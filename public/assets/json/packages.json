@@ -1,0 +1,38 @@
+[
+    {
+        "Image":"basic.svg",
+        "Month":"Monthly",
+        "Basics":"Basic",
+        "Lorem":"Lorem ipsum dolor sit amet doloroli sitiol conse ctetur adipiscing elit. ",
+        "Amount":"$49.99",
+        "Include":"What’s included",
+        "Customers":"50 Customers",
+        "Suppliers":"10 Suppliers",
+        "Products":"100 Products",
+        "Invoice":"100 Invoice"
+     },
+    {
+    "Image":"enterprise.svg",
+    "Month":"Monthly",
+    "Basics":"Enterprise",
+    "Lorem":"Lorem ipsum dolor sit amet doloroli sitiol conse ctetur adipiscing elit.",
+    "Amount":"$99.99",
+    "Include":"What’s included",
+    "Customers":"100 Customers",
+    "Suppliers":"50 Suppliers",
+    "Products":"200 Products",
+    "Invoice":"200 Invoice"
+    },
+    {
+        "Image":"free-trail.svg",
+        "Month":"Monthly",
+        "Basics":"Free Trail",
+        "Lorem":"Lorem ipsum dolor sit amet doloroli sitiol conse ctetur adipiscing elit. ",
+        "Amount":"$0.00",
+        "Include":"What’s included",
+        "Customers":"10 Customers",
+        "Suppliers":"5 Suppliers",
+        "Products":"50 Products",
+        "Invoice":"Invoice"
+        }
+]

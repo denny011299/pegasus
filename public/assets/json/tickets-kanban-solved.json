@@ -1,0 +1,38 @@
+[
+    {
+        "title": "Verify your email",
+        "priority": "Low",
+        "priorityclass": "badge badge bg-primary-light",
+        "ticket_number": "#4987",
+        "due_status": "Open",
+        "due_status_class": "badge  bg-danger-light text-danger-light",
+        "progress_date": "Jan 2023"
+    },
+    {
+        "title": "Support for theme",
+        "priority": "Medium",
+        "priorityclass": "badge bg-warning-light text-warning-light",
+        "ticket_number": "#4987",
+        "due_status": "Resolved",
+        "due_status_class": "badge bg-success-light",
+        "progress_date": "Jan 2023"
+    },
+    {
+        "title": "Management",
+        "priority": "High",
+        "priorityclass": "badge bg-danger-light",
+        "ticket_number": "#4987",
+        "due_status": "Open",
+        "due_status_class": "badge  bg-danger-light text-danger-light",
+        "progress_date": "Jan 2023"
+    },
+    {
+        "title": "Support for theme",
+        "priority": "Low",
+        "priorityclass": "badge bg-primary-light",
+        "ticket_number": "#4987",
+        "due_status": "Resolved",
+        "due_status_class": "badge bg-success-light",
+        "progress_date": "Jan 2023"
+    }
+]

@@ -1,0 +1,62 @@
+[
+    {
+        "Id": "INV-001",
+        "Customer": "Orn LLC",
+        "Email": " orn@example.com",
+        "Amount": "$299.99",
+        "Mode": "CASH",
+        "CreatedOn": "15 Dec 2023, 04:35 PM",
+        "Status": "Paid",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "Id": "INV-005",
+        "Customer": "Accent Technology",
+        "Email": "accent@example.com",
+        "Amount": "$299.99",
+        "Mode": "UPI",
+        "CreatedOn": "15 Dec 2023, 04:35 PM",
+        "Status": "Paid",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "Id": "INV-101",
+        "Customer": "Express Advertising",
+        "Email": "express@example.com",
+        "Amount": "$299.99",
+        "Mode": "UPI",
+        "CreatedOn": "04 Dec 2023, 12:38 PM",
+        "Status": "Paid",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "Id": "INV-421",
+        "Customer": "Lexicon Technologies",
+        "Email": "lexicon@example.com",
+        "Amount": "$299.99",
+        "Mode": "CHEQUE",
+        "CreatedOn": "28 Nov 2023, 03:25 PM",
+        "Status": "Paid",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "Id": "INV-321",
+        "Customer": "Sumo Soft Limited",
+        "Email": "sumo@example.com",
+        "Amount": "$299.99",
+        "Mode": "-",
+        "CreatedOn": "20 Nov 2023, 02:47 PM",
+        "Status": "Pending",
+        "Class": "badge bg-pending-light"
+    },
+    {
+        "Id": "INV-333",
+        "Customer": "Repair Group Co",
+        "Email": " repair@example.com",
+        "Amount": "$299.99",
+        "Mode": "-",
+        "CreatedOn": "15 Nov 2023, 10:42 AM",
+        "Status": "Pending",
+        "Class": "badge bg-pending-light"
+    }
+]

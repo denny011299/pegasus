@@ -1,0 +1,74 @@
+[
+    {
+        "InvoiceNo": "#4987",
+        "Category": "Food",
+        "CreatedOn": "23 Mar 2023",
+        "TotalAmount": "$1,54,220",
+        "PaidAmount": "$1,50,000",
+        "PaymentMode": "Cash",
+        "Balance": "$2,54,00",
+        "DueDate": "25 Mar 2023",
+        "Status": "Paid",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "InvoiceNo": "#4988",
+        "Category": "Advertising",
+        "CreatedOn": "16 Mar 2023",
+        "TotalAmount": "$3,54,220",
+        "PaidAmount": "$2,50,000",
+        "PaymentMode": "Cheque",
+        "Balance": "$4,220",
+        "DueDate": "16 Jan 2023",
+        "Status": "Overdue",
+        "Class": "badge bg-warning-light text-warning"
+    },
+    {
+        "InvoiceNo": "#4989",
+        "Category": "Marketing",
+        "CreatedOn": "25 Feb 2023",
+        "TotalAmount": "$1,54,220",
+        "PaidAmount": "$1,50,000",
+        "PaymentMode": "Cash",
+        "Balance": "$4,220",
+        "DueDate": "16 Jan 2023",
+        "Status": "Cancelled",
+        "Class": "badge bg-danger-light text-danger"
+    },
+    {
+        "InvoiceNo": "#4990",
+        "Category": "Repairs",
+        "CreatedOn": "25 Mar 2023",
+        "TotalAmount": "$1,54,220",
+        "PaidAmount": "$1,50,000",
+        "PaymentMode": "Cash",
+        "Balance": "$4,220",
+        "DueDate": "12 May 2023",
+        "Status": "Partially Paid",
+        "Class": "badge bg-primary-light"
+    },
+    {
+        "InvoiceNo": "#4991",
+        "Category": "Software",
+        "CreatedOn": "12 May 2023",
+        "TotalAmount": "$5,54,220",
+        "PaidAmount": "$3,50,000",
+        "PaymentMode": "Cheque",
+        "Balance": "$4,220",
+        "DueDate": "18 May 2023",
+        "Status": "Unpaid",
+        "Class": "badge bg-light-gray text-secondary"
+    },
+    {
+        "InvoiceNo": "#4992",
+        "Category": "Stationary",
+        "CreatedOn": "16 Nov 2023",
+        "TotalAmount": "$5,54,220",
+        "PaidAmount": "$6,50,000",
+        "PaymentMode": "Cash",
+        "Balance": "$4,220",
+        "DueDate": "25 Feb 2023",
+        "Status": "Draft",
+        "Class": "badge bg-light-gray text-primary"
+    }
+]

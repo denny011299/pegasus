@@ -1,0 +1,68 @@
+[
+	{
+		"Id": "1",
+		"CategoryName": "Advertising",
+		"Date": "19 Dec 2023, 06:12 PM",
+		"AddedBy": "Admin",
+		"Status": "checkbox",
+		"AdminImage": "avatar-21.jpg",
+		"Image": "category-01.jpg",
+		"StatusId": "rating_1",
+		"StatusFor": "rating_1"
+	},
+	{
+		"Id": "2",
+		"CategoryName": "Food",
+		"Date": "15 Dec 2023, 04:35 PM",
+		"AddedBy": "Admin",
+		"Status": "checkbox",
+		"AdminImage": "avatar-21.jpg",
+		"Image": "category-04.jpg",
+		"StatusId": "rating_2",
+		"StatusFor": "rating_2"
+	},
+	{
+		"Id": "3",
+		"CategoryName": "Furniture",
+		"Date": "04 Dec 2023, 12:38 PM",
+		"AddedBy": "Admin",
+		"Status": "checkbox",
+		"AdminImage": "avatar-21.jpg",
+		"Image": "category-07.jpg",
+		"StatusId": "rating_3",
+		"StatusFor": "rating_3"
+	},
+	{
+		"Id": "4",
+		"CategoryName": "Repairs",
+		"Date": "28 Nov 2023, 03:25 PM",
+		"AddedBy": "Admin",
+		"Status": "checkbox",
+		"AdminImage": "avatar-21.jpg",
+		"Image": "category-02.jpg",
+		"StatusId": "rating_4",
+		"StatusFor": "rating_4"
+	},
+	{
+		"Id": "5",
+		"CategoryName": "Laptop",
+		"Date": "20 Nov 2023, 02:47 PM",
+		"AddedBy": "Admin",
+		"Status": "checkbox",
+		"AdminImage": "avatar-21.jpg",
+		"Image": "category-09.jpg",
+		"StatusId": "rating_5",
+		"StatusFor": "rating_5"
+	},
+	{
+		"Id": "6",
+		"CategoryName": "Shoes",
+		"Date": "15 Nov 2023, 10:42 AM",
+		"AddedBy": "Admin",
+		"Status": "checkbox",
+		"AdminImage": "avatar-21.jpg",
+		"Image": "category-08.jpg",
+		"StatusId": "rating_6",
+		"StatusFor": "rating_6"
+	}
+]

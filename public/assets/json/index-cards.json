@@ -1,0 +1,50 @@
+[
+    {
+        "dash-widget-icon": "dash-widget-icon bg-1",
+        "icon-class": "fas fa-dollar-sign",
+        "dash-title": "Amount Due",
+        "dash-counts": "1,642",
+        "progress-bar": "progress-bar bg-5",
+        "progress-width": "75%",
+        "progress-aria": "75",
+        "arrow-class": "fas fa-arrow-down me-1",
+        "arrow-color": "text-danger me-1",
+        "since-last-week": "1.15%"
+    },
+    {
+        "dash-widget-icon": "dash-widget-icon bg-2",
+        "icon-class": "fas fa-users",
+        "dash-title": "Customers",
+        "dash-counts": "3,642",
+        "progress-bar": "progress-bar bg-6",
+        "progress-width": "65%",
+        "progress-aria": "65",
+        "arrow-class": "fas fa-arrow-up me-1",
+        "arrow-color": "text-success me-1",
+        "since-last-week": "2.37%"
+    },
+    {
+        "dash-widget-icon": "dash-widget-icon bg-3",
+        "icon-class": "fas fa-file-alt",
+        "dash-title": "Invoices",
+        "dash-counts": "1,041",
+        "progress-bar": "progress-bar bg-7",
+        "progress-width": "85%",
+        "progress-aria": "85",
+        "arrow-class": "fas fa-arrow-up me-1",
+        "arrow-color": "text-success me-1",
+        "since-last-week": "3.77%"
+    },
+    {
+        "dash-widget-icon": "dash-widget-icon bg-4",
+        "icon-class": "far fa-file",
+        "dash-title": "Estimates",
+        "dash-counts": "2,150",
+        "progress-bar": "progress-bar bg-8",
+        "progress-width": "45%",
+        "progress-aria": "45",
+        "arrow-class": "fas fa-arrow-down me-1",
+        "arrow-color": "text-danger me-1",
+        "since-last-week": "8.68%"
+    }
+]

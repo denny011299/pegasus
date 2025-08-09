@@ -1,0 +1,17 @@
+[
+	{
+		"InvoiceID": "#4991",
+		"Category": "Software",
+		"CreatedOn": "12 May 2023",
+		"InvoiceTo": "Pricilla",
+         "Phone":"+1 559-741-9672",
+		"Total": "$5,54,220",
+		"Paid": "$3,50,000",
+		"PaymentMode": "Cheque",
+		"Balance": "$4,220",
+		"DueDate": "18 May 2023",
+		"Status": "Unpaid",
+        "Class":"badge bg-light-gray text-secondary",
+        "Image":"avatar-18.jpg"
+		}
+]

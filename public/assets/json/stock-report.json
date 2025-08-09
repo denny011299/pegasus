@@ -1,0 +1,57 @@
+[
+	{
+		"Id": "1",
+		"Product": "Lenovo 3rd Generation",
+		"SKU": "PPT001",
+		"Category": "Laptop",
+		"OpeningQty": "0",
+		"QtyIn": "10",
+		"QtyOut": "5",
+		"ClosingQty": "5",
+        "Image":"sales-return1.svg"
+	},
+	{
+		"Id": "2",
+		"Product": "Nike Jordan",
+		"SKU": "PPT005",
+		"Category": "Shoe",
+		"OpeningQty": "0",
+		"QtyIn": "10",
+		"QtyOut": "0",
+		"ClosingQty": "10",
+        "Image":"sales-return2.svg"
+	},
+	{
+		"Id": "3",
+		"Product": "Apple Series 5 Watch",
+		"SKU": "PPT010",
+		"Category": "Accessories",
+		"OpeningQty": "0",
+		"QtyIn": "5",
+		"QtyOut": "0",
+		"ClosingQty": "5",
+        "Image":"sales-return3.svg"
+	},
+	{
+		"Id": "4",
+		"Product": "Amazon Echo Dot",
+		"SKU": "PPT104",
+		"Category": "Electronics",
+		"OpeningQty": "0",
+		"QtyIn": "10",
+		"QtyOut": "0",
+		"ClosingQty": "10",
+        "Image":"sales-return4.svg"
+	},
+	{
+		"Id": "5",
+		"Product": "Lobar Handy",
+		"SKU": "PPT050",
+		"Category": "Furnitures",
+		"OpeningQty": "0",
+		"QtyIn": "14",
+		"QtyOut": "4",
+		"ClosingQty": "10",
+        "Image":"sales-return5.svg"
+	}
+]

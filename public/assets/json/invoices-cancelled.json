@@ -1,0 +1,18 @@
+[
+	{
+		"InvoiceID": "#4989",
+		"Category": "Marketing",
+		"CreatedOn": "25 Feb 2023",
+		"InvoiceTo": "Robert",
+        "Phone": "+1 956-623-2880",
+		"Total": "$1,54,220",
+		"Paid": "$1,50,000",
+		"PaymentMode": "Cash",
+		"Balance": "$4,220",
+		"DueDate": "16 Jan 2023",
+		"Status": "Cancelled",
+        "Image":"avatar-16.jpg",
+        "Class":"badge bg-danger-light"
+		
+	}
+]

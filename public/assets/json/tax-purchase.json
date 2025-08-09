@@ -1,0 +1,62 @@
+[
+	{
+		"Id": "1",
+		"Supplier": "Michael",
+		"Date": "01 Aug 2023",
+		"RefNo": "#312345",
+		"TotalAmount": "$3000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "12",
+		"TaxAmount": "$375"
+	},
+	{
+		"Id": "2",
+		"Supplier": "Richard",
+		"Date": "12 Aug 2023",
+		"RefNo": "#236348",
+		"TotalAmount": "$2000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "08",
+		"TaxAmount": "$247"
+	},
+	{
+		"Id": "3",
+		"Supplier": "Joseph",
+		"Date": "16 Sep 2023",
+		"RefNo": "#395374",
+		"TotalAmount": "$17200.00",
+		"PaymentMethod": "Cash",
+		"Discount": "10",
+		"TaxAmount": "$172"
+	},
+	{
+		"Id": "4",
+		"Supplier": "David",
+		"Date": "24 Sep 2023",
+		"RefNo": "#312345",
+		"TotalAmount": "$32000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "14",
+		"TaxAmount": "$590"
+	},
+	{
+		"Id": "5",
+		"Supplier": "Benjamin",
+		"Date": "19 Oct 2023",
+		"RefNo": "#893246",
+		"TotalAmount": "$24000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "12",
+		"TaxAmount": "$375"
+	},
+	{
+		"Id": "6",
+		"Supplier": "Steven",
+		"Date": "20 Oct 2023",
+		"RefNo": "#457289",
+		"TotalAmount": "$12000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "05",
+		"TaxAmount": "$440"
+	}
+]

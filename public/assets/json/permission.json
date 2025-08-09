@@ -1,0 +1,52 @@
+[
+	{
+		"Id": "1",
+		"Modules": "Dashboard",
+		"SubModules": "Dashboard"
+	},
+	{
+		"Id": "2",
+		"Modules": "Appointments",
+		"SubModules": "Appointments"
+	},
+	{
+		"Id": "3",
+		"Modules": "Specialization",
+		"SubModules": "Specialization"
+	},
+	{
+		"Id": "4",
+		"Modules": "Sub Categories",
+		"SubModules": "Sub Categories"
+	},
+	{
+		"Id": "5",
+		"Modules": "Clients",
+		"SubModules": "Clients"
+	},
+	{
+		"Id": "6",
+		"Modules": "Payment Request",
+		"SubModules": "Payment Request"
+	},
+	{
+		"Id": "7",
+		"Modules": "Reviews",
+		"SubModules": "Reviews"
+	},
+	{
+		"Id": "8",
+		"Modules": "Subscription",
+		"SubModules": "Subscription"
+	},
+	{
+		"Id": "9",
+		"Modules": "Settings",
+		"SubModules": "Settings"
+	},
+	{
+		"Id": "10",
+		"Modules": "Email Templates",
+		"SubModules": "Email Templates"
+	}
+]

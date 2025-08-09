@@ -1,0 +1,36 @@
+[
+	{
+		"TicketID": "#4987",
+		"Subject": "Support for theme",
+		"Assigned": "Charles Hafner",
+		"AssignedDate": "17 Dec 2023",
+		"CreatedOn": "19 Dec 2023, 6:12PM",
+		"DueDate": "16 Jan 2023",
+		"Assignee": "John Smith",
+        "Phone":" +1 843-443-3282",
+		"LastReply": "18 Jan 2023",
+		"Priority": "Medium",
+		"Status": "Open",
+        "Image":"avatar-07.jpg",
+        "Image1":"avatar-14.jpg",
+        "Class":"badge bg-warning-light text-warning-light",
+        "Class1":"badge bg-danger-light text-danger-light"
+		},
+	{
+		"TicketID": "#4991",
+		"Subject": "verify your email",
+		"Assigned": "Esther",
+		"AssignedDate": "21 Dec 2023",
+		"CreatedOn": "23 Dec 2023, 6:12PM",
+		"DueDate": "28 Feb 2023",
+		"Assignee": "Pricilla",
+        "Phone":"+1 843-443-4298",
+		"LastReply": "21 Jan 2023",
+		"Priority": "Low",
+		"Status": "Open",
+        "Image":"avatar-11.jpg",
+        "Image1":"avatar-18.jpg",
+        "Class":"badge bg-primary-light",
+        "Class1":"badge bg-danger-light text-danger-light"
+		}
+]

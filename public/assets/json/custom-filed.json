@@ -1,0 +1,34 @@
+[
+    {
+        "Id": "1",
+        "Modules": "Plan",
+        "Label": "Name",
+        "Type": "Text",
+        "DefaultValue": "Enter Name",
+        "Required": "Required"
+    },
+    {
+        "Id": "2",
+        "Modules": "Companies",
+        "Label": "Email",
+        "Type": "Email",
+        "DefaultValue": "Enter Email",
+        "Required": "Required"
+    },
+    {
+        "Id": "3",
+        "Modules": "Ledger",
+        "Label": "Phone",
+        "Type": "Text",
+        "DefaultValue": "Enter Phone",
+        "Required": "Required"
+    },
+    {
+        "Id": "4",
+        "Modules": "Packages",
+        "Label": "Comments",
+        "Type": "Textarea",
+        "DefaultValue": "Enter Comments",
+        "Required": "Required"
+    }
+]

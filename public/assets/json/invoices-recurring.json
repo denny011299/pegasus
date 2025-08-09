@@ -1,0 +1,17 @@
+[
+	{
+		"InvoiceID": "#4990",
+		"Category": "Repairs",
+		"CreatedOn": "25 Mar 2023",
+		"InvoiceTo": "Sharonda",
+        "Phone": "+1 707-439-1732",
+		"Total": "$1,54,220",
+		"Paid": "$1,50,000",
+		"PaymentMode": "Cash",
+		"Balance": "$4,220",
+		"DueDate": "12 May 2023",
+		"Status": "Partially Paid",
+        "Class":"badge bg-primary-light",
+        "Image":"avatar-17.jpg"
+		}
+]

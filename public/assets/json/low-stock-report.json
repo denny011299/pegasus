@@ -1,0 +1,47 @@
+[
+	{
+		"Id": "1",
+		"Product": "Lenovo 3rd Generation",
+		"SKU": "PPT001",
+		"Category": "Laptop",
+		"OpeningQty": "10",
+		"ClosingQty": "5",
+        "Image":"product-01.png"
+	},
+	{
+		"Id": "2",
+		"Product": "Nike Jordan",
+		"SKU": "PPT005",
+		"Category": "Shoe",
+		"OpeningQty": "10",
+		"ClosingQty": "10",
+        "Image":"product-02.png"
+	},
+	{
+		"Id": "3",
+		"Product": "Apple Series 5 Watch",
+		"SKU": "PPT010",
+		"Category": "Accessories",
+		"OpeningQty": "5",
+		"ClosingQty": "5",
+        "Image":"product-03.png"
+	},
+	{
+		"Id": "4",
+		"Product": "Amazon Echo Dot",
+		"SKU": "PPT104",
+		"Category": "Electronics",
+		"OpeningQty": "10",
+		"ClosingQty": "10",
+        "Image":"product-04.png"
+	},
+	{
+		"Id": "5",
+		"Product": "Lobar Handy",
+		"SKU": "PPT050",
+		"Category": "Furnitures",
+		"OpeningQty": "14",
+		"ClosingQty": "10",
+        "Image":"product-05.png"
+	}
+]

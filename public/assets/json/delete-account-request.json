@@ -1,0 +1,50 @@
+[
+	{
+		"Id": "1",
+		"UserName": "John Smith",
+		"Email": "john@example.com",
+		"RequisitionDate": "28 Sep 2023 16:43PM",
+		"DeleteRequestDate": "19 Dec 2023, 06:12 PM",
+		"Image": "avatar-14.jpg"
+	},
+	{
+		"Id": "2",
+		"UserName": "Johnny",
+		"Email": " johnny@example.com",
+		"RequisitionDate": "12 Dec 2023, 06:12 PM",
+		"DeleteRequestDate": "15 Dec 2023, 06:12 PM",
+		"Image": "avatar-15.jpg"
+	},
+	{
+		"Id": "3",
+		"UserName": "Robert",
+		"Email": " robert@example.com",
+		"RequisitionDate": "04 Dec 2023, 12:38 PM",
+		"DeleteRequestDate": "08 Dec 2023, 12:38 PM",
+		"Image": "avatar-16.jpg"
+	},
+	{
+		"Id": "4",
+		"UserName": "Sharonda",
+		"Email": " sharon@example.com",
+		"RequisitionDate": "14 Dec 2023, 12:38 PM",
+		"DeleteRequestDate": "24 Dec 2023, 12:38 PM",
+		"Image": "avatar-17.jpg"
+	},
+	{
+		"Id": "5",
+		"UserName": "Pricilla",
+		"Email": " pricilla@example.com",
+		"RequisitionDate": "12 Dec 2023, 12:38 PM",
+		"DeleteRequestDate": "13 Dec 2023, 12:38 PM",
+		"Image": "avatar-18.jpg"
+	},
+	{
+		"Id": "6",
+		"UserName": "Randall",
+		"Email": " randall@example.com",
+		"RequisitionDate": "04 Dec 2023, 12:38 PM",
+		"DeleteRequestDate": "09 Dec 2023, 12:38 PM",
+		"Image": "avatar-19.jpg"
+	}
+]

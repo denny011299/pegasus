@@ -1,0 +1,68 @@
+[
+    {
+        "title": "Total Invoice",
+        "class": "bg-info-light",
+        "icon": "receipt-item.svg",
+        "amount": "$298",
+        "number_of_invoice": "02",
+        "trending": {
+            "value": "02",
+            "direction": "fe fe-trending-up"
+        }
+    },
+    {
+        "title": "Outstanding",
+        "class": "bg-primary-light",
+        "icon": "transaction-minus.svg",
+        "amount": "$325,215",
+        "number_of_invoice": "03",
+        "trending": {
+            "value": "04",
+            "direction": "fe fe-trending-up"
+        }
+    },
+    {
+        "title": "Total Overdue",
+        "class": "bg-warning-light",
+        "icon": "archive-book.svg",
+        "amount": "$7825",
+        "number_of_invoice": "01",
+        "trending": {
+            "value": "03",
+            "direction": "fe fe-trending-down"
+        }
+    },
+    {
+        "title": "Cancelled",
+        "class": "bg-primary-light",
+        "icon": "clipboard-close.svg",
+        "amount": "100",
+        "number_of_invoice": "04",
+        "trending": {
+            "value": "05",
+            "direction": "fe fe-trending-down"
+        }
+    },
+    {
+        "title": "Draft",
+        "class": "bg-green-light",
+        "icon": "message-edit.svg",
+        "amount": "$125,586",
+        "number_of_invoice": "06",
+        "trending": {
+            "value": "02",
+            "direction": "fe fe-trending-down"
+        }
+    },
+    {
+        "title": "Recurring",
+        "class": "bg-danger-light",
+        "icon": "3d-rotate.svg",
+        "amount": "$86,892",
+        "number_of_invoice": "03",
+        "trending": {
+            "value": "02",
+            "direction": "fe fe-trending-up"
+        }
+    }
+]

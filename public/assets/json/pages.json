@@ -1,0 +1,50 @@
+[
+	{
+		"Id": "1",
+		"Pages": "About Us",
+		"PagesSlug": "about-us",
+		"Status": "checkbox",
+		"StatusId": "rating_1",
+		"StatusFor": "rating_1"
+	},
+	{
+		"Id": "2",
+		"Pages": "Cookie Policy",
+		"PagesSlug": "cookie-policy",
+		"Status": "checkbox",
+		"StatusId": "rating_2",
+		"StatusFor": "rating_2"
+	},
+	{
+		"Id": "3",
+		"Pages": "FAQ",
+		"PagesSlug": "faq",
+		"Status": "checkbox",
+		"StatusId": "rating_3",
+		"StatusFor": "rating_3"
+	},
+	{
+		"Id": "4",
+		"Pages": "Helps",
+		"PagesSlug": "helps",
+		"Status": "checkbox",
+		"StatusId": "rating_4",
+		"StatusFor": "rating_4"
+	},
+	{
+		"Id": "5",
+		"Pages": "Home",
+		"PagesSlug": "home",
+		"Status": "checkbox",
+		"StatusId": "rating_5",
+		"StatusFor": "rating_5"
+	},
+	{
+		"Id": "6",
+		"Pages": "Privacy Policy",
+		"PagesSlug": "privacy-policy",
+		"Status": "checkbox",
+		"StatusId": "rating_6",
+		"StatusFor": "rating_6"
+	}
+]

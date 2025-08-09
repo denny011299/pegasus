@@ -1,0 +1,22 @@
+[
+	{
+		"Id": "1",
+		"RoleName": "Admin",
+		"Createdat": "19 Dec 2023, 06:12 PM"
+	},
+	{
+		"Id": "2",
+		"RoleName": "Customer",
+		"Createdat": "28 Nov 2023, 03:25 PM"
+	},
+	{
+		"Id": "3",
+		"RoleName": "Shop Owner",
+		"Createdat": "19 Dec 2023, 06:12 PM"
+	},
+	{
+		"Id": "4",
+		"RoleName": "Receptionist",
+		"Createdat": "9 Dec 2023, 06:12 PM"
+	}
+]

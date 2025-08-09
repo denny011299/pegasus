@@ -1,0 +1,68 @@
+[
+    {
+      "Customer": {
+        "name": "Greg Lynch",
+        "profile_link": "profile",
+        "avatar": "avatar-05.jpg"
+      },
+      "ExpiryDate": "5 Nov 2023",
+      "Amount": "$175",
+      "Status": {
+        "text": "Sent",
+        "class": "badge bg-info-light text-info"
+      }
+    },
+    {
+      "Customer": {
+        "name": "Karlene Chaidez",
+        "profile_link": "profile",
+        "avatar": "avatar-06.jpg"
+      },
+      "ExpiryDate": "28 Oct 2023",
+      "Amount": "$1500",
+      "Status": {
+        "text": "Expired",
+        "class": "badge bg-warning-light text-warning"
+      }
+    },
+    {
+      "Customer": {
+        "name": "John Blair",
+        "profile_link": "profile",
+        "avatar": "avatar-07.jpg"
+      },
+      "ExpiryDate": "17 Oct 2023",
+      "Amount": "$2350",
+      "Status": {
+        "text": "Accepted",
+        "class": "badge bg-success-light"
+      }
+    },
+    {
+      "Customer": {
+        "name": "Russell Copeland",
+        "profile_link": "profile",
+        "avatar": "avatar-08.jpg"
+      },
+      "ExpiryDate": "8 Oct 2023",
+      "Amount": "$1890",
+      "Status": {
+        "text": "Accepted",
+        "class": "badge bg-success-light"
+      }
+    },
+    {
+      "Customer": {
+        "name": "Leatha Bailey",
+        "profile_link": "profile",
+        "avatar": "avatar-09.jpg"
+      },
+      "ExpiryDate": "30 Sep 2023",
+      "Amount": "$785",
+      "Status": {
+        "text": "Accepted",
+        "class": "badge bg-success-light"
+      }
+    }
+  ]
+  

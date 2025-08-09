@@ -1,0 +1,62 @@
+[
+    {
+        "Id": "1",
+        "SignatureName": "Allen",
+        "Signature": "user-signature.png",
+        "Image": "user-signature-white.png",
+        "Status": "checkbox",
+        "checked": true,
+        "CheckboxId": "rating_1",
+        "CheckboxFor": "rating_1"
+    },
+    {
+        "Id": "2",
+        "SignatureName": "Raymond",
+        "Signature": "user-signature.png",
+        "Image": "user-signature-white.png",
+        "Status": "checkbox",
+        "checked": true,
+        "CheckboxId": "rating_2",
+        "CheckboxFor": "rating_2"
+    },
+    {
+        "Id": "3",
+        "SignatureName": "Ralph",
+        "Signature": "user-signature.png",
+        "Image": "user-signature-white.png",
+        "Status": "checkbox",
+        "checked": false,
+        "CheckboxId": "rating_3",
+        "CheckboxFor": "rating_3"
+    },
+    {
+        "Id": "4",
+        "SignatureName": "Ruth",
+        "Signature": "user-signature.png",
+        "Image": "user-signature-white.png",
+        "Status": "checkbox",
+        "checked": true,
+        "CheckboxId": "rating_4",
+        "CheckboxFor": "rating_4"
+    },
+    {
+        "Id": "5",
+        "SignatureName": "Steven",
+        "Signature": "user-signature.png",
+        "Image": "user-signature-white.png",
+        "Status": "checkbox",
+        "checked": true,
+        "CheckboxId": "rating_5",
+        "CheckboxFor": "rating_5"
+    },
+    {
+        "Id": "6",
+        "SignatureName": "Earnes",
+        "Signature": "user-signature.png",
+        "Image": "user-signature-white.png",
+        "Status": "checkbox",
+        "checked": true,
+        "CheckboxId": "rating_6",
+        "CheckboxFor": "rating_6"
+    }
+]

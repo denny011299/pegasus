@@ -1,0 +1,65 @@
+[
+    {
+        "Id": "1",
+        "CountryName": "American Samoa(+684)",
+        "StateName": "Swains Island",
+        "CityName": "Gandzasar",
+        "Image": "as.png"
+    },
+    {
+        "Id": "2",
+        "CountryName": "Andorra (+376)",
+        "StateName": "Andorra la Vella",
+        "CityName": "Escaldes-Engordany",
+        "Image": "ad.png"
+    },
+    {
+        "Id": "3",
+        "CountryName": "Angola (+244)",
+        "StateName": "Benguela",
+        "CityName": "Chissamba",
+        "Image": "ao.png"
+    },
+    {
+        "Id": "4",
+        "CountryName": "Anguilla (+1264)",
+        "StateName": "The Valley",
+        "CityName": "Illinois",
+        "Image": "ai.png"
+    },
+    {
+        "Id": "5",
+        "CountryName": "Antigua & Barbuda (+1268)",
+        "StateName": "Saint Paul",
+        "CityName": "Maplewood",
+        "Image": "ag.png"
+    },
+    {
+        "Id": "6",
+        "CountryName": "Australia",
+        "StateName": "Queensland",
+        "CityName": "Sydney",
+        "Image": "au.png"
+    },
+    {
+        "Id": "7",
+        "CountryName": "American Samoa(+684)",
+        "StateName": "Swains Island",
+        "CityName": "Gandzasar",
+        "Image": "as.png"
+    },
+    {
+        "Id": "8",
+        "CountryName": "Andorra (+376)",
+        "StateName": "Andorra la Vella",
+        "CityName": "Escaldes-Engordany",
+        "Image": "ad.png"
+    },
+    {
+        "Id": "9",
+        "CountryName": "Angola (+244)",
+        "StateName": "Benguela",
+        "CityName": "Chissamba",
+        "Image": "ao.png"
+    }
+]

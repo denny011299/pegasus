@@ -1,0 +1,17 @@
+[
+	{
+		"InvoiceID": "#4988",
+		"Category": "Food",
+		"CreatedOn": "16 Mar 2023",
+		"InvoiceTo": "Johnny",
+        "Phone": "+1 917-409-0861",
+		"Total": "$3,54,220",
+		"Paid": "$2,50,000",
+		"PaymentMode": "Cheque",
+		"Balance": "$4,220",
+		"DueDate": "16 Jan 2023",
+		"Status": "Overdue",
+        "Class":"badge bg-warning-light text-warning",
+        "Image":"avatar-15.jpg"
+		}
+]

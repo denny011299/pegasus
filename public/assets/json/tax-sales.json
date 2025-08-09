@@ -1,0 +1,68 @@
+[
+	{
+		"Id": "1",
+		"Customer": "John Smith",
+		"Date": "01 Aug 2023",
+		"InvoiceNo": "INV312345",
+		"TotalAmount": "$28000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "10",
+		"TaxAmount": "$280",
+        "Image":"avatar-14.jpg"
+	},
+	{
+		"Id": "2",
+		"Customer": "Johny Charles",
+		"Date": "13 Aug 2023",
+		"InvoiceNo": "INV472894",
+		"TotalAmount": "$32000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "07",
+		"TaxAmount": "$340",
+        "Image":"avatar-15.jpg"
+	},
+	{
+		"Id": "3",
+		"Customer": "Robert George",
+		"Date": "16 Sep 2023",
+		"InvoiceNo": "INV562967",
+		"TotalAmount": "$10000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "12",
+		"TaxAmount": "$170",
+        "Image":"avatar-16.jpg"
+	},
+	{
+		"Id": "4",
+		"Customer": "Sharonda Letha",
+		"Date": "24 Sep 2023",
+		"InvoiceNo": "INV012649",
+		"TotalAmount": "$12000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "18",
+		"TaxAmount": "$520",
+        "Image":"avatar-17.jpg"
+	},
+	{
+		"Id": "5",
+		"Customer": "Pricillia Maureen",
+		"Date": "10 Oct 2023",
+		"InvoiceNo": "INV941759",
+		"TotalAmount": "$16000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "05",
+		"TaxAmount": "$270",
+        "Image":"avatar-18.jpg"
+	},
+	{
+		"Id": "6",
+		"Customer": "Randall Hollis",
+		"Date": "29 Oct 2023",
+		"InvoiceNo": "INV375016",
+		"TotalAmount": "$22000.00",
+		"PaymentMethod": "Cash",
+		"Discount": "16",
+		"TaxAmount": "$350",
+        "Image":"avatar-19.jpg"
+	}
+]

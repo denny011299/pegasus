@@ -1,0 +1,67 @@
+[
+    {
+        "Customer": {
+            "name": "Barbara Moore",
+            "profile_link": "profile",
+            "avatar": "avatar-04.jpg"
+        },
+        "Amount": "$118",
+        "DueDate": "23 Nov 2023",
+        "Status": {
+            "text": "Paid",
+            "class": "badge bg-success-light"
+        }
+    },
+    {
+        "Customer": {
+            "name": "Karlene Chaidez",
+            "profile_link": "profile",
+            "avatar": "avatar-06.jpg"
+        },
+        "Amount": "$222",
+        "DueDate": "18 Nov 2023",
+        "Status": {
+            "text": "Sent",
+            "class": "badge bg-info-light text-info"
+        }
+    },
+    {
+        "Customer": {
+            "name": "Russell Copeland",
+            "profile_link": "profile",
+            "avatar": "avatar-08.jpg"
+        },
+        "Amount": "$347",
+        "DueDate": "10 Nov 2023",
+        "Status": {
+            "text": "Partially Paid",
+            "class": "badge bg-warning-light text-warning"
+        }
+    },
+    {
+        "Customer": {
+            "name": "Joseph Collins",
+            "profile_link": "profile",
+            "avatar": "avatar-10.jpg"
+        },
+        "Amount": "$826",
+        "DueDate": "25 Sep 2023",
+        "Status": {
+            "text": "Overdue",
+            "class": "badge bg-danger-light"
+        }
+    },
+    {
+        "Customer": {
+            "name": "Jennifer Floyd",
+            "profile_link": "profile",
+            "avatar": "avatar-11.jpg"
+        },
+        "Amount": "$519",
+        "DueDate": "18 Sep 2023",
+        "Status": {
+            "text": "Paid",
+            "class": "badge bg-success-light"
+        }
+    }
+]

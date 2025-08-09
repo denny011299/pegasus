@@ -1,0 +1,42 @@
+[
+    {
+        "Name": "PAYOUT -1",
+        "Payment": "Payment Out",
+        "Created": "13 Aug 2023",
+        "ClassMode": "badge bg-success-light",
+        "Mode": "Cash",
+        "ClassAmount": "text-danger-light",
+        "Amount": "-$200",
+        "ClosingBalance": "$300"
+    },
+    {
+        "Name": "PAYOUT -2",
+        "Payment": "Payment Out",
+        "Created": "16 Aug 2023",
+        "ClassMode": "badge bg-success-light",
+        "Mode": "Cash",
+        "ClassAmount": "text-danger-light",
+        "Amount": "-$100",
+        "ClosingBalance": "$400"
+    },
+    {
+        "Name": "PAYIN -2",
+        "Payment": "Payment In",
+        "Created": "14 Aug 2023",
+        "ClassMode": "badge bg-success-light",
+        "Mode": "Cash",
+        "ClassAmount": "text-success-light",
+        "Amount": "+$200",
+        "ClosingBalance": "$500"
+    },
+    {
+        "Name": "PAYIN -1",
+        "Payment": "Payment In",
+        "Created": "12 Aug 2023",
+        "ClassMode": "badge bg-success-light",
+        "Mode": "Cash",
+        "ClassAmount": "text-success-light",
+        "Amount": "+$500",
+        "ClosingBalance": "$500"
+    }
+]

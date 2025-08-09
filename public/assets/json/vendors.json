@@ -1,0 +1,56 @@
+[
+    {
+        "Id": "1",
+        "Name": "John Smith",
+        "Email": "john@example.com",
+        "Phone": "+1 989-438-3131",
+        "Created": "19 Dec 2023, 06:12 PM",
+        "Balance": "$4,220",
+        "Image": "avatar-14.jpg"
+    },
+    {
+        "Id": "2",
+        "Name": "Johnny Charles",
+        "Email": "johnny@example.com",
+        "Phone": "+1 843-443-3282",
+        "Created": "15 Dec 2023, 06:12 PM",
+        "Balance": "$1,862",
+        "Image": "avatar-15.jpg"
+    },
+    {
+        "Id": "3",
+        "Name": "Robert George",
+        "Email": "robert@example.com",
+        "Phone": "+1 917-409-0861",
+        "Created": "04 Dec 2023, 12:38 PM",
+        "Balance": "$2,789",
+        "Image": "avatar-16.jpg"
+    },
+    {
+        "Id": "4",
+        "Name": "Sharonda Letha",
+        "Email": "sharon@example.com",
+        "Phone": "+1 956-623-2880",
+        "Created": "14 Dec 2023, 12:38 PM",
+        "Balance": "$6,789",
+        "Image": "avatar-17.jpg"
+    },
+    {
+        "Id": "5",
+        "Name": "Pricilla Maureen",
+        "Email": "pricilla@example.com",
+        "Phone": "+1 956-613-2880",
+        "Created": "12 Dec 2023, 12:38 PM",
+        "Balance": "$1,789",
+        "Image": "avatar-18.jpg"
+    },
+    {
+        "Id": "6",
+        "Name": "Randall Hollis",
+        "Email": "randall@example.com",
+        "Phone": "+1 117-409-0861",
+        "Created": "04 Dec 2023, 12:38 PM",
+        "Balance": "$1,789",
+        "Image": "avatar-19.jpg"
+    }
+]

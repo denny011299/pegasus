@@ -1,0 +1,62 @@
+[
+    {
+        "Id": "1",
+        "CategoryName": "Advertising",
+        "TotalProducts": "60",
+        "Image": "product-list-img.jpg"
+    },
+    {
+        "Id": "2",
+        "CategoryName": "Food",
+        "TotalProducts": "55",
+        "Image": "product-list-img-2.jpg"
+    },
+    {
+        "Id": "3",
+        "CategoryName": "Furniture",
+        "TotalProducts": "70",
+        "Image": "category-img-03.jpg"
+    },
+    {
+        "Id": "4",
+        "CategoryName": "Repairs",
+        "TotalProducts": "82",
+        "Image": "category-img-04.jpg"
+    },
+    {
+        "Id": "5",
+        "CategoryName": "Laptop",
+        "TotalProducts": "26",
+        "Image": "category-img-05.jpg"
+    },
+    {
+        "Id": "6",
+        "CategoryName": "Shoes",
+        "TotalProducts": "60",
+        "Image": "category-img-06.jpg"
+    },
+    {
+        "Id": "7",
+        "CategoryName": "Accessories",
+        "TotalProducts": "20",
+        "Image": "category-img-07.jpg"
+    },
+    {
+        "Id": "8",
+        "CategoryName": "Phone",
+        "TotalProducts": "37",
+        "Image": "category-img-08.jpg"
+    },
+    {
+        "Id": "9",
+        "CategoryName": "Bags",
+        "TotalProducts": "52",
+        "Image": "category-img-09.jpg"
+    },
+    {
+        "Id": "10",
+        "CategoryName": "Speaker",
+        "TotalProducts": "156",
+        "Image": "category-img-10.jpg"
+    }
+]

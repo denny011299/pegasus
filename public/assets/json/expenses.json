@@ -1,0 +1,74 @@
+[
+	{
+		"Id": "1",
+		"ExpenseID": "EXP-148061",
+		"Reference": "#25689825",
+		"Amount": "$1,54,220",
+		"Attachment": "",
+		"PaymentMode": "Cash",
+		"Notes": "Lorem ipsum dolor sit consectetur",
+		"Status": "Paid",
+		"Class":"badge bg-success-light text-success-light",
+		"Image":"expenses-01.jpg"
+			},
+	{
+		"Id": "2",
+		"ExpenseID": "EXP-148062",
+		"Reference": "#25689826",
+		"Amount": "$1,222",
+		"Attachment": "",
+		"PaymentMode": "Cheque",
+		"Notes": "Ut enim minim veniam, quis nostrud",
+		"Status": "Pending",
+		"Class":"badge bg-warning-light text-warning-light",
+		"Image":"expenses-01.jpg"
+			},
+	{
+		"Id": "3",
+		"ExpenseID": "EXP-148063",
+		"Reference": "#25689827",
+		"Amount": "$2,2222",
+		"Attachment": "",
+		"PaymentMode": "Cheque",
+		"Notes": "Duis aute irure dolor in reprehenderit in",
+		"Status": "Cancelled",
+		"Class":"badge bg-danger-light",
+		"Image":"expenses-01.jpg"
+			},
+	{
+		"Id": "4",
+		"ExpenseID": "EXP-148064",
+		"Reference": "#25689828",
+		"Amount": "$5,222",
+		"Attachment": "",
+		"PaymentMode": "Cash",
+		"Notes": "Excepteur occaecat cupidatat non",
+		"Status": "Paid",
+		"Class":"badge bg-success-light text-success-light",
+		"Image":"expenses-01.jpg"
+			},
+	{
+		"Id": "5",
+		"ExpenseID": "EXP-148065",
+		"Reference": "#25689829",
+		"Amount": "$8,54,220",
+		"Attachment": "",
+		"PaymentMode": "Cheque",
+		"Notes": "Sed ut perspiciatis unde omnis iste",
+		"Status": "Pending",
+		"Class":"badge bg-warning-light text-warning-light",
+		"Image":"expenses-01.jpg"
+			},
+	{
+		"Id": "6",
+		"ExpenseID": "EXP-148066",
+		"Reference": "#25689830",
+		"Amount": "$3,54,220",
+		"Attachment": "",
+		"PaymentMode": "Cheque",
+		"Notes": "Nemo enim ipsam voluptatem voluptas",
+		"Status": "Cancelled",
+		"Class":"badge bg-danger-light",
+		"Image":"expenses-01.jpg"
+			}
+]

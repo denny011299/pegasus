@@ -1,0 +1,74 @@
+[
+    {
+        "Id": "1",
+        "Customer": "Orn LLC",
+        "Email": " orn@example.com",
+        "Domain": "ornllc",
+        "NoofEmployees": "10",
+        "Package": "FREE TRIAL",
+        "Pack": "monthly",
+        "CreatedOn": "15 Dec 2023, 04:35 PM",
+        "Status": "Rejected",
+        "Class": "bg-inactive"
+    },
+    {
+        "Id": "2",
+        "Customer": "Accent Technology",
+        "Email": "accent@example.com",
+        "Domain": "accent00",
+        "NoofEmployees": "100",
+        "Package": "ENTERPRISE",
+        "Pack": "lifetime",
+        "CreatedOn": "15 Dec 2023, 04:35 PM",
+        "Status": "Approved",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "Id": "3",
+        "Customer": "Express Advertising",
+        "Email": "express@example.com",
+        "Domain": "expadvertising",
+        "NoofEmployees": "200",
+        "Package": "ENTERPRISE",
+        "Pack": "lifetime",
+        "CreatedOn": "04 Dec 2023, 12:38 PM",
+        "Status": "Approved",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "Id": "4",
+        "Customer": "lexicon Technologies",
+        "Email": "lexicon@example.com",
+        "Domain": "lexicontech05",
+        "NoofEmployees": "50",
+        "Package": "Basic",
+        "Pack": "monthly",
+        "CreatedOn": "28 Nov 2023, 03:25 PM",
+        "Status": "Approved",
+        "Class": "badge bg-success-light"
+    },
+    {
+        "Id": "5",
+        "Customer": "Sumo Soft Limited",
+        "Email": "sumo@example.com",
+        "Domain": "sumosoftltd",
+        "NoofEmployees": "75",
+        "Package": "Basic",
+        "Pack": "Yearly",
+        "CreatedOn": "20 Nov 2023, 02:47 PM",
+        "Status": "Rejected",
+        "Class": "bg-inactive"
+    },
+    {
+        "Id": "6",
+        "Customer": "Repair Group Co",
+        "Email": " repair@example.com",
+        "Domain": "repairco1993",
+        "NoofEmployees": "10",
+        "Package": "ENTERPRISE",
+        "Pack": "monthly",
+        "CreatedOn": "15 Dec 2023, 04:35 PM",
+        "Status": "Rejected",
+        "Class": "bg-inactive"
+    }
+]

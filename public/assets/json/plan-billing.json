@@ -1,0 +1,30 @@
+[
+    {
+        "Id": "1",
+        "Date": "13 Aug 2023",
+        "Details": "ENTERPRISE",
+        "Period": "lifetime",
+        "Status": "$199.99"
+    },
+    {
+        "Id": "2",
+        "Date": "13 Aug 2023",
+        "Details": "FREE TRAIL",
+        "Period": "monthly",
+        "Status": "$0.00"
+    },
+    {
+        "Id": "3",
+        "Date": "13 Aug 2023",
+        "Details": "Basic",
+        "Period": "Yearly",
+        "Status": "$49.99"
+    },
+    {
+        "Id": "4",
+        "Date": "13 Aug 2023",
+        "Details": "ENTERPRISE",
+        "Period": "lifetime",
+        "Status": "$199.99"
+    }
+]

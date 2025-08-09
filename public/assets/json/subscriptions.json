@@ -1,0 +1,110 @@
+[
+    {
+        "id": "1",
+        "Name": "Orn LLC",
+        "Email": "orn@example.com",
+        "avatar": "avatar-14.jpg",
+        "Package": {
+            "Name": "FREE TRIAL",
+            "BillingCycle": "monthly"
+        },
+        "Cycle": "30 Days",
+        "Payment": "Paypal",
+        "Amount": "$0.00",
+        "CreatedOn": "15 Dec 2023, 04:35 PM",
+        "Status": {
+            "Text": "Inactive",
+            "Class": "bg-inactive"
+        }
+    },
+    {
+        "id": "2",
+        "Name": "Accent Technology",
+        "Email": "accent@example.com",
+        "avatar": "avatar-15.jpg",
+        "Package": {
+            "Name": "ENTERPRISE",
+            "BillingCycle": "lifetime"
+        },
+        "Cycle": "-",
+        "Payment": "Debit Card",
+        "Amount": "$999.99",
+        "CreatedOn": "04 Dec 2023, 12:38 PM",
+        "Status": {
+            "Text": "Active",
+            "Class": "badge bg-success-light"
+        }
+    },
+    {
+        "id": "3",
+        "Name": "Express Advertising",
+        "Email": "express@example.com",
+        "avatar": "avatar-16.jpg",
+        "Package": {
+            "Name": "ENTERPRISE",
+            "BillingCycle": "lifetime"
+        },
+        "Cycle": "-",
+        "Payment": "Paypal",
+        "Amount": "$999.99",
+        "CreatedOn": "15 Dec 2023, 04:35 PM",
+        "Status": {
+            "Text": "Active",
+            "Class": "badge bg-success-light"
+        }
+    },
+    {
+        "id": "4",
+        "Name": "Lexicon Technologies",
+        "Email": "lexicon@example.com",
+        "avatar": "avatar-17.jpg",
+        "Package": {
+            "Name": "Basic",
+            "BillingCycle": "monthly"
+        },
+        "Cycle": "30 Days",
+        "Payment": "Debit Card",
+        "Amount": "$49.99",
+        "CreatedOn": "28 Nov 2023, 03:25 PM",
+        "Status": {
+            "Text": "Active",
+            "Class": "badge bg-success-light"
+        }
+    },
+    {
+        "id": "5",
+        "Name": "Sumo Soft Limited",
+        "Email": "sumo@example.com",
+        "avatar": "avatar-18.jpg",
+        "Package": {
+            "Name": "Basic",
+            "BillingCycle": "Yearly"
+        },
+        "Cycle": "365 Days",
+        "Payment": "Credit Card",
+        "Amount": "$399.99",
+        "CreatedOn": "20 Nov 2023, 02:47 PM",
+        "Status": {
+            "Text": "Inactive",
+            "Class": "bg-inactive"
+        }
+    },
+    {
+        "id": "6",
+        "Name": "Repair Group Co",
+        "Email": "repair@example.com",
+        "avatar": "avatar-19.jpg",
+        "Package": {
+            "Name": "ENTERPRISE",
+            "BillingCycle": "monthly"
+        },
+        "Cycle": "30 Days",
+        "Payment": "Credit Card",
+        "Amount": "$199.99",
+        "CreatedOn": "15 Nov 2023, 10:42 AM",
+        "Status": {
+            "Text": "Inactive",
+            "Class": "bg-inactive"
+        }
+    }
+]

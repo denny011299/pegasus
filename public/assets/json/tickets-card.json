@@ -1,0 +1,38 @@
+[
+    {
+        "title": "Total Tickets",
+        "icon": "receipt-item.svg",
+        "class": "bg-info-light",
+        "amount": "$298"
+    },
+    {
+        "title": "Completed",
+        "icon": "transaction-minus.svg",
+        "class": "bg-primary-light",
+        "amount": "$325,215"
+    },
+    {
+        "title": "In Progress",
+        "icon": "archive-book.svg",
+        "class": "bg-warning-light",
+        "amount": "$7825"
+    },
+    {
+        "title": "Unassigned",
+        "icon": "clipboard-close.svg",
+        "class": "bg-primary-light",
+        "amount": "100"
+    },
+    {
+        "title": "New",
+        "icon": "message-edit.svg",
+        "class": "bg-green-light",
+        "amount": "$125,586"
+    },
+    {
+        "title": "Hold Tickets",
+        "icon": "3d-rotate.svg",
+        "class": "bg-danger-light",
+        "amount": "$86,892"
+    }
+]

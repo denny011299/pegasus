@@ -1,0 +1,68 @@
+[
+	{
+		"Id": "1",
+		"Name": "John Smith",
+		"Email": "john@example.com",
+		"Phone": "+1 989-438-3131",
+		"Balance": "$4,220",
+		"TotalInvoice": "2",
+		"Created": "19 Dec 2023, 06:12 PM",
+		"Status": "Deactive",
+		"Image": "avatar-14.jpg"
+	},
+	{
+		"Id": "2",
+		"Name": "Johnny",
+		"Email": " johnny@example.com",
+		"Phone": "+1 843-443-3282",
+		"Balance": "$1,862",
+		"TotalInvoice": "1",
+		"Created": "15 Dec 2023, 06:12 PM",
+		"Status": "Deactive",
+		"Image": "avatar-15.jpg"
+	},
+	{
+		"Id": "3",
+		"Name": "Robert",
+		"Email": " robert@example.com",
+		"Phone": "+1 917-409-0861",
+		"Balance": "$2,789",
+		"TotalInvoice": "3",
+		"Created": "04 Dec 2023, 12:38 PM",
+		"Status": "Deactive",
+		"Image": "avatar-16.jpg"
+	},
+	{
+		"Id": "4",
+		"Name": "Sharonda",
+		"Email": " sharon@example.com",
+		"Phone": "+1 956-623-2880",
+		"Balance": "$6,789",
+		"TotalInvoice": "6",
+		"Created": "14 Dec 2023, 12:38 PM",
+		"Status": "Deactive",
+		"Image": "avatar-17.jpg"
+	},
+	{
+		"Id": "5",
+		"Name": "Pricilla",
+		"Email": " pricilla@example.com",
+		"Phone": "+1 956-613-2880",
+		"Balance": "$1,789",
+		"TotalInvoice": "4",
+		"Created": "12 Dec 2023, 12:38 PM",
+		"Status": "Deactive",
+		"Image": "avatar-18.jpg"
+	},
+	{
+		"Id": "6",
+		"Name": "Randall",
+		"Email": " randall@example.com",
+		"Phone": "+1 117-409-0861",
+		"Balance": "$1,789",
+		"TotalInvoice": "1",
+		"Created": "04 Dec 2023, 12:38 PM",
+		"Status": "Deactive",
+		"Image": "avatar-19.jpg"
+	}
+]

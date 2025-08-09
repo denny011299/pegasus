@@ -1,0 +1,68 @@
+[
+	{
+		"Id": "1",
+		"UserName": "John Smith",
+		"Email": "john@example.com",
+		"Rating": "",
+		"Content": "Lorem ipsum dolor sit amet, consectetur",
+		"CreatedOn": "19 Dec 2023, 06:12 PM",
+		"Status": "Active",
+		"Image": "avatar-14.jpg",
+		"Class": "badge bg-success-light"
+	},
+	{
+		"Id": "2",
+		"UserName": "Johnny",
+		"Email": " johnny@example.com",
+		"Rating": "",
+		"Content": "Ut enim ad minim veniam, nostrud exercitation",
+		"CreatedOn": "15 Dec 2023, 06:12 PM",
+		"Status": "Active",
+		"Image": "avatar-15.jpg",
+		"Class": "badge bg-success-light"
+	},
+	{
+		"Id": "3",
+		"UserName": "Robert",
+		"Email": " robert@example.com",
+		"Rating": "",
+		"Content": "Duis irure dolor in reprehenderit in voluptate",
+		"CreatedOn": "04 Dec 2023, 12:38 PM",
+		"Status": "Deactive",
+		"Image": "avatar-16.jpg",
+		"Class": "badge bg-danger-light"
+	},
+	{
+		"Id": "4",
+		"UserName": "Sharonda",
+		"Email": " sharon@example.com",
+		"Rating": "",
+		"Content": "Sed ut perspiciatis unde omnis iste natus",
+		"CreatedOn": "14 Dec 2023, 12:38 PM",
+		"Status": "Active",
+		"Image": "avatar-17.jpg",
+		"Class": "badge bg-success-light"
+	},
+	{
+		"Id": "5",
+		"UserName": "Pricilla",
+		"Email": " pricilla@example.com",
+		"Rating": "",
+		"Content": "Nemo enim ipsam voluptatem quia voluptas",
+		"CreatedOn": "12 Dec 2023, 12:38 PM",
+		"Status": "Active",
+		"Image": "avatar-18.jpg",
+		"Class": "badge bg-success-light"
+	},
+	{
+		"Id": "6",
+		"UserName": "Randall",
+		"Email": " randall@example.com",
+		"Rating": "",
+		"Content": "Neque porro quisquam est, qui dolorem ipsum",
+		"CreatedOn": "04 Dec 2023, 12:38 PM",
+		"Status": "Deactive",
+		"Image": "avatar-19.jpg",
+		"Class": "badge bg-danger-light"
+	}
+]

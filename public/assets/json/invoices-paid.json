@@ -1,0 +1,33 @@
+[
+	{
+		"InvoiceID": "#4987",
+		"Category": "Advertising",
+		"CreatedOn": "23 Mar 2023",
+		"InvoiceTo": "John Smith",
+		"Phone":"+1 843-443-3282",
+		"Total": "$1,54,220",
+		"Paid": "$1,50,000",
+		"PaymentMode": "Cash",
+		"Balance": "$0",
+		"DueDate": "-",
+		"Class":"badge bg-success-light",
+		"Status": "Paid",
+		"Image":"avatar-14.jpg"
+		                                                                                                                                                                                                                                                                                                
+	},
+	{
+		"InvoiceID": "#4992",
+		"Category": "Stationary",
+		"CreatedOn": "16 Nov 2023",
+		"InvoiceTo": "Randall",
+		"Phone":"+1 989-438-3131",
+		"Total": "$5,54,220",
+		"Paid": "$6,50,000",
+		"PaymentMode": "Cash",
+		"Balance": "$4,220",
+		"DueDate": "25 Feb 2023",
+		"Class":"badge bg-success-light",
+		"Status": "Paid",
+		"Image":"avatar-19.jpg"
+    }                                                                                                                                                                             
+]

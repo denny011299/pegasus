@@ -1,0 +1,56 @@
+[
+    {
+        "Id": "1",
+        "Item": "Lenovo 3rd Generation",
+        "Code": "P125389",
+        "Units": "Inches",
+        "Quantity": "2",
+        "SellingPrice": "$253.00",
+        "PurchasePrice": "$248.00"
+    },
+    {
+        "Id": "2",
+        "Item": "Nike Jordan",
+        "Code": "P125390",
+        "Units": "Pieces",
+        "Quantity": "4",
+        "SellingPrice": "$360.00",
+        "PurchasePrice": "$350.00"
+    },
+    {
+        "Id": "3",
+        "Item": "Apple Series 5 Watch",
+        "Code": "P125391",
+        "Units": "Inches",
+        "Quantity": "7",
+        "SellingPrice": "$724.00",
+        "PurchasePrice": "$700.00"
+    },
+    {
+        "Id": "4",
+        "Item": "Amazon Echo Dot",
+        "Code": "P125392",
+        "Units": "Box",
+        "Quantity": "3",
+        "SellingPrice": "$210.00",
+        "PurchasePrice": "$200.00"
+    },
+    {
+        "Id": "5",
+        "Item": "Lobar Handy",
+        "Code": "P125393",
+        "Units": "Kilograms",
+        "Quantity": "1",
+        "SellingPrice": "$155.00",
+        "PurchasePrice": "$150.00"
+    },
+    {
+        "Id": "6",
+        "Item": "Woodcraft Sandal",
+        "Code": "P125389",
+        "Units": "Inches",
+        "Quantity": "2",
+        "SellingPrice": "$253.00",
+        "PurchasePrice": "$248.00"
+    }
+]

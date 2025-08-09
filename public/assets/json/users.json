@@ -1,0 +1,80 @@
+[
+	{
+		"Id": "1",
+		"UserName": "John Smith",
+		"Email": "john@example.com",
+		"MobileNumber": "+1 989-438-3131",
+		"Role": "$4,220",
+		"LastActivity": "10 mins ago",
+		"Createdon": "19 Dec 2023, 06:12 PM",
+		"ClassActivity": "badge  bg-ash-gray text-gray-light",
+		"ClassStatus": "badge bg-success-light",
+		"Status": "Active",
+		"Image": "avatar-14.jpg"
+	},
+	{
+		"Id": "2",
+		"UserName": "Johnny",
+		"Email":" johnny@example.com",
+		"MobileNumber": "+1 843-443-3282",
+		"Role": "$1,862",
+		"LastActivity": "Online",
+		"Createdon": "15 Dec 2023, 06:12 PM",
+		"ClassActivity": "badge  bg-success-light",
+		"ClassStatus": "badge bg-success-light",
+		"Status": "Active",
+		"Image": "avatar-15.jpg"
+	},
+	{
+		"Id": "3",
+		"UserName": "Robert",
+		"Email":" robert@example.com",
+		"MobileNumber": "+1 917-409-0861",
+		"Role": "$2,789",
+		"LastActivity": "Online",
+		"Createdon": "04 Dec 2023, 12:38 PM",
+		"ClassStatus": "badge  bg-ash-gray text-gray-light",
+		"ClassActivity": "badge bg-success-light",
+		"Status": "Restricted",
+		"Image": "avatar-16.jpg"
+	},
+	{
+		"Id": "4",
+		"UserName": "Sharonda",
+		"Email":" sharon@example.com",
+		"MobileNumber": "+1 956-623-2880",
+		"Role": "$6,789",
+		"LastActivity": "1 hour ago",
+		"Createdon": "14 Dec 2023, 12:38 PM",
+		"ClassActivity": "badge  bg-ash-gray text-gray-light",
+		"ClassStatus": "badge bg-success-light",
+		"Status": "Active",
+		"Image": "avatar-17.jpg"
+	},
+	{
+		"Id": "5",
+		"UserName": "Pricilla",
+		"Email":" pricilla@example.com",
+		"MobileNumber": "+1 956-613-2880",
+		"Role": "$1,789",
+		"LastActivity": "Online",
+		"Createdon": "12 Dec 2023, 12:38 PM",
+		"ClassActivity": "badge bg-success-light",
+		"ClassStatus": "badge bg-success-light",
+		"Status": "Active",
+		"Image": "avatar-18.jpg"
+	},
+	{
+		"Id": "6",
+		"UserName": "Randall",
+		"Email":" randall@example.com",
+		"MobileNumber": "+1 117-409-0861",
+		"Role": "$1,789",
+		"LastActivity": "2 days ago",
+		"Createdon": "04 Dec 2023, 12:38 PM",
+		"ClassActivity": "badge  bg-ash-gray text-gray-light",
+		"ClassStatus": "badge  bg-ash-gray text-gray-light",
+		"Status": "Restricted",
+		"Image": "avatar-19.jpg"
+	}
+]

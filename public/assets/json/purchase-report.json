@@ -1,0 +1,42 @@
+[
+	{
+		"Id": "1",
+		"Product": "Lenovo 3rd Generation",
+		"PurchaseAmount": "$7248.00",
+		"PurchaseQty": "50",
+		"InstockQty": "100",
+        "Image":"sales-return1.svg"
+	},
+	{
+		"Id": "2",
+		"Product": "Nike Jordan",
+		"PurchaseAmount": "$1350.00",
+		"PurchaseQty": "70",
+		"InstockQty": "140",
+        "Image":"sales-return2.svg"
+	},
+	{
+		"Id": "3",
+		"Product": "Apple Series 5 Watch",
+		"PurchaseAmount": "$700.00",
+		"PurchaseQty": "30",
+		"InstockQty": "200",
+        "Image":"sales-return3.svg"
+	},
+	{
+		"Id": "4",
+		"Product": "Amazon Echo Dot",
+		"PurchaseAmount": "$200.00",
+		"PurchaseQty": "20",
+		"InstockQty": "250",
+        "Image":"sales-return4.svg"
+	},
+	{
+		"Id": "5",
+		"Product": "Lobar Handy",
+		"PurchaseAmount": "$150.00",
+		"PurchaseQty": "40",
+		"InstockQty": "300",
+        "Image":"sales-return5.svg"
+	}
+]

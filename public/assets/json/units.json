@@ -1,0 +1,32 @@
+[
+	{
+		"Id": "1",
+		"UnitName": "Kilogram",
+		"ShortName": "kg"
+	},
+	{
+		"Id": "2",
+		"UnitName": "Gram",
+		"ShortName": "g"
+	},
+	{
+		"Id": "3",
+		"UnitName": "Liter",
+		"ShortName": "l"
+	},
+	{
+		"Id": "4",
+		"UnitName": "Millimetre",
+		"ShortName": "ml"
+	},
+	{
+		"Id": "5",
+		"UnitName": "Pack",
+		"ShortName": "pk"
+	},
+	{
+		"Id": "6",
+		"UnitName": "Piece",
+		"ShortName": "pc"
+	}
+]

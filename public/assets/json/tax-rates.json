@@ -1,0 +1,50 @@
+[
+    {
+        "Id": "1",
+        "Name": "VAT@10%",
+        "TaxRate": "10.00",
+        "Status": "checkbox",
+        "StatusId": "rating_1",
+        "StatusFor": "rating_1"
+    },
+    {
+        "Id": "2",
+        "Name": "GST@10",
+        "TaxRate": "10.00",
+        "Status": "checkbox",
+        "StatusId": "rating_2",
+        "StatusFor": "rating_2"
+    },
+    {
+        "Id": "3",
+        "Name": "VAT@5%",
+        "TaxRate": "5.00",
+        "Status": "checkbox",
+        "StatusId": "rating_3",
+        "StatusFor": "rating_3"
+    },
+    {
+        "Id": "4",
+        "Name": "GST@5",
+        "TaxRate": "5.00",
+        "Status": "checkbox",
+        "StatusId": "rating_4",
+        "StatusFor": "rating_4"
+    },
+    {
+        "Id": "5",
+        "Name": "VAT@15%",
+        "TaxRate": "15.00",
+        "Status": "checkbox",
+        "StatusId": "rating_5",
+        "StatusFor": "rating_5"
+    },
+    {
+        "Id": "6",
+        "Name": "GST@15",
+        "TaxRate": "15.00",
+        "Status": "checkbox",
+        "StatusId": "rating_6",
+        "StatusFor": "rating_6"
+    }
+]

@@ -1,0 +1,56 @@
+[
+    {
+        "Id": "1",
+        "Item": "Nike Jordan",
+        "Code": "P125390",
+        "Units": "Pieces",
+        "Quantity": "2",
+        "SellingPrice": "$1360.00",
+        "PurchasePrice": "$1350.00"
+    },
+    {
+        "Id": "2",
+        "Item": "Lobar Handy",
+        "Code": "P125393",
+        "Units": "Inches",
+        "Quantity": "5",
+        "SellingPrice": "$155.00",
+        "PurchasePrice": "$150.00"
+    },
+    {
+        "Id": "3",
+        "Item": "Iphone 14 Pro",
+        "Code": "P125398",
+        "Units": "Inches",
+        "Quantity": "7",
+        "SellingPrice": "$764.00",
+        "PurchasePrice": "$750.00"
+    },
+    {
+        "Id": "4",
+        "Item": "Black Slim 200",
+        "Code": "P125395",
+        "Units": "Inches",
+        "Quantity": "3",
+        "SellingPrice": "$255.00",
+        "PurchasePrice": "$250.00"
+    },
+    {
+        "Id": "5",
+        "Item": "Bold V3.2",
+        "Code": "P125397",
+        "Units": "Pieces",
+        "Quantity": "6",
+        "SellingPrice": "$1055.00",
+        "PurchasePrice": "$1050.00"
+    },
+    {
+        "Id": "6",
+        "Item": "Woodcraft Sandal",
+        "Code": "P125394",
+        "Units": "Pieces",
+        "Quantity": "8",
+        "SellingPrice": "$175.00",
+        "PurchasePrice": "$140.00"
+    }
+]

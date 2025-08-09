@@ -1,0 +1,19 @@
+[
+    {
+        "TicketID": "#4990",
+        "Subject": "Management",
+        "Assigned": "Sharonda",
+        "AssignedDate": "27 Feb 2023",
+        "CreatedOn": "28 Feb 2023, 6:12PM",
+        "DueDate": "29 Mar 2023",
+        "Assignee": "Sharonda",
+        "Phone": "+1 843-443-5298",
+        "LastReply": "25 Jan 2023",
+        "Priority": "Medium",
+        "Status": "Closed",
+        "AssignedImage": "avatar-08.jpg",
+        "Image": "avatar-17.jpg",
+        "ClassPriority": "badge bg-warning-light text-warning-light",
+        "Class": "badge bg-light-gray text-secondary"
+    }
+]

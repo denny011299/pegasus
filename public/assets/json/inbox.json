@@ -1,0 +1,72 @@
+[
+    {
+        "Name": "John Doe",
+        "Content": "Lorem ipsum dolor sit amet, consectetuer adipiscing\n                                                    elit",
+        "Class": "unread clickable-row",
+        "StarClass": "fas fa-star starred",
+        "Time": "13:14"
+    },
+    {
+        "Name": "Envato Account",
+        "Content": "Important account security update from Envato",
+        "Class": "unread clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "8:42"
+    },
+    {
+        "Name": "Twitter",
+        "Content": "HRMS Bootstrap Admin Template",
+        "Class": "clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "30 Nov"
+    },
+    {
+        "Name": "Richard Parker",
+        "Content": "Lorem ipsum dolor sit amet, consectetuer adipiscing\n                                                    elit",
+        "Class": "unread clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "18 Sep"
+    },
+    {
+        "Name": "John Smith",
+        "Content": "Lorem ipsum dolor sit amet, consectetuer adipiscing\n                                                    elit",
+        "Class": "clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "21 Aug"
+    },
+    {
+        "Name": "me, Robert Smith (3)",
+        "Content": "Lorem ipsum dolor sit amet, consectetuer adipiscing\n                                                    elit",
+        "Class": "clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "1 Aug"
+    },
+    {
+        "Name": "Codecanyon",
+        "Content": "Welcome To Codecanyon",
+        "Class": "unread clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "Jul 13"
+    },
+    {
+        "Name": "Richard Miles",
+        "Content": "Lorem ipsum dolor sit amet, consectetuer adipiscing\n                                                    elit",
+        "Class": "clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "May 14"
+    },
+    {
+        "Name": "John Smith",
+        "Content": "Lorem ipsum dolor sit amet, consectetuer adipiscing\n                                                    elit",
+        "Class": "unread clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "11/11/16"
+    },
+    {
+        "Name": "Mike Litorus",
+        "Content": "Lorem ipsum dolor sit amet, consectetuer adipiscing\n                                                    elit",
+        "Class": "clickable-row",
+        "StarClass": "far fa-star",
+        "Time": "10/31/16"
+    }
+]
