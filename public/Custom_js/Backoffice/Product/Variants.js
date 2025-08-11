@@ -30,10 +30,10 @@
 				},
 			 },
             columns: [
-                { data: "variant_name" },
-                { data: "variant_values" },
+                { data: "variant_name"},
+                { data: "variant_values"},
                 { data: "variant_date" },
-                { data: "action",class:"action-table-data" },
+                { data: "action",class:"d-flex align-items-center", },
             ],
 			initComplete: (settings, json)=>{
 				$('.dataTables_filter').appendTo('#tableSearch');
@@ -60,14 +60,12 @@
                          }
                     });
                     e[i].action = `
-                        <div class="edit-delete-action d-flex align-items-center">
-                            <a class="me-2 p-2 btn_edit" data-id="${e[i].variant_id}" data-bs-target="#edit-unit">
+                            <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].variant_id}" data-bs-target="#edit-unit">
                                 <i data-feather="edit" class="feather-edit"></i>
                             </a>
-                            <a class="p-2 btn_delete" data-id="${e[i].variant_id}" href="javascript:void(0);">
+                            <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].variant_id}" href="javascript:void(0);">
                                 <i data-feather="trash-2" class="feather-trash-2"></i>
                             </a>
-                        </div>
                     `;
                 }
                 

@@ -31,7 +31,7 @@
             columns: [
                 { data: "category_name" },
                 { data: "category_date" },
-                { data: "action", class: "action-table-data" },
+                { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -54,14 +54,12 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].category_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
-                        <div class="edit-delete-action d-flex align-items-center">
-                            <a class="me-2 p-2 btn_edit" data-id="${e[i].category_id}" data-bs-target="#edit-category">
-                                <i data-feather="edit" class="feather-edit"></i>
-                            </a>
-                            <a class="p-2 btn_delete" data-id="${e[i].category_id}" href="javascript:void(0);">
-                                <i data-feather="trash-2" class="feather-trash-2"></i>
-                            </a>
-                        </div>
+                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].category_id}" data-bs-target="#edit-category">
+                            <i data-feather="edit" class="feather-edit"></i>
+                        </a>
+                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].category_id}" href="javascript:void(0);">
+                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                        </a>
                     `;
                 }
 

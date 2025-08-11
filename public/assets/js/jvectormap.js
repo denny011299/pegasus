@@ -3,7 +3,7 @@
 	
 	$('#world_map').vectorMap({
 		map: 'world_mill',
-		scaleColors : ['#7539FF', '#7539FF'],
+		scaleColors : ['#082a58', '#082a58'],
 		normalizeFunction : 'polynomial',
 		hoverOpacity : 0.7,
 		hoverColor : false,

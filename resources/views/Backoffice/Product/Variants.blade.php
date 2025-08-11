@@ -5,7 +5,7 @@
         .bootstrap-tagsinput .tag {
             margin-right: 2px;
             color: #fff;
-            background-color: #b3b3b3;
+            background-color: #082a58;
             padding: .2em .4em;
             border-radius: .2rem;
         }
@@ -44,7 +44,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Variant</th>
-                                            <th>Values</th>
+                                            <th style="width: 40%">Values</th>
                                             <th>Created On</th>
                                             <th class="no-sort">Action</th>
                                         </tr>

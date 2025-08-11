@@ -33,7 +33,7 @@
                 { data: "unit_short_name" },
                 { data: "product_count" },
                 { data: "unit_date" },
-                { data: "action", class: "action-table-data" },
+                { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -57,10 +57,10 @@
                     e[i].unit_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
                         <div class="edit-delete-action d-flex align-items-center">
-                            <a class="me-2 p-2 btn_edit" data-id="${e[i].unit_id}" data-bs-target="#edit-unit">
+                            <a class="btn-action-icon me-2 p-2 btn_edit" data-id="${e[i].unit_id}" data-bs-target="#edit-unit">
                                 <i data-feather="edit" class="feather-edit"></i>
                             </a>
-                            <a class="p-2 btn_delete" data-id="${e[i].unit_id}" href="javascript:void(0);">
+                            <a class="btn-action-icon p-2 btn_delete" data-id="${e[i].unit_id}" href="javascript:void(0);">
                                 <i data-feather="trash-2" class="feather-trash-2"></i>
                             </a>
                         </div>

@@ -299,7 +299,7 @@ Version      : 1.0
 			width: '100%',
 			position: 'right',
 			size: '7px',
-			color: '#7539FF',
+			color: '#082a58',
 			allowPageScroll: false,
 			wheelStep: 10,
 			touchScrollStep: 100,
