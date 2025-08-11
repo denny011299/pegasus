@@ -3,6 +3,7 @@
 
 <!-- Bootstrap Core JS -->
 <script src="{{ URL::asset('/assets/js/bootstrap.bundle.min.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
 
 <!-- Feather Icon JS -->
 <script src="{{ URL::asset('/assets/js/feather.min.js') }}"></script>

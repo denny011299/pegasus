@@ -34,11 +34,12 @@
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="600">
-    <title>Kanakku - Bootstrap Admin HTML Template</title>
+    <title>PEGASUS MANAGEMENT INVENTORY</title>
 
     <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ URL::asset('/assets/img/favicon.png') }}">
+    <link rel="shortcut icon" href="{{ URL::asset('/assets/pegasus_logo.jpg') }}">
 
+    @yield('custom_css')
     @include('layout.partials.head')
 </head>
 @if (
@@ -58,28 +59,6 @@
     ]))
 
     <body>
-@endif
-@if (Route::is(['chat']))
-
-    <body class="chat-page">
-@endif
-@if (Route::is(['mail-pay-invoice']))
-
-    <body class="invoice-center-pay">
-@endif
-@if (Route::is([
-        'cashreceipt-1',
-        'cashreceipt-2',
-        'cashreceipt-3',
-        'cashreceipt-4',
-        'invoice-five',
-        'invoice-four-a',
-        'invoice-three',
-        'invoice-two',
-        'invoice-one-a',
-    ]))
-
-    <body class="no-stickybar">
 @endif
 @if (Route::is(['error-404']))
 
@@ -104,21 +83,6 @@
         'register',
     ]))
     <div class="main-wrapper">
-@endif
-@if (Route::is(['invoice-four-a']))
-    <div class="main-wrapper invoice-four">
-@endif
-@if (Route::is(['invoice-one-a']))
-    <div class="main-wrapper invoice-one">
-@endif
-@if (Route::is(['invoice-three']))
-    <div class="main-wrapper invoice-three">
-@endif
-@if (Route::is(['invoice-two']))
-    <div class="main-wrapper invoice-two">
-@endif
-@if (Route::is(['index-five']))
-    <div class="main-wrapper container">
 @endif
 @if (Route::is(['forgot-password', 'lock-screen', 'login', 'register']))
     <div class="main-wrapper login-body">
@@ -148,9 +112,6 @@
     ]))
     @include('layout.partials.header')
 @endif
-@if (Route::is(['index-three']))
-    <div class="container">
-@endif
 @if (
     !Route::is([
         'signature-preview-invoice',
@@ -176,17 +137,10 @@
     ]))
     @include('layout.partials.sidebar')
 @endif
-@if (Route::is(['index-four']))
-    @include('layout.partials.two-col-sidebar')
-@endif
 @yield('content')
 @if (Route::is(['index-three']))
     </div>
 @endif
-@component('components.add-modal-popup')
-@endcomponent
-@component('components.edit-modal-popup')
-@endcomponent
 @component('components.modal-popup')
 @endcomponent
 @if (!Route::is(['mail-pay-invoice', 'cashreceipt-1', 'cashreceipt-2', 'cashreceipt-3', 'cashreceipt-4']))
@@ -224,6 +178,7 @@
 @endif
 
 @include('layout.partials.footer-scripts')
+@yield('custom_js')
 </body>
 
 </html>
