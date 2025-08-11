@@ -227,3 +227,17 @@
 
 <!-- Custom JS -->
 <script src="{{ URL::asset('/assets/js/script.js') }}"></script>
+
+<script>
+       //munculin modal delete
+    function showModalDelete(text, button_id) {
+        //button id ini, id button ketika dikofrimasi delete
+        $("#text-delete").html(text);
+        $(".btn-konfirmasi").attr("id", button_id);
+        $('#modalDelete').modal("show");
+    }
+      
+    function closeModalDelete() {
+        $('#modalDelete').modal("hide");
+    }
+</script>

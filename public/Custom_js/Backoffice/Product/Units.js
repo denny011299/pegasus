@@ -151,8 +151,8 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableUnits').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        // showModalDelete("Apakah yakin ingin mengahapus unit ini?","btn-delete-unit");
-        $('#deleteModal').modal("show");
+        showModalDelete("Apakah yakin ingin mengahapus unit ini?","btn-delete-unit");
+        //$('#deleteModal').modal("show");
         $('#btn-delete-unit').attr("unit_id", data.unit_id);
     });
 

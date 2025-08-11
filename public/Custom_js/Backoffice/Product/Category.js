@@ -145,8 +145,8 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableCategory').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        // showModalDelete("Apakah yakin ingin mengahapus category ini?","btn-delete-category");
-        $('#deleteModal').modal("show");
+        showModalDelete("Apakah yakin ingin mengahapus category ini?","btn-delete-category");
+        //$('#deleteModal').modal("show");
         $('#btn-delete-category').attr("category_id", data.category_id);
     });
 

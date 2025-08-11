@@ -157,8 +157,8 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableVariant').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        // showModalDelete("Apakah yakin ingin mengahapus variant ini?","btn-delete-variant");
-        $('#deleteModal').modal("show");
+         showModalDelete("Apakah yakin ingin mengahapus variant ini?","btn-delete-variant");
+        //$('#deleteModal').modal("show");
         $('#btn-delete-variant').attr("variant_id", data.variant_id);
     });
 

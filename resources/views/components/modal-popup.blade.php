@@ -1,3 +1,22 @@
+<!--- modal Delete -->
+<div class="modal fade" id="modalDelete" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Konfirmasi Delete</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <p id="text-delete" style="font-size:10pt"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-cancel" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-danger btn-konfirmasi ms-2">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 @if (Route::is(['category']))
     <!-- modal -->
     <div class="modal modal-lg custom-modal fade" id="add_category" role="dialog">
@@ -35,29 +54,6 @@
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade contentmodal" id="deleteModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content doctor-profile">
-                <div class="modal-header pb-0 border-bottom-0  justify-content-end">
-                    <button type="button" class="close-btn" data-bs-dismiss="modal" aria-label="Close"><i
-                            class="feather-x-circle"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div class="delete-wrap text-center">
-                        <div class="del-icon"><i class="feather-x-circle"></i></div>
-                        <h2>Sure you want to delete</h2>
-                        <div class="submit-section">
-                            <a href="javascript:void(0);" data-bs-dismiss="modal"
-                                class="btn btn-success me-2">Yes</a>
-                            <a href="#" class="btn btn-danger" data-bs-dismiss="modal">No</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /Modal -->
 @endif
 
 @if (Route::is(['unit']))
@@ -104,29 +100,6 @@
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade contentmodal" id="deleteModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content doctor-profile">
-                <div class="modal-header pb-0 border-bottom-0  justify-content-end">
-                    <button type="button" class="close-btn" data-bs-dismiss="modal" aria-label="Close"><i
-                            class="feather-x-circle"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div class="delete-wrap text-center">
-                        <div class="del-icon"><i class="feather-x-circle"></i></div>
-                        <h2>Sure you want to delete</h2>
-                        <div class="submit-section">
-                            <a href="javascript:void(0);" data-bs-dismiss="modal"
-                                class="btn btn-success me-2">Yes</a>
-                            <a href="#" class="btn btn-danger" data-bs-dismiss="modal">No</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /Modal -->
 @endif
 
 @if (Route::is(['variant']))
@@ -174,27 +147,4 @@
         </div>
     </div>
 
-    <!-- Modal -->
-    <div class="modal fade contentmodal" id="deleteModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content doctor-profile">
-                <div class="modal-header pb-0 border-bottom-0  justify-content-end">
-                    <button type="button" class="close-btn" data-bs-dismiss="modal" aria-label="Close"><i
-                            class="feather-x-circle"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div class="delete-wrap text-center">
-                        <div class="del-icon"><i class="feather-x-circle"></i></div>
-                        <h2>Sure you want to delete</h2>
-                        <div class="submit-section">
-                            <a href="javascript:void(0);" data-bs-dismiss="modal"
-                                class="btn btn-success me-2">Yes</a>
-                            <a href="#" class="btn btn-danger" data-bs-dismiss="modal">No</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /Modal -->
 @endif
