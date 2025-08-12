@@ -50,6 +50,7 @@
                     e = e.original || [];
                 }
                 console.log(e);
+                table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].category_date = moment(e[i].created_at).format('D MMM YYYY');

@@ -182,3 +182,7 @@
 </body>
 
 </html>
+
+<script>
+    var token= "{{csrf_token()}}";
+</script>

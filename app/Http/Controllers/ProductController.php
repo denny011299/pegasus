@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\ProductCategory;
 use App\Models\ProductUnits;
 use App\Models\ProductVariants;
+use App\Models\Unit;
+use App\Models\Variant;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -15,23 +18,23 @@ class ProductController extends Controller
     }
 
     function getCategory(Request $req){
-        $data = (new ProductCategory())->getCategory();
+        $data = (new Category())->getCategory();
         return response()->json($data);
     }
 
     function insertCategory(Request $req){
         $data = $req->all();
-        return (new ProductCategory())->insertCategory($data);
+        return (new Category())->insertCategory($data);
     }
 
     function updateCategory(Request $req){
         $data = $req->all();
-        return (new ProductCategory())->updateCategory($data);
+        return (new Category())->updateCategory($data);
     }
 
     function deleteCategory(Request $req){
         $data = $req->all();
-        return (new ProductCategory())->deleteCategory($data);
+        return (new Category())->deleteCategory($data);
     }
 
     // Product Units
@@ -40,23 +43,23 @@ class ProductController extends Controller
     }
 
     function getUnit(Request $req){
-        $data = (new ProductUnits())->getUnit();
+        $data = (new Unit())->getUnit();
         return response()->json($data);
     }
 
     function insertUnit(Request $req){
         $data = $req->all();
-        return (new ProductUnits())->insertUnit($data);
+        return (new Unit())->insertUnit($data);
     }
 
     function updateUnit(Request $req){
         $data = $req->all();
-        return (new ProductUnits())->updateUnit($data);
+        return (new Unit())->updateUnit($data);
     }
 
     function deleteUnit(Request $req){
         $data = $req->all();
-        return (new ProductUnits())->deleteUnit($data);
+        return (new Unit())->deleteUnit($data);
     }
 
     // Product Variants
@@ -65,22 +68,22 @@ class ProductController extends Controller
     }
 
     function getVariant(Request $req){
-        $data = (new ProductVariants())->getVariant();
+        $data = (new Variant())->getVariant();
         return response()->json($data);
     }
 
     function insertVariant(Request $req){
         $data = $req->all();
-        return (new ProductVariants())->insertVariant($data);
+        return (new Variant())->insertVariant($data);
     }
 
     function updateVariant(Request $req){
         $data = $req->all();
-        return (new ProductVariants())->updateVariant($data);
+        return (new Variant())->updateVariant($data);
     }
 
     function deleteVariant(Request $req){
         $data = $req->all();
-        return (new ProductVariants())->deleteVariant($data);
+        return (new Variant())->deleteVariant($data);
     }
 }
