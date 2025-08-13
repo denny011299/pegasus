@@ -21,7 +21,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Category Name",
+                searchPlaceholder: "Search Category",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',

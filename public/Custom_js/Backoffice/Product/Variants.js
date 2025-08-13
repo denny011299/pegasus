@@ -22,7 +22,7 @@
 			"language": {
 				search: ' ',
 				sLengthMenu: '_MENU_',
-				searchPlaceholder: "Search Variant Name",
+				searchPlaceholder: "Search Variant",
 				info: "_START_ - _END_ of _TOTAL_ items",
 				paginate: {
 					next: ' <i class=" fa fa-angle-right"></i>',

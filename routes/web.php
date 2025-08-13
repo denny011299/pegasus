@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -24,3 +26,25 @@ Route::get('/getVariant', [ProductController::class, "getVariant"])->name('getVa
 Route::post('/insertVariant', [ProductController::class, "insertVariant"])->name('insertVariant');
 Route::post('/updateVariant', [ProductController::class, "updateVariant"])->name('updateVariant');
 Route::post('/deleteVariant', [ProductController::class, "deleteVariant"])->name('deleteVariant');
+
+Route::get('/profit_loss',[ReportController::class,"ProfitLoss"])->name('profit_loss');
+Route::get('/getProfit',[ReportController::class,"getProfit"])->name('getProfit');
+Route::get('/getLoss',[ReportController::class,"getLoss"])->name('getLoss');
+
+Route::get('/stockOpname',[StockController::class,"StockOpname"])->name('stockOpname');
+Route::get('/getStockOpname', [StockController::class, "getStockOpname"])->name('getStockOpname');
+Route::post('/insertStockOpname', [StockController::class, "insertStockOpname"])->name('insertStockOpname');
+Route::post('/updateStockOpname', [StockController::class, "updateStockOpname"])->name('updateStockOpname');
+Route::post('/deleteStockOpname', [StockController::class, "deleteStockOpname"])->name('deleteStockOpname');
+
+Route::get('/stockAlert',[StockController::class,"StockAlert"])->name('stockAlert');
+Route::get('/getStockAlert', [StockController::class, "getStockAlert"])->name('getStockAlert');
+Route::post('/insertStockAlert', [StockController::class, "insertStockAlert"])->name('insertStockAlert');
+Route::post('/updateStockAlert', [StockController::class, "updateStockAlert"])->name('updateStockAlert');
+Route::post('/deleteStockAlert', [StockController::class, "deleteStockAlert"])->name('deleteStockAlert');
+
+Route::get('/productIssue',[StockController::class,"ProductIssue"])->name('productIssue');
+Route::get('/getProductIssue', [StockController::class, "getProductIssue"])->name('getProductIssue');
+Route::post('/insertProductIssue', [StockController::class, "insertProductIssue"])->name('insertProductIssue');
+Route::post('/updateProductIssue', [StockController::class, "updateProductIssue"])->name('updateProductIssue');
+Route::post('/deleteProductIssue', [StockController::class, "deleteProductIssue"])->name('deleteProductIssue');

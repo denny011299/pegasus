@@ -532,13 +532,32 @@
                                     class="{{ Request::is('variant') ? 'active' : '' }}">Variants</a></li>
                         </ul>
                     </li>
-                    {{-- <li>
-                        <a href="{{ url('inventory') }}"
-                            class="{{ Request::is('inventory', 'inventory-history') ? 'active' : '' }}"><i
-                                class="fe fe-user"></i>
-                            <span>Inventory</span></a>
-                    </li> --}}
+                    <li class="submenu">
+                        <a href="#"><i class="fe fe-briefcase"></i> <span> Inventory</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
+                            <li><a href="{{ url('productIssue') }}"
+                                    class="{{ Request::is('productIssue') ? 'active' : '' }}">Product
+                                    Issues</a></li>
+                            <li><a href="{{ url('stockOpname') }}"
+                                    class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stock Opname</a></li>
+                            <li><a href="{{ url('stockAlert') }}"
+                                    class="{{ Request::is('stockAlert') ? 'active' : '' }}">Stock Alert</a></li>
+                        </ul>
+                    </li>
                     <!-- /Inventory -->
+
+                    {{-- Report --}}
+                    <li class="menu-title"><span>Reports</span></li>
+                    <li class="submenu">
+                        <a href="#"><i class="fe fe-activity"></i> <span> Reports</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
+                            <li><a href="{{ url('profit_loss') }}"
+                                    class="{{ Request::is('profit_loss') ? 'active' : '' }}">
+                                    Profit & Loss</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>

@@ -1,0 +1,96 @@
+<?php $page = 'stock_alert'; ?>
+@extends('layout.mainlayout')
+@section('content')
+    <!-- Page Wrapper -->
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+
+            <!-- Page Header -->
+            <div class="d-flex justify-content-between m-0 p-0">
+                @component('components.page-header')
+                        @slot('title')
+                            Stock Alert
+                        @endslot
+                @endcomponent
+                <ul class="nav nav-pills navtab-bg">
+                    <li class="nav-item">
+                        <a href="#low" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
+                            Low Stocks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#out" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
+                            Out of Stocks
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /Page Header -->
+
+            <!-- Search Filter -->
+            @component('components.search-filter')
+            @endcomponent
+            <!-- /Search Filter -->
+
+            <!-- Table -->
+            <div class="row" style="margin-top: -6vh">
+                <div class="col-sm-12">
+                    <div class=" card-table">
+                        <div class="card-body">
+							<div class="tab-content">
+								<div class="tab-pane show active" id="low">
+									<div class="table-responsive">
+                                        <table class="table table-center table-hover" id="tableStockAlertLow">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Product Name</th>
+                                                    <th>Category</th>
+                                                    <th>SKU</th>
+                                                    <th>Stock</th>
+                                                    <th>Qty Alert</th>
+                                                    <th class="no-sort">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                
+                                            </tbody>
+                                        </table>
+                                    </div>
+								</div>
+								<div class="tab-pane" id="out">
+									<div class="table-responsive">
+                                        <table class="table table-center table-hover" id="tableStockAlertOut" style="width: 100%">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Product Name</th>
+                                                    <th>Category</th>
+                                                    <th>SKU</th>
+                                                    <th>Stock</th>
+                                                    <th>Qty Alert</th>
+                                                    <th class="no-sort">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                
+                                            </tbody>
+                                        </table>
+                                    </div>
+								</div>
+							</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /Table -->
+
+        </div>
+    </div>
+    <!-- /Page Wrapper -->
+@endsection
+
+@section('custom_js')
+    <script>
+        var public = "{{ asset('') }}";    
+    </script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}"></script>
+@endsection
