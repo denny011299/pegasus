@@ -46,7 +46,7 @@
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
-                        <button type="submit" data-bs-dismiss="modal"
+                        <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Add Category</button>
                     </div>
                 </form>
@@ -92,7 +92,7 @@
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
-                        <button type="submit" data-bs-dismiss="modal"
+                        <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Add Unit</button>
                     </div>
                 </form>
@@ -139,7 +139,7 @@
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
-                        <button type="submit" data-bs-dismiss="modal"
+                        <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Add Variant</button>
                     </div>
                 </form>

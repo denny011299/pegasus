@@ -224,11 +224,18 @@
     <script src="{{ URL::asset('/assets/js/theme-settings.js') }}"></script>
     <script src="{{ URL::asset('/assets/js/greedynav.js') }}"></script>
 @endif
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Custom JS -->
 <script src="{{ URL::asset('/assets/js/script.js') }}"></script>
 
 <script>
+    function notifikasi(simbol,title,deskripsi) {
+        Swal.fire({
+            icon: simbol,
+            title:title,
+            text: deskripsi,
+        });
+    }
        //munculin modal delete
     function showModalDelete(text, button_id) {
         //button id ini, id button ketika dikofrimasi delete

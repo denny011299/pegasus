@@ -11,22 +11,19 @@
             <ul class="filter-list">
                 @if (Route::is(['category']))
                     <li>
-                        <a class="btn btn-primary btnAdd" href="javascript:void(0);" data-bs-toggle="modal"
-                            data-bs-target="#add_category"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
                             Category</a>
                     </li>
                 @endif
                 @if (Route::is(['unit']))
                     <li>
-                        <a class="btn btn-primary btnAdd" href="javascript:void(0);" data-bs-toggle="modal"
-                            data-bs-target="#add_unit"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
                             Units</a>
                     </li>
                 @endif
                 @if (Route::is(['variant']))
                     <li>
-                        <a class="btn btn-primary btnAdd" href="javascript:void(0);" data-bs-toggle="modal"
-                            data-bs-target="#add_variant"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
                             Variants</a>
                     </li>
                 @endif

@@ -50,6 +50,7 @@
             success:function(e){      
                 table.clear().draw(); 
                 console.log(e);
+                
                 for (let i = 0; i < e.length; i++) {
                     e[i].variant_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].variant_values = "";
@@ -97,10 +98,11 @@
             //ResetLoadingButton('.btn-save', 'Save changes');
             return false;
         };
-
+        console.log($('#variant_attribute').val());
+        
         param = {
             variant_name:$('#variant_name').val(),
-            variant_attribute:JSON.stringify($('#variant_attribute').val().split(",")),
+            variant_attribute:JSON.stringify($('#variant_attribute').val()),
              _token:token
         };
 

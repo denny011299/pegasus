@@ -9,25 +9,25 @@
     @if (!Route::is(['index-two']))
         <a href="{{ url('/') }}"
             class="d-inline-flex d-sm-inline-flex align-items-center d-md-inline-flex d-lg-none align-items-center device-logo">
-            <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo2" alt="Logo" style="height: 50px">
+            <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo2" alt="Logo" style="height: 70px">
         </a>
         <div class="main-logo d-inline float-start d-lg-flex align-items-center d-none d-sm-none d-md-none">
             <div class="logo-white">
                 <a href="{{ url('/') }}">
                     <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-blue"
-                        alt="Logo" style="height: 50px">
+                        alt="Logo" style="height: 70px">
                 </a>
                 <a href="{{ url('/') }}">
                     <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-small"
-                        alt="Logo" style="height: 50px">
+                        alt="Logo" style="height: 70px">
                 </a>
             </div>
             <div class="logo-color">
                 <a href="{{ url('/') }}">
-                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-blue" alt="Logo" style="height: 50px">
+                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-blue" alt="Logo" style="height: 70px">
                 </a>
                 <a href="{{ url('/') }}">
-                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-small" style="height: 50px"
+                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-small" style="height: 70px"
                         alt="Logo">
                 </a>
             </div>
