@@ -18,11 +18,13 @@ class StockOpname extends Model
             [
                 "stop_pic" => "Shawn Davies",
                 "stop_id" => "OPN001",
+                "stop_category" => "Laptop",
                 "created_at" => now()
             ],
             [
                 "stop_pic" => "Maria Johnson",
                 "stop_id" => "OPN002",
+                "stop_category" => "Jam",
                 "created_at" => now()
             ]
         ];

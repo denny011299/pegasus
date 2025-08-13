@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ProductIssues;
 use App\Models\StockAlert;
 use App\Models\StockOpname;
+use App\Models\StockOpnameDetail;
 use Illuminate\Http\Request;
 
 class StockController extends Controller
@@ -32,6 +33,31 @@ class StockController extends Controller
     function deleteStockOpname(Request $req){
         $data = $req->all();
         return (new StockOpname())->deleteStockOpname($data);
+    }
+
+    // Stock Opname Detail
+    public function DetailStockOpname($id){
+        return view('Backoffice.Inventory.CreateStockOpname');
+    }
+
+    function getDetailStockOpname(Request $req){
+        $data = (new StockOpnameDetail())->getDetailStockOpname();
+        return response()->json($data);
+    }
+
+    function insertDetailStockOpname(Request $req){
+        $data = $req->all();
+        return (new StockOpnameDetail())->insertDetailStockOpname($data);
+    }
+
+    function updateDetailStockOpname(Request $req){
+        $data = $req->all();
+        return (new StockOpnameDetail())->updateDetailStockOpname($data);
+    }
+
+    function deleteDetailStockOpname(Request $req){
+        $data = $req->all();
+        return (new StockOpnameDetail())->deleteDetailStockOpname($data);
     }
 
     // Stock Alert

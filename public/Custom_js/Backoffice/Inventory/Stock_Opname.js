@@ -29,9 +29,9 @@
                 },
             },
             columns: [
-                { data: "no" },
-                { data: "stop_pic" },
                 { data: "stop_date" },
+                { data: "stop_pic" },
+                { data: "stop_category" },
                 { data: "stop_id" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -54,14 +54,10 @@
                 console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].no = i+1;
                     e[i].stop_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].stop_id}" data-bs-target="#edit-category">
-                            <i data-feather="edit" class="feather-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].stop_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                        <a href="/detailStockOpname/${e[i].stop_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
+                            <i data-feather="view" class="fe fe-eye"></i>
                         </a>
                     `;
                 }

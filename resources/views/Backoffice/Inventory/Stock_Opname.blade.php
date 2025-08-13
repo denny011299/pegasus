@@ -27,9 +27,9 @@
                                 <table class="table table-center table-hover" id="tableStockOpname">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>No</th>
-                                            <th>PIC</th>
                                             <th>Opname Date</th>
+                                            <th>PIC</th>
+                                            <th>Category</th>
                                             <th>Opname ID</th>
                                             <th class="no-sort">Action</th>
                                         </tr>

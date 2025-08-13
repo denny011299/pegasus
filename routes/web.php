@@ -48,3 +48,9 @@ Route::get('/getProductIssue', [StockController::class, "getProductIssue"])->nam
 Route::post('/insertProductIssue', [StockController::class, "insertProductIssue"])->name('insertProductIssue');
 Route::post('/updateProductIssue', [StockController::class, "updateProductIssue"])->name('updateProductIssue');
 Route::post('/deleteProductIssue', [StockController::class, "deleteProductIssue"])->name('deleteProductIssue');
+
+Route::get('/detailStockOpname/{id}', [StockController::class, "DetailStockOpname"])->name('detailStockOpname');
+Route::get('/getDetailStockOpname', [StockController::class, "getDetailStockOpname"])->name('getDetailStockOpname');
+Route::post('/insertDetailStockOpname', [StockController::class, "insertDetailStockOpname"])->name('insertDetailStockOpname');
+Route::post('/updateDetailStockOpname', [StockController::class, "updateDetailStockOpname"])->name('updateDetailStockOpname');
+Route::post('/deleteDetailStockOpname', [StockController::class, "deleteDetailStockOpname"])->name('deleteDetailStockOpname');

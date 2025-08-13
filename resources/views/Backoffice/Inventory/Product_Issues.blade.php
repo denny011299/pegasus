@@ -1,4 +1,4 @@
-<?php $page = 'stock_alert'; ?>
+<?php $page = 'product_issues'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -6,11 +6,25 @@
         <div class="content container-fluid">
 
             <!-- Page Header -->
+            <div class="d-flex justify-content-between">
                 @component('components.page-header')
                         @slot('title')
-                            Stock Alert
+                            Product Issues
                         @endslot
                 @endcomponent
+                <ul class="nav nav-pills navtab-bg">
+                    <li class="nav-item">
+                        <a href="#return" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
+                            Returned
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#damage" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
+                            Damaged
+                        </a>
+                    </li>
+                </ul>
+            </div>
             <!-- /Page Header -->
 
             <!-- Search Filter -->
@@ -19,22 +33,10 @@
             <!-- /Search Filter -->
 
             <!-- Table -->
-            <div class="row">
+            <div class="row" style="margin-top: -7vh">
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
-                            <ul class="nav nav-pills navtab-bg">
-                                <li class="nav-item">
-                                    <a href="#return" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
-                                        Returned
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#damage" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                                        Damaged
-                                    </a>
-                                </li>
-                            </ul>
 							<div class="tab-content">
 								<div class="tab-pane show active" id="return">
 									<div class="table-responsive">
