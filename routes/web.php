@@ -27,7 +27,7 @@ Route::post('/insertVariant', [ProductController::class, "insertVariant"])->name
 Route::post('/updateVariant', [ProductController::class, "updateVariant"])->name('updateVariant');
 Route::post('/deleteVariant', [ProductController::class, "deleteVariant"])->name('deleteVariant');
 
-Route::get('/profit_loss',[ReportController::class,"ProfitLoss"])->name('profit_loss');
+Route::get('/profitLoss',[ReportController::class,"ProfitLoss"])->name('profitLoss');
 Route::get('/getProfit',[ReportController::class,"getProfit"])->name('getProfit');
 Route::get('/getLoss',[ReportController::class,"getLoss"])->name('getLoss');
 
@@ -54,3 +54,6 @@ Route::get('/getDetailStockOpname', [StockController::class, "getDetailStockOpna
 Route::post('/insertDetailStockOpname', [StockController::class, "insertDetailStockOpname"])->name('insertDetailStockOpname');
 Route::post('/updateDetailStockOpname', [StockController::class, "updateDetailStockOpname"])->name('updateDetailStockOpname');
 Route::post('/deleteDetailStockOpname', [StockController::class, "deleteDetailStockOpname"])->name('deleteDetailStockOpname');
+
+Route::get('/inwardOutward',[ReportController::class,"InwardOutward"])->name('inwardOutward');
+Route::get('/payReceive',[ReportController::class,"PayReceive"])->name('payReceive');

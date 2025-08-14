@@ -553,9 +553,21 @@
                         <a href="#"><i class="fe fe-activity"></i> <span> Reports</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            <li><a href="{{ url('profit_loss') }}"
-                                    class="{{ Request::is('profit_loss') ? 'active' : '' }}">
+                            <li><a href="{{ url('profitLoss') }}"
+                                    class="{{ Request::is('profitLoss') ? 'active' : '' }}">
                                     Profit & Loss</a></li>
+                            <li><a href="{{ url('cash') }}"
+                                    class="{{ Request::is('cash') ? 'active' : '' }}">
+                                    Cash</a></li>
+                            <li><a href="{{ url('pettyCash') }}"
+                                    class="{{ Request::is('pettyCash') ? 'active' : '' }}">
+                                    Petty Cash</a></li>
+                            <li><a href="{{ url('inwardOutward') }}"
+                                    class="{{ Request::is('inwardOutward') ? 'active' : '' }}">
+                                    Inward & Outward Goods</a></li>
+                            <li><a href="{{ url('payReceive') }}"
+                                    class="{{ Request::is('payReceive') ? 'active' : '' }}">
+                                    Payables & Receiveables</a></li>
                         </ul>
                     </li>
                 </ul>
