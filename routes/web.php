@@ -5,6 +5,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
+use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -75,3 +76,9 @@ Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('g
 
 Route::get('/product',[ProductController::class,"Product"])->name('product');
 Route::get('/getProduct',[ProductController::class,"getProduct"])->name('getProduct');
+
+Route::get('/stock',[StockController::class,"Stock"])->name('stock');
+Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
+
+Route::get('/supplies',[ProductController::class,"Supplies"])->name('supplies');
+Route::get('/getSupplies',[ProductController::class,"getSupplies"])->name('getSupplies');

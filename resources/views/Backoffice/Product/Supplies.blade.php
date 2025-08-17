@@ -1,4 +1,4 @@
-<?php $page = 'product'; ?>
+<?php $page = 'supplies'; ?>
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
@@ -24,7 +24,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Product
+                    Supplies
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -40,17 +40,13 @@
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableProduct">
+                                <table class="table table-center table-hover" id="tableSupplies">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Product ID</th>
-                                            <th>Product Name</th>
-                                            <th>SKU</th>
-                                            <th>Category</th>
-                                            <th>Merk</th>
+                                            <th>Supply Name</th>
                                             <th>Unit</th>
-                                            <th>Variant</th>
-                                            <th>Barcode</th>
+                                            <th>Description</th>
+                                            <th>Stock</th>
                                             <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>
@@ -74,5 +70,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Product/Product.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Product/Supplies.js')}}"></script>
 @endsection

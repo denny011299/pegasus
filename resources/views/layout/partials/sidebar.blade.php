@@ -530,6 +530,8 @@
                                     class="{{ Request::is('unit') ? 'active' : '' }}">Units</a></li>
                             <li><a href="{{ url('variant') }}"
                                     class="{{ Request::is('variant') ? 'active' : '' }}">Variants</a></li>
+                            <li><a href="{{ url('supplies') }}"
+                                    class="{{ Request::is('supplies') ? 'active' : '' }}">Supplies</a></li>
                         </ul>
                     </li>
                     <li class="submenu">

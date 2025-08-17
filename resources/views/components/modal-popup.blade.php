@@ -167,8 +167,15 @@
                                 <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Name<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="product_name"
+                                        <input type="text" class="form-control fill" id="pr_name"
                                             placeholder="Enter Product Name">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>SKU<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="pr_sku"
+                                            placeholder="Enter SKU Name">
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -182,7 +189,15 @@
                                 <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Unit<span class="text-danger">*</span></label>
-                                        <select class="form-control fill" id="pr_unit">
+                                        <select class="form-control tagging fill" id="pr_unit" multiple="multiple">
+											
+										</select>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Variant<span class="text-danger">*</span></label>
+                                        <select class="form-control tagging fill" id="pr_variant" multiple="multiple">
 											
 										</select>
                                     </div>
@@ -201,7 +216,67 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Product</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Add Supplies</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+@endif
+
+@if (Route::is(['supplies']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_supplies" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Supplies</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Name<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="sup_name"
+                                            placeholder="Enter Supplies Name">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Unit<span class="text-danger">*</span></label>
+                                        <select class="form-control tagging fill" id="sup_unit" multiple="multiple">
+											
+										</select>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Description</label>
+                                        <textarea class="form-control" id="sup_desc" cols="30" rows="5"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Stock<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="sup_stock"
+                                            placeholder="Enter Supplies Stock">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Add Supplies</button>
                     </div>
                 </form>
             </div>

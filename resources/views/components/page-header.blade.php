@@ -33,10 +33,10 @@
                             Products</a>
                     </li>
                 @endif
-                @if (Route::is(['stock']))
+                @if (Route::is(['supplies']))
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
-                            Stocks</a>
+                            Supplies</a>
                     </li>
                 @endif
             </ul>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ManageStock;
 use App\Models\ProductIssues;
+use App\Models\Stock;
 use App\Models\StockAlert;
 use App\Models\StockOpname;
 use App\Models\StockOpnameDetail;
@@ -119,6 +120,16 @@ class StockController extends Controller
 
     function getManageStock(Request $req){
         $data = (new ManageStock())-> getManageStock();
+        return response()->json($data);
+    }
+
+    // Stock
+    public function Stock(){
+        return view('Backoffice.Inventory.Stock');
+    }
+
+    function getStock(Request $req){
+        $data = (new Stock())->getStock();
         return response()->json($data);
     }
 }

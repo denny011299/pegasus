@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductUnits;
 use App\Models\ProductVariants;
+use App\Models\Supplies;
 use App\Models\Unit;
 use App\Models\Variant;
 use Illuminate\Http\Request;
@@ -96,5 +97,15 @@ class ProductController extends Controller
     function getProduct(Request $req){
         $data = (new Product())->getProduct();
         return $data;
+    }
+
+    // Supplies
+    public function Supplies(){
+        return view('Backoffice.Product.Supplies');
+    }
+
+    function getSupplies(Request $req){
+        $data = (new Supplies())->getSupplies();
+        return response()->json($data);
     }
 }

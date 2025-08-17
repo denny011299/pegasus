@@ -1,21 +1,5 @@
-<?php $page = 'product'; ?>
+<?php $page = 'stock'; ?>
 @extends('layout.mainlayout')
-@section('custom_css')
-    <style>
-        .bootstrap-tagsinput .tag {
-            margin-right: 2px;
-            color: #fff;
-            background-color: #082a58;
-            padding: .2em .4em;
-            border-radius: .2rem;
-        }
-        .bootstrap-tagsinput .tag [data-role="remove"] {
-            color: #ffffff !important;
-            margin-left: 5px;
-            cursor: pointer;
-        }
-    </style>
-@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -24,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Product
+                    Stock
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -40,13 +24,14 @@
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableProduct">
+                                <table class="table table-center table-hover" id="tableStock">
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Product ID</th>
                                             <th>Product Name</th>
                                             <th>SKU</th>
                                             <th>Category</th>
+                                            <th>Stock</th>
                                             <th>Merk</th>
                                             <th>Unit</th>
                                             <th>Variant</th>
@@ -74,5 +59,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Product/Product.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock.js')}}"></script>
 @endsection
