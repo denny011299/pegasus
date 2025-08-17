@@ -521,9 +521,9 @@
                         <a href="#"><i class="fe fe-package"></i> <span> Products</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            {{-- <li><a href="{{ url('product') }}"
+                            <li><a href="{{ url('product') }}"
                                     class="{{ Request::is('product', 'add-products', 'edit-products') ? 'active' : '' }}">Product
-                                    List</a></li> --}}
+                                    List</a></li>
                             <li><a href="{{ url('category') }}"
                                     class="{{ Request::is('category') ? 'active' : '' }}">Category</a></li>
                             <li><a href="{{ url('unit') }}"
@@ -536,13 +536,16 @@
                         <a href="#"><i class="fe fe-briefcase"></i> <span> Inventory</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
+                            <li><a href="{{ url('stock') }}"
+                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stocks</a></li>
                             <li><a href="{{ url('productIssue') }}"
-                                    class="{{ Request::is('productIssue') ? 'active' : '' }}">Product
-                                    Issues</a></li>
+                                    class="{{ Request::is('productIssue') ? 'active' : '' }}">Product Issues</a></li>
                             <li><a href="{{ url('stockOpname') }}"
                                     class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stock Opname</a></li>
                             <li><a href="{{ url('stockAlert') }}"
                                     class="{{ Request::is('stockAlert') ? 'active' : '' }}">Stock Alert</a></li>
+                            <li><a href="{{ url('manageStock') }}"
+                                    class="{{ Request::is('manageStock') ? 'active' : '' }}">Manage Stock</a></li>
                         </ul>
                     </li>
                     <!-- /Inventory -->

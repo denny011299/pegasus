@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ManageStock;
 use App\Models\ProductIssues;
 use App\Models\StockAlert;
 use App\Models\StockOpname;
@@ -109,5 +110,15 @@ class StockController extends Controller
     function deleteProductIssue(Request $req){
         $data = $req->all();
         return (new ProductIssues())->deleteProductIssue($data);
+    }
+
+    // Manage Stock
+    public function ManageStock(){
+        return view('Backoffice.Inventory.Manage_Stock');
+    }
+
+    function getManageStock(Request $req){
+        $data = (new ManageStock())-> getManageStock();
+        return response()->json($data);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductUnits;
 use App\Models\ProductVariants;
@@ -85,5 +86,15 @@ class ProductController extends Controller
     function deleteVariant(Request $req){
         $data = $req->all();
         return (new Variant())->deleteVariant($data);
+    }
+
+    // Product
+    public function Product(){
+        return view('Backoffice.Product.Product');
+    }
+    
+    function getProduct(Request $req){
+        $data = (new Product())->getProduct();
+        return $data;
     }
 }

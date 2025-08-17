@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\SupplierController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -56,4 +58,20 @@ Route::post('/updateDetailStockOpname', [StockController::class, "updateDetailSt
 Route::post('/deleteDetailStockOpname', [StockController::class, "deleteDetailStockOpname"])->name('deleteDetailStockOpname');
 
 Route::get('/inwardOutward',[ReportController::class,"InwardOutward"])->name('inwardOutward');
+Route::get('/getInwardOutward',[ReportController::class,"getInwardOutward"])->name('getInwardOutward');
+
 Route::get('/payReceive',[ReportController::class,"PayReceive"])->name('payReceive');
+Route::get('/getSalesOrder', [CustomerController::class, "getSalesOrder"])->name('getSalesOrder');
+Route::get('/getPurchaseOrder', [SupplierController::class, "getPurchaseOrder"])->name('getPurchaseOrder');
+
+Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
+Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');
+
+Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash');
+Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
+
+Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
+Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('getManageStock');
+
+Route::get('/product',[ProductController::class,"Product"])->name('product');
+Route::get('/getProduct',[ProductController::class,"getProduct"])->name('getProduct');

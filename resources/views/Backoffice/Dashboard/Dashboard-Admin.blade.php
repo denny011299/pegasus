@@ -1,31 +1,16 @@
-<?php $page = 'dashboard'; ?>
+<?php $page = 'index'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
-
-            <!-- Page Header -->
-            @component('components.page-header')
-                @slot('title')
-                    Dashboard
-                @endslot
-            @endcomponent
-            <!-- /Page Header -->
-
-            <!-- Table -->
+            @livewire('index-cards')
+            @livewire('index-sales')
             <div class="row">
-                
+                @livewire('index-invoices')
+                @livewire('index-estimates')
             </div>
-            <!-- /Table -->
-
         </div>
     </div>
     <!-- /Page Wrapper -->
-@endsection
-
-@section('custom_js')
-    <script>
-        var public = "{{ asset('') }}";    
-    </script>
 @endsection

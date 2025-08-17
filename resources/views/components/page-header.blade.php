@@ -27,6 +27,18 @@
                             Variants</a>
                     </li>
                 @endif
+                @if (Route::is(['product']))
+                    <li>
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Products</a>
+                    </li>
+                @endif
+                @if (Route::is(['stock']))
+                    <li>
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Stocks</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

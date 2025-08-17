@@ -1,0 +1,132 @@
+    var mode=1;
+    var tablePayables, tableReceiveables;
+    $(document).ready(function(){
+        inisialisasi();
+        refreshPayReceive();
+    });
+    
+    function inisialisasi() {
+        tablePayables = $('#tablePayables').DataTable({
+            bFilter: true,
+            sDom: 'fBtlpi',
+            ordering: true,
+            language: {
+                search: ' ',
+                sLengthMenu: '_MENU_',
+                searchPlaceholder: "Search Payables",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                paginate: {
+                    next: ' <i class=" fa fa-angle-right"></i>',
+                    previous: '<i class="fa fa-angle-left"></i> '
+                },
+            },
+            columns: [
+                { data: 'po_date' },
+                { data: 'po_number' },
+                { data: 'invoice_number' },
+                { data: 'supplier_name' },
+                { data: 'total' },
+                { data: 'status_bayar' },
+                { data: "action", class: "d-flex align-items-center" },
+            ],
+            initComplete: (settings, json) => {
+                $('.dataTables_filter').appendTo('#tableSearch');
+                $('.dataTables_filter').appendTo('.search-input');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            },
+        });
+
+        tableReceiveables = $('#tableReceiveables').DataTable({
+            bFilter: true,
+            sDom: 'fBtlpi',
+            ordering: true,
+            language: {
+                search: ' ',
+                sLengthMenu: '_MENU_',
+                searchPlaceholder: "Search Receiveables",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                paginate: {
+                    next: ' <i class=" fa fa-angle-right"></i>',
+                    previous: '<i class="fa fa-angle-left"></i> '
+                },
+            },
+            autoWidth: false,
+            columns: [
+                { data: 'order_date' },
+                { data: 'due_date' },
+                { data: 'so_number' },
+                { data: 'invoice_number' },
+                { data: 'customer_name' },
+                { data: 'total' },
+                { data: 'status_bayar' },
+                { data: 'action', class: "d-flex align-items-center" },
+            ],
+            initComplete: (settings, json) => {
+                $('.dataTables_filter').appendTo('#tableSearch');
+                $('.dataTables_filter').appendTo('.search-input');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            },
+        });
+    }
+
+    function refreshPayReceive() {
+        $.ajax({
+            url: "/getPurchaseOrder",
+            method: "get",
+            success: function (e) {
+                if (!Array.isArray(e)) {
+                    e = e.original || [];
+                }
+                console.log(e);
+                // Manipulasi data sebelum masuk ke tabel
+                e.forEach(item => {
+                    if (item.status == 1){
+                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Belum Dibayar</span>`;
+                    } else if (item.status == 2){
+                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Menunggu Pembayaran</span>`;
+                    } else if (item.status == 3){
+                        item.status_bayar = `<span class="badge bg-danger" style="font-size: 12px">Jatuh Tempo</span>`;
+                    }
+                    item.action = `
+                        <a class="me-2 btn-action-icon p-2 btn_view" data-bs-target="#view-opname">
+                            <i data-feather="view" class="fe fe-eye"></i>
+                        </a>
+                    `;
+                });
+                tablePayables.clear().rows.add(e).draw();
+            },
+            error: function (err) {
+                console.error("Gagal load:", err);
+            }
+        });
+        $.ajax({
+            url: "/getSalesOrder",
+            method: "get",
+            success: function (e) {
+                if (!Array.isArray(e)) {
+                    e = e.original || [];
+                }
+                console.log(e);
+                // Manipulasi data sebelum masuk ke tabel
+                e.forEach(item => {
+                    if (item.status == 1){
+                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Belum Dibayar</span>`;
+                    } else if (item.status == 2){
+                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Menunggu Pembayaran</span>`;
+                    } else if (item.status == 3){
+                        item.status_bayar = `<span class="badge bg-danger" style="font-size: 12px">Jatuh Tempo</span>`;
+                    }
+                    item.action = `
+                        <a class="me-2 btn-action-icon p-2 btn_view" data-bs-target="#view-opname">
+                            <i data-feather="view" class="fe fe-eye"></i>
+                        </a>
+                    `;
+                });
+
+                tableReceiveables.clear().rows.add(e).draw();
+            },
+            error: function (err) {
+                console.error("Gagal load:", err);
+            }
+        });
+    }

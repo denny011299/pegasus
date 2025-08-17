@@ -1,4 +1,4 @@
-<?php $page = 'pettyCash'; ?>
+<?php $page = 'product'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Petty Cash
+                    Product
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -24,15 +24,15 @@
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tablePettyCash">
+                                <table class="table table-center table-hover" id="tableProduct">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Description</th>
-                                            <th>Debit</th>
-                                            <th>Credit 1</th>
-                                            <th>Credit 2</th>
-                                            <th>Balance</th>
+                                            <th>Product ID</th>
+                                            <th>Product Name</th>
+                                            <th>Category</th>
+                                            <th>Merk</th>
+                                            <th>Unit</th>
+                                            <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -55,5 +55,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Petty_Cash.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Product/Product.js')}}"></script>
 @endsection
