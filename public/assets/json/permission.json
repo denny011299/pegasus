@@ -1,52 +1,35 @@
 [
-	{
-		"Id": "1",
-		"Modules": "Dashboard",
-		"SubModules": "Dashboard"
-	},
-	{
-		"Id": "2",
-		"Modules": "Appointments",
-		"SubModules": "Appointments"
-	},
-	{
-		"Id": "3",
-		"Modules": "Specialization",
-		"SubModules": "Specialization"
-	},
-	{
-		"Id": "4",
-		"Modules": "Sub Categories",
-		"SubModules": "Sub Categories"
-	},
-	{
-		"Id": "5",
-		"Modules": "Clients",
-		"SubModules": "Clients"
-	},
-	{
-		"Id": "6",
-		"Modules": "Payment Request",
-		"SubModules": "Payment Request"
-	},
-	{
-		"Id": "7",
-		"Modules": "Reviews",
-		"SubModules": "Reviews"
-	},
-	{
-		"Id": "8",
-		"Modules": "Subscription",
-		"SubModules": "Subscription"
-	},
-	{
-		"Id": "9",
-		"Modules": "Settings",
-		"SubModules": "Settings"
-	},
-	{
-		"Id": "10",
-		"Modules": "Email Templates",
-		"SubModules": "Email Templates"
-	}
+  { "Id": "1", "Modules": "Product", "SubModules": "Category" },
+  { "Id": "2", "Modules": "Product", "SubModules": "Satuan" },
+  { "Id": "3", "Modules": "Product", "SubModules": "Variant Product" },
+  { "Id": "4", "Modules": "Product", "SubModules": "Bahan Mentah" },
+  { "Id": "5", "Modules": "Product", "SubModules": "Product" },
+  { "Id": "6", "Modules": "Supplier", "SubModules": "Supplier" },
+  { "Id": "7", "Modules": "Customer", "SubModules": "Customer" },
+  { "Id": "8", "Modules": "Inventory", "SubModules": "List Stock Barang" },
+  { "Id": "9", "Modules": "Inventory", "SubModules": "Barang Masuk & Keluar Product" },
+  { "Id": "10", "Modules": "Inventory", "SubModules": "Product Issues" },
+  { "Id": "11", "Modules": "Inventory", "SubModules": "Stock Opname" },
+  { "Id": "12", "Modules": "Inventory", "SubModules": "Stock Alert" },
+  { "Id": "13", "Modules": "Order", "SubModules": "Sales Order" },
+  { "Id": "14", "Modules": "Order", "SubModules": "Purchase Order" },
+  { "Id": "15", "Modules": "Order", "SubModules": "Purchase" },
+  { "Id": "16", "Modules": "Order", "SubModules": "Surat Jalan PO" },
+  { "Id": "17", "Modules": "Order", "SubModules": "Tanda Terima PO & Payment" },
+  { "Id": "18", "Modules": "Order", "SubModules": "Work Order Letter" },
+  { "Id": "19", "Modules": "Production", "SubModules": "Manajemen Bahan Mentah" },
+  { "Id": "20", "Modules": "Production", "SubModules": "Proses Produksi Multi Tahap" },
+  { "Id": "21", "Modules": "Production", "SubModules": "Bill of Materials (BoM)" },
+  { "Id": "22", "Modules": "Production", "SubModules": "Management Product Jadi" },
+  { "Id": "23", "Modules": "Staff", "SubModules": "Staff" },
+  { "Id": "24", "Modules": "Staff", "SubModules": "Staff User Permissions" },
+  { "Id": "27", "Modules": "Accounting", "SubModules": "Kas Kecil" },
+  { "Id": "28", "Modules": "Accounting", "SubModules": "Kas" },
+  { "Id": "29", "Modules": "Accounting", "SubModules": "Piutang & Hutang" },
+  { "Id": "30", "Modules": "Reporting", "SubModules": "Laporan Barang Masuk & Keluar" },
+  { "Id": "31", "Modules": "Reporting", "SubModules": "Laporan Absensi Pegawai" },
+  { "Id": "32", "Modules": "Reporting", "SubModules": "Laporan Produksi Harian / Mingguan / Bulanan" },
+  { "Id": "33", "Modules": "Reporting", "SubModules": "Laporan Pemakaian Bahan Baku" },
+  { "Id": "34", "Modules": "Reporting", "SubModules": "Laporan P/L" },
+  { "Id": "35", "Modules": "Reporting", "SubModules": "Laporan Barang Mentah Kembali" }
 ]

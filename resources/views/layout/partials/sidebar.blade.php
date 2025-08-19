@@ -607,6 +607,16 @@
                            
                         </ul>
                     </li>
+                    <li class="menu-title"><span>User Management</span></li>
+                        <li>
+                            <a class="{{ Request::is('user') ? 'active' : '' }}" href="/user"><i
+                                    class="fe fe-user"></i> <span>Users</span></a>
+                        </li>
+                        <li>
+                            <a class="{{ Request::is('roles-permission', 'permission') ? 'active' : '' }}"
+                                href="/role"><i class="fe fe-clipboard"></i> <span>Roles &
+                                    Permission</span></a>
+                        </li>
                 </ul>
             </div>
         </div>

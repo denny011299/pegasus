@@ -71,6 +71,20 @@
                                 aria-hidden="true"></i>Add Customer</a>
                     </li>
                 @endif
+                @if (Route::is(['user']))
+                    <li>
+                        <a class="btn btn-primary" href="javascript:void(0);" data-bs-toggle="modal"
+                            data-bs-target="#add_user"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            User</a>
+                    </li>
+                @endif
+                @if (Route::is(['role']))
+                    <li>
+                        <a class="btn btn-primary" href="#" data-bs-toggle="modal"
+                            data-bs-target="#add_role"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Roles</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\UserController;
 use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 
@@ -79,12 +80,6 @@ Route::get('/getPoDelivery', [SupplierController::class, "getPoDelivery"])->name
 Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('getPoInvoice');
 Route::get('/getPoReceipt', [SupplierController::class, "getPoReceipt"])->name('getPoReceipt');
 
-Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
-Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');
-
-Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash');
-Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
-
 Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
 Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('getManageStock');
 
@@ -97,6 +92,25 @@ Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
 Route::get('/supplies',[ProductController::class,"Supplies"])->name('supplies');
 Route::get('/getSupplies',[ProductController::class,"getSupplies"])->name('getSupplies');
 
+Route::get('/user',[UserController::class,"user"])->name('user');
+Route::get('/getUser', [UserController::class, "getUser"])->name('getUser');
+Route::post('/insertUser', [UserController::class, "insertUser"])->name('insertUser');
+Route::post('/updateUser', [UserController::class, "updateUser"])->name('updateUser');
+Route::post('/deleteUser', [UserController::class, "deleteUser"])->name('deleteUser');
+
+Route::get('/role',[UserController::class,"role"])->name('role');
+Route::get('/getRole', [UserController::class, "getRole"])->name('getRole');
+Route::post('/insertRole', [UserController::class, "insertRole"])->name('insertRole');
+Route::post('/updateRole', [UserController::class, "updateRole"])->name('updateRole');
+Route::post('/deleteRole', [UserController::class, "deleteRole"])->name('deleteRole');
+
+Route::get('/permission',[UserController::class,"permission"])->name('permission');
+Route::get('/getPermission', [UserController::class, "getPermission"])->name('getPermission');
+Route::post('/insertPermission', [UserController::class, "insertPermission"])->name('insertPermission');
+Route::post('/updatePermission', [UserController::class, "updatePermission"])->name('updatePermission');
+Route::post('/deletePermission', [UserController::class, "deletePermission"])->name('deletePermission');
+
+//customer
 Route::get('/customers',[CustomerController::class,"customer"])->name('customers');
 Route::get('/customerDetail/{id}',[CustomerController::class,"customerDetail"])->name('customerDetail');
 Route::get('/getCustomers', [CustomerController::class, "getCustomers"])->name('getCustomers');
@@ -105,6 +119,11 @@ Route::post('/insertCustomer', [CustomerController::class, "insertCustomer"])->n
 Route::post('/updateCustomer', [CustomerController::class, "updateCustomer"])->name('updateCustomer');
 Route::post('/deleteCustomer', [CustomerController::class, "deleteCustomer"])->name('deleteCustomer');
 
+//reporting
 Route::get('/reportBahanBaku', [ReportController::class, "reportBahanBaku"])->name('reportBahanBaku');
 Route::get('/reportProduksi', [ReportController::class, "reportProduksi"])->name('reportProduksi');
 Route::get('/SuppliesReturn', [ReportController::class, "SuppliesReturn"])->name('SuppliesReturn');
+Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
+Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');
+Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash');
+Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
