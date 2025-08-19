@@ -62,8 +62,19 @@ Route::get('/inwardOutward',[ReportController::class,"InwardOutward"])->name('in
 Route::get('/getInwardOutward',[ReportController::class,"getInwardOutward"])->name('getInwardOutward');
 
 Route::get('/payReceive',[ReportController::class,"PayReceive"])->name('payReceive');
+
+Route::get('/salesOrder',[CustomerController::class,"SalesOrder"])->name('salesOrder');
 Route::get('/getSalesOrder', [CustomerController::class, "getSalesOrder"])->name('getSalesOrder');
+Route::get('/salesOrderDetail/{id}', [CustomerController::class, "SalesOrderDetail"])->name('salesOrderDetail');
+Route::get('/getSoInvoice', [CustomerController::class, "getSoInvoice"])->name('getSoInvoice');
+Route::get('/getSoDelivery', [CustomerController::class, "getSoDelivery"])->name('getSoDelivery');
+
+Route::get('/purchaseOrder',[SupplierController::class,"PurchaseOrder"])->name('purchaseOrder');
+Route::get('/purchaseOrderDetail/{id}',[SupplierController::class,"PurchaseOrderDetail"])->name('purchaseOrderDetail');
 Route::get('/getPurchaseOrder', [SupplierController::class, "getPurchaseOrder"])->name('getPurchaseOrder');
+Route::get('/getPoDelivery', [SupplierController::class, "getPoDelivery"])->name('getPoDelivery');
+Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('getPoInvoice');
+Route::get('/getPoReceipt', [SupplierController::class, "getPoReceipt"])->name('getPoReceipt');
 
 Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
 Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');

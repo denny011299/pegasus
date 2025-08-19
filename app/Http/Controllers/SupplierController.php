@@ -2,37 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderDelivery;
+use App\Models\PurchaseOrderDetailInvoice;
+use App\Models\PurchaseOrderReceipt;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
+    function PurchaseOrder(){
+        return view('Backoffice.Suppliers.Purchase_Order');
+    }
+
+    function PurchaseOrderDetail($id){
+        return view('Backoffice.Suppliers.Purchase_Order_Detail');
+    }
+
     function getPurchaseOrder(Request $req){
-        $data = [
-            [
-                'po_date' => '2025-07-20',
-                'po_number' => 'PO-2025-001',
-                'invoice_number' => 'INV-PO-001',
-                'supplier_name' => 'CV Mitra Sejahtera',
-                'total' => 9500000,
-                'status' => 2
-            ],
-            [
-                'po_date' => '2025-07-22',
-                'po_number' => 'PO-2025-002',
-                'invoice_number' => 'INV-PO-002',
-                'supplier_name' => 'PT Sumber Elektronik',
-                'total' => 13250000,
-                'status' => 2
-            ],
-            [
-                'po_date' => '2025-07-25',
-                'po_number' => 'PO-2025-003',
-                'invoice_number' => 'INV-PO-003',
-                'supplier_name' => 'UD Sinar Logam',
-                'total' => 7800000,
-                'status' => 3
-            ],
-        ];
+        $data = (new PurchaseOrder())->getPurchaseOrder();
+        return response()->json($data);
+    }
+
+    function getPoDelivery(Request $req){
+        $data = (new PurchaseOrderDelivery())->getPoDelivery();
+        return response()->json($data);
+    }
+
+    function getPoInvoice(Request $req){
+        $data = (new PurchaseOrderDetailInvoice())->getPoInvoice();
+        return response()->json($data);
+    }
+
+    function getPoReceipt(Request $req){
+        $data = (new PurchaseOrderReceipt())->getPoReceipt();
         return response()->json($data);
     }
 }

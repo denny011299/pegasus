@@ -39,6 +39,28 @@
                             Supplies</a>
                     </li>
                 @endif
+                @if (Route::is(['salesOrder']))
+                    <li>
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Sales Order</a>
+                    </li>
+                @endif
+                @if (Route::is(['salesOrderDetail']))
+                    <li>
+                        <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Back</a>
+                    </li>
+                @endif
+                @if (Route::is(['purchaseOrder']))
+                    <li>
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Purchase Order</a>
+                    </li>
+                @endif
+                @if (Route::is(['purchaseOrderDetail']))
+                    <li>
+                        <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Back</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

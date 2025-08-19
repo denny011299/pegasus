@@ -22,10 +22,10 @@
             },
             columns: [
                 { data: 'po_date' },
-                { data: 'po_number' },
-                { data: 'invoice_number' },
-                { data: 'supplier_name' },
-                { data: 'total' },
+                { data: 'po_reference' },
+                { data: 'po_invoice_number' },
+                { data: 'po_name' },
+                { data: 'po_total' },
                 { data: 'status_bayar' },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -52,12 +52,12 @@
             },
             autoWidth: false,
             columns: [
-                { data: 'order_date' },
-                { data: 'due_date' },
-                { data: 'so_number' },
-                { data: 'invoice_number' },
-                { data: 'customer_name' },
-                { data: 'total' },
+                { data: 'so_order_date' },
+                { data: 'so_due_date' },
+                { data: 'so_reference' },
+                { data: 'so_invoice_number' },
+                { data: 'so_name' },
+                { data: 'so_total' },
                 { data: 'status_bayar' },
                 { data: 'action', class: "d-flex align-items-center" },
             ],
@@ -80,11 +80,11 @@
                 console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach(item => {
-                    if (item.status == 1){
+                    if (item.po_status == 1){
                         item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Belum Dibayar</span>`;
-                    } else if (item.status == 2){
+                    } else if (item.po_status == 2){
                         item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Menunggu Pembayaran</span>`;
-                    } else if (item.status == 3){
+                    } else if (item.po_status == 3){
                         item.status_bayar = `<span class="badge bg-danger" style="font-size: 12px">Jatuh Tempo</span>`;
                     }
                     item.action = `
@@ -109,11 +109,11 @@
                 console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach(item => {
-                    if (item.status == 1){
+                    if (item.so_status == 1){
                         item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Belum Dibayar</span>`;
-                    } else if (item.status == 2){
+                    } else if (item.so_status == 2){
                         item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Menunggu Pembayaran</span>`;
-                    } else if (item.status == 3){
+                    } else if (item.so_status == 3){
                         item.status_bayar = `<span class="badge bg-danger" style="font-size: 12px">Jatuh Tempo</span>`;
                     }
                     item.action = `

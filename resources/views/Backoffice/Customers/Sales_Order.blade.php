@@ -1,4 +1,4 @@
-<?php $page = 'stock'; ?>
+<?php $page = 'sales_order'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Stock
+                    Sales Order
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -24,16 +24,17 @@
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableStock">
+                                <table class="table table-center table-hover" id="tableSalesOrder">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Product ID</th>
-                                            <th>Product Name</th>
-                                            <th>Variant</th>
-                                            <th>SKU</th>
-                                            <th>Category</th>
-                                            <th>Stock</th>
-                                            <th>Merk</th>
+                                            <th>Customer Name</th>
+                                            <th>Reference</th>
+                                            <th>Date</th>
+                                            <th>Total Amount</th>
+                                            <th>Paid</th>
+                                            <th>Difference</th>
+                                            <th>Payment Status</th>
+                                            <th>Cashier</th>
                                             <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>
@@ -57,5 +58,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Customers/Sales_Order.js')}}"></script>
 @endsection

@@ -1,7 +1,7 @@
 <!-- Header -->
 @if (!Route::is(['index-three', 'index-four', 'index-five']))
     @if (!Route::is(['index-two']))
-        <div class="header header-one">
+        <div class="header header-one" style="background-color: #102c5c">
     @endif
     @if (Route::is(['index-two']))
         <div class="header header-two">
@@ -11,7 +11,7 @@
             class="d-inline-flex d-sm-inline-flex align-items-center d-md-inline-flex d-lg-none align-items-center device-logo">
             <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo2" alt="Logo" style="height: 70px">
         </a>
-        <div class="main-logo d-inline float-start d-lg-flex align-items-center d-none d-sm-none d-md-none">
+        <div class="main-logo d-inline float-start d-lg-flex align-items-center d-none d-sm-none d-md-none" style="background-color: #102c5c">
             <div class="logo-white">
                 <a href="{{ url('/') }}">
                     <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-blue"
@@ -65,7 +65,7 @@
         <!-- Flag -->
         <li class="nav-item dropdown has-arrow flag-nav">
             <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
-                <img src="{{ URL::asset('/assets/img/flags/us1.png') }}" alt="flag"><span>English</span>
+                <img src="{{ URL::asset('/assets/img/flags/us1.png') }}" alt="flag"><span style="color: white">English</span>
             </a>
             <div class="dropdown-menu dropdown-menu-end">
                 <a href="javascript:void(0);" class="dropdown-item">
@@ -208,7 +208,7 @@
                             'seo-settings',
                             'saas-settings',
                         ]))
-                        <img src="{{ URL::asset('/assets/img/profiles/avatar-07.jpg') }}" alt="img"
+                        <img src="{{ URL::asset('/assets/img/profiles/avatar-23.png') }}" alt="img"
                             class="profilesidebar">
                     @endif
                     @if (Route::is([
@@ -237,8 +237,8 @@
                     <span class="animate-circle"></span>
                 </span>
                 <span class="user-content">
-                    <span class="user-details">Admin</span>
-                    <span class="user-name">John Smith</span>
+                    <span class="user-details" style="color: white">Admin</span>
+                    <span class="user-name" style="color: white">John Smith</span>
                 </span>
             </a>
             <div class="dropdown-menu menu-drop-user">
@@ -323,7 +323,7 @@
             <!-- Header Menu -->
             <ul class="nav nav-tabs user-menu user-menu-five">
                 <!-- Flag -->
-                <li class="nav-item dropdown has-arrow flag-nav">
+                <li class="nav-item dropdown has-arrow flag-nav" style="color: white">
                     <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
                         <img src="{{ URL::asset('/assets/img/flags/us1.png') }}" alt="flag"><span>English</span>
                     </a>

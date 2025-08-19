@@ -216,7 +216,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Supplies</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Add Product</button>
                     </div>
                 </form>
             </div>
@@ -263,10 +263,23 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <div class="input-block mb-3">
+                                    <div class="input-block">
                                         <label>Stock<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="sup_stock"
-                                            placeholder="Enter Supplies Stock">
+                                        <div class="input-block mb-3 d-flex">
+                                            <div class="col-3">
+                                                <label>Dus</label>
+                                                <input type="text" class="form-control fill" id="sup_stock1"
+                                                placeholder="Enter Supplies Stock">
+                                            </div>
+                                            <div class="col-1 pt-4 fs-2 text-center">
+                                                =
+                                            </div>
+                                            <div class="col-3">
+                                                <label>Botol</label>
+                                                <input type="text" class="form-control fill" id="sup_stock2"
+                                                placeholder="Enter Supplies Stock">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -282,5 +295,469 @@
             </div>
         </div>
     </div>
+@endif
 
+@if (Route::is(['salesOrder']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_sales_order" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Sales Order</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block">
+                                            <label>Customer Name<span class="text-danger">*</span></label>
+                                            <select id="so_name" class="form-control fill"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="so_date">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block">
+                                            <label>Discount<span class="text-danger">*</span></label>
+                                            <select id="so_discount" class="form-control fill">
+                                                <option value="0" checked>0</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Delivery Cost<span class="text-danger">*</span></label>
+                                            <div class="input-group mb-3">
+                                                <span class="input-group-text">Rp </span>
+                                                <input type="text" class="form-control fill" id="so_cost" value="0" placeholder="20.000">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-block mb-3">
+                                        <label>SKU/Barcode<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="so_sku"
+                                        placeholder="SKU Product">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <table class="table table-center table-hover" id="tableSalesModal">
+                                        <thead>
+                                            <th>Product</th>
+                                            <th>Variant</th>
+                                            <th>SKU</th>
+                                            <th>Qty</th>
+                                            <th>Unit Price</th>
+                                            <th>Subtotal</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <div class="col-12 row pt-3">
+                                    <div class="col-6"></div>
+                                    <div class="col-6">
+                                        <div class="d-flex justify-content-between">
+                                            <p>Ppn</p>
+                                            <p>0</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <p>Diskon</p>
+                                            <p>0</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <p>Biaya Pengiriman</p>
+                                            <p>0</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <p>Grand Total</p>
+                                            <p>400000</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Add Sales Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if (Route::is(['salesOrderDetail']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_sales_delivery" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Delivery Notes</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12 row">
+                                    <div class="col-4">
+                                        <div class="input-block">
+                                            <label>Receiver Name<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill" id="sod_name">
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label>Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="sod_date">
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label>Phone Number<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill" id="sod_phone">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Address<span class="text-danger">*</span></label>
+                                            <textarea class="form-control fill" id="sod_address" cols="30" rows="5"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Description<span class="text-danger">*</span></label>
+                                            <textarea class="form-control fill" id="sod_desc" cols="30" rows="5"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <table class="table table-center table-hover" id="tableSalesDelivery">
+                                        <thead>
+                                            <th>Product</th>
+                                            <th>SKU</th>
+                                            <th>Category</th>
+                                            <th>Qty</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_sales_invoice" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Invoice</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="input-block">
+                                        <label>Invoice Number<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="soi_code">
+                                    </div>
+                                </div>
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Invoice Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="soi_date">
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Due Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="soi_due">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block">
+                                        <label>Amount<span class="text-danger">*</span></label>
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">Rp </span>
+                                            <input type="text" class="form-control fill" id="soi_total" value="0" placeholder="20.000">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Add Invoice</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if (Route::is(['purchaseOrder']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_purchase_order" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Purchase Order</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block">
+                                            <label>Supplier Name<span class="text-danger">*</span></label>
+                                            <select id="po_name" class="form-control fill"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="po_date">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Notes<span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="po_notes" cols="30" rows="5"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-block mb-3">
+                                        <label>Product Name<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="po_sku"
+                                        placeholder="Product Code">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <table class="table table-center table-hover" id="tablePurchaseModal">
+                                        <thead>
+                                            <th>Product</th>
+                                            <th>Qty</th>
+                                            <th>Purchase Price</th>
+                                            <th>Discount</th>
+                                            <th>Unit Cost</th>
+                                            <th>Subtotal</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <div class="col-12 row pt-3">
+                                    <div class="col-6"></div>
+                                    <div class="col-6">
+                                        <div class="d-flex justify-content-between">
+                                            <p>Ppn</p>
+                                            <p>0</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <p>Diskon</p>
+                                            <p>0</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <p>Biaya Pengiriman</p>
+                                            <p>0</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <p>Grand Total</p>
+                                            <p>320000</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Add Purchase Order</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if (Route::is(['purchaseOrderDetail']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_purchase_delivery" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Delivery Notes</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12 row">
+                                    <div class="col-4">
+                                        <div class="input-block">
+                                            <label>Receiver Name<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill" id="pod_name">
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label>Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="pod_date">
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label>Phone Number<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill" id="pod_phone">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Address<span class="text-danger">*</span></label>
+                                            <textarea class="form-control fill" id="pod_address" cols="30" rows="5"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Description<span class="text-danger">*</span></label>
+                                            <textarea class="form-control fill" id="pod_desc" cols="30" rows="5"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <table class="table table-center table-hover" id="tablePurchaseDelivery">
+                                        <thead>
+                                            <th>Product</th>
+                                            <th>SKU</th>
+                                            <th>Category</th>
+                                            <th>Qty</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_purchase_invoice" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Invoice</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="input-block">
+                                        <label>Invoice Number<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="poi_code">
+                                    </div>
+                                </div>
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Invoice Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="poi_date">
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Due Date<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="poi_due">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block">
+                                        <label>Amount<span class="text-danger">*</span></label>
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text">Rp </span>
+                                            <input type="text" class="form-control fill" id="poi_total" value="0" placeholder="20.000">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Add Invoice</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endif

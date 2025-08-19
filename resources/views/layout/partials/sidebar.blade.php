@@ -515,8 +515,8 @@
                     </li>
                     <!-- /Main -->
 
-                    <!-- Inventory -->
-                    <li class="menu-title"><span>Inventory</span></li>
+                    <!-- Master -->
+                    <li class="menu-title"><span>Master</span></li>
                     <li class="submenu">
                         <a href="#"><i class="fe fe-package"></i> <span> Products</span> <span
                                 class="menu-arrow"></span></a>
@@ -535,6 +535,26 @@
                         </ul>
                     </li>
                     <li class="submenu">
+                        <a href="#"><i class="fe fe-users"></i> <span> Customers</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
+                            {{-- <li><a href="{{ url('customer') }}"
+                                    class="{{ Request::is('customer') ? 'active' : '' }}">Customers</a></li> --}}
+                            <li><a href="{{ url('salesOrder') }}"
+                                    class="{{ Request::is('salesOrder') ? 'active' : '' }}">Sales Order</a></li>
+                        </ul>
+                    </li>
+                    <li class="submenu">
+                        <a href="#"><i class="fe fe-truck"></i> <span> Suppliers</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
+                            {{-- <li><a href="{{ url('supplier') }}"
+                                    class="{{ Request::is('supplier') ? 'active' : '' }}">Suppliers</a></li> --}}
+                            <li><a href="{{ url('purchaseOrder') }}"
+                                    class="{{ Request::is('purchaseOrder') ? 'active' : '' }}">Purchase Order</a></li>
+                        </ul>
+                    </li>
+                    <li class="submenu">
                         <a href="#"><i class="fe fe-briefcase"></i> <span> Inventory</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
@@ -550,7 +570,7 @@
                                     class="{{ Request::is('manageStock') ? 'active' : '' }}">Manage Stock</a></li>
                         </ul>
                     </li>
-                    <!-- /Inventory -->
+                    <!-- /Master -->
 
                     {{-- Report --}}
                     <li class="menu-title"><span>Reports</span></li>
