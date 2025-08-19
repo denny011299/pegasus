@@ -34,7 +34,7 @@
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="600">
-    <title>PEGASUS MANAGEMENT INVENTORY</title>
+    <title>Pegasus Management Inventory</title>
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="{{ URL::asset('/assets/pegasus_logo.jpg') }}">

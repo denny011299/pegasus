@@ -151,7 +151,7 @@
 @if (Route::is(['product']))
     <!-- modal -->
     <div class="modal modal-lg custom-modal fade" id="add_product" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
@@ -164,29 +164,24 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-12">
+                                <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Name<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="pr_name"
                                             placeholder="Enter Product Name">
                                     </div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>SKU<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="pr_sku"
-                                            placeholder="Enter SKU Name">
-                                    </div>
-                                </div>
-                                <div class="col-12">
+                                <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Category<span class="text-danger">*</span></label>
                                         <select class="form-control fill" id="pr_category">
-											
+											<option value="">Padat</option>
+											<option value="">Cair</option>
+											<option value="">Gas</option>
 										</select>
                                     </div>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Unit<span class="text-danger">*</span></label>
                                         <select class="form-control tagging fill" id="pr_unit" multiple="multiple">
@@ -194,19 +189,71 @@
 										</select>
                                     </div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Variant<span class="text-danger">*</span></label>
-                                        <select class="form-control tagging fill" id="pr_variant" multiple="multiple">
-											
-										</select>
+                                <hr>
+                                <div class="row mb-3">
+                                    <div class="col-8">
+                                        <label>Variant Product</label>
+                                    </div>
+                                    <div class="col-4 text-end">
+                                        <div class="row">
+                                            <div class="col-9">
+                                                <select name="" id="" class="form-select">
+                                                    <option value="">250 Ml</option>
+                                                    <option value="">500 Ml</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-3">
+                                                 <button class="btn btn-primary"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i></button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Merk<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="pr_merk"
-                                            placeholder="Enter Product Merk">
+                                <div class="table-responsive">
+
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <td>Name Variant</td>
+                                                <td>SKU</td>
+                                                <td>Price</td>
+                                                <td>Barcode</td>
+                                                <td class="text-center" style="width:15%">Action</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><input type="text" class="form-control" name="" id=""></td>
+                                                <td><input type="text" class="form-control" name="" id=""></td>
+                                                <td><input type="text" class="form-control" name="" id=""></td>
+                                                <td><input type="text" class="form-control" name="" id=""></td>
+                                                <td class="text-center d-flex align-items-center">
+                                                    <a class="p-2 btn-action-icon btn_delete mx-auto" data-id="${e[i].pr_id}" href="javascript:void(0);">
+                                                        <i data-feather="trash-2" class="feather-trash-2"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="col-12">
+                                <div class="input-block mb-3">
+                                    <label>Relasi Unit<span class="text-danger">*</span></label>
+                                    <div class="row">
+                                        <div class="col-2">
+                                            <label>Dus</label>
+                                            <input type="text" class="form-control fill" id="sup_stock1"
+                                            placeholder="Enter Supplies Stock">
+                                        </div>
+                                        <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
+                                            =
+                                        </div>
+                                        <div class="col-2">
+                                            <label>Botol</label>
+                                            <input type="text" class="form-control fill" id="sup_stock2"
+                                            placeholder="Enter Supplies Stock">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -264,7 +311,7 @@
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block">
-                                        <label>Stock<span class="text-danger">*</span></label>
+                                        <label>Relation Unit<span class="text-danger">*</span></label>
                                         <div class="input-block mb-3 d-flex">
                                             <div class="col-3">
                                                 <label>Dus</label>

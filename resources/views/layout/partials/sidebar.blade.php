@@ -540,6 +540,8 @@
                         <ul style="display: none;">
                             {{-- <li><a href="{{ url('customer') }}"
                                     class="{{ Request::is('customer') ? 'active' : '' }}">Customers</a></li> --}}
+                            <li><a href="/customers"
+                                    class="{{ Request::is('salesOrder') ? 'active' : '' }}">Customers</a></li>
                             <li><a href="{{ url('salesOrder') }}"
                                     class="{{ Request::is('salesOrder') ? 'active' : '' }}">Sales Order</a></li>
                         </ul>
@@ -578,6 +580,15 @@
                         <a href="#"><i class="fe fe-activity"></i> <span> Reports</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
+                                <li><a href="/reportBahanBaku"
+                                    class="{{ Request::is('reportBahanBaku') ? 'active' : '' }}">
+                                    Manage Supplies</a></li>
+                            <li><a href="/SuppliesReturn"
+                                    class="{{ Request::is('SuppliesReturn') ? 'active' : '' }}">
+                                    Supplies Return</a></li>
+                            <li><a href="/reportProduksi"
+                                    class="{{ Request::is('reportProduksi') ? 'active' : '' }}">
+                                    Production Report</a></li>
                             <li><a href="{{ url('profitLoss') }}"
                                     class="{{ Request::is('profitLoss') ? 'active' : '' }}">
                                     Profit & Loss</a></li>
@@ -593,6 +604,7 @@
                             <li><a href="{{ url('payReceive') }}"
                                     class="{{ Request::is('payReceive') ? 'active' : '' }}">
                                     Payables & Receiveables</a></li>
+                           
                         </ul>
                     </li>
                 </ul>

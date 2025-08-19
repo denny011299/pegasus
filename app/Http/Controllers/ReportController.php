@@ -60,4 +60,16 @@ class ReportController extends Controller
         $data = (new PettyCash())->getPettyCash();
         return response()->json($data);
     }
+    
+    function reportBahanBaku(){
+        return view('Backoffice.Reports.Bahan_Baku');
+    }
+    
+    function SuppliesReturn(){
+        return view('Backoffice.Reports.SuppliesReturn');
+    }
+    
+    function reportProduksi(){
+        return view('Backoffice.Reports.ReportProduksi');
+    }
 }

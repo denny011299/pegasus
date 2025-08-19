@@ -24,10 +24,10 @@
             </div>
             <div class="logo-color">
                 <a href="{{ url('/') }}">
-                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-blue" alt="Logo" style="height: 70px">
+                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-blue" alt="Logo" style="height: 50px">
                 </a>
                 <a href="{{ url('/') }}">
-                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-small" style="height: 70px"
+                    <img src="{{ URL::asset('/assets/pegasus_banner_small.png') }}" class="img-fluid logo-small" style="height: 50px"
                         alt="Logo">
                 </a>
             </div>

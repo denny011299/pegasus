@@ -1,9 +1,9 @@
 [
     {
-        "title": "Total Invoice",
+        "title": "Total Sales Order",
         "class": "bg-info-light",
         "icon": "receipt-item.svg",
-        "amount": "$298",
+        "amount": "298",
         "number_of_invoice": "02",
         "trending": {
             "value": "02",
@@ -11,7 +11,7 @@
         }
     },
     {
-        "title": "Outstanding",
+        "title": "Total Invoice",
         "class": "bg-primary-light",
         "icon": "transaction-minus.svg",
         "amount": "$325,215",
@@ -22,7 +22,7 @@
         }
     },
     {
-        "title": "Total Overdue",
+        "title": "Total Payment",
         "class": "bg-warning-light",
         "icon": "archive-book.svg",
         "amount": "$7825",
@@ -33,7 +33,7 @@
         }
     },
     {
-        "title": "Cancelled",
+        "title": "Total Spent",
         "class": "bg-primary-light",
         "icon": "clipboard-close.svg",
         "amount": "100",
@@ -44,7 +44,7 @@
         }
     },
     {
-        "title": "Draft",
+        "title": "Receivables",
         "class": "bg-green-light",
         "icon": "message-edit.svg",
         "amount": "$125,586",
@@ -55,7 +55,7 @@
         }
     },
     {
-        "title": "Recurring",
+        "title": "Sales Order Complete",
         "class": "bg-danger-light",
         "icon": "3d-rotate.svg",
         "amount": "$86,892",

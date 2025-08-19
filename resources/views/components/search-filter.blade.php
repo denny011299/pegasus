@@ -28,6 +28,96 @@
 <!-- /Search Filter -->
 @endif
 
+@if(Route::is(['SuppliesReturn']))
+<!-- Search Filter -->
+<div class="profit-menu card">
+    <div class="row card-body pb-0">
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>From</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" placeholder="01 Jan 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>To</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" placeholder="31 Mar 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-0"></div>
+        <div class="col-lg-2 col-md-6 col-sm-12">
+            <a class="btn btn-primary loss" href="#">
+                Run</a>
+        </div>
+    </div>
+</div>
+<!-- /Search Filter -->
+@endif
+
+@if(Route::is(['reportBahanBaku']))
+<!-- Search Filter -->
+<div class="profit-menu card">
+    <div class="row card-body pb-0">
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>From</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" placeholder="01 Jan 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>To</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" placeholder="31 Mar 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-0"></div>
+        <div class="col-lg-2 col-md-6 col-sm-12">
+            <a class="btn btn-primary loss" href="#">
+                Run</a>
+        </div>
+    </div>
+</div>
+<!-- /Search Filter -->
+@endif
+
+@if(Route::is(['reportProduksi']))
+<!-- Search Filter -->
+<div class="profit-menu card">
+    <div class="row card-body pb-0">
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>From</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" placeholder="01 Jan 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>To</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" placeholder="31 Mar 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 col-sm-0"></div>
+        <div class="col-lg-2 col-md-6 col-sm-12">
+            <a class="btn btn-primary loss" href="#">
+                Run</a>
+        </div>
+    </div>
+</div>
+<!-- /Search Filter -->
+@endif
+
 
 @if(Route::is(['inwardOutward']))
 <!-- Search Filter -->

@@ -247,4 +247,66 @@
     function closeModalDelete() {
         $('#modalDelete').modal("hide");
     }
+
+    
+    function autocompleteCity(id, modalParent = null,prov_id=null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteCity",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        "prov_id": prov_id,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "City Name",
+            closeOnSelect: true,
+            allowClear: true,
+            
+            width: "100%",
+            dir: "ltr",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
+    function autocompleteProv(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteProv",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Provinsi",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
 </script>

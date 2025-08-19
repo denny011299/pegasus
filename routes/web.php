@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('Backoffice.Dashboard.Dashboard-Admin');
 });
+Route::post('/autocompleteCity', [AutocompleteController::class, "autocompleteCity"])->name('autocompleteCity');
+Route::post('/autocompleteProv', [AutocompleteController::class, "autocompleteProv"])->name('autocompleteProv');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
@@ -93,3 +96,15 @@ Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
 
 Route::get('/supplies',[ProductController::class,"Supplies"])->name('supplies');
 Route::get('/getSupplies',[ProductController::class,"getSupplies"])->name('getSupplies');
+
+Route::get('/customers',[CustomerController::class,"customer"])->name('customers');
+Route::get('/customerDetail/{id}',[CustomerController::class,"customerDetail"])->name('customerDetail');
+Route::get('/getCustomers', [CustomerController::class, "getCustomers"])->name('getCustomers');
+Route::get('/insertCustomer', [CustomerController::class, "viewInsertCustomer"])->name('viewInsertCustomer');
+Route::post('/insertCustomer', [CustomerController::class, "insertCustomer"])->name('insertCustomer');
+Route::post('/updateCustomer', [CustomerController::class, "updateCustomer"])->name('updateCustomer');
+Route::post('/deleteCustomer', [CustomerController::class, "deleteCustomer"])->name('deleteCustomer');
+
+Route::get('/reportBahanBaku', [ReportController::class, "reportBahanBaku"])->name('reportBahanBaku');
+Route::get('/reportProduksi', [ReportController::class, "reportProduksi"])->name('reportProduksi');
+Route::get('/SuppliesReturn', [ReportController::class, "SuppliesReturn"])->name('SuppliesReturn');

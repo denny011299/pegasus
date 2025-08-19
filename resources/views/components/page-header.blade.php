@@ -61,6 +61,16 @@
                         <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Back</a>
                     </li>
                 @endif
+                @if (Route::is(['customers']))
+                    <li>
+                        <a class="btn btn-import" href="javascript:void(0);"><span><i
+                                    class="fe fe-check-square me-2"></i>Import Customer</span></a>
+                    </li>
+                    <li>
+                        <a class="btn btn-primary" href="/insertCustomer"><i class="fa fa-plus-circle me-2"
+                                aria-hidden="true"></i>Add Customer</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

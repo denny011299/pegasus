@@ -19,11 +19,6 @@
                         </div>
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
-                        <p class="inovices-all">No of Invoice <span
-                                class="rounded-circle bg-light-gray">{{ $invoice['number_of_invoice'] }}</span>
-                        </p>
-                        <p class="inovice-trending text-success-light">{{ $invoice['trending']['value'] }} <span
-                                class="ms-2"><i class="{{ $invoice['trending']['direction'] }}"></i></span></p>
                     </div>
                 </div>
             </div>
