@@ -85,6 +85,12 @@
                             Roles</a>
                     </li>
                 @endif
+                @if (Route::is(['stockOpname']))
+                    <li>
+                        <a class="btn btn-primary" href="/detailStockOpname/1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Stock Opname</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

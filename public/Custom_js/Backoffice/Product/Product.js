@@ -38,7 +38,6 @@
                 { data: "pr_merk" },
                 { data: "unit_values" },
                 { data: "variant_values" },
-                { data: "barcode" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

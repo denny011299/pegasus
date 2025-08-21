@@ -50,7 +50,6 @@
                                             <th>Merk</th>
                                             <th>Unit</th>
                                             <th>Variant</th>
-                                            <th>Barcode</th>
                                             <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>

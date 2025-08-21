@@ -15,6 +15,7 @@ Route::get('/', function () {
 });
 Route::post('/autocompleteCity', [AutocompleteController::class, "autocompleteCity"])->name('autocompleteCity');
 Route::post('/autocompleteProv', [AutocompleteController::class, "autocompleteProv"])->name('autocompleteProv');
+Route::post('/autocompleteCountry', [AutocompleteController::class, "autocompleteCountry"])->name('autocompleteCountry');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
