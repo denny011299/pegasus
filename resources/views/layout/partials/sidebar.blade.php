@@ -550,8 +550,8 @@
                         <a href="#"><i class="fe fe-truck"></i> <span> Suppliers</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            {{-- <li><a href="{{ url('supplier') }}"
-                                    class="{{ Request::is('supplier') ? 'active' : '' }}">Suppliers</a></li> --}}
+                            <li><a href="{{ url('supplier') }}"
+                                    class="{{ Request::is('supplier') ? 'active' : '' }}">Suppliers</a></li>
                             <li><a href="{{ url('purchaseOrder') }}"
                                     class="{{ Request::is('purchaseOrder') ? 'active' : '' }}">Purchase Order</a></li>
                         </ul>

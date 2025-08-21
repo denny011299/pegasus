@@ -229,6 +229,25 @@
 <script src="{{ URL::asset('/assets/js/script.js') }}"></script>
 
 <script>
+    toastr.options = {
+        "closeButton": false,
+        "debug": false,
+        "newestOnTop": false,
+        "progressBar": false,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": true,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    }
+    
+      feather.replace();
     function notifikasi(simbol,title,deskripsi) {
         Swal.fire({
             icon: simbol,
@@ -244,10 +263,57 @@
         $('#modalDelete').modal("show");
     }
       
+    $('.btn-cancel').on("click",function(){
+        closeModalDelete();
+    })
+    
     function closeModalDelete() {
         $('#modalDelete').modal("hide");
     }
 
+    $(document).on("input", ".number-only", function() {
+        $(this).val($(this).val().replace(/[^0-9]/g, ''));
+        if ($(this).val()[0] === '0'&&$(this).val().length>1) {
+            $(this).val($(this).val().substring(1));
+        }
+    })
+
+    $(document).on("keyup", ".nominal_only", function() {
+        $(this).val(formatRupiah(convertToAngka($(this).val())));
+    });
+
+    function formatRupiah(angka, prefix) {
+        angka = angka.toString();
+        var number_string = angka.replace(/[^,\d]/g, "").toString(),
+            split = number_string.split(","),
+            sisa = split[0].length % 3,
+            rupiah = split[0].substr(0, sisa),
+            ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+        if (ribuan) {
+            separator = sisa ? "." : "";
+            rupiah += separator + ribuan.join(".");
+        }
+        rupiah = split[1] != undefined ? rupiah + "," + split[1] : rupiah;
+        return prefix == undefined ? rupiah : rupiah ? prefix + rupiah : "";
+    }
+
+    function convertToAngka(rupiah) {
+        return parseInt(rupiah.replace(/,.*|[^0-9]/g, ""), 10);
+    }
+
+    function LoadingButton(id) {
+        $(id).html(`
+            <div class="text-center h-100">
+                <div class="spinner-border" role="status">
+                </div>
+            </div>   
+        `).attr("disabled", true);
+    }
+
+    function ResetLoadingButton(id, text = null) {
+        $(id).html(`${text? text : 'Save Changes'}`).attr("disabled", false);
+        console.log("success");
+    }
     
     function autocompleteCity(id, modalParent = null,prov_id=null) {
         //search country dan city

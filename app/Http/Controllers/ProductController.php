@@ -108,4 +108,19 @@ class ProductController extends Controller
         $data = (new Supplies())->getSupplies();
         return response()->json($data);
     }
+
+    function insertSupplies(Request $req){
+        $data = $req->all();
+        return (new Supplies())->insertSupplies($data);
+    }
+
+    function updateSupplies(Request $req){
+        $data = $req->all();
+        return (new Supplies())->updateSupplies($data);
+    }
+
+    function deleteSupplies(Request $req){
+        $data = $req->all();
+        return (new Supplies())->deleteSupplies($data);
+    }
 }

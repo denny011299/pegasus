@@ -128,3 +128,8 @@ Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
 Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');
 Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash');
 Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
+
+// supplier
+Route::get('/suppliers',[SupplierController::class,"supplier"])->name('suppliers');
+Route::get('/supplierDetail/{id}',[SupplierController::class,"supplierDetail"])->name('supplierDetail');
+

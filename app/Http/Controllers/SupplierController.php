@@ -6,6 +6,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\PurchaseOrderReceipt;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
@@ -36,5 +37,30 @@ class SupplierController extends Controller
     function getPoReceipt(Request $req){
         $data = (new PurchaseOrderReceipt())->getPoReceipt();
         return response()->json($data);
+    }
+
+    // Supplier
+    public function Supplier(){
+        return view('Backoffice.Suppliers.Supplier');
+    }
+
+    function getSupplier(Request $req){
+        $data = (new Supplier())->getSupplier();
+        return response()->json($data);
+    }
+
+    function insertSupplier(Request $req){
+        $data = $req->all();
+        return (new Supplier())->insertSupplier($data);
+    }
+
+    function updateSupplier(Request $req){
+        $data = $req->all();
+        return (new Supplier())->updateSupplier($data);
+    }
+
+    function deleteSupplier(Request $req){
+        $data = $req->all();
+        return (new Supplier())->deleteSupplier($data);
     }
 }

@@ -291,14 +291,14 @@
                                 <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Name<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="sup_name"
+                                        <input type="text" class="form-control fill" id="supplies_name"
                                             placeholder="Enter Supplies Name">
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Unit<span class="text-danger">*</span></label>
-                                        <select class="form-control tagging fill" id="sup_unit" multiple="multiple">
+                                        <select class="form-control tagging fill" id="supplies_unit" multiple="multiple">
 											
 										</select>
                                     </div>
@@ -306,7 +306,7 @@
                                 <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Description</label>
-                                        <textarea class="form-control" id="sup_desc" cols="30" rows="5"></textarea>
+                                        <textarea class="form-control" id="supplies_desc" cols="30" rows="5"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -314,16 +314,16 @@
                                         <label>Relation Unit<span class="text-danger">*</span></label>
                                         <div class="input-block mb-3 d-flex">
                                             <div class="col-3">
-                                                <label>Dus</label>
-                                                <input type="text" class="form-control fill" id="sup_stock1"
+                                                <select class="form-control fill" id="supplies_unit1"></select>
+                                                <input type="text" class="form-control fill" id="supplies_stock1"
                                                 placeholder="Enter Supplies Stock">
                                             </div>
                                             <div class="col-1 pt-4 fs-2 text-center">
                                                 =
                                             </div>
                                             <div class="col-3">
-                                                <label>Botol</label>
-                                                <input type="text" class="form-control fill" id="sup_stock2"
+                                                <select class="form-control fill" id="supplies_unit2"></select>
+                                                <input type="text" class="form-control fill" id="supplies_stock2"
                                                 placeholder="Enter Supplies Stock">
                                             </div>
                                         </div>

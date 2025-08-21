@@ -1,4 +1,4 @@
-<?php $page = 'customers'; ?>
+<?php $page = 'suppliers'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -7,7 +7,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Customers
+                    Suppliers
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -22,14 +22,14 @@
                     <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover datatable">
+                                <table class="table table-center table-hover datatable" id="tableSupplier">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Customer Name</th>
-                                            <th>Customer Code</th>
+                                            <th>Supplier Name</th>
+                                            <th>Supplier Code</th>
                                             <th>Telphone </th>
                                             <th>City</th>
-                                            <th>Total Spent</th>
+                                            <th>Total Buy</th>
                                             <th>Created</th>
                                             <th class="no-sort">Actions</th>
                                         </tr>
@@ -46,4 +46,11 @@
         </div>
     </div>
     <!-- /Page Wrapper -->
+@endsection
+
+@section('custom_js')
+    <script>
+        var public = "{{ asset('') }}";    
+    </script>
+    <script src="{{asset('Custom_js/Backoffice/Suppliers/Supplier.js')}}"></script>
 @endsection

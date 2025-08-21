@@ -8,7 +8,7 @@
             <!-- Page Header -->
             <div class="page-header">
                 <div class="content-page-header">
-                    <h5>supplier Details</h5>
+                    <h5>Supplier Details</h5>
                 </div>
             </div>
             <!-- /Page Header -->
