@@ -1,5 +1,16 @@
 <?php $page = 'supplier-details'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        .supplier-details-cont{
+            padding: 20px;
+        }
+
+        i .fe{
+            width: 100px
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -15,11 +26,11 @@
 
             <div class="card supplier-details-group">
                 <div class="card-body">
-                    <div class="row align-items-center">
+                    <div class="row align-items-center pt-2">
                         <div class="col-xl-3 col-lg-4 col-md-6 col-12">
                             <div class="supplier-details">
                                 <div class="d-flex align-items-center">
-                                    <span class="supplier-widget-img d-inline-flex">
+                                    <span class="supplier-widget-img d-inline-flex" style="width: 60px">
                                         <img class="rounded-circle"
                                             src="{{ URL::asset('/assets/img/profiles/avatar-14.jpg') }}" alt="profile-img">
                                     </span>
@@ -145,4 +156,12 @@
         </div>
     </div>
     <!-- /Page Wrapper -->
+@endsection
+
+@section('custom_js')
+    <script>
+        var supplier_id = "{{ $data['supplier_id'] }}";  
+        var public = "{{ asset('') }}";
+    </script>
+    <script src="{{asset('Custom_js/Backoffice/Suppliers/Supplier_Detail.js')}}"></script>
 @endsection

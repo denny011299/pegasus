@@ -11,14 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('suppliers', function (Blueprint $table) {
-            $table->id('supplier_id');
-            $table->string('supplier_name', 255);
-            $table->string('supplier_code', 50)->unique();
-            $table->string('supplier_phone', 50)->nullable();
-            $table->text('supplier_address')->nullable();
-            $table->integer('city_id');
-            $table->string('supplier_image', 255)->nullable();
+        Schema::create('supplies_relations', function (Blueprint $table) {
+            $table->id('sr_id');
+            $table->integer('su_id_1');
+            $table->integer('su_id_2');
+            $table->decimal('sr_value_1', 10, 2)->default(0);
+            $table->decimal('sr_value_2', 10, 2)->default(0);
             $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive');
             $table->timestamps();
         });
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('suppliers');
+        Schema::dropIfExists('supplies_relations');
     }
 };

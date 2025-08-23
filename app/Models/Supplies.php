@@ -27,6 +27,15 @@ class Supplies extends Model
         $result->orderBy('created_at', 'asc');
         
         $result = $result->get();
+        foreach ($result as $key => $value) {
+            $value->unit = (new SuppliesUnit())->getSuppliesUnit(["supplies_id"=>$value->supplies_id]);
+            $temp = "";
+            foreach ($value->unit as $key => $unit) {
+                $temp.=$unit->unit_name;
+                if($key<count($value->unit)-1) $temp.=", ";
+            }
+            $value->unit_text = $temp;
+        }
         return $result;
     }
 
@@ -36,7 +45,7 @@ class Supplies extends Model
         $t->supplies_name = $data["supplies_name"];
         $t->supplies_desc = $data["supplies_desc"];
         $t->supplies_unit = $data["supplies_unit"];
-        $t->supplies_stock = $data["supplies_stock"];
+        $t->supplies_stock = 0;
         $t->save();
         return $t->supplies_id;
     }

@@ -14,16 +14,14 @@ class Supplier extends Model
     function getSupplier($data = []){
         $data = array_merge([
             "supplier_name"=>null,
-            "supplier_desc"=>null,
-            "supplier_unit"=>null,
-            "supplier_stock"=>null,
+            "supplier_code"=>null,
+            "city_id"=>null,
         ], $data);
 
         $result = Supplier::where('status', '=', 1);
         if($data["supplier_name"]) $result->where('supplier_name','like','%'.$data["supplier_name"].'%');
         if($data["supplier_code"]) $result->where('supplier_code','like','%'.$data["supplier_code"].'%');
-        if($data["supplier_phone"]) $result->where('supplier_phone','like','%'.$data["supplier_phone"].'%');
-        if($data["supplier_city"]) $result->where('supplier_city', '=', $data["supplier_city"]);
+        if($data["city_id"]) $result->where('city_id', '=', $data["city_id"]);
         $result->orderBy('created_at', 'asc');
         
         $result = $result->get();
@@ -34,9 +32,11 @@ class Supplier extends Model
     {
         $t = new Supplier();
         $t->supplier_name = $data["supplier_name"];
-        $t->supplier_code = $data["supplier_code"];
+        $t->supplier_code = $this->generateSupplierID();
         $t->supplier_phone = $data["supplier_phone"];
-        $t->supplier_city = $data["supplier_city"];
+        $t->supplier_address = $data["supplier_address"];
+        $t->city_id = $data["city_id"];
+        if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
         $t->save();
         return $t->supplier_id;
     }
@@ -47,7 +47,9 @@ class Supplier extends Model
         $t->supplier_name = $data["supplier_name"];
         $t->supplier_code = $data["supplier_code"];
         $t->supplier_phone = $data["supplier_phone"];
-        $t->supplier_city = $data["supplier_city"];
+        $t->supplier_address = $data["supplier_address"];
+        $t->city_id = $data["city_id"];
+        if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
         $t->save();
         return $t->supplier_id;
     }
@@ -57,5 +59,13 @@ class Supplier extends Model
         $t = Supplier::find($data["supplier_id"]);
         $t->status = 0;
         $t->save();
+    }
+
+    function generateSupplierID()
+    {
+        $id  = self::max('supplier_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "SUP".str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

@@ -8,6 +8,8 @@ use App\Models\ProductCategory;
 use App\Models\ProductUnits;
 use App\Models\ProductVariants;
 use App\Models\Supplies;
+use App\Models\SuppliesRelation;
+use App\Models\SuppliesUnit;
 use App\Models\Unit;
 use App\Models\Variant;
 use Illuminate\Http\Request;
@@ -45,7 +47,9 @@ class ProductController extends Controller
     }
 
     function getUnit(Request $req){
-        $data = (new Unit())->getUnit();
+        $data = (new Unit())->getUnit([
+            "unit_name"=>$req->unit_name
+        ]);
         return response()->json($data);
     }
 
@@ -122,5 +126,39 @@ class ProductController extends Controller
     function deleteSupplies(Request $req){
         $data = $req->all();
         return (new Supplies())->deleteSupplies($data);
+    }
+
+    function insertSuppliesUnit(Request $req){
+        $suppliesId = $req->supplies_id;
+        $units = json_decode($req->units, true);
+        $idUnits = [];
+
+        foreach ($units as $u) {
+            $data = [
+                "supplies_id" => $suppliesId,
+                "unit_id" => $u,
+                "status" => 1
+            ];
+            $idUnits[] = (new SuppliesUnit())->insertSuppliesUnit($data);
+        }
+
+        return response()->json(["id_units" => $idUnits]);
+    }
+
+    function insertSuppliesRelation(Request $req){
+        $relations = json_decode($req->input('relations'), true);
+
+        foreach ($relations as $rel) {
+            $data = [
+                "su_id_1" => $rel["su_id_1"],
+                "su_id_2" => $rel["su_id_2"],
+                "sr_value_1" => $rel["sr_value_1"],
+                "sr_value_2" => $rel["sr_value_2"],
+            ];
+
+            (new SuppliesRelation())->insertSuppliesRelation($data);
+        }
+
+        return response()->json(["success" => true]);
     }
 }

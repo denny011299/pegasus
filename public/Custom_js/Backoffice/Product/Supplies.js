@@ -1,17 +1,22 @@
     var mode=1;
     var table;
+    var idUnits = [];
     $(document).ready(function(){
         inisialisasi();
         refreshSupplies();
+        autocompleteUnit('#supplies_unit', '#add_supplies');
     });
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
+        idUnits = [];
         $('#add_supplies .modal-title').html("Create Supplies");
         $('#add_supplies input').val("");
+        $('#supplies_desc').val("");
         $('.is-invalid').removeClass('is-invalid');
-        $('#supplies_unit').tagsinput('removeAll');
+        $('#supplies_unit').val(null);
         $('#add_supplies').modal("show");
+        $('#supplies_unit').trigger('change');
     });
     
     function inisialisasi() {
@@ -31,8 +36,8 @@
             },
             columns: [
                 { data: "supplies_name" },
-                { data: "unit_values" },
-                { data: "supplies_desc" },
+                { data: "unit_text" },
+                { data: "desc" },
                 { data: "supplies_stock" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -56,6 +61,9 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
+                    if (e[i].supplies_desc == null) e[i].desc = '-';
+                    else e[i].desc = e[i].supplies_desc;
+
                     e[i].unit_values = "";
                     JSON.parse(e[i].supplies_unit).forEach((element,index) => {
                          e[i].unit_values += element;
@@ -81,6 +89,42 @@
             }
         });
     }
+
+    $(document).on('change', '#supplies_unit', function(){
+        let selectedUnits = $(this).val(); // ambil array value dari multiselect
+        idUnits = [];
+        selectedUnits.forEach(function(name) {
+            getUnit(name, function(id) {
+                idUnits.push(id);
+            })
+        });
+        console.log(selectedUnits);
+
+        // kosongkan dulu container biar gak dobel2
+        $(".relationContainer").empty(); 
+
+        // loop data terpilih
+        selectedUnits.forEach((item, index) => {
+            let html = '';
+            let nextItem = (index + 1 < selectedUnits.length) ? selectedUnits[index + 1] : "-"; 
+            
+            html = `
+            <div class="col-2 pb-3">
+                <label id="pu_id_${index+1}">${item}</label>
+                <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
+                placeholder="Enter Stock">
+            </div>
+            `;
+            if (nextItem != '-'){
+                html += `
+                    <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
+                    =
+                    </div>
+                `;
+            }
+            $(".relationContainer").append(html);
+        });
+    })
 
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
@@ -121,7 +165,61 @@
             headers: {
                 'X-CSRF-TOKEN': token
             },
-            success:function(e){      
+            success:function(e){   
+                let supplies_id = e;
+
+                // 1. Insert Supplies Unit
+                $.ajax({
+                    url: "/insertSuppliesUnit",
+                    method: "post",
+                    headers: { 'X-CSRF-TOKEN': token },
+                    data: {
+                        supplies_id: supplies_id,
+                        units: JSON.stringify(idUnits)
+                    },
+                    success: function (unitResp) {
+                        console.log(unitResp)
+                        let relations = [];
+                        let ids = unitResp.id_units;
+
+                        for (let i = 0; i < idUnits.length - 1; i++) {
+                            let nilai1 = parseFloat($(`#supplies_stock${i+1}`).val()) || 1;
+                            let nilai2 = parseFloat($(`#supplies_stock${i+2}`).val()) || 1;
+
+                            let sr_value_1 = 1;
+                            let sr_value_2 = nilai2 / nilai1;
+
+                            relations.push({
+                                su_id_1: ids[i],
+                                su_id_2: ids[i+1],
+                                sr_value_1: sr_value_1,
+                                sr_value_2: sr_value_2
+                            });
+                        }
+
+                        // 2. Insert Supplies Relation
+                        $.ajax({
+                            url: "/insertSuppliesRelation",
+                            method: "post",
+                            headers: { 'X-CSRF-TOKEN': token },
+                            data: {
+                                supplies_id: supplies_id,
+                                relations: JSON.stringify(relations)
+                            },
+                            success: function () {
+                                ResetLoadingButton(".btn-save", 'Save changes');
+                            },
+                            error: function (e) {
+                                console.log(e);
+                                ResetLoadingButton(".btn-save", 'Save changes');
+                            }
+                        });
+                    },
+                    error: function (e) {
+                        console.log(e);
+                        ResetLoadingButton(".btn-save", 'Save changes');
+                    }
+                });
                 ResetLoadingButton(".btn-save", 'Save changes');   
                 afterInsert();
             },
@@ -139,6 +237,18 @@
         refreshSupplies();
     }
 
+    function getUnit(unitName, callback) {
+        $.ajax({
+            url: "/getUnit",
+            method: "get",
+            headers: { "X-CSRF-TOKEN": token },
+            data: { unit_name: unitName },
+            success: function(resp) {
+                callback(resp[0].unit_id);
+            }
+        });
+    }
+
     // $(document).on("keyup","#filter_supplies_name",function(){
     //     refreshSupplies();
     // });
@@ -147,15 +257,71 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableSupplies').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
+        idUnits = [];
         $('#add_supplies .modal-title').html("Update Supplies");
         $('#add_supplies input').empty().val("");
-        $('#supplies_unit').tagsinput('removeAll');
+        $('#supplies_unit').val(null);
         $('#supplies_name').val(data.supplies_name);
         $('#supplies_desc').val(data.supplies_desc);
-        data.supplies_unit.split(',').forEach(function(item) {
-            $('#supplies_unit').tagsinput('add', item.trim());
+
+        let units = [];
+        units = JSON.parse(data.supplies_unit);
+        units.forEach(val => {
+            if ($("#supplies_unit option[value='" + val + "']").length === 0) {
+                let newOption = new Option(val, val, true, true);
+                $("#supplies_unit").append(newOption).trigger('change');
+            }
+        });
+        units.forEach(function(u){
+            getUnit(u, function(id){
+                idUnits.push(id);
+            });
         });
 
+        $.ajax({
+            url: "/getSuppliesRelation",
+            method: "get",
+            data: { supplies_id: data.supplies_id },
+            headers: { "X-CSRF-TOKEN": token },
+            success: function(resp){
+                // resp misalnya [{su_id_1, su_id_2, sr_value_1, sr_value_2}]
+                $(".relationContainer").empty();
+
+                // render input stok berdasarkan units
+                units.forEach((item, index) => {
+                    let html = '';
+                    html = `
+                        <div class="col-2 pb-3">
+                            <label id="pu_id_${index+1}">${item}</label>
+                            <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
+                            placeholder="Enter Stock">
+                        </div>
+                    `;
+                    if (index < units.length - 1) {
+                        html += `
+                            <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
+                                =
+                            </div>
+                        `;
+                    }
+                    $(".relationContainer").append(html);
+                });
+
+                // isi nilai stock sesuai relasi
+                if(resp && resp.length > 0){
+                    let total = 1;
+                    for (let i = 0; i < resp.length; i++) {
+                        let nilai1 = resp[i].sr_value_1;
+                        let nilai2 = resp[i].sr_value_2;
+
+                        $(`#supplies_stock${i+1}`).val(nilai1 * total);
+                        total = total * nilai2;
+                        $(`#supplies_stock${i+2}`).val(total);
+                    }
+                }
+            }
+        });
+        
         $('#add_supplies').modal("show");
         $('#add_supplies').attr("supplies_id", data.supplies_id);
     });

@@ -16,6 +16,7 @@ Route::get('/', function () {
 Route::post('/autocompleteCity', [AutocompleteController::class, "autocompleteCity"])->name('autocompleteCity');
 Route::post('/autocompleteProv', [AutocompleteController::class, "autocompleteProv"])->name('autocompleteProv');
 Route::post('/autocompleteCountry', [AutocompleteController::class, "autocompleteCountry"])->name('autocompleteCountry');
+Route::post('/autocompleteUnit', [AutocompleteController::class, "autocompleteUnit"])->name('autocompleteUnit');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
@@ -92,6 +93,12 @@ Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
 
 Route::get('/supplies',[ProductController::class,"Supplies"])->name('supplies');
 Route::get('/getSupplies',[ProductController::class,"getSupplies"])->name('getSupplies');
+Route::post('/insertSupplies', [ProductController::class, "insertSupplies"])->name('insertSupplies');
+Route::post('/updateSupplies', [ProductController::class, "updateSupplies"])->name('updateSupplies');
+Route::post('/deleteSupplies', [ProductController::class, "deleteSupplies"])->name('deleteSupplies');
+
+Route::post('/insertSuppliesUnit',[ProductController::class,"insertSuppliesUnit"])->name('insertSuppliesUnit');
+Route::post('/insertSuppliesRelation',[ProductController::class,"insertSuppliesRelation"])->name('insertSuppliesRelation');
 
 Route::get('/user',[UserController::class,"user"])->name('user');
 Route::get('/getUser', [UserController::class, "getUser"])->name('getUser');
@@ -130,6 +137,6 @@ Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash'
 Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
 
 // supplier
-Route::get('/suppliers',[SupplierController::class,"supplier"])->name('suppliers');
+Route::get('/supplier',[SupplierController::class,"supplier"])->name('supplier');
 Route::get('/supplierDetail/{id}',[SupplierController::class,"supplierDetail"])->name('supplierDetail');
-
+Route::get('/insertSupplier', [SupplierController::class, "viewInsertSupplier"])->name('viewInsertSupplier');

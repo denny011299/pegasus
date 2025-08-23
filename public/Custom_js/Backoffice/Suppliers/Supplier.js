@@ -10,7 +10,6 @@
         $('#add_supplier .modal-title').html("Create Supplier");
         $('#add_supplier input').val("");
         $('.is-invalid').removeClass('is-invalid');
-        $('#supplier_unit').tagsinput('removeAll');
         $('#add_supplier').modal("show");
     });
     
@@ -19,6 +18,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

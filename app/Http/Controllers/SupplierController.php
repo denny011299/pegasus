@@ -44,8 +44,22 @@ class SupplierController extends Controller
         return view('Backoffice.Suppliers.Supplier');
     }
 
+    public function SupplierDetail($id){
+        // $param["data"] =(new Supplier())->getSupplier(["supplier_id"=>$id])[0];
+        $param["supplier_id"] =$id;
+        return view('Backoffice.Suppliers.Supplier_Detail')->with($param);
+    }
+
+    function viewInsertSupplier() {
+        $param["mode"] =1;
+        $param["data"] =[];
+        return view('Backoffice.Suppliers.insertSupplier')->with($param);
+    }
+
     function getSupplier(Request $req){
-        $data = (new Supplier())->getSupplier();
+        $data = (new Supplier())->getSupplier([
+            "supplier_id" => $req->supplier_id
+        ]);
         return response()->json($data);
     }
 

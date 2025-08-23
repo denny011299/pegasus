@@ -11,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_relations', function (Blueprint $table) {
-            $table->id();
+        Schema::create('supplies_units', function (Blueprint $table) {
+            $table->id('su_id');
+            $table->integer('unit_id');
+            $table->integer('supplies_id');
+            $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive');
             $table->timestamps();
         });
     }
@@ -22,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_relations');
+        Schema::dropIfExists('supplies_units');
     }
 };

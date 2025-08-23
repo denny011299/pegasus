@@ -298,9 +298,7 @@
                                 <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Unit<span class="text-danger">*</span></label>
-                                        <select class="form-control tagging fill" id="supplies_unit" multiple="multiple">
-											
-										</select>
+                                        <select id="supplies_unit" class="fill" multiple="multiple" name="units[]"></select>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -312,17 +310,17 @@
                                 <div class="col-12">
                                     <div class="input-block">
                                         <label>Relation Unit<span class="text-danger">*</span></label>
-                                        <div class="input-block mb-3 d-flex">
-                                            <div class="col-3">
-                                                <select class="form-control fill" id="supplies_unit1"></select>
+                                        <div class="input-block mb-3 row relationContainer">
+                                            <div class="col-2">
+                                                <label id="pu_id_1">-</label>
                                                 <input type="text" class="form-control fill" id="supplies_stock1"
                                                 placeholder="Enter Supplies Stock">
                                             </div>
-                                            <div class="col-1 pt-4 fs-2 text-center">
+                                            <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
                                                 =
                                             </div>
-                                            <div class="col-3">
-                                                <select class="form-control fill" id="supplies_unit2"></select>
+                                            <div class="col-2">
+                                                <label id="pu_id_2">-</label>
                                                 <input type="text" class="form-control fill" id="supplies_stock2"
                                                 placeholder="Enter Supplies Stock">
                                             </div>

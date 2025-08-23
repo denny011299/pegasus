@@ -8,7 +8,10 @@ use App\Models\Coa;
 use App\Models\Provinces;
 use App\Models\Staff;
 use App\Models\Store;
+use App\Models\Unit;
 use Illuminate\Http\Request;
+
+use function Laravel\Prompts\alert;
 
 class AutocompleteController extends Controller
 {
@@ -51,6 +54,25 @@ class AutocompleteController extends Controller
 
         echo json_encode(array(
             "data" => $data_city
+        ));
+    }
+
+    public function autocompleteUnit(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Unit();
+        $data = $p->getUnit([
+            "unit_name" => $keyword
+        ]);
+        
+        foreach ($data as $r) {
+            $r->id = $r["unit_name"];
+            $r->text = $r["unit_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data
         ));
     }
 }

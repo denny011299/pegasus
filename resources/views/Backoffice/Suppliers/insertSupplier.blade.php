@@ -1,4 +1,4 @@
-<?php $page = 'add-customer'; ?>
+<?php $page = 'add-supplier'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -9,7 +9,7 @@
                     <!-- Page Header -->
                     <div class="page-header">
                         <div class="content-page-header">
-                            <h5>Add Customer</h5>
+                            <h5>Add Supplier</h5>
                         </div>
                     </div>
                     <!-- /Page Header -->
@@ -32,7 +32,7 @@
                                         </div>
                                         <div class="img-upload">
                                             <label class="btn btn-upload">
-                                                Upload <input type="file">
+                                                Upload <input type="file" class="form-control fill" id="supplier_image">
                                             </label>
                                         </div>
                                     </div>
@@ -40,20 +40,13 @@
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control" placeholder="Enter Name">
+                                                <input type="text" class="form-control fill" id="supplier_name" placeholder="Enter Name">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Email <span class="text-danger">*</span></label>
-                                                <input type="email" class="form-control"
-                                                    placeholder="Enter Email Address">
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Date Of Birth <span class="text-danger">*</span></label>
-                                                <input type="date" class="form-control"
+                                                <input type="email" class="form-control fill" id="supplier_address"
                                                     placeholder="Enter Email Address">
                                             </div>
                                         </div>
@@ -150,8 +143,8 @@
                                     </div>
                                 </div>
                                 <div class="add-customer-btns text-end">
-                                    <a href="{{ url('customers') }}" class="btn customer-btn-cancel">Cancel</a>
-                                    <a href="{{ url('customers') }}" class="btn customer-btn-save">Save Changes</a>
+                                    <a href="{{ url('supplier') }}" class="btn customer-btn-cancel">Cancel</a>
+                                    <a href="{{ url('supplier') }}" class="btn customer-btn-save">Save Changes</a>
                                 </div>
                             </form>
                         </div>

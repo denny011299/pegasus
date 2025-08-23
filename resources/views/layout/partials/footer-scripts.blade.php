@@ -1,6 +1,9 @@
 <!-- jQuery -->
 <script src="{{ URL::asset('/assets/js/jquery-3.7.1.min.js') }}"></script>
 
+{{-- Select2 --}}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <!-- Bootstrap Core JS -->
 <script src="{{ URL::asset('/assets/js/bootstrap.bundle.min.js') }}"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
@@ -371,6 +374,38 @@
             placeholder: "Provinsi",
             closeOnSelect: true,
             allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
+    function autocompleteUnit(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteUnit",
+                dataType: "json",
+                type: "post",
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                data: function(params) {
+                    return {
+                        keyword: params.term
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Unit Name",
+            closeOnSelect: true,
+            allowClear: true,
+            theme: "bootstrap-5",
             width: "100%",
             dropdownParent: modalParent ? $(modalParent) : "",
         });
