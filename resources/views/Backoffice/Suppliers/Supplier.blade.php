@@ -27,34 +27,14 @@
                                         <tr>
                                             <th>Supplier Name</th>
                                             <th>Supplier Code</th>
-                                            <th>Telphone </th>
+                                            <th>Telephone </th>
                                             <th>City</th>
                                             <th>Total Buy</th>
                                             <th>Created</th>
                                             <th class="no-sort">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                      <tr>
-                                        <td>CV Jaya Mulya</td>
-                                        <td>SUP001</td>
-                                        <td>085673627261</td>
-                                        <td>Malang</td>
-                                        <td>Rp 10.000.000</td>
-                                        <td>2025-08-01</td>
-                                        <td class="d-flex align-items-center">
-                                             <a class="me-2 btn-action-icon p-2 btn_view"  href="/supplierDetail/1">
-                                                <i data-feather="eye" class="feather-edit"></i>
-                                            </a>
-                                            <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
-                                                <i data-feather="edit" class="feather-edit"></i>
-                                            </a>
-                                            <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">
-                                                <i data-feather="trash-2" class="feather-trash-2"></i>
-                                            </a>
-                                        </td>
-                                      </tr>
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>

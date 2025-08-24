@@ -19,6 +19,7 @@ class Cities extends Model
         
         $pc = Cities::where('prov_id','=',$data["prov_id"]);
         if($data["city_name"]!=null) $pc->where("city_name","like","%".$data["city_name"]."%");
+        if($data["prov_id"]) $pc->where('prov_id', '=', $data["prov_id"]);
         return [
             "data"=>$pc->get(),
             "count"=>$pc->count()

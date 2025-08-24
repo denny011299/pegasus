@@ -43,7 +43,7 @@ class AutocompleteController extends Controller
 
         $p = new Provinces();
         $data_city = $p->get_data([
-            "prov_name" => $keyword
+            "prov_name" => $keyword,
         ]);
 
 

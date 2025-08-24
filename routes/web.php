@@ -137,6 +137,11 @@ Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash'
 Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
 
 // supplier
+Route::get('/getSupplier',[SupplierController::class,"getSupplier"])->name('getSupplier');
 Route::get('/supplier',[SupplierController::class,"supplier"])->name('supplier');
 Route::get('/supplierDetail/{id}',[SupplierController::class,"supplierDetail"])->name('supplierDetail');
-Route::get('/insertSupplier', [SupplierController::class, "viewInsertSupplier"])->name('viewInsertSupplier');
+Route::get('/insertSupplier', [SupplierController::class, "ViewInsertSupplier"])->name('ViewInsertSupplier');
+Route::post('/insertSupplier', [SupplierController::class, "insertSupplier"])->name('insertSupplier');
+Route::get('/updateSupplier/{id}', [SupplierController::class, "ViewUpdateSupplier"])->name('ViewUpdateSupplier');
+Route::post('/updateSupplier', [SupplierController::class, "updateSupplier"])->name('updateSupplier');
+Route::post('/deleteSupplier', [SupplierController::class, "deleteSupplier"])->name('deleteSupplier');

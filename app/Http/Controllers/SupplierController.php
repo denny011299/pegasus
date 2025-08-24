@@ -51,8 +51,14 @@ class SupplierController extends Controller
     }
 
     function viewInsertSupplier() {
-        $param["mode"] =1;
+        $param["mode"] =1; // 1 = insert, 2 = update
         $param["data"] =[];
+        return view('Backoffice.Suppliers.insertSupplier')->with($param);
+    }
+
+    function ViewUpdateSupplier($id) {
+        $param["mode"]=2; // 1 = insert, 2 = update
+        $param["data"] = (new Supplier())->getSupplier(["pr_id"=>$id])[0];
         return view('Backoffice.Suppliers.insertSupplier')->with($param);
     }
 
@@ -65,16 +71,33 @@ class SupplierController extends Controller
 
     function insertSupplier(Request $req){
         $data = $req->all();
+        if(isset($req->image)&&$req->image!="undefined")$data["supplier_image"] = $this->insertFile($req->image, "supplier");
         return (new Supplier())->insertSupplier($data);
     }
 
     function updateSupplier(Request $req){
         $data = $req->all();
+        if(isset($req->image)&&$req->image!="undefined")$data["supplier_image"] = $this->insertFile($req->image, "supplier");
         return (new Supplier())->updateSupplier($data);
     }
 
     function deleteSupplier(Request $req){
         $data = $req->all();
         return (new Supplier())->deleteSupplier($data);
+    }
+
+    //lain lain
+    public function insertFile($file, $type)
+    {
+        try {
+            $fileName = uniqid() . '.' . $file->extension();
+            $filePath = 'upload/' . $type . "/" . $fileName;
+
+            $file->move(public_path('upload/' . $type), $fileName);
+            return $filePath;
+        } catch (\Throwable $th) {
+            dd($th);
+            return -1;
+        }
     }
 }
