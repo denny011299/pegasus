@@ -20,35 +20,6 @@ $(document).ready(function(){
     }
 })
 
-// Function untuk insert customer baru
-function insertSupplier(formData, url) {
-    $.ajax({
-        url: url,
-        method: "POST",
-        data: formData,
-        headers: {
-            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
-        },
-        success: function (response) {
-            // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
-
-            if (response.success) {
-                if(mode==1)notifikasi('success', "Successful Insert", "Successful Supplier Added");
-                else if(mode==2)notifikasi('success', "Successful Update", "Successful Supplier Updated");
-                afterInsert();
-            } else {
-                notifikasi('error', "Gagal Insert", "Silahkan cek kembali inputan");
-            }
-        },
-        error: function (xhr) {
-            // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
-            console.log(xhr);
-        },
-    });
-}
-
 $(document).on("click", ".btn-save", function () {
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
@@ -96,9 +67,36 @@ $(document).on("click", ".btn-save", function () {
         fd.append(key, value);
     }
     fd.append('image', $('#supplier_image')[0].files[0]);
+    console.log($('#supplier_image')[0].files[0])
 
     LoadingButton($(this));
-    insertSupplier(fd, url);
+    $.ajax({
+        url: url,
+        method: "POST",
+        data: fd,
+        contentType: false,
+        processData: false,
+        headers: {
+            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+        },
+        success: function (response) {
+            // Re-enable button
+            ResetLoadingButton(".btn-save", 'Save changes');
+
+            if (response.success) {
+                if(mode==1)notifikasi('success', "Successful Insert", "Successful Supplier Added");
+                else if(mode==2)notifikasi('success', "Successful Update", "Successful Supplier Updated");
+                afterInsert();
+            } else {
+                notifikasi('error', "Gagal Insert", "Silahkan cek kembali inputan");
+            }
+        },
+        error: function (xhr) {
+            // Re-enable button
+            ResetLoadingButton(".btn-save", 'Save changes');
+            console.log(xhr);
+        },
+    });
 });
     
 $(document).on("change", "#supplier_image", function () {
