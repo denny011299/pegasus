@@ -9,7 +9,10 @@
                     <!-- Page Header -->
                     <div class="page-header">
                         <div class="content-page-header">
-                            <h5>Add Supplier</h5>
+                            <div class="d-flex justify-content-between w-100">
+                                <h5>Add Supplier</h5>
+                                <button class="btn btn-back">Back</button>
+                            </div>
                         </div>
                     </div>
                     <!-- /Page Header -->

@@ -80,7 +80,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSupplier').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus supplier ini?","btn-delete-supplier");
+        showModalDelete("Apakah yakin ingin menghapus supplier ini?","btn-delete-supplier");
         $('#btn-delete-supplier').attr("supplier_id", data.supplier_id);
     });
 

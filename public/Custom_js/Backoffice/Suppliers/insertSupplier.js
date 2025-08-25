@@ -3,12 +3,13 @@ autocompleteCity('#city_id');
 
 $(document).ready(function(){
     if(mode==2) {
+        console.log(data)
         $('#supplier_name').val(data.supplier_name);
         $('#supplier_email').val(data.supplier_email);
         $('#supplier_phone').val(data.supplier_phone);
         $('#supplier_notes').val(data.supplier_notes);
         $('#supplier_address').val(data.supplier_address);
-        $('#state_id').append(`<option value="${data.prov_id}">${data.prov_name}</option>`);
+        $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`);
         $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`);
         $('#supplier_zipcode').val(data.supplier_zipcode);
         $('#supplier_bank').val(data.supplier_bank);
@@ -25,9 +26,14 @@ $(document).on("click", ".btn-save", function () {
     $('.is-invalid').removeClass('is-invalid');
     var url = "/insertSupplier";
 
+    // check image
+    if (mode==2)$('#supplier_image').removeClass('fill');
+    else if (mode==1) $('#supplier_image').addClass('fill');
+
     var valid = 1;
     $(".fill").each(function(){
         if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+            console.log($(this))
             valid=-1;
             $(this).addClass('is-invalid');
         }
@@ -82,14 +88,9 @@ $(document).on("click", ".btn-save", function () {
         success: function (response) {
             // Re-enable button
             ResetLoadingButton(".btn-save", 'Save changes');
-
-            if (response.success) {
-                if(mode==1)notifikasi('success', "Successful Insert", "Successful Supplier Added");
-                else if(mode==2)notifikasi('success', "Successful Update", "Successful Supplier Updated");
-                afterInsert();
-            } else {
-                notifikasi('error', "Gagal Insert", "Silahkan cek kembali inputan");
-            }
+            if(mode==1)notifikasi('success', "Successful Insert", "Successful Supplier Added");
+            else if(mode==2)notifikasi('success', "Successful Update", "Successful Supplier Updated");
+            afterInsert();
         },
         error: function (xhr) {
             // Re-enable button
@@ -127,3 +128,7 @@ $('#state_id').on('change', function() {
 function afterInsert() {
     window.location.href = "/supplier";
 }
+
+$(document).on('click', '.btn-back', function(){
+    history.go(-1);
+})

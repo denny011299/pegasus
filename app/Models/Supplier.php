@@ -32,6 +32,9 @@ class Supplier extends Model
         foreach ($result as $key => $value) {
             $u = Cities::find($value->city_id);
             $value->city_name = $u->city_name;
+
+            $v = Provinces::find($value->state_id);
+            $value->state_name = $v ? $v->prov_name : null;
         }
         return $result;
     }
@@ -41,8 +44,10 @@ class Supplier extends Model
         $t = new Supplier();
         $t->supplier_name = $data["supplier_name"];
         $t->supplier_code = $this->generateSupplierID();
+        $t->supplier_email = $data["supplier_email"];
         $t->supplier_phone = $data["supplier_phone"];
         $t->supplier_address = $data["supplier_address"];
+        $t->supplier_notes = $data["supplier_notes"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
         $t->supplier_zipcode = $data["supplier_zipcode"];
@@ -61,9 +66,10 @@ class Supplier extends Model
     {
         $t = Supplier::find($data["supplier_id"]);
         $t->supplier_name = $data["supplier_name"];
-        $t->supplier_code = $data["supplier_code"];
+        $t->supplier_email = $data["supplier_email"];
         $t->supplier_phone = $data["supplier_phone"];
         $t->supplier_address = $data["supplier_address"];
+        $t->supplier_notes = $data["supplier_notes"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
         $t->supplier_zipcode = $data["supplier_zipcode"];

@@ -29,7 +29,7 @@
                                             <th>Supplier Code</th>
                                             <th>Telephone </th>
                                             <th>City</th>
-                                            <th>Total Buy</th>
+                                            <th>Total Payment</th>
                                             <th>Created</th>
                                             <th class="no-sort">Actions</th>
                                         </tr>

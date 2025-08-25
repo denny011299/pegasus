@@ -58,7 +58,7 @@ class SupplierController extends Controller
 
     function ViewUpdateSupplier($id) {
         $param["mode"]=2; // 1 = insert, 2 = update
-        $param["data"] = (new Supplier())->getSupplier(["pr_id"=>$id])[0];
+        $param["data"] = (new Supplier())->getSupplier(["supplier_id"=>$id])[0];
         return view('Backoffice.Suppliers.insertSupplier')->with($param);
     }
 
