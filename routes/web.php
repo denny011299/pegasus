@@ -121,7 +121,7 @@ Route::post('/deletePermission', [UserController::class, "deletePermission"])->n
 //customer
 Route::get('/customers',[CustomerController::class,"customer"])->name('customers');
 Route::get('/customerDetail/{id}',[CustomerController::class,"customerDetail"])->name('customerDetail');
-Route::get('/getCustomers', [CustomerController::class, "getCustomers"])->name('getCustomers');
+Route::get('/getCustomer', [CustomerController::class, "getCustomer"])->name('getCustomer');
 Route::get('/insertCustomer', [CustomerController::class, "viewInsertCustomer"])->name('viewInsertCustomer');
 Route::post('/insertCustomer', [CustomerController::class, "insertCustomer"])->name('insertCustomer');
 Route::post('/updateCustomer', [CustomerController::class, "updateCustomer"])->name('updateCustomer');

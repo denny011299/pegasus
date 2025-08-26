@@ -71,33 +71,18 @@ class SupplierController extends Controller
 
     function insertSupplier(Request $req){
         $data = $req->all();
-        if(isset($req->image)&&$req->image!="undefined")$data["supplier_image"] = $this->insertFile($req->image, "supplier");
+        if(isset($req->image)&&$req->image!="undefined")$data["supplier_image"] = (new HelperController)->insertFile($req->image, "supplier");
         return (new Supplier())->insertSupplier($data);
     }
 
     function updateSupplier(Request $req){
         $data = $req->all();
-        if(isset($req->image)&&$req->image!="undefined")$data["supplier_image"] = $this->insertFile($req->image, "supplier");
+        if(isset($req->image)&&$req->image!="undefined")$data["supplier_image"] = (new HelperController)->insertFile($req->image, "supplier");
         return (new Supplier())->updateSupplier($data);
     }
 
     function deleteSupplier(Request $req){
         $data = $req->all();
         return (new Supplier())->deleteSupplier($data);
-    }
-
-    //lain lain
-    public function insertFile($file, $type)
-    {
-        try {
-            $fileName = uniqid() . '.' . $file->extension();
-            $filePath = 'upload/' . $type . "/" . $fileName;
-
-            $file->move(public_path('upload/' . $type), $fileName);
-            return $filePath;
-        } catch (\Throwable $th) {
-            dd($th);
-            return -1;
-        }
     }
 }

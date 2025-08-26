@@ -34,7 +34,7 @@ class Supplier extends Model
             $value->city_name = $u->city_name;
 
             $v = Provinces::find($value->state_id);
-            $value->state_name = $v ? $v->prov_name : null;
+            $value->state_name = $v->prov_name;
         }
         return $result;
     }

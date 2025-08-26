@@ -32,7 +32,9 @@ class CustomerController extends Controller
         $data = (new SalesOrderDetailInvoice())->getSoInvoice();
         return response()->json($data);
     }
-     function customer() {
+
+    // Customer
+    function customer() {
         return view('Backoffice.Customer.customer');
     }
     
@@ -59,14 +61,14 @@ class CustomerController extends Controller
     function insertCustomer(Request $req)
     {
         $data = $req->all();
-        if(isset($req->main)&&$req->main!="undefined")$data["cus_img"] = (new HelperController)->insertFile($req->main, "customer");
+        if(isset($req->image)&&$req->image!="undefined")$data["cus_img"] = (new HelperController)->insertFile($req->image, "customer");
         return (new Customer())->insertCustomer($data);
     }
 
     function updateCustomer(Request $req)
     {
         $data = $req->all();
-        if(isset($req->main)&&$req->main!="undefined")$data["cus_img"] = (new HelperController)->insertFile($req->main, "customer");
+        if(isset($req->image)&&$req->image!="undefined")$data["cus_img"] = (new HelperController)->insertFile($req->image, "customer");
         (new Customer())->updateCustomer($data);
     }
 
