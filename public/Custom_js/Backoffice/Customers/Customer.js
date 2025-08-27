@@ -6,6 +6,11 @@
     });
     
     function inisialisasi() {
+        // Cek apakah DataTable sudah diinisialisasi sebelumnya
+        if ($.fn.DataTable.isDataTable("#tableCustomer")) {
+            // Destroy DataTable yang sudah ada
+            $("#tableCustomer").DataTable().destroy();
+        }
         table = $('#tableCustomer').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
@@ -44,7 +49,7 @@
             method: "get",
             success: function (e) {
                 if (!Array.isArray(e)) {
-                    e = e.original || [];
+                    e = e.original;
                 }
 
                 table.clear().draw(); 

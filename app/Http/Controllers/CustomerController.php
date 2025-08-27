@@ -55,7 +55,7 @@ class CustomerController extends Controller
             "cus_name"=>$req->cus_name,
             "city_id"=>$req->city_id
         ]);
-        return json_encode($data);
+        return response()->json($data);
     }
 
     function insertCustomer(Request $req)

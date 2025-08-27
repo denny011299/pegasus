@@ -538,10 +538,8 @@
                         <a href="#"><i class="fe fe-users"></i> <span> Customers</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            {{-- <li><a href="{{ url('customer') }}"
-                                    class="{{ Request::is('customer') ? 'active' : '' }}">Customers</a></li> --}}
-                            <li><a href="/customers"
-                                    class="{{ Request::is('salesOrder') ? 'active' : '' }}">Customers</a></li>
+                            <li><a href="{{ url('customer') }}"
+                                    class="{{ Request::is('customer') ? 'active' : '' }}">Customers</a></li>
                             <li><a href="{{ url('salesOrder') }}"
                                     class="{{ Request::is('salesOrder') ? 'active' : '' }}">Sales Order</a></li>
                         </ul>

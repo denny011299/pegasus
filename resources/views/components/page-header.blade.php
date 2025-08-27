@@ -61,7 +61,7 @@
                         <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Back</a>
                     </li>
                 @endif
-                @if (Route::is(['customers']))
+                @if (Route::is(['customer']))
                     <li>
                         <a class="btn btn-import" href="javascript:void(0);"><span><i
                                     class="fe fe-check-square me-2"></i>Import Customer</span></a>

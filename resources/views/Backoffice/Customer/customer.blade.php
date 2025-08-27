@@ -22,7 +22,7 @@
                     <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableCustomer">
+                                <table class="table table-center table-hover datatable" id="tableCustomer">
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Customer Name</th>
