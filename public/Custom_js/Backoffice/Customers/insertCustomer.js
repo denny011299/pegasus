@@ -6,6 +6,7 @@ $(document).ready(function(){
         console.log(data)
         $('#customer_name').val(data.customer_name);
         $('#customer_email').val(data.customer_email);
+        $('#customer_birthdate').val(data.customer_birthdate);
         $('#customer_phone').val(data.customer_phone);
         $('#customer_notes').val(data.customer_notes);
         $('#customer_address').val(data.customer_address);
@@ -48,6 +49,7 @@ $(document).on("click", ".btn-save", function () {
     param = {
         customer_name: $("#customer_name").val(),
         customer_email: $("#customer_email").val(),
+        customer_birthdate: $("#customer_birthdate").val(),
         customer_phone: $("#customer_phone").val(),
         customer_address: $("#customer_address").val(),
         customer_notes: $("#customer_notes").val(),
@@ -64,7 +66,7 @@ $(document).on("click", ".btn-save", function () {
     };
 
     if(mode==2){
-        url = "/updateSupplier";
+        url = "/updateCustomer";
         param.customer_id = data.customer_id;
     }
 
@@ -112,6 +114,7 @@ $(document).on("change", "#customer_image", function () {
         // ganti nama file
         $("#file_name").text(file.name);
     }
+    console.log($('#customer_image')[0].files[0])
 });
 
 $('#state_id').on('change', function() {
@@ -126,7 +129,7 @@ $('#state_id').on('change', function() {
 });
 
 function afterInsert() {
-    window.location.href = "/supplier";
+    window.location.href = "/customer";
 }
 
 $(document).on('click', '.btn-back', function(){

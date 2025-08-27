@@ -36,7 +36,7 @@
                                         <div class="img-upload">
                                             <label class="btn btn-upload">
                                                 Upload <input type="file" class="form-control fill input-gambar"
-                                                accept="image/png, image/jpeg" id="supplier_image">
+                                                accept="image/png, image/jpeg" id="customer_image">
                                             </label>
                                         </div>
                                     </div>
@@ -44,20 +44,20 @@
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill" id="supplier_name" placeholder="Enter Name">
+                                                <input type="text" class="form-control fill" id="customer_name" placeholder="Enter Name">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Email <span class="text-danger">*</span></label>
-                                                <input type="email" class="form-control fill" id="supplier_email"
+                                                <input type="email" class="form-control fill" id="customer_email"
                                                     placeholder="Enter Email Address">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Date Of Birth <span class="text-danger">*</span></label>
-                                                <input type="date" class="form-control fill" id="supplier_birthdate"
+                                                <input type="date" class="form-control fill" id="customer_birthdate"
                                                     placeholder="Enter Birthdate">
                                             </div>
                                         </div>
@@ -153,8 +153,8 @@
                                     </div>
                                 </div>
                                 <div class="add-customer-btns text-end">
-                                    <a href="{{ url('customer') }}" class="btn customer-btn-cancel">Cancel</a>
-                                    <a href="{{ url('customer') }}" class="btn customer-btn-save">Save Changes</a>
+                                    <a href="{{ url('customer') }}" class="btn btn-outline-secondary btn-cancel">Cancel</a>
+                                    <a class="btn btn-primary btn-save">Save Changes</a>
                                 </div>
                             </form>
                         </div>
@@ -164,4 +164,13 @@
         </div>
     </div>
     <!-- /Page Wrapper -->
+@endsection
+
+@section('custom_js')
+    <script>
+        var public = "{{ asset('') }}";
+        var mode="{{$mode}}";
+        var data=@json($data);
+    </script>
+    <script src="{{asset('Custom_js/Backoffice/Customers/insertCustomer.js')}}"></script>
 @endsection

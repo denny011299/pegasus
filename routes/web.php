@@ -124,6 +124,7 @@ Route::get('/customerDetail/{id}',[CustomerController::class,"customerDetail"])-
 Route::get('/getCustomer', [CustomerController::class, "getCustomer"])->name('getCustomer');
 Route::get('/insertCustomer', [CustomerController::class, "viewInsertCustomer"])->name('viewInsertCustomer');
 Route::post('/insertCustomer', [CustomerController::class, "insertCustomer"])->name('insertCustomer');
+Route::get('/updateCustomer/{id}', [CustomerController::class, "ViewUpdateCustomer"])->name('ViewUpdateCustomer');
 Route::post('/updateCustomer', [CustomerController::class, "updateCustomer"])->name('updateCustomer');
 Route::post('/deleteCustomer', [CustomerController::class, "deleteCustomer"])->name('deleteCustomer');
 

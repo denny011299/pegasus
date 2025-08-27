@@ -96,6 +96,6 @@ class Customer extends Model
         $id  = self::max('customer_id');
         if (is_null($id)) $id = 0;
         $id++;
-        return "CSO".str_pad($id, 4, "0", STR_PAD_LEFT);
+        return "CUS".str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

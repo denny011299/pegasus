@@ -48,6 +48,11 @@ class CustomerController extends Controller
         $param["data"] =[];
         return view('Backoffice.Customer.insertCustomer')->with($param);
     }
+    function ViewUpdateCustomer($id) {
+        $param["mode"]=2; // 1 = insert, 2 = update
+        $param["data"] = (new Customer())->getCustomer(["customer_id"=>$id])[0];
+        return view('Backoffice.Customer.insertCustomer')->with($param);
+    }
 
     function getCustomer(Request $req)
     {
@@ -61,14 +66,14 @@ class CustomerController extends Controller
     function insertCustomer(Request $req)
     {
         $data = $req->all();
-        if(isset($req->image)&&$req->image!="undefined")$data["cus_img"] = (new HelperController)->insertFile($req->image, "customer");
+        if(isset($req->image)&&$req->image!="undefined")$data["customer_image"] = (new HelperController)->insertFile($req->image, "customer");
         return (new Customer())->insertCustomer($data);
     }
 
     function updateCustomer(Request $req)
     {
         $data = $req->all();
-        if(isset($req->image)&&$req->image!="undefined")$data["cus_img"] = (new HelperController)->insertFile($req->image, "customer");
+        if(isset($req->image)&&$req->image!="undefined")$data["customer_image"] = (new HelperController)->insertFile($req->image, "customer");
         (new Customer())->updateCustomer($data);
     }
 
