@@ -101,6 +101,18 @@
                                 aria-hidden="true"></i>Add Supplier</a>
                     </li>
                 @endif
+                @if (Route::is(['cash']))
+                    <li>
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Cash</a>
+                    </li>
+                @endif
+                @if (Route::is(['pettyCash']))
+                    <li>
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Petty Cash</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

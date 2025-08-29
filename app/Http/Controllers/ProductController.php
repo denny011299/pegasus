@@ -103,6 +103,21 @@ class ProductController extends Controller
         return $data;
     }
 
+    function insertProduct(Request $req){
+        $data = $req->all();
+        return (new Product())->insertProduct($data);
+    }
+
+    function updateProduct(Request $req){
+        $data = $req->all();
+        return (new Product())->updateProduct($data);
+    }
+
+    function deleteProduct(Request $req){
+        $data = $req->all();
+        return (new Product())->deleteProduct($data);
+    }
+
     // Supplies
     public function Supplies(){
         return view('Backoffice.Product.Supplies');

@@ -283,6 +283,7 @@
 
     $(document).on("keyup", ".nominal_only", function() {
         $(this).val(formatRupiah(convertToAngka($(this).val())));
+        console.log($(this).val());
     });
 
     function formatRupiah(angka, prefix) {

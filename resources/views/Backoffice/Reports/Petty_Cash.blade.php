@@ -30,8 +30,7 @@
                                             <th>Date</th>
                                             <th>Description</th>
                                             <th>Debit</th>
-                                            <th>Credit 1</th>
-                                            <th>Credit 2</th>
+                                            <th>Credit</th>
                                             <th>Balance</th>
                                         </tr>
                                     </thead>

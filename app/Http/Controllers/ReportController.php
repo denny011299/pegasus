@@ -51,6 +51,11 @@ class ReportController extends Controller
         return response()->json($data);
     }
 
+    function insertCash(Request $req){
+        $data = $req->all();
+        return (new Cash())->insertCash($data);
+    }
+
     // Report Petty Cash
     public function PettyCash(){
         return view('Backoffice.Reports.Petty_Cash');
@@ -59,6 +64,11 @@ class ReportController extends Controller
     function getPettyCash(Request $req){
         $data = (new PettyCash())->getPettyCash();
         return response()->json($data);
+    }
+
+    function insertPettyCash(Request $req){
+        $data = $req->all();
+        return (new PettyCash())->insertPettyCash($data);
     }
     
     function reportBahanBaku(){

@@ -12,7 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cashes', function (Blueprint $table) {
-            $table->id();
+            $table->integerIncrements('cash_id');
+            $table->date('cash_date');
+            $table->tinyInteger('cash_type')->comment('1 = debit, 2 = credit 1, 3 = credit 2');
+            $table->string('cash_description', 255);
+            $table->integer('cash_nominal');
+            $table->integer('cash_balance');
+            $table->tinyInteger('status')->default(1)->comment('1 = active, 0 = inactive');
             $table->timestamps();
         });
     }

@@ -134,8 +134,10 @@ Route::get('/reportProduksi', [ReportController::class, "reportProduksi"])->name
 Route::get('/SuppliesReturn', [ReportController::class, "SuppliesReturn"])->name('SuppliesReturn');
 Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
 Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');
+Route::post('/insertCash',[ReportController::class,"insertCash"])->name('insertCash');
 Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash');
 Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
+Route::post('/insertPettyCash',[ReportController::class,"insertPettyCash"])->name('insertPettyCash');
 
 // supplier
 Route::get('/getSupplier',[SupplierController::class,"getSupplier"])->name('getSupplier');
