@@ -71,16 +71,9 @@
                                 aria-hidden="true"></i>Add Customer</a>
                     </li>
                 @endif
-                @if (Route::is(['user']))
-                    <li>
-                        <a class="btn btn-primary" href="javascript:void(0);" data-bs-toggle="modal"
-                            data-bs-target="#add_user"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
-                            User</a>
-                    </li>
-                @endif
                 @if (Route::is(['role']))
                     <li>
-                        <a class="btn btn-primary" href="#" data-bs-toggle="modal"
+                        <a class="btn btn-primary btnAdd" href="#" data-bs-toggle="modal"
                             data-bs-target="#add_role"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
                             Roles</a>
                     </li>
@@ -111,6 +104,12 @@
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
                             Petty Cash</a>
+                    </li>
+                @endif
+                @if (Route::is(['staff']))
+                    <li>
+                        <a class="btn btn-primary" href="/insertStaff"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Staff</a>
                     </li>
                 @endif
             </ul>

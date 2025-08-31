@@ -2,26 +2,27 @@
     var table;
     $(document).ready(function(){
         inisialisasi();
-        refreshCategory();
+        refreshRole();
     });
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_category .modal-title').html("Create Category");
-        $('#add_category input').val("");
+        $('#add_role .modal-title').html("Create Role");
+        $('#add_role input').val("");
         $('.is-invalid').removeClass('is-invalid');
-        $('#add_category').modal("show");
+        $('#add_role').modal("show");
     });
     
     function inisialisasi() {
-        table = $('#tableCategory').DataTable({
+        table = $('#tableRole').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Category",
+                searchPlaceholder: "Search Role",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -29,8 +30,9 @@
                 },
             },
             columns: [
-                { data: "category_name" },
-                { data: "category_date" },
+                { data: "role_id" },
+                { data: "role_name" },
+                { data: "role_date" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -41,9 +43,9 @@
         });
     }
 
-    function refreshCategory() {
+    function refreshRole() {
         $.ajax({
-            url: "/getCategory",
+            url: "/getRole",
             method: "get",
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -53,14 +55,12 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].category_date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].role_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].category_id}" data-bs-target="#edit-category">
-                            <i data-feather="edit" class="feather-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].category_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2" class="feather-trash-2"></i>
-                        </a>
+                        <a href="#" class="btn btn-greys btn_edit me-2" data-bs-toggle="modal"
+                            data-bs-target="#edit_role"><i class="fa fa-edit me-1"></i> Edit Role</a>
+                        <a href="/permission/${e[i].role_id}" class="btn btn-greys me-2"><i
+                            class="fa fa-shield me-1"></i> Permissions</a>
                     `;
                 }
 
@@ -68,7 +68,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load role:", err);
             }
         });
     }
@@ -76,10 +76,10 @@
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
-        var url ="/insertCategory";
+        var url ="/insertRole";
         var valid=1;
 
-        $("#add_category .fill").each(function(){
+        $("#add_role .fill").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
@@ -93,13 +93,13 @@
         };
 
         param = {
-            category_name:$('#category_name').val(),
+            role_name:$('#role_name').val(),
              _token:token
         };
 
         if(mode==2){
-            url="/updateCategory";
-            param.category_id = $('#add_category').attr("category_id");
+            url="/updateRole";
+            param.role_id = $('#add_role').attr("role_id");
         }
 
         LoadingButton($(this));
@@ -123,50 +123,22 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Category Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Category Updated");
-        refreshCategory();
+        if(mode==1)notifikasi('success', "Successful Insert", "Successful Role Added");
+        else if(mode==2)notifikasi('success', "Successful Update", "Successful Role Updated");
+        refreshRole();
     }
 
-    $(document).on("keyup","#filter_category_name",function(){
-        refreshCategory();
+    $(document).on("keyup","#filter_role_name",function(){
+        refreshRole();
     });
     //edit
     $(document).on("click",".btn_edit",function(){
-        var data = $('#tableCategory').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var data = $('#tableRole').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_category .modal-title').html("Update Category");
-        $('#add_category input').empty().val("");
-        $('#category_name').val(data.category_name);
+        $('#add_role .modal-title').html("Update Role");
+        $('#add_role input').empty().val("");
+        $('#role_name').val(data.role_name);
 
-        $('#add_category').modal("show");
-        $('#add_category').attr("category_id", data.category_id);
-    });
-
-    //delete
-    $(document).on("click",".btn_delete",function(){
-        var data = $('#tableCategory').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus category ini?","btn-delete-category");
-        $('#btn-delete-category').attr("category_id", data.category_id);
-    });
-
-
-    $(document).on("click","#btn-delete-category",function(){
-        $.ajax({
-            url:"/deleteCategory",
-            data:{
-                category_id:$('#btn-delete-category').attr('category_id'),
-                _token:token
-            },
-            method:"post",
-            success:function(e){
-                $('.modal').modal("hide");
-                refreshCategory();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete category");
-                
-            },
-            error:function(e){
-                console.log(e);
-            }
-        });
+        $('#add_role').modal("show");
+        $('#add_role').attr("role_id", data.role_id);
     });

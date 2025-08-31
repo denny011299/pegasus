@@ -1,4 +1,4 @@
-<?php $page = 'roles-permission'; ?>
+<?php $page = 'staff'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -7,7 +7,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Roles & Permission
+                    Staff
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -17,17 +17,18 @@
                     <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableRole">
+                                <table class="table table-center table-hover datatable" id="tableStaff">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>ID</th>
-                                            <th>Role Name</th>
-                                            <th>Created at</th>
+                                            <th>Staff Name</th>
+                                            <th>Phone</th>
+                                            <th>Email</th>
+                                            <th>Role </th>
+                                            <th>Created on</th>
                                             <th Class="no-sort">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
@@ -40,5 +41,8 @@
 @endsection
 
 @section('custom_js')
-    <script src="{{ asset('/Custom_js/Backoffice/User/Role.js') }}"></script>
+    <script>
+        var public = "{{ asset('') }}";    
+    </script>
+    <script src="{{asset('Custom_js/Backoffice/User/Staff.js')}}"></script>
 @endsection

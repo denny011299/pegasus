@@ -4,6 +4,7 @@ use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
@@ -100,11 +101,6 @@ Route::post('/deleteSupplies', [ProductController::class, "deleteSupplies"])->na
 Route::post('/insertSuppliesUnit',[ProductController::class,"insertSuppliesUnit"])->name('insertSuppliesUnit');
 Route::post('/insertSuppliesRelation',[ProductController::class,"insertSuppliesRelation"])->name('insertSuppliesRelation');
 
-Route::get('/user',[UserController::class,"user"])->name('user');
-Route::get('/getUser', [UserController::class, "getUser"])->name('getUser');
-Route::post('/insertUser', [UserController::class, "insertUser"])->name('insertUser');
-Route::post('/updateUser', [UserController::class, "updateUser"])->name('updateUser');
-Route::post('/deleteUser', [UserController::class, "deleteUser"])->name('deleteUser');
 
 Route::get('/role',[UserController::class,"role"])->name('role');
 Route::get('/getRole', [UserController::class, "getRole"])->name('getRole');
@@ -112,7 +108,7 @@ Route::post('/insertRole', [UserController::class, "insertRole"])->name('insertR
 Route::post('/updateRole', [UserController::class, "updateRole"])->name('updateRole');
 Route::post('/deleteRole', [UserController::class, "deleteRole"])->name('deleteRole');
 
-Route::get('/permission',[UserController::class,"permission"])->name('permission');
+Route::get('/permission/{id}',[UserController::class,"permission"])->name('permission');
 Route::get('/getPermission', [UserController::class, "getPermission"])->name('getPermission');
 Route::post('/insertPermission', [UserController::class, "insertPermission"])->name('insertPermission');
 Route::post('/updatePermission', [UserController::class, "updatePermission"])->name('updatePermission');
@@ -148,3 +144,13 @@ Route::post('/insertSupplier', [SupplierController::class, "insertSupplier"])->n
 Route::get('/updateSupplier/{id}', [SupplierController::class, "ViewUpdateSupplier"])->name('ViewUpdateSupplier');
 Route::post('/updateSupplier', [SupplierController::class, "updateSupplier"])->name('updateSupplier');
 Route::post('/deleteSupplier', [SupplierController::class, "deleteSupplier"])->name('deleteSupplier');
+
+// Staff
+Route::get('/staff',[UserController::class,"staff"])->name('staff');
+Route::get('/staffDetail/{id}',[UserController::class,"staffDetail"])->name('staffDetail');
+Route::get('/getStaff', [UserController::class, "getStaff"])->name('getStaff');
+Route::get('/insertStaff', [UserController::class, "viewInsertStaff"])->name('viewInsertStaff');
+Route::post('/insertStaff', [UserController::class, "insertStaff"])->name('insertStaff');
+Route::get('/updateStaff/{id}', [UserController::class, "ViewUpdateStaff"])->name('ViewUpdateStaff');
+Route::post('/updateStaff', [UserController::class, "updateStaff"])->name('updateStaff');
+Route::post('/deleteStaff', [UserController::class, "deleteStaff"])->name('deleteStaff');

@@ -90,8 +90,8 @@ $(document).on("click", ".btn-save", function () {
         success: function (response) {
             // Re-enable button
             ResetLoadingButton(".btn-save", 'Save changes');
-            if(mode==1)notifikasi('success', "Successful Insert", "Successful Supplier Added");
-            else if(mode==2)notifikasi('success', "Successful Update", "Successful Supplier Updated");
+            if(mode==1)notifikasi('success', "Successful Insert", "Successful Customer Added");
+            else if(mode==2)notifikasi('success', "Successful Update", "Successful Customer Updated");
             afterInsert();
         },
         error: function (xhr) {

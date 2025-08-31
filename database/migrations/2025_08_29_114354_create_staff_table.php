@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
-            $table->integerIncrements('role_id');
-            $table->string('role_name', 250);
-            $table->text('role_access', 250);
-            $table->integer('status')->default(1)->comment('1 = active, 0 = dead');
+        Schema::create('staff', function (Blueprint $table) {
+            $table->id();
             $table->timestamps();
         });
     }
@@ -25,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('staff');
     }
 };

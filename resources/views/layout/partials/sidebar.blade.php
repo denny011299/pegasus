@@ -607,7 +607,7 @@
                     </li>
                     <li class="menu-title"><span>User Management</span></li>
                         <li>
-                            <a class="{{ Request::is('user') ? 'active' : '' }}" href="/user"><i
+                            <a class="{{ Request::is('staff') ? 'active' : '' }}" href="/staff"><i
                                     class="fe fe-user"></i> <span>Users</span></a>
                         </li>
                         <li>

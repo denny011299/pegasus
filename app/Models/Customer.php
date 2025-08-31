@@ -63,7 +63,7 @@ class Customer extends Model
 
     function updateCustomer($data)
     {
-        $t = self::find($data["cus_id"]);
+        $t = self::find($data["customer_id"]);
         $t->customer_name = $data["customer_name"];
         $t->customer_email = $data["customer_email"];
         $t->customer_birthdate = $data["customer_birthdate"];
