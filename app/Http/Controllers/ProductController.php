@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductUnits;
+use App\Models\ProductVariant;
 use App\Models\ProductVariants;
 use App\Models\Supplies;
 use App\Models\SuppliesRelation;
@@ -102,10 +103,14 @@ class ProductController extends Controller
         $data = (new Product())->getProduct();
         return $data;
     }
-
     function insertProduct(Request $req){
         $data = $req->all();
-        return (new Product())->insertProduct($data);
+        $id = (new Product())->insertProduct($data);
+
+        foreach (json_decode($data['product_variant'],true) as $key => $value) {
+            $value['product_id'] = $id;
+            (new ProductVariant())->insertProductVariant($value);
+        }
     }
 
     function updateProduct(Request $req){

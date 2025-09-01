@@ -230,7 +230,9 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Custom JS -->
 <script src="{{ URL::asset('/assets/js/script.js') }}"></script>
-
+<script src="
+https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
+"></script>
 <script>
     toastr.options = {
         "closeButton": false,
@@ -380,19 +382,17 @@
         });
     }
 
-    function autocompleteUnit(id, modalParent = null) {
+    function autocompleteCategory(id, modalParent = null) {
         //search country dan city
         $(id).select2({
             ajax: {
-                url: "/autocompleteUnit",
+                url: "/autocompleteCategory",
                 dataType: "json",
                 type: "post",
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                },
-                data: function(params) {
+                data: function data(params) {
                     return {
-                        keyword: params.term
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
                     };
                 },
                 processResults: function processResults(data) {
@@ -403,10 +403,67 @@
                     };
                 },
             },
-            placeholder: "Unit Name",
+            placeholder: "Select Category",
             closeOnSelect: true,
             allowClear: true,
-            theme: "bootstrap-5",
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
+    function autocompleteVariant(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteVariant",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Select Variant",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
+    function autocompleteUnit(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteUnit",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Select Unit",
+            closeOnSelect: true,
+            allowClear: true,
             width: "100%",
             dropdownParent: modalParent ? $(modalParent) : "",
         });

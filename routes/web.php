@@ -3,6 +3,7 @@
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StockController;
@@ -17,7 +18,9 @@ Route::get('/', function () {
 Route::post('/autocompleteCity', [AutocompleteController::class, "autocompleteCity"])->name('autocompleteCity');
 Route::post('/autocompleteProv', [AutocompleteController::class, "autocompleteProv"])->name('autocompleteProv');
 Route::post('/autocompleteCountry', [AutocompleteController::class, "autocompleteCountry"])->name('autocompleteCountry');
+Route::post('/autocompleteCategory', [AutocompleteController::class, "autocompleteCategory"])->name('autocompleteCategory');
 Route::post('/autocompleteUnit', [AutocompleteController::class, "autocompleteUnit"])->name('autocompleteUnit');
+Route::post('/autocompleteVariant', [AutocompleteController::class, "autocompleteVariant"])->name('autocompleteVariant');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
@@ -88,6 +91,9 @@ Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('g
 
 Route::get('/product',[ProductController::class,"Product"])->name('product');
 Route::get('/getProduct',[ProductController::class,"getProduct"])->name('getProduct');
+Route::post('/insertProduct', [ProductController::class, "insertProduct"])->name('insertProduct');
+Route::post('/updateProduct', [ProductController::class, "updateProduct"])->name('updateProduct');
+Route::post('/deleteProduct', [ProductController::class, "deleteProduct"])->name('deleteProduct');
 
 Route::get('/stock',[StockController::class,"Stock"])->name('stock');
 Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
@@ -154,3 +160,18 @@ Route::post('/insertStaff', [UserController::class, "insertStaff"])->name('inser
 Route::get('/updateStaff/{id}', [UserController::class, "ViewUpdateStaff"])->name('ViewUpdateStaff');
 Route::post('/updateStaff', [UserController::class, "updateStaff"])->name('updateStaff');
 Route::post('/deleteStaff', [UserController::class, "deleteStaff"])->name('deleteStaff');
+
+
+//produksi
+Route::get('/bom',[ProductionController::class,"bom"])->name('bom');
+Route::get('/getBom', [ProductionController::class, "getBom"])->name('getBom');
+Route::post('/insertBom', [ProductionController::class, "insertBom"])->name('insertBom');
+Route::post('/updateBom', [ProductionController::class, "updateBom"])->name('updateBom');
+Route::post('/deleteBom', [ProductionController::class, "deleteBom"])->name('deleteBom');
+
+Route::get('/production',[ProductionController::class,"production"])->name('production');
+Route::get('/getProduction', [ProductionController::class, "getProduction"])->name('getProduction');
+Route::post('/insertProduction', [ProductionController::class, "insertProduction"])->name('insertProduction');
+Route::post('/updateProduction', [ProductionController::class, "updateProduction"])->name('updateProduction');
+Route::post('/deleteProduction', [ProductionController::class, "deleteProduction"])->name('deleteProduction');
+

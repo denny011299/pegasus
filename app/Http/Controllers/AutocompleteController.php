@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\CategoryCoa;
 use App\Models\Cities;
 use App\Models\Coa;
@@ -9,6 +10,7 @@ use App\Models\Provinces;
 use App\Models\Staff;
 use App\Models\Store;
 use App\Models\Unit;
+use App\Models\Variant;
 use Illuminate\Http\Request;
 
 use function Laravel\Prompts\alert;
@@ -36,14 +38,13 @@ class AutocompleteController extends Controller
         ));
     }
 
-
     public function autocompleteProv(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
 
         $p = new Provinces();
         $data_city = $p->get_data([
-            "prov_name" => $keyword,
+            "prov_name" => $keyword
         ]);
 
 
@@ -62,17 +63,56 @@ class AutocompleteController extends Controller
         $keyword = isset($req->keyword) ? $req->keyword : null;
 
         $p = new Unit();
-        $data = $p->getUnit([
-            "unit_name" => $keyword
+        $data_city = $p->getUnit([
+            "unit_short_name" => $keyword
         ]);
-        
-        foreach ($data as $r) {
-            $r->id = $r["unit_name"];
-            $r->text = $r["unit_name"];
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["unit_id"];
+            $r->text = $r["unit_short_name"];
         };
 
         echo json_encode(array(
-            "data" => $data
+            "data" => $data_city
+        ));
+    }
+    public function autocompleteCategory(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Category();
+        $data_city = $p->getCategory([
+            "category_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["category_id"];
+            $r->text = $r["category_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+    public function autocompleteVariant(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Variant();
+        $data_city = $p->getVariant([
+            "variant_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["variant_id"];
+            $r->text = $r["variant_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
         ));
     }
 }
