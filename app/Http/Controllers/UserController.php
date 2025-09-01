@@ -15,8 +15,7 @@ class UserController extends Controller
     }
 
     public function staffDetail($id){
-        // $param["data"] =(new Staff())->getStaff(["staff_id"=>$id])[0];
-        $param["staff_id"] =$id;
+        $param["data"] =(new Staff())->getStaff(["staff_id"=>$id])[0];
         return view('Backoffice.User.staffDetails')->with($param);
     }
 
