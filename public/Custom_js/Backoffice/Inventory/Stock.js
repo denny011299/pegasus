@@ -21,14 +21,11 @@
                 },
             },
             columns: [
-                { data: "stk_id" },
-                { data: "stk_name" },
-                { data: "stk_variant" },
-                { data: "stk_sku" },
-                { data: "stk_category" },
-                { data: "stk_stock" },
-                { data: "stk_merk" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "product_variant_sku" },
+                { data: "product_name" },
+                { data: "product_variant_name" },
+                { data: "product_category" },
+                { data: "product_variant_stock_text" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -50,6 +47,7 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
+                    e[i].product_variant_stock_text = `${e[i].product_variant_stock} ${e[i].product_unit}`;
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].stk_id}" data-bs-target="#edit-category">
                             <i data-feather="edit" class="feather-edit"></i>

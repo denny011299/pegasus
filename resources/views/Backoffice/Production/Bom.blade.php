@@ -1,21 +1,5 @@
-<?php $page = 'product'; ?>
+<?php $page = 'stock_opname'; ?>
 @extends('layout.mainlayout')
-@section('custom_css')
-    <style>
-        .bootstrap-tagsinput .tag {
-            margin-right: 2px;
-            color: #fff;
-            background-color: #082a58;
-            padding: .2em .4em;
-            border-radius: .2rem;
-        }
-        .bootstrap-tagsinput .tag [data-role="remove"] {
-            color: #ffffff !important;
-            margin-left: 5px;
-            cursor: pointer;
-        }
-    </style>
-@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -24,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Product
+                    Bill of Materials
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -40,18 +24,31 @@
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableProduct">
+                                <table class="table table-center table-hover" id="tableBom">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Product Name</th>
-                                            <th>Category</th>
+                                            <th>SKU</th>
+                                            <th>Product</th>
+                                            <th>Material</th>
                                             <th>Unit</th>
-                                            <th>Variant</th>
                                             <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        
+                                         <tr>
+                                            <td>MAT-WRP01</td>
+                                            <td>Antis</td>
+                                            <td>alcohol, Air, botol</td>
+                                            <td>Kg</td>
+                                            <td  class="d-flex align-items-center">
+                                                 <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
+                                                <i data-feather="edit" class="feather-edit"></i>
+                                                </a>
+                                                <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">
+                                                    <i data-feather="trash-2" class="feather-trash-2"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -70,5 +67,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Product/Product.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Opname.js')}}"></script>
 @endsection

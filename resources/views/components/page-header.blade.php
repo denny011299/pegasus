@@ -112,6 +112,18 @@
                             Staff</a>
                     </li>
                 @endif
+                  @if (Route::is(['bom']))
+                    <li>
+                        <a class="btn btn-primary btnAdd" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add
+                            Bill of Materials</a>
+                    </li>
+                @endif
+                @if (Route::is(['production']))
+                    <li>
+                        <a class="btn btn-primary btnAdd" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>
+                            Add Production</a>
+                    </li>
+                @endif
                 @if (Route::is(['staffDetail']))
                     <li>
                         <a class="btn btn-outline-secondary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Back</a>

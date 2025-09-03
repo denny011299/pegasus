@@ -571,7 +571,17 @@
                         </ul>
                     </li>
                     <!-- /Master -->
-
+                 <li class="menu-title"><span>Production</span></li>
+                    <li class="submenu">
+                        <li>
+                            <a class="{{ Request::is('bom') ? 'active' : '' }}" href="/bom"><i
+                                    class="fe fe-list"></i> <span>Bill of Materials</span></a>
+                        </li>
+                        <li>
+                            <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">
+                                <i class="fa-solid fa-gear"></i> <span>Production</span></a>
+                        </li>
+                    </li>
                     {{-- Report --}}
                     <li class="menu-title"><span>Reports</span></li>
                     <li class="submenu">

@@ -7,35 +7,67 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $table = "products";
-    protected $primaryKey = "pr_id";
+    protected $primaryKey = "product_id";
     public $timestamps = true;
     public $incrementing = true;
 
-    function getProduct($data = []){
-        $data = [
-            [
-                'pr_id'   => 0001,
-                'pr_name' => 'Case Samsung Mickey',
-                'pr_sku' => 'PT002',
-                'pr_category' => 'Elektronik',
-                'pr_merk' => 'Samsung',
-                'pr_unit' => json_encode(["Dus", "Pcs"]),
-                'pr_variant' => json_encode(["Merah", "Kuning", "Hitam"]),
-                'pr_barcode' => 'assets/img/barcodes/barcode-01.png',
-            ],
-            [
-                'pr_id'   => 0002,
-                'pr_name' => 'Lenovo Ideapad 3',
-                'pr_sku' => 'PT008',
-                'pr_category' => 'Elektronik',
-                'pr_merk' => 'Lenovo',
-                'pr_unit' => json_encode(["Pcs"]),
-                'pr_variant' => json_encode(["Putih", "Hitam"]),
-                'pr_barcode' => 'assets/img/barcodes/barcode-02.png',
-            ],
-        ];
-        return $data;
+    function getProduct($data = [])
+    {
+        $data = array_merge([
+            "product_name" => null,
+            "category_id"  => null
+        ], $data);
+
+        $result = Product::where("status", "=", 1);
+
+        if ($data["product_name"]) {
+            $result->where("product_name", "like", "%".$data["product_name"]."%");
+        }
+
+        if ($data["category_id"]) {
+            $result->where("category_id", "=", $data["category_id"]);
+        }
+
+        $result->orderBy("created_at", "asc");
+        $result= $result->get();
+        foreach ($result as $key => $value) {
+            $value->product_unit = json_decode($value->product_unit);
+            $value->pr_unit = Unit::whereIn('unit_id', $value->product_unit)->get();
+            $value->pr_variant = ProductVariant::where('product_id','=', $value->product_id)->get();
+            $value->product_category = Category::find($value->category_id)->category_name ?? "-";
+        }
+        return $result;
     }
 
-    
+    function insertProduct($data)
+    {
+        $t = new Product();
+        $t->product_name = $data["product_name"];
+        $t->category_id  = $data["category_id"];
+        $t->product_unit = $data["product_unit"];
+        $t->status       = $data["status"] ?? 1;
+        $t->save();
+
+        return $t->product_id;
+    }
+
+    function updateProduct($data)
+    {
+        $t = Product::find($data["product_id"]);
+        $t->product_name = $data["product_name"];
+        $t->category_id  = $data["category_id"];
+        $t->product_unit = $data["product_unit"];
+        $t->status       = $data["status"];
+        $t->save();
+
+        return $t->product_id;
+    }
+
+    function deleteProduct($data)
+    {
+        $t = Product::find($data["product_id"]);
+        $t->status = 0; // soft delete
+        $t->save();
+    }
+   
 }

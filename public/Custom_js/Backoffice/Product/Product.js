@@ -1,5 +1,10 @@
     var mode=1;
     var table;
+    
+    autocompleteVariant("#product_variant","#add_product");
+    autocompleteCategory("#product_category","#add_product");
+    autocompleteUnit("#product_unit","#add_product");
+
     $(document).ready(function(){
         inisialisasi();
         refreshProduct();
@@ -12,9 +17,38 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#pr_variant').tagsinput('removeAll');
         $('#pr_unit').tagsinput('removeAll');
+        $('#tbVariant').html("")
+         addRow();
         $('#add_product').modal("show");
     });
-    
+
+    $(document).on('click','.btnAddRow',function(){
+        if($('#product_variant').val()!=""&&$('#product_variant').val()!=null) {
+            var data = $('#product_variant').select2('data')[0];
+            data.name = JSON.parse(data.variant_attribute);
+            data.name.forEach(element => {
+                addRow(element);    
+            });
+            $('#product_variant').empty();
+        }
+       else addRow();
+    });
+    function addRow(names="") {
+        
+        $('#tbVariant').append(`
+            <tr class="row-variant">
+                <td><input type="text" class="form-control variant_name" name="" id="" value="${names}"></td>
+                <td><input type="text" class="form-control variant_sku" name="" id=""></td>
+                <td><input type="text" class="form-control variant_price nominal_only" name="" id=""></td>
+                <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder=""><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
+                <td class="text-center d-flex align-items-center">
+                    <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
+                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                        </a>
+                    </td>
+                </tr>    
+        `)
+    }
     function inisialisasi() {
         table = $('#tableProduct').DataTable({
             bFilter: true,
@@ -31,11 +65,8 @@
                 },
             },
             columns: [
-                { data: "pr_id" },
-                { data: "pr_name" },
-                { data: "pr_sku" },
-                { data: "pr_category" },
-                { data: "pr_merk" },
+                { data: "product_name" },
+                { data: "product_category" },
                 { data: "unit_values" },
                 { data: "variant_values" },
                 { data: "action", class: "d-flex align-items-center" },
@@ -61,20 +92,19 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].variant_values = "";
-                    JSON.parse(e[i].pr_variant).forEach((element,index) => {
-                         e[i].variant_values += element;
-                         if(index< JSON.parse(e[i].pr_variant).length-1){
+                    e[i].pr_variant.forEach((element,index) => {
+                         e[i].variant_values += element.product_variant_name;
+                         if(index< e[i].pr_variant.length-1){
                             e[i].variant_values += ", ";
                          }
                     });
                     e[i].unit_values = "";
-                    JSON.parse(e[i].pr_unit).forEach((element,index) => {
-                         e[i].unit_values += element;
-                         if(index< JSON.parse(e[i].pr_unit).length-1){
+                    e[i].pr_unit.forEach((element,index) => {
+                         e[i].unit_values += element.unit_name;
+                         if(index< e[i].pr_unit.length-1){
                             e[i].unit_values += ", ";
                          }
                     });
-                    e[i].barcode = `<img src="${e[i].pr_barcode}" class="me-2" style="width:70px">`;
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].pr_id}" data-bs-target="#edit-category">
                             <i data-feather="edit" class="feather-edit"></i>
@@ -108,19 +138,35 @@
         });
 
         if(valid==-1){
-            // notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             //ResetLoadingButton('.btn-save', 'Save changes');
             return false;
         };
-
+        
         param = {
-            // category_name:$('#category_name').val(),
+             product_name:$('#product_name').val(),
+             category_id:$('#product_category').val(),
+             product_unit:JSON.stringify($('#product_unit').val()),
              _token:token
         };
+        var temp=[];
+        $('.row-variant').each(function(){
+            
+            var variant = {
+                variant_name: $(this).find('.variant_name').val(),
+                variant_sku: $(this).find('.variant_sku').val(),
+                variant_price: convertToAngka($(this).find('.variant_price').val()),
+                variant_barcode: $(this).find('.variant_barcode').val(),
+                product_variant_id: $(this).find('.variant_id').val(),
+            };
+            temp.push(variant);
+        });
+        param.product_variant = JSON.stringify(temp);
+
 
         if(mode==2){
             url="/updateProduct";
-            // param.category_id = $('#add_product').attr("category_id");
+            param.product_id = $('#add_product').attr("product_id");
         }
 
         //LoadingButton($(this));
@@ -152,26 +198,57 @@
     // $(document).on("keyup","#filter_category_name",function(){
     //     refreshProduct();
     // });
+
     //edit
+    $(document).on("change","#product_unit",function(){
+        var data = $(this).select2("data");
+        $('#unit1').html("");
+        data.forEach(element => {
+            $('#unit1').append(`<li><a class="dropdown-item" href="#"></a></li>`);
+        });
+    });
+
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
         $('#add_product .modal-title').html("Update Product");
         $('#add_product input').empty().val("");
-        $('#pr_variant').tagsinput('removeAll');
-        $('#pr_unit').tagsinput('removeAll');
-        // $('#category_name').val(data.category_name);
 
+        $('#product_name').val(data.product_name);
+        $('#product_category').append(`<option value="${data.category_id}">${data.category_name}</option>`);
+        // $('#category_name').val(data.category_name);
+        $('#tbVariant').html("")
+        data.pr_variant.forEach(element => {
+            addRow(element.product_variant_name);
+            $('.row-variant').last().find('.variant_sku').val(element.product_variant_sku);
+            $('.row-variant').last().find('.variant_price').val(formatRupiah(element.product_variant_price));
+            $('.row-variant').last().find('.variant_barcode').val(element.product_variant_barcode);
+            $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
+        });
+        $('#product_unit').empty();
+        data.pr_unit.forEach(element => {
+           const newOption = new Option(element.unit_name, element.unit_id, false, false);
+           $('#product_unit').append(newOption).trigger('change');
+        });
         $('#add_product').modal("show");
         // $('#add_product').attr("category_id", data.category_id);
     });
-
+    
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        // showModalDelete("Apakah yakin ingin mengahapus category ini?","btn-delete-category");
+        showModalDelete("Apakah yakin ingin mengahapus product ini?","btn-delete-product");
+        $('#btn-delete-product').attr("product_id", data.product_id);
         $('#modalDelete').modal("show");
-        // $('#btn-delete-product').attr("category_id", data.category_id);
+    });
+
+    $(document).on("click",".btn_delete_row",function(){
+        if($('.row-variant').length<2) {
+            notifikasi('error', "Gagal Hapus", "Minimal 1 varian harus ada");
+            return false;
+        }
+        $(this).closest("tr").remove();
+
     });
 
 
@@ -179,14 +256,14 @@
         $.ajax({
             url:"/deleteProduct",
             data:{
-                // category_id:$('#btn-delete-product').attr('category_id'),
+                product_id:$('#btn-delete-product').attr('product_id'),
                 _token:token
             },
             method:"post",
             success:function(e){
                 $('.modal').modal("hide");
                 refreshProduct();
-                // notifikasi('success', "Berhasil Delete", "Berhasil delete category");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete category");
                 
             },
             error:function(e){

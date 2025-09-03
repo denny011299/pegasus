@@ -27,14 +27,11 @@
                                 <table class="table table-center table-hover" id="tableStock">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Product ID</th>
+                                            <th>SKU</th>
                                             <th>Product Name</th>
                                             <th>Variant</th>
-                                            <th>SKU</th>
                                             <th>Category</th>
                                             <th>Stock</th>
-                                            <th>Merk</th>
-                                            <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>

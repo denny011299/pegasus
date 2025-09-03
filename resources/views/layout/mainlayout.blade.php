@@ -38,7 +38,7 @@
 
     <!-- Favicon -->
     <link rel="shortcut icon" href="{{ URL::asset('/assets/pegasus_logo.jpg') }}">
-
+    
     {{-- Token --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
