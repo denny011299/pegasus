@@ -4,6 +4,7 @@ use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
@@ -154,3 +155,10 @@ Route::post('/insertStaff', [UserController::class, "insertStaff"])->name('inser
 Route::get('/updateStaff/{id}', [UserController::class, "ViewUpdateStaff"])->name('ViewUpdateStaff');
 Route::post('/updateStaff', [UserController::class, "updateStaff"])->name('updateStaff');
 Route::post('/deleteStaff', [UserController::class, "deleteStaff"])->name('deleteStaff');
+
+// Settings
+Route::get('/profiles',[SettingController::class,"Profiles"])->name('profiles');
+Route::get('/settings',[SettingController::class,"Settings"])->name('settings');
+Route::post('/getSetting', [SettingController::class, "getSetting"])->name('getSetting');
+Route::post('/insertSetting', [SettingController::class, "insertSetting"])->name('insertSetting');
+Route::post('/updateSetting', [SettingController::class, "updateSetting"])->name('updateSetting');

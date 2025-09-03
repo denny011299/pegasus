@@ -112,6 +112,11 @@
                             Staff</a>
                     </li>
                 @endif
+                @if (Route::is(['staffDetail']))
+                    <li>
+                        <a class="btn btn-outline-secondary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Back</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

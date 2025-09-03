@@ -246,7 +246,7 @@
                     <div class="subscription-menu">
                         <ul>
                             <li>
-                                <a class="dropdown-item" href="{{ url('profile') }}">Profile</a>
+                                <a class="dropdown-item" href="{{ url('profiles') }}">Profile</a>
                             </li>
                             <li>
                                 <a class="dropdown-item" href="{{ url('settings') }}">Settings</a>

@@ -55,7 +55,6 @@ class Staff extends Model
         $t->staff_emergency1 = $data["staff_emergency1"];
         $t->staff_emergency2 = $data["staff_emergency2"];
         $t->staff_address = $data["staff_address"];
-        $t->country_id = $data["country_id"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
         $t->staff_zipcode = $data["staff_zipcode"];
@@ -83,7 +82,6 @@ class Staff extends Model
         $t->staff_emergency1 = $data["staff_emergency1"];
         $t->staff_emergency2 = $data["staff_emergency2"];
         $t->staff_address = $data["staff_address"];
-        $t->country_id = $data["country_id"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
         $t->staff_zipcode = $data["staff_zipcode"];

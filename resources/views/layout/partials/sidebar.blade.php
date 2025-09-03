@@ -615,6 +615,19 @@
                                 href="/role"><i class="fe fe-clipboard"></i> <span>Roles &
                                     Permission</span></a>
                         </li>
+                    <li class="menu-title"><span>Settings</span></li>
+                    <li class="submenu">
+                        <a href="#"><i class="fe fe-settings"></i> <span> Settings</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
+                            <li><a href="{{ url('profiles') }}"
+                                    class="{{ Request::is('profiles') ? 'active' : '' }}">
+                                    Profiles</a></li>
+                            <li><a href="{{ url('settings') }}"
+                                    class="{{ Request::is('settings') ? 'active' : '' }}">
+                                    Settings</a></li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>

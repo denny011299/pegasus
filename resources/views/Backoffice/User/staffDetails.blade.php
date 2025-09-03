@@ -18,9 +18,11 @@
 
             <!-- Page Header -->
             <div class="page-header">
-                <div class="content-page-header">
-                    <h5>Staff Details</h5>
-                </div>
+                @component('components.page-header')
+                    @slot('title')
+                        Staff Details
+                    @endslot
+                @endcomponent
             </div>
             <!-- /Page Header -->
 
