@@ -22,6 +22,9 @@ Route::post('/autocompleteCountry', [AutocompleteController::class, "autocomplet
 Route::post('/autocompleteCategory', [AutocompleteController::class, "autocompleteCategory"])->name('autocompleteCategory');
 Route::post('/autocompleteUnit', [AutocompleteController::class, "autocompleteUnit"])->name('autocompleteUnit');
 Route::post('/autocompleteVariant', [AutocompleteController::class, "autocompleteVariant"])->name('autocompleteVariant');
+Route::post('/autocompleteBom', [AutocompleteController::class, "autocompleteBom"])->name('autocompleteBom');
+Route::post('/autocompleteProduct', [AutocompleteController::class, "autocompleteProduct"])->name('autocompleteProduct');
+Route::post('/autocompleteSupplies', [AutocompleteController::class, "autocompleteSupplies"])->name('autocompleteSupplies');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');

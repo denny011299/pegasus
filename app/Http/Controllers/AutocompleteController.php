@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bom;
 use App\Models\Category;
 use App\Models\CategoryCoa;
 use App\Models\Cities;
 use App\Models\Coa;
+use App\Models\Product;
 use App\Models\Provinces;
 use App\Models\Staff;
 use App\Models\Store;
+use App\Models\Supplies;
 use App\Models\Unit;
 use App\Models\Variant;
 use Illuminate\Http\Request;
@@ -109,6 +112,66 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["variant_id"];
             $r->text = $r["variant_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteBom(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Bom();
+        $data_city = $p->getBom([
+            "product_id" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["product_id"];
+            $r->text = $r["product_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteProduct(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Product();
+        $data_city = $p->getProduct([
+            "product_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["product_id"];
+            $r->text = $r["product_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteSupplies(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Supplies();
+        $data_city = $p->getSupplies([
+            "supplies_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["supplies_id"];
+            $r->text = $r["supplies_name"];
         };
 
         echo json_encode(array(

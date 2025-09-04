@@ -67,5 +67,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Opname.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Production/Bom.js')}}"></script>
 @endsection

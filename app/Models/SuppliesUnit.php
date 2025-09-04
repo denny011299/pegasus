@@ -16,10 +16,9 @@ class SuppliesUnit extends Model
             "supplies_id"=>null,
         ], $data);
 
-        $result = Supplies::where('status', '=', 1);
+        $result = SuppliesUnit::where('status', '=', 1);
         if($data["supplies_id"]) $result->where('supplies_id', '=', $data["supplies_id"]);
         $result->orderBy('created_at', 'asc');
-        
         $result = $result->get();
         foreach ($result as $key => $value) {
             $u = Unit::find($value->unit_id);

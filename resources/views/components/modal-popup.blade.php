@@ -1187,3 +1187,78 @@
         </div>
     </div>
 @endif
+
+@if (Route::is(['bom']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_bom" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Bill of Material</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-8">
+                                    <div class="input-block mb-3">
+                                        <label>Product<span class="text-danger">*</span></label>
+                                        <select class="form-select fill" id="product_id"></select>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-block mb-3">
+                                        <label>Qty Produksi<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill number-only" id="bom_qty" placeholder="Qty Produksi">
+                                    </div>
+                                </div>
+                                <div class="col-12 border py-3 mb-3">
+                                    <table class="table table-center table-hover" id="tableSupply" style="min-height: 15vh">
+                                        <thead>
+                                            <th>Supply Name</th>
+                                            <th>Qty</th>
+                                            <th>Unit</th>
+                                            <th class="no-sort">Action</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-block mb-3">
+                                        <label>Supply Name<span class="text-danger">*</span></label>
+                                        <select class="form-select fill" id="supplies_id"></select>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="input-block mb-3">
+                                        <label>Qty<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill number-only" id="bom_detail_qty" placeholder="Qty Supply">
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-block mb-3">
+                                        <label>Unit Name<span class="text-danger">*</span></label>
+                                        <select class="form-select fill" id="unit_id"></select>
+                                    </div>
+                                </div>
+                                <div class="col-1 pt-4">
+                                    <button class="btn btn-primary btn-add-supply">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Add Role</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
