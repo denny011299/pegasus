@@ -33,7 +33,7 @@ class Product extends Model
         foreach ($result as $key => $value) {
             $value->product_unit = json_decode($value->product_unit);
             $value->pr_unit = Unit::whereIn('unit_id', $value->product_unit)->get();
-            // $value->pr_variant = ProductVariant::where('product_id','=', $value->product_id)->get();
+            $value->pr_variant = ProductVariant::where('product_id','=', $value->product_id)->get();
             $value->product_category = Category::find($value->category_id)->category_name ?? "-";
         }
         return $result;

@@ -26,7 +26,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Role",
+                searchPlaceholder: "Search BoM",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -49,7 +49,7 @@
 
     function refreshBom() {
         $.ajax({
-            url: "/getRole",
+            url: "/getBom",
             method: "get",
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -61,10 +61,12 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].bom_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
-                        <a href="#" class="btn btn-greys btn_edit me-2" data-bs-toggle="modal"
-                            data-bs-target="#edit_role"><i class="fa fa-edit me-1"></i> Edit Role</a>
-                        <a href="/permission/${e[i].bom_id}" class="btn btn-greys me-2"><i
-                            class="fa fa-shield me-1"></i> Permissions</a>
+                        <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
+                            <i data-feather="edit" class="feather-edit"></i>
+                        </a>
+                        <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">
+                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                        </a>
                     `;
                 }
 
@@ -139,10 +141,48 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableBom').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_bom .modal-title').html("Update Role");
+        $('#add_bom .modal-title').html("Update Bill of Material");
         $('#add_bom input').empty().val("");
         $('#bom_name').val(data.bom_name);
 
         $('#add_bom').modal("show");
         $('#add_bom').attr("bom_id", data.bom_id);
+    });
+
+    $(document).on('click', '.btn-add-supply', function(){
+        $.ajax({
+            url:"/getSupplies",
+            data: {
+                supplies_id: $('#supplies_id').val()
+            },
+            method:"get",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){        
+                addRow(e[0]);
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    })
+    function addRow(e) {
+        console.log(e);
+        $('#tableSupply').append(`
+            <tr class="row-supply">
+                <td>${e.supplies_name}</td>
+                <td>${$('#bom_detail_qty').val()}</td>
+                <td>${e.supplies_id}</td>
+                <td class="text-center d-flex align-items-center">
+                    <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
+                            <i data-feather="trash-2" class="feather-trash"></i>
+                        </a>
+                    </td>
+                </tr>    
+        `)
+    }
+
+    $(document).on("click",".btn_delete_row",function(){
+        $(this).closest("tr").remove();
     });

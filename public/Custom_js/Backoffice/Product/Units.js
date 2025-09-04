@@ -116,11 +116,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                //ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Save changes');      
                 afterInsert();
             },
             error:function(e){
-                //ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Save changes');
                 console.log(e);
             }
         });
@@ -128,8 +128,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Category Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Category Updated");
+        if(mode==1)notifikasi('success', "Successful Insert", "Successful Unit Added");
+        else if(mode==2)notifikasi('success', "Successful Update", "Successful Unit Updated");
         refreshUnits();
     }
 

@@ -1,11 +1,6 @@
 <?php $page = 'product_issues'; ?>
 @extends('layout.mainlayout')
 @section('content')
-<style>
-    .page-header,.content-page-header{
-        margin-bottom: 10px!important;
-    }
-</style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -18,38 +13,6 @@
             @endcomponent
             <!-- /Page Header -->
 
-            <!-- Search Filter -->
-            @component('components.search-filter')
-            @endcomponent
-            <!-- /Search Filter -->
-
-            <ul class="nav nav-pills navtab-bg mb-5">
-                        <li class="nav-item">
-                            <a href="#all" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
-                                All
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#pending" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                                Pending
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#progress" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                                Progress
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#packing" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                                Packing
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#done" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                                Done
-                            </a>
-                        </li>
-                    </ul>
             <!-- Search Filter -->
             @component('components.search-filter')
             @endcomponent
@@ -368,5 +331,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Product_Issues.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Production/Production.js')}}"></script>
 @endsection

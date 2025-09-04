@@ -17,6 +17,7 @@ return new class extends Migration
             $table->integer('category_id');
             $table->text('product_unit');
             $table->integer('status')->default(1)->comment('1 = active, 0 = dead');
+            $table->timestamps();
         });
     }
 

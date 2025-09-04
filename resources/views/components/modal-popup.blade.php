@@ -259,7 +259,7 @@
 @endif
 
 @if (Route::is(['production']))
-    <div class="modal fade show" id="add-product-issues" aria-modal="true" role="dialog" style="display: block;" data-select2-id="select2-data-add-product-issues">
+    <div class="modal modal-lg custom-modal fade" id="addProduction" aria-modal="true" role="dialog" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content " data-select2-id="select2-data-13-pjoj">
                 <div class="page-wrapper-new p-0" data-select2-id="select2-data-12-7op7">
@@ -268,8 +268,7 @@
                             <div class="page-title">
                                 <h4>Add Production</h4>
                             </div>
-                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">×</span>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                             </button>
                         </div>
                         <div class="modal-body custom-modal-body" data-select2-id="select2-data-10-vbre">
@@ -324,9 +323,8 @@
 
 
                                 <div class="modal-footer-btn">
-                                    <button type="button" class="btn btn-cancel me-2" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="button" class="btn btn-submit btn-save">Create Product
-                                        Issues</button>
+                                    <a class="btn btn-secondary-outline btn-cancel me-2" data-bs-dismiss="modal">Cancel</button>
+                                    <a class="btn btn-primary btn-save">Add Production</button>
                                 </div>
                             </form>
                         </div>
@@ -1255,7 +1253,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Role</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Add BoM</button>
                     </div>
                 </form>
             </div>
