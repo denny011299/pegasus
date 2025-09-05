@@ -94,12 +94,12 @@ class ProductIssues extends Model
         // return $m;  
         if($m->pi_qty != $data["pi_qty"]){
             // kembalikan stock ke kondisi sebelum update
-            if($m->tipe_return == 1){
-                $m->product_variant_stock += $m->pi_qty;
-            }elseif($m->tipe_return == 2){
-                $m->ms_stock -= $m->pi_qty;
+            if($data["tipe_return"]  == 1){
+                $m->product_variant_stock += $t->pi_qty;
+            }elseif($data["tipe_return"] == 2){
+                $m->product_variant_stock -= $t->pi_qty;
             }
-
+            $m->save();
               // Return to Supplier
             if ($data["tipe_return"] == 1) {
                 if ($m->product_variant_stock - $data["pi_qty"] > 0) {
@@ -117,7 +117,7 @@ class ProductIssues extends Model
       
 
         $t->pi_type = $data["pi_type"];     
-        $t->pi_qty = $data["pi_qty"];    
+        $t->pi_qty = $data["pi_qty"];   
         $t->pi_date = $pi_date;    
         $t->product_variant_id = $data["product_variant_id"];    
         $t->pi_notes = $data["pi_notes"];    

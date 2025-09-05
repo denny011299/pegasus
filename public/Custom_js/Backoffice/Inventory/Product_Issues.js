@@ -113,11 +113,7 @@
     }
 
     function afterInsert() {
-        if (type == 1) {
-            getReturn();
-        } else if (type == 2) {
-            getDMG();
-        }
+       refreshProductIssues();
     }
 
     
@@ -231,10 +227,12 @@ $(document).on("click", ".btn_edit", function () {
     $("add-product-issues input").empty().val("");
     $("#pi_date").val(moment(data.pi_date).format("DD-MM-YYYY"));
     $("#pi_qty").val(data.pi_qty);
-    $("#pi_type").val(data.pi_type);
     $("#pi_notes").val(data.pi_notes);
     $("#product_id").append(
         `<option value="${data.product_variant_id}">${data.pr_name}</option>`
+    );
+    $("#pi_type").empty().append(
+        `<option value="${data.pi_type}">${data.pi_type==1?"Returned":"Damaged"}</option>`
     );
     $("#pi_type,#tipe_return,#product_id").prop("disabled", true);
 

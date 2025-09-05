@@ -5,6 +5,10 @@
     .content-page-header,.page-header {
         margin-bottom: 0px !important;
     }
+    .tab-content {
+        padding-top: 0px !important;
+        margin-top: 10px !important;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -35,7 +39,7 @@
             <!-- /Search Filter -->
 
             <!-- Table -->
-            <div class="row" style="margin-top: -3vh">
+            <div class="row" style="">
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
