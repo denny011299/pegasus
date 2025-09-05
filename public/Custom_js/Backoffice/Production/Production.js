@@ -1,3 +1,5 @@
+autocompleteBom('#product_id', '#addProduction')
+
 $(document).on('click', '.btnAdd', function(){
     mode=1;
     $('#addProduction .modal-title').html("Create Production");

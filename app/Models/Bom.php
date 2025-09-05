@@ -28,6 +28,9 @@ class Bom extends Model
         foreach ($result as $key => $value) {
             $u = Product::find($value->product_id);
             $value->product_name = $u->product_name;
+
+            $v = ProductVariant::where('product_id',"=", $value->product_id)->first();
+            $value->product_sku = $v->product_variant_sku;
         }
 
         return $result;

@@ -261,75 +261,38 @@
 @if (Route::is(['production']))
     <div class="modal modal-lg custom-modal fade" id="addProduction" aria-modal="true" role="dialog" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content " data-select2-id="select2-data-13-pjoj">
-                <div class="page-wrapper-new p-0" data-select2-id="select2-data-12-7op7">
-                    <div class="content" data-select2-id="select2-data-11-3nm7">
-                        <div class="modal-header border-0 custom-modal-header">
-                            <div class="page-title">
-                                <h4>Add Production</h4>
+            <div class="modal-content ">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Add Production</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Product</label>
+                                        <select class="form-select fill" id="product_id"></select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Qty</label>
+                                        <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Qty Production">
+                                    </div>
+                                </div>
                             </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                            </button>
-                        </div>
-                        <div class="modal-body custom-modal-body" data-select2-id="select2-data-10-vbre">
-                            <form action="coupons" data-select2-id="select2-data-9-hf07">
-                                <div class="row" data-select2-id="select2-data-8-h3m5">
-                                    <div class="col-lg-6" data-select2-id="select2-data-18-aspo">
-                                        <div class="mb-3" data-select2-id="select2-data-17-pu12">
-                                            <label class="form-label">Product</label>
-                                            <select class="form-select select2 fill select2Input select2-hidden-accessible" id="product_id" data-select2-id="select2-data-product_id" tabindex="-1" aria-hidden="true">
-                                            </select><span class="select2 select2-container select2-container--default select2-container--below" dir="ltr" data-select2-id="select2-data-2-pa3r" style="width: 100%;"><span class="selection"><span class="select2-selection select2-selection--single" role="combobox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-disabled="false" aria-labelledby="select2-product_id-container" aria-controls="select2-product_id-container"><span class="select2-selection__rendered" id="select2-product_id-container" role="textbox" aria-readonly="true" title="Cari Barcode/SKU/Nama Produk"><span class="select2-selection__placeholder">Cari Barcode/SKU/Nama Produk</span></span><span class="select2-selection__arrow" role="presentation"><b role="presentation"></b></span></span></span><span class="dropdown-wrapper" aria-hidden="true"></span></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="input-blocks mb-3">
-                                            <label>Date</label>
-
-                                            <div class="input-groupicon calender-input">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar info-img"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                                <input type="text" class="datetimepicker form-control" id="pi_date" placeholder="Select Date">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6" data-select2-id="select2-data-7-izii">
-                                        <div class="mb-3" data-select2-id="select2-data-6-3onx">
-                                            <label class="form-label">Type</label>
-                                            <select class="select select2-hidden-accessible" id="pi_type" data-select2-id="select2-data-pi_type" tabindex="-1" aria-hidden="true">
-                                                <option value="1" selected="" data-select2-id="select2-data-4-1tdc">Returned</option>
-                                                <option value="2" data-select2-id="select2-data-15-5b6z">Damaged</option>
-                                            </select><span class="select2 select2-container select2-container--default select2-container--below" dir="ltr" data-select2-id="select2-data-3-190e" style="width: 100%;"><span class="selection"><span class="select2-selection select2-selection--single" role="combobox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-disabled="false" aria-labelledby="select2-pi_type-container" aria-controls="select2-pi_type-container"><span class="select2-selection__rendered" id="select2-pi_type-container" role="textbox" aria-readonly="true" title="Returned">Returned</span><span class="select2-selection__arrow" role="presentation"><b role="presentation"></b></span></span></span><span class="dropdown-wrapper" aria-hidden="true"></span></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Qty</label>
-                                            <input type="text" class="form-control" id="pi_qty">
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Store/Warehouse</label>
-                                            <select name="" id="store_id" class="form-control select2 fill select2Input select2-hidden-accessible" data-select2-id="select2-data-store_id" tabindex="-1" aria-hidden="true">
-                                            </select><span class="select2 select2-container select2-container--default" dir="ltr" data-select2-id="select2-data-1-r7p8" style="width: 100%;"><span class="selection"><span class="select2-selection select2-selection--single" role="combobox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-disabled="false" aria-labelledby="select2-store_id-container" aria-controls="select2-store_id-container"><span class="select2-selection__rendered" id="select2-store_id-container" role="textbox" aria-readonly="true" title="Pilih Store / Warehouse"><span class="select2-selection__placeholder">Pilih Store / Warehouse</span></span><span class="select2-selection__arrow" role="presentation"><b role="presentation"></b></span></span></span><span class="dropdown-wrapper" aria-hidden="true"></span></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Notes</label>
-                                            <input type="text" class="form-control" id="pi_notes">
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                                <div class="modal-footer-btn">
-                                    <a class="btn btn-secondary-outline btn-cancel me-2" data-bs-dismiss="modal">Cancel</button>
-                                    <a class="btn btn-primary btn-save">Add Production</button>
-                                </div>
-                            </form>
                         </div>
                     </div>
-                </div>
+                    <div class="modal-footer">
+                        <a class="btn btn-secondary-outline btn-cancel me-2" data-bs-dismiss="modal">Cancel</a>
+                        <a class="btn btn-primary btn-save">Add Production</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1228,23 +1191,23 @@
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Supply Name<span class="text-danger">*</span></label>
-                                        <select class="form-select fill" id="supplies_id"></select>
+                                        <select class="form-select fill_supply" id="supplies_id"></select>
                                     </div>
                                 </div>
                                 <div class="col-3">
                                     <div class="input-block mb-3">
                                         <label>Qty<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill number-only" id="bom_detail_qty" placeholder="Qty Supply">
+                                        <input type="text" class="form-control fill_supply number-only" id="bom_detail_qty" placeholder="Qty Supply">
                                     </div>
                                 </div>
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Unit Name<span class="text-danger">*</span></label>
-                                        <select class="form-select fill" id="unit_id"></select>
+                                        <select class="form-select fill_supply" id="unit_id"></select>
                                     </div>
                                 </div>
                                 <div class="col-1 pt-4">
-                                    <button class="btn btn-primary btn-add-supply">+</button>
+                                    <a class="btn btn-primary btn-add-supply">+</a>
                                 </div>
                             </div>
                         </div>

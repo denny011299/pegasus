@@ -34,22 +34,7 @@
                                             <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                         <tr>
-                                            <td>MAT-WRP01</td>
-                                            <td>Antis</td>
-                                            <td>alcohol, Air, botol</td>
-                                            <td>Kg</td>
-                                            <td  class="d-flex align-items-center">
-                                                 <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
-                                                <i data-feather="edit" class="feather-edit"></i>
-                                                </a>
-                                                <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">
-                                                    <i data-feather="trash-2" class="feather-trash-2"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>

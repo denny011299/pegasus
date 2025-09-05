@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('bom_details', function (Blueprint $table) {
             $table->integerIncrements('bom_detail_id');
+            $table->integer('bom_id');
             $table->integer('supplies_id');
             $table->integer('bom_detail_qty')->default(1);
             $table->integer('unit_id');

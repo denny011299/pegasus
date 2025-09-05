@@ -15,6 +15,7 @@ return new class extends Migration
              $table->integerIncrements('product_variant_id');
             $table->integer('product_id');
             $table->string('product_variant_sku', 100);
+            $table->string('product_variant_name', 255);
             $table->integer('product_variant_price');
             $table->string('product_variant_barcode',100);
             $table->integer('product_variant_stock');
