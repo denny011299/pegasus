@@ -15,7 +15,9 @@ class ProductionController extends Controller
     }
 
     function getBom(Request $req){
-        $bomList = (new Bom())->getBom();
+        $bomList = (new Bom())->getBom([
+            "bom_id" =>$req->bom_id
+        ]);
         foreach ($bomList as $bom) {
             $details = (new BomDetail())->getBomDetail([
                 "bom_id" => $bom->bom_id
@@ -74,7 +76,7 @@ class ProductionController extends Controller
 
     function insertProduction(Request $req){
         $data = $req->all();
-        return (new Production())->insertProduction($data);
+        (new Production())->insertProduction($data);
     }
 
     function updateProduction(Request $req){

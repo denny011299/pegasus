@@ -8,7 +8,7 @@
         inisialisasi();
         refreshBom();
     });
-    
+
     $(document).on('change','#supplies_id',function(){
         var data = $(this).select2("data")[0];
         $('#unit_id').empty();

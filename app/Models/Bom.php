@@ -21,6 +21,7 @@ class Bom extends Model
 
         $result = Bom::where('status', '=', 1);
         if($data["product_id"]) $result->where('product_id','=',$data["product_id"]);
+        if($data["bom_id"]) $result->where('bom_id','=',$data["bom_id"]);
         $result->orderBy('created_at', 'asc');
        
         $result = $result->get();

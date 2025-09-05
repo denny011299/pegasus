@@ -273,17 +273,34 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-lg-6">
+                                <div class="col-lg-6 col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label">Date</label>
+                                        <input type="date" class="form-control fill" id="production_date">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6"></div>
+                                <div class="col-lg-6 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Product</label>
                                         <select class="form-select fill" id="product_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-lg-6">
+                                <div class="col-lg-6 col-12">
                                     <div class="mb-3">
-                                        <label class="form-label">Qty</label>
+                                        <label class="form-label">Qty Production</label>
                                         <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Qty Production">
                                     </div>
+                                </div>
+                                <div class="col-12 border py-3 mb-3">
+                                    <table class="table table-center table-hover" id="tableSupply" style="min-height: 15vh">
+                                        <thead>
+                                            <th>Supply Name</th>
+                                            <th>Qty</th>
+                                            <th>Unit</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
