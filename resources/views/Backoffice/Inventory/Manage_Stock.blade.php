@@ -29,14 +29,14 @@
                                 </div>
                             </div>
                             
-                            <div class="row mt-2">
+                            <div class="row mt-2 row-input">
                                 <div class="col-3">
                                     <label for="input_barcode">Barcode Number</label>
                                     <input type="text" id="input_barcode" class="form-control" aria-describedby="emailHelp" placeholder="Barcode Number">
                                 </div>
                                 <div class="col-2">
                                     <label for="input_sku">Qty</label>
-                                    <input type="text" id="input_qty" class="form-control number-only" id="input_qty" aria-describedby="emailHelp" placeholder="Qty" value="1">
+                                    <input type="text" id="input_qty" class="form-control number-only" aria-describedby="emailHelp" placeholder="Qty" value="1">
                                 </div>
                                 <div class="col-2">
                                     <label for="input_sku">Type</label>
@@ -110,7 +110,6 @@
                                                 <td>SKU</td>
                                                 <td>Product Name</td>
                                                 <td>Qty In</td>
-                                                <td>Qty Out</td>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -123,7 +122,6 @@
                                                 <td>Date</td>
                                                 <td>SKU</td>
                                                 <td>Product Name</td>
-                                                <td>Qty In</td>
                                                 <td>Qty Out</td>
                                             </tr>
                                         </thead>
@@ -147,5 +145,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Manage_stock.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Manage_Stock.js')}}"></script>
 @endsection

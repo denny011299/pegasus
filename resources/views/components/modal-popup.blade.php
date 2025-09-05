@@ -174,17 +174,14 @@
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Category<span class="text-danger">*</span></label>
-                                        <select class="form-control fill" id="product_category">
-											<option value="">Padat</option>
-											<option value="">Cair</option>
-											<option value="">Gas</option>
+                                        <select class="form-select fill select2" id="product_category">
 										</select>
                                     </div>
                                 </div>
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Unit<span class="text-danger">*</span></label>
-                                        <select class="form-control  fill" id="product_unit" multiple="multiple">
+                                        <select class="form-select select2  fill" id="product_unit"  name="product_unit[]" multiple="multiple">
 
                                         </select>
                                     </div>
@@ -258,6 +255,89 @@
 
 @endif
 
+@if (Route::is(['productIssue']))
+    <!-- Add coupons -->
+    <div class="modal fade" id="add-product-issues">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content ">
+                <div class="page-wrapper-new p-0">
+                    <div class="content">
+                        <div class="modal-header border-0 custom-modal-header">
+                            <div class="page-title">
+                                <h4>Add Product Issues</h4>
+                            </div>
+                            <button type="button" class="close ms-auto" data-bs-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body custom-modal-body">
+                            <form action="coupons">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Product</label>
+                                            <select class="form-select  select2 fill select2Input" id="product_id">
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="input-blocks mb-3">
+                                            <label>Date</label>
+
+                                            <div class="input-groupicon calender-input">
+                                                <input type="text" class="datetimepicker form-control fill"
+                                                    id="pi_date" placeholder="Select Date">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Jenis Retur</label>
+                                            <select class="select" id="tipe_return">
+                                                <option value="1" selected>Retur ke Supplier / Rusak Gudang</option>
+                                                <option value="2">Customer Refund</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Type</label>
+                                            <select class="select" id="pi_type">
+                                                <option value="1" selected>Returned</option>
+                                                <option value="2">Damaged</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Qty</label>
+                                            <input type="text number-only" class="form-control number-only fill" id="pi_qty">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Notes</label>
+                                            <input type="text" class="form-control" id="pi_notes">
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="modal-footer">
+                                     <button type="button" data-bs-dismiss="modal"
+                                        class="btn btn-back cancel-btn me-2">Cancel</button>
+                                    <button type="button" class="btn btn-primary paid-continue-btn btn-save">Create Product
+                                        Issues</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /Add Coupons -->
+@endif
 @if (Route::is(['production']))
     <div class="modal modal-lg custom-modal fade" id="addProduction" aria-modal="true" role="dialog" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">

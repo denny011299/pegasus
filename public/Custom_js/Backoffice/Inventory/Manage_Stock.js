@@ -3,6 +3,38 @@ var type= 1;//1 = all, 2 = In, 3 = Out
 var tableIn, tableOut, tableAll;
 
 $('#input_barcode').trigger("focus");
+
+$(document).on("click",".btn_scan",function(){
+
+    mode = $(this).attr("tipe");
+    $('#input_barcode').trigger("focus");
+});
+
+$(document).on("click",".nav-jenis",function(){
+    refreshManageStock();
+    type = $(this).attr("tipe");
+    $('#input_barcode').trigger("focus");
+});
+$(document).on("change","#input-type",function(){
+    $('#input_barcode').trigger("focus");
+});
+
+
+$('#input_barcode').on('keyup', function(e) {
+    if (e.which === 13) { // 13 = Enter
+        const barcode = $(this).val();
+        console.log("Barcode:", barcode);
+        if(mode==1){
+            // Auto scan mode
+            
+            insertData(barcode);
+        }
+        else{
+            $('#input_qty').focus().select();
+        }
+    } 
+});
+
 // $('#filter_start_date').val(getCurrentDate(-1));
 // $('#filter_end_date').val(getCurrentDate());
 // afterInsert();
@@ -30,11 +62,11 @@ function inisialisasi(){
             },
         },
         columns: [
-            { data: "dates" },
-            { data: "product" },
-            { data: "ms_sku" },
-            { data: "ms_product_in" },
-            { data: "ms_product_out" },
+           { data: "dates" },
+            { data: "pr_name" },
+            { data: "pr_sku" },
+            { data: "sup_in" },
+            { data: "sup_out" },
         ],
         initComplete: (settings, json) => {
             $('.dataTables_filter').appendTo('#tableSearch');
@@ -61,10 +93,9 @@ function inisialisasi(){
         },
         columns: [
             { data: "dates" },
-            { data: "product" },
-            { data: "ms_sku" },
-            { data: "ms_product_in" },
-            { data: "ms_product_out" },
+            { data: "pr_name" },
+            { data: "pr_sku" },
+            { data: "ms_stock" },
         ],
         initComplete: (settings, json) => {
             $('.dataTables_filter').appendTo('#tableSearch');
@@ -90,11 +121,10 @@ function inisialisasi(){
             },
         },
         columns: [
-            { data: "dates" },
-            { data: "product" },
-            { data: "ms_sku" },
-            { data: "ms_product_in" },
-            { data: "ms_product_out" },
+             { data: "dates" },
+            { data: "pr_name" },
+            { data: "pr_sku" },
+            { data: "ms_stock" },
         ],
         initComplete: (settings, json) => {
             $('.dataTables_filter').appendTo('#tableSearch');
@@ -121,7 +151,7 @@ function refreshManageStock(){
             tableOut.clear().draw();
             tableAll.clear().draw();
             for (var i = 0; i < e.length; i++) {
-                e[i].dates = moment(e[i].ms_date).format('D MMM YYYY');
+                e[i].dates = moment(e[i].created_at).format('D MMM YYYY');
                 e[i].product = `<img src="${public+e[i].ms_image}" class="me-2" style="width:30px">`+e[i].ms_name;
                 e[i].action=`
                     <a class="p-2 btn-action-icon btn_delete" href="javascript:void(0);">
@@ -129,9 +159,19 @@ function refreshManageStock(){
                     </a>
                 `;
             }
-            tableIn.rows.add(e).draw();
-            tableOut.rows.add(e).draw();
-            tableAll.rows.add(e).draw();
+            if(mode==1){
+                var uniqueData = e.filter((item, index, self) => 
+                    index === self.findIndex((t) => (
+                        t.pr_name === item.pr_name && t.dates === item.dates && t.pr_sku === item.pr_sku
+                    ))
+                );
+            }
+            let productAll = uniqueData;
+            let productIn = e.filter(item => item.ms_type == 1);
+            let productOut = e.filter(item => item.ms_type == 2);
+            tableIn.rows.add(productIn).draw();
+            tableOut.rows.add(productOut).draw();
+            tableAll.rows.add(productAll).draw();
             feather.replace();
         },
         error: function (e) {
@@ -152,34 +192,11 @@ $(document).on("click",".btn_scan",function(){
 // });
 
 
-$(document).on("click",".nav-jenis",function(){
-    type= $(this).attr("tipe");
-    // afterInsert();
-     $('#input_barcode').trigger("focus");
-});
-
-$('#input_barcode').on('keyup', function(e) {
-    if (e.which === 13) { // 13 = Enter
-        const barcode = $(this).val();
-        console.log("Barcode:", barcode);
-        if(mode==1){
-            // Auto scan mode
-            // insertData(barcode);
-            $(this).val(""); // reset input
-        }
-        else{
-            $('#input_qty').focus().select();
-        }
-    } 
-});
 
 $('#input_qty').on('keyup', function(e) {
     if (e.which === 13) { // 13 = Enter
         const barcode = $(this).val();
-        // insertData(barcode);
-        $('#input_barcode').val("");
-        $('#input_qty').val("1");
-        $('#input_barcode').trigger("focus");
+        insertData(barcode);
     } 
 });
 
@@ -245,3 +262,70 @@ $('#input_qty').on('keyup', function(e) {
 //         getOut();
 //     }
 // }
+
+
+
+function insertData() {
+    //LoadingButton(this);
+    $('.is-invalid').removeClass('is-invalid');
+    var url ="/insertManageStocks";
+    var valid=1;
+    $(".fill").each(function(){
+        if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+            valid=-1;
+            $(this).addClass('is-invalid');
+        }
+    });
+
+    if(valid==-1){
+        notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+       // ResetLoadingButton('.btn-save', 'Save changes');
+        return false;
+    };
+    $('.row-input input').attr("disabled",true); // reset input
+    
+    param = {
+        ms_type:$('#input-type').val(),//1 = In , 2 = Out
+        barcode:$('#input_barcode').val(),
+        ms_stock:$('#input_qty').val(),
+        jenis_insert:2,//2 = Product , 1 = supplies
+        _token:token
+    };
+    
+    //LoadingButton($(this));
+    
+    $.ajax({
+        url:url,
+        data: param,
+        method:"post",
+        headers: {
+            'X-CSRF-TOKEN': token
+        },
+        success:function(e){      
+            $('.row-input input').attr("disabled",false); // reset input
+            $('#input_barcode').val("");
+             $('#input_barcode').trigger("focus");
+            if($('#input-type').val()==1){
+                toastr.success('', 'Successfully Added Incoming Item');
+            }
+            else{
+                toastr.success('', 'Successfully Added Outgoing Item');
+                
+            }
+            if(mode==2){
+                $('#input_qty').val("1");
+            }
+            afterInsert();
+        },
+        error:function(e){
+            $('.row-input input').attr("disabled",false); // reset input
+            $('#input_barcode').val("");
+            $('#input_barcode').trigger("focus");
+            console.log(e);
+        }
+    });
+}
+
+function afterInsert() {
+    refreshManageStock();
+}

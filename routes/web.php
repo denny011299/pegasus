@@ -63,9 +63,9 @@ Route::post('/deleteStockAlert', [StockController::class, "deleteStockAlert"])->
 
 Route::get('/productIssue',[StockController::class,"ProductIssue"])->name('productIssue');
 Route::get('/getProductIssue', [StockController::class, "getProductIssue"])->name('getProductIssue');
-Route::post('/insertProductIssue', [StockController::class, "insertProductIssue"])->name('insertProductIssue');
-Route::post('/updateProductIssue', [StockController::class, "updateProductIssue"])->name('updateProductIssue');
-Route::post('/deleteProductIssue', [StockController::class, "deleteProductIssue"])->name('deleteProductIssue');
+Route::post('/insertProductIssues', [StockController::class, "insertProductIssue"])->name('insertProductIssue');
+Route::post('/updateProductIssues', [StockController::class, "updateProductIssue"])->name('updateProductIssue');
+Route::post('/deleteProductIssues', [StockController::class, "deleteProductIssue"])->name('deleteProductIssue');
 
 Route::get('/detailStockOpname/{id}', [StockController::class, "DetailStockOpname"])->name('detailStockOpname');
 Route::get('/getDetailStockOpname', [StockController::class, "getDetailStockOpname"])->name('getDetailStockOpname');
@@ -92,6 +92,7 @@ Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('
 Route::get('/getPoReceipt', [SupplierController::class, "getPoReceipt"])->name('getPoReceipt');
 
 Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
+Route::post('/insertManageStocks',[StockController::class,"insertManageStocks"])->name('insertManageStocks');
 Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('getManageStock');
 
 Route::get('/product',[ProductController::class,"Product"])->name('product');

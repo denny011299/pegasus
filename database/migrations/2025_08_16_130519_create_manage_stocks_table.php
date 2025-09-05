@@ -11,8 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('manage_stocks', function (Blueprint $table) {
-            $table->id();
+         Schema::create('manage_stocks', function (Blueprint $table) {
+            $table->integerIncrements('ms_id');
+            $table->integer('ms_type');
+            $table->integer('product_variant_id')->comment('Variant ID')->nullable();
+            $table->integer('ms_stock')->nullable();
+            $table->integer('ms_created_by')->nullable();
+            $table->integer('status')->default(1)->comment('1 = active, 0 = dead'); 
             $table->timestamps();
         });
     }

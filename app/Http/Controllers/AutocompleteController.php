@@ -160,6 +160,7 @@ class AutocompleteController extends Controller
         ));
     }
 
+
     public function autocompleteSupplies(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
@@ -191,7 +192,7 @@ class AutocompleteController extends Controller
 
         foreach ($data_city as $r) {
             $r->id = $r["product_id"];
-            $r->text = $r["product_name"];
+            $r->text = $r["product_name"] ." ". $r["product_variant_name"];
         };
 
         echo json_encode(array(
