@@ -69,7 +69,7 @@ class StockController extends Controller
     }
 
     function getStockAlert(Request $req){
-        $data = (new StockAlert())->getStockAlert();
+        $data = (new StockAlert())->getStockAlert(["mode"=>$req->mode]);
         return response()->json($data);
     }
 
