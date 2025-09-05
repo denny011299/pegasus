@@ -1,39 +1,41 @@
 <?php $page = 'product_issues'; ?>
 @extends('layout.mainlayout')
 @section('content')
+<style>
+    .content-page-header,.page-header {
+        margin-bottom: 0px !important;
+    }
+</style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
 
             <!-- Page Header -->
-            <div class="d-flex justify-content-between">
-                @component('components.page-header')
+              @component('components.page-header')
                         @slot('title')
                             Product Issues
                         @endslot
                 @endcomponent
-                <ul class="nav nav-pills navtab-bg">
-                    <li class="nav-item">
-                        <a href="#return" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
+            <!-- /Page Header -->
+             <ul class="nav nav-pills navtab-bg">
+                    <li class="nav-item nav-jenis" tipe="1" >
+                        <a href="#return" data-bs-toggle="tab" class="nav-link active"style="border-radius: 10px">
                             Returned
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item nav-jenis"  tipe="2">
                         <a href="#damage" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
                             Damaged
                         </a>
                     </li>
                 </ul>
-            </div>
-            <!-- /Page Header -->
-
             <!-- Search Filter -->
             @component('components.search-filter')
             @endcomponent
             <!-- /Search Filter -->
 
             <!-- Table -->
-            <div class="row" style="margin-top: -7vh">
+            <div class="row" style="margin-top: -3vh">
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">

@@ -124,6 +124,12 @@
                             Add Production</a>
                     </li>
                 @endif
+                @if (Route::is(['productIssue']))
+                    <li>
+                        <a class="btn btn-primary btnAdd" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>
+                            Add Product Issue</a>
+                    </li>
+                @endif
                 @if (Route::is(['staffDetail']))
                     <li>
                         <a class="btn btn-outline-secondary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Back</a>

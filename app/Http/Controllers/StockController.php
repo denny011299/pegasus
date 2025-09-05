@@ -95,23 +95,23 @@ class StockController extends Controller
     }
 
     function getProductIssue(Request $req){
-        $data = (new ProductIssues())->getProductIssue();
+        $data = (new ProductIssues())->getProductIssues();
         return response()->json($data);
     }
 
     function insertProductIssue(Request $req){
         $data = $req->all();
-        return (new ProductIssues())->insertProductIssue($data);
+        return (new ProductIssues())->insertProductIssues($data);
     }
 
     function updateProductIssue(Request $req){
         $data = $req->all();
-        return (new ProductIssues())->updateProductIssue($data);
+        return (new ProductIssues())->updateProductIssues($data);
     }
 
     function deleteProductIssue(Request $req){
         $data = $req->all();
-        return (new ProductIssues())->deleteProductIssue($data);
+        return (new ProductIssues())->deleteProductIssues($data);
     }
 
     // Manage Stock
