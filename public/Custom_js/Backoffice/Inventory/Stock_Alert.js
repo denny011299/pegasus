@@ -21,12 +21,11 @@
                 },
             },
             columns: [
-                { data: "product" },
-                { data: "stal_category" },
-                { data: "stal_sku" },
-                { data: "stal_stock" },
-                { data: "stal_qty" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "product_name_text" },
+                { data: "product_category" },
+                { data: "product_variant_sku" },
+                { data: "product_variant_stock_text" },
+                { data: "product_alert" },
             ]
         });
 
@@ -46,12 +45,11 @@
             },
             autoWidth: false,
             columns: [
-                { data: "product", class: "width: 12%" },
-                { data: "stal_category", class: "width: 18%" },
-                { data: "stal_sku", class: "width: 15%" },
-                { data: "stal_stock", class: "width: 15%" },
-                { data: "stal_qty", class: "width: 15%" },
-                { data: "action", class: "d-flex align-items-center width: 25%" },
+                { data: "product_name_text" },
+                { data: "product_category" },
+                { data: "product_variant_sku" },
+                { data: "product_variant_stock_text" },
+                { data: "product_alert" },
             ]
         });
     }
@@ -60,6 +58,9 @@
         $.ajax({
             url: "/getStockAlert",
             method: "get",
+            data:{
+                mode:mode
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
@@ -67,6 +68,8 @@
                 console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach(item => {
+                    item.product_name_text = item.product_name + " " +item.product_variant_name;
+                    item.product_variant_stock_text = item.product_variant_stock +" "+item.product_unit;
                     item.product = `<img src="${public+item.stal_image}" class="me-2" style="width:30px">`+item.stal_name;
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
@@ -78,10 +81,14 @@
                     `;
                 });
 
-                let stockLow = e.filter(item => item.stal_stock > 0);
-                let stockOut = e.filter(item => item.stal_stock == 0);
+                let stockLow = e.filter(item => item.product_variant_stock <= item.product_alert&&  item.product_variant_stock>0);
+                let stockOut = e.filter(item => item.product_variant_stock == 0);
+
                 tableLow.clear().rows.add(stockLow).draw();
                 tableOut.clear().rows.add(stockOut).draw();
+                $("#total_low").text(stockLow.length);
+                $("#total_out").text(stockOut.length);
+                console.log(stockLow);
                 
                 feather.replace(); // Biar icon feather muncul lagi
             },

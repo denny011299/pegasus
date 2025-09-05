@@ -15,12 +15,12 @@
                 <ul class="nav nav-pills navtab-bg">
                     <li class="nav-item">
                         <a href="#low" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
-                            Low Stocks
+                            Low Stocks <span class="badge text-bg-danger" id="total_low">0</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#out" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                            Out of Stocks
+                            Out of Stocks <span class="badge text-bg-danger" id="total_out">0</span>
                         </a>
                     </li>
                 </ul>
@@ -48,7 +48,6 @@
                                                     <th>SKU</th>
                                                     <th>Stock</th>
                                                     <th>Qty Alert</th>
-                                                    <th class="no-sort">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -67,7 +66,6 @@
                                                     <th>SKU</th>
                                                     <th>Stock</th>
                                                     <th>Qty Alert</th>
-                                                    <th class="no-sort">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
