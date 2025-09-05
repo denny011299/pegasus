@@ -174,17 +174,14 @@
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Category<span class="text-danger">*</span></label>
-                                        <select class="form-control fill" id="product_category">
-											<option value="">Padat</option>
-											<option value="">Cair</option>
-											<option value="">Gas</option>
+                                        <select class="form-select fill select2" id="product_category">
 										</select>
                                     </div>
                                 </div>
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Unit<span class="text-danger">*</span></label>
-                                        <select class="form-control  fill" id="product_unit" multiple="multiple">
+                                        <select class="form-select select2  fill" id="product_unit"  name="product_unit[]" multiple="multiple">
 
                                         </select>
                                     </div>

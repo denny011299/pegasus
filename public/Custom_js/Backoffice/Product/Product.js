@@ -14,11 +14,12 @@
         mode=1;
         $('#add_product .modal-title').html("Create Product");
         $('#add_product input').val("");
+        $('#add_product #product_unit').empty();
+        $('#add_product #product_category').empty();
         $('.is-invalid').removeClass('is-invalid');
-        $('#pr_variant').tagsinput('removeAll');
-        $('#pr_unit').tagsinput('removeAll');
         $('#tbVariant').html("")
          addRow();
+         
         $('#add_product').modal("show");
     });
 
@@ -47,7 +48,8 @@
                         </a>
                     </td>
                 </tr>    
-        `)
+        `);
+         feather.replace();
     }
     function inisialisasi() {
         table = $('#tableProduct').DataTable({
@@ -77,6 +79,7 @@
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
         });
+         feather.replace();
     }
 
     function refreshProduct() {

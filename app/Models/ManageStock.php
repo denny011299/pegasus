@@ -41,24 +41,15 @@ class ManageStock extends Model
         $result = $result->get();
 
         foreach ($result as $key => $value) {
-            
-            $sup = Product::find($value->pr_id);
-            $pvr = ProductVariants::find($value->pvr_id);
-            $value->pr_name = $sup->nama_produk." ".$pvr->nama_varian;
-            $value->pr_sku = $pvr->SKU;
-            $value->pr_img = $pvr->gambar;
-
-            if($value->warehouse_id){
-                $value->outlet = Warehouse::find($value->warehouse_id)->warehouse_name;
-            }
-            else{
-                $value->outlet = Store::find($value->store_id)->store_name;
-            }
-             $value->sup_in = manageStock::where("pvr_id", $value->pvr_id)
+            $pvr = ProductVariant::find($value->product_variant_id);
+            $sup = Product::find($pvr->product_id);
+            $value->pr_name = $sup->product_name." ".$pvr->product_variant_name;
+            $value->pr_sku = $pvr->product_variant_sku;
+             $value->sup_in = manageStock::where("product_variant_id", $value->product_variant_id)
                 ->where("ms_type", 1)
             // ->whereBetween('created_at', [$data["ms_start_date"] ?? Carbon::now(), $data["ms_end_date"] ?? Carbon::now()])
                 ->sum('ms_stock');
-            $value->sup_out = manageStock::where("pvr_id", $value->pvr_id)
+            $value->sup_out = manageStock::where("product_variant_id", $value->product_variant_id)
                 ->where("ms_type", 2)
                 //->whereBetween('created_at', [$data["ms_start_date"] ?? Carbon::now(), $data["ms_end_date"] ?? Carbon::now()])
                 ->sum('ms_stock');
@@ -75,29 +66,26 @@ class ManageStock extends Model
         ], $data);
 
        
-        $p = ProductVariants::where("barcode","=",$data["barcode"])->first();
+        $p = ProductVariant::where("product_variant_barcode","=",$data["barcode"])->first();
 
         if($p){
-             $exists = self::where("pvr_id",'=', $p->product_variant_id)
-                ->where(function($q) use ($data) {
-                    $q->where("store_id",'=', $data["store_id"])
-                    ->orWhere("warehouse_id",'=', $data["warehouse_id"]);
-                })
+             $exists = self::where("product_variant_id",'=', $p->product_variant_id)
                 ->where('ms_type','=', $data["ms_type"])
                 ->whereDate('created_at','=', Carbon::today());
             $ext  = $exists->count();
             if ($ext>0) {
               
                $s= $exists->first();
-               $data["pvr_id"] = $s->pvr_id;
-               $data["pr_id"] = $s->pr_id;
+               $data["product_variant_id"] = $s->product_variant_id;
                $data["ms_id"] = $s->ms_id;
-               $data["product_id"] = $s->product_id;
+                $p->product_variant_stock += $data["ms_stock"];
+                $p->save();
                return $this->updateManage($data);
             }
             else{
-                $data["pr_id"] = $p->product_id;
-                $data["pvr_id"] = $p->product_variant_id;
+                $data["product_variant_id"] = $p->product_variant_id;
+                $p->product_variant_stock += $data["ms_stock"];
+                $p->save();
             }
         } else {
             return "Product not found";
@@ -105,10 +93,7 @@ class ManageStock extends Model
         
         $t = new self();    
         $t->ms_type = $data["ms_type"]; 
-        $t->pr_id = $data["pr_id"];    
-        $t->pvr_id = $data["pvr_id"];    
-        if(isset($data["store_id"]))$t->store_id = $data["store_id"];    
-        if(isset($data["warehouse_id"]))$t->warehouse_id = $data["warehouse_id"]; 
+        $t->product_variant_id = $data["product_variant_id"];    
         $t->ms_stock = $data["ms_stock"];   
         $t->save(); 
         return $t->ms_id;   
@@ -117,9 +102,6 @@ class ManageStock extends Model
     function updateManage($data)
     {
         $t = self::find($data["ms_id"]);    
-        $t->ms_type = $data["ms_type"]; 
-        if(isset($data["pr_id"]))$t->pr_id = $data["pr_id"];    
-        if(isset($data["sup_id"]))$t->sup_id = $data["sup_id"]; 
         $t->ms_stock += $data["ms_stock"];   
         $t->save(); 
         return $t->ms_id;   

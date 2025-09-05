@@ -120,10 +120,13 @@ class StockController extends Controller
     }
 
     function getManageStock(Request $req){
-        $data = (new ManageStock())-> getManageStock();
+        $data = (new ManageStock())->getManageStocks();
         return response()->json($data);
     }
-
+    function insertManageStocks(Request $req){
+        $data = $req->all();
+        return (new ManageStock())->insertManageStock($data);
+    }
     // Stock
     public function Stock(){
         return view('Backoffice.Inventory.Stock');

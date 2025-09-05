@@ -92,6 +92,7 @@ Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('
 Route::get('/getPoReceipt', [SupplierController::class, "getPoReceipt"])->name('getPoReceipt');
 
 Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
+Route::post('/insertManageStocks',[StockController::class,"insertManageStocks"])->name('insertManageStocks');
 Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('getManageStock');
 
 Route::get('/product',[ProductController::class,"Product"])->name('product');
