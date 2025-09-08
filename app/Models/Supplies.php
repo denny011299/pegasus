@@ -56,7 +56,7 @@ class Supplies extends Model
         $t->supplies_name = $data["supplies_name"];
         $t->supplies_desc = $data["supplies_desc"];
         $t->supplies_unit = $data["supplies_unit"];
-        $t->supplies_stock = $data["supplies_stock"];
+        if(isset($data["supplies_stock"])) $t->supplies_stock = $data["supplies_stock"];
         $t->save();
         return $t->supplies_id;
     }

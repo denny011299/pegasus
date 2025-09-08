@@ -57,7 +57,7 @@
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Phone <span class="text-danger">*</span></label>
-                                                <input type="text" id="supplier_phone" class="form-control fill"
+                                                <input type="text" id="supplier_phone number-only" class="form-control fill"
                                                     placeholder="08xxx" name="name">
                                             </div>
                                         </div>

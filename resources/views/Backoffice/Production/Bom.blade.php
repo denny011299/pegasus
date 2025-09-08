@@ -25,13 +25,13 @@
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tableBom">
-                                    <thead class="thead-light">
+                                    <thead class="thead-ligh    t">
                                         <tr>
                                             <th>SKU</th>
                                             <th>Product</th>
                                             <th>Material</th>
                                             <th>Unit</th>
-                                            <th class="no-sort">Action</th>
+                                            <th class="no-sort text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

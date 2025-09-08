@@ -65,12 +65,6 @@
                     else e[i].desc = e[i].supplies_desc;
 
                     e[i].unit_values = "";
-                    JSON.parse(e[i].supplies_unit).forEach((element,index) => {
-                         e[i].unit_values += element;
-                         if(index< JSON.parse(e[i].supplies_unit).length-1){
-                            e[i].unit_values += ", ";
-                         }
-                    });
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].supplies_id}" data-bs-target="#edit-supplies">
                             <i data-feather="edit" class="feather-edit"></i>
@@ -265,10 +259,10 @@
         $('#supplies_desc').val(data.supplies_desc);
 
         let units = [];
-        units = JSON.parse(data.supplies_unit);
+        units = data.unit;
         units.forEach(val => {
-            if ($("#supplies_unit option[value='" + val + "']").length === 0) {
-                let newOption = new Option(val, val, true, true);
+            if ($("#supplies_unit option[value='" + val.unit_id + "']").length === 0) {
+                let newOption = new Option(val.unit_name, val.unit_id, true, true);
                 $("#supplies_unit").append(newOption).trigger('change');
             }
         });

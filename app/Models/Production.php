@@ -35,6 +35,7 @@ class Production extends Model
     {
         $t = new Production();
         $t->production_date = $data["production_date"];
+        $t->production_bom_id = $data["production_bom_id"];
         $t->production_product_id = $data["production_product_id"];
         $t->production_qty = $data["production_qty"];
         $t->production_created_by = 0;
@@ -46,6 +47,7 @@ class Production extends Model
     {
         $t = Production::find($data["production_id"]);
         $t->production_date = $data["production_date"];
+        $t->production_bom_id = $data["production_bom_id"];
         $t->production_product_id = $data["production_product_id"];
         $t->production_qty = $data["production_qty"];
         $t->production_created_by = 0;
@@ -58,5 +60,15 @@ class Production extends Model
         $t = Production::find($data["production_id"]);
         $t->status = 0;
         $t->save();
+
+        $b = (new BomDetail())->getBomDetail([
+            "bom_id" => $t->production_bom_id
+        ]);
+
+        foreach ($b as $key => $value) {
+            $s = Supplies::find($value->supplies_id);
+            $s->supplies_stock +=  ($value->bom_detail_qty * $t->production_qty);
+            $s->save();
+        }
     }
 }

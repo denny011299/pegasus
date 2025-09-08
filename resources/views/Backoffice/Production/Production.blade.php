@@ -31,7 +31,6 @@
                                             <th>Product</th>
                                             <th>SKU</th>
                                             <th>Qty</th>
-                                            <th>Status</th>
                                             <th class="no-sort">Action</th>
                                         </tr>
                                     </thead>

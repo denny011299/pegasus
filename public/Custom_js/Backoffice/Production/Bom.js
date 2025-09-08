@@ -235,7 +235,7 @@
             });
         }
         else{
-            $('#tableSupply').append(`
+            $('#tableSupply tbody').append(`
                 <tr class="row-supply" data-id="${e.supplies_id}">
                     <td>${e.supplies_name}</td>
                     <td>${e.bom_detail_qty}</td>

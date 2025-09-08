@@ -131,7 +131,7 @@ class AutocompleteController extends Controller
 
 
         foreach ($data_city as $r) {
-            $r->id = $r["product_id"];
+            $r->id = $r["bom_id"];
             $r->text = $r["product_name"];
         };
 

@@ -221,6 +221,7 @@
                                     </table>
                                 </div>
                             </div>
+                            {{-- 
                             <hr>
                             <div class="col-12">
                                 <div class="input-block mb-3">
@@ -239,7 +240,7 @@
                                     </table>
                                    
                                 </div>
-                            </div>
+                            </div>--}}
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -369,11 +370,11 @@
                                 <div class="col-lg-6 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Qty Production</label>
-                                        <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Qty Production">
+                                        <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Qty Production" value="1">
                                     </div>
                                 </div>
-                                <div class="col-12 border py-3 mb-3">
-                                    <table class="table table-center table-hover" id="tableSupply" style="min-height: 15vh">
+                                <div class="col-12 py-3 mb-3">
+                                    <table class="table table-center" id="tableSupply" style="min-height: 15vh">
                                         <thead>
                                             <th>Supply Name</th>
                                             <th>Qty</th>
@@ -429,6 +430,7 @@
                                         <textarea class="form-control" id="supplies_desc" cols="30" rows="5"></textarea>
                                     </div>
                                 </div>
+                                {{-- 
                                 <div class="col-12">
                                     <div class="input-block">
                                         <label>Relation Unit<span class="text-danger">*</span></label>
@@ -448,7 +450,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </div>--}}
                             </div>
                         </div>
                     </div>
@@ -1274,7 +1276,7 @@
                                         <input type="text" class="form-control fill number-only" id="bom_qty" placeholder="Qty Produksi">
                                     </div>
                                 </div>
-                                <div class="col-12 border py-3 mb-3">
+                                <div class="col-12 py-3 mb-3">
                                     <table class="table table-center table-hover" id="tableSupply" style="min-height: 15vh">
                                         <thead>
                                             <th>Supply Name</th>

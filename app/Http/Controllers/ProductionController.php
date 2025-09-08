@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bom;
 use App\Models\BomDetail;
 use App\Models\Production;
+use App\Models\Supplies;
 use Illuminate\Http\Request;
 
 class ProductionController extends Controller
@@ -76,7 +77,37 @@ class ProductionController extends Controller
 
     function insertProduction(Request $req){
         $data = $req->all();
+        $bahan = json_decode($req->detail,true)[0];
+        $cek = -1;
+        $bahan_kurang = [];
+
+        foreach ($bahan as $key => $value) {
+            $stok = Supplies::find($value['supplies_id'])->supplies_stock;
+            if($stok - ($value['bom_detail_qty'] * $data['production_qty'])<0){
+                $cek = 1;
+                array_push($bahan_kurang, $value['supplies_name']);
+            }
+        }
+
+        if($cek==1){
+            return response()->json([
+                "status"=>-1,
+                "message"=>"Stok bahan baku tidak mencukupi : ".implode(", ", $bahan_kurang)
+            ]);
+        }
+        
+        foreach ($bahan as $key => $value) {
+            $stok = Supplies::find($value['supplies_id']);
+            $stok->supplies_stock -=  ($value['bom_detail_qty'] * $data['production_qty']);
+            $stok->save();
+        }
+
         (new Production())->insertProduction($data);
+
+         return response()->json([
+                "status"=>1,
+                "message"=>"Berhasil"
+        ]);
     }
 
     function updateProduction(Request $req){
