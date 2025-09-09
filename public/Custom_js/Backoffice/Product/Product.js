@@ -12,7 +12,7 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_product .modal-title').html("Create Product");
+        $('#add_product .modal-title').html("Tambah Produk");
         $('#add_product input').val("");
         $('#add_product #product_unit').empty();
         $('#add_product #product_category').empty();
@@ -59,7 +59,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Product",
+                searchPlaceholder: "Cari Produk",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -128,7 +128,7 @@
     }
 
     $(document).on("click",".btn-save",function(){
-       // LoadingButton(this);
+        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         var url ="/insertProduct";
         var valid=1;
@@ -142,7 +142,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            //ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Save changes');
             return false;
         };
         
@@ -172,7 +172,7 @@
             param.product_id = $('#add_product').attr("product_id");
         }
 
-        //LoadingButton($(this));
+        LoadingButton($(this));
         $.ajax({
             url:url,
             data: param,
@@ -181,11 +181,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                //ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                //ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -193,8 +193,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Category Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Category Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");
         refreshProduct();
     }
 
@@ -214,7 +214,7 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_product .modal-title').html("Update Product");
+        $('#add_product .modal-title').html("Update Produk");
         $('#add_product input').empty().val("");
 
         $('#product_name').val(data.product_name);
@@ -240,7 +240,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus product ini?","btn-delete-product");
+        showModalDelete("Apakah yakin ingin mengahapus produk ini?","btn-delete-product");
         $('#btn-delete-product').attr("product_id", data.product_id);
         $('#modalDelete').modal("show");
     });
@@ -266,7 +266,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshProduct();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete category");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete produk");
                 
             },
             error:function(e){

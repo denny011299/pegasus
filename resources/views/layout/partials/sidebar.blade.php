@@ -504,13 +504,13 @@
                 </nav>
                 <ul class="sidebar-vertical">
                     <!-- Main -->
-                    <li class="menu-title"><span>Main</span></li>
+                    <li class="menu-title"><span>Menu Utama</span></li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-home"></i> <span> Dashboard</span> <span
+                        <a href="#"><i class="fe fe-home"></i> <span> Dasbor</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                             <li><a class="{{ Request::is('index', '/') ? 'active' : '' }}"
-                                    href="{{ url('/') }}">Admin Dashboard</a></li>
+                                    href="{{ url('/') }}">Dasbor Admin</a></li>
                         </ul>
                     </li>
                     <!-- /Main -->
@@ -518,124 +518,124 @@
                     <!-- Master -->
                     <li class="menu-title"><span>Master</span></li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-package"></i> <span> Products</span> <span
+                        <a href="#"><i class="fe fe-package"></i> <span> Produk</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                             <li><a href="{{ url('product') }}"
-                                    class="{{ Request::is('product', 'add-products', 'edit-products') ? 'active' : '' }}">Product
-                                    List</a></li>
+                                    class="{{ Request::is('product', 'add-products', 'edit-products') ? 'active' : '' }}">Daftar
+                                    Produk</a></li>
                             <li><a href="{{ url('category') }}"
-                                    class="{{ Request::is('category') ? 'active' : '' }}">Category</a></li>
+                                    class="{{ Request::is('category') ? 'active' : '' }}">Kategori</a></li>
                             <li><a href="{{ url('unit') }}"
-                                    class="{{ Request::is('unit') ? 'active' : '' }}">Units</a></li>
+                                    class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
                             <li><a href="{{ url('variant') }}"
-                                    class="{{ Request::is('variant') ? 'active' : '' }}">Variants</a></li>
+                                    class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                             <li><a href="{{ url('supplies') }}"
-                                    class="{{ Request::is('supplies') ? 'active' : '' }}">Supplies</a></li>
+                                    class="{{ Request::is('supplies') ? 'active' : '' }}">Bahan Mentah</a></li>
                         </ul>
                     </li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-users"></i> <span> Customers</span> <span
+                        <a href="#"><i class="fe fe-users"></i> <span> Pelanggan</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                             <li><a href="{{ url('customer') }}"
-                                    class="{{ Request::is('customer') ? 'active' : '' }}">Customers</a></li>
+                                    class="{{ Request::is('customer') ? 'active' : '' }}">Pelanggan</a></li>
                             <li><a href="{{ url('salesOrder') }}"
-                                    class="{{ Request::is('salesOrder') ? 'active' : '' }}">Sales Order</a></li>
+                                    class="{{ Request::is('salesOrder') ? 'active' : '' }}">Pesanan Penjualan</a></li>
                         </ul>
                     </li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-truck"></i> <span> Suppliers</span> <span
+                        <a href="#"><i class="fe fe-truck"></i> <span> Pemasok</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                             <li><a href="{{ url('supplier') }}"
-                                    class="{{ Request::is('supplier') ? 'active' : '' }}">Suppliers</a></li>
+                                    class="{{ Request::is('supplier') ? 'active' : '' }}">Pemasok</a></li>
                             <li><a href="{{ url('purchaseOrder') }}"
-                                    class="{{ Request::is('purchaseOrder') ? 'active' : '' }}">Purchase Order</a></li>
+                                    class="{{ Request::is('purchaseOrder') ? 'active' : '' }}">Pesanan Pembelian</a></li>
                         </ul>
                     </li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-briefcase"></i> <span> Inventory</span> <span
+                        <a href="#"><i class="fe fe-briefcase"></i> <span> Inventaris</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                             <li><a href="{{ url('stock') }}"
-                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stocks</a></li>
+                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stok</a></li>
                             <li><a href="{{ url('productIssue') }}"
-                                    class="{{ Request::is('productIssue') ? 'active' : '' }}">Product Issues</a></li>
+                                    class="{{ Request::is('productIssue') ? 'active' : '' }}">Produk Bermasalah</a></li>
                             <li><a href="{{ url('stockOpname') }}"
-                                    class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stock Opname</a></li>
+                                    class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname</a></li>
                             <li><a href="{{ url('stockAlert') }}"
-                                    class="{{ Request::is('stockAlert') ? 'active' : '' }}">Stock Alert</a></li>
+                                    class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok</a></li>
                             <li><a href="{{ url('manageStock') }}"
-                                    class="{{ Request::is('manageStock') ? 'active' : '' }}">Manage Stock</a></li>
+                                    class="{{ Request::is('manageStock') ? 'active' : '' }}">Pengelolaan Stok</a></li>
                         </ul>
                     </li>
                     <!-- /Master -->
-                 <li class="menu-title"><span>Production</span></li>
+                 <li class="menu-title"><span>Produksi</span></li>
                     <li class="submenu">
                         <li>
                             <a class="{{ Request::is('bom') ? 'active' : '' }}" href="/bom"><i
-                                    class="fe fe-list"></i> <span>Bill of Materials</span></a>
+                                    class="fe fe-list"></i> <span>Resep Bahan Mentah</span></a>
                         </li>
                         <li>
                             <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">
-                                <i class="fa-solid fa-gear"></i> <span>Production</span></a>
+                                <i class="fa-solid fa-gear"></i> <span>Produksi</span></a>
                         </li>
                     </li>
                     {{-- Report --}}
-                    <li class="menu-title"><span>Reports</span></li>
+                    <li class="menu-title"><span>Laporan</span></li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-activity"></i> <span> Reports</span> <span
+                        <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                                 <li><a href="/reportBahanBaku"
                                     class="{{ Request::is('reportBahanBaku') ? 'active' : '' }}">
-                                    Manage Supplies</a></li>
+                                    Pengelolaan Bahan Mentah</a></li>
                             <li><a href="/SuppliesReturn"
                                     class="{{ Request::is('SuppliesReturn') ? 'active' : '' }}">
-                                    Supplies Return</a></li>
+                                    Retur Bahan Mentah</a></li>
                             <li><a href="/reportProduksi"
                                     class="{{ Request::is('reportProduksi') ? 'active' : '' }}">
-                                    Production Report</a></li>
+                                    Laporan Produksi</a></li>
                             <li><a href="{{ url('profitLoss') }}"
                                     class="{{ Request::is('profitLoss') ? 'active' : '' }}">
-                                    Profit & Loss</a></li>
+                                    Untung & Rugi</a></li>
                             <li><a href="{{ url('cash') }}"
                                     class="{{ Request::is('cash') ? 'active' : '' }}">
-                                    Cash</a></li>
+                                    Kas</a></li>
                             <li><a href="{{ url('pettyCash') }}"
                                     class="{{ Request::is('pettyCash') ? 'active' : '' }}">
-                                    Petty Cash</a></li>
+                                    Kas Kecil</a></li>
                             <li><a href="{{ url('inwardOutward') }}"
                                     class="{{ Request::is('inwardOutward') ? 'active' : '' }}">
-                                    Inward & Outward Goods</a></li>
+                                    Barang Masuk Keluar</a></li>
                             <li><a href="{{ url('payReceive') }}"
                                     class="{{ Request::is('payReceive') ? 'active' : '' }}">
-                                    Payables & Receiveables</a></li>
+                                    Hutang & Piutang</a></li>
                            
                         </ul>
                     </li>
-                    <li class="menu-title"><span>User Management</span></li>
+                    <li class="menu-title"><span>Manajemen Pengguna</span></li>
                         <li>
                             <a class="{{ Request::is('staff') ? 'active' : '' }}" href="/staff"><i
-                                    class="fe fe-user"></i> <span>Users</span></a>
+                                    class="fe fe-user"></i> <span>Pengguna</span></a>
                         </li>
                         <li>
                             <a class="{{ Request::is('roles-permission', 'permission') ? 'active' : '' }}"
-                                href="/role"><i class="fe fe-clipboard"></i> <span>Roles &
-                                    Permission</span></a>
+                                href="/role"><i class="fe fe-clipboard"></i> <span>Peran &
+                                    Perizinan</span></a>
                         </li>
-                    <li class="menu-title"><span>Settings</span></li>
+                    <li class="menu-title"><span>Pengaturan</span></li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-settings"></i> <span> Settings</span> <span
+                        <a href="#"><i class="fe fe-settings"></i> <span> Pengaturan</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                             <li><a href="{{ url('profiles') }}"
                                     class="{{ Request::is('profiles') ? 'active' : '' }}">
-                                    Profiles</a></li>
+                                    Profil</a></li>
                             <li><a href="{{ url('settings') }}"
                                     class="{{ Request::is('settings') ? 'active' : '' }}">
-                                    Settings</a></li>
+                                    Pengaturan</a></li>
                         </ul>
                     </li>
                 </ul>

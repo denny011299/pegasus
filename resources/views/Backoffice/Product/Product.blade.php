@@ -24,7 +24,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Product
+                    Produk
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -43,11 +43,11 @@
                                 <table class="table table-center table-hover" id="tableProduct">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Product Name</th>
-                                            <th>Category</th>
-                                            <th>Unit</th>
-                                            <th>Variant</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Nama Produk</th>
+                                            <th>Kategori</th>
+                                            <th>Satuan</th>
+                                            <th>Variasi</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
