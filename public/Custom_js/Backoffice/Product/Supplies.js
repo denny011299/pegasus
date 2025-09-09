@@ -238,6 +238,8 @@
             headers: { "X-CSRF-TOKEN": token },
             data: { unit_name: unitName },
             success: function(resp) {
+                console.log(unitName)
+                console.log(resp)
                 callback(resp[0].unit_id);
             }
         });

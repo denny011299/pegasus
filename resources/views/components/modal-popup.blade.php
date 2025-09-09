@@ -45,7 +45,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Kategori</button>
                     </div>
@@ -91,7 +91,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Satuan</button>
                     </div>
@@ -138,7 +138,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Variasi</button>
                     </div>
@@ -245,7 +245,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Produk</button>
                     </div>
@@ -304,7 +304,7 @@
                                         <div class="mb-3">
                                             <label class="form-label">Tipe</label>
                                             <select class="select" id="pi_type">
-                                                <option value="1" selected>Pengembalian</option>
+                                                <option value="1" selected>Dikembalikan</option>
                                                 <option value="2">Rusak</option>
                                             </select>
                                         </div>
@@ -326,9 +326,9 @@
 
                                 <div class="modal-footer">
                                      <button type="button" data-bs-dismiss="modal"
-                                        class="btn btn-back cancel-btn me-2">Cancel</button>
+                                        class="btn btn-back cancel-btn me-2">Batal</button>
                                     <button type="button" class="btn btn-primary paid-continue-btn btn-save">Tambah Produk
-                                        Bermasalah</button>
+                                        </button>
                                 </div>
                             </form>
                         </div>
@@ -377,7 +377,7 @@
                                     <table class="table table-center" id="tableSupply" style="min-height: 15vh">
                                         <thead>
                                             <th>Nama Bahan Mentah</th>
-                                            <th>Jumlah</th>
+                                            <th class="text-center">Jumlah</th>
                                             <th>Satuan</th>
                                         </thead>
                                         <tbody></tbody>
@@ -387,7 +387,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <a class="btn btn-secondary-outline btn-cancel me-2" data-bs-dismiss="modal">Cancel</a>
+                        <a class="btn btn-secondary-outline btn-cancel me-2" data-bs-dismiss="modal">Batal</a>
                         <a class="btn btn-primary btn-save">Tambah Produksi</a>
                     </div>
                 </form>
@@ -438,7 +438,7 @@
                                             <div class="col-2">
                                                 <label id="pu_id_1">-</label>
                                                 <input type="text" class="form-control fill" id="supplies_stock1"
-                                                placeholder="Enter Supplies Stock">
+                                                placeholder="Input Stock Bahan">
                                             </div>
                                             <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
                                                 =
@@ -446,7 +446,7 @@
                                             <div class="col-2">
                                                 <label id="pu_id_2">-</label>
                                                 <input type="text" class="form-control fill" id="supplies_stock2"
-                                                placeholder="Enter Supplies Stock">
+                                                placeholder="Input Stock Bahan">
                                             </div>
                                         </div>
                                     </div>
@@ -456,7 +456,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Bahan Mentah</button>
                     </div>
@@ -500,7 +500,7 @@
                                     <div class="col-6">
                                         <div class="input-block">
                                             <label>Diskon<span class="text-danger">*</span></label>
-                                            <select id="so_discount" class="form-control fill">
+                                            <select id="so_discount" class="form-control fill number-only">
                                                 <option value="0" checked>0</option>
                                             </select>
                                         </div>
@@ -510,7 +510,7 @@
                                             <label>Biaya Pengiriman<span class="text-danger">*</span></label>
                                             <div class="input-group mb-3">
                                                 <span class="input-group-text">Rp </span>
-                                                <input type="text" class="form-control fill" id="so_cost" value="0" placeholder="20.000">
+                                                <input type="text" class="form-control fill number-only nominal_only" id="so_cost" value="0" placeholder="20.000">
                                             </div>
                                         </div>
                                     </div>
@@ -523,7 +523,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center table-hover" id="tableSalesModal">
+                                    <table class="table table-center" id="tableSalesModal">
                                         <thead>
                                             <th>Produk</th>
                                             <th>Variasi</th>
@@ -561,7 +561,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Pesanan Penjualan</button>
                     </div>
@@ -622,7 +622,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center table-hover" id="tableSalesDelivery">
+                                    <table class="table table-center" id="tableSalesDelivery">
                                         <thead>
                                             <th>Produk</th>
                                             <th>SKU</th>
@@ -637,7 +637,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Catatan Pengiriman</button>
                     </div>
@@ -651,11 +651,10 @@
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Invoice</h4>
+                    <div class="form-header modal-header-title text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Faktur Penjualan</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <form action="#">
                     <div class="modal-body">
@@ -663,30 +662,30 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block">
-                                        <label>Invoice Number<span class="text-danger">*</span></label>
+                                        <label>Nomor Faktur<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="soi_code">
                                     </div>
                                 </div>
                                 <div class="col-12 row">
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Invoice Date<span class="text-danger">*</span></label>
+                                            <label>Tanggal Faktur<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="soi_date">
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Due Date<span class="text-danger">*</span></label>
+                                            <label>Jatuh Tempo<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="soi_due">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block">
-                                        <label>Amount<span class="text-danger">*</span></label>
+                                        <label>Jumlah<span class="text-danger">*</span></label>
                                         <div class="input-group mb-3">
                                             <span class="input-group-text">Rp </span>
-                                            <input type="text" class="form-control fill" id="soi_total" value="0" placeholder="20.000">
+                                            <input type="text" class="form-control fill number-only nominal_only" id="soi_total" value="0" placeholder="20.000">
                                         </div>
                                     </div>
                                 </div>
@@ -695,9 +694,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Invoice</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Faktur</button>
                     </div>
                 </form>
             </div>
@@ -711,11 +710,10 @@
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Purchase Order</h4>
+                    <div class="form-header modal-header-title text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Purchase Order</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <form action="#">
                     <div class="modal-body">
@@ -724,38 +722,38 @@
                                 <div class="col-12 row">
                                     <div class="col-6">
                                         <div class="input-block">
-                                            <label>Supplier Name<span class="text-danger">*</span></label>
+                                            <label>Nama Supplier<span class="text-danger">*</span></label>
                                             <select id="po_name" class="form-control fill"></select>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Date<span class="text-danger">*</span></label>
+                                            <label>Tanggal<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="po_date">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Notes<span class="text-danger">*</span></label>
+                                        <label>Catatan<span class="text-danger">*</span></label>
                                         <textarea class="form-control" id="po_notes" cols="30" rows="5"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-6">
                                     <div class="input-block mb-3">
-                                        <label>Product Name<span class="text-danger">*</span></label>
+                                        <label>Nama Produk<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="po_sku"
-                                        placeholder="Product Code">
+                                        placeholder="Kode Produk">
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center table-hover" id="tablePurchaseModal">
+                                    <table class="table table-center" id="tablePurchaseModal">
                                         <thead>
-                                            <th>Product</th>
+                                            <th>Produk</th>
                                             <th>Qty</th>
-                                            <th>Purchase Price</th>
-                                            <th>Discount</th>
-                                            <th>Unit Cost</th>
+                                            <th>Harga Beli</th>
+                                            <th>Diskon</th>
+                                            <th>Biaya per Unit</th>
                                             <th>Subtotal</th>
                                         </thead>
                                         <tbody></tbody>
@@ -777,7 +775,7 @@
                                             <p>0</p>
                                         </div>
                                         <div class="d-flex justify-content-between">
-                                            <p>Grand Total</p>
+                                            <p>Total Akhir</p>
                                             <p>320000</p>
                                         </div>
                                     </div>
@@ -787,9 +785,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Purchase Order</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Purchase Order</button>
                     </div>
                 </form>
             </div>
@@ -803,11 +801,10 @@
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Delivery Notes</h4>
+                    <div class="form-header modal-header-title text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Delivery Notes</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <form action="#">
                     <div class="modal-body">
@@ -816,43 +813,43 @@
                                 <div class="col-12 row">
                                     <div class="col-4">
                                         <div class="input-block">
-                                            <label>Receiver Name<span class="text-danger">*</span></label>
+                                            <label>Nama Penerima<span class="text-danger">*</span></label>
                                             <input type="text" class="form-control fill" id="pod_name">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
-                                            <label>Date<span class="text-danger">*</span></label>
+                                            <label>Tanggal<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="pod_date">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
-                                            <label>Phone Number<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill" id="pod_phone">
+                                            <label>No. Telepon<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill number-only" id="pod_phone">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12 row">
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Address<span class="text-danger">*</span></label>
+                                            <label>Alamat<span class="text-danger">*</span></label>
                                             <textarea class="form-control fill" id="pod_address" cols="30" rows="5"></textarea>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Description<span class="text-danger">*</span></label>
+                                            <label>Keterangan<span class="text-danger">*</span></label>
                                             <textarea class="form-control fill" id="pod_desc" cols="30" rows="5"></textarea>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center table-hover" id="tablePurchaseDelivery">
+                                    <table class="table table-center" id="tablePurchaseDelivery">
                                         <thead>
-                                            <th>Product</th>
+                                            <th>Produk</th>
                                             <th>SKU</th>
-                                            <th>Category</th>
+                                            <th>Kategori</th>
                                             <th>Qty</th>
                                         </thead>
                                         <tbody></tbody>
@@ -863,9 +860,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Save Changes</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Simpan Perubahan</button>
                     </div>
                 </form>
             </div>
@@ -877,11 +874,10 @@
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Invoice</h4>
+                    <div class="form-header modal-header-title text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Faktur Pembelian</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <form action="#">
                     <div class="modal-body">
@@ -889,27 +885,27 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block">
-                                        <label>Invoice Number<span class="text-danger">*</span></label>
+                                        <label>Nomor Faktur<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="poi_code">
                                     </div>
                                 </div>
                                 <div class="col-12 row">
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Invoice Date<span class="text-danger">*</span></label>
+                                            <label>Tanggal Faktur<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="poi_date">
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Due Date<span class="text-danger">*</span></label>
+                                            <label>Jatuh Tempo<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="poi_due">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block">
-                                        <label>Amount<span class="text-danger">*</span></label>
+                                        <label>Jumlah<span class="text-danger">*</span></label>
                                         <div class="input-group mb-3">
                                             <span class="input-group-text">Rp </span>
                                             <input type="text" class="form-control fill" id="poi_total" value="0" placeholder="20.000">
@@ -921,9 +917,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Invoice</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Faktur</button>
                     </div>
                 </form>
             </div>
@@ -933,23 +929,23 @@
 
 
 @if (Route::is(['staff']))
-    <!-- Delete Items Modal -->
+    <!-- Hapus User Modal -->
     <div class="modal custom-modal fade" id="delete_modal" role="dialog">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-body">
                     <div class="form-header">
-                        <h3>Delete Users</h3>
-                        <p>Are you sure want to delete?</p>
+                        <h3>Hapus User</h3>
+                        <p>Apakah kamu yakin ingin menghapus?</p>
                     </div>
                     <div class="modal-btn delete-action">
                         <div class="row">
                             <div class="col-6">
-                                <a href="#" class="btn btn-primary paid-continue-btn">Delete</a>
+                                <a href="#" class="btn btn-primary paid-continue-btn">Hapus</a>
                             </div>
                             <div class="col-6">
                                 <a href="#" data-bs-dismiss="modal"
-                                    class="btn btn-primary paid-cancel-btn">Cancel</a>
+                                    class="btn btn-primary paid-cancel-btn">Batal</a>
                             </div>
                         </div>
                     </div>
@@ -957,18 +953,18 @@
             </div>
         </div>
     </div>
-    <!-- /Delete Items Modal -->
+    <!-- /Hapus User Modal -->
 
     
-    <!-- Add User -->
+    <!-- Tambah User -->
     <div class="modal custom-modal modal-lg fade" id="add_user" role="dialog">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title text-start mb-0">
-                        <h4 class="mb-0">Add Staff</h4>
+                        <h4 class="mb-0">Tambah Staf</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
 
                     </button>
                 </div>
@@ -978,7 +974,7 @@
                             <div class="col-md-12">
                                 <div class="card-body">
                                     <div class="form-groups-item">
-                                        <h5 class="form-title">Profile Picture</h5>
+                                        <h5 class="form-title">Foto Profil</h5>
                                         <div class="profile-picture">
                                             <div class="upload-profile">
                                                 <div class="profile-img">
@@ -986,58 +982,58 @@
                                                         src="{{ URL::asset('/assets/img/profiles/avatar-10.jpg')}}" alt="profile-img">
                                                 </div>
                                                 <div class="add-profile">
-                                                    <h5>Upload a New Photo</h5>
+                                                    <h5>Upload Foto Baru</h5>
                                                     <span>Profile-pic.jpg</span>
                                                 </div>
                                             </div>
                                             <div class="img-upload">
                                                 <a class="btn btn-primary me-2">Upload</a>
-                                                <a class="btn btn-remove">Remove</a>
+                                                <a class="btn btn-remove">Hapus</a>
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="input-block mb-3">
-                                                    <label>First Name</label>
+                                                    <label>Nama Depan</label>
                                                     <input type="text" class="form-control"
-                                                        placeholder="Enter First Name">
+                                                        placeholder="Masukkan Nama Depan">
                                                 </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="input-block mb-3">
-                                                    <label>Last Name</label>
+                                                    <label>Nama Belakang</label>
                                                     <input type="text" class="form-control"
-                                                        placeholder="Enter Last Name">
+                                                        placeholder="Masukkan Nama Belakang">
                                                 </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="input-block mb-3">
-                                                    <label>User Name</label>
+                                                    <label>Username</label>
                                                     <input type="text" class="form-control"
-                                                        placeholder="Enter User Name">
+                                                        placeholder="Masukkan Username">
                                                 </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="input-block mb-3">
                                                     <label>Email</label>
                                                     <input type="email" class="form-control"
-                                                        placeholder="Enter Email Address">
+                                                        placeholder="Masukkan Email">
                                                 </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="input-block mb-3">
-                                                    <label>Phone Number</label>
+                                                    <label>No. Telepon</label>
                                                     <input type="text" class="form-control"
-                                                        placeholder="Enter Phone Number" name="name">
+                                                        placeholder="Masukkan Nomor Telepon" name="name">
                                                 </div>
                                             </div>
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="input-block mb-3">
-                                                    <label>Role</label>
+                                                    <label>Peran</label>
                                                     <select class="select">
-                                                        <option>Select Role</option>
-                                                        <option>Role 1</option>
-                                                        <option>Role 2</option>
+                                                        <option>Pilih Peran</option>
+                                                        <option>Peran 1</option>
+                                                        <option>Peran 2</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -1054,7 +1050,7 @@
                                             <div class="col-lg-4 col-md-6 col-sm-12">
                                                 <div class="pass-group" id="passwordInput2">
                                                     <div class="input-block">
-                                                        <label>Confirm Password</label>
+                                                        <label>Konfirmasi Password</label>
                                                         <input type="password" class="form-control pass-input"
                                                             placeholder="">
                                                         <span class="toggle-password feather-eye"></span>
@@ -1065,9 +1061,9 @@
                                                 <div class="input-block ">
                                                     <label>Status</label>
                                                     <select class="select">
-                                                        <option>Select Status</option>
-                                                        <option>Active</option>
-                                                        <option>Inactive</option>
+                                                        <option>Pilih Status</option>
+                                                        <option>Aktif</option>
+                                                        <option>Tidak Aktif</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -1080,15 +1076,15 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="submit" data-bs-dismiss="modal"
-                            class="btn btn-primary paid-continue-btn">Add User</button>
+                            class="btn btn-primary paid-continue-btn">Tambah User</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    <!-- /Add User -->
+    <!-- /Tambah User -->
 @endif
 
 @if (Route::is(['cash']))
@@ -1098,9 +1094,9 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Cash</h4>
+                        <h4 class="mb-0 modal-title">Tambah Kas</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
                     </button>
                 </div>
                 <form action="#">
@@ -1109,30 +1105,30 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Date<span class="text-danger">*</span></label>
+                                        <label>Tanggal<span class="text-danger">*</span></label>
                                         <input type="date" class="form-control fill" id="cash_date">
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Description<span class="text-danger">*</span></label>
+                                        <label>Keterangan<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="cash_description"
-                                            placeholder="Enter Description">
+                                            placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
                                 <div class="row input-block">
-                                    <label>Type<span class="text-danger">*</span></label>
+                                    <label>Tipe<span class="text-danger">*</span></label>
                                     <div class="col-4">
                                         <select class="form-select" id="cash_select">
                                             <option value="debit" checked>Debit</option>
-                                            <option value="credit1">Credit 1</option>
-                                            <option value="credit2">Credit 2</option>
+                                            <option value="credit1">Kredit 1</option>
+                                            <option value="credit2">Kredit 2</option>
                                         </select>
                                     </div>
                                     <div class="col-8">
                                         <div class="input-group fix-nominal">
                                             <span class="input-group-text">Rp.</span>
-                                            <input type="text" name="" id="cash_nominal" class="form-control fill number-only nominal_only" placeholder="Ex 10000">
+                                            <input type="text" name="" id="cash_nominal" class="form-control fill number-only nominal_only" placeholder="Contoh 10000">
                                         </div> 
                                     </div>
                                 </div>
@@ -1141,9 +1137,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Cash</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Kas</button>
                     </div>
                 </form>
             </div>
@@ -1158,9 +1154,9 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Petty Cash</h4>
+                        <h4 class="mb-0 modal-title">Tambah Kas Kecil</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
                     </button>
                 </div>
                 <form action="#">
@@ -1169,29 +1165,29 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Date<span class="text-danger">*</span></label>
+                                        <label>Tanggal<span class="text-danger">*</span></label>
                                         <input type="date" class="form-control fill" id="pc_date">
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Description<span class="text-danger">*</span></label>
+                                        <label>Keterangan<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="pc_description"
-                                            placeholder="Enter Description">
+                                            placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
                                 <div class="row input-block">
-                                    <label>Type<span class="text-danger">*</span></label>
+                                    <label>Tipe<span class="text-danger">*</span></label>
                                     <div class="col-4">
                                         <select class="form-select" id="pc_select">
                                             <option value="debit" checked>Debit</option>
-                                            <option value="credit">Credit</option>
+                                            <option value="credit">Kredit</option>
                                         </select>
                                     </div>
                                     <div class="col-8">
                                         <div class="input-group fix-nominal">
                                             <span class="input-group-text">Rp.</span>
-                                            <input type="text" name="" id="pc_nominal" class="form-control fill number-only nominal_only" placeholder="Ex 10000">
+                                            <input type="text" name="" id="pc_nominal" class="form-control fill number-only nominal_only" placeholder="Contoh 10000">
                                         </div> 
                                     </div>
                                 </div>
@@ -1200,9 +1196,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Cash</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Kas</button>
                     </div>
                 </form>
             </div>
@@ -1217,9 +1213,9 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Role</h4>
+                        <h4 class="mb-0 modal-title">Tambah Peran</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
                     </button>
                 </div>
                 <form action="#">
@@ -1228,9 +1224,9 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Role Name<span class="text-danger">*</span></label>
+                                        <label>Nama Peran<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="role_name"
-                                            placeholder="Enter Role Name">
+                                            placeholder="Masukkan Nama Peran">
                                     </div>
                                 </div>
                             </div>
@@ -1238,9 +1234,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Role</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Peran</button>
                     </div>
                 </form>
             </div>
@@ -1255,9 +1251,9 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Bill of Material</h4>
+                        <h4 class="mb-0 modal-title">Tambah Resep Bahan</h4>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
                     </button>
                 </div>
                 <form action="#">
@@ -1266,7 +1262,7 @@
                             <div class="row">
                                 <div class="col-8">
                                     <div class="input-block mb-3">
-                                        <label>Product<span class="text-danger">*</span></label>
+                                        <label>Produk<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="product_id"></select>
                                     </div>
                                 </div>
@@ -1277,31 +1273,31 @@
                                     </div>
                                 </div>
                                 <div class="col-12 py-3 mb-3">
-                                    <table class="table table-center table-hover" id="tableSupply" style="min-height: 15vh">
+                                    <table class="table table-center" id="tableSupply" style="min-height: 15vh">
                                         <thead>
-                                            <th>Supply Name</th>
+                                            <th>Nama Bahan</th>
                                             <th>Qty</th>
-                                            <th>Unit</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Satuan</th>
+                                            <th class="no-sort text-center">Aksi</th>
                                         </thead>
                                         <tbody></tbody>
                                     </table>
                                 </div>
                                 <div class="col-4">
                                     <div class="input-block mb-3">
-                                        <label>Supply Name<span class="text-danger">*</span></label>
+                                        <label>Nama Bahan<span class="text-danger">*</span></label>
                                         <select class="form-select fill_supply" id="supplies_id"></select>
                                     </div>
                                 </div>
                                 <div class="col-3">
                                     <div class="input-block mb-3">
                                         <label>Qty<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill_supply number-only" id="bom_detail_qty" placeholder="Qty Supply">
+                                        <input type="text" class="form-control fill_supply number-only" id="bom_detail_qty" placeholder="Qty Bahan">
                                     </div>
                                 </div>
                                 <div class="col-4">
                                     <div class="input-block mb-3">
-                                        <label>Unit Name<span class="text-danger">*</span></label>
+                                        <label>Nama Satuan<span class="text-danger">*</span></label>
                                         <select class="form-select fill_supply" id="unit_id"></select>
                                     </div>
                                 </div>
@@ -1313,9 +1309,9 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Cancel</button>
+                            class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add BoM</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Resep</button>
                     </div>
                 </form>
             </div>

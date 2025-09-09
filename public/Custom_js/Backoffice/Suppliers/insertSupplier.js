@@ -40,7 +40,7 @@ $(document).on("click", ".btn-save", function () {
     });
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', 'Save changes');
+        ResetLoadingButton('.btn-save', 'Simpan perubahan');
         return false;
     };
 
@@ -87,14 +87,14 @@ $(document).on("click", ".btn-save", function () {
         },
         success: function (response) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
-            if(mode==1)notifikasi('success', "Successful Insert", "Successful Supplier Added");
-            else if(mode==2)notifikasi('success', "Successful Update", "Successful Supplier Updated");
+            ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pemasok");
+            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pemasok");
             afterInsert();
         },
         error: function (xhr) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
+            ResetLoadingButton(".btn-save", 'Simpan perubahan');
             console.log(xhr);
         },
     });

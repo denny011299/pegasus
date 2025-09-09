@@ -41,8 +41,8 @@
                             </td>
                             <td class="text-center pt-2 selisih">0</td>
                             <td class="">
-                                <input type="text" class="form-control notes" placeholder="Notes.." value="${mode==2?st.stpd_note:''}">
-                                <input type="hidden" class="form-control input-selesih" placeholder="Notes.."  >
+                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?st.stpd_note:''}">
+                                <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
                             </td>
                         </tr>
                     `);
@@ -109,7 +109,7 @@ function insertData() {
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', 'Save changes');
+        ResetLoadingButton('.btn-save', 'Simpan perubahan');
         return false;
     };
 
@@ -137,7 +137,7 @@ function insertData() {
             'X-CSRF-TOKEN': token
         },
         success:function(e){      
-            toastr.success('', 'Successfully Added Stock Opname');
+            toastr.success('', 'Berhasil Tambah Stock Opname');
             if(stp_type==1)window.location.href="/admin/StockOpname";
             else if(stp_type==2)window.location.href="/admin/StockOpnameSupply";
         },

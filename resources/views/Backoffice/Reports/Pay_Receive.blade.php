@@ -9,18 +9,18 @@
             <div class="d-flex justify-content-between">
                 @component('components.page-header')
                         @slot('title')
-                            Payables & Receiveables
+                            Hutang & Piutang
                         @endslot
                 @endcomponent
                 <ul class="nav nav-pills navtab-bg">
                     <li class="nav-item">
                         <a href="#payables" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
-                            Payables
+                            Hutang
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#receiveables" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                            Receiveables
+                            Piutang
                         </a>
                     </li>
                 </ul>
@@ -43,13 +43,13 @@
                                         <table class="table table-center table-hover" id="tablePayables">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>PO Date</th>
-                                                    <th>PO Number</th>
-                                                    <th>Invoice Number</th>
-                                                    <th>Supplier Name</th>
+                                                    <th>Tanggal Pesanan Pembelian</th>
+                                                    <th>Nomor Pesanan Pembelian</th>
+                                                    <th>Nomor Faktur</th>
+                                                    <th>Nama Pemasok</th>
                                                     <th>Total</th>
                                                     <th>Status</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -63,14 +63,14 @@
                                         <table class="table table-center table-hover" id="tableReceiveables">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Order Date</th>
-                                                    <th>Due Date</th>
-                                                    <th>SO Number</th>
-                                                    <th>Invoice Number</th>
-                                                    <th>Customer Name</th>
+                                                    <th>Tanggal Order</th>
+                                                    <th>Jatuh Tempo</th>
+                                                    <th>Nomor Pesanan Penjualan</th>
+                                                    <th>Nomor Faktur</th>
+                                                    <th>Nama Pelanggan</th>
                                                     <th>Total</th>
                                                     <th>Status</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

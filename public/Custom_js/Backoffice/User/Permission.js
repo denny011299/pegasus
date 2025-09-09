@@ -83,7 +83,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan pilih minimal 1 permissions yang ingin ditambahkan');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
         
@@ -105,11 +105,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -117,6 +117,6 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        notifikasi('success', "Successful Update", "Successful Permissions Updated");
+        notifikasi('success', "Berhasil Update", "Berhasil Update Perizinan");
         window.open('/role', "_self");
     }

@@ -20,7 +20,7 @@
             <div class="page-header">
                 @component('components.page-header')
                     @slot('title')
-                        Staff Details
+                        Detail Staff
                     @endslot
                 @endcomponent
             </div>
@@ -37,7 +37,7 @@
                                             src="{{ asset($data["staff_image"]) }}" alt="profile-img">
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Name</h6>
+                                        <h6>Nama</h6>
                                         <p>{{ $data["staff_first_name"] . ' ' . $data["staff_last_name"] }}</p>
                                     </div>
                                 </div>
@@ -50,7 +50,7 @@
                                         <i class="fe fe-mail"></i>
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Email Address</h6>
+                                        <h6>Alamat Email</h6>
                                         <p>{{$data["staff_email"]}}</p>
                                     </div>
                                 </div>
@@ -63,7 +63,7 @@
                                         <i class="fe fe-phone"></i>
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Phone Number</h6>
+                                        <h6>Nomor Telepon</h6>
                                         <p>{{$data["staff_phone"]}}</p>
                                     </div>
                                 </div>
@@ -76,7 +76,7 @@
                                         <i class="fe fe-briefcase"></i>
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Address</h6>
+                                        <h6>Alamat</h6>
                                         <p>{{$data["staff_address"]}}</p>
                                     </div>
                                 </div>
@@ -89,7 +89,7 @@
                                         <i class="fe fe-calendar"></i>
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Birthdate</h6>
+                                        <h6>Tanggal Lahir</h6>
                                         <p>{{ \Carbon\Carbon::parse($data["staff_birthdate"])->translatedFormat('d F Y') }}</p>
                                     </div>
                                 </div>
@@ -102,7 +102,7 @@
                                         <i class="fe fe-user"></i>
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Departement</h6>
+                                        <h6>Departemen</h6>
                                         <p>{{$data["staff_departement"]}}</p>
                                     </div>
                                 </div>
@@ -115,7 +115,7 @@
                                         <i class="fe fe-user"></i>
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Position</h6>
+                                        <h6>Jabatan</h6>
                                         <p>{{$data["staff_position"]}}</p>
                                     </div>
                                 </div>
@@ -128,7 +128,7 @@
                                         <i class="fe fe-calendar"></i>
                                     </span>
                                     <div class="staff-details-cont">
-                                        <h6>Joining Date</h6>
+                                        <h6>Tanggal Bergabung</h6>
                                         <p>{{ \Carbon\Carbon::parse($data["staff_join_date"])->translatedFormat('d F Y') }}</p>
                                     </div>
                                 </div>
@@ -142,13 +142,8 @@
             @component('components.search-filter')
             @endcomponent
             <!-- /Search Filter -->
-
-            {{-- <!-- Inovices card -->
-            @component('components.invoices-card')
-            @endcomponent
-            <!-- /Inovices card --> --}}
            
-            <h6 class="mt-4 mb-2">Attendance</h6>
+            <h6 class="mt-4 mb-2">Kehadiran</h6>
             <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
@@ -158,56 +153,15 @@
                                 <table class="table table-stripped table-hover datatable" id="tableAttendance">
                                     <thead class="thead-light">
                                        <thead>
-                                            <th>Attendance Date</th>
-                                            <th>Entry Time</th>
-                                            <th>Clock Out</th>
-                                            <th>Overtime</th>
+                                            <th>Tanggal Kehadiran</th>
+                                            <th>Jam Masuk</th>
+                                            <th>Jam Pulang</th>
+                                            <th>Lembur</th>
                                             <th>Status</th>
-                                            <th class="no-sort">Action</th>
+                                            <th class="no-sort">Aksi</th>
                                         </thead>
                                     </thead>
-                                    <tbody>
-                                        {{-- @php
-                                            $json = file_get_contents(public_path('../public/assets/json/staff-details.json'));
-                                            $customers = json_decode($json, true);
-                                        @endphp
-                                        @foreach ($customers as $customer)
-                                            <tr>
-                                                <td>
-                                                    <a href="{{ url('invoice-details') }}"
-                                                        class="invoice-link">{{ $customer['InvoiceNo'] }}</a>
-                                                </td>
-                                                <td>{{ $customer['CreatedOn'] }}</td>
-                                                <td>{{ $customer['DueDate'] }}</td>
-                                                <td>{{ $customer['TotalAmount'] }}</td>
-                                                <td>{{ $customer['PaidAmount'] }}</td>
-                                                <td><span
-                                                        class="{{ $customer['Class'] }}">{{ $customer['Status'] }}</span>
-                                                </td>
-                                                <td>
-                                                    <div class="dropdown dropdown-action">
-                                                        <a href="#" class=" btn-action-icon "
-                                                            data-bs-toggle="dropdown" aria-expanded="false"><i
-                                                                class="fas fa-ellipsis-v"></i></a>
-                                                        <div class="dropdown-menu dropdown-menu-end staff-dropdown">
-                                                            <ul>
-                                                                <li>
-                                                                    <a class="dropdown-item"
-                                                                        href="{{ url('edit-customer') }}"><i
-                                                                            class="far fa-edit me-2"></i>View</a>
-                                                                </li>
-                                                                <li>
-                                                                    <a class="dropdown-item"
-                                                                        href="{{ url('staff-details') }}"><i
-                                                                            class="far fa-eye me-2"></i>Print Invoice</a>
-                                                                </li>
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach --}}
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
@@ -216,7 +170,7 @@
             </div>
             <!-- /Table -->
 
-            <h6 class="mb-2">Reimburse</h6>
+            <h6 class="mb-2">Penggantian Biaya</h6>
             <div class="row">
                 <div class="col-sm-12">
                     <div class="card-table">
@@ -225,11 +179,11 @@
                                 <table class="table table-stripped table-hover datatable">
                                     <thead class="thead-light">
                                        <thead>
-                                            <th>Date</th>
-                                            <th>Reimburse Number</th>
-                                            <th>Total Amount</th>
-                                            <th>Payment Status</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Tanggal</th>
+                                            <th>Nomor Reimburse</th>
+                                            <th>Total Biaya</th>
+                                            <th>Status Pembayaran</th>
+                                            <th class="no-sort">Aksi</th>
                                         </thead>
                                     </thead>
                                     <tbody>
@@ -237,96 +191,36 @@
                                             <td>2025-08-01</td>
                                             <td>RB-1001</td>
                                             <td>Rp 15.000.000</td>
-                                            <td><span class="badge bg-success-light">Done</span></td>
-                                            <td>
-                                                <div class="dropdown dropdown-action">
-                                                    <a href="#" class=" btn-action-icon " data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </a>
-                                                    <div class="dropdown-menu dropdown-menu-end staff-dropdown">
-                                                        <ul>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-edit me-2"></i>View</a></li>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-eye me-2"></i>Print</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                            <td><span class="badge bg-success-light">Selesai</span></td>
+                                            <td>...</td>
                                         </tr>
                                         <tr>
                                             <td>2025-07-28</td>
                                             <td>RB-1002</td>
                                             <td>Rp 7.500.000</td>
-                                            <td><span class="badge bg-warning-light text-dark">Invoicing</span></td>
-                                            <td>
-                                                <div class="dropdown dropdown-action">
-                                                    <a href="#" class=" btn-action-icon " data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </a>
-                                                    <div class="dropdown-menu dropdown-menu-end staff-dropdown">
-                                                        <ul>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-edit me-2"></i>View</a></li>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-eye me-2"></i>Print</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                            <td><span class="badge bg-warning-light text-dark">Proses Penagihan</span></td>
+                                            <td>...</td>
                                         </tr>
                                         <tr>
                                             <td>2025-07-25</td>
                                             <td>RB-1003</td>
                                             <td>Rp 22.750.000</td>
-                                            <td><span class="badge bg-danger-light">Cancled</span></td>
-                                            <td>
-                                                <div class="dropdown dropdown-action">
-                                                    <a href="#" class=" btn-action-icon " data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </a>
-                                                    <div class="dropdown-menu dropdown-menu-end staff-dropdown">
-                                                        <ul>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-edit me-2"></i>View</a></li>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-eye me-2"></i>Print</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                            <td><span class="badge bg-danger-light">Dibatalkan</span></td>
+                                            <td>...</td>
                                         </tr>
                                         <tr>
                                             <td>2025-07-20</td>
                                             <td>RB-1004</td>
                                             <td>Rp 5.200.000</td>
-                                            <td><span class="badge bg-success-light">Done</span></td>
-                                            <td>
-                                                <div class="dropdown dropdown-action">
-                                                    <a href="#" class=" btn-action-icon " data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </a>
-                                                    <div class="dropdown-menu dropdown-menu-end staff-dropdown">
-                                                        <ul>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-edit me-2"></i>View</a></li>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-eye me-2"></i>Print</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                            <td><span class="badge bg-success-light">Selesai</span></td>
+                                            <td>...</td>
                                         </tr>
                                         <tr>
                                             <td>2025-07-15</td>
                                             <td>RB-1005</td>
                                             <td>Rp 18.300.000</td>
-                                            <td><span class="badge bg-warning-light text-dark">Invoicing</span></td>
-                                            <td>
-                                                <div class="dropdown dropdown-action">
-                                                    <a href="#" class=" btn-action-icon " data-bs-toggle="dropdown" aria-expanded="false">
-                                                        <i class="fas fa-ellipsis-v"></i>
-                                                    </a>
-                                                    <div class="dropdown-menu dropdown-menu-end staff-dropdown">
-                                                        <ul>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-edit me-2"></i>View</a></li>
-                                                            <li><a class="dropdown-item" href="#"><i class="far fa-eye me-2"></i>Print</a></li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </td>
+                                            <td><span class="badge bg-warning-light text-dark">Proses Penagihan</span></td>
+                                            <td>...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -337,7 +231,7 @@
             </div>
             <!-- /Table -->
 
-            <h6 class="mt-4 mb-2">Salary</h6>
+            <h6 class="mt-4 mb-2">Gaji</h6>
             <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
@@ -347,11 +241,11 @@
                                 <table class="table table-stripped table-hover datatable" id="tableSalary">
                                     <thead class="thead-light">
                                        <thead>
-                                            <th>Slip Number</th>
-                                            <th>Date</th>
+                                            <th>Nomor Slip</th>
+                                            <th>Tanggal</th>
                                             <th>Total</th>
                                             <th>Status</th>
-                                            <th class="no-sort">Action</th>
+                                            <th class="no-sort">Aksi</th>
                                         </thead>
                                     </thead>
                                     <tbody></tbody>
@@ -369,7 +263,6 @@
 
 @section('custom_js')
     <script>
-        var staff_id = "{{ $data['staff_id'] }}";  
         var public = "{{ asset('') }}";    
     </script>
     <script src="{{asset('Custom_js/Backoffice/User/staffDetail.js')}}"></script>

@@ -12,12 +12,9 @@ $(document).ready(function(){
         $('#staff_gender').val(data.staff_gender);
         $('#staff_join_date').val(data.staff_join_date);
         $('#staff_shift').append(`<option value="${data.staff_shift}">${data.staff_shift}</option>`);
-        $('#staff_nationality').append(`<option value="${data.staff_nationality}">${data.staff_nationality}</option>`);
         $('#staff_departement').append(`<option value="${data.staff_departement}">${data.staff_departement}</option>`);
         $('#staff_position').append(`<option value="${data.staff_position}">${data.staff_position}</option>`);
-        $('#staff_blood').val(data.staff_blood);
         $('#staff_emergency1').val(data.staff_emergency1);
-        $('#staff_emergency2').val(data.staff_emergency2);
         $('#staff_address').val(data.staff_address);
         $('#country_id').append(`<option value="${data.country_id}">Indonesia</option>`);
         $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`);
@@ -54,7 +51,7 @@ $(document).on("click", ".btn-save", function () {
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', 'Save changes');
+        ResetLoadingButton('.btn-save', 'Simpan perubahan');
         return false;
     };
 
@@ -65,14 +62,11 @@ $(document).on("click", ".btn-save", function () {
         staff_phone: $("#staff_phone").val(),
         staff_birthdate: $("#staff_birthdate").val(),
         staff_gender: $("#staff_gender").val(),
-        staff_nationality: $("#staff_nationality").val(),
         staff_join_date: $("#staff_join_date").val(),
         staff_shift: $("#staff_shift").val(),
         staff_departement: $("#staff_departement").val(),
         staff_position: $("#staff_position").val(),
-        staff_blood: $("#staff_blood").val(),
         staff_emergency1: $("#staff_emergency1").val(),
-        staff_emergency2: $("#staff_emergency2").val(),
         staff_address: $("#staff_address").val(),
         country_id: $("#country_id").val(),
         state_id: $("#state_id").val(),
@@ -105,14 +99,14 @@ $(document).on("click", ".btn-save", function () {
         },
         success: function (response) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
-            if(mode==1)notifikasi('success', "Successful Insert", "Successful Staff Added");
-            else if(mode==2)notifikasi('success', "Successful Update", "Successful Staff Updated");
+            ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Staff");
+            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Staff");
             afterInsert();
         },
         error: function (xhr) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
+            ResetLoadingButton(".btn-save", 'Simpan perubahan');
             console.log(xhr);
         },
     });

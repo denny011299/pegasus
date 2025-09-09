@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Supplies Usage Report
+                    Laporan Penggunaan Bahan Baku
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,40 +27,40 @@
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Supplies Name</th>
-                                            <th>Code Production</th>
-                                            <th>Qty</th>
+                                            <th>Tanggal</th>
+                                            <th>Nama Bahan</th>
+                                            <th>Kode Produksi</th>
+                                            <th>Jumlah</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>01 August 2025</td>
-                                            <td>Alcohol 70%</td>
+                                            <td>01 Agustus 2025</td>
+                                            <td>Alkohol 70%</td>
                                             <td>PROD001</td>
                                             <td>120</td>
                                         </tr>
                                         <tr>
-                                            <td>03 August 2025</td>
-                                            <td>Sodium Chloride</td>
+                                            <td>03 Agustus 2025</td>
+                                            <td>Natrium Klorida</td>
                                             <td>PROD002</td>
                                             <td>80</td>
                                         </tr>
                                         <tr>
-                                            <td>05 August 2025</td>
-                                            <td>Hydrogen Peroxide</td>
+                                            <td>05 Agustus 2025</td>
+                                            <td>Hidrogen Peroksida</td>
                                             <td>PROD003</td>
                                             <td>50</td>
                                         </tr>
                                         <tr>
-                                            <td>06 August 2025</td>
-                                            <td>Acetic Acid</td>
+                                            <td>06 Agustus 2025</td>
+                                            <td>Asam Asetat</td>
                                             <td>PROD004</td>
                                             <td>200</td>
                                         </tr>
                                         <tr>
-                                            <td>07 August 2025</td>
-                                            <td>Sulfuric Acid</td>
+                                            <td>07 Agustus 2025</td>
+                                            <td>Asam Sulfat</td>
                                             <td>PROD005</td>
                                             <td>60</td>
                                         </tr>

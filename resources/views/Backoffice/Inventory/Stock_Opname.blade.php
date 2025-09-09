@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Stock Opname
+                    Stok Opname
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,11 +27,11 @@
                                 <table class="table table-center table-hover" id="tableStockOpname">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Opname Date</th>
-                                            <th>PIC</th>
-                                            <th>Category</th>
-                                            <th>Opname ID</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Tanggal Opname</th>
+                                            <th>Penanggung Jawab</th>
+                                            <th>Kategori</th>
+                                            <th>ID Opname</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>

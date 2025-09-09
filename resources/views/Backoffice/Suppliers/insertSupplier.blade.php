@@ -1,4 +1,4 @@
-<?php $page = 'add-supplier'; ?>
+<?php $page = 'tambah-pemasok'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -10,8 +10,8 @@
                     <div class="page-header">
                         <div class="content-page-header">
                             <div class="d-flex justify-content-between w-100">
-                                <h5>Add Supplier</h5>
-                                <button class="btn btn-back">Back</button>
+                                <h5>Tambah Pemasok</h5>
+                                <button class="btn btn-back">Kembali</button>
                             </div>
                         </div>
                     </div>
@@ -20,7 +20,7 @@
                         <div class="col-md-12">
                             <form action="#">
                                 <div class="form-group-item">
-                                    <h5 class="form-title">Basic Details</h5>
+                                    <h5 class="form-title">Detail Dasar</h5>
                                     <div class="profile-picture">
                                         <div class="upload-profile">
                                             <div class="profile-img">
@@ -29,13 +29,13 @@
                                                     alt="profile-img">
                                             </div>
                                             <div class="add-profile">
-                                                <h5>Upload a New Photo</h5>
+                                                <h5>Unggah Foto Baru</h5>
                                                 <span id="file_name">Profile-pic.jpg</span>
                                             </div>
                                         </div>
                                         <div class="img-upload">
                                             <label class="btn btn-upload">
-                                                Upload <input type="file" class="form-control fill input-gambar"
+                                                Unggah <input type="file" class="form-control fill input-gambar"
                                                 accept="image/png, image/jpeg" id="supplier_image">
                                             </label>
                                         </div>
@@ -43,30 +43,29 @@
                                     <div class="row">
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Name <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill" id="supplier_name" placeholder="Enter Name">
+                                                <label>Nama <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill" id="supplier_name" placeholder="Masukkan Nama">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Email <span class="text-danger">*</span></label>
                                                 <input type="email" class="form-control fill" id="supplier_email"
-                                                    placeholder="Enter Email Address">
+                                                    placeholder="Masukkan Alamat Email">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Phone <span class="text-danger">*</span></label>
-                                                <input type="text" id="supplier_phone number-only" class="form-control fill"
+                                                <label>Telepon <span class="text-danger">*</span></label>
+                                                <input type="text" id="supplier_phone" class="form-control fill number-only"
                                                     placeholder="08xxx" name="name">
                                             </div>
                                         </div>
-                                        
                                        
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Notes</label>
-                                                <input type="email" class="form-control" id="supplier_notes" placeholder="Enter Your Notes">
+                                                <label>Catatan</label>
+                                                <input type="text" class="form-control" id="supplier_notes" placeholder="Masukkan Catatan Anda">
                                             </div>
                                         </div>
                                     </div>
@@ -75,32 +74,32 @@
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="billing-btn mb-2">
-                                                <h5 class="form-title">Billing Address</h5>
+                                                <h5 class="form-title">Alamat Penagihan</h5>
                                             </div>
                                             <div class="input-block mb-3">
-                                                <label>Address</label>
-                                                <input type="text" class="form-control fill" id="supplier_address" placeholder="Enter Address 1">
+                                                <label>Alamat <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill" id="supplier_address" placeholder="Masukkan Alamat">
                                             </div>
                                             <div class="row">
                                                 <div class="col-lg-4 col-md-12">
                                                     <div class="input-block mb-3">
-                                                        <label>State</label>
+                                                        <label>Provinsi <span class="text-danger">*</span></label>
                                                         <select class="form-select fill" id="state_id"></select>
                                                     </div>
                                                    
                                                 </div>
                                                 <div class="col-lg-4 col-md-12">
                                                     <div class="input-block mb-3">
-                                                        <label>City</label>
+                                                        <label>Kota <span class="text-danger">*</span></label>
                                                         <select class="form-select fill" id="city_id"></select>
                                                     </div>
                                                    
                                                 </div>
                                                 <div class="col-lg-4 col-md-12">
                                                     <div class="input-block mb-3">
-                                                        <label>Zipcode</label>
-                                                        <input type="text" class="form-control fill" id="supplier_zipcode"
-                                                            placeholder="Enter Pincode">
+                                                        <label>Kode Pos <span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control fill number-only" id="supplier_zipcode"
+                                                            placeholder="Masukkan Kode Pos">
                                                     </div>
                                                 </div>
                                             </div>
@@ -109,45 +108,45 @@
                                 </div>
                                 <div class="form-group-customer customer-additional-form">
                                     <div class="row">
-                                        <h5 class="form-title">Bank Details</h5>
+                                        <h5 class="form-title">Detail Bank</h5>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Bank Name</label>
-                                                <input type="text" class="form-control fill" id="supplier_bank" placeholder="Enter Bank Name">
+                                                <label>Nama Bank <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill" id="supplier_bank" placeholder="Masukkan Nama Bank">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Branch</label>
+                                                <label>Cabang <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="supplier_branch"
-                                                    placeholder="Enter Branch Name">
+                                                    placeholder="Masukkan Nama Cabang">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-12 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Account Holder Name</label>
+                                                <label>Nama Pemilik Rekening <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="supplier_account_name"
-                                                    placeholder="Enter Account Holder Name">
+                                                    placeholder="Masukkan Nama Pemilik Rekening">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-12 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Account Number</label>
-                                                <input type="text" class="form-control fill" id="supplier_account_number"
-                                                    placeholder="Enter Account Number">
+                                                <label>Nomor Rekening <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill number-only" id="supplier_account_number"
+                                                    placeholder="Masukkan Nomor Rekening">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-12 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>IFSC</label>
-                                                <input type="text" class="form-control fill" id="supplier_ifsc" placeholder="Enter IFSC Code">
+                                                <label>Kode IFSC <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill" id="supplier_ifsc" placeholder="Masukkan Kode IFSC">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="add-supplier-btns text-end">
-                                    <a href="{{ url('supplier') }}" class="btn btn-outline-secondary btn-cancel">Cancel</a>
-                                    <button class="btn btn-primary btn-save">Save Changes</button>
+                                    <a href="{{ url('supplier') }}" class="btn btn-outline-secondary btn-cancel">Batal</a>
+                                    <button class="btn btn-primary btn-save">Simpan Perubahan</button>
                                 </div>
                             </form>
                         </div>

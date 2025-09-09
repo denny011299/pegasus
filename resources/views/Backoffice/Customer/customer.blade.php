@@ -7,7 +7,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Customers
+                    Pelanggan
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -25,13 +25,13 @@
                                 <table class="table table-center table-hover datatable" id="tableCustomer">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Customer Name</th>
-                                            <th>Customer Code</th>
-                                            <th>Telephone </th>
-                                            <th>City</th>
-                                            <th>Total Spent</th>
-                                            <th>Created</th>
-                                            <th class="no-sort">Actions</th>
+                                            <th>Nama Pelanggan</th>
+                                            <th>Kode Pelanggan</th>
+                                            <th>Telepon</th>
+                                            <th>Kota</th>
+                                            <th>Total Belanja</th>
+                                            <th>Dibuat</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

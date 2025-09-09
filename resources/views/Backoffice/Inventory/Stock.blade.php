@@ -1,4 +1,4 @@
-<?php $page = 'stock'; ?>
+<?php $page = 'stok'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Stock
+                    Stok
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -28,10 +28,10 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>SKU</th>
-                                            <th>Product Name</th>
-                                            <th>Variant</th>
-                                            <th>Category</th>
-                                            <th>Stock</th>
+                                            <th>Nama Produk</th>
+                                            <th>Varian</th>
+                                            <th>Kategori</th>
+                                            <th>Stok</th>
                                         </tr>
                                     </thead>
                                     <tbody>

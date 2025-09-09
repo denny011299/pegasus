@@ -33,7 +33,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Returned Product",
+                searchPlaceholder: "Cari Produk Dikembalikan",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -57,7 +57,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Damaged Product",
+                searchPlaceholder: "Cari Produk Rusak",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -119,9 +119,9 @@
     
 function loadPiType() {
     $("#pi_type").empty();
-    $("#pi_type").append(`<option value="1" selected>Returned</option>`);
+    $("#pi_type").append(`<option value="1" selected>Dikembalikan</option>`);
     if ($("#tipe_return").val() == 1) {
-        $("#pi_type").append(`<option value="2">Damaged</option>`);
+        $("#pi_type").append(`<option value="2">Rusak</option>`);
     }
 }
 
@@ -194,14 +194,14 @@ $(document).on("click", ".btn-save", function () {
                 if (mode == 1)
                     notifikasi(
                         "success",
-                        "Successful Insert",
-                        "Successful Data Added"
+                        "Berhasil Insert",
+                        "Berhasil Data Ditambahkan"
                     );
                 else if (mode == 2)
                     notifikasi(
                         "success",
-                        "Successful Update",
-                        "Successful Data Updated"
+                        "Berhasil Update",
+                        "Berhasil Data Diupdate"
                     );
             }
 
@@ -232,7 +232,7 @@ $(document).on("click", ".btn_edit", function () {
         `<option value="${data.product_variant_id}">${data.pr_name}</option>`
     );
     $("#pi_type").empty().append(
-        `<option value="${data.pi_type}">${data.pi_type==1?"Returned":"Damaged"}</option>`
+        `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
     $("#pi_type,#tipe_return,#product_id").prop("disabled", true);
 
@@ -250,7 +250,7 @@ $(document).on("click", ".btn_delete", function () {
         .row($(this).parents("tr"))
         .data(); //ambil data dari table
     showModalDelete(
-        "Apakah yakin ingin mengahapus Product Issues ini?",
+        "Apakah yakin ingin mengahapus Masalah Produk ini?",
         "btn-delete-issues"
     );
     $("#btn-delete-issues").attr("pi_id", data.pi_id);

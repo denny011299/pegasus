@@ -1,4 +1,4 @@
-<?php $page = 'product_issues'; ?>
+<?php $page = 'masalah_produk'; ?>
 @extends('layout.mainlayout')
 @section('content')
 <style>
@@ -17,19 +17,19 @@
             <!-- Page Header -->
               @component('components.page-header')
                         @slot('title')
-                            Product Issues
+                            Masalah Produk
                         @endslot
                 @endcomponent
             <!-- /Page Header -->
              <ul class="nav nav-pills navtab-bg">
                     <li class="nav-item nav-jenis" tipe="1" >
                         <a href="#return" data-bs-toggle="tab" class="nav-link active"style="border-radius: 10px">
-                            Returned
+                            Dikembalikan
                         </a>
                     </li>
                     <li class="nav-item nav-jenis"  tipe="2">
                         <a href="#damage" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                            Damaged
+                            Rusak
                         </a>
                     </li>
                 </ul>
@@ -49,12 +49,12 @@
                                         <table class="table table-center table-hover" id="tableReturn">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Product</th>
+                                                    <th>Produk</th>
                                                     <th>SKU</th>
-                                                    <th>Return Date</th>
-                                                    <th>Qty</th>
-                                                    <th>Notes</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th>Tanggal Pengembalian</th>
+                                                    <th>Jumlah</th>
+                                                    <th>Catatan</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -68,12 +68,12 @@
                                         <table class="table table-center table-hover" id="tableDamage">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Product</th>
+                                                    <th>Produk</th>
                                                     <th>SKU</th>
-                                                    <th>Date</th>
-                                                    <th>Qty</th>
-                                                    <th>Notes</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th>Tanggal</th>
+                                                    <th>Jumlah</th>
+                                                    <th>Catatan</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Profile Settings
+                    Pengaturan Profil
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -21,7 +21,7 @@
             <div class="card">
                 <div class="card-body w-100">
                     <div class="content-page-header">
-                        <h5 class="setting-menu">Profile Account</h5>
+                        <h5 class="setting-menu">Akun Profil</h5>
                     </div>
                     <div class="row">
                         <div class="profile-picture">
@@ -34,103 +34,87 @@
                             </div>
                             <div class="img-upload">
                                 <label class="btn btn-primary">
-                                    Upload new picture <input type="file" class="form-control input-gambar"
+                                    Unggah Foto Baru <input type="file" class="form-control input-gambar"
                                                 accept="image/png, image/jpeg" id="staff_image">
                                 </label>
-                                <p class="mt-1">Profile Should be Supported File format JPG,JPEG,PNG
-                                </p>
+                                <p class="mt-1">Profil harus menggunakan format file JPG, JPEG, atau PNG</p>
                             </div>
                         </div>
                         <div class="col-lg-12">
                             <div class="form-title">
-                                <h5>User Information</h5>
+                                <h5>Informasi Pengguna</h5>
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>First Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control fill" id="staff_first_name" placeholder="Enter First Name">
+                                <label>Nama Depan <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fill" id="staff_first_name" placeholder="Masukkan Nama Depan">
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>Last Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control fill" id="staff_last_name" placeholder="Enter Last Name">
+                                <label>Nama Belakang <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fill" id="staff_last_name" placeholder="Masukkan Nama Belakang">
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
                                 <label>Email <span class="text-danger">*</span></label>
                                 <input type="email" class="form-control fill" id="staff_email"
-                                    placeholder="Enter Email Address">
+                                    placeholder="Masukkan Alamat Email">
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>Phone Number<span class="text-danger">*</span></label>
+                                <label>Nomor Telepon <span class="text-danger">*</span></label>
                                 <input type="text" id="staff_phone" class="form-control fill"
                                     placeholder="08xxx" name="name">
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>Date Of Birth <span class="text-danger">*</span></label>
+                                <label>Tanggal Lahir <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control fill" id="staff_birthdate"
-                                    placeholder="Enter Birthdate">
+                                    placeholder="Masukkan Tanggal Lahir">
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>Gender <span class="text-danger">*</span></label>
+                                <label>Jenis Kelamin <span class="text-danger">*</span></label>
                                 <select class="form-select fill" id="staff_gender">
-                                    <option value="1">Male</option>
-                                    <option value="2">Female</option>
+                                    <option value="1">Laki-laki</option>
+                                    <option value="2">Perempuan</option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>State<span class="text-danger">*</span></label>
+                                <label>Provinsi <span class="text-danger">*</span></label>
                                 <select class="form-select fill" id="state_id"></select>
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>City<span class="text-danger">*</span></label>
+                                <label>Kota <span class="text-danger">*</span></label>
                                 <select class="form-select fill" id="city_id"></select>
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>Blood Type <span class="text-danger">*</span></label>
-                                <select class="form-select fill" id="staff_blood">
-                                    <option value="O+">O+</option>
-                                    <option value="O-">O-</option>
-                                    <option value="A+">A+</option>
-                                    <option value="A-">A-</option>
-                                    <option value="AB+">AB+</option>
-                                    <option value="AB-">AB-</option>
-                                    <option value="B+">B+</option>
-                                    <option value="B-">B-</option>
-                                </select>
+                                <label>Kata Sandi <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control fill" id="staff_password" placeholder="Masukkan Kata Sandi">
                             </div>
                         </div>
                         <div class="col-lg-4 col-md-6 col-sm-12">
                             <div class="input-block mb-3">
-                                <label>Password<span class="text-danger">*</span></label>
-                                <input type="password" class="form-control fill" id="staff_password" placeholder="Enter Password">
-                            </div>
-                        </div>
-                        <div class="col-lg-4 col-md-6 col-sm-12">
-                            <div class="input-block mb-3">
-                                <label>Confirm Password<span class="text-danger">*</span></label>
-                                <input type="password" class="form-control fill" id="staff_confirm" placeholder="Enter Confirm Password">
+                                <label>Konfirmasi Kata Sandi <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control fill" id="staff_confirm" placeholder="Masukkan Ulang Kata Sandi">
                             </div>
                         </div>
                         <div class="col-lg-12 pt-3">
                             <div class="btn-path text-end">
-                                <a href="/" class="btn btn-cancel bg-primary-light me-3">Cancel</a>
-                                <a class="btn btn-primary btn-save">Save Changes</a>
+                                <a href="/" class="btn btn-cancel bg-primary-light me-3">Batal</a>
+                                <a class="btn btn-primary btn-save">Simpan Perubahan</a>
                             </div>
                         </div>
                     </div>

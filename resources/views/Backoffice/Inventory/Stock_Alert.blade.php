@@ -9,18 +9,18 @@
             <div class="d-flex justify-content-between m-0 p-0">
                 @component('components.page-header')
                         @slot('title')
-                            Stock Alert
+                            Peringatan Stok
                         @endslot
                 @endcomponent
                 <ul class="nav nav-pills navtab-bg">
                     <li class="nav-item">
                         <a href="#low" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
-                            Low Stocks <span class="badge text-bg-danger" id="total_low">0</span>
+                            Stok Rendah <span class="badge text-bg-danger" id="total_low">0</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#out" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                            Out of Stocks <span class="badge text-bg-danger" id="total_out">0</span>
+                            Stok Habis <span class="badge text-bg-danger" id="total_out">0</span>
                         </a>
                     </li>
                 </ul>
@@ -43,11 +43,11 @@
                                         <table class="table table-center table-hover" id="tableStockAlertLow">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Product Name</th>
-                                                    <th>Category</th>
+                                                    <th>Nama Produk</th>
+                                                    <th>Kategori</th>
                                                     <th>SKU</th>
-                                                    <th>Stock</th>
-                                                    <th>Qty Alert</th>
+                                                    <th>Stok</th>
+                                                    <th>Qty Peringatan</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -61,11 +61,11 @@
                                         <table class="table table-center table-hover" id="tableStockAlertOut" style="width: 100%">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Product Name</th>
-                                                    <th>Category</th>
+                                                    <th>Nama Produk</th>
+                                                    <th>Kategori</th>
                                                     <th>SKU</th>
-                                                    <th>Stock</th>
-                                                    <th>Qty Alert</th>
+                                                    <th>Stok</th>
+                                                    <th>Qty Peringatan</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

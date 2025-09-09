@@ -9,7 +9,7 @@
         mode=1;
         tablePurchaseModal();
         refreshTableProduct();
-        $('#add_purchase_order .modal-title').html("Create Purchase Order");
+        $('#add_purchase_order .modal-title').html("Tambah Pesanan Pembelian");
         $('#add_purchase_order input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_order').modal("show");
@@ -23,7 +23,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Purchase Order",
+                searchPlaceholder: "Cari Pesanan Pembelian",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -63,15 +63,15 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     if (e[i].po_status == 1){
-                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Paid</span>`;
+                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Lunas</span>`;
                     } else if (e[i].po_status == 2){
-                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Pending</span>`;
+                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Tertunda</span>`;
                     }
                     e[i].action = `
-                        <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].po_id}" data-bs-target="#view-sales">
+                        <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].po_id}" data-bs-target="#view-purchase">
                             <i data-feather="view" class="fe fe-eye"></i>
                         </a>
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].po_id}" data-bs-target="#edit-sales">
+                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].po_id}" data-bs-target="#edit-purchase">
                             <i data-feather="edit" class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].po_id}" href="javascript:void(0);">
@@ -84,7 +84,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load Pesanan Pembelian:", err);
             }
         });
     }
@@ -102,7 +102,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Pesanan Pembelian",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -111,11 +111,11 @@
             },
             columns: [
                 { data: "pr_name" },
-                { data: "pr_qty" },
-                { data: "pr_buy_price" },
-                { data: "pr_discount" },
-                { data: "pr_price" },
-                { data: "pr_subtotal" },
+                { data: "pr_qty", className: "text-center"},
+                { data: "pr_buy_price", className: "text-end"},
+                { data: "pr_discount", className: "text-end"},
+                { data: "pr_price", className: "text-end"},
+                { data: "pr_subtotal", className: "text-end"},
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -148,7 +148,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load Pesanan Pembelian:", err);
             }
         });
     }
@@ -168,7 +168,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            //ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
 
@@ -182,7 +182,7 @@
             // param.category_id = $('#add_purchase_order').attr("category_id");
         }
 
-        //LoadingButton($(this));
+        LoadingButton($(this));
         $.ajax({
             url:url,
             data: param,
@@ -191,11 +191,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                //ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                //ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -203,8 +203,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Category Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Category Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pesanan Pembelian");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pesanan Pembelian");
         refreshPurchaseOrder();
     }
 
@@ -216,7 +216,7 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tablePurchaseOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_purchase_order .modal-title').html("Update Category");
+        $('#add_purchase_order .modal-title').html("Update Pesanan Pembelian");
         $('#add_purchase_order input').empty().val("");
         // $('#category_name').val(data.category_name);
 
@@ -227,24 +227,23 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tablePurchaseOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        // showModalDelete("Apakah yakin ingin mengahapus category ini?","btn-delete-category");
-        $('#modalDelete').modal("show");
-        // $('#btn-delete-sales').attr("category_id", data.category_id);
+        showModalDelete("Apakah yakin ingin mengahapus pesanan pembelian ini?","btn-delete-purchase");
+        $('#btn-delete-purchase').attr("category_id", data.category_id);
     });
 
 
-    $(document).on("click","#btn-delete-sales",function(){
+    $(document).on("click","#btn-delete-purchase",function(){
         $.ajax({
-            url:"/deleteSalesOrder",
+            url:"/deletePurchaseOrder",
             data:{
-                category_id:$('#btn-delete-sales').attr('category_id'),
+                category_id:$('#btn-delete-purchase').attr('category_id'),
                 _token:token
             },
             method:"post",
             success:function(e){
                 $('.modal').modal("hide");
                 refreshPurchaseOrder();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete sales order");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete pesanan pembelian");
                 
             },
             error:function(e){

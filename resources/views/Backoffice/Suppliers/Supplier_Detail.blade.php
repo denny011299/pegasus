@@ -1,4 +1,4 @@
-<?php $page = 'supplier-details'; ?>
+<?php $page = 'detail-pemasok'; ?>
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
@@ -18,9 +18,11 @@
 
             <!-- Page Header -->
             <div class="page-header">
-                <div class="content-page-header">
-                    <h5>Supplier Details</h5>
-                </div>
+                @component('components.page-header')
+                    @slot('title')
+                        Detail Pemasok
+                    @endslot
+                @endcomponent
             </div>
             <!-- /Page Header -->
 
@@ -48,7 +50,7 @@
                                         <i class="fe fe-mail"></i>
                                     </span>
                                     <div class="supplier-details-cont">
-                                        <h6>Email Address</h6>
+                                        <h6>Alamat Email</h6>
                                         <p>john@example.com</p>
                                     </div>
                                 </div>
@@ -61,7 +63,7 @@
                                         <i class="fe fe-phone"></i>
                                     </span>
                                     <div class="supplier-details-cont">
-                                        <h6>Phone Number</h6>
+                                        <h6>Nomor Telepon</h6>
                                         <p>585-785-4840</p>
                                     </div>
                                 </div>
@@ -74,7 +76,7 @@
                                         <i class="fe fe-airplay"></i>
                                     </span>
                                     <div class="supplier-details-cont">
-                                        <h6>Company Name</h6>
+                                        <h6>Nama Perusahaan</h6>
                                         <p>Kanakku Corporation</p>
                                     </div>
                                 </div>
@@ -100,7 +102,7 @@
                                         <i class="fe fe-briefcase"></i>
                                     </span>
                                     <div class="supplier-details-cont">
-                                        <h6>Company Address</h6>
+                                        <h6>Alamat Perusahaan</h6>
                                         <p>4712 Cherry Ridge Drive Rochester, NY 14620.</p>
                                     </div>
                                 </div>
@@ -110,49 +112,48 @@
                 </div>
             </div>
 
-            <!-- Search Filter -->
+            <!-- Filter Pencarian -->
             @component('components.search-filter')
             @endcomponent
-            <!-- /Search Filter -->
+            <!-- /Filter Pencarian -->
 
-            <!-- Inovices card -->
+            <!-- Kartu Faktur -->
             @component('components.invoices-card')
             @endcomponent
-            <!-- /Inovices card -->
+            <!-- /Kartu Faktur -->
 
-            <!-- Table -->
+            <!-- Tabel -->
             <div class="row">
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                    <div class="row pb-3">
-                                        <div class="col-8"></div>
-                                        <div class="col-4 text-end">
-                                            <a class="btn btn-primary btnAddDn"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add Delivery Notes</a>
-                                        </div>
+                                <div class="row pb-3">
+                                    <div class="col-8"></div>
+                                    <div class="col-4 text-end">
+                                        <a class="btn btn-primary btnAddDn"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah Surat Jalan</a>
                                     </div>
-                                    <div class="col-12 pb-5">
-                                        <table class="table table-center table-hover" id="tableDelivery">
-                                            <thead>
-                                                <th>Delivery Note No.</th>
-                                                <th>Delivery Date</th>
-                                                <th>Receiver</th>
-                                                <th>Address</th>
-                                                <th>Phone Number</th>
-                                                <th>Status</th>
-                                                <th class="no-sort">Action</th>
-                                            </thead>
-                                            <tbody></tbody>
-                                        </table>
-                                    </div>
+                                </div>
+                                <div class="col-12 pb-5">
+                                    <table class="table table-center table-hover" id="tableDelivery">
+                                        <thead>
+                                            <th>No. Surat Jalan</th>
+                                            <th>Tanggal Pengiriman</th>
+                                            <th>Penerima</th>
+                                            <th>Alamat</th>
+                                            <th>Nomor Telepon</th>
+                                            <th>Status</th>
+                                            <th class="no-sort">Aksi</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- /Table -->
+            <!-- /Tabel -->
         </div>
     </div>
     <!-- /Page Wrapper -->
@@ -160,7 +161,6 @@
 
 @section('custom_js')
     <script>
-        var supplier_id = "{{ $data['supplier_id'] }}";  
         var public = "{{ asset('') }}";
     </script>
     <script src="{{asset('Custom_js/Backoffice/Suppliers/Supplier_Detail.js')}}"></script>

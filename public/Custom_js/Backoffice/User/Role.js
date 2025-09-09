@@ -7,7 +7,7 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_role .modal-title').html("Create Role");
+        $('#add_role .modal-title').html("Tambah Peran");
         $('#add_role input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_role').modal("show");
@@ -22,7 +22,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Role",
+                searchPlaceholder: "Cari Peran",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -58,9 +58,9 @@
                     e[i].role_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
                         <a href="#" class="btn btn-greys btn_edit me-2" data-bs-toggle="modal"
-                            data-bs-target="#edit_role"><i class="fa fa-edit me-1"></i> Edit Role</a>
+                            data-bs-target="#edit_role"><i class="fa fa-edit me-1"></i> Edit Peran</a>
                         <a href="/permission/${e[i].role_id}" class="btn btn-greys me-2"><i
-                            class="fa fa-shield me-1"></i> Permissions</a>
+                            class="fa fa-shield me-1"></i> Perizinan</a>
                     `;
                 }
 
@@ -88,7 +88,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
 
@@ -111,11 +111,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -123,8 +123,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Role Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Role Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Peran");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Peran");
         refreshRole();
     }
 
@@ -135,7 +135,7 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableRole').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_role .modal-title').html("Update Role");
+        $('#add_role .modal-title').html("Update Peran");
         $('#add_role input').empty().val("");
         $('#role_name').val(data.role_name);
 

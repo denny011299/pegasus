@@ -1,4 +1,4 @@
-<?php $page = 'stock_opname'; ?>
+<?php $page = 'bom'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Bill of Materials
+                    Resep Bahan Mentah
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -25,13 +25,13 @@
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tableBom">
-                                    <thead class="thead-ligh    t">
+                                    <thead class="thead-light">
                                         <tr>
                                             <th>SKU</th>
-                                            <th>Product</th>
+                                            <th>Produk</th>
                                             <th>Material</th>
-                                            <th>Unit</th>
-                                            <th class="no-sort text-center">Action</th>
+                                            <th>Satuan</th>
+                                            <th class="no-sort text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

@@ -54,7 +54,7 @@ function inisialisasi(){
         language: {
             search: ' ',
             sLengthMenu: '_MENU_',
-            searchPlaceholder: "Search Products (All)",
+            searchPlaceholder: "Cari Produk (Semua)",
             info: "_START_ - _END_ of _TOTAL_ items",
             paginate: {
                 next: ' <i class=" fa fa-angle-right"></i>',
@@ -84,7 +84,7 @@ function inisialisasi(){
         language: {
             search: ' ',
             sLengthMenu: '_MENU_',
-            searchPlaceholder: "Search Products (In)",
+            searchPlaceholder: "Cari Produk (Masuk)",
             info: "_START_ - _END_ of _TOTAL_ items",
             paginate: {
                 next: ' <i class=" fa fa-angle-right"></i>',
@@ -113,7 +113,7 @@ function inisialisasi(){
         language: {
             search: ' ',
             sLengthMenu: '_MENU_',
-            searchPlaceholder: "Search Products (Out)",
+            searchPlaceholder: "Cari Produk (Keluar)",
             info: "_START_ - _END_ of _TOTAL_ items",
             paginate: {
                 next: ' <i class=" fa fa-angle-right"></i>',
@@ -215,7 +215,7 @@ $('#input_qty').on('keyup', function(e) {
 
 //     if(valid==-1){
 //         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-//         ResetLoadingButton('.btn-save', 'Save changes');
+//         ResetLoadingButton('.btn-save', 'Simpan perubahan');
 //         return false;
 //     };
 
@@ -238,10 +238,10 @@ $('#input_qty').on('keyup', function(e) {
 //         },
 //         success:function(e){      
 //             if($('#input-type').val()==1){
-//                 toastr.success('', 'Successfully Added Incoming Item');
+//                 toastr.success('', 'Berhasil Tambah Barang Masuk');
 //             }
 //             else{
-//                 toastr.success('', 'Successfully Added Outgoing Item');
+//                 toastr.success('', 'Berhasil Tambah Barang Keluar');
                 
 //             }
 //             afterInsert();
@@ -279,7 +279,7 @@ function insertData() {
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-       // ResetLoadingButton('.btn-save', 'Save changes');
+       // ResetLoadingButton('.btn-save', 'Simpan perubahan');
         return false;
     };
     $('.row-input input').attr("disabled",true); // reset input
@@ -306,10 +306,10 @@ function insertData() {
             $('#input_barcode').val("");
              $('#input_barcode').trigger("focus");
             if($('#input-type').val()==1){
-                toastr.success('', 'Successfully Added Incoming Item');
+                toastr.success('', 'Berhasil Tambah Barang Masuk');
             }
             else{
-                toastr.success('', 'Successfully Added Outgoing Item');
+                toastr.success('', 'Berhasil Tambah Barang Keluar');
                 
             }
             if(mode==2){

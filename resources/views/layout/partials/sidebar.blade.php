@@ -567,7 +567,7 @@
                             <li><a href="{{ url('stockAlert') }}"
                                     class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok</a></li>
                             <li><a href="{{ url('manageStock') }}"
-                                    class="{{ Request::is('manageStock') ? 'active' : '' }}">Pengelolaan Stok</a></li>
+                                    class="{{ Request::is('manageStock') ? 'active' : '' }}">Keluar Masuk Produk</a></li>
                         </ul>
                     </li>
                     <!-- /Master -->

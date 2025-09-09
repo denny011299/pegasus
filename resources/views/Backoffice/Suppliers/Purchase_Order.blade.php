@@ -8,17 +8,17 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Purchase Order
+                    Pesanan Pembelian
                 @endslot
             @endcomponent
             <!-- /Page Header -->
 
-            <!-- Search Filter -->
+            <!-- Filter Pencarian -->
             @component('components.search-filter')
             @endcomponent
-            <!-- /Search Filter -->
+            <!-- /Filter Pencarian -->
 
-            <!-- Table -->
+            <!-- Tabel -->
             <div class="row">
                 <div class="col-sm-12">
                     <div class=" card-table">
@@ -27,15 +27,15 @@
                                 <table class="table table-center table-hover" id="tablePurchaseOrder">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Supplier Name</th>
-                                            <th>Reference</th>
-                                            <th>Date</th>
+                                            <th>Nama Pemasok</th>
+                                            <th>Referensi</th>
+                                            <th>Tanggal</th>
                                             <th>Total</th>
-                                            <th>Paid</th>
-                                            <th>Payables</th>
+                                            <th>Dibayar</th>
+                                            <th>Hutang</th>
                                             <th>Status</th>
-                                            <th>Created By</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Dibuat Oleh</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -47,7 +47,7 @@
                     </div>
                 </div>
             </div>
-            <!-- /Table -->
+            <!-- /Tabel -->
 
         </div>
     </div>

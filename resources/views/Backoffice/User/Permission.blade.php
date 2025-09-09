@@ -9,13 +9,13 @@
             <div class="page-header">
                 @component('components.page-header')
                     @slot('title')
-                        Permission
+                        Izin Akses
                     @endslot
                 @endcomponent
                 <div class="role-testing d-flex align-items-center justify-content-between">
-                    <h6>Role Name:<span class="ms-1 role_name">-</span></h6>
+                    <h6>Nama Role:<span class="ms-1 role_name">-</span></h6>
                     <p><label class="custom_check"><input type="checkbox" name="invoice" class="all_check"><span
-                                class="checkmark"></span></label>Allow All Modules</p>
+                                class="checkmark"></span></label>Izinkan Semua Modul</p>
                 </div>
             </div>
             <!-- /Page Header -->
@@ -30,13 +30,13 @@
                                     <thead class="thead-lightr">
                                         <tr>
                                             <th>#</th>
-                                            <th>Modules</th>
-                                            <th>Sub Modules</th>
-                                            <th>Create</th>
+                                            <th>Modul</th>
+                                            <th>Sub Modul</th>
+                                            <th>Buat</th>
                                             <th>Edit</th>
-                                            <th>Delete</th>
-                                            <th>View</th>
-                                            <th>Allow all</th>
+                                            <th>Hapus</th>
+                                            <th>Lihat</th>
+                                            <th>Izinkan Semua</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -91,8 +91,8 @@
             <!-- /Table -->
 
             <div class="btn-center my-4">
-                <a href="/role" class="btn btn-primary cancel me-2">Back</a>
-                <button type="submit" class="btn btn-primary btn-save">Update</button>
+                <a href="/role" class="btn btn-primary cancel me-2">Kembali</a>
+                <button type="submit" class="btn btn-primary btn-save">Perbarui</button>
             </div>
         </div>
     </div>

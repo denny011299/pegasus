@@ -7,7 +7,7 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_petty_cash .modal-title').html("Create Petty Cash");
+        $('#add_petty_cash .modal-title').html("Tambah Kas Kecil");
         $('#add_petty_cash input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_petty_cash').modal("show");
@@ -29,7 +29,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Petty Cash",
+                searchPlaceholder: "Cari Kas Kecil",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -103,7 +103,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Add Petty Cash');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
 
@@ -131,11 +131,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -143,7 +143,7 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Petty Cash Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Petty Cash Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Kas Kecil");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Kas Kecil");
         refreshPettyCash();
     }

@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Sales Order
+                    Pesanan Penjualan
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,15 +27,15 @@
                                 <table class="table table-center table-hover" id="tableSalesOrder">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Customer Name</th>
-                                            <th>Reference</th>
-                                            <th>Date</th>
-                                            <th>Total Amount</th>
-                                            <th>Paid</th>
-                                            <th>Difference</th>
-                                            <th>Payment Status</th>
-                                            <th>Cashier</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Nama Customer</th>
+                                            <th>Referensi</th>
+                                            <th>Tanggal</th>
+                                            <th>Jumlah Total</th>
+                                            <th>Dibayar</th>
+                                            <th>Selisih</th>
+                                            <th>Status Pembayaran</th>
+                                            <th>Kasir</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>

@@ -13,7 +13,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Stock Alert (Low)",
+                searchPlaceholder: "Cari Stok (Rendah)",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -26,7 +26,12 @@
                 { data: "product_variant_sku" },
                 { data: "product_variant_stock_text" },
                 { data: "product_alert" },
-            ]
+            ],
+            initComplete: (settings, json) => {
+                $('.dataTables_filter').appendTo('#tableSearch');
+                $('.dataTables_filter').appendTo('.search-input');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            },
         });
 
         tableOut = $('#tableStockAlertOut').DataTable({
@@ -36,7 +41,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Stock Alert (Out)",
+                searchPlaceholder: "Cari Stok (Habis)",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -50,7 +55,12 @@
                 { data: "product_variant_sku" },
                 { data: "product_variant_stock_text" },
                 { data: "product_alert" },
-            ]
+            ],
+            initComplete: (settings, json) => {
+                $('.dataTables_filter').appendTo('#tableSearch');
+                $('.dataTables_filter').appendTo('.search-input');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            },
         });
     }
 

@@ -14,7 +14,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Produk",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -45,7 +45,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Pemesanan Penjualan",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -75,7 +75,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Faktur",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -127,7 +127,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load pemesanan penjualan:", err);
             }
         });
 
@@ -160,7 +160,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load:", err);
             }
         });
 
@@ -191,7 +191,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load:", err);
             }
         });
     }
@@ -201,7 +201,7 @@
     })
 
     $(document).on('click', '.btnAddDn', function(){
-        $('#add_sales_delivery .modal-title').html("Create Delivery Notes");
+        $('#add_sales_delivery .modal-title').html("Tambah Catatan Pengiriman");
         $('#add_sales_delivery input').val("");
         $('.is-invalid').removeClass('is-invalid');
         tableSalesDelivery();
@@ -210,7 +210,7 @@
     })
 
     $(document).on('click', '.btnAddInv', function(){
-        $('#add_sales_invoice .modal-title').html("Create Invoice");
+        $('#add_sales_invoice .modal-title').html("Tambah Faktur");
         $('#add_sales_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_sales_invoice').modal("show");
@@ -276,7 +276,7 @@
     $(document).on('click', '.btn_edit_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
         mode = 2;
-        $('#add_sales_delivery .modal-title').html("Update Delivery Notes");
+        $('#add_sales_delivery .modal-title').html("Update Catatan Pengiriman");
         $('#add_sales_delivery input').val("");
         $('.is-invalid').removeClass('is-invalid');
         tableSalesDelivery();
@@ -292,7 +292,7 @@
     $(document).on('click', '.btn_edit_inv', function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();
         mode = 2;
-        $('#add_sales_invoice .modal-title').html("Update Invoice");
+        $('#add_sales_invoice .modal-title').html("Update Faktur");
         $('#add_sales_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_sales_invoice').modal("show");

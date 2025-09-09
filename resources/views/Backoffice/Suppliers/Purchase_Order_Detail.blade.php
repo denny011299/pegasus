@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Purchase Detail
+                    Detail Pembelian
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -26,7 +26,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
-                                        Summary
+                                        Ringkasan
                                     </button>
                                 </h2>
                                 <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show">
@@ -34,13 +34,13 @@
                                         <div class="row">
                                             <div class="col-4">
                                                 <div class="input-block">
-                                                    <label>Supplier Name</label>
+                                                    <label>Nama Supplier</label>
                                                     <select id="po_name" class="form-control fill"></select>
                                                 </div>
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Date</label>
+                                                    <label>Tanggal</label>
                                                     <input type="date" class="form-control fill" id="po_date">
                                                 </div>
                                             </div>
@@ -63,7 +63,7 @@
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Paid</label>
+                                                    <label>Dibayar</label>
                                                     <div class="input-group mb-3">
                                                         <span class="input-group-text">Rp </span>
                                                         <input type="text" class="form-control fill" id="po_paid" value="0">
@@ -72,7 +72,7 @@
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Remaining Payment</label>
+                                                    <label>Sisa Pembayaran</label>
                                                     <div class="input-group mb-3">
                                                         <span class="input-group-text">Rp </span>
                                                         <input type="text" class="form-control fill" id="po_remain" value="0">
@@ -84,20 +84,20 @@
                                             <div class="col-6">
                                                 <div class="card p-0">
                                                     <div class="card-body">
-                                                        <h6>Deliver</h6>
-                                                        <p>Deliver Name: CV Maju Lancar</p>
-                                                        <p>Address: Jl. Maju Jaya 2 no. 12</p>
-                                                        <p>Phone Number: 081273289917</p>
+                                                        <h6>Pengirim</h6>
+                                                        <p>Nama Pengirim: CV Maju Lancar</p>
+                                                        <p>Alamat: Jl. Maju Jaya 2 no. 12</p>
+                                                        <p>No. Telepon: 081273289917</p>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="col-6">
                                                 <div class="card p-0">
                                                     <div class="card-body">
-                                                        <h6>Receiver</h6>
-                                                        <p>Receiver Name: Budianto</p>
-                                                        <p>Address: Jl Makin Maju 5 no.18</p>
-                                                        <p>Phone Number: 081756378192</p>
+                                                        <h6>Penerima</h6>
+                                                        <p>Nama Penerima: Budianto</p>
+                                                        <p>Alamat: Jl. Makin Maju 5 no.18</p>
+                                                        <p>No. Telepon: 081756378192</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -105,11 +105,11 @@
                                         <div class="col-12">
                                             <table class="table table-center table-hover" id="tableProduct">
                                                 <thead>
-                                                    <th>Product</th>
+                                                    <th>Produk</th>
                                                     <th>Qty</th>
-                                                    <th>Purchase Price(Rp)</th>
-                                                    <th>Discount(Rp)</th>
-                                                    <th>Unit Cost(Rp)</th>
+                                                    <th>Harga Beli (Rp)</th>
+                                                    <th>Diskon (Rp)</th>
+                                                    <th>Biaya Unit (Rp)</th>
                                                     <th>Subtotal</th>
                                                 </thead>
                                                 <tbody></tbody>
@@ -119,7 +119,7 @@
                                             <div class="col-6"></div>
                                             <div class="col-6">
                                                 <div class="d-flex justify-content-between">
-                                                    <p>Ppn</p>
+                                                    <p>PPN</p>
                                                     <p>0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
@@ -131,7 +131,7 @@
                                                     <p>0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
-                                                    <p>Grand Total</p>
+                                                    <p>Total Akhir</p>
                                                     <p>Rp 320000</p>
                                                 </div>
                                             </div>
@@ -142,7 +142,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
-                                        Delivery Notes
+                                        Catatan Pengiriman
                                     </button>
                                 </h2>
                                 <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse">
@@ -150,19 +150,19 @@
                                         <div class="row pb-3">
                                             <div class="col-8"></div>
                                             <div class="col-4 text-end">
-                                                <a class="btn btn-primary btnAddDn"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add Delivery Notes</a>
+                                                <a class="btn btn-primary btnAddDn"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah Catatan Pengiriman</a>
                                             </div>
                                         </div>
                                         <div class="col-12 pb-5">
                                             <table class="table table-center table-hover" id="tableDelivery">
                                                 <thead>
-                                                    <th>Delivery Note No.</th>
-                                                    <th>Delivery Date</th>
-                                                    <th>Receiver</th>
-                                                    <th>Address</th>
-                                                    <th>Phone Number</th>
+                                                    <th>No. Catatan Pengiriman</th>
+                                                    <th>Tanggal Pengiriman</th>
+                                                    <th>Penerima</th>
+                                                    <th>Alamat</th>
+                                                    <th>No. Telepon</th>
                                                     <th>Status</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>
@@ -173,7 +173,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
-                                        Invoices and Payments
+                                        Faktur dan Pembayaran
                                     </button>
                                 </h2>
                                 <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse">
@@ -181,17 +181,17 @@
                                         <div class="row pb-3">
                                             <div class="col-8"></div>
                                             <div class="col-4 text-end">
-                                                <a class="btn btn-primary btnAddInv"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add Invoice</a>
+                                                <a class="btn btn-primary btnAddInv"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah Faktur</a>
                                             </div>
                                         </div>
                                         <div class="col-12 pb-5">
                                             <table class="table table-center table-hover" id="tableInvoice">
                                                 <thead>
-                                                    <th>Order Date</th>
-                                                    <th>Invoice No.</th>
+                                                    <th>Tanggal Pesanan</th>
+                                                    <th>No. Faktur</th>
                                                     <th>Total</th>
                                                     <th>Status</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>
@@ -202,7 +202,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseFour" aria-expanded="false" aria-controls="panelsStayOpen-collapseFour">
-                                        Goods Receipt
+                                        Penerimaan Barang
                                     </button>
                                 </h2>
                                 <div id="panelsStayOpen-collapseFour" class="accordion-collapse collapse">
@@ -210,17 +210,17 @@
                                         <div class="row pb-3">
                                             <div class="col-8"></div>
                                             <div class="col-4 text-end">
-                                                <a class="btn btn-primary btnAddRcp"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add Goods Receipt</a>
+                                                <a class="btn btn-primary btnAddRcp"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah Penerimaan Barang</a>
                                             </div>
                                         </div>
                                         <div class="col-12 pb-5">
                                             <table class="table table-center table-hover" id="tableReceipt">
                                                 <thead>
-                                                    <th>Receive Date</th>
-                                                    <th>Ref Delivery Note</th>
-                                                    <th>Receiver</th>
+                                                    <th>Tanggal Terima</th>
+                                                    <th>Referensi Catatan Pengiriman</th>
+                                                    <th>Penerima</th>
                                                     <th>Status</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>

@@ -7,7 +7,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Roles & Permission
+                    Peran & Izin
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -21,9 +21,9 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>ID</th>
-                                            <th>Role Name</th>
-                                            <th>Created at</th>
-                                            <th Class="no-sort">Actions</th>
+                                            <th>Nama Peran</th>
+                                            <th>Dibuat Pada</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>

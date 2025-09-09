@@ -343,7 +343,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "City Name",
+            placeholder: "Pilih Kota",
             closeOnSelect: true,
             allowClear: true,
             
@@ -374,7 +374,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Provinsi",
+            placeholder: "Pilih Provinsi",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -403,7 +403,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Select Category",
+            placeholder: "Pilih Kategori",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -432,7 +432,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Select Variant",
+            placeholder: "Pilih Variasi",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -461,7 +461,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Select Unit",
+            placeholder: "Pilih Satuan",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -490,7 +490,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Select Product",
+            placeholder: "Pilih Produk",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -519,7 +519,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Select Product",
+            placeholder: "Pilih Produk",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -548,7 +548,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Select Supply",
+            placeholder: "Pilih Bahan Mentah",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -577,7 +577,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Select Product",
+            placeholder: "Pilih Produk",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",

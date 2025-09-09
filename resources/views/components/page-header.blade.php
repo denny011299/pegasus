@@ -115,7 +115,7 @@
                   @if (Route::is(['bom']))
                     <li>
                         <a class="btn btn-primary btnAdd" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Resep Bahan Mentah</a>
+                            Resep</a>
                     </li>
                 @endif
                 @if (Route::is(['production']))
@@ -131,6 +131,16 @@
                     </li>
                 @endif
                 @if (Route::is(['staffDetail']))
+                    <li>
+                        <a class="btn btn-outline-secondary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
+                    </li>
+                @endif
+                @if (Route::is(['customerDetail']))
+                    <li>
+                        <a class="btn btn-outline-secondary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
+                    </li>
+                @endif
+                @if (Route::is(['supplierDetail']))
                     <li>
                         <a class="btn btn-outline-secondary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
                     </li>

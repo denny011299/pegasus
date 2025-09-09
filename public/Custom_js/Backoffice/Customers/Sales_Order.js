@@ -9,7 +9,7 @@
         mode=1;
         tableSalesModal();
         refreshTableProduct();
-        $('#add_sales_order .modal-title').html("Create Sales Order");
+        $('#add_sales_order .modal-title').html("Tambah Pesanan Penjualan");
         $('#add_sales_order input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_sales_order').modal("show");
@@ -23,7 +23,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Pesanan Penjualan",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -80,7 +80,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load so:", err);
             }
         });
     }
@@ -98,7 +98,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Pesanan Penjualan",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -109,9 +109,9 @@
                 { data: "pr_name" },
                 { data: "variant" },
                 { data: "pr_sku" },
-                { data: "pr_qty" },
-                { data: "pr_price" },
-                { data: "pr_subtotal" },
+                { data: "pr_qty", className: "text-center"},
+                { data: "pr_price", className: "text-end"},
+                { data: "pr_subtotal", className: "text-end"},
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -150,13 +150,13 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load so:", err);
             }
         });
     }
 
     $(document).on("click",".btn-save",function(){
-       // LoadingButton(this);
+       LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         var url ="/insertSales";
         var valid=1;
@@ -170,7 +170,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            //ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
 
@@ -184,7 +184,7 @@
             // param.category_id = $('#add_sales_order').attr("category_id");
         }
 
-        //LoadingButton($(this));
+        LoadingButton($(this));
         $.ajax({
             url:url,
             data: param,
@@ -193,11 +193,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                //ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                //ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -205,8 +205,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Category Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Category Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pesanan Penjualan");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pesanan Penjualan");
         refreshSalesOrder();
     }
 
@@ -218,7 +218,7 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_sales_order .modal-title').html("Update Category");
+        $('#add_sales_order .modal-title').html("Update Pesanan Penjualan");
         $('#add_sales_order input').empty().val("");
         // $('#category_name').val(data.category_name);
 
@@ -229,9 +229,9 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        // showModalDelete("Apakah yakin ingin mengahapus category ini?","btn-delete-category");
-        $('#modalDelete').modal("show");
-        // $('#btn-delete-sales').attr("category_id", data.category_id);
+        showModalDelete("Apakah yakin ingin mengahapus pesanan penjualan ini?","btn-delete-sales");
+        // $('#modalDelete').modal("show");
+        $('#btn-delete-sales').attr("category_id", data.category_id);
     });
 
 
@@ -246,7 +246,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshSalesOrder();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete sales order");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete pesanan penjualan");
                 
             },
             error:function(e){

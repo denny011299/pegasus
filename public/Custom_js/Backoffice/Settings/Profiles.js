@@ -37,7 +37,7 @@ $(document).on('click', '.btn-save', function(){
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', 'Save changes');
+        ResetLoadingButton('.btn-save', 'Simpan perubahan');
         return false;
     };
 
@@ -86,12 +86,12 @@ $(document).on('click', '.btn-save', function(){
         },
         success: function (response) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
-            notifikasi('success', "Successful Update", "Successful Profile Updated");
+            ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            notifikasi('success', "Berhasil Update", "Berhasil Update Profil");
         },
         error: function (xhr) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Save changes');
+            ResetLoadingButton(".btn-save", 'Simpan perubahan');
             console.log(xhr);
         },
     });

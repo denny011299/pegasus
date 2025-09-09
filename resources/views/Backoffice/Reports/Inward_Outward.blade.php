@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Inward & Outward Goods
+                    Barang Masuk & Keluar
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -28,11 +28,11 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>SKU</th>
-                                            <th>Product Name</th>
-                                            <th>Type</th>
-                                            <th>Unit</th>
-                                            <th>Qty</th>
-                                            <th>User</th>
+                                            <th>Nama Produk</th>
+                                            <th>Jenis</th>
+                                            <th>Satuan</th>
+                                            <th>Jumlah</th>
+                                            <th>Pengguna</th>
                                         </tr>
                                     </thead>
                                     <tbody>

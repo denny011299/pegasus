@@ -9,7 +9,7 @@
 
     $(document).on('click', '.btnAdd', function(){
         mode=1;
-        $('#addProduction .modal-title').html("Create Production");
+        $('#addProduction .modal-title').html("Tambah Produksi");
         $('#addProduction input').val("");
         $('#product_id').empty();
         $('#production_qty').val(1);
@@ -52,7 +52,7 @@
                 addRow(e[0]);
             },
             error: function (err) {
-                console.error("Gagal load bom:", err);
+                console.error("Gagal load produksi:", err);
             }
         });
     })
@@ -65,7 +65,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Production",
+                searchPlaceholder: "Cari Produksi",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -106,7 +106,7 @@
                     `;
 
                     if (e[i].status == 1){
-                        e[i].production_status = `<span class="badge bg-secondary" style="font-size: 12px">Pending</span>`;
+                        e[i].production_status = `<span class="badge bg-secondary" style="font-size: 12px">Tertunda</span>`;
                     } else if (e[i].status == 2){
                         e[i].production_status = `<span class="badge bg-primary" style="font-size: 12px">Diproses</span>`;
                     } else if (e[i].status == 3){
@@ -139,7 +139,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
         param = {
@@ -159,7 +159,7 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){ 
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 if(e.status == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", e.message);
                     return false;
@@ -167,7 +167,7 @@
                 afterInsert();
             },
             error:function(a){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(a);
             }
         });
@@ -200,7 +200,7 @@
 
                 if (validQty == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", `Mohon cek stock ${bahanKurang.map(d => d).join(", ")}`);
-                    ResetLoadingButton('.btn-save', 'Save changes');
+                    ResetLoadingButton('.btn-save', 'Simpan perubahan');
                     return false;
                 } else{
                     
@@ -213,7 +213,7 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Category Added");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produksi");
         refreshProduction();
     }
 
@@ -224,7 +224,7 @@
             $('#tableSupply tbody').append(`
                 <tr class="row-supply" data-id="${element.supplies_id}">
                     <td>${element.supplies_name}</td>
-                    <td>${element.bom_detail_qty}</td>
+                    <td class="text-center">${element.bom_detail_qty}</td>
                     <td>${element.unit_name}</td>
                 </tr>    
             `)
@@ -243,7 +243,7 @@ $(document).on("click", ".btn_delete", function () {
         "Apakah yakin ingin batalkan produksi ini?",
         "btn-delete-production"
     );
-    $("#btn-delete-production").html("Cancel Production");
+    $("#btn-delete-production").html("Batal Produksi");
     $("#btn-delete-production").attr("production_id", data.production_id);
 });
 
@@ -260,7 +260,7 @@ $(document).on("click", "#btn-delete-production", function () {
             afterInsert();
             notifikasi(
                 "success",
-                "Successful Cancel",
+                "Berhasil Batalkan",
                 "Berhasil batalkan produksi"
             );
         },

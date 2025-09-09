@@ -14,7 +14,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Produk",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -45,7 +45,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Pengiriman",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -77,7 +77,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Faktur",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -107,7 +107,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Sales Order",
+                searchPlaceholder: "Cari Penerimaan Barang",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -169,9 +169,9 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].pod_date).format('D MMM YYYY');
                     if (e[i].pod_status == 1){
-                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Pending</span>`;
+                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Tertunda</span>`;
                     } else if (e[i].pod_status == 2){
-                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Delivered</span>`;
+                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Terkirim</span>`;
                     }
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_print_dn" data-id="${e[i].pod_id}" data-bs-target="#print-sales">
@@ -207,9 +207,9 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
                     if (e[i].poi_status == 1){
-                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Pending</span>`;
+                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Tertunda</span>`;
                     } else if (e[i].poi_status == 2){
-                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Paid</span>`;
+                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
                     }
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_print_inv" data-id="${e[i].poi_id}" data-bs-target="#print-sales">
@@ -242,9 +242,9 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].por_date).format('D MMM YYYY');
                     if (e[i].por_status == 1){
-                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Delivering</span>`;
+                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Sedang Dikirim</span>`;
                     } else if (e[i].por_status == 2){
-                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Received</span>`;
+                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
                     }
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit_rcp" data-id="${e[i].por_id}" data-bs-target="#edit-sales">
@@ -270,7 +270,7 @@
     })
 
     $(document).on('click', '.btnAddDn', function(){
-        $('#add_purchase_delivery .modal-title').html("Create Delivery Notes");
+        $('#add_purchase_delivery .modal-title').html("Tambah Catatan Pengiriman");
         $('#add_purchase_delivery input').val("");
         $('.is-invalid').removeClass('is-invalid');
         tablePurchaseDelivery();
@@ -279,14 +279,14 @@
     })
 
     $(document).on('click', '.btnAddInv', function(){
-        $('#add_purchase_invoice .modal-title').html("Create Invoice");
+        $('#add_purchase_invoice .modal-title').html("Tambah Faktur");
         $('#add_purchase_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_invoice').modal("show");
     })
 
     $(document).on('click', '.btnAddRcp', function(){
-        $('#add_purchase_receipt .modal-title').html("Create Receipt");
+        $('#add_purchase_receipt .modal-title').html("Tambah Penerimaan Barang");
         $('#add_purchase_receipt input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_receipt').modal("show");
@@ -304,7 +304,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Product",
+                searchPlaceholder: "Cari Produk",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -344,7 +344,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load:", err);
             }
         });
     }
@@ -352,7 +352,7 @@
     $(document).on('click', '.btn_edit_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
         mode = 2;
-        $('#add_purchase_delivery .modal-title').html("Update Delivery Notes");
+        $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
         $('#add_purchase_delivery input').val("");
         $('.is-invalid').removeClass('is-invalid');
         tablePurchaseDelivery();
@@ -368,7 +368,7 @@
     $(document).on('click', '.btn_edit_inv', function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();
         mode = 2;
-        $('#add_purchase_invoice .modal-title').html("Update Invoice");
+        $('#add_purchase_invoice .modal-title').html("Update Faktur");
         $('#add_purchase_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_invoice').modal("show");
@@ -377,7 +377,7 @@
     $(document).on('click', '.btn_edit_rcp', function(){
         var data = $('#tableReceipt').DataTable().row($(this).parents('tr')).data();
         mode = 2;
-        $('#add_purchase_receipt .modal-title').html("Update Goods Receipt");
+        $('#add_purchase_receipt .modal-title').html("Update Penerimaan Barang");
         $('#add_purchase_receipt input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_receipt').modal("show");

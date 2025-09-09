@@ -1,4 +1,4 @@
-<?php $page = 'product_issues'; ?>
+<?php $page = 'production'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -8,7 +8,7 @@
              <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Production
+                    Produksi
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,11 +27,11 @@
                                 <table class="table table-center table-hover" id="tableProduction">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Product</th>
+                                            <th>Tanggal</th>
+                                            <th>Produk</th>
                                             <th>SKU</th>
                                             <th>Qty</th>
-                                            <th class="no-sort">Action</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

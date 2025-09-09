@@ -8,7 +8,7 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_cash .modal-title').html("Create Cash");
+        $('#add_cash .modal-title').html("Tambah Kas");
         $('#add_cash input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_cash').modal("show");
@@ -29,7 +29,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Cash",
+                searchPlaceholder: "Cari Kas",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -112,7 +112,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save Changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
 
@@ -142,11 +142,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -154,7 +154,7 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Cash Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Cash Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Kas");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Kas");
         refreshCash();
     }

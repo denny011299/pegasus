@@ -14,7 +14,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Supplier",
+                searchPlaceholder: "Cari Pemasok",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -80,7 +80,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSupplier').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin menghapus supplier ini?","btn-delete-supplier");
+        showModalDelete("Apakah yakin ingin menghapus pemasok ini?","btn-delete-supplier");
         $('#btn-delete-supplier').attr("supplier_id", data.supplier_id);
     });
 
@@ -96,7 +96,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshSupplier();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete supplier");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete pemasok");
                 
             },
             error:function(e){

@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Production Report
+                    Laporan Produksi
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,41 +27,41 @@
                                 <table class="table table-center table-hover" id="tableProduct">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Production Date</th>
-                                            <th>Product Name</th>
-                                            <th>Qty</th>
+                                            <th>Tanggal Produksi</th>
+                                            <th>Nama Produk</th>
+                                            <th>Jumlah</th>
                                             <th>Status</th>
-                                            <th>Input by</th>
+                                            <th>Diinput oleh</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>02 August 2025</td>
+                                            <td>02 Agustus 2025</td>
                                             <td>Hand Sanitizer 250ml</td>
-                                            <td>1,200</td>
-                                            <td><span class="badge bg-success-light">Completed</span></td>
+                                            <td>1.200</td>
+                                            <td><span class="badge bg-success-light">Selesai</span></td>
                                             <td>Admin</td>
                                         </tr>
                                         <tr>
-                                            <td>06 August 2025</td>
-                                            <td>Liquid Soap 1L</td>
+                                            <td>06 Agustus 2025</td>
+                                            <td>Sabun Cair 1L</td>
                                             <td>500</td>
-                                            <td><span class="badge bg-success-light">Completed</span></td>
+                                            <td><span class="badge bg-success-light">Selesai</span></td>
                                             <td>Operator</td>
                                         </tr>
                                         <tr>
-                                            <td>08 August 2025</td>
-                                            <td>Bleaching Powder 25kg</td>
+                                            <td>08 Agustus 2025</td>
+                                            <td>Bubuk Pemutih 25kg</td>
                                             <td>200</td>
-                                            <td><span class="badge bg-success-light">Completed</span></td>
+                                            <td><span class="badge bg-success-light">Selesai</span></td>
                                             <td>Admin</td>
                                         </tr>
                                         <tr>
-                                            <td>09 August 2025</td>
-                                            <td>Alcohol 70% 5L</td>
+                                            <td>09 Agustus 2025</td>
+                                            <td>Alkohol 70% 5L</td>
                                             <td>300</td>
-                                            <td><span class="badge bg-danger-light">Cancelled</span></td>
-                                            <td>Manager</td>
+                                            <td><span class="badge bg-danger-light">Dibatalkan</span></td>
+                                            <td>Manajer</td>
                                         </tr>
                                     </tbody>
 

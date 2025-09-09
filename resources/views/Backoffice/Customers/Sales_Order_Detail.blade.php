@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Sales Detail
+                    Detail Penjualan
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -26,7 +26,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
-                                        Summary
+                                        Ringkasan
                                     </button>
                                 </h2>
                                 <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show">
@@ -34,13 +34,13 @@
                                         <div class="row">
                                             <div class="col-4">
                                                 <div class="input-block">
-                                                    <label>Customer Name</label>
+                                                    <label>Nama Pelanggan</label>
                                                     <select id="so_name" class="form-control fill"></select>
                                                 </div>
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Date</label>
+                                                    <label>Tanggal</label>
                                                     <input type="date" class="form-control fill" id="so_date">
                                                 </div>
                                             </div>
@@ -48,13 +48,13 @@
                                                 <div class="input-block mb-3">
                                                     <label>Status</label>
                                                     <select id="so_status" class="form-control fill">
-                                                        <option value="created" checked>Created</option>
+                                                        <option value="created" checked>Dibuat</option>
                                                     </select>
                                                 </div>
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Delivery Cost</label>
+                                                    <label>Biaya Pengiriman</label>
                                                     <div class="input-group mb-3">
                                                         <span class="input-group-text">Rp </span>
                                                         <input type="text" class="form-control fill" id="so_cost" value="0">
@@ -63,7 +63,7 @@
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Paid</label>
+                                                    <label>Dibayar</label>
                                                     <div class="input-group mb-3">
                                                         <span class="input-group-text">Rp </span>
                                                         <input type="text" class="form-control fill" id="so_paid" value="0">
@@ -72,7 +72,7 @@
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Remaining Payment</label>
+                                                    <label>Sisa Pembayaran</label>
                                                     <div class="input-group mb-3">
                                                         <span class="input-group-text">Rp </span>
                                                         <input type="text" class="form-control fill" id="so_remain" value="0">
@@ -84,20 +84,20 @@
                                             <div class="col-6">
                                                 <div class="card p-0">
                                                     <div class="card-body">
-                                                        <h6>Deliver</h6>
-                                                        <p>Deliver Name: CV Maju Lancar</p>
-                                                        <p>Address: Jl. Maju Jaya 2 no. 12</p>
-                                                        <p>Phone Number: 081273289917</p>
+                                                        <h6>Pengiriman</h6>
+                                                        <p>Nama Pengirim: CV Maju Lancar</p>
+                                                        <p>Alamat: Jl. Maju Jaya 2 no. 12</p>
+                                                        <p>No. Telepon: 081273289917</p>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="col-6">
                                                 <div class="card p-0">
                                                     <div class="card-body">
-                                                        <h6>Customer Detail</h6>
-                                                        <p>Name: </p>
-                                                        <p>Address: </p>
-                                                        <p>Phone Number: </p>
+                                                        <h6>Detail Pelanggan</h6>
+                                                        <p>Nama: </p>
+                                                        <p>Alamat: </p>
+                                                        <p>No. Telepon: </p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -105,11 +105,11 @@
                                         <div class="col-12">
                                             <table class="table table-center table-hover" id="tableProduct">
                                                 <thead>
-                                                    <th>Product</th>
-                                                    <th>Variant</th>
+                                                    <th>Produk</th>
+                                                    <th>Varian</th>
                                                     <th>SKU</th>
                                                     <th>Qty</th>
-                                                    <th>Unit Price</th>
+                                                    <th>Harga Satuan</th>
                                                     <th>Subtotal</th>
                                                 </thead>
                                                 <tbody></tbody>
@@ -119,7 +119,7 @@
                                             <div class="col-6"></div>
                                             <div class="col-6">
                                                 <div class="d-flex justify-content-between">
-                                                    <p>Ppn</p>
+                                                    <p>PPN</p>
                                                     <p>0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
@@ -131,7 +131,7 @@
                                                     <p>0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
-                                                    <p>Grand Total</p>
+                                                    <p>Total Keseluruhan</p>
                                                     <p>Rp 400000</p>
                                                 </div>
                                             </div>
@@ -142,7 +142,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
-                                        Delivery Notes
+                                        Catatan Pengiriman
                                     </button>
                                 </h2>
                                 <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse">
@@ -150,17 +150,17 @@
                                         <div class="row pb-3">
                                             <div class="col-8"></div>
                                             <div class="col-4 text-end">
-                                                <a class="btn btn-primary btnAddDn"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add Delivery Notes</a>
+                                                <a class="btn btn-primary btnAddDn"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah Catatan Pengiriman</a>
                                             </div>
                                         </div>
                                         <div class="col-12 pb-5">
                                             <table class="table table-center table-hover" id="tableDelivery">
                                                 <thead>
-                                                    <th>Delivery Note No.</th>
-                                                    <th>Delivery Date</th>
-                                                    <th>Receiver</th>
-                                                    <th>Address</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th>No. Catatan Pengiriman</th>
+                                                    <th>Tanggal Pengiriman</th>
+                                                    <th>Penerima</th>
+                                                    <th>Alamat</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>
@@ -171,7 +171,7 @@
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
-                                        Invoices and Payments
+                                        Faktur & Pembayaran
                                     </button>
                                 </h2>
                                 <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse">
@@ -179,18 +179,18 @@
                                         <div class="row pb-3">
                                             <div class="col-8"></div>
                                             <div class="col-4 text-end">
-                                                <a class="btn btn-primary btnAddInv"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Add Invoice</a>
+                                                <a class="btn btn-primary btnAddInv"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah Faktur</a>
                                             </div>
                                         </div>
                                         <div class="col-12 pb-5">
                                             <table class="table table-center table-hover" id="tableInvoice">
                                                 <thead>
-                                                    <th>Invoice Date</th>
-                                                    <th>Due Date</th>
-                                                    <th>Invoice Code</th>
+                                                    <th>Tanggal Faktur</th>
+                                                    <th>Jatuh Tempo</th>
+                                                    <th>Kode Faktur</th>
                                                     <th>Status</th>
                                                     <th>Total</th>
-                                                    <th class="no-sort">Action</th>
+                                                    <th class="no-sort">Aksi</th>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>
@@ -198,11 +198,11 @@
                                     </div>
                                 </div>
                             </div>
-                            </div>
+                        </div>
                     </div>
                     <div class=" card-table">
                         <div class="card-body">
-                            
+                            <!-- Optional additional content -->
                         </div>
                     </div>
                 </div>

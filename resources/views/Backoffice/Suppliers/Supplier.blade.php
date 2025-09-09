@@ -1,4 +1,4 @@
-<?php $page = 'suppliers'; ?>
+<?php $page = 'pemasok'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -7,7 +7,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Suppliers
+                    Pemasok
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -25,13 +25,13 @@
                                 <table class="table table-center table-hover" id="tableSupplier">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Supplier Name</th>
-                                            <th>Supplier Code</th>
-                                            <th>Telephone </th>
-                                            <th>City</th>
-                                            <th>Total Payment</th>
-                                            <th>Created</th>
-                                            <th class="no-sort">Actions</th>
+                                            <th>Nama Pemasok</th>
+                                            <th>Kode Pemasok</th>
+                                            <th>Telepon</th>
+                                            <th>Kota</th>
+                                            <th>Total Pembayaran</th>
+                                            <th>Dibuat Pada</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Cash
+                    Kas
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,12 +27,12 @@
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Date</th>
-                                            <th>Description</th>
+                                            <th>Tanggal</th>
+                                            <th>Deskripsi</th>
                                             <th>Debit</th>
-                                            <th>Credit 1</th>
-                                            <th>Credit 2</th>
-                                            <th>Balance</th>
+                                            <th>Kredit 1</th>
+                                            <th>Kredit 2</th>
+                                            <th>Saldo</th>
                                         </tr>
                                     </thead>
                                     <tbody>

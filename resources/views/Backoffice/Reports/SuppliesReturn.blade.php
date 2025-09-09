@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Supplies Return Report
+                    Laporan Retur Bahan Baku
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -21,51 +21,50 @@
             <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
-                    <div class=" card-table">
+                    <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tableProduct">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Returned Date</th>
-                                            <th>Supplies Name</th>
-                                            <th>Qty</th>
-                                            <th>Input by</th>
+                                            <th>Tanggal Retur</th>
+                                            <th>Nama Bahan Baku</th>
+                                            <th>Jumlah</th>
+                                            <th>Diinput oleh</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>01 August 2025</td>
-                                            <td>Alcohol 70%</td>
+                                            <td>01 Agustus 2025</td>
+                                            <td>Alkohol 70%</td>
                                             <td>120</td>
                                             <td>Admin</td>
                                         </tr>
                                         <tr>
-                                            <td>03 August 2025</td>
-                                            <td>Sodium Chloride</td>
+                                            <td>03 Agustus 2025</td>
+                                            <td>Natrium Klorida</td>
                                             <td>80</td>
                                             <td>Rina</td>
                                         </tr>
                                         <tr>
-                                            <td>05 August 2025</td>
-                                            <td>Hydrogen Peroxide</td>
+                                            <td>05 Agustus 2025</td>
+                                            <td>Hidrogen Peroksida</td>
                                             <td>50</td>
                                             <td>Andi</td>
                                         </tr>
                                         <tr>
-                                            <td>06 August 2025</td>
-                                            <td>Acetic Acid</td>
+                                            <td>06 Agustus 2025</td>
+                                            <td>Asam Asetat</td>
                                             <td>200</td>
                                             <td>Dewi</td>
                                         </tr>
                                         <tr>
-                                            <td>07 August 2025</td>
-                                            <td>Sulfuric Acid</td>
+                                            <td>07 Agustus 2025</td>
+                                            <td>Asam Sulfat</td>
                                             <td>60</td>
                                             <td>Budi</td>
                                         </tr>
                                     </tbody>
-
                                 </table>
                             </div>
                         </div>

@@ -19,7 +19,7 @@
     });
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_bom .modal-title').html("Create Bill of Material");
+        $('#add_bom .modal-title').html("Tambah Resep Bahan Mentah");
         $('#add_bom input').val("");
         $('#supplies_id').empty();
         $('#unit_id').empty();
@@ -39,7 +39,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search BoM",
+                searchPlaceholder: "Cari Resep",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -110,7 +110,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
         console.log(bahan);
@@ -136,11 +136,11 @@
             },
             success:function(e){
                 bahan = [];
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan perubahan');
                 console.log(e);
             }
         });
@@ -148,8 +148,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful BoM Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful BoM Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Resep");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Resep");
         refreshBom();
     }
 
@@ -159,7 +159,7 @@
         var data = $('#tableBom').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         console.log(data);
         mode=2;
-        $('#add_bom .modal-title').html("Update Bill of Material");
+        $('#add_bom .modal-title').html("Update Resep Bahan Mentah");
         $('#add_bom input').empty().val("");
         $('#supplies_id').empty();
         $('#unit_id').empty();
@@ -198,7 +198,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
         var temp = $('#supplies_id').select2("data")[0];
@@ -261,7 +261,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableBom').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus BoM ini?","btn-delete-bom");
+        showModalDelete("Apakah yakin ingin mengahapus resep ini?","btn-delete-bom");
         $('#btn-delete-bom').attr("bom_id", data.bom_id);
         $('#modalDelete').modal("show");
     });
@@ -277,7 +277,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshBom();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete BoM");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete resep bahan mentah");
             },
             error:function(e){
                 console.log(e);

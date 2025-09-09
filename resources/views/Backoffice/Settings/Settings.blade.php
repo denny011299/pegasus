@@ -7,7 +7,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Company Settings
+                    Pengaturan Perusahaan
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -18,61 +18,61 @@
                         <div class="row">
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>Company Name</label>
-                                    <input type="text" class="form-control fill" id="company_name" placeholder="Enter Company Name">
+                                    <label>Nama Perusahaan</label>
+                                    <input type="text" class="form-control fill" id="company_name" placeholder="Masukkan Nama Perusahaan">
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>Company Address</label>
-                                    <input type="text" class="form-control fill" id="company_address" placeholder="Enter Company Address">
+                                    <label>Alamat Perusahaan</label>
+                                    <input type="text" class="form-control fill" id="company_address" placeholder="Masukkan Alamat Perusahaan">
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>Phone Number</label>
-                                    <input type="text" class="form-control fill number-only" id="company_phone" placeholder="Enter Phone Number">
+                                    <label>Nomor Telepon</label>
+                                    <input type="text" class="form-control fill number-only" id="company_phone" placeholder="Masukkan Nomor Telepon">
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>Company Email</label>
-                                    <input type="text" class="form-control fill" id="company_email" placeholder="Enter Company Email">
+                                    <label>Email Perusahaan</label>
+                                    <input type="text" class="form-control fill" id="company_email" placeholder="Masukkan Email Perusahaan">
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>State</label>
+                                    <label>Provinsi</label>
                                     <select class="form-select fill" id="state_id"></select>
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>City</label>
+                                    <label>Kota</label>
                                     <select class="form-select fill" id="city_id"></select>
                                 </div>
                             </div>
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>Zipcode</label>
-                                    <input type="text" class="form-control fill" id="company_zipcode" placeholder="Enter Zipcode">
+                                    <label>Kode Pos</label>
+                                    <input type="text" class="form-control fill" id="company_zipcode" placeholder="Masukkan Kode Pos">
                                 </div>
                             </div>
                             <div class="col-6"></div>
                             <div class="col-lg-6 col-12">
                                 <div class="input-block mb-3">
-                                    <label>Company Logo</label>
+                                    <label>Logo Perusahaan</label>
                                     <div class="input-block service-upload logo-upload mb-0">
                                         <div class="drag-drop">
                                             <h6 class="drop-browse align-center">
-                                                <span class="text-info me-1">Click To Replace</span> or Drag and Drop
+                                                <span class="text-info me-1">Klik untuk Mengganti</span> atau Seret & Letakkan
                                             </h6>
-                                            <p class="text-muted"> Accept only PNG, JPG file</p>
+                                            <p class="text-muted"> Hanya mendukung file PNG, JPG</p>
                                             <input type="file" id="company_logo" accept="image/png, image/jpeg" multiple="">
                                         </div>
                                         <span class="companies-logo"><img
                                                 src="{{ URL::asset('/assets/img/dummy_logo.jpg') }}"
-                                                id="preview_image1" alt="upload"></span>
+                                                id="preview_image1" alt="unggah"></span>
                                     </div>
                                 </div>
                             </div>
@@ -82,21 +82,21 @@
                                     <div class="input-block service-upload logo-upload mb-0">
                                         <div class="drag-drop">
                                             <h6 class="drop-browse align-center">
-                                                <span class="text-info me-1">Click To Replace</span> or Drag and Drop
+                                                <span class="text-info me-1">Klik untuk Mengganti</span> atau Seret & Letakkan
                                             </h6>
-                                            <p class="text-muted"> Accept only PNG, JPG file</p>
+                                            <p class="text-muted"> Hanya mendukung file PNG, JPG</p>
                                             <input type="file" id="company_icon" accept="image/png, image/jpeg" multiple="">
                                         </div>
                                         <span class="site-logo"><img
                                                 src="{{ URL::asset('/assets/img/dummy_icons.jpg') }}"
-                                                id="preview_image2" alt="upload"></span>
+                                                id="preview_image2" alt="unggah"></span>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-lg-12 pt-3">
                                 <div class="btn-path text-end">
-                                    <a href="/" class="btn btn-cancel bg-primary-light me-3">Cancel</a>
-                                    <a class="btn btn-primary btn-save">Save Changes</a>
+                                    <a href="/" class="btn btn-cancel bg-primary-light me-3">Batal</a>
+                                    <a class="btn btn-primary btn-save">Simpan Perubahan</a>
                                 </div>
                             </div>
                         </div>

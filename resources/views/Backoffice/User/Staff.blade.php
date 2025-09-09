@@ -20,12 +20,12 @@
                                 <table class="table table-center table-hover datatable" id="tableStaff">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Staff Name</th>
-                                            <th>Phone</th>
+                                            <th>Nama Staff</th>
+                                            <th>No. Telepon</th>
                                             <th>Email</th>
-                                            <th>Role </th>
-                                            <th>Created on</th>
-                                            <th Class="no-sort">Actions</th>
+                                            <th>Peran</th>
+                                            <th>Dibuat pada</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

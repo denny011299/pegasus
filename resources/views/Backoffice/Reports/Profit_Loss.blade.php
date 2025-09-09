@@ -7,7 +7,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Profit & Loss
+                    Laba & Rugi
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,10 +27,10 @@
                                     <table class="table table-center ">
                                         <thead class="thead-light loss">
                                             <tr>
-                                                <th>Info</th>
-                                                <th>Year 1</th>
-                                                <th>Year 2</th>
-                                                <th>Year 3</th>
+                                                <th>Informasi</th>
+                                                <th>Tahun 1</th>
+                                                <th>Tahun 2</th>
+                                                <th>Tahun 3</th>
                                                 <th>Total</th>
                                             </tr>
                                         </thead>
@@ -39,11 +39,11 @@
                                                 <table class="table table-center" id="tableProfit">
                                                     <thead class="profitloss-heading">
                                                         <tr>
-                                                            <th>Income</th>
-                                                            <th>Name</th>
-                                                            <th>Year 1</th>
-                                                            <th>Year 2</th>
-                                                            <th>Year 3</th>
+                                                            <th>Pendapatan</th>
+                                                            <th>Nama</th>
+                                                            <th>Tahun 1</th>
+                                                            <th>Tahun 2</th>
+                                                            <th>Tahun 3</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -57,11 +57,11 @@
                                                 <table class="table table-center" id="tableLoss">
                                                     <thead class="profitloss-heading">
                                                         <tr>
-                                                            <th>Expenses</th>
-                                                            <th>Name</th>
-                                                            <th>Year 1</th>
-                                                            <th>Year 2</th>
-                                                            <th>Year 3</th>
+                                                            <th>Pengeluaran</th>
+                                                            <th>Nama</th>
+                                                            <th>Tahun 1</th>
+                                                            <th>Tahun 2</th>
+                                                            <th>Tahun 3</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
