@@ -41,7 +41,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Supplies
+                    Bahan Mentah
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -60,11 +60,11 @@
                                 <table class="table table-center table-hover" id="tableSupplies">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Supply Name</th>
-                                            <th>Unit</th>
-                                            <th>Description</th>
-                                            <th>Stock</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Nama Bahan Mentah</th>
+                                            <th>Satuan</th>
+                                            <th>Deskripsi</th>
+                                            <th>Stok</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>

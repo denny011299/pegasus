@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Units
+                    Satuan
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,11 +27,10 @@
                                 <table class="table table-center table-hover" id="tableUnits">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Unit</th>
-                                            <th>Short Name</th>
-                                            <th>No of Products</th>
-                                            <th>Created On</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Satuan</th>
+                                            <th>Singkatan</th>
+                                            <th>Dibuat Pada</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>

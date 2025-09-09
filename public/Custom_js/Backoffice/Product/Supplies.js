@@ -10,7 +10,7 @@
     $(document).on('click','.btnAdd',function(){
         mode=1;
         idUnits = [];
-        $('#add_supplies .modal-title').html("Create Supplies");
+        $('#add_supplies .modal-title').html("Tambah Bahan Mentah");
         $('#add_supplies input').val("");
         $('#supplies_desc').val("");
         $('.is-invalid').removeClass('is-invalid');
@@ -27,7 +27,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Supplies",
+                searchPlaceholder: "Cari Bahan Mentah",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -106,7 +106,7 @@
             <div class="col-2 pb-3">
                 <label id="pu_id_${index+1}">${item}</label>
                 <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
-                placeholder="Enter Stock">
+                placeholder="Input Stok">
             </div>
             `;
             if (nextItem != '-'){
@@ -135,7 +135,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan Perubahan');
             return false;
         };
 
@@ -201,24 +201,24 @@
                                 relations: JSON.stringify(relations)
                             },
                             success: function () {
-                                ResetLoadingButton(".btn-save", 'Save changes');
+                                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
                             },
                             error: function (e) {
                                 console.log(e);
-                                ResetLoadingButton(".btn-save", 'Save changes');
+                                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
                             }
                         });
                     },
                     error: function (e) {
                         console.log(e);
-                        ResetLoadingButton(".btn-save", 'Save changes');
+                        ResetLoadingButton(".btn-save", 'Simpan Perubahan');
                     }
                 });
-                ResetLoadingButton(".btn-save", 'Save changes');   
+                ResetLoadingButton(".btn-save", 'Simpan Perubahan');   
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
                 console.log(e);
             }
         });
@@ -226,8 +226,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Supply Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Supply Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Bahan Mentah");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Tambah Bahan Mentah");
         refreshSupplies();
     }
 
@@ -252,7 +252,7 @@
         var data = $('#tableSupplies').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
         idUnits = [];
-        $('#add_supplies .modal-title').html("Update Supplies");
+        $('#add_supplies .modal-title').html("Update Bahan Mentah");
         $('#add_supplies input').empty().val("");
         $('#supplies_unit').val(null);
         $('#supplies_name').val(data.supplies_name);
@@ -288,7 +288,7 @@
                         <div class="col-2 pb-3">
                             <label id="pu_id_${index+1}">${item}</label>
                             <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
-                            placeholder="Enter Stock">
+                            placeholder="Input Stock">
                         </div>
                     `;
                     if (index < units.length - 1) {
@@ -323,7 +323,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSupplies').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus supply ini?","btn-delete-supplies");
+        showModalDelete("Apakah yakin ingin mengahapus bahan mentah ini?","btn-delete-supplies");
         $('#btn-delete-supplies').attr("supplies_id", data.supplies_id);
     });
 
@@ -339,7 +339,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshSupplies();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete supply");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete bahan mentah");
                 
             },
             error:function(e){

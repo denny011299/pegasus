@@ -24,7 +24,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Variants
+                    Variasi
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -43,10 +43,10 @@
                                 <table class="table table-center table-hover" id="tableVariant">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Variant</th>
-                                            <th style="width: 40%">Values</th>
-                                            <th>Created On</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Variasi</th>
+                                            <th style="width: 40%">Nilai</th>
+                                            <th>Dibuat Pada</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>

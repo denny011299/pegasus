@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Category
+                    Kategori
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,9 +27,9 @@
                                 <table class="table table-center table-hover" id="tableCategory">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Category Name</th>
-                                            <th>Created On</th>
-                                            <th class="no-sort">Action</th>
+                                            <th>Nama Kategori</th>
+                                            <th>Dibuat Pada</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>

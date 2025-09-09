@@ -7,7 +7,7 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_variant .modal-title').html("Create Variant");
+        $('#add_variant .modal-title').html("Tambah Variasi");
         $('#add_variant input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#variant_attribute').tagsinput('removeAll');
@@ -22,7 +22,7 @@
 			"language": {
 				search: ' ',
 				sLengthMenu: '_MENU_',
-				searchPlaceholder: "Search Variant",
+				searchPlaceholder: "Cari Variasi",
 				info: "_START_ - _END_ of _TOTAL_ items",
 				paginate: {
 					next: ' <i class=" fa fa-angle-right"></i>',
@@ -74,14 +74,14 @@
                 feather.replace();
             },
             error:function(e){
-                //ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
                 console.log(e);
             }
         });
     }
 
     $(document).on("click",".btn-save",function(){
-       // LoadingButton(this);
+       LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         var url ="/insertVariant";
         var valid=1;
@@ -95,7 +95,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            //ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan Perubahan');
             return false;
         };
         console.log($('#variant_attribute').val());
@@ -111,7 +111,7 @@
             param.variant_id = $('#add_variant').attr("variant_id");
         }
 
-        //LoadingButton($(this));
+        LoadingButton($(this));
         $.ajax({
             url:url,
             data: param,
@@ -120,11 +120,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                //ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan Perubahan');      
                 afterInsert();
             },
             error:function(e){
-                //ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
                 console.log(e);
             }
         });
@@ -132,8 +132,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Variant Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Variant Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Variasi");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Variasi");
         refreshVariant();
     }
 
@@ -144,7 +144,7 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableVariant').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_variant .modal-title').html("Update variant");
+        $('#add_variant .modal-title').html("Update Variasi");
         $('#add_variant input').empty().val("");
         $('#variant_name').val(data.variant_name);
         $('#variant_attribute').tagsinput('removeAll');
@@ -159,8 +159,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableVariant').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-         showModalDelete("Apakah yakin ingin mengahapus variant ini?","btn-delete-variant");
-        //$('#deleteModal').modal("show");
+         showModalDelete("Apakah yakin ingin menghapus variasi ini?","btn-delete-variant");
         $('#btn-delete-variant').attr("variant_id", data.variant_id);
     });
 
@@ -176,7 +175,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshVariant();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete variant");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete variasi");
                 
             },
             error:function(e){

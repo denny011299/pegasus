@@ -24,7 +24,7 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Category</h4>
+                        <h4 class="mb-0 modal-title">Tambah Kategori</h4>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
@@ -35,9 +35,9 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Category Name<span class="text-danger">*</span></label>
+                                        <label>Nama Kategori<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="category_name"
-                                            placeholder="Enter Category Name">
+                                            placeholder="Input Nama Kategori">
                                     </div>
                                 </div>
                             </div>
@@ -47,7 +47,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Category</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Kategori</button>
                     </div>
                 </form>
             </div>
@@ -63,7 +63,7 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Unit</h4>
+                        <h4 class="mb-0 modal-title">Tambah Satuan</h4>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
@@ -74,16 +74,16 @@
                             <div class="row">
                                 <div class="col-lg-6 col-md-12">
                                     <div class="input-block mb-3">
-                                        <label>Unit Name<span class="text-danger">*</span></label>
+                                        <label>Nama Satuan<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="unit_name"
-                                            placeholder="Enter Unit Name">
+                                            placeholder="Input Nama Satuan">
                                     </div>
                                 </div>
                                 <div class="col-lg-6 col-md-12">
                                     <div class="input-block mb-3">
-                                        <label>Short Name<span class="text-danger">*</span></label>
+                                        <label>Singkatan<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="unit_short_name"
-                                            placeholder="Enter Short Name">
+                                            placeholder="Input Singkatan">
                                     </div>
                                 </div>
                             </div>
@@ -93,7 +93,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Unit</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Satuan</button>
                     </div>
                 </form>
             </div>
@@ -109,7 +109,7 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Add Variant</h4>
+                        <h4 class="mb-0 modal-title">Tambah Variasi</h4>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
@@ -120,14 +120,14 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Name<span class="text-danger">*</span></label>
+                                        <label>Nama<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="variant_name"
-                                            placeholder="Enter Variant Name">
+                                            placeholder="Input Nama Variasi">
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Variant<span class="text-danger">*</span></label>
+                                        <label>Variasi<span class="text-danger">*</span></label>
                                         <select class="form-control tagging fill" id="variant_attribute" multiple="multiple">
 											
 										</select>
@@ -140,7 +140,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Cancel</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Add Variant</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Variasi</button>
                     </div>
                 </form>
             </div>

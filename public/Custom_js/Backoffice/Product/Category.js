@@ -7,7 +7,7 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_category .modal-title').html("Create Category");
+        $('#add_category .modal-title').html("Tambah Kategori");
         $('#add_category input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_category').modal("show");
@@ -21,7 +21,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Category",
+                searchPlaceholder: "Cari Kategori",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -88,7 +88,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan Pembaruan');
             return false;
         };
 
@@ -111,11 +111,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');
                 console.log(e);
             }
         });
@@ -123,8 +123,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Category Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Category Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Kategori");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Kategori");
         refreshCategory();
     }
 
@@ -135,7 +135,7 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableCategory').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_category .modal-title').html("Update Category");
+        $('#add_category .modal-title').html("Update Kategori");
         $('#add_category input').empty().val("");
         $('#category_name').val(data.category_name);
 
@@ -146,7 +146,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableCategory').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus category ini?","btn-delete-category");
+        showModalDelete("Apakah yakin ingin mengahapus kategori ini?","btn-delete-category");
         $('#btn-delete-category').attr("category_id", data.category_id);
     });
 
@@ -162,7 +162,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshCategory();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete category");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete kategori");
                 
             },
             error:function(e){

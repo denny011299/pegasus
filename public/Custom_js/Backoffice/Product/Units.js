@@ -7,7 +7,7 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_unit .modal-title').html("Create Unit");
+        $('#add_unit .modal-title').html("Tambah Satuan");
         $('#add_unit input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#add_unit').modal("show");
@@ -21,7 +21,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Search Unit",
+                searchPlaceholder: "Cari Satuan",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -31,7 +31,6 @@
             columns: [
                 { data: "unit_name" },
                 { data: "unit_short_name" },
-                { data: "product_count" },
                 { data: "unit_date" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -78,7 +77,7 @@
     }
 
     $(document).on("click",".btn-save",function(){
-       // LoadingButton(this);
+       LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         var url ="/insertUnit";
         var valid=1;
@@ -92,7 +91,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            //ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan Perubahan');
             return false;
         };
 
@@ -107,7 +106,7 @@
             param.unit_id = $('#add_unit').attr("unit_id");
         }
 
-        //LoadingButton($(this));
+        LoadingButton($(this));
         $.ajax({
             url:url,
             data: param,
@@ -116,11 +115,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Save changes');      
+                ResetLoadingButton(".btn-save", 'Simpan Perubahan');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Save changes');
+                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
                 console.log(e);
             }
         });
@@ -128,8 +127,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Successful Insert", "Successful Unit Added");
-        else if(mode==2)notifikasi('success', "Successful Update", "Successful Unit Updated");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Satuan");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Satuan");
         refreshUnits();
     }
 
@@ -140,7 +139,7 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableUnits').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_unit .modal-title').html("Update Unit");
+        $('#add_unit .modal-title').html("Update Satuan");
         $('#add_unit input').empty().val("");
         $('#unit_name').val(data.unit_name);
         $('#unit_short_name').val(data.unit_short_name);
@@ -152,8 +151,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableUnits').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus unit ini?","btn-delete-unit");
-        //$('#deleteModal').modal("show");
+        showModalDelete("Apakah yakin ingin mengahapus satuan ini?","btn-delete-unit");
         $('#btn-delete-unit').attr("unit_id", data.unit_id);
     });
 
@@ -169,7 +167,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshUnits();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete unit");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete satuan");
                 
             },
             error:function(e){
