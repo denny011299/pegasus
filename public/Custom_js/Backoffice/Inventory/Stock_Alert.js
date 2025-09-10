@@ -26,6 +26,7 @@
                 { data: "product_variant_sku" },
                 { data: "product_variant_stock_text" },
                 { data: "product_alert" },
+                { data: "min_order" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -55,6 +56,7 @@
                 { data: "product_variant_sku" },
                 { data: "product_variant_stock_text" },
                 { data: "product_alert" },
+                { data: "min_order" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -81,6 +83,7 @@
                     item.product_name_text = item.product_name + " " +item.product_variant_name;
                     item.product_variant_stock_text = item.product_variant_stock +" "+item.product_unit;
                     item.product = `<img src="${public+item.stal_image}" class="me-2" style="width:30px">`+item.stal_name;
+                    item.min_order = `${item.product_alert - item.product_variant_stock} ${item.product_unit}`;
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
                             <i data-feather="edit"></i>

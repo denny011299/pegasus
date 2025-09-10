@@ -48,6 +48,7 @@
                                                     <th>SKU</th>
                                                     <th>Stok</th>
                                                     <th>Qty Peringatan</th>
+                                                    <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -66,6 +67,7 @@
                                                     <th>SKU</th>
                                                     <th>Stok</th>
                                                     <th>Qty Peringatan</th>
+                                                    <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
