@@ -59,7 +59,7 @@ class SuppliesVariant extends Model
        $t->supplies_variant_name = $data["variant_name"];
         $t->supplies_variant_sku = $data["variant_sku"];
         $t->supplies_variant_price = $data["variant_price"];
-        $t->supplies_variant_barcode = $data["variant_barcode"] ?? $t->generateBarcode();
+        $t->supplies_variant_barcode = $t->generateBarcode();
         $t->supplies_variant_stock = 0;
         $t->save();
 
@@ -97,7 +97,7 @@ class SuppliesVariant extends Model
        do {
         // Generate angka acak sebanyak 12 digit
             $barcode = (string) random_int(100000000000, 999999999999);
-        } while (self::where('supplies_barcode', $barcode)->exists());
+        } while (self::where('supplies_variant_barcode', $barcode)->exists());
         return $barcode;
     }
 }

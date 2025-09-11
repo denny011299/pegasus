@@ -24,6 +24,7 @@
     });
 
     $(document).on('click','.btnAddRow',function(){
+        $('#tbVariant').html("")
         if($('#product_variant').val()!=""&&$('#product_variant').val()!=null) {
             var data = $('#product_variant').select2('data')[0];
             data.name = JSON.parse(data.variant_attribute);
@@ -142,7 +143,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
         

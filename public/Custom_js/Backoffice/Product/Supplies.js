@@ -23,6 +23,7 @@
     });
 
     $(document).on('click','.btnAddRow',function(){
+        $('#tbVariant').html("")
         if($('#supplies_variant').val()!=""&&$('#supplies_variant').val()!=null) {
             var data = $('#supplies_variant').select2('data')[0];
             data.name = JSON.parse(data.variant_attribute);
@@ -286,7 +287,7 @@
     function afterInsert() {
         $(".modal").modal("hide");
         if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Bahan Mentah");
-        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Tambah Bahan Mentah");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Bahan Mentah");
         refreshSupplies();
     }
 
