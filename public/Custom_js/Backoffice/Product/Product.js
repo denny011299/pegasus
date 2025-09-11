@@ -216,7 +216,7 @@
         mode=2;
         $('#add_product .modal-title').html("Update Produk");
         $('#add_product input').empty().val("");
-
+        $('.is-invalid').removeClass('is-invalid');
         $('#product_name').val(data.product_name);
         $('#product_category').append(`<option value="${data.category_id}">${data.category_name}</option>`);
         // $('#category_name').val(data.category_name);

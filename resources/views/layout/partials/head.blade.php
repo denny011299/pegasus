@@ -15,6 +15,12 @@
     <!-- Feather CSS -->
     <link rel="stylesheet" href="{{ url('assets/plugins/feather/feather.css') }}">
 
+    <style>
+        .select2-selection__clear {
+            padding: 0.6rem 1.2rem 0 0 !important;
+        }
+    </style>
+
     @if (Route::is([
             'bus-ticket',
             'car-booking-invoice',

@@ -147,6 +147,7 @@
         $('#add_variant .modal-title').html("Update Variasi");
         $('#add_variant input').empty().val("");
         $('#variant_name').val(data.variant_name);
+        $('.is-invalid').removeClass('is-invalid');
         $('#variant_attribute').tagsinput('removeAll');
         data.variant_values.split(',').forEach(function(item) {
             $('#variant_attribute').tagsinput('add', item.trim());

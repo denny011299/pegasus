@@ -5,6 +5,7 @@
         inisialisasi();
         refreshSupplies();
         autocompleteUnit('#supplies_unit', '#add_supplies');
+        autocompleteVariant("#supplies_variant","#add_supplies");
     });
     
     $(document).on('click','.btnAdd',function(){
@@ -15,9 +16,40 @@
         $('#supplies_desc').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#supplies_unit').val(null);
+        $('#tbVariant').html("")
+        addRow();
         $('#add_supplies').modal("show");
         $('#supplies_unit').trigger('change');
     });
+
+    $(document).on('click','.btnAddRow',function(){
+        if($('#supplies_variant').val()!=""&&$('#supplies_variant').val()!=null) {
+            var data = $('#supplies_variant').select2('data')[0];
+            data.name = JSON.parse(data.variant_attribute);
+            data.name.forEach(element => {
+                addRow(element);    
+            });
+            $('#supplies_variant').empty();
+        }
+       else addRow();
+    });
+    function addRow(names="") {
+        
+        $('#tbVariant').append(`
+            <tr class="row-variant">
+                <td><input type="text" class="form-control variant_name" name="" id="" value="${names}"></td>
+                <td><input type="text" class="form-control variant_sku" name="" id=""></td>
+                <td><input type="text" class="form-control variant_price nominal_only" name="" id=""></td>
+                <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder=""><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
+                <td class="text-center d-flex align-items-center">
+                    <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
+                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                        </a>
+                    </td>
+                </tr>    
+        `);
+         feather.replace();
+    }
     
     function inisialisasi() {
         table = $('#tableSupplies').DataTable({
@@ -36,7 +68,8 @@
             },
             columns: [
                 { data: "supplies_name" },
-                { data: "unit_text" },
+                { data: "unit_values" },
+                { data: "variant_values" },
                 { data: "desc" },
                 { data: "supplies_stock" },
                 { data: "action", class: "d-flex align-items-center" },
@@ -61,10 +94,23 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
+                    console.log(e[0]);
                     if (e[i].supplies_desc == null) e[i].desc = '-';
                     else e[i].desc = e[i].supplies_desc;
-
+                    e[i].variant_values = "";
+                    e[i].sup_variant.forEach((element,index) => {
+                         e[i].variant_values += element.supplies_variant_name;
+                         if(index< e[i].sup_variant.length-1){
+                            e[i].variant_values += ", ";
+                         }
+                    });
                     e[i].unit_values = "";
+                    e[i].sup_unit.forEach((element,index) => {
+                         e[i].unit_values += element.unit_name;
+                         if(index< e[i].sup_unit.length-1){
+                            e[i].unit_values += ", ";
+                         }
+                    });
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].supplies_id}" data-bs-target="#edit-supplies">
                             <i data-feather="edit" class="feather-edit"></i>
@@ -146,6 +192,19 @@
              _token:token
         };
 
+        var temp=[];
+        $('.row-variant').each(function(){
+            var variant = {
+                variant_name: $(this).find('.variant_name').val(),
+                variant_sku: $(this).find('.variant_sku').val(),
+                variant_price: convertToAngka($(this).find('.variant_price').val()),
+                variant_barcode: $(this).find('.variant_barcode').val(),
+                supplies_variant_id: $(this).find('.variant_id').val(),
+            };
+            temp.push(variant);
+        });
+        param.supplies_variant = JSON.stringify(temp);
+
         if(mode==2){
             url="/updateSupplies";
             param.supplies_id = $('#add_supplies').attr("supplies_id");
@@ -160,60 +219,60 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){   
-                let supplies_id = e;
+                // let supplies_id = e;
 
-                // 1. Insert Supplies Unit
-                $.ajax({
-                    url: "/insertSuppliesUnit",
-                    method: "post",
-                    headers: { 'X-CSRF-TOKEN': token },
-                    data: {
-                        supplies_id: supplies_id,
-                        units: JSON.stringify(idUnits)
-                    },
-                    success: function (unitResp) {
-                        console.log(unitResp)
-                        let relations = [];
-                        let ids = unitResp.id_units;
+                // // 1. Insert Supplies Unit
+                // $.ajax({
+                //     url: "/insertSuppliesUnit",
+                //     method: "post",
+                //     headers: { 'X-CSRF-TOKEN': token },
+                //     data: {
+                //         supplies_id: supplies_id,
+                //         units: JSON.stringify(idUnits)
+                //     },
+                //     success: function (unitResp) {
+                //         console.log(unitResp)
+                //         let relations = [];
+                //         let ids = unitResp.id_units;
 
-                        for (let i = 0; i < idUnits.length - 1; i++) {
-                            let nilai1 = parseFloat($(`#supplies_stock${i+1}`).val()) || 1;
-                            let nilai2 = parseFloat($(`#supplies_stock${i+2}`).val()) || 1;
+                //         for (let i = 0; i < idUnits.length - 1; i++) {
+                //             let nilai1 = parseFloat($(`#supplies_stock${i+1}`).val()) || 1;
+                //             let nilai2 = parseFloat($(`#supplies_stock${i+2}`).val()) || 1;
 
-                            let sr_value_1 = 1;
-                            let sr_value_2 = nilai2 / nilai1;
+                //             let sr_value_1 = 1;
+                //             let sr_value_2 = nilai2 / nilai1;
 
-                            relations.push({
-                                su_id_1: ids[i],
-                                su_id_2: ids[i+1],
-                                sr_value_1: sr_value_1,
-                                sr_value_2: sr_value_2
-                            });
-                        }
+                //             relations.push({
+                //                 su_id_1: ids[i],
+                //                 su_id_2: ids[i+1],
+                //                 sr_value_1: sr_value_1,
+                //                 sr_value_2: sr_value_2
+                //             });
+                //         }
 
-                        // 2. Insert Supplies Relation
-                        $.ajax({
-                            url: "/insertSuppliesRelation",
-                            method: "post",
-                            headers: { 'X-CSRF-TOKEN': token },
-                            data: {
-                                supplies_id: supplies_id,
-                                relations: JSON.stringify(relations)
-                            },
-                            success: function () {
-                                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-                            },
-                            error: function (e) {
-                                console.log(e);
-                                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-                            }
-                        });
-                    },
-                    error: function (e) {
-                        console.log(e);
-                        ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-                    }
-                });
+                //         // 2. Insert Supplies Relation
+                //         $.ajax({
+                //             url: "/insertSuppliesRelation",
+                //             method: "post",
+                //             headers: { 'X-CSRF-TOKEN': token },
+                //             data: {
+                //                 supplies_id: supplies_id,
+                //                 relations: JSON.stringify(relations)
+                //             },
+                //             success: function () {
+                //                 ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+                //             },
+                //             error: function (e) {
+                //                 console.log(e);
+                //                 ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+                //             }
+                //         });
+                //     },
+                //     error: function (e) {
+                //         console.log(e);
+                //         ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+                //     }
+                // });
                 ResetLoadingButton(".btn-save", 'Simpan Perubahan');   
                 afterInsert();
             },
@@ -245,6 +304,14 @@
         });
     }
 
+    $(document).on("click",".btn_delete_row",function(){
+        if($('.row-variant').length<2) {
+            notifikasi('error', "Gagal Hapus", "Minimal 1 varian harus ada");
+            return false;
+        }
+        $(this).closest("tr").remove();
+    });
+
     // $(document).on("keyup","#filter_supplies_name",function(){
     //     refreshSupplies();
     // });
@@ -256,67 +323,66 @@
         idUnits = [];
         $('#add_supplies .modal-title').html("Update Bahan Mentah");
         $('#add_supplies input').empty().val("");
+        $('.is-invalid').removeClass('is-invalid');
         $('#supplies_unit').val(null);
         $('#supplies_name').val(data.supplies_name);
         $('#supplies_desc').val(data.supplies_desc);
-
-        let units = [];
-        units = data.unit;
-        units.forEach(val => {
-            if ($("#supplies_unit option[value='" + val.unit_id + "']").length === 0) {
-                let newOption = new Option(val.unit_name, val.unit_id, true, true);
-                $("#supplies_unit").append(newOption).trigger('change');
-            }
+        $('#tbVariant').html("");
+        data.sup_variant.forEach(element => {
+            addRow(element.supplies_variant_name);
+            $('.row-variant').last().find('.variant_sku').val(element.supplies_variant_sku);
+            $('.row-variant').last().find('.variant_price').val(formatRupiah(element.supplies_variant_price));
+            $('.row-variant').last().find('.variant_barcode').val(element.supplies_variant_barcode);
+            $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
         });
-        units.forEach(function(u){
-            getUnit(u, function(id){
-                idUnits.push(id);
-            });
+        data.sup_unit.forEach(element => {
+           const newOption = new Option(element.unit_name, element.unit_id, false, false);
+           $('#product_unit').append(newOption).trigger('change');
         });
 
-        $.ajax({
-            url: "/getSuppliesRelation",
-            method: "get",
-            data: { supplies_id: data.supplies_id },
-            headers: { "X-CSRF-TOKEN": token },
-            success: function(resp){
-                // resp misalnya [{su_id_1, su_id_2, sr_value_1, sr_value_2}]
-                $(".relationContainer").empty();
+        // $.ajax({
+        //     url: "/getSuppliesRelation",
+        //     method: "get",
+        //     data: { supplies_id: data.supplies_id },
+        //     headers: { "X-CSRF-TOKEN": token },
+        //     success: function(resp){
+        //         // resp misalnya [{su_id_1, su_id_2, sr_value_1, sr_value_2}]
+        //         $(".relationContainer").empty();
 
-                // render input stok berdasarkan units
-                units.forEach((item, index) => {
-                    let html = '';
-                    html = `
-                        <div class="col-2 pb-3">
-                            <label id="pu_id_${index+1}">${item}</label>
-                            <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
-                            placeholder="Input Stock">
-                        </div>
-                    `;
-                    if (index < units.length - 1) {
-                        html += `
-                            <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
-                                =
-                            </div>
-                        `;
-                    }
-                    $(".relationContainer").append(html);
-                });
+        //         // render input stok berdasarkan units
+        //         units.forEach((item, index) => {
+        //             let html = '';
+        //             html = `
+        //                 <div class="col-2 pb-3">
+        //                     <label id="pu_id_${index+1}">${item}</label>
+        //                     <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
+        //                     placeholder="Input Stock">
+        //                 </div>
+        //             `;
+        //             if (index < units.length - 1) {
+        //                 html += `
+        //                     <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
+        //                         =
+        //                     </div>
+        //                 `;
+        //             }
+        //             $(".relationContainer").append(html);
+        //         });
 
-                // isi nilai stock sesuai relasi
-                if(resp && resp.length > 0){
-                    let total = 1;
-                    for (let i = 0; i < resp.length; i++) {
-                        let nilai1 = resp[i].sr_value_1;
-                        let nilai2 = resp[i].sr_value_2;
+        //         // isi nilai stock sesuai relasi
+        //         if(resp && resp.length > 0){
+        //             let total = 1;
+        //             for (let i = 0; i < resp.length; i++) {
+        //                 let nilai1 = resp[i].sr_value_1;
+        //                 let nilai2 = resp[i].sr_value_2;
 
-                        $(`#supplies_stock${i+1}`).val(nilai1 * total);
-                        total = total * nilai2;
-                        $(`#supplies_stock${i+2}`).val(total);
-                    }
-                }
-            }
-        });
+        //                 $(`#supplies_stock${i+1}`).val(nilai1 * total);
+        //                 total = total * nilai2;
+        //                 $(`#supplies_stock${i+2}`).val(total);
+        //             }
+        //         }
+        //     }
+        // });
         
         $('#add_supplies').modal("show");
         $('#add_supplies').attr("supplies_id", data.supplies_id);

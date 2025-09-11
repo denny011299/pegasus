@@ -18,7 +18,6 @@ class Supplies extends Model
             "supplies_unit"=>null,
             "supplies_stock"=>null,
         ], $data);
-
         $result = Supplies::where('status', '=', 1);
         if($data["supplies_name"]) $result->where('supplies_name','like','%'.$data["supplies_name"].'%');
         if($data["supplies_desc"]) $result->where('supplies_desc','like','%'.$data["supplies_desc"].'%');
@@ -28,13 +27,16 @@ class Supplies extends Model
         
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $value->unit = (new SuppliesUnit())->getSuppliesUnit(["supplies_id"=>$value->supplies_id]);
-            $temp = "";
-            foreach ($value->unit as $key => $unit) {
-                $temp.=$unit->unit_name;
-                if($key<count($value->unit)-1) $temp.=", ";
-            }
-            $value->unit_text = $temp;
+            // $value->unit = (new SuppliesUnit())->getSuppliesUnit(["supplies_id"=>$value->supplies_id]);
+            // $temp = "";
+            // foreach ($value->unit as $key => $unit) {
+            //     $temp.=$unit->unit_name;
+            //     if($key<count($value->unit)-1) $temp.=", ";
+            // }
+            // $value->unit_text = $temp;
+            $value->supplies_unit = json_decode($value->supplies_unit);
+            $value->sup_unit = Unit::whereIn('unit_id', $value->supplies_unit)->get();
+            $value->sup_variant = SuppliesVariant::where('supplies_id','=', $value->supplies_id)->get();
         }
         return $result;
     }

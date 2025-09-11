@@ -219,7 +219,7 @@
         $('#add_purchase_order .modal-title').html("Update Pesanan Pembelian");
         $('#add_purchase_order input').empty().val("");
         // $('#category_name').val(data.category_name);
-
+        $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_order').modal("show");
         // $('#add_purchase_order').attr("so_id", data.so_id);
     });

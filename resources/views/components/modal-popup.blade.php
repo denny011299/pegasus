@@ -430,6 +430,39 @@
                                         <textarea class="form-control" id="supplies_desc" cols="30" rows="5"></textarea>
                                     </div>
                                 </div>
+                                <hr>
+                                <div class="row mb-3">
+                                    <div class="col-8">
+                                        <label>Variasi Bahan</label>
+                                    </div>
+                                    <div class="col-4 text-end">
+                                        <div class="row">
+                                            <div class="col-9">
+                                                <select name="" id="supplies_variant" class="form-select select2">
+                                                </select>
+                                            </div>
+                                            <div class="col-3">
+                                                 <button type="button" class="btn btn-primary btnAddRow"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <td>Nama Variasi</td>
+                                                <td>SKU</td>
+                                                <td>Harga</td>
+                                                <td>Barcode</td>
+                                                <td class="text-center" style="width:15%">Aksi</td>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbVariant">
+                                           
+                                        </tbody>
+                                    </table>
+                                </div>
                                 {{-- 
                                 <div class="col-12">
                                     <div class="input-block">
