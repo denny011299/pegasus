@@ -181,7 +181,7 @@
             bahan.push(data);
             addRow(data)
         });
-        
+        $('.btn-save').html('Simpan perubahan');
         $('#add_bom').modal("show");
         $('#add_bom').attr("bom_id", data.bom_id);
     });

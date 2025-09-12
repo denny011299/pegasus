@@ -222,6 +222,7 @@
         $('#add_sales_order input').empty().val("");
         // $('#category_name').val(data.category_name);
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Simpan perubahan');
         $('#add_sales_order').modal("show");
         // $('#add_sales_order').attr("so_id", data.so_id);
     });

@@ -4,9 +4,8 @@
     $(document).ready(function(){
         inisialisasi();
         refreshSupplies();
-        autocompleteUnit('#supplies_unit', '#add_supplies');
+        autocompleteUnit("#supplies_unit","#add_supplies");
         autocompleteVariant("#supplies_variant","#add_supplies");
-        $('#supplies_unit').select2();
     });
     
     $(document).on('click','.btnAdd',function(){
@@ -135,10 +134,8 @@
     $(document).on('change', '#supplies_unit', function(){
         let selectedUnits = $(this).val(); // ambil array value dari multiselect
         idUnits = [];
-        selectedUnits.forEach(function(name) {
-            getUnit(name, function(id) {
-                idUnits.push(id);
-            })
+        selectedUnits.forEach(function(id) {
+            idUnits.push(id);
         });
         console.log(selectedUnits);
 
@@ -338,9 +335,10 @@
             $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
         });
         data.sup_unit.forEach(element => {
-           const newOption = new Option(element.unit_name, element.unit_id, false, false);
-           $('#product_unit').append(newOption).trigger('change');
+            var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
+            $('#supplies_unit').append(newOption).trigger('change');
         });
+
 
         // $.ajax({
         //     url: "/getSuppliesRelation",
@@ -385,7 +383,7 @@
         //         }
         //     }
         // });
-        
+        $('.btn-save').html('Simpan perubahan');
         $('#add_supplies').modal("show");
         $('#add_supplies').attr("supplies_id", data.supplies_id);
     });

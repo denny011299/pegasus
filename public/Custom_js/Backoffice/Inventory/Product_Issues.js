@@ -236,6 +236,7 @@ $(document).on("click", ".btn_edit", function () {
     );
     $("#pi_type,#tipe_return,#product_id").prop("disabled", true);
     $('.is-invalid').removeClass('is-invalid');
+    $('.btn-save').html('Simpan perubahan');
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
 });

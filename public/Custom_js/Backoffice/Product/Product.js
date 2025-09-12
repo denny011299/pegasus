@@ -215,11 +215,12 @@
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
+        console.log(data)
         $('#add_product .modal-title').html("Update Produk");
         $('#add_product input').empty().val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#product_name').val(data.product_name);
-        $('#product_category').append(`<option value="${data.category_id}">${data.category_name}</option>`);
+        $('#product_category').append(`<option value="${data.category_id}">${data.product_category}</option>`);
         // $('#category_name').val(data.category_name);
         $('#tbVariant').html("")
         data.pr_variant.forEach(element => {
@@ -231,9 +232,10 @@
         });
         $('#product_unit').empty();
         data.pr_unit.forEach(element => {
-           const newOption = new Option(element.unit_name, element.unit_id, false, false);
+           const newOption = new Option(element.unit_name, element.unit_id, true, true);
            $('#product_unit').append(newOption).trigger('change');
         });
+        $('.btn-save').html('Simpan perubahan');
         $('#add_product').modal("show");
         // $('#add_product').attr("category_id", data.category_id);
     });

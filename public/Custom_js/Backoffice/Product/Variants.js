@@ -152,7 +152,7 @@
         data.variant_values.split(',').forEach(function(item) {
             $('#variant_attribute').tagsinput('add', item.trim());
         });
-
+        $('.btn-save').html('Simpan perubahan');
         $('#add_variant').modal("show");
         $('#add_variant').attr("variant_id", data.variant_id);
     });

@@ -1,38 +1,5 @@
 <?php $page = 'supplies'; ?>
 @extends('layout.mainlayout')
-@section('custom_css')
-    <style>
-        .select2-container--default .select2-selection--multiple .select2-selection__choice {
-            background-color: #082a58 !important;
-            color: #fff !important;
-            border: none !important;
-            border-radius: 0.4rem !important;
-            padding: 2px 8px !important;
-            margin-top: 4px !important;
-            display: flex !important;
-            align-items: center !important;
-        }
-
-        /* Teks di dalam chip */
-        .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
-            color: #fff !important;
-            font-weight: 500;
-            margin-left: 5px !important;
-        }
-
-        /* Tombol hapus */
-        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-            background: none !important;
-            border: none !important;
-            color: #fff !important;
-            cursor: pointer !important;
-            font-size: 14px !important;
-            margin-right: 4px !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-        }
-    </style>
-@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

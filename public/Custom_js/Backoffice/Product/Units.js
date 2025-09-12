@@ -144,6 +144,7 @@
         $('#unit_name').val(data.unit_name);
         $('#unit_short_name').val(data.unit_short_name);
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Simpan perubahan');
         $('#add_unit').modal("show");
         $('#add_unit').attr("unit_id", data.unit_id);
     });

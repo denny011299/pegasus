@@ -281,6 +281,7 @@
         $('.is-invalid').removeClass('is-invalid');
         tableSalesDelivery();
         refreshTableProduct();
+        $('.btn-save').html('Simpan perubahan');
         $('#add_sales_delivery').modal("show");
     })
 
@@ -295,5 +296,6 @@
         $('#add_sales_invoice .modal-title').html("Update Faktur");
         $('#add_sales_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Simpan perubahan');
         $('#add_sales_invoice').modal("show");
     })

@@ -220,6 +220,7 @@
         $('#add_purchase_order input').empty().val("");
         // $('#category_name').val(data.category_name);
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Simpan perubahan');
         $('#add_purchase_order').modal("show");
         // $('#add_purchase_order').attr("so_id", data.so_id);
     });

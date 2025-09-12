@@ -357,6 +357,7 @@
         $('.is-invalid').removeClass('is-invalid');
         tablePurchaseDelivery();
         refreshTableProduct();
+        $('.btn-save').html('Simpan perubahan');
         $('#add_purchase_delivery').modal("show");
     })
 
@@ -371,6 +372,7 @@
         $('#add_purchase_invoice .modal-title').html("Update Faktur");
         $('#add_purchase_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Simpan perubahan');
         $('#add_purchase_invoice').modal("show");
     })
 
@@ -380,6 +382,7 @@
         $('#add_purchase_receipt .modal-title').html("Update Penerimaan Barang");
         $('#add_purchase_receipt input').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Simpan perubahan');
         $('#add_purchase_receipt').modal("show");
     })
 

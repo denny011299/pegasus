@@ -139,6 +139,7 @@
         $('#add_category input').empty().val("");
         $('#category_name').val(data.category_name);
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Simpan perubahan');
         $('#add_category').modal("show");
         $('#add_category').attr("category_id", data.category_id);
     });

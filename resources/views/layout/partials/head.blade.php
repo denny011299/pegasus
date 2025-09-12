@@ -19,6 +19,41 @@
         .select2-selection__clear {
             padding: 0.6rem 1.2rem 0 0 !important;
         }
+        /* Select2 */
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #082a58 !important;
+            color: #fff !important;
+            border: none !important;
+            border-radius: 0.4rem !important;
+            padding: 2px 8px !important;
+            margin-top: 4px !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        /* Teks di dalam chip */
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+            color: #fff !important;
+            font-weight: 500;
+            padding-left: 1rem !important;
+        }
+        /* Tombol hapus */
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            background: none !important;
+            border: none !important;
+            color: #fff !important;
+            cursor: pointer !important;
+            font-size: 14px !important;
+            margin-right: 4px !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            padding: 0.3rem 0 0 0.5rem !important;
+        }
+
+        /* Tombol clear select2 unit */
+        button.select2-selection__clear[aria-describedby*="unit-container"] {
+            padding: 0.2rem 0 0.7rem !important;
+        }
     </style>
 
     @if (Route::is([
