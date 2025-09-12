@@ -5,6 +5,7 @@
         inisialisasi();
         refreshSupplies();
         autocompleteUnit('#supplies_unit', '#add_supplies');
+        $('#supplies_unit').select2();
     });
     
     $(document).on('click','.btnAdd',function(){
