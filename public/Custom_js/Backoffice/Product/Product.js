@@ -1,6 +1,6 @@
     var mode=1;
     var table;
-    
+    var dataRelasi;
     autocompleteVariant("#product_variant","#add_product");
     autocompleteCategory("#product_category","#add_product");
     autocompleteUnit("#product_unit","#add_product");
@@ -19,7 +19,8 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#tbVariant').html("")
          addRow();
-         
+          $('#tbRelasi').html("");
+          
         $('#add_product').modal("show");
     });
 
@@ -35,14 +36,14 @@
         }
        else addRow();
     });
+
     function addRow(names="") {
-        
         $('#tbVariant').append(`
             <tr class="row-variant">
-                <td><input type="text" class="form-control variant_name" name="" id="" value="${names}"></td>
-                <td><input type="text" class="form-control variant_sku" name="" id=""></td>
-                <td><input type="text" class="form-control variant_price nominal_only" name="" id=""></td>
-                <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder=""><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
+                <td><input type="text" class="form-control variant_name" name="" id="" placeholder="Masukan Nama" value="${names}"></td>
+                <td><input type="text" class="form-control variant_sku" name="" id="" placeholder="Masukan Sku"></td>
+                <td><input type="text" class="form-control variant_price nominal_only" name="" id="" placeholder="Masukan Harga"></td>
+                <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukan Barcode"><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
                 <td class="text-center d-flex align-items-center">
                     <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                             <i data-feather="trash-2" class="feather-trash-2"></i>
@@ -52,6 +53,7 @@
         `);
          feather.replace();
     }
+
     function inisialisasi() {
         table = $('#tableProduct').DataTable({
             bFilter: true,
@@ -150,12 +152,14 @@
         param = {
              product_name:$('#product_name').val(),
              category_id:$('#product_category').val(),
+             unit_id:$('#unit_id').val(),
+             product_alert:$('#product_alert').val(),
              product_unit:JSON.stringify($('#product_unit').val()),
              _token:token
         };
+        
         var temp=[];
         $('.row-variant').each(function(){
-            
             var variant = {
                 variant_name: $(this).find('.variant_name').val(),
                 variant_sku: $(this).find('.variant_sku').val(),
@@ -165,7 +169,20 @@
             };
             temp.push(variant);
         });
+
+        var relasi = [];
+        $('.row-relasi').each(function(){
+            var tmp = {
+                unit_id_1: $(this).find('.unit1').attr('unit_id'),
+                unit_value_1: $(this).find('.unit1').val(),
+                unit_id_2: $(this).find('.unit2').attr('unit_id'),
+                unit_value_2: $(this).find('.unit2').val(),
+            };
+            relasi.push(tmp);
+        });
+
         param.product_variant = JSON.stringify(temp);
+        param.product_relasi = JSON.stringify(relasi);
 
 
         if(mode==2){
@@ -205,24 +222,54 @@
 
     //edit
     $(document).on("change","#product_unit",function(){
-        var data = $(this).select2("data");
-        $('#unit1').html("");
-        data.forEach(element => {
-            $('#unit1').append(`<li><a class="dropdown-item" href="#"></a></li>`);
+        dataRelasi = $(this).select2("data");
+        if(dataRelasi.length>1){
+           addRowRelasi();
+        }
+        $('#unit_id').html("");2
+        dataRelasi.forEach(item => {
+            $('#unit_id').append(`<option value="${item.id}">${item.text}</option>`);
         });
+        $('#unit_id option:first').prop('selected', true).trigger("change");
     });
+    
+    $(document).on("change","#unit_id",function(){
+        $('#unit_alert').html($('#unit_id option:selected').text().trim());
+    });
+
+    function addRowRelasi() {
+        $('#tbRelasi').append(`
+                <tr class="row-relasi">
+                    <td>
+                        <div class="input-group">
+                            <input type="text" class="form-control nominal-only unit1" value="1" unit_id="${dataRelasi[dataRelasi.length-2].unit_id}" disabled>
+                            <span class="input-group-text unit_text_1">${dataRelasi[dataRelasi.length-2].text}</span>
+                            <input type="hidden" class="form-control pr_id" value="${dataRelasi[dataRelasi.length-2].pr_id??''}">
+                        </div>
+                    </td>
+                    <td>
+                        <div class="input-group">
+                            <input type="text" class="form-control nominal-only unit2" placeholder="Masukan Nilai" unit_id="${dataRelasi[dataRelasi.length-1].unit_id}">
+                            <span class="input-group-text unit_text_2">${dataRelasi[dataRelasi.length-1].text}</span>
+                        </div>
+                    </td>
+                </tr>    
+            `);        
+    }
 
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        console.log(data)
+        console.log(data);
+        
         $('#add_product .modal-title').html("Update Produk");
         $('#add_product input').empty().val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#product_name').val(data.product_name);
-        $('#product_category').append(`<option value="${data.category_id}">${data.product_category}</option>`);
+        $('#product_category').empty().append(`<option value="${data.category_id}">${data.product_category}</option>`);
         // $('#category_name').val(data.category_name);
-        $('#tbVariant').html("")
+        $('#tbVariant').html("");
+
         data.pr_variant.forEach(element => {
             addRow(element.product_variant_name);
             $('.row-variant').last().find('.variant_sku').val(element.product_variant_sku);
@@ -230,12 +277,34 @@
             $('.row-variant').last().find('.variant_barcode').val(element.product_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
         });
+
+        $('.row-relasi').html("");
+        dataRelasi = data.pr_relasi;
+        if (dataRelasi.length>1){ 
+            dataRelasi.forEach(element => {
+                addRowRelasi();
+                $('.row-relasi').last().find('.unit1').val(element.pr_unit_value_1);
+                $('.row-relasi').last().find('.unit2').val(element.pr_unit_value_2);
+                $('.row-relasi').last().find('.unit_text_1').html(element.pr_unit_name_1);
+                $('.row-relasi').last().find('.unit_text_2').html(element.pr_unit_name_2);
+                $('.row-relasi').last().find('.pr_id').val(element.pr_id);
+                if(element.is_default==1){
+                    $('.row-relasi').last().find('.default').prop('checked', true);
+                } 
+            });
+        }
+
         $('#product_unit').empty();
+        $('#unit_id').empty(); 
         data.pr_unit.forEach(element => {
-           const newOption = new Option(element.unit_name, element.unit_id, true, true);
-           $('#product_unit').append(newOption).trigger('change');
+            console.log(element);
+            $('#product_unit').val(element.unit_id);
+            $('#product_unit').append(`<option value="${element.unit_id}">${element.unit_short_name}</option>`);
+            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_short_name}</option>`);
         });
-        $('.btn-save').html('Simpan perubahan');
+        $('#product_alert').val(data.product_alert);
+        $('#unit_id').val(data.unit_id).trigger("change");
+        $('#add_product').attr("product_id",data.product_id);
         $('#add_product').modal("show");
         // $('#add_product').attr("category_id", data.category_id);
     });

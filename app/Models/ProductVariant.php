@@ -45,9 +45,11 @@ class ProductVariant extends Model
         foreach ($variants as $variant) {
             $p = Product::find($variant->product_id);
             $u =  Unit::whereIn('unit_id', json_decode($p->product_unit,true))->first();
+
             $variant->product_name = $p ? $p->product_name : "-";
             $variant->product_unit = $u ? $u->unit_name : "-";
             $variant->product_category = Category::find($p->category_id)->category_name ?? "-";
+            $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit,true))->get();
         }
 
         return $variants;
@@ -57,13 +59,12 @@ class ProductVariant extends Model
     {
         $t = new self();
         $t->product_id = $data["product_id"];
-       $t->product_variant_name = $data["variant_name"];
+        $t->product_variant_name = $data["variant_name"];
         $t->product_variant_sku = $data["variant_sku"];
         $t->product_variant_price = $data["variant_price"];
-        $t->product_variant_barcode = $data["variant_barcode"] ?? $t->generateBarcode();
+        $t->product_variant_barcode = $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_stock = 0;
         $t->save();
-
         return $t->product_variant_id;
     }
 
@@ -77,7 +78,7 @@ class ProductVariant extends Model
         $t->product_variant_name = $data["variant_name"];
         $t->product_variant_sku = $data["product_variant_sku"];
         $t->product_variant_price = $data["product_variant_price"];
-        $t->product_variant_barcode = $data["product_variant_barcode"] ?? $t->generateBarcode();
+        $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["product_variant_barcode"] : $t->generateBarcode();
         $t->product_variant_stock = $data["product_variant_stock"];
         $t->save();
 

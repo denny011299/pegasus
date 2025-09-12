@@ -34,6 +34,7 @@ class Product extends Model
             $value->product_unit = json_decode($value->product_unit);
             $value->pr_unit = Unit::whereIn('unit_id', $value->product_unit)->get();
             $value->pr_variant = ProductVariant::where('product_id','=', $value->product_id)->get();
+            $value->pr_relasi = (new ProductRelation())->getProductRelation(['product_id'=>$value->product_id]);
             $value->product_category = Category::find($value->category_id)->category_name ?? "-";
         }
         return $result;
@@ -45,9 +46,11 @@ class Product extends Model
         $t->product_name = $data["product_name"];
         $t->category_id  = $data["category_id"];
         $t->product_unit = $data["product_unit"];
+        $t->product_alert = $data["product_alert"];
+        $t->unit_id = $data["unit_id"];
         $t->status       = $data["status"] ?? 1;
         $t->save();
-
+       
         return $t->product_id;
     }
 
@@ -57,9 +60,10 @@ class Product extends Model
         $t->product_name = $data["product_name"];
         $t->category_id  = $data["category_id"];
         $t->product_unit = $data["product_unit"];
-        $t->status       = $data["status"];
+        $t->product_alert = $data["product_alert"];
+        $t->unit_id = $data["unit_id"];
         $t->save();
-
+        
         return $t->product_id;
     }
 

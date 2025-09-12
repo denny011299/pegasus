@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProductRelation;
+use App\Models\ProductStock;
 use App\Models\ProductUnits;
 use App\Models\ProductVariant;
 use App\Models\ProductVariants;
@@ -112,11 +114,34 @@ class ProductController extends Controller
             $value['product_id'] = $id;
             (new ProductVariant())->insertProductVariant($value);
         }
+
+        foreach (json_decode($data['product_relasi'],true) as $key => $value) {
+            $value['product_id'] = $id;
+            (new ProductRelation())->insertProductRelation($value);
+        }
+         (new ProductStock())->syncStock($id);
     }
 
     function updateProduct(Request $req){
         $data = $req->all();
-        return (new Product())->updateProduct($data);
+        $id = [];
+        (new Product())->updateProduct($data);
+          foreach (json_decode($data['product_variant'],true) as $key => $value) {
+            $value['product_id'] = $data["product_id"];
+            if(!isset($value["product_variant_id"])) $t = (new ProductVariant())->insertProductVariant($value);
+            else $t = (new ProductVariant())->updateProductVariant($value);
+            array_push($id,$t);
+        }
+        ProductVariant::where('product_id','=',$data["product_id"])->whereNotIn("product_variant",$id)->update(["status"=>0]);
+
+        foreach (json_decode($data['product_relasi'],true) as $key => $value) {
+            $value['product_id'] = $data["product_id"];
+            if(!isset($value["pr_id"])) $t = (new ProductRelation())->insertProductRelation($value);
+            else $t = (new ProductRelation())->updateProductRelation($value);
+            array_push($id,$t);
+        }
+         ProductRelation::where('product_id','=',$data["product_id"])->whereNotIn("pr_id",$id)->update(["status"=>0]);
+
     }
 
     function deleteProduct(Request $req){
