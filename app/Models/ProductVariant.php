@@ -97,7 +97,7 @@ class ProductVariant extends Model
        do {
         // Generate angka acak sebanyak 12 digit
             $barcode = (string) random_int(100000000000, 999999999999);
-        } while (self::where('product_barcode', $barcode)->exists());
+        } while (self::where('product_variant_barcode', $barcode)->exists());
         return $barcode;
     }
 }

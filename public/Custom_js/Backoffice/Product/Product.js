@@ -24,6 +24,7 @@
     });
 
     $(document).on('click','.btnAddRow',function(){
+        $('#tbVariant').html("")
         if($('#product_variant').val()!=""&&$('#product_variant').val()!=null) {
             var data = $('#product_variant').select2('data')[0];
             data.name = JSON.parse(data.variant_attribute);
@@ -142,7 +143,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
         
@@ -216,7 +217,7 @@
         mode=2;
         $('#add_product .modal-title').html("Update Produk");
         $('#add_product input').empty().val("");
-
+        $('.is-invalid').removeClass('is-invalid');
         $('#product_name').val(data.product_name);
         $('#product_category').append(`<option value="${data.category_id}">${data.category_name}</option>`);
         // $('#category_name').val(data.category_name);

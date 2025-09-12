@@ -11,6 +11,7 @@ use App\Models\ProductVariants;
 use App\Models\Supplies;
 use App\Models\SuppliesRelation;
 use App\Models\SuppliesUnit;
+use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
 use Illuminate\Http\Request;
@@ -135,7 +136,11 @@ class ProductController extends Controller
 
     function insertSupplies(Request $req){
         $data = $req->all();
-        return (new Supplies())->insertSupplies($data);
+        $id = (new Supplies())->insertSupplies($data);
+        foreach (json_decode($data['supplies_variant'],true) as $key => $value) {
+            $value['supplies_id'] = $id;
+            (new SuppliesVariant())->insertSuppliesVariant($value);
+        }
     }
 
     function updateSupplies(Request $req){

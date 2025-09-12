@@ -138,7 +138,7 @@
         $('#add_category .modal-title').html("Update Kategori");
         $('#add_category input').empty().val("");
         $('#category_name').val(data.category_name);
-
+        $('.is-invalid').removeClass('is-invalid');
         $('#add_category').modal("show");
         $('#add_category').attr("category_id", data.category_id);
     });

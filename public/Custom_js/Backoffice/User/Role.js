@@ -138,7 +138,7 @@
         $('#add_role .modal-title').html("Update Peran");
         $('#add_role input').empty().val("");
         $('#role_name').val(data.role_name);
-
+        $('.is-invalid').removeClass('is-invalid');
         $('#add_role').modal("show");
         $('#add_role').attr("role_id", data.role_id);
     });

@@ -235,7 +235,7 @@ $(document).on("click", ".btn_edit", function () {
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
     $("#pi_type,#tipe_return,#product_id").prop("disabled", true);
-
+    $('.is-invalid').removeClass('is-invalid');
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
 });
