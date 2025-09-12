@@ -31,7 +31,7 @@ class Bom extends Model
             $value->product_sku = $v->product_variant_sku;
             $u = Product::find($v->product_id);
             $value->product_name = $u->product_name;
-
+            $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit,true))->get();
         }
 
         return $result;

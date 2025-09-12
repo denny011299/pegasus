@@ -387,7 +387,11 @@
                                 <div class="col-lg-6 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Jumlah Produksi</label>
-                                        <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
+                                            <select class="form-select w-25" id="unit_id">
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12 py-3 mb-3">
