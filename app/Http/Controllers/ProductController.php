@@ -126,21 +126,21 @@ class ProductController extends Controller
         $data = $req->all();
         $id = [];
         (new Product())->updateProduct($data);
-          foreach (json_decode($data['product_variant'],true) as $key => $value) {
+        foreach (json_decode($data['product_variant'],true) as $key => $value) {
             $value['product_id'] = $data["product_id"];
             if(!isset($value["product_variant_id"])) $t = (new ProductVariant())->insertProductVariant($value);
             else $t = (new ProductVariant())->updateProductVariant($value);
             array_push($id,$t);
         }
-        ProductVariant::where('product_id','=',$data["product_id"])->whereNotIn("product_variant",$id)->update(["status"=>0]);
-
+        ProductVariant::where('product_id','=',$data["product_id"])->whereNotIn("product_variant_id",$id)->update(["status"=>0]);
+            
         foreach (json_decode($data['product_relasi'],true) as $key => $value) {
             $value['product_id'] = $data["product_id"];
             if(!isset($value["pr_id"])) $t = (new ProductRelation())->insertProductRelation($value);
             else $t = (new ProductRelation())->updateProductRelation($value);
             array_push($id,$t);
         }
-         ProductRelation::where('product_id','=',$data["product_id"])->whereNotIn("pr_id",$id)->update(["status"=>0]);
+        ProductRelation::where('product_id','=',$data["product_id"])->whereNotIn("pr_id",$id)->update(["status"=>0]);
 
     }
 
@@ -177,7 +177,15 @@ class ProductController extends Controller
 
     function updateSupplies(Request $req){
         $data = $req->all();
-        return (new Supplies())->updateSupplies($data);
+        $id = [];
+        (new Supplies())->updateSupplies($data);
+          foreach (json_decode($data['supplies_variant'],true) as $key => $value) {
+            $value['supplies_id'] = $data["supplies_id"];
+            if(!isset($value["supplies_variant_id"])) $t = (new SuppliesVariant())->insertSuppliesVariant($value);
+            else $t = (new SuppliesVariant())->updateSuppliesVariant($value);
+            array_push($id,$t);
+        }
+        SuppliesVariant::where('supplies_id','=',$data["supplies_id"])->whereNotIn("supplies_variant_id",$id)->update(["status"=>0]);
     }
 
     function deleteSupplies(Request $req){

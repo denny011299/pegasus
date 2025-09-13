@@ -12,8 +12,8 @@
     $(document).on('change','#supplies_id',function(){
         var data = $(this).select2("data")[0];
         $('#unit_id').empty();
-        
-        data.unit.forEach(element => {
+        console.log(data)
+        data.sup_unit.forEach(element => {
             $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
         });
     });

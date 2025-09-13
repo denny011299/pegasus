@@ -78,14 +78,19 @@ class ProductVariant extends Model
     {
         $t = self::find($data["product_variant_id"]);
         if (!$t) {
-            throw new \Exception("Product variant with ID " . $data["product_variant_id"] . " not found.");
+            return $this->insertProductVariant([
+                "product_id"      => $data["product_id"],
+                "variant_name"    => $data["variant_name"],
+                "variant_sku"     => $data["variant_sku"],
+                "variant_price"   => $data["variant_price"],
+                "variant_barcode" => $data["variant_barcode"] ?? "",
+            ]);
         }
         $t->product_id = $data["product_id"];
         $t->product_variant_name = $data["variant_name"];
-        $t->product_variant_sku = $data["product_variant_sku"];
-        $t->product_variant_price = $data["product_variant_price"];
-        $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["product_variant_barcode"] : $t->generateBarcode();
-        $t->product_variant_stock = $data["product_variant_stock"];
+        $t->product_variant_sku = $data["variant_sku"];
+        $t->product_variant_price = $data["variant_price"];
+        $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->save();
 
         return $t->product_variant_id;

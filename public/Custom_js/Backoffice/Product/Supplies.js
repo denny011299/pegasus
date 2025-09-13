@@ -30,6 +30,7 @@
             data.name.forEach(element => {
                 addRow(element);    
             });
+            console.log(data);
             $('#supplies_variant').empty();
         }
        else addRow();
@@ -95,7 +96,7 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    console.log(e[0]);
+                    console.log(e[1]);
                     if (e[i].supplies_desc == null) e[i].desc = '-';
                     else e[i].desc = e[i].supplies_desc;
                     e[i].variant_values = "";
@@ -194,10 +195,10 @@
         var temp=[];
         $('.row-variant').each(function(){
             var variant = {
-                variant_name: $(this).find('.variant_name').val(),
-                variant_sku: $(this).find('.variant_sku').val(),
-                variant_price: convertToAngka($(this).find('.variant_price').val()),
-                variant_barcode: $(this).find('.variant_barcode').val(),
+                supplies_variant_name: $(this).find('.variant_name').val(),
+                supplies_variant_sku: $(this).find('.variant_sku').val(),
+                supplies_variant_price: convertToAngka($(this).find('.variant_price').val()),
+                supplies_variant_barcode: $(this).find('.variant_barcode').val(),
                 supplies_variant_id: $(this).find('.variant_id').val(),
             };
             temp.push(variant);
@@ -218,60 +219,6 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){   
-                // let supplies_id = e;
-
-                // // 1. Insert Supplies Unit
-                // $.ajax({
-                //     url: "/insertSuppliesUnit",
-                //     method: "post",
-                //     headers: { 'X-CSRF-TOKEN': token },
-                //     data: {
-                //         supplies_id: supplies_id,
-                //         units: JSON.stringify(idUnits)
-                //     },
-                //     success: function (unitResp) {
-                //         console.log(unitResp)
-                //         let relations = [];
-                //         let ids = unitResp.id_units;
-
-                //         for (let i = 0; i < idUnits.length - 1; i++) {
-                //             let nilai1 = parseFloat($(`#supplies_stock${i+1}`).val()) || 1;
-                //             let nilai2 = parseFloat($(`#supplies_stock${i+2}`).val()) || 1;
-
-                //             let sr_value_1 = 1;
-                //             let sr_value_2 = nilai2 / nilai1;
-
-                //             relations.push({
-                //                 su_id_1: ids[i],
-                //                 su_id_2: ids[i+1],
-                //                 sr_value_1: sr_value_1,
-                //                 sr_value_2: sr_value_2
-                //             });
-                //         }
-
-                //         // 2. Insert Supplies Relation
-                //         $.ajax({
-                //             url: "/insertSuppliesRelation",
-                //             method: "post",
-                //             headers: { 'X-CSRF-TOKEN': token },
-                //             data: {
-                //                 supplies_id: supplies_id,
-                //                 relations: JSON.stringify(relations)
-                //             },
-                //             success: function () {
-                //                 ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-                //             },
-                //             error: function (e) {
-                //                 console.log(e);
-                //                 ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-                //             }
-                //         });
-                //     },
-                //     error: function (e) {
-                //         console.log(e);
-                //         ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-                //     }
-                // });
                 ResetLoadingButton(".btn-save", 'Simpan Perubahan');   
                 afterInsert();
             },
@@ -303,6 +250,13 @@
         });
     }
 
+    $('#supplies_unit').on('click', function() {
+       $('.select2-search__field').remove();
+    });
+    $('#supplies_unit').on('change', function() {
+       $('.select2-search__field').remove();
+    });
+
     $(document).on("click",".btn_delete_row",function(){
         if($('.row-variant').length<2) {
             notifikasi('error', "Gagal Hapus", "Minimal 1 varian harus ada");
@@ -318,6 +272,7 @@
     //edit
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableSupplies').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        console.log(data);
         mode=2;
         idUnits = [];
         $('#add_supplies .modal-title').html("Update Bahan Mentah");

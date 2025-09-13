@@ -51,7 +51,7 @@ class SalesOrderDetail extends Model
     }
 
     function updateSalesOrderDetail($data){
-        $t = SalesOrderDetail::find($data["so_id"]);
+        $t = SalesOrderDetail::find($data["sod_id"]);
         $t->so_id = $data["so_id"];
         $t->product_variant_id = $data["product_variant_id"];
         $t->sod_nama = $data["sod_nama"];

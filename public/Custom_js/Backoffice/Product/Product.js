@@ -173,14 +173,13 @@
         var relasi = [];
         $('.row-relasi').each(function(){
             var tmp = {
-                unit_id_1: $(this).find('.unit1').attr('unit_id'),
+                unit_id_1: $(this).find('.unit1').data('unit_id'),
                 unit_value_1: $(this).find('.unit1').val(),
-                unit_id_2: $(this).find('.unit2').attr('unit_id'),
+                unit_id_2: $(this).find('.unit2').data('unit_id'),
                 unit_value_2: $(this).find('.unit2').val(),
             };
             relasi.push(tmp);
         });
-
         param.product_variant = JSON.stringify(temp);
         param.product_relasi = JSON.stringify(relasi);
 
@@ -235,6 +234,11 @@
     
     $(document).on("change","#unit_id",function(){
         $('#unit_alert').html($('#unit_id option:selected').text().trim());
+        $('.select2-search__field').remove();
+    });
+
+    $('#unit_id').on('click', function() {
+       $('.select2-search__field').remove();
     });
 
     function addRowRelasi() {
@@ -242,14 +246,14 @@
                 <tr class="row-relasi">
                     <td>
                         <div class="input-group">
-                            <input type="text" class="form-control nominal-only unit1" value="1" unit_id="${dataRelasi[dataRelasi.length-2].unit_id}" disabled>
+                            <input type="text" class="form-control nominal-only unit1 fill" value="1" data-unit_id="${dataRelasi[dataRelasi.length-2].id}" disabled>
                             <span class="input-group-text unit_text_1">${dataRelasi[dataRelasi.length-2].text}</span>
                             <input type="hidden" class="form-control pr_id" value="${dataRelasi[dataRelasi.length-2].pr_id??''}">
                         </div>
                     </td>
                     <td>
                         <div class="input-group">
-                            <input type="text" class="form-control nominal-only unit2" placeholder="Masukan Nilai" unit_id="${dataRelasi[dataRelasi.length-1].unit_id}">
+                            <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai" data-unit_id="${dataRelasi[dataRelasi.length-1].id}">
                             <span class="input-group-text unit_text_2">${dataRelasi[dataRelasi.length-1].text}</span>
                         </div>
                     </td>
@@ -267,7 +271,6 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#product_name').val(data.product_name);
         $('#product_category').empty().append(`<option value="${data.category_id}">${data.product_category}</option>`);
-        // $('#category_name').val(data.category_name);
         $('#tbVariant').html("");
 
         data.pr_variant.forEach(element => {
@@ -280,27 +283,28 @@
 
         $('.row-relasi').html("");
         dataRelasi = data.pr_relasi;
-        if (dataRelasi.length>1){ 
-            dataRelasi.forEach(element => {
+        dataRelasi.forEach(element => {
+            if (dataRelasi.length>1){
                 addRowRelasi();
                 $('.row-relasi').last().find('.unit1').val(element.pr_unit_value_1);
                 $('.row-relasi').last().find('.unit2').val(element.pr_unit_value_2);
                 $('.row-relasi').last().find('.unit_text_1').html(element.pr_unit_name_1);
                 $('.row-relasi').last().find('.unit_text_2').html(element.pr_unit_name_2);
                 $('.row-relasi').last().find('.pr_id').val(element.pr_id);
-                if(element.is_default==1){
-                    $('.row-relasi').last().find('.default').prop('checked', true);
-                } 
-            });
-        }
+            } else if (dataRelasi.length == 1){
+                $('.row-relasi').last().find('.unit2').val(element.pr_unit_value_2);
+                $('.row-relasi').last().find('.pr_id').val(element.pr_id);
+            }
+            if(element.is_default==1){
+                $('.row-relasi').last().find('.default').prop('checked', true);
+            } 
+        });
 
         $('#product_unit').empty();
         $('#unit_id').empty(); 
         data.pr_unit.forEach(element => {
-            console.log(element);
-            $('#product_unit').val(element.unit_id);
-            $('#product_unit').append(`<option value="${element.unit_id}">${element.unit_short_name}</option>`);
-            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_short_name}</option>`);
+            var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
+            $('#product_unit').append(newOption).trigger('change');
         });
         $('#product_alert').val(data.product_alert);
         $('#unit_id').val(data.unit_id).trigger("change");

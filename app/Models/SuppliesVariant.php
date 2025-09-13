@@ -22,7 +22,6 @@ class SuppliesVariant extends Model
 
         $result = self::where("status", "=", 1);
 
-
         // Filter berdasarkan supplies_id
         if ($data["supplies_id"]) {
             $result->where("supplies_id", "=", $data["supplies_id"]);
@@ -70,14 +69,18 @@ class SuppliesVariant extends Model
     {
         $t = self::find($data["supplies_variant_id"]);
         if (!$t) {
-            throw new \Exception("Supplies variant with ID " . $data["supplies_variant_id"] . " not found.");
+            return $this->insertSuppliesVariant([
+                "supplies_id" => $data["supplies_id"],
+                "variant_name" => $data["supplies_variant_name"],
+                "variant_sku" => $data["supplies_variant_sku"],
+                "variant_price" => $data["supplies_variant_price"],
+            ]);
         }
         $t->supplies_id = $data["supplies_id"];
-        $t->supplies_variant_name = $data["variant_name"];
+        $t->supplies_variant_name = $data["supplies_variant_name"];
         $t->supplies_variant_sku = $data["supplies_variant_sku"];
         $t->supplies_variant_price = $data["supplies_variant_price"];
         $t->supplies_variant_barcode = $data["supplies_variant_barcode"] ?? $t->generateBarcode();
-        $t->supplies_variant_stock = $data["supplies_variant_stock"];
         $t->save();
 
         return $t->supplies_variant_id;

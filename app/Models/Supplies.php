@@ -36,7 +36,9 @@ class Supplies extends Model
             // $value->unit_text = $temp;
             $value->supplies_unit = json_decode($value->supplies_unit);
             $value->sup_unit = Unit::whereIn('unit_id', $value->supplies_unit)->get();
-            $value->sup_variant = SuppliesVariant::where('supplies_id','=', $value->supplies_id)->get();
+            $value->sup_variant = (new SuppliesVariant())->getSuppliesVariant([
+                "supplies_id" => $value->supplies_id
+            ]);
         }
         return $result;
     }

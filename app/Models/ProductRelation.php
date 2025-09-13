@@ -44,7 +44,6 @@ class ProductRelation extends Model
 
     function updateProductRelation($data)
     {
-
         $t = self::find($data["pr_id"]);
         $t->product_id = $data["product_id"];
         $t->pr_unit_id_1 = $data["unit_id_1"];
