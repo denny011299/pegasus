@@ -1,18 +1,80 @@
     var mode=1;
-    var table, tablePr;
+    var table;
+    var products = [];
+    autocompleteCustomer('#so_customer', "#add_sales_order");
     $(document).ready(function(){
         inisialisasi();
         refreshSalesOrder();
     });
+
+    // Supaya bisa focus saat load modal
+    $('#add_sales_order').on('shown.bs.modal', function () {
+        $('#so_barcode').trigger("focus");
+    });
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        tableSalesModal();
+        products = [];
         refreshTableProduct();
         $('#add_sales_order .modal-title').html("Tambah Pesanan Penjualan");
         $('#add_sales_order input').val("");
+        $('#so_discount').val(0);
+        $('#so_cost').val(0);
+        $('#so_ppn').val(11);
         $('.is-invalid').removeClass('is-invalid');
         $('#add_sales_order').modal("show");
+        
+        let today = new Date();
+        let yyyy = today.getFullYear();
+        let mm = String(today.getMonth() + 1).padStart(2, '0');
+        let dd = String(today.getDate()).padStart(2, '0');
+        let todayStr = yyyy + '-' + mm + '-' + dd;
+        $("#so_date").val(todayStr);
+    });
+
+    $(document).on('blur', '#so_ppn', function(){
+        var value = $(this).val();
+        viewSummary(value, "ppn")
+    })
+
+    $(document).on('blur', '#so_cost', function(){
+        var value = $(this).val();
+        viewSummary(value, "cost")
+    })
+
+    $(document).on('blur', '#so_discount', function(){
+        var value = $(this).val();
+        viewSummary(value, "discount")
+    })
+
+    $('#so_barcode').on('keyup', function(e) {
+        if (e.which === 13) { // 13 = Enter
+            const value = $(this).val();
+
+            $.ajax({
+                url:"/getProductVariant",
+                method:"get",
+                data:{
+                    search_product: value
+                },
+                success: function(e) {
+                    if (e.length == 1){
+                        e.forEach(element => {
+                            products.push(element);
+                        });
+                        toastr.success('', 'Berhasil menambahkan produk');
+                    } else{
+                        toastr.error('', 'Produk tidak ditemukan');
+                    }
+                    refreshTableProduct();
+                },
+                error: function(e) {
+
+                }
+            })
+            $('#so_barcode').val("");
+            $('#so_barcode').trigger("focus");
+        } 
     });
     
     function inisialisasi() {
@@ -31,13 +93,12 @@
                 },
             },
             columns: [
-                { data: "so_name" },
-                { data: "so_reference" },
-                { data: "so_date" },
-                { data: "so_total" },
+                { data: "customer_name" },
+                { data: "date" },
+                { data: "total" },
                 { data: "so_paid" },
                 { data: "so_difference" },
-                { data: "status" },
+                { data: "status_so" },
                 { data: "so_cashier" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -61,8 +122,9 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].so_date = moment(e[i].so_due_date).format('D MMM YYYY');
-                    e[i].status = 'created';
+                    e[i].date = moment(e[i].so_date).format('D MMM YYYY');
+                    e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
+                    e[i].status_so = 'created';
                     e[i].action = `
                         <a href="/salesOrderDetail/${e[i].so_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].so_id}" data-bs-target="#view-sales">
                             <i data-feather="view" class="fe fe-eye"></i>
@@ -85,80 +147,84 @@
         });
     }
 
-    function tableSalesModal(){
-        if ($.fn.DataTable.isDataTable('#tableSalesModal')) {
-            tablePr = $('#tableSalesModal').DataTable();
-            return;
-        }
-        tablePr = $('#tableSalesModal').DataTable({
-            bFilter: true,
-            sDom: 'fBtlpi',
-            ordering: true,
-            searching: false,
-            language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Pesanan Penjualan",
-                info: "_START_ - _END_ of _TOTAL_ items",
-                paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
-                },
-            },
-            columns: [
-                { data: "pr_name" },
-                { data: "variant" },
-                { data: "pr_sku" },
-                { data: "pr_qty", className: "text-center"},
-                { data: "pr_price", className: "text-end"},
-                { data: "pr_subtotal", className: "text-end"},
-            ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
-            },
+    function refreshTableProduct(){
+        $('#tableSalesModal').html("");
+        var html ="";
+        products.forEach((p, index) => {
+            html += `
+                <tr>
+                    <td style="width: 25%">${p.product_name}</td>
+                    <td style="width: 20%">${p.product_variant_name}</td>
+                    <td style="width: 15%">${p.product_variant_sku}</td>
+                    <td style="width: 10%" class="text-center p-2">
+                        <input type="text" class="form-control fill number-only so_qty"
+                            data-price="${p.product_variant_price}"
+                            data-index="${index}" style="width: 80%" value="${p.so_qty || 0}">
+                    </td>
+                    <td style="width: 15%" class="text-end">${p.product_variant_price}</td>
+                    <td style="width: 15%" class="subtotal text-end">${p.so_subtotal || 0}</td>
+                </tr>
+            `;
         });
+        $('#tableSalesModal').append(html);
     }
 
-    function refreshTableProduct(){
-        $.ajax({
-            url: "/getProduct",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                console.log(e);
-                tablePr.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].pr_qty = 2;
-                    e[i].pr_price = 100000;
-                    e[i].pr_subtotal = 200000;
+    $(document).on('blur', '.so_qty', function () {
+        const index = $(this).data('index');
+        let qty = parseInt($(this).val()) || 0;
+        let price = parseInt($(this).data('price')) || 0;
+        let subtotal = qty * price;
 
-                    e[i].variant = "";
-                    JSON.parse(e[i].pr_variant).forEach((element,index) => {
-                         e[i].variant += element;
-                         if(index< JSON.parse(e[i].pr_variant).length-1){
-                            e[i].variant += ", ";
-                         }
-                    });
-                }
+        $(this).closest('tr').find('.subtotal').html(subtotal);
+        products[index].so_qty = qty;
+        products[index].so_subtotal = subtotal;
 
-                tablePr.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                console.error("Gagal load so:", err);
-            }
+        updateTotal();
+        $('#so_barcode').trigger("focus");
+        console.log(products);
+    });
+
+    function updateTotal() {
+        let total = 0;
+        $(".subtotal").each(function () {
+            total += parseInt($(this).text().replace(/,/g, "")) || 0;
         });
+        $("#value_total").html(`Rp ${formatRupiah(total)}`);
+        // update summary
+        $('#so_ppn').trigger('blur')
+        $('#so_discount').trigger('blur')
+        $('#so_cost').trigger('blur')
+        grandTotal()
+        $('#so_barcode').trigger("focus");
+    }
+
+    function viewSummary(value, from){
+        var total = convertToAngka($('#value_total').html());
+        var hasil = 0;
+        value = convertToAngka(value);
+        if (from == "cost") hasil = value;
+        else hasil += total*(value/100);
+        $(`#value_${from}`).html(`Rp ${formatRupiah(hasil)}`);
+        grandTotal()
+        $('#so_barcode').trigger("focus");
+    }
+
+    function grandTotal(){
+        var total = convertToAngka($('#value_total').html());
+        var ppn = convertToAngka($('#value_ppn').html());
+        var discount = convertToAngka($('#value_discount').html());
+        var cost = convertToAngka($('#value_cost').html());
+        var grand = total + ppn - discount + cost;
+        $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
+
+        
+        $('#so_barcode').trigger("focus");
     }
 
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
-        var url ="/insertSales";
+        var url ="/insertSalesOrder";
         var valid=1;
 
         $("#add_sales_order .fill").each(function(){
@@ -174,14 +240,27 @@
             return false;
         };
 
+        if ($('#tableSalesModal').html() == ""){
+            notifikasi('error', "Gagal Insert", 'Harus ada 1 produk dipilih');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            return false;
+        }
+
         param = {
-            // category_name:$('#category_name').val(),
-             _token:token
+            so_customer: $('#so_customer').val(),
+            so_date: $('#so_date').val(),
+            so_total: convertToAngka($('#value_grand').html()),
+            so_ppn: convertToAngka($('#so_ppn').val()),
+            so_cost: convertToAngka($('#so_cost').val()),
+            so_discount: convertToAngka($('#so_discount').val()),
+            products: JSON.stringify(products),
+            _token:token
         };
 
         if(mode==2){
             url="/updateSalesOrder";
-            // param.category_id = $('#add_sales_order').attr("category_id");
+            param.so_id = $('#add_sales_order').attr("so_id");
+            param.so_number = $('#add_sales_order').attr("so_number");
         }
 
         LoadingButton($(this));
@@ -217,22 +296,48 @@
     //edit
     $(document).on("click",".btn_edit",function(){
         var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        console.log(data);
+        products = [];
         mode=2;
         $('#add_sales_order .modal-title').html("Update Pesanan Penjualan");
         $('#add_sales_order input').empty().val("");
-        // $('#category_name').val(data.category_name);
+        $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
+        $('#so_date').val(data.so_date)
+        $('#so_discount').val(data.so_discount)
+        $('#so_ppn').val(data.so_ppn)
+        $('#so_cost').val(data.so_cost)
+        data.items.forEach(e => {
+            var temp = {
+                "product_name" : e.sod_nama,
+                "product_variant_name" : e.sod_variant,
+                "product_variant_sku" : e.sod_sku,
+                "so_qty" : e.sod_qty,
+                "product_variant_price" : e.sod_harga,
+                "so_subtotal" : e.sod_subtotal,
+            };
+            products.push(temp);
+        });
+        refreshTableProduct();
+
+        // update summary
+        $('#so_ppn').trigger('blur')
+        $('#so_discount').trigger('blur')
+        $('#so_cost').trigger('blur')
+        grandTotal()
+        $('#so_barcode').trigger("focus");
+
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Simpan perubahan');
         $('#add_sales_order').modal("show");
-        // $('#add_sales_order').attr("so_id", data.so_id);
+        $('#add_sales_order').attr("so_id", data.so_id);
+        $('#add_sales_order').attr("so_number", data.so_number);
     });
 
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         showModalDelete("Apakah yakin ingin mengahapus pesanan penjualan ini?","btn-delete-sales");
-        // $('#modalDelete').modal("show");
-        $('#btn-delete-sales').attr("category_id", data.category_id);
+        $('#btn-delete-sales').attr("so_id", data.so_id);
     });
 
 
@@ -240,7 +345,7 @@
         $.ajax({
             url:"/deleteSalesOrder",
             data:{
-                category_id:$('#btn-delete-sales').attr('category_id'),
+                so_id:$('#btn-delete-sales').attr('so_id'),
                 _token:token
             },
             method:"post",

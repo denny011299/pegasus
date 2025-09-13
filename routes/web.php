@@ -26,6 +26,7 @@ Route::post('/autocompleteBom', [AutocompleteController::class, "autocompleteBom
 Route::post('/autocompleteProduct', [AutocompleteController::class, "autocompleteProduct"])->name('autocompleteProduct');
 Route::post('/autocompleteSupplies', [AutocompleteController::class, "autocompleteSupplies"])->name('autocompleteSupplies');
 Route::post('/autocompleteProductVariant', [AutocompleteController::class, "autocompleteProductVariant"])->name('autocompleteProductVariant');
+Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocompleteCustomer"])->name('autocompleteCustomer');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
@@ -81,8 +82,9 @@ Route::get('/payReceive',[ReportController::class,"PayReceive"])->name('payRecei
 Route::get('/salesOrder',[CustomerController::class,"SalesOrder"])->name('salesOrder');
 Route::get('/getSalesOrder', [CustomerController::class, "getSalesOrder"])->name('getSalesOrder');
 Route::get('/salesOrderDetail/{id}', [CustomerController::class, "SalesOrderDetail"])->name('salesOrderDetail');
-Route::get('/getSoInvoice', [CustomerController::class, "getSoInvoice"])->name('getSoInvoice');
-Route::get('/getSoDelivery', [CustomerController::class, "getSoDelivery"])->name('getSoDelivery');
+Route::post('/insertSalesOrder', [CustomerController::class, "insertSalesOrder"])->name('insertSalesOrder');
+Route::post('/updateSalesOrder', [CustomerController::class, "updateSalesOrder"])->name('updateSalesOrder');
+Route::post('/deleteSalesOrder', [CustomerController::class, "deleteSalesOrder"])->name('deleteSalesOrder');
 
 Route::get('/purchaseOrder',[SupplierController::class,"PurchaseOrder"])->name('purchaseOrder');
 Route::get('/purchaseOrderDetail/{id}',[SupplierController::class,"PurchaseOrderDetail"])->name('purchaseOrderDetail');
@@ -97,6 +99,7 @@ Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('g
 
 Route::get('/product',[ProductController::class,"Product"])->name('product');
 Route::get('/getProduct',[ProductController::class,"getProduct"])->name('getProduct');
+Route::get('/getProductVariant',[ProductController::class,"getProductVariant"])->name('getProductVariant');
 Route::post('/insertProduct', [ProductController::class, "insertProduct"])->name('insertProduct');
 Route::post('/updateProduct', [ProductController::class, "updateProduct"])->name('updateProduct');
 Route::post('/deleteProduct', [ProductController::class, "deleteProduct"])->name('deleteProduct');

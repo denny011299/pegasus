@@ -124,6 +124,13 @@ class ProductController extends Controller
         return (new Product())->deleteProduct($data);
     }
 
+    function getProductVariant(Request $req){
+        $data = (new ProductVariant())->getProductVariant([
+            "search_product" => $req->search_product
+        ]);
+        return response()->json($data);
+    }
+
     // Supplies
     public function Supplies(){
         return view('Backoffice.Product.Supplies');

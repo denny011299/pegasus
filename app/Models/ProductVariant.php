@@ -18,6 +18,7 @@ class ProductVariant extends Model
             "product_variant_sku" => null,
             "product_variant_id" => null,
             "status" => 1,
+            "search_product" => null,
         ], $data);
 
         $result = self::where("status", "=", 1);
@@ -31,6 +32,11 @@ class ProductVariant extends Model
         // Filter berdasarkan SKU
         if ($data["product_variant_sku"]) {
             $result->where("product_variant_sku", "like", "%" . $data["product_variant_sku"] . "%");
+        }
+
+        if ($data["search_product"]){
+            $result->where("product_variant_sku", "like", "%" . $data["search_product"])
+            ->orwhere("product_variant_barcode", "=", $data["search_product"]);
         }
 
         // Filter berdasarkan product_variant_id

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\CategoryCoa;
 use App\Models\Cities;
 use App\Models\Coa;
+use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Provinces;
@@ -193,6 +194,26 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["product_id"];
             $r->text = $r["product_name"] ." ". $r["product_variant_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteCustomer(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Customer();
+        $data_city = $p->getCustomer([
+            "customer_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["customer_id"];
+            $r->text = $r["customer_name"];
         };
 
         echo json_encode(array(

@@ -19,7 +19,8 @@
         .select2-selection__clear {
             padding: 0.6rem 1.2rem 0 0 !important;
         }
-        /* Select2 */
+
+        /* Select2 Multiple - Chip */
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: #082a58 !important;
             color: #fff !important;
@@ -34,10 +35,11 @@
         /* Teks di dalam chip */
         .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
             color: #fff !important;
-            font-weight: 500;
+            font-weight: 500 !important;
             padding-left: 1rem !important;
         }
-        /* Tombol hapus */
+
+        /* Tombol hapus di chip */
         .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
             background: none !important;
             border: none !important;
@@ -45,15 +47,49 @@
             cursor: pointer !important;
             font-size: 14px !important;
             margin-right: 4px !important;
-            padding: 0 !important;
-            line-height: 1 !important;
             padding: 0.3rem 0 0 0.5rem !important;
+            line-height: 1 !important;
         }
 
         /* Tombol clear select2 unit */
         button.select2-selection__clear[aria-describedby*="unit-container"] {
-            padding: 0.2rem 0 0.7rem !important;
+            padding: 0.1rem 0 0.8rem !important;
         }
+
+        /* Biar tinggi select2 multiple lebih konsisten */
+        .select2-container .select2-selection--multiple {
+            min-height: 38px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 4px !important;
+            padding: 2px !important;
+        }
+
+        /* Container rendered → supaya chip & input sejajar */
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+            padding: 2px 4px !important;
+        }
+
+        /* Inline search wrapper → biar search ikut fleksibel */
+        .select2-container--default .select2-selection--multiple .select2-search--inline {
+            flex: 1 !important;
+        }
+
+        /* Input search tetap inline */
+        .select2-container .select2-selection--multiple .select2-search--inline .select2-search__field {
+            height: 20px !important;
+            margin: 2px 0 !important;
+            padding: 2px !important;
+            min-width: 50px !important;
+            box-sizing: border-box !important;
+        }
+
+        .select2 .select2-container .select2-container--default .select2-container--below .select2-container--focus .select2-container--open{
+            height: 40px !important;
+        }
+
     </style>
 
     @if (Route::is([

@@ -6,6 +6,7 @@ use App\Models\SalesOrder;
 use App\Models\SalesOrderDelivery;
 use App\Models\SalesOrderDetailInvoice;
 use App\Models\Customer;
+use App\Models\SalesOrderDetail;
 use Illuminate\Http\Request;
 
 class CustomerController extends Controller
@@ -21,6 +22,32 @@ class CustomerController extends Controller
     function getSalesOrder(Request $req){
         $data = (new SalesOrder())->getSalesOrder();
         return response()->json($data);
+    }
+
+    function insertSalesOrder(Request $req){
+        $data = $req->all();
+        $id = (new SalesOrder())->insertSalesOrder($data);
+        foreach (json_decode($data['products'],true) as $key => $value) {
+            $value['so_id'] = $id;
+            (new SalesOrderDetail())->insertSalesOrderDetail($value);
+        }
+    }
+
+    function updateSalesOrder(Request $req){
+        $data = $req->all();
+        $list_id_detail = [];
+        $so_id = (new SalesOrder())->updateSalesOrder($data);
+        foreach (json_decode($req->products,true) as $key => $value) {
+            $value['so_id'] = $so_id;
+            $id = (new SalesOrderDetail())->updateSalesOrderDetail($value);
+            array_push($list_id_detail, $id);
+        }
+        SalesOrderDetail::whereNotIn('sod_id', $list_id_detail)->where('so_id','=',$so_id)->update(['status' => 0]);
+    }
+
+    function deleteSalesOrder(Request $req){
+        $data = $req->all();
+        return (new SalesOrder())->deleteSalesOrder($data);
     }
 
     function getSoDelivery(Request $req){

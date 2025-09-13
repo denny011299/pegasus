@@ -28,7 +28,6 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Nama Customer</th>
-                                            <th>Referensi</th>
                                             <th>Tanggal</th>
                                             <th>Jumlah Total</th>
                                             <th>Dibayar</th>

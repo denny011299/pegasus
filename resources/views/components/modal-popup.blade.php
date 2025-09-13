@@ -519,7 +519,7 @@
                                     <div class="col-6">
                                         <div class="input-block">
                                             <label>Nama Pelanggan<span class="text-danger">*</span></label>
-                                            <select id="so_name" class="form-control fill"></select>
+                                            <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -530,33 +530,50 @@
                                     </div>
                                 </div>
                                 <div class="col-12 row">
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="input-block">
                                             <label>Diskon<span class="text-danger">*</span></label>
-                                            <select id="so_discount" class="form-control fill number-only">
-                                                <option value="0" checked>0</option>
-                                            </select>
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control fill number-only" id="so_discount" 
+                                                placeholder="Input Diskon" value="0">
+                                                <span class="input-group-text">%</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-4">
+                                        <div class="input-block">
+                                            <label>PPN<span class="text-danger">*</span></label>
+                                            <div class="input-group mb-3">
+                                                <input type="text" class="form-control fill number-only" id="so_ppn" 
+                                                placeholder="Input PPN" value="0">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Biaya Pengiriman<span class="text-danger">*</span></label>
                                             <div class="input-group mb-3">
                                                 <span class="input-group-text">Rp </span>
-                                                <input type="text" class="form-control fill number-only nominal_only" id="so_cost" value="0" placeholder="20.000">
+                                                <input type="text" class="form-control fill number-only nominal_only" id="so_cost" value="0" placeholder="Input Biaya Pengiriman">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-6">
-                                    <div class="input-block mb-3">
-                                        <label>SKU/Barcode<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="so_sku"
-                                        placeholder="SKU Produk">
+                                <div class="col-12 row">
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>SKU/Barcode<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="so_barcode"
+                                            placeholder="SKU Produk">
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center" id="tableSalesModal">
+                                    <table class="table table-center">
                                         <thead>
                                             <th>Produk</th>
                                             <th>Variasi</th>
@@ -565,27 +582,33 @@
                                             <th>Harga Satuan</th>
                                             <th>Subtotal</th>
                                         </thead>
-                                        <tbody></tbody>
+                                        <tbody id="tableSalesModal">
+                                            
+                                        </tbody>
                                     </table>
                                 </div>
                                 <div class="col-12 row pt-3">
                                     <div class="col-6"></div>
                                     <div class="col-6">
                                         <div class="d-flex justify-content-between">
+                                            <p>Total</p>
+                                            <p id="value_total">0</p>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
                                             <p>Ppn</p>
-                                            <p>0</p>
+                                            <p id="value_ppn">0</p>
                                         </div>
                                         <div class="d-flex justify-content-between">
                                             <p>Diskon</p>
-                                            <p>0</p>
+                                            <p id="value_discount">0</p>
                                         </div>
                                         <div class="d-flex justify-content-between">
                                             <p>Biaya Pengiriman</p>
-                                            <p>0</p>
+                                            <p id="value_cost">0</p>
                                         </div>
                                         <div class="d-flex justify-content-between">
-                                            <p>Grand Total</p>
-                                            <p>400000</p>
+                                            <b>Grand Total</b>
+                                            <b id="value_grand">0</b>
                                         </div>
                                     </div>
                                 </div>
