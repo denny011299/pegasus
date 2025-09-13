@@ -30,7 +30,7 @@
             var data = $('#product_variant').select2('data')[0];
             data.name = JSON.parse(data.variant_attribute);
             data.name.forEach(element => {
-                addRow(element);    
+                addRow(element);
             });
             $('#product_variant').empty();
         }
@@ -180,6 +180,7 @@
             };
             relasi.push(tmp);
         });
+        console.log(relasi)
         param.product_variant = JSON.stringify(temp);
         param.product_relasi = JSON.stringify(relasi);
 
@@ -222,7 +223,7 @@
     //edit
     $(document).on("change","#product_unit",function(){
         dataRelasi = $(this).select2("data");
-        if(dataRelasi.length>1){
+        if(dataRelasi.length>1 && mode == 1){
            addRowRelasi();
         }
         $('#unit_id').html("");2
@@ -242,19 +243,26 @@
     });
 
     function addRowRelasi() {
+        console.log(dataRelasi)
         $('#tbRelasi').append(`
                 <tr class="row-relasi">
                     <td>
                         <div class="input-group">
-                            <input type="text" class="form-control nominal-only unit1 fill" value="1" data-unit_id="${dataRelasi[dataRelasi.length-2].id}" disabled>
-                            <span class="input-group-text unit_text_1">${dataRelasi[dataRelasi.length-2].text}</span>
-                            <input type="hidden" class="form-control pr_id" value="${dataRelasi[dataRelasi.length-2].pr_id??''}">
+                            <input type="text" class="form-control nominal-only unit1 fill" value="1"
+                            data-unit_id="${dataRelasi[dataRelasi.length-1].pr_unit_id_1 ? dataRelasi[dataRelasi.length-1].pr_unit_id_1 : dataRelasi[dataRelasi.length-2].id}" disabled>
+                            <span class="input-group-text unit_text_1">
+                                ${dataRelasi[dataRelasi.length-1].pr_unit_name_1 ? dataRelasi[dataRelasi.length-1].pr_unit_name_1 : dataRelasi[dataRelasi.length-2].text}
+                            </span>
+                            <input type="hidden" class="form-control pr_id" value="${dataRelasi[dataRelasi.length-1].pr_id??''}">
                         </div>
                     </td>
                     <td>
                         <div class="input-group">
-                            <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai" data-unit_id="${dataRelasi[dataRelasi.length-1].id}">
-                            <span class="input-group-text unit_text_2">${dataRelasi[dataRelasi.length-1].text}</span>
+                            <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai"
+                            data-unit_id="${dataRelasi[dataRelasi.length-1].pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : dataRelasi[dataRelasi.length-1].id}">
+                            <span class="input-group-text unit_text_2">
+                                ${dataRelasi[dataRelasi.length-1].pr_unit_name_2 ? dataRelasi[dataRelasi.length-1].pr_unit_name_2 : dataRelasi[dataRelasi.length-1].text}
+                            </span>
                         </div>
                     </td>
                 </tr>    
@@ -281,24 +289,27 @@
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
         });
 
-        $('.row-relasi').html("");
+        $('#tbRelasi').html("");
         dataRelasi = data.pr_relasi;
-        dataRelasi.forEach(element => {
-            if (dataRelasi.length>1){
+        console.log(dataRelasi)
+        if (dataRelasi.length>1){
+            dataRelasi.forEach(element => {
                 addRowRelasi();
                 $('.row-relasi').last().find('.unit1').val(element.pr_unit_value_1);
                 $('.row-relasi').last().find('.unit2').val(element.pr_unit_value_2);
                 $('.row-relasi').last().find('.unit_text_1').html(element.pr_unit_name_1);
                 $('.row-relasi').last().find('.unit_text_2').html(element.pr_unit_name_2);
                 $('.row-relasi').last().find('.pr_id').val(element.pr_id);
-            } else if (dataRelasi.length == 1){
-                $('.row-relasi').last().find('.unit2').val(element.pr_unit_value_2);
-                $('.row-relasi').last().find('.pr_id').val(element.pr_id);
-            }
-            if(element.is_default==1){
-                $('.row-relasi').last().find('.default').prop('checked', true);
-            } 
-        });
+                if(element.is_default==1){
+                    $('.row-relasi').last().find('.default').prop('checked', true);
+                }
+            })
+        } else if (dataRelasi.length == 1){
+            addRowRelasi();
+            $('.row-relasi').last().find('.unit2').val(dataRelasi[0].pr_unit_value_2);
+            console.log($('.row-relasi').find('.unit2'))
+            $('.row-relasi').last().find('.pr_id').val(dataRelasi[0].pr_id);
+        }
 
         $('#product_unit').empty();
         $('#unit_id').empty(); 
