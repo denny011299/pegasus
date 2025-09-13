@@ -2,18 +2,7 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-        .bootstrap-tagsinput .tag {
-            margin-right: 2px;
-            color: #fff;
-            background-color: #082a58;
-            padding: .2em .4em;
-            border-radius: .2rem;
-        }
-        .bootstrap-tagsinput .tag [data-role="remove"] {
-            color: #ffffff !important;
-            margin-left: 5px;
-            cursor: pointer;
-        }
+        
     </style>
 @endsection
 @section('content')

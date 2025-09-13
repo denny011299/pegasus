@@ -2,7 +2,7 @@
     var mode = 1; //1 = auto scan, 2 = manual input
     var type = 1; //1 = all, 2 = In, 3 = Out
 
-    autocompleteProductVariant("#product_id", "#add-product-issues");
+    autocompleteProductVariantOnly("#product_id", "#add-product-issues");
 
 
     $(document).ready(function(){
@@ -14,6 +14,18 @@
         type = $(this).attr("tipe");
         afterInsert();
     });
+      $(document).on("change", "#product_id" , function () {
+        var data = $(this).select2("data")[0];
+        console.log(data);
+        if(data){
+             $('#unit_id').html("");
+            data.pr_unit.forEach(element => {
+                 $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
+            });
+              $('#pi_unit option').first().prop('selected', true);
+        }
+       
+    });
 
     $(document).on('click','.btnAdd',function(){
         mode=1;
@@ -22,7 +34,8 @@
         $('#add-product-issues select2').empty();
         $('#add-product-issues select').val(1).trigger('change');
         $('.is-invalid').removeClass('is-invalid');
-            $("#pi_type,#tipe_return,#product_id").prop("disabled", false);
+        $("#pi_type,#tipe_return,#product_id,#unit_id").prop("disabled", false);
+        $('#add-product-issues #unit_id').append("<option selected>Pilih Satuan</option>");
         $('#add-product-issues').modal("show");
     });
     function inisialisasi() {
@@ -163,6 +176,7 @@ $(document).on("click", ".btn-save", function () {
         pi_qty: $("#pi_qty").val(),
         pi_type: $("#pi_type").val(),
         pi_notes: $("#pi_notes").val(),
+        unit_id: $("#unit_id").val(),
         tipe_return: $("#tipe_return").val(),
         _token: token,
     };
@@ -234,7 +248,7 @@ $(document).on("click", ".btn_edit", function () {
     $("#pi_type").empty().append(
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
-    $("#pi_type,#tipe_return,#product_id").prop("disabled", true);
+    $("#pi_type,#tipe_return,#product_id,#unit_id").prop("disabled", true);
     $('.is-invalid').removeClass('is-invalid');
     $('.btn-save').html('Simpan perubahan');
     $("#add-product-issues").modal("show");

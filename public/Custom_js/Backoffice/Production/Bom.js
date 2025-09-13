@@ -232,7 +232,7 @@
                 if (element.supplies_id == e.supplies_id){
                     element.bom_detail_qty += e.bom_detail_qty;
                 }
-            });
+            }); 
         }
         else{
             $('#tableSupply tbody').append(`

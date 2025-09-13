@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Bom;
 use App\Models\BomDetail;
 use App\Models\Production;
+use App\Models\ProductStock;
+use App\Models\ProductVariant;
 use App\Models\Supplies;
 use Illuminate\Http\Request;
 
@@ -104,7 +106,12 @@ class ProductionController extends Controller
 
         (new Production())->insertProduction($data);
 
-         return response()->json([
+        $b = bom::find($data["production_bom_id"]);
+        $v = ProductStock::where("product_variant_id","=",$data["production_product_id"])
+        ->where("unit_id","=",$data["unit_id"])->first();
+        $v->ps_stock += intval($data['production_qty'])*$b->bom_qty;
+        $v->save();
+        return response()->json([
                 "status"=>1,
                 "message"=>"Berhasil"
         ]);

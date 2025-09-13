@@ -233,6 +233,7 @@
 <script src="
 https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 "></script>
+
 <script>
     toastr.options = {
         "closeButton": false,
@@ -464,6 +465,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             placeholder: "Pilih Satuan",
             closeOnSelect: true,
             allowClear: true,
+            multiple: true,
+            tags: true, // Ini adalah properti utama untuk mengaktifkan tagging
             width: "100%",
             dropdownParent: modalParent ? $(modalParent) : "",
         });
@@ -561,6 +564,35 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         $(id).select2({
             ajax: {
                 url: "/autocompleteProductVariant",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Pilih Produk",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
+    function autocompleteProductVariantOnly(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteProductVariants",
                 dataType: "json",
                 type: "post",
                 data: function data(params) {

@@ -15,8 +15,9 @@
         $('#production_qty').val(1);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
+        $('#unit_id').append("<option selected>Pilih Satuan</option>");
         $('#addProduction').modal("show");
-
+        
         let today = new Date();
         let yyyy = today.getFullYear();
         let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -27,6 +28,13 @@
 
     $(document).on('change', '#product_id', function(){
         var data = $(this).select2("data")[0];
+        
+        $('#unit_id').html("");
+         data.pr_unit.forEach(element => {
+              $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
+         });
+           $('#pi_unit option').first().prop('selected', true);
+        
         detail_supply = [];
         $('#tableSupply tbody').html(`
             <tr class="text-center pt-4">
@@ -147,6 +155,7 @@
             production_bom_id:$('#product_id').val(),
             production_product_id:dt.product_id,
             production_qty:$('#production_qty').val(),
+            unit_id:$('#unit_id').val(),
             detail:JSON.stringify(detail_supply),
             _token:token
         };

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ManageStock;
 use App\Models\ProductIssues;
+use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\StockAlert;
@@ -134,6 +135,9 @@ class StockController extends Controller
 
     function getStock(Request $req){
         $data = (new ProductVariant())->getProductVariant();
+        foreach ($data as $key => $value) {
+            $value->stock = (new ProductStock())->getProductStock(["product_variant_id"=>$value->product_variant_id]);
+        }
         return response()->json($data);
     }
 }

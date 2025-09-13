@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ReportController;
@@ -26,6 +27,7 @@ Route::post('/autocompleteBom', [AutocompleteController::class, "autocompleteBom
 Route::post('/autocompleteProduct', [AutocompleteController::class, "autocompleteProduct"])->name('autocompleteProduct');
 Route::post('/autocompleteSupplies', [AutocompleteController::class, "autocompleteSupplies"])->name('autocompleteSupplies');
 Route::post('/autocompleteProductVariant', [AutocompleteController::class, "autocompleteProductVariant"])->name('autocompleteProductVariant');
+Route::post('/autocompleteProductVariants', [AutocompleteController::class, "autocompleteProductVariants"])->name('autocompleteProductVariant');
 Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocompleteCustomer"])->name('autocompleteCustomer');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
@@ -185,6 +187,7 @@ Route::post('/updateProduction', [ProductionController::class, "updateProduction
 Route::post('/deleteProduction', [ProductionController::class, "deleteProduction"])->name('deleteProduction');
 
 // Settings
+Route::get('/testing',[GeneralController::class,"testing"])->name('testing');
 Route::get('/profiles',[SettingController::class,"Profiles"])->name('profiles');
 Route::get('/settings',[SettingController::class,"Settings"])->name('settings');
 Route::post('/getSetting', [SettingController::class, "getSetting"])->name('getSetting');

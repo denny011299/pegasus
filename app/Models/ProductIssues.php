@@ -55,19 +55,20 @@ class ProductIssues extends Model
     function insertProductIssues($data)
     {   
         $m = ProductVariant::find($data["product_variant_id"]);
+        $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
         // return $m;  
 
         // Return to Supplier
         if ($data["tipe_return"] == 1) {
-            if ($m->product_variant_stock - $data["pi_qty"] > 0) {
-                $m->product_variant_stock -= $data["pi_qty"];
+            if ($s->ps_stock - $data["pi_qty"] > 0) {
+                $s->ps_stock -= $data["pi_qty"];
             } else {
                 return -1;
             }
         }
         // Return from customer
         elseif ($data["tipe_return"] == 2) {
-            $m->ms_stock += $data["pi_qty"];
+            $s->ps_stock += $data["pi_qty"];
         }
 
 
@@ -82,6 +83,7 @@ class ProductIssues extends Model
         $t->product_variant_id = $data["product_variant_id"];      
         $t->save(); 
         $m->save();
+        $s->save();
 
         return $m;  
     } 
@@ -89,28 +91,33 @@ class ProductIssues extends Model
     function updateProductIssues($data)
     {
         $m = ProductVariant::find($data["product_variant_id"]);
+        $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
+  
         $pi_date = Carbon::createFromFormat('d-m-Y', $data['pi_date'])->format('Y-m-d');   
         $t =  self::find($data["pi_id"]);    
         // return $m;  
         if($m->pi_qty != $data["pi_qty"]){
             // kembalikan stock ke kondisi sebelum update
             if($data["tipe_return"]  == 1){
-                $m->product_variant_stock += $t->pi_qty;
+                $s->ps_stock += $t->pi_qty;
             }elseif($data["tipe_return"] == 2){
-                $m->product_variant_stock -= $t->pi_qty;
+                
+                $s->ps_stock -= $t->pi_qty;
             }
-            $m->save();
+            $s->save();
+
+        
               // Return to Supplier
             if ($data["tipe_return"] == 1) {
-                if ($m->product_variant_stock - $data["pi_qty"] > 0) {
-                    $m->product_variant_stock -= $data["pi_qty"];
+                if ($s->ps_stock - $data["pi_qty"] > 0) {
+                    $s->ps_stock -= $data["pi_qty"];
                 } else {
                     return -1;
                 }
             }
             // Return from customer
             elseif ($data["tipe_return"] == 2) {
-                $m->ms_stock += $data["pi_qty"];
+                $s->ps_stock += $data["pi_qty"];
             }
 
         }
@@ -124,6 +131,7 @@ class ProductIssues extends Model
         $t->tipe_return = $data["tipe_return"];      
         $t->product_variant_id = $data["product_variant_id"];      
         $t->save(); 
+        $s->save();
         $m->save();
 
         return $m;  

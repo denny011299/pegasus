@@ -43,11 +43,16 @@
                 if (!Array.isArray(e)) {
                     e = e.original || [];
                 }
-
+                console.log(e);
+                
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].product_variant_stock_text = `${e[i].product_variant_stock} ${e[i].product_unit}`;
+                    e[i].product_variant_stock_text="";
+                   e[i].stock.forEach((element,index) => {
+                            e[i].product_variant_stock_text += `${element.ps_stock} ${element.unit_name}`;
+                            if(index<e[i].stock.length-1)e[i].product_variant_stock_text +=", ";
+                        });
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].stk_id}" data-bs-target="#edit-category">
                             <i data-feather="edit" class="feather-edit"></i>

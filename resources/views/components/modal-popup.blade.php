@@ -181,9 +181,24 @@
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Satuan<span class="text-danger">*</span></label>
-                                        <select class="form-select select2  fill" id="product_unit"  name="product_unit[]" multiple="multiple">
-
-                                        </select>
+                                        <select class="form-control fill" id="product_unit"  name="product_unit[]" ></select>
+                                    
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="input-block mb-3">
+                                        <label>Default Unit<span class="text-danger">*</span></label>
+                                        <select class="form-select fill select2" id="unit_id">
+										</select>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="input-block mb-3">
+                                        <label>Stock Alert<span class="text-danger">*</span></label>
+                                        <div class="input-group mb-3">
+                                            <input type="text" class="form-control" id="product_alert" aria-describedby="basic-addon3">
+                                              <span class="input-group-text" id="unit_alert">-</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <hr>
@@ -221,7 +236,6 @@
                                     </table>
                                 </div>
                             </div>
-                            {{-- 
                             <hr>
                             <div class="col-12">
                                 <div class="input-block mb-3">
@@ -231,16 +245,15 @@
                                             <tr>
                                                 <td>Name Unit 1</td>
                                                 <td>Name Unit 2</td>
-                                                <td class="text-center" style="width:15%">Action</td>
                                             </tr>
                                         </thead>
-                                        <tbody id="tbVariant">
+                                        <tbody id="tbRelasi">
                                            
                                         </tbody>
                                     </table>
                                    
                                 </div>
-                            </div>--}}
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -309,10 +322,14 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-lg-6">
+                                   <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label class="form-label">Jumlah</label>
-                                            <input type="text number-only" class="form-control number-only fill" id="pi_qty">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control number-only fill" id="pi_qty">
+                                                <select class="form-select w-25" id="unit_id">
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-lg-6">
@@ -370,7 +387,11 @@
                                 <div class="col-lg-6 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Jumlah Produksi</label>
-                                        <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
+                                            <select class="form-select w-25" id="unit_id">
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12 py-3 mb-3">
