@@ -15,6 +15,7 @@
         $('#production_qty').val(1);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
+        $('#unit_id').html("");
         $('#unit_id').append("<option selected>Pilih Satuan</option>");
         $('#addProduction').modal("show");
         
@@ -28,12 +29,14 @@
 
     $(document).on('change', '#product_id', function(){
         var data = $(this).select2("data")[0];
+        console.log(data);
         
         $('#unit_id').html("");
          data.pr_unit.forEach(element => {
               $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
          });
-           $('#pi_unit option').first().prop('selected', true);
+         $('#unit_id').val(data.unit_id).trigger("change");
+        $('#pi_unit option').first().prop('selected', true);
         
         detail_supply = [];
         $('#tableSupply tbody').html(`
@@ -99,6 +102,9 @@
         $.ajax({
             url: "/getProduction",
             method: "get",
+            data:{
+                "date":moment().format('YYYY-MM-DD')
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];

@@ -14,11 +14,13 @@ class Production extends Model
     function getProduction($data = [])
     {
         $data = array_merge([
-            "production_product_id"=>null
+            "production_product_id"=>null,
+            "date"=>null
         ], $data);
 
         $result = Production::where('status', '=', 1);
         if($data["production_product_id"]) $result->where('production_product_id','=',$data["production_product_id"]);
+        if($data["date"]) $result->where('production_date','=',$data["date"]);
         $result->orderBy('created_at', 'asc');
         
         $result = $result->get();

@@ -22,6 +22,7 @@
             data.pr_unit.forEach(element => {
                  $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
             });
+             $('#unit_id').val(data.unit_id).trigger("change");
               $('#pi_unit option').first().prop('selected', true);
         }
        

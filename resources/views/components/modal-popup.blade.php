@@ -181,8 +181,9 @@
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Satuan<span class="text-danger">*</span></label>
-                                        <select class="form-control fill" id="product_unit"  name="product_unit[]" ></select>
-                                    
+                                        <div class="container-satuan">
+                                            <select class="form-control fill" id="product_unit"  name="product_unit[]" ></select>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-3">

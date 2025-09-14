@@ -38,6 +38,7 @@ class ProductStock extends Model
         $t->unit_id = $data["unit_id"];
         $t->ps_stock = $data["ps_stock"] ?? 0;
         $t->save();
+
         return $t->role_id;
     }
 
@@ -76,5 +77,36 @@ class ProductStock extends Model
                 }
             }
         }
+    }
+
+    function cekStockBerlebih($data) {
+        $t = self::find($data["ps_id"]);
+        $p = Product::find($data["product_id"]);
+        if($p->unit_id != $data["unit_id"]){
+            $ada = 1;
+            while ($ada==1) {
+                $r = ProductRelation::where('pr_unit_id_2','=',$data["unit_id"])
+                ->where('product_id','=',$data["product_id"])->first();
+                if($t->ps_stock>=$r->pr_unit_value_2){
+                  
+                    $tambah = floor($t->ps_stock /$r->pr_unit_value_2);
+                    $t->ps_stock %= $r->pr_unit_value_2;
+                    
+                    $t->save();
+                    $stBaru = self::where('product_variant_id','=',$data["product_variant_id"])
+                    ->where("unit_id",'=',$r->pr_unit_id_1)->first();
+                    $stBaru->ps_stock += $tambah;
+                    $stBaru->save();
+    
+                    $cek = $r = ProductRelation::where('pr_unit_id_2','=',$r->pr_unit_id_1)
+                    ->where('product_id','=',$data["product_id"]);
+                    if($cek->count()<=0){
+                        $ada=-1;
+                    }
+                }
+                else  $ada=-1;
+            }
+        }
+
     }
 }

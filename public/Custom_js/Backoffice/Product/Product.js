@@ -4,6 +4,13 @@
     autocompleteVariant("#product_variant","#add_product");
     autocompleteCategory("#product_category","#add_product");
     autocompleteUnit("#product_unit","#add_product");
+  
+    $('#unit_id').on('click', function() {
+       $('.select2-search__field').remove();
+    });
+    $('#unit_id').on('change', function() {
+       $('.select2-search__field').remove();
+    });
 
     $(document).ready(function(){
         inisialisasi();

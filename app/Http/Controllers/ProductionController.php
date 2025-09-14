@@ -73,7 +73,7 @@ class ProductionController extends Controller
     }
 
     function getProduction(Request $req){
-        $data = (new Production())->getProduction();
+        $data = (new Production())->getProduction(["date"=>$req->date]);
         return response()->json($data);
     }
 
@@ -111,6 +111,9 @@ class ProductionController extends Controller
         ->where("unit_id","=",$data["unit_id"])->first();
         $v->ps_stock += intval($data['production_qty'])*$b->bom_qty;
         $v->save();
+
+        (new ProductStock())->cekStockBerlebih($v);
+
         return response()->json([
                 "status"=>1,
                 "message"=>"Berhasil"
