@@ -108,6 +108,7 @@ Route::post('/deleteProduct', [ProductController::class, "deleteProduct"])->name
 
 Route::get('/stock',[StockController::class,"Stock"])->name('stock');
 Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
+Route::get('/getStockSupplies',[StockController::class,"getStockSupplies"])->name('getStockSupplies');
 
 Route::get('/supplies',[ProductController::class,"Supplies"])->name('supplies');
 Route::get('/getSupplies',[ProductController::class,"getSupplies"])->name('getSupplies');

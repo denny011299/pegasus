@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Stok
+                    Stok Bahan Mentah
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -28,9 +28,8 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>SKU</th>
-                                            <th>Nama Produk</th>
+                                            <th>Nama Bahan Mentah</th>
                                             <th>Varian</th>
-                                            <th>Kategori</th>
                                             <th>Stok</th>
                                         </tr>
                                     </thead>
@@ -54,5 +53,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Supplies.js')}}"></script>
 @endsection

@@ -10,6 +10,8 @@ use App\Models\Stock;
 use App\Models\StockAlert;
 use App\Models\StockOpname;
 use App\Models\StockOpnameDetail;
+use App\Models\SuppliesStock;
+use App\Models\SuppliesVariant;
 use Illuminate\Http\Request;
 
 class StockController extends Controller
@@ -137,6 +139,14 @@ class StockController extends Controller
         $data = (new ProductVariant())->getProductVariant();
         foreach ($data as $key => $value) {
             $value->stock = (new ProductStock())->getProductStock(["product_variant_id"=>$value->product_variant_id]);
+        }
+        return response()->json($data);
+    }
+
+    function getStockSupplies(Request $req){
+        $data = (new SuppliesVariant())->getSuppliesVariant();
+        foreach ($data as $key => $value) {
+            $value->stock = (new SuppliesStock())->getSuppliesStock(["supplies_variant_id"=>$value->supplies_variant_id]);
         }
         return response()->json($data);
     }
