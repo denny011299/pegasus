@@ -26,6 +26,7 @@ Route::post('/autocompleteVariant', [AutocompleteController::class, "autocomplet
 Route::post('/autocompleteBom', [AutocompleteController::class, "autocompleteBom"])->name('autocompleteBom');
 Route::post('/autocompleteProduct', [AutocompleteController::class, "autocompleteProduct"])->name('autocompleteProduct');
 Route::post('/autocompleteSupplies', [AutocompleteController::class, "autocompleteSupplies"])->name('autocompleteSupplies');
+Route::post('/autocompleteSuppliesVariant', [AutocompleteController::class, "autocompleteSuppliesVariant"])->name('autocompleteSuppliesVariant');
 Route::post('/autocompleteProductVariant', [AutocompleteController::class, "autocompleteProductVariant"])->name('autocompleteProductVariant');
 Route::post('/autocompleteProductVariants', [AutocompleteController::class, "autocompleteProductVariants"])->name('autocompleteProductVariant');
 Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocompleteCustomer"])->name('autocompleteCustomer');

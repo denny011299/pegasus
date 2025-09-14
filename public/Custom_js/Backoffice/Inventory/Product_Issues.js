@@ -249,6 +249,7 @@ $(document).on("click", ".btn_edit", function () {
     mode = 2;
     $("add-product-issues input").empty().val("");
     $("#pi_date").val(moment(data.pi_date).format("DD-MM-YYYY"));
+    $("#unit_id").val(data.pi_qty);
     $("#pi_qty").val(data.pi_qty);
     $("#pi_notes").val(data.pi_notes);
     $("#product_id").append(
