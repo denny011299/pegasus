@@ -36,7 +36,7 @@ class ProductStock extends Model
         $t->product_id = $data["product_id"];
         $t->product_variant_id = $data["product_variant_id"];
         $t->unit_id = $data["unit_id"];
-        $t->ps_stock = $data["ps_stock"];
+        $t->ps_stock = $data["ps_stock"] ?? 0;
         $t->save();
         return $t->role_id;
     }

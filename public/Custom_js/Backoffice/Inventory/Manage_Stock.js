@@ -155,7 +155,7 @@ function refreshManageStock(){
                 e[i].product = `<img src="${public+e[i].ms_image}" class="me-2" style="width:30px">`+e[i].ms_name;
                 e[i].action=`
                     <a class="p-2 btn-action-icon btn_delete" href="javascript:void(0);">
-                        <i data-feather="trash-2"></i>
+                        <i class="fe fe-trash-2"></i>
                     </a>
                 `;
             }

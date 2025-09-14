@@ -89,7 +89,7 @@
                     }
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_view" data-bs-target="#view-opname">
-                            <i data-feather="view" class="fe fe-eye"></i>
+                            <i class="fe fe-eye"></i>
                         </a>
                     `;
                 });
@@ -118,7 +118,7 @@
                     }
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_view" data-bs-target="#view-opname">
-                            <i data-feather="view" class="fe fe-eye"></i>
+                            <i class="fe fe-eye"></i>
                         </a>
                     `;
                 });

@@ -58,13 +58,13 @@
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY'); 
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_view" href="/staffDetail/${e[i].staff_id}" data-bs-target="#view-supplier">
-                            <i data-feather="view" class="fe fe-eye"></i>
+                            <i class="fe fe-eye"></i>
                         </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit" href="/updateStaff/${e[i].staff_id}" data-bs-target="#edit-supplier">
-                            <i data-feather="edit" class="fe fe-edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].staff_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2" class="fe fe-trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                 }

@@ -57,7 +57,7 @@
                     e[i].stop_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
                         <a href="/detailStockOpname/${e[i].stop_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
-                            <i data-feather="view" class="fe fe-eye"></i>
+                            <i class="fe fe-eye"></i>
                         </a>
                     `;
                 }

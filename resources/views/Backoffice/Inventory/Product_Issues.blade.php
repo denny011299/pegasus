@@ -9,6 +9,14 @@
         padding-top: 0px !important;
         margin-top: 10px !important;
     }
+    #tableReturn, #tableDamage {
+        table-layout: fixed !important;
+        width: 100% !important;
+    }
+    #tableReturn td, #tableDamage td {
+        white-space: normal !important;
+        word-wrap: break-word;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">

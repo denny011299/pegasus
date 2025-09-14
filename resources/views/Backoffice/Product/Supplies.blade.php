@@ -1,5 +1,18 @@
 <?php $page = 'supplies'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        #tableSupplies {
+            table-layout: fixed !important;
+            width: 100% !important;
+        }
+
+        #tableSupplies td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

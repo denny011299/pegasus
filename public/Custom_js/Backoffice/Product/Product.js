@@ -40,9 +40,9 @@
     function addRow(names="") {
         $('#tbVariant').append(`
             <tr class="row-variant">
-                <td><input type="text" class="form-control variant_name" name="" id="" placeholder="Masukan Nama" value="${names}"></td>
-                <td><input type="text" class="form-control variant_sku" name="" id="" placeholder="Masukan Sku"></td>
-                <td><input type="text" class="form-control variant_price nominal_only" name="" id="" placeholder="Masukan Harga"></td>
+                <td><input type="text" class="form-control fill variant_name" name="" id="" placeholder="Masukan Nama" value="${names}"></td>
+                <td><input type="text" class="form-control fill variant_sku" name="" id="" placeholder="Masukan Sku"></td>
+                <td><input type="text" class="form-control fill variant_price nominal_only" name="" id="" placeholder="Masukan Harga"></td>
                 <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukan Barcode"><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
                 <td class="text-center d-flex align-items-center">
                     <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
@@ -113,10 +113,10 @@
                     });
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].pr_id}" data-bs-target="#edit-category">
-                            <i data-feather="edit" class="feather-edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].pr_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                 }
@@ -180,6 +180,7 @@
             };
             relasi.push(tmp);
         });
+        console.log($(this).find('.unit1').data('unit_id'));
         console.log(relasi)
         param.product_variant = JSON.stringify(temp);
         param.product_relasi = JSON.stringify(relasi);
@@ -223,10 +224,29 @@
     //edit
     $(document).on("change","#product_unit",function(){
         dataRelasi = $(this).select2("data");
-        if(dataRelasi.length>1 && mode == 1){
+
+        // Pengecekan apakah sudah selected atau belum
+        var cek = 1;
+        dataRelasi.forEach(element => {
+            if ($(this).text().trim() === element["text"]){
+                cek = -1
+            }
+        });
+        if (cek == -1) return false
+
+        console.log(dataRelasi)
+        if(dataRelasi.length>1 && $('#tbRelasi').html() == ""){
            addRowRelasi();
+        } 
+        else if (dataRelasi.length == 1) {
+            $('#tbRelasi').html("");
         }
-        $('#unit_id').html("");2
+        else if (dataRelasi.length < 1) {
+            $('#tbRelasi').html("");
+            $('#unit_alert').html("-");
+            $('#unit_id').val("");
+        }
+        $('#unit_id').html("");
         dataRelasi.forEach(item => {
             $('#unit_id').append(`<option value="${item.id}">${item.text}</option>`);
         });

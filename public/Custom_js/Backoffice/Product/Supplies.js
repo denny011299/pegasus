@@ -39,9 +39,9 @@
         
         $('#tbVariant').append(`
             <tr class="row-variant">
-                <td><input type="text" class="form-control variant_name" name="" id="" value="${names}"></td>
-                <td><input type="text" class="form-control variant_sku" name="" id=""></td>
-                <td><input type="text" class="form-control variant_price nominal_only" name="" id=""></td>
+                <td><input type="text" class="form-control fill variant_name" name="" id="" value="${names}"></td>
+                <td><input type="text" class="form-control fill variant_sku" name="" id=""></td>
+                <td><input type="text" class="form-control fill variant_price nominal_only" name="" id=""></td>
                 <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder=""><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
                 <td class="text-center d-flex align-items-center">
                     <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
@@ -69,11 +69,11 @@
                 },
             },
             columns: [
-                { data: "supplies_name" },
-                { data: "unit_values" },
-                { data: "variant_values" },
-                { data: "desc" },
-                { data: "supplies_stock" },
+                { data: "supplies_name", width: "25%" },
+                { data: "unit_values", width: "15%" },
+                { data: "variant_values", width: "15%" },
+                { data: "desc", width: "25%" },
+                { data: "supplies_stock", width: "10%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -115,10 +115,10 @@
                     });
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].supplies_id}" data-bs-target="#edit-supplies">
-                            <i data-feather="edit" class="feather-edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].supplies_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                 }

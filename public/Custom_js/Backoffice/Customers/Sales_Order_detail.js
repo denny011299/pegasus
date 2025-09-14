@@ -148,10 +148,10 @@
                             <i class="fe fe-file"></i>
                         </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit_dn" data-id="${e[i].sod_id}" data-bs-target="#edit-sales">
-                            <i data-feather="edit" class="fe fe-edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete_dn" data-id="${e[i].sod_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2" class="fe fe-trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                 }
@@ -182,7 +182,7 @@
                             <i class="fe fe-file"></i>
                         </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit_inv" data-id="${e[i].soi_id}" data-bs-target="#edit-sales">
-                            <i data-feather="edit" class="fe fe-edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                     `;
                 }

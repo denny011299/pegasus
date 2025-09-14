@@ -9,7 +9,7 @@ $(document).ready(function(){
         $('#supplier_phone').val(data.supplier_phone);
         $('#supplier_notes').val(data.supplier_notes);
         $('#supplier_address').val(data.supplier_address);
-        $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`);
+        $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`).trigger('change');
         $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`);
         $('#supplier_zipcode').val(data.supplier_zipcode);
         $('#supplier_bank').val(data.supplier_bank);

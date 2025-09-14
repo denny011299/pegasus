@@ -43,6 +43,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
+            
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -54,11 +55,11 @@
                 },
             },
             columns: [
-                { data: "pr_name" },
-                { data: "pr_sku" },
-                { data: "date" },
-                { data: "pi_qty" },
-                { data: "pi_notes" },
+                { data: "pr_name", width: "20%" },
+                { data: "pr_sku", width: "10%" },
+                { data: "date", width: "20%" },
+                { data: "pi_qty", width: "10%" },
+                { data: "pi_notes", width: "20%" },
                 { data: "action", class: "d-flex align-items-center" },
             ]
         });
@@ -67,6 +68,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -77,14 +79,13 @@
                     previous: '<i class="fa fa-angle-left"></i> '
                 },
             },
-            autoWidth: false,
             columns: [
-                { data: "pr_name", class: "width: 12%" },
-                { data: "pr_sku", class: "width: 18%" },
+                { data: "pr_name", class: "width: 25%" },
+                { data: "pr_sku", class: "width: 15%" },
                 { data: "date", class: "width: 15%" },
                 { data: "pi_qty", class: "width: 15%" },
-                { data: "pi_notes", class: "width: 15%" },
-                { data: "action", class: "d-flex align-items-center width: 25%" },
+                { data: "pi_notes", class: "width: 20%" },
+                { data: "action", class: "d-flex align-items-center" },
             ]
         });
     }
@@ -103,10 +104,10 @@
                     item.date = moment(item.pi_date).format('D MMM YYYY');
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
-                            <i data-feather="edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                 });

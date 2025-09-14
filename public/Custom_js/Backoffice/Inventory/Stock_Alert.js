@@ -112,10 +112,10 @@
                     item.min_order = `${item.product_alert - item.product_variant_stock} ${item.product_unit}`;
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
-                            <i data-feather="edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                     // Asumsi 'item' adalah objek produk lengkap dengan relasi dan stok.

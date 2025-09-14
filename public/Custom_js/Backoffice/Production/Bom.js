@@ -1,5 +1,5 @@
     autocompleteSupplies('#supplies_id', '#add_bom');
-    autocompleteProductVariant('#product_id', '#add_bom');
+    autocompleteProductVariantOnly('#product_id', '#add_bom');
 
     var mode=1;
     var table;
@@ -77,10 +77,10 @@
                     e[i].unit = e[i].details[0].unit_name;
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
-                            <i data-feather="edit" class="feather-edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].bom_id}  href="javascript:void(0);">
-                            <i data-feather="trash-2" class="feather-trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                     e[i].supplies = e[i].details.map(d => d.supplies_name).join(", ");
@@ -242,7 +242,7 @@
                     <td>${e.unit_name}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
-                                <i data-feather="trash-2" class="fe fe-trash"></i>
+                                <i class="fe fe-trash-2"></i>
                         </a>
                     </td>
                 </tr>    

@@ -59,16 +59,17 @@ class ProductIssues extends Model
         // return $m;  
 
         // Return to Supplier
+        $stocks = $s->ps_stock ?? 0;
         if ($data["tipe_return"] == 1) {
-            if ($s->ps_stock - $data["pi_qty"] > 0) {
-                $s->ps_stock -= $data["pi_qty"];
+            if ($stocks - $data["pi_qty"] > 0) {
+                $stocks -= $data["pi_qty"];
             } else {
                 return -1;
             }
         }
         // Return from customer
         elseif ($data["tipe_return"] == 2) {
-            $s->ps_stock += $data["pi_qty"];
+            $stocks += $data["pi_qty"];
         }
 
 

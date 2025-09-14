@@ -23,10 +23,10 @@ class Production extends Model
         
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $u = Product::find($value->production_product_id);
-            $value->product_name = $u->product_name;
-            $v = ProductVariant::where('product_id',"=", $value->production_product_id)->first();
-            $value->product_sku = $v->product_variant_sku;
+            $u = ProductVariant::find($value->production_product_id);
+            $value->product_sku = $u->product_variant_sku;
+            $v = Product::find($u->product_id);
+            $value->product_name = $v->product_name;
         }
         return $result;
     }

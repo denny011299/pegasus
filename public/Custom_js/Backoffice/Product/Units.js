@@ -58,10 +58,10 @@
                     e[i].action = `
                         <div class="edit-delete-action d-flex align-items-center">
                             <a class="btn-action-icon me-2 p-2 btn_edit" data-id="${e[i].unit_id}" data-bs-target="#edit-unit">
-                                <i data-feather="edit" class="feather-edit"></i>
+                                <i class="fe fe-edit"></i>
                             </a>
                             <a class="btn-action-icon p-2 btn_delete" data-id="${e[i].unit_id}" href="javascript:void(0);">
-                                <i data-feather="trash-2" class="feather-trash-2"></i>
+                                <i class="fe fe-trash-2"></i>
                             </a>
                         </div>
                     `;

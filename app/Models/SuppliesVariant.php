@@ -55,9 +55,9 @@ class SuppliesVariant extends Model
     {
         $t = new self();
         $t->supplies_id = $data["supplies_id"];
-       $t->supplies_variant_name = $data["variant_name"];
-        $t->supplies_variant_sku = $data["variant_sku"];
-        $t->supplies_variant_price = $data["variant_price"];
+       $t->supplies_variant_name = $data["supplies_variant_name"];
+        $t->supplies_variant_sku = $data["supplies_variant_sku"];
+        $t->supplies_variant_price = $data["supplies_variant_price"];
         $t->supplies_variant_barcode = $t->generateBarcode();
         $t->supplies_variant_stock = 0;
         $t->save();

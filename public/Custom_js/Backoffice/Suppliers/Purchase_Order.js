@@ -69,13 +69,13 @@
                     }
                     e[i].action = `
                         <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].po_id}" data-bs-target="#view-purchase">
-                            <i data-feather="view" class="fe fe-eye"></i>
+                            <i class="fe fe-eye"></i>
                         </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].po_id}" data-bs-target="#edit-purchase">
-                            <i data-feather="edit" class="fe fe-edit"></i>
+                            <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].po_id}" href="javascript:void(0);">
-                            <i data-feather="trash-2" class="fe fe-trash-2"></i>
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     `;
                 }

@@ -138,7 +138,7 @@
         var valid=1;
         var dt = $('#product_id').select2("data")[0];
 
-        $("#add_production .fill").each(function(){
+        $("#addProduction .fill").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
