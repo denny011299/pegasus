@@ -41,10 +41,8 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Nama Bahan Mentah</th>
-                                            <th>Satuan</th>
                                             <th>Variasi</th>
                                             <th>Deskripsi</th>
-                                            <th>Stok</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

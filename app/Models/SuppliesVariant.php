@@ -43,9 +43,7 @@ class SuppliesVariant extends Model
         // Menambahkan nama produk dari relasi
         foreach ($variants as $variant) {
             $s = Supplies::find($variant->supplies_id);
-            $u =  Unit::whereIn('unit_id', json_decode($s->supplies_unit,true))->first();
             $variant->supplies_name = $s ? $s->supplies_name : "-";
-            $variant->supplies_unit = $u ? $u->unit_name : "-";
         }
 
         return $variants;
