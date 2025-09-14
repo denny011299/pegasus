@@ -127,8 +127,6 @@
                         item.minim_order = needed + " " + item.stock[0].unit_name;
                     } else {
                         // Logika untuk produk dengan banyak relasi/varian
-                        console.log(item.product_name_text);
-                        
                         // 1. Konversi semua stok ke satuan terkecil (base unit)
                         let totalStockInSmallestUnit = item.stock[0].ps_stock;
                         
@@ -189,7 +187,6 @@
                             item.minim_order = resultText.reverse().join(", ");
                         }
                     }
-
                 });
                 
                 let stockLow = e.filter(item => item.stock[0].ps_stock <= item.product_alert&&  item.habis==-1);

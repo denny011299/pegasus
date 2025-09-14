@@ -181,6 +181,28 @@ class AutocompleteController extends Controller
             "data" => $data_city
         ));
     }
+    
+
+    public function autocompleteSuppliesVariant(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Supplies();
+        $data_city = $p->getSupplies([
+            "supplies_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["supplies_id"];
+            $r->text = $r["supplies_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
     public function autocompleteProductVariant(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;

@@ -1,4 +1,4 @@
-    autocompleteSupplies('#supplies_id', '#add_bom');
+    autocompleteSuppliesVariant('#supplies_id', '#add_bom');
     autocompleteProductVariantOnly('#product_id', '#add_bom');
 
     var mode=1;

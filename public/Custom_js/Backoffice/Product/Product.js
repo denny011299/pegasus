@@ -1,6 +1,7 @@
     var mode=1;
     var table;
     var dataRelasi;
+    var canAdd = true;
     autocompleteVariant("#product_variant","#add_product");
     autocompleteCategory("#product_category","#add_product");
     autocompleteUnit("#product_unit","#add_product");
@@ -19,9 +20,11 @@
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
+        canAdd=true;
         $('#add_product .modal-title').html("Tambah Produk");
         $('#add_product input').val("");
         $('#add_product #product_unit').empty();
+        $('#product_variant').empty();
         $('#add_product #product_category').empty();
         $('.is-invalid').removeClass('is-invalid');
         $('#tbVariant').html("")
@@ -187,8 +190,6 @@
             };
             relasi.push(tmp);
         });
-        console.log($(this).find('.unit1').data('unit_id'));
-        console.log(relasi)
         param.product_variant = JSON.stringify(temp);
         param.product_relasi = JSON.stringify(relasi);
 
@@ -233,19 +234,27 @@
         dataRelasi = $(this).select2("data");
 
         // Pengecekan apakah sudah selected atau belum
-        var cek = 1;
-        dataRelasi.forEach(element => {
-            if ($(this).text().trim() === element["text"]){
-                cek = -1
-            }
+        var select = dataRelasi.length==1?1:$('#unit_id').val();
+        
+        
+        $('#unit_id').html("");
+        dataRelasi.forEach(item => {
+            $('#unit_id').append(`<option value="${item.id}">${item.text}</option>`);
         });
-        if (cek == -1) return false
 
-        console.log(dataRelasi)
-        if(dataRelasi.length>1 && $('#tbRelasi').html() == ""){
-           addRowRelasi();
-        } 
-        else if (dataRelasi.length == 1) {
+        if(dataRelasi.length>1)$('#unit_id').val(select);
+        else $('#unit_id').eq(select).prop('selected', true);
+        $('#unit_id').trigger("change");
+
+        if(canAdd==true){
+            
+            $('#tbRelasi').html("");
+            dataRelasi.forEach((element,index) => {
+                if(index>0)addRowRelasi(dataRelasi[index-1],element); 
+            });
+        }
+        
+        if (dataRelasi.length == 1) {
             $('#tbRelasi').html("");
         }
         else if (dataRelasi.length < 1) {
@@ -253,11 +262,6 @@
             $('#unit_alert').html("-");
             $('#unit_id').val("");
         }
-        $('#unit_id').html("");
-        dataRelasi.forEach(item => {
-            $('#unit_id').append(`<option value="${item.id}">${item.text}</option>`);
-        });
-        $('#unit_id option:first').prop('selected', true).trigger("change");
     });
     
     $(document).on("change","#unit_id",function(){
@@ -269,26 +273,26 @@
        $('.select2-search__field').remove();
     });
 
-    function addRowRelasi() {
-        console.log(dataRelasi)
+    function addRowRelasi(element1,element2) {
+        
         $('#tbRelasi').append(`
-                <tr class="row-relasi">
+                <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${element2.pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : dataRelasi[dataRelasi.length-1].id}">
                     <td>
                         <div class="input-group">
                             <input type="text" class="form-control nominal-only unit1 fill" value="1"
-                            data-unit_id="${dataRelasi[dataRelasi.length-1].pr_unit_id_1 ? dataRelasi[dataRelasi.length-1].pr_unit_id_1 : dataRelasi[dataRelasi.length-2].id}" disabled>
+                            data-unit_id="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element1.id}" disabled>
                             <span class="input-group-text unit_text_1">
-                                ${dataRelasi[dataRelasi.length-1].pr_unit_name_1 ? dataRelasi[dataRelasi.length-1].pr_unit_name_1 : dataRelasi[dataRelasi.length-2].text}
+                                ${element1.pr_unit_name_1 ? element1.pr_unit_name_1 : element1.text}
                             </span>
-                            <input type="hidden" class="form-control pr_id" value="${dataRelasi[dataRelasi.length-1].pr_id??''}">
+                            <input type="hidden" class="form-control pr_id" value="${element1.pr_id??''}">
                         </div>
                     </td>
                     <td>
                         <div class="input-group">
                             <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai"
-                            data-unit_id="${dataRelasi[dataRelasi.length-1].pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : dataRelasi[dataRelasi.length-1].id}">
+                            data-unit_id="${element1.pr_unit_id_2 ? element1.pr_unit_id_2 : element2.id}" value="${element1.pr_unit_value_2 ? element1.pr_unit_value_2 : ""}">
                             <span class="input-group-text unit_text_2">
-                                ${dataRelasi[dataRelasi.length-1].pr_unit_name_2 ? dataRelasi[dataRelasi.length-1].pr_unit_name_2 : dataRelasi[dataRelasi.length-1].text}
+                                ${element1.pr_unit_name_2 ? element1.pr_unit_name_2 : element2.text}
                             </span>
                         </div>
                     </td>
@@ -309,40 +313,31 @@
         $('#tbVariant').html("");
 
         data.pr_variant.forEach(element => {
+           
             addRow(element.product_variant_name);
             $('.row-variant').last().find('.variant_sku').val(element.product_variant_sku);
             $('.row-variant').last().find('.variant_price').val(formatRupiah(element.product_variant_price));
             $('.row-variant').last().find('.variant_barcode').val(element.product_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
+        
         });
-
+        console.log(canAdd);
+        
         $('#tbRelasi').html("");
         dataRelasi = data.pr_relasi;
-        console.log(dataRelasi)
-        if (dataRelasi.length>1){
-            dataRelasi.forEach(element => {
-                addRowRelasi();
-                $('.row-relasi').last().find('.unit1').val(element.pr_unit_value_1);
-                $('.row-relasi').last().find('.unit2').val(element.pr_unit_value_2);
-                $('.row-relasi').last().find('.unit_text_1').html(element.pr_unit_name_1);
-                $('.row-relasi').last().find('.unit_text_2').html(element.pr_unit_name_2);
-                $('.row-relasi').last().find('.pr_id').val(element.pr_id);
-                if(element.is_default==1){
-                    $('.row-relasi').last().find('.default').prop('checked', true);
-                }
-            })
-        } else if (dataRelasi.length == 1){
-            addRowRelasi();
-            $('.row-relasi').last().find('.unit2').val(dataRelasi[0].pr_unit_value_2);
-            console.log($('.row-relasi').find('.unit2'))
-            $('.row-relasi').last().find('.pr_id').val(dataRelasi[0].pr_id);
-        }
-
+        console.log(data.pr_relasi)
+        dataRelasi.forEach((element,index) => {
+             canAdd=false;
+            addRowRelasi(element,element);
+             canAdd=true;
+        })
+        console.log(canAdd);
+        
         $('#product_unit').empty();
         $('#unit_id').empty(); 
         data.pr_unit.forEach(element => {
             var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
-            $('#product_unit').append(newOption).trigger('change');
+            $('#product_unit').append(newOption).trigger("change");
         });
         $('#product_alert').val(data.product_alert);
         $('#unit_id').val(data.unit_id).trigger("change");
