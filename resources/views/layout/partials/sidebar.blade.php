@@ -506,76 +506,89 @@
                     <!-- Main -->
                     <li class="menu-title"><span>Menu Utama</span></li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-home"></i> <span> Dasbor</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                            <li><a class="{{ Request::is('index', '/') ? 'active' : '' }}"
-                                    href="{{ url('/') }}">Dasbor Admin</a></li>
-                        </ul>
+                        <li>
+                            <a class="{{ Request::is('index') ? 'active' : '' }}" href="/"><i
+                                    class="fe fe-home"></i> <span>Dashboard</span></a>
+                        </li>
                     </li>
                     <!-- /Main -->
 
                     <!-- Master -->
                     <li class="menu-title"><span>Master</span></li>
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-package"></i> <span> Produk</span> <span
+                        <a href="#"><i class="fe fe-list"></i> <span> Master</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            <li><a href="{{ url('product') }}"
-                                    class="{{ Request::is('product', 'add-products', 'edit-products') ? 'active' : '' }}">Daftar
-                                    Produk</a></li>
                             <li><a href="{{ url('category') }}"
                                     class="{{ Request::is('category') ? 'active' : '' }}">Kategori</a></li>
                             <li><a href="{{ url('unit') }}"
                                     class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
                             <li><a href="{{ url('variant') }}"
                                     class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
+                        </ul>
+                    </li>
+                    <li class="submenu">
+                        <a href="#"><i class="fe fe-package"></i> <span> Produk</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
+                            <li><a href="{{ url('product') }}"
+                                    class="{{ Request::is('product') ? 'active' : '' }}">Daftar Produk</a></li>
+                            <li><a href="{{ url('stock') }}"
+                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stok Produk</a></li>
+                        </ul>
+                    </li>
+                    <li class="submenu">
+                        <a href="#"><i class="fa fa-cubes"></i> <span> Bahan Mentah</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
                             <li><a href="{{ url('supplies') }}"
-                                    class="{{ Request::is('supplies') ? 'active' : '' }}">Bahan Mentah</a></li>
+                                    class="{{ Request::is('supplies') ? 'active' : '' }}">Daftar Bahan Mentah</a></li>
+                            {{-- <li><a href="{{ url('stock') }}"
+                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stok Bahan Mentah</a></li> --}}
                         </ul>
                     </li>
+                
                     <li class="submenu">
-                        <a href="#"><i class="fe fe-users"></i> <span> Pelanggan</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                            <li><a href="{{ url('customer') }}"
-                                    class="{{ Request::is('customer') ? 'active' : '' }}">Pelanggan</a></li>
-                            <li><a href="{{ url('salesOrder') }}"
-                                    class="{{ Request::is('salesOrder') ? 'active' : '' }}">Pesanan Penjualan</a></li>
-                        </ul>
-                    </li>
-                    <li class="submenu">
-                        <a href="#"><i class="fe fe-truck"></i> <span> Pemasok</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                            <li><a href="{{ url('supplier') }}"
-                                    class="{{ Request::is('supplier') ? 'active' : '' }}">Pemasok</a></li>
-                            <li><a href="{{ url('purchaseOrder') }}"
-                                    class="{{ Request::is('purchaseOrder') ? 'active' : '' }}">Pesanan Pembelian</a></li>
-                        </ul>
+                        <li>
+                            <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
+                                    class="fe fe-users"></i> <span>Pelanggan</span></a>
+                        </li>
+                        <li>
+                            <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i
+                                    class="fe fe-truck"></i> <span>Pemasok</span></a>
+                        </li>
                     </li>
                     <li class="submenu">
                         <a href="#"><i class="fe fe-briefcase"></i> <span> Inventaris</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            <li><a href="{{ url('stock') }}"
-                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stok</a></li>
                             <li><a href="{{ url('productIssue') }}"
                                     class="{{ Request::is('productIssue') ? 'active' : '' }}">Produk Bermasalah</a></li>
+                            <li><a href="{{ url('stockAlert') }}"
+                                class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok</a></li>
                             <li><a href="{{ url('stockOpname') }}"
                                     class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname</a></li>
-                            <li><a href="{{ url('stockAlert') }}"
-                                    class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok</a></li>
-                            <li><a href="{{ url('manageStock') }}"
-                                    class="{{ Request::is('manageStock') ? 'active' : '' }}">Keluar Masuk Produk</a></li>
                         </ul>
                     </li>
                     <!-- /Master -->
+                    {{-- Ordering --}}
+                    <li class="menu-title"><span>Penjualan & Pembelian</span></li>
+                    <li class="submenu">
+                        <li>
+                            <a class="{{ Request::is('salesOrder') ? 'active' : '' }}" href="/salesOrder"><i
+                                    class="fe fe-shopping-cart"></i> <span>Penjualan</span></a>
+                        </li>
+                        <li>
+                            <a class="{{ Request::is('purchaseOrder') ? 'active' : '' }}" href="/purchaseOrder">
+                                <i class="fe fe-dollar-sign"></i> <span>Pembelian</span></a>
+                        </li>
+                    </li>
+                    {{-- /Ordering --}}
                  <li class="menu-title"><span>Produksi</span></li>
                     <li class="submenu">
                         <li>
                             <a class="{{ Request::is('bom') ? 'active' : '' }}" href="/bom"><i
-                                    class="fe fe-list"></i> <span>Resep Bahan Mentah</span></a>
+                                    class="fe fe-file-text"></i> <span>Resep Bahan Mentah</span></a>
                         </li>
                         <li>
                             <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">

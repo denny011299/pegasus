@@ -71,10 +71,8 @@
             },
             columns: [
                 { data: "supplies_name", width: "25%" },
-                { data: "unit_values", width: "15%" },
-                { data: "variant_values", width: "15%" },
-                { data: "desc", width: "25%" },
-                { data: "supplies_stock", width: "10%" },
+                { data: "variant_values", width: "20%" },
+                { data: "desc", width: "35%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -107,13 +105,6 @@
                             e[i].variant_values += ", ";
                          }
                     });
-                    e[i].unit_values = "";
-                    e[i].sup_unit.forEach((element,index) => {
-                         e[i].unit_values += element.unit_name;
-                         if(index< e[i].sup_unit.length-1){
-                            e[i].unit_values += ", ";
-                         }
-                    });
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].supplies_id}" data-bs-target="#edit-supplies">
                             <i class="fe fe-edit"></i>
@@ -132,40 +123,6 @@
             }
         });
     }
-
-    $(document).on('change', '#supplies_unit', function(){
-        let selectedUnits = $(this).val(); // ambil array value dari multiselect
-        idUnits = [];
-        selectedUnits.forEach(function(id) {
-            idUnits.push(id);
-        });
-        console.log(selectedUnits);
-
-        // kosongkan dulu container biar gak dobel2
-        $(".relationContainer").empty(); 
-
-        // loop data terpilih
-        selectedUnits.forEach((item, index) => {
-            let html = '';
-            let nextItem = (index + 1 < selectedUnits.length) ? selectedUnits[index + 1] : "-"; 
-            
-            html = `
-            <div class="col-2 pb-3">
-                <label id="pu_id_${index+1}">${item}</label>
-                <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
-                placeholder="Input Stok">
-            </div>
-            `;
-            if (nextItem != '-'){
-                html += `
-                    <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
-                    =
-                    </div>
-                `;
-            }
-            $(".relationContainer").append(html);
-        });
-    })
 
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
@@ -189,7 +146,7 @@
         param = {
             supplies_name:$('#supplies_name').val(),
             supplies_desc:$('#supplies_desc').val(),
-            supplies_unit:JSON.stringify($('#supplies_unit').val()),
+            // supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token
         };
 
@@ -237,26 +194,26 @@
         refreshSupplies();
     }
 
-    function getUnit(unitName, callback) {
-        $.ajax({
-            url: "/getUnit",
-            method: "get",
-            headers: { "X-CSRF-TOKEN": token },
-            data: { unit_name: unitName },
-            success: function(resp) {
-                console.log(unitName)
-                console.log(resp)
-                callback(resp[0].unit_id);
-            }
-        });
-    }
+    // function getUnit(unitName, callback) {
+    //     $.ajax({
+    //         url: "/getUnit",
+    //         method: "get",
+    //         headers: { "X-CSRF-TOKEN": token },
+    //         data: { unit_name: unitName },
+    //         success: function(resp) {
+    //             console.log(unitName)
+    //             console.log(resp)
+    //             callback(resp[0].unit_id);
+    //         }
+    //     });
+    // }
 
-    $('#supplies_unit').on('click', function() {
-       $('.select2-search__field').remove();
-    });
-    $('#supplies_unit').on('change', function() {
-       $('.select2-search__field').remove();
-    });
+    // $('#supplies_unit').on('click', function() {
+    //    $('.select2-search__field').remove();
+    // });
+    // $('#supplies_unit').on('change', function() {
+    //    $('.select2-search__field').remove();
+    // });
 
     $(document).on("click",".btn_delete_row",function(){
         if($('.row-variant').length<2) {
@@ -290,10 +247,10 @@
             $('.row-variant').last().find('.variant_barcode').val(element.supplies_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
         });
-        data.sup_unit.forEach(element => {
-            var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
-            $('#supplies_unit').append(newOption).trigger('change');
-        });
+        // data.sup_unit.forEach(element => {
+        //     var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
+        //     $('#supplies_unit').append(newOption).trigger('change');
+        // });
 
 
         // $.ajax({
