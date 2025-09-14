@@ -46,7 +46,8 @@ class ProductIssues extends Model
             $sup = Product::find($pvr->product_id);
             $value->pr_name = $sup->product_name." ".$pvr->product_variant_name;
             $value->pr_sku = $pvr->product_variant_sku;
-
+            $u = Unit::find($value->unit_id);
+            $value->unit_name = $u->unit_name;
         }
  
         return $result;
@@ -81,7 +82,8 @@ class ProductIssues extends Model
         $t->product_variant_id = $data["product_variant_id"];    
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];      
-        $t->product_variant_id = $data["product_variant_id"];      
+        $t->product_variant_id = $data["product_variant_id"];
+        $t->unit_id = $data["unit_id"];
         $t->save(); 
         $m->save();
         $s->save();
@@ -130,7 +132,8 @@ class ProductIssues extends Model
         $t->product_variant_id = $data["product_variant_id"];    
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];      
-        $t->product_variant_id = $data["product_variant_id"];      
+        $t->product_variant_id = $data["product_variant_id"];
+        $t->unit_id = $data["unit_id"];
         $t->save(); 
         $s->save();
         $m->save();

@@ -16,6 +16,7 @@
         $('#supplies_desc').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#supplies_unit').val(null);
+        $('#supplies_variant').empty();
         $('#tbVariant').html("")
         addRow();
         $('#add_supplies').modal("show");

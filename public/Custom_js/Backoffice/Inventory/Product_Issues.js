@@ -19,9 +19,11 @@
         console.log(data);
         if(data){
              $('#unit_id').html("");
-            data.pr_unit.forEach(element => {
-                 $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
-            });
+             if (data.pr_unit){
+                 data.pr_unit.forEach(element => {
+                      $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
+                 });
+             }
              $('#unit_id').val(data.unit_id).trigger("change");
               $('#pi_unit option').first().prop('selected', true);
         }
@@ -30,13 +32,18 @@
 
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add-product-issues .modal-title').html("Create Category");
+        $('#add-product-issues .modal-title').html("Tambah Produk Bermasalah");
         $('#add-product-issues input').val("");
+        $('#pi_type').html(`
+            <option value="1" selected>Dikembalikan</option>
+            <option value="2">Rusak</option>    
+        `);
+        $('#product_id').empty();
         $('#add-product-issues select2').empty();
-        $('#add-product-issues select').val(1).trigger('change');
+        $('#add-product-issues select').val(1);
         $('.is-invalid').removeClass('is-invalid');
         $("#pi_type,#tipe_return,#product_id,#unit_id").prop("disabled", false);
-        $('#add-product-issues #unit_id').append("<option selected>Pilih Satuan</option>");
+        $('#add-product-issues #unit_id').append("<option selected value=''>Pilih Satuan</option>");
         $('#add-product-issues').modal("show");
     });
     function inisialisasi() {
@@ -57,9 +64,9 @@
             },
             columns: [
                 { data: "pr_name", width: "20%" },
-                { data: "pr_sku", width: "10%" },
+                { data: "pr_sku", width: "15%" },
                 { data: "date", width: "20%" },
-                { data: "pi_qty", width: "10%" },
+                { data: "pi_qty", width: "15%" },
                 { data: "pi_notes", width: "20%" },
                 { data: "action", class: "d-flex align-items-center" },
             ]
@@ -84,7 +91,7 @@
                 { data: "pr_name", class: "width: 25%" },
                 { data: "pr_sku", class: "width: 15%" },
                 { data: "date", class: "width: 15%" },
-                { data: "pi_qty", class: "width: 15%" },
+                { data: "pi_qty", class: "width: 10%" },
                 { data: "pi_notes", class: "width: 20%" },
                 { data: "action", class: "d-flex align-items-center" },
             ]
@@ -247,12 +254,16 @@ $(document).on("click", ".btn_edit", function () {
     $("#product_id").append(
         `<option value="${data.product_variant_id}">${data.pr_name}</option>`
     );
+    $("#unit_id").empty().append(
+        `<option value="${data.unit_id}" selected>${data.unit_name}</option>`
+    ).trigger("change");
     $("#pi_type").empty().append(
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
     $("#pi_type,#tipe_return,#product_id,#unit_id").prop("disabled", true);
     $('.is-invalid').removeClass('is-invalid');
     $('.btn-save').html('Simpan perubahan');
+    $('#add-product-issues .modal-title').html("Update Produk Bermasalah");
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
 });

@@ -55,7 +55,7 @@ class SuppliesVariant extends Model
     {
         $t = new self();
         $t->supplies_id = $data["supplies_id"];
-       $t->supplies_variant_name = $data["supplies_variant_name"];
+        $t->supplies_variant_name = $data["supplies_variant_name"];
         $t->supplies_variant_sku = $data["supplies_variant_sku"];
         $t->supplies_variant_price = $data["supplies_variant_price"];
         $t->supplies_variant_barcode = $t->generateBarcode();
@@ -71,9 +71,9 @@ class SuppliesVariant extends Model
         if (!$t) {
             return $this->insertSuppliesVariant([
                 "supplies_id" => $data["supplies_id"],
-                "variant_name" => $data["supplies_variant_name"],
-                "variant_sku" => $data["supplies_variant_sku"],
-                "variant_price" => $data["supplies_variant_price"],
+                "supplies_variant_name" => $data["supplies_variant_name"],
+                "supplies_variant_sku" => $data["supplies_variant_sku"],
+                "supplies_variant_price" => $data["supplies_variant_price"],
             ]);
         }
         $t->supplies_id = $data["supplies_id"];

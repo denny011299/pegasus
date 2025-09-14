@@ -279,7 +279,7 @@
                     <div class="content">
                         <div class="modal-header border-0 custom-modal-header">
                             <div class="page-title">
-                                <h4>Tambah Produk Bermasalah</h4>
+                                <h4 class="moda-title">Tambah Produk Bermasalah</h4>
                             </div>
                             <button type="button" class="close ms-auto" data-bs-dismiss="modal" aria-label="Close">
                                 <span aria-hidden="true">&times;</span>
@@ -318,8 +318,7 @@
                                         <div class="mb-3">
                                             <label class="form-label">Tipe</label>
                                             <select class="select" id="pi_type">
-                                                <option value="1" selected>Dikembalikan</option>
-                                                <option value="2">Rusak</option>
+                                                
                                             </select>
                                         </div>
                                     </div>
@@ -328,7 +327,7 @@
                                             <label class="form-label">Jumlah</label>
                                             <div class="input-group">
                                                 <input type="text" class="form-control number-only fill" id="pi_qty">
-                                                <select class="form-select w-25" id="unit_id">
+                                                <select class="form-select w-25 fill" id="unit_id">
                                                 </select>
                                             </div>
                                         </div>
