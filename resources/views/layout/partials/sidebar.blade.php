@@ -533,8 +533,8 @@
                         <ul style="display: none;">
                             <li><a href="{{ url('product') }}"
                                     class="{{ Request::is('product') ? 'active' : '' }}">Daftar Produk</a></li>
-                            <li><a href="{{ url('stock') }}"
-                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stok Produk</a></li>
+                            <li><a href="{{ url('stockProduct') }}"
+                                    class="{{ Request::is('stockProduct') ? 'active' : '' }}">Stok Produk</a></li>
                         </ul>
                     </li>
                     <li class="submenu">
@@ -543,8 +543,8 @@
                         <ul style="display: none;">
                             <li><a href="{{ url('supplies') }}"
                                     class="{{ Request::is('supplies') ? 'active' : '' }}">Daftar Bahan Mentah</a></li>
-                            {{-- <li><a href="{{ url('stock') }}"
-                                    class="{{ Request::is('stock') ? 'active' : '' }}">Stok Bahan Mentah</a></li> --}}
+                            <li><a href="{{ url('stockSupplies') }}"
+                                    class="{{ Request::is('stockSupplies') ? 'active' : '' }}">Stok Bahan Mentah</a></li>
                         </ul>
                     </li>
                 

@@ -107,8 +107,9 @@ Route::post('/insertProduct', [ProductController::class, "insertProduct"])->name
 Route::post('/updateProduct', [ProductController::class, "updateProduct"])->name('updateProduct');
 Route::post('/deleteProduct', [ProductController::class, "deleteProduct"])->name('deleteProduct');
 
-Route::get('/stock',[StockController::class,"Stock"])->name('stock');
+Route::get('/stockProduct',[StockController::class,"Stock"])->name('stockProduct');
 Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
+Route::get('/stockSupplies',[StockController::class,"StockSupplies"])->name('stockSupplies');
 Route::get('/getStockSupplies',[StockController::class,"getStockSupplies"])->name('getStockSupplies');
 
 Route::get('/supplies',[ProductController::class,"Supplies"])->name('supplies');

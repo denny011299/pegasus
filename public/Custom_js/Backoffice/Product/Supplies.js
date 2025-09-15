@@ -72,7 +72,8 @@
             columns: [
                 { data: "supplies_name", width: "25%" },
                 { data: "variant_values", width: "20%" },
-                { data: "desc", width: "35%" },
+                { data: "unit_name", width: "15%" },
+                { data: "desc", width: "25%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -146,7 +147,7 @@
         param = {
             supplies_name:$('#supplies_name').val(),
             supplies_desc:$('#supplies_desc').val(),
-            // supplies_unit:JSON.stringify($('#supplies_unit').val()),
+            supplies_unit:$('#supplies_unit').val(),
              _token:token
         };
 
@@ -239,6 +240,7 @@
         $('#supplies_unit').val(null);
         $('#supplies_name').val(data.supplies_name);
         $('#supplies_desc').val(data.supplies_desc);
+        $('#supplies_unit').append(`<option value="${data.supplies_unit}">${data.unit_name}</option>`);
         $('#tbVariant').html("");
         data.sup_variant.forEach(element => {
             addRow(element.supplies_variant_name);

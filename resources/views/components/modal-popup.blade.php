@@ -439,12 +439,12 @@
                                             placeholder="Input Nama Bahan Mentah">
                                     </div>
                                 </div>
-                                {{-- <div class="col-12">
+                                <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Satuan<span class="text-danger">*</span></label>
-                                        <select id="supplies_unit" class="fill" multiple="multiple" name="units[]"></select>
+                                        <select id="supplies_unit" class="form-select fill"></select>
                                     </div>
-                                </div> --}}
+                                </div>
                                 <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Deskripsi</label>

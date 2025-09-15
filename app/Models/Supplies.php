@@ -28,6 +28,8 @@ class Supplies extends Model
             $value->sup_variant = (new SuppliesVariant())->getSuppliesVariant([
                 "supplies_id" => $value->supplies_id
             ]);
+            $u = Unit::find($value->supplies_unit);
+            $value->unit_name = $u->unit_name;
         }
         return $result;
     }
@@ -37,6 +39,7 @@ class Supplies extends Model
         $t = new Supplies();
         $t->supplies_name = $data["supplies_name"];
         $t->supplies_desc = $data["supplies_desc"];
+        $t->supplies_unit = $data["supplies_unit"];
         $t->save();
         return $t->supplies_id;
     }
@@ -46,6 +49,7 @@ class Supplies extends Model
         $t = Supplies::find($data["supplies_id"]);
         $t->supplies_name = $data["supplies_name"];
         $t->supplies_desc = $data["supplies_desc"];
+        $t->supplies_unit = $data["supplies_unit"];
         $t->save();
         return $t->supplies_id;
     }

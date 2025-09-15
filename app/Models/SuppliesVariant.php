@@ -44,6 +44,8 @@ class SuppliesVariant extends Model
         foreach ($variants as $variant) {
             $s = Supplies::find($variant->supplies_id);
             $variant->supplies_name = $s ? $s->supplies_name : "-";
+            $u = Unit::find($s->supplies_unit);
+            $variant->unit_name = $u->unit_name;
         }
 
         return $variants;

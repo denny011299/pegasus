@@ -42,6 +42,7 @@
                                         <tr>
                                             <th>Nama Bahan Mentah</th>
                                             <th>Variasi</th>
+                                            <th>Satuan</th>
                                             <th>Deskripsi</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>

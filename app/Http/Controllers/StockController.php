@@ -132,7 +132,7 @@ class StockController extends Controller
     }
     // Stock
     public function Stock(){
-        return view('Backoffice.Inventory.Stock');
+        return view('Backoffice.Inventory.Stock_Product');
     }
 
     function getStock(Request $req){
@@ -143,11 +143,13 @@ class StockController extends Controller
         return response()->json($data);
     }
 
+    // Stock supplies
+    public function StockSupplies(){
+        return view('Backoffice.Inventory.Stock_Supplies');
+    }
+
     function getStockSupplies(Request $req){
         $data = (new SuppliesVariant())->getSuppliesVariant();
-        foreach ($data as $key => $value) {
-            $value->stock = (new SuppliesStock())->getSuppliesStock(["supplies_variant_id"=>$value->supplies_variant_id]);
-        }
         return response()->json($data);
     }
 }
