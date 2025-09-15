@@ -47,7 +47,7 @@ class SalesOrderDetail extends Model
         $t->sod_subtotal = $data["so_subtotal"];
         $t->save();
 
-        return $t->so_id;
+        return $t->sod_id;
     }
 
     function updateSalesOrderDetail($data){
@@ -62,7 +62,7 @@ class SalesOrderDetail extends Model
         $t->sod_subtotal = $data["sod_subtotal"];
         $t->save();
 
-        return $t->product_id;
+        return $t->sod_id;
     }
 
     function deleteSalesOrderDetail($data){

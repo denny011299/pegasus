@@ -39,10 +39,11 @@ class CustomerController extends Controller
         $so_id = (new SalesOrder())->updateSalesOrder($data);
         foreach (json_decode($req->products,true) as $key => $value) {
             $value['so_id'] = $so_id;
-            $id = (new SalesOrderDetail())->updateSalesOrderDetail($value);
+            if(!isset($value["sod_id"])) $id = (new SalesOrderDetail())->insertSalesOrderDetail($value);
+            else $id = (new SalesOrderDetail())->updateSalesOrderDetail($value);
             array_push($list_id_detail, $id);
         }
-        SalesOrderDetail::whereNotIn('sod_id', $list_id_detail)->where('so_id','=',$so_id)->update(['status' => 0]);
+        SalesOrderDetail::where('so_id','=',$so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
     }
 
     function deleteSalesOrder(Request $req){

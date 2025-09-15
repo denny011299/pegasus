@@ -18,11 +18,13 @@
         refreshTableProduct();
         $('#add_sales_order .modal-title').html("Tambah Pesanan Penjualan");
         $('#add_sales_order input').val("");
-        $('#so_discount').val(0);
-        $('#so_cost').val(0);
-        $('#so_ppn').val(11);
+        $('#so_discount').val(0).trigger('blur');
+        $('#so_cost').val(0).trigger('blur');
+        $('#so_ppn').val(11).trigger('blur');
+        $('#so_customer').empty();
         $('.is-invalid').removeClass('is-invalid');
         $('#add_sales_order').modal("show");
+        updateTotal();
         
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -45,6 +47,10 @@
     $(document).on('blur', '#so_discount', function(){
         var value = $(this).val();
         viewSummary(value, "discount")
+    })
+
+    $(document).on('change', '#so_customer', function(){
+        $('#so_barcode').trigger("focus");
     })
 
     $('#so_barcode').on('keyup', function(e) {
@@ -308,6 +314,7 @@
         $('#so_cost').val(data.so_cost)
         data.items.forEach(e => {
             var temp = {
+                "product_variant_id" : e.product_variant_id,
                 "product_name" : e.sod_nama,
                 "product_variant_name" : e.sod_variant,
                 "product_variant_sku" : e.sod_sku,
@@ -323,7 +330,7 @@
         $('#so_ppn').trigger('blur')
         $('#so_discount').trigger('blur')
         $('#so_cost').trigger('blur')
-        grandTotal()
+        updateTotal()
         $('#so_barcode').trigger("focus");
 
         $('.is-invalid').removeClass('is-invalid');

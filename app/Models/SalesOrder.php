@@ -59,7 +59,7 @@ class SalesOrder extends Model
         $t->so_cashier  = 1;
         $t->save();
 
-        return $t->product_id;
+        return $t->so_id;
     }
 
     function deleteSalesOrder($data){
