@@ -143,16 +143,18 @@ class ProductIssues extends Model
 
     function deleteProductIssues($data)
     {
-        $t = self::find($data["pi_id"]);    
+        $t = self::find($data["pi_id"]);
         $t->status = 0;
         $t->save();
+
         $m = ProductVariant::find($t->product_variant_id);
-        if($m->tipe_return == 1){
-            $m->product_variant_stock += $m->pi_qty;
-        }elseif($m->tipe_return == 2){
-            $m->ms_stock -= $m->pi_qty;
+        $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
+        if($t->tipe_return == 1){
+            $s->ps_stock += $t->pi_qty;
+        }else if($t->tipe_return == 2){
+            $s->ps_stock -= $t->pi_qty;
         }
-        $m->save();
+        $s->save();
         return $m;
     }
 }

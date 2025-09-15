@@ -66,7 +66,7 @@
                 { data: "pr_name", width: "20%" },
                 { data: "pr_sku", width: "15%" },
                 { data: "date", width: "20%" },
-                { data: "pi_qty", width: "15%" },
+                { data: "pi_qty", width: "12%" },
                 { data: "pi_notes", width: "20%" },
                 { data: "action", class: "d-flex align-items-center" },
             ]

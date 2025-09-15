@@ -66,6 +66,7 @@
                 success: function(e) {
                     if (e.length == 1){
                         e.forEach(element => {
+                            console.log(element)
                             products.push(element);
                         });
                         toastr.success('', 'Berhasil menambahkan produk');
@@ -156,16 +157,18 @@
     function refreshTableProduct(){
         $('#tableSalesModal').html("");
         var html ="";
+        console.log(products)
         products.forEach((p, index) => {
             html += `
                 <tr>
                     <td style="width: 25%">${p.product_name}</td>
-                    <td style="width: 20%">${p.product_variant_name}</td>
+                    <td style="width: 15%">${p.product_variant_name}</td>
                     <td style="width: 15%">${p.product_variant_sku}</td>
-                    <td style="width: 10%" class="text-center p-2">
+                    <td style="width: 15%" class="text-center p-2 d-flex">
                         <input type="text" class="form-control fill number-only so_qty"
                             data-price="${p.product_variant_price}"
-                            data-index="${index}" style="width: 80%" value="${p.so_qty || 0}">
+                            data-index="${index}" style="width: 3rem" value="${p.so_qty || 1}">
+                        <span class="pt-2 ps-2">${p.unit_name}</span>
                     </td>
                     <td style="width: 15%" class="text-end">${p.product_variant_price}</td>
                     <td style="width: 15%" class="subtotal text-end">${p.so_subtotal || 0}</td>
@@ -173,18 +176,22 @@
             `;
         });
         $('#tableSalesModal').append(html);
+        $('.so_qty').trigger('blur');
     }
 
     $(document).on('blur', '.so_qty', function () {
         const index = $(this).data('index');
-        let qty = parseInt($(this).val()) || 0;
-        let price = parseInt($(this).data('price')) || 0;
+        let qty = parseInt($(this).val());
+        let price = parseInt($(this).data('price'));
         let subtotal = qty * price;
 
         $(this).closest('tr').find('.subtotal').html(subtotal);
         products[index].so_qty = qty;
         products[index].so_subtotal = subtotal;
-
+        if (qty == 0){
+            products.splice(index, 1);
+            refreshTableProduct();
+        }
         updateTotal();
         $('#so_barcode').trigger("focus");
         console.log(products);
@@ -277,9 +284,16 @@
             headers: {
                 'X-CSRF-TOKEN': token
             },
-            success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
-                afterInsert();
+            success:function(e){    
+                if (e == -1){
+                    ResetLoadingButton(".btn-save", 'Simpan perubahan');   
+                    if (mode == 1) notifikasi("error", "Gagal Insert", "Stock Product tidak mencukupi!");
+                    else if (mode == 2) notifikasi("error", "Gagal Update", "Stock Product tidak mencukupi!");
+                }
+                else{
+                    ResetLoadingButton(".btn-save", 'Simpan perubahan');      
+                    afterInsert();
+                }
             },
             error:function(e){
                 ResetLoadingButton(".btn-save", 'Simpan perubahan');
@@ -314,6 +328,7 @@
         $('#so_cost').val(data.so_cost)
         data.items.forEach(e => {
             var temp = {
+                "sod_id" : e.sod_id,
                 "product_variant_id" : e.product_variant_id,
                 "product_name" : e.sod_nama,
                 "product_variant_name" : e.sod_variant,
@@ -321,6 +336,8 @@
                 "so_qty" : e.sod_qty,
                 "product_variant_price" : e.sod_harga,
                 "so_subtotal" : e.sod_subtotal,
+                "unit_name" : e.unit_name,
+                "unit_id" : e.unit_id
             };
             products.push(temp);
         });

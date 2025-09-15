@@ -26,9 +26,12 @@ class CustomerController extends Controller
 
     function insertSalesOrder(Request $req){
         $data = $req->all();
-        $id = (new SalesOrder())->insertSalesOrder($data);
+        $so_id = (new SalesOrder())->insertSalesOrder($data);
+        if ($so_id == -1){
+            return -1;
+        }
         foreach (json_decode($data['products'],true) as $key => $value) {
-            $value['so_id'] = $id;
+            $value['so_id'] = $so_id;
             (new SalesOrderDetail())->insertSalesOrderDetail($value);
         }
     }
@@ -37,6 +40,9 @@ class CustomerController extends Controller
         $data = $req->all();
         $list_id_detail = [];
         $so_id = (new SalesOrder())->updateSalesOrder($data);
+        if ($so_id == -1){
+            return -1;
+        }
         foreach (json_decode($req->products,true) as $key => $value) {
             $value['so_id'] = $so_id;
             if(!isset($value["sod_id"])) $id = (new SalesOrderDetail())->insertSalesOrderDetail($value);
@@ -48,7 +54,11 @@ class CustomerController extends Controller
 
     function deleteSalesOrder(Request $req){
         $data = $req->all();
-        return (new SalesOrder())->deleteSalesOrder($data);
+        (new SalesOrder())->deleteSalesOrder($data);
+        $v = SalesOrderDetail::where('so_id','=',$data["so_id"])->get();
+        foreach ($v as $key => $value) {
+            (new SalesOrderDetail())->deleteSalesOrderDetail($value);
+        }
     }
 
     function getSoDelivery(Request $req){

@@ -523,7 +523,7 @@
 @if (Route::is(['salesOrder']))
     <!-- modal -->
     <div class="modal modal-lg custom-modal fade" id="add_sales_order" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
@@ -599,9 +599,9 @@
                                             <th>Produk</th>
                                             <th>Variasi</th>
                                             <th>SKU</th>
-                                            <th>Jumlah</th>
-                                            <th>Harga Satuan</th>
-                                            <th>Subtotal</th>
+                                            <th class="text-center">Jumlah</th>
+                                            <th class="text-end">Harga Satuan</th>
+                                            <th class="text-end">Subtotal</th>
                                         </thead>
                                         <tbody id="tableSalesModal">
                                             
