@@ -15,12 +15,24 @@ class Production extends Model
     {
         $data = array_merge([
             "production_product_id"=>null,
-            "date"=>null
+            "date"=>null,
+            "report" => null
         ], $data);
-
-        $result = Production::where('status', '=', 1);
+        if($data["report"] == null) $result = Production::where('status', '=', 1);
+        else if($data["report"]) $result = Production::where('status', '>=', 0);
         if($data["production_product_id"]) $result->where('production_product_id','=',$data["production_product_id"]);
-        if($data["date"]) $result->where('production_date','=',$data["date"]);
+        if($data["date"]) {
+            if (is_array($data["date"]) && count($data["date"]) === 2) {
+                // Jika date adalah array [start_date, end_date]]
+                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
+                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
+                $result->whereBetween('production_date', [$startDate, $endDate]);
+            } else {
+                // Jika date hanya satu nilai
+                $date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                $result->where('production_date', '=', $date);
+            }
+        }
         $result->orderBy('created_at', 'asc');
         
         $result = $result->get();
@@ -29,6 +41,8 @@ class Production extends Model
             $value->product_sku = $u->product_variant_sku;
             $v = Product::find($u->product_id);
             $value->product_name = $v->product_name;
+            $x = Unit::find($v->unit_id);
+            $value->unit_name = $x->unit_name;
         }
         return $result;
     }

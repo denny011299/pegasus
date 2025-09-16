@@ -73,7 +73,10 @@ class ProductionController extends Controller
     }
 
     function getProduction(Request $req){
-        $data = (new Production())->getProduction(["date"=>$req->date]);
+        $data = (new Production())->getProduction([
+            "date"=>$req->date,
+            "report" => $req->report ? $req->report : null
+        ]);
         return response()->json($data);
     }
 

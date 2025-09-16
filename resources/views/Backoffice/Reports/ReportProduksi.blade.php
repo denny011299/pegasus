@@ -24,7 +24,7 @@
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableProduct">
+                                <table class="table table-center table-hover" id="tableReportProduction">
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Tanggal Produksi</th>
@@ -35,34 +35,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>02 Agustus 2025</td>
-                                            <td>Hand Sanitizer 250ml</td>
-                                            <td>1.200</td>
-                                            <td><span class="badge bg-success-light">Selesai</span></td>
-                                            <td>Admin</td>
-                                        </tr>
-                                        <tr>
-                                            <td>06 Agustus 2025</td>
-                                            <td>Sabun Cair 1L</td>
-                                            <td>500</td>
-                                            <td><span class="badge bg-success-light">Selesai</span></td>
-                                            <td>Operator</td>
-                                        </tr>
-                                        <tr>
-                                            <td>08 Agustus 2025</td>
-                                            <td>Bubuk Pemutih 25kg</td>
-                                            <td>200</td>
-                                            <td><span class="badge bg-success-light">Selesai</span></td>
-                                            <td>Admin</td>
-                                        </tr>
-                                        <tr>
-                                            <td>09 Agustus 2025</td>
-                                            <td>Alkohol 70% 5L</td>
-                                            <td>300</td>
-                                            <td><span class="badge bg-danger-light">Dibatalkan</span></td>
-                                            <td>Manajer</td>
-                                        </tr>
+                                        
                                     </tbody>
 
                                 </table>
@@ -82,5 +55,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Cash.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/ReportProduction.js')}}"></script>
 @endsection
