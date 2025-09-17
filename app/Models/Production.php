@@ -29,7 +29,9 @@ class Production extends Model
                 $result->whereBetween('production_date', [$startDate, $endDate]);
             } else {
                 // Jika date hanya satu nilai
-                $date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                $date = $data["date"];
+                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d'))$date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                
                 $result->where('production_date', '=', $date);
             }
         }
@@ -82,8 +84,8 @@ class Production extends Model
         ]);
 
         foreach ($b as $key => $value) {
-            $s = Supplies::find($value->supplies_id);
-            $s->supplies_stock +=  ($value->bom_detail_qty * $t->production_qty);
+            $s = SuppliesVariant::find($value->supplies_id);
+            $s->supplies_variant_stock +=  ($value->bom_detail_qty * $t->production_qty);
             $s->save();
         }
     }

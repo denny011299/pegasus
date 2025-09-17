@@ -8,6 +8,8 @@ use App\Models\Production;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
+use App\Models\SuppliesVariant;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 
 class ProductionController extends Controller
@@ -88,7 +90,7 @@ class ProductionController extends Controller
         $bahan_kurang = [];
 
         foreach ($bahan as $key => $value) {
-            $stok = Supplies::find($value['supplies_id'])->supplies_stock;
+            $stok = SuppliesVariant::find($value['supplies_id'])->supplies_variant_stock;
             if($stok - ($value['bom_detail_qty'] * $data['production_qty'])<0){
                 $cek = 1;
                 array_push($bahan_kurang, $value['supplies_name']);
@@ -103,8 +105,8 @@ class ProductionController extends Controller
         }
         
         foreach ($bahan as $key => $value) {
-            $stok = Supplies::find($value['supplies_id']);
-            $stok->supplies_stock -=  ($value['bom_detail_qty'] * $data['production_qty']);
+            $stok = SuppliesVariant::find($value['supplies_id']);
+            $stok->supplies_variant_stock -=  ($value['bom_detail_qty'] * $data['production_qty']);
             $stok->save();
         }
 
@@ -132,5 +134,24 @@ class ProductionController extends Controller
     function deleteProduction(Request $req){
         $data = $req->all();
         return (new Production())->deleteProduction($data);
+    }
+
+    function getPemakaian(Request $req){
+        $bahan = [];
+        $data = (new production)->getProduction(["date"=>$req->date]);
+        foreach ($data as $key => $value) {
+            $bhan = BomDetail::where("bom_id",'=',$value["production_bom_id"])->get();
+            foreach ($bhan as $key => $valueBahan) {
+                $supVar = SuppliesVariant::find($valueBahan->supplies_id);
+                $sup = Supplies::find($supVar->supplies_id);
+                $unit_name = Unit::find($sup->supplies_unit)->unit_name;
+                $supVar->production_date = $value->production_date;
+                $supVar->kode_produksi = "PR".str_pad($value["production_id"],4,"0",STR_PAD_LEFT);
+                $supVar->qtyPemakaian = ($value["production_qty"]*$valueBahan["bom_detail_qty"])." ".$unit_name;
+                $supVar->supplies_name = $sup->supplies_name." ".$supVar->supplies_variant_name;
+                array_push($bahan,$supVar);
+            }
+        }
+        return response()->json($bahan);
     }
 }

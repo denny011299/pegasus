@@ -5,22 +5,22 @@
         <div class="col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Dari</label>
-                <div class="cal-icon cal-icon-info">
-                    <input type="text" class="datetimepicker form-control" placeholder="01 Jan 2023">
+                <div class="cal-icon cal-icon-info"> 
+                    <input type="text" id="start_date" class="datetimepicker form-control" placeholder="01 Jan 2023">
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Sampai</label>
-                <div class="cal-icon cal-icon-info">
-                    <input type="text" class="datetimepicker form-control" placeholder="31 Mar 2023">
+                <div class="cal-icon cal-icon-info"> 
+                    <input type="text" id="end_date" class="datetimepicker form-control" placeholder="31 Mar 2023">
                 </div>
             </div>
         </div>
         <div class="col-lg-4 col-md-6 col-sm-0"></div>
         <div class="col-lg-2 col-md-6 col-sm-12">
-            <a class="btn btn-primary loss" href="#">
+            <a class="btn btn-primary loss btn-filter" href="#">
                 Jalankan
             </a>
         </div>
@@ -68,7 +68,7 @@
             <div class="input-block mb-3">
                 <label>Dari</label>
                 <div class="cal-icon cal-icon-info">
-                    <input type="text" class="datetimepicker form-control" placeholder="01 Jan 2023">
+                    <input type="text" class="datetimepicker form-control" id="start_date">
                 </div>
             </div>
         </div>
@@ -76,13 +76,13 @@
             <div class="input-block mb-3">
                 <label>Sampai</label>
                 <div class="cal-icon cal-icon-info">
-                    <input type="text" class="datetimepicker form-control" placeholder="31 Mar 2023">
+                    <input type="text" class="datetimepicker form-control" id="end_date">
                 </div>
             </div>
         </div>
         <div class="col-lg-4 col-md-6 col-sm-0"></div>
         <div class="col-lg-2 col-md-6 col-sm-12">
-            <a class="btn btn-primary loss" href="#">
+            <a class="btn btn-primary loss btn-filter"  href="#">
                 Jalankan
             </a>
         </div>

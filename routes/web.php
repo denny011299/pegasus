@@ -192,6 +192,7 @@ Route::post('/deleteBom', [ProductionController::class, "deleteBom"])->name('del
 
 Route::get('/production',[ProductionController::class,"production"])->name('production');
 Route::get('/getProduction', [ProductionController::class, "getProduction"])->name('getProduction');
+Route::get('/getPemakaian', [ProductionController::class, "getPemakaian"])->name('getPemakaian');
 Route::post('/insertProduction', [ProductionController::class, "insertProduction"])->name('insertProduction');
 Route::post('/updateProduction', [ProductionController::class, "updateProduction"])->name('updateProduction');
 Route::post('/deleteProduction', [ProductionController::class, "deleteProduction"])->name('deleteProduction');

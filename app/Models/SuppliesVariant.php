@@ -47,9 +47,10 @@ class SuppliesVariant extends Model
         $variants = $result->get();
         
         // Menambahkan nama produk dari relasi
-        foreach ($variants as $variant) {
+       foreach ($variants as $key  =>  $variant) {
             $s = Supplies::find($variant->supplies_id);
             $variant->supplies_name = $s ? $s->supplies_name : "-";
+         
             $u = Unit::find($s->supplies_unit);
             $variant->unit_name = $u->unit_name;
             $variant->unit_id = $u->unit_id;
