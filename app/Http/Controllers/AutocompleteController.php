@@ -15,6 +15,7 @@ use App\Models\Staff;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Supplies;
+use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
 use Illuminate\Http\Request;
@@ -188,15 +189,15 @@ class AutocompleteController extends Controller
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
 
-        $p = new Supplies();
-        $data_city = $p->getSupplies([
-            "supplies_name" => $keyword,
+        $p = new SuppliesVariant();
+        $data_city = $p->getSuppliesVariant([
+            "supplies_variant_sku" => $keyword,
         ]);
 
 
         foreach ($data_city as $r) {
             $r->id = $r["supplies_id"];
-            $r->text = $r["supplies_name"];
+            $r->text = $r["supplies_name"]." ".$r["supplies_variant_name"];
         };
 
         echo json_encode(array(

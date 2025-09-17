@@ -31,8 +31,9 @@ class BomDetail extends Model
         $result = $result->get();
 
         foreach ($result as $key => $value) {
-            $u = Supplies::find($value->supplies_id);
-            $value->supplies_name = $u->supplies_name;
+            $u = SuppliesVariant::find($value->supplies_id);
+            $s = Supplies::find($u->supplies_id);
+            $value->supplies_name = $s->supplies_name." ".$u->supplies_variant_name;
 
             $v = Unit::find($value->unit_id);
             $value->unit_name = $v->unit_name;

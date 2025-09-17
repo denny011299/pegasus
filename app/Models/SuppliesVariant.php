@@ -52,6 +52,7 @@ class SuppliesVariant extends Model
             $variant->supplies_name = $s ? $s->supplies_name : "-";
             $u = Unit::find($s->supplies_unit);
             $variant->unit_name = $u->unit_name;
+            $variant->unit_id = $u->unit_id;
         }
 
         return $variants;

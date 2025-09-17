@@ -1401,12 +1401,13 @@
                                         <input type="text" class="form-control fill_supply number-only" id="bom_detail_qty" placeholder="Qty Bahan">
                                     </div>
                                 </div>
+                                {{-- 
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Nama Satuan<span class="text-danger">*</span></label>
                                         <select class="form-select fill_supply" id="unit_id"></select>
                                     </div>
-                                </div>
+                                </div>--}}
                                 <div class="col-1 pt-4">
                                     <a class="btn btn-primary btn-add-supply">+</a>
                                 </div>

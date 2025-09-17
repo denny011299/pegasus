@@ -45,7 +45,8 @@ class ProductionController extends Controller
         $bom_id = (new Bom())->updateBom($data);
         foreach (json_decode($req->bahan,true) as $key => $value) {
             $value['bom_id'] = $bom_id;
-            $id = (new BomDetail())->updateBomDetail($value);
+            if(isset($value["bom_detail_id"])) $id = (new BomDetail())->updateBomDetail($value);
+            else $id = (new BomDetail())->insertBomDetail($value);
             array_push($list_id_detail, $id);
         }
         BomDetail::whereNotIn('bom_detail_id', $list_id_detail)->where('bom_id','=',$bom_id)->update(['status' => 0]);

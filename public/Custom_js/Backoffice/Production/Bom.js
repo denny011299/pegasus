@@ -11,11 +11,12 @@
 
     $(document).on('change','#supplies_id',function(){
         var data = $(this).select2("data")[0];
+        console.log(data);
         $('#unit_id').empty();
-        console.log(data)
+        /*
         data.sup_unit.forEach(element => {
             $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
-        });
+        });*/
     });
     $(document).on('click','.btnAdd',function(){
         mode=1;
@@ -203,11 +204,11 @@
         };
         var temp = $('#supplies_id').select2("data")[0];
         var data  = {
-            "supplies_id": temp.supplies_id,
-            "supplies_name": temp.supplies_name,
+            "supplies_id": temp.supplies_variant_id,
+            "supplies_name": temp.supplies_name+" "+temp.supplies_variant_name,
             "bom_detail_qty": parseInt($('#bom_detail_qty').val()),
-            "unit_name": $('#unit_id option:selected').text().trim(),
-            "unit_id": $('#unit_id').val(),
+            "unit_name": temp.unit_name,
+            "unit_id": temp.unit_id
         };
         bahan.push(data);
         addRow(data)
@@ -229,7 +230,7 @@
 
             // Update data qty di bahan untuk ajax
             bahan.forEach(element => {
-                if (element.supplies_id == e.supplies_id){
+                if (element.supplies_id == e.supplies_variant_id){
                     element.bom_detail_qty += e.bom_detail_qty;
                 }
             }); 
