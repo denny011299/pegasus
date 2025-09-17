@@ -525,6 +525,8 @@
                                     class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
                             <li><a href="{{ url('variant') }}"
                                     class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
+                            <li><a href="{{ url('area') }}"
+                                    class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li>
                         </ul>
                     </li>
                     <li class="submenu">

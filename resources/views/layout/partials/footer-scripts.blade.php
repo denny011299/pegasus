@@ -383,6 +383,64 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
 
+    function autocompleteArea(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteArea",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Pilih Wilayah",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+    
+    function autocompleteSubdistrict(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteSubdistrict",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Pilih Kecamatan",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
     function autocompleteCategory(id, modalParent = null) {
         //search country dan city
         $(id).select2({
@@ -697,6 +755,35 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                 },
             },
             placeholder: "Pilih Pelanggan",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+    
+    function autocompleteStaffSales(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteStaffSales",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Pilih Sales",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",

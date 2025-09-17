@@ -7,6 +7,7 @@ $(document).ready(function(){
         $('#supplier_name').val(data.supplier_name);
         $('#supplier_email').val(data.supplier_email);
         $('#supplier_phone').val(data.supplier_phone);
+        $('#supplier_pic').val(data.supplier_pic);
         $('#supplier_notes').val(data.supplier_notes);
         $('#supplier_address').val(data.supplier_address);
         $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`).trigger('change');
@@ -17,6 +18,7 @@ $(document).ready(function(){
         $('#supplier_account_name').val(data.supplier_account_name);
         $('#supplier_account_number').val(data.supplier_account_number);
         $('#supplier_ifsc').val(data.supplier_ifsc);
+        $('#supplier_top').val(data.supplier_top);
         $('#preview_image').attr("src",public+data.supplier_image); 
     }
 })
@@ -49,6 +51,7 @@ $(document).on("click", ".btn-save", function () {
         supplier_name: $("#supplier_name").val(),
         supplier_email: $("#supplier_email").val(),
         supplier_phone: $("#supplier_phone").val(),
+        supplier_pic: $("#supplier_pic").val(),
         supplier_address: $("#supplier_address").val(),
         supplier_notes: $("#supplier_notes").val(),
         state_id: $("#state_id").val(),
@@ -59,6 +62,7 @@ $(document).on("click", ".btn-save", function () {
         supplier_account_name: $("#supplier_account_name").val(),
         supplier_account_number: $("#supplier_account_number").val(),
         supplier_ifsc: $("#supplier_ifsc").val(),
+        supplier_top: $("#supplier_top").val(),
         supplier_payment: 0,
         _token:token
     };

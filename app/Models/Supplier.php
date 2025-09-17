@@ -46,6 +46,7 @@ class Supplier extends Model
         $t->supplier_code = $this->generateSupplierID();
         $t->supplier_email = $data["supplier_email"];
         $t->supplier_phone = $data["supplier_phone"];
+        $t->supplier_pic = $data["supplier_pic"];
         $t->supplier_address = $data["supplier_address"];
         $t->supplier_notes = $data["supplier_notes"];
         $t->state_id = $data["state_id"];
@@ -56,6 +57,7 @@ class Supplier extends Model
         $t->supplier_account_name = $data["supplier_account_name"];
         $t->supplier_account_number = $data["supplier_account_number"];
         $t->supplier_ifsc = $data["supplier_ifsc"];
+        $t->supplier_top = $data["supplier_top"];
         $t->supplier_payment = $data["supplier_payment"];
         if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
         $t->save();
@@ -68,6 +70,7 @@ class Supplier extends Model
         $t->supplier_name = $data["supplier_name"];
         $t->supplier_email = $data["supplier_email"];
         $t->supplier_phone = $data["supplier_phone"];
+        $t->supplier_pic = $data["supplier_pic"];
         $t->supplier_address = $data["supplier_address"];
         $t->supplier_notes = $data["supplier_notes"];
         $t->state_id = $data["state_id"];
@@ -78,6 +81,7 @@ class Supplier extends Model
         $t->supplier_account_name = $data["supplier_account_name"];
         $t->supplier_account_number = $data["supplier_account_number"];
         $t->supplier_ifsc = $data["supplier_ifsc"];
+        $t->supplier_top = $data["supplier_top"];
         $t->supplier_payment = $data["supplier_payment"];
         if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
         $t->save();

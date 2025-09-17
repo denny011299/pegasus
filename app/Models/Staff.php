@@ -16,22 +16,24 @@ class Staff extends Model
         $data = array_merge([
             "staff_name"=>null,
             "staff_id"=>null,
-            "city_id"=>null
+            "city_id"=>null,
+            "role_id"=>null
         ], $data);
 
         $result = self::where('status', '=', 1);
         if($data["staff_name"]) $result->where('staff_name','like','%'.$data["staff_name"].'%');
         if($data["city_id"]) $result->where('city_id','=',$data["city_id"]);
         if($data["staff_id"]) $result->where('staff_id','=',$data["staff_id"]);
+        if($data["role_id"]) $result->where('role_id','=',$data["role_id"]);
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
         
         foreach ($result as $key => $value) {
-            $u = Cities::find($value->city_id);
-            $value->city_name = $u->city_name;
+            // $u = Cities::find($value->city_id);
+            // $value->city_name = $u->city_name;
 
-            $v = Provinces::find($value->state_id);
-            $value->state_name = $v->prov_name;
+            // $v = Provinces::find($value->state_id);
+            // $value->state_name = $v->prov_name;
         }
         
         return $result;

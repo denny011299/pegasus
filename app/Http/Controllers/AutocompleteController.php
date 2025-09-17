@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Area;
 use App\Models\Bom;
 use App\Models\Category;
 use App\Models\CategoryCoa;
@@ -58,6 +59,44 @@ class AutocompleteController extends Controller
         foreach ($data_city['data'] as $r) {
             $r->id = $r["prov_id"];
             $r->text = $r["prov_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteArea(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Area();
+        $data_city = $p->getArea([
+            "area_name" => $keyword
+        ]);
+        
+        foreach ($data_city as $r) {
+            $r->id = $r["area_id"];
+            $r->text = $r["area_code"]." - ".$r["area_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteSubdistrict(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Area();
+        $data_city = $p->getArea([
+            "area_name" => $keyword
+        ]);
+        
+        foreach ($data_city as $r) {
+            $r->id = $r["area_id"];
+            $r->text = $r["area_name"];
         };
 
         echo json_encode(array(
@@ -277,6 +316,27 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["supplier_id"];
             $r->text = $r["supplier_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteStaffSales(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Staff();
+        $data_city = $p->getStaff([
+            "staff_name" => $keyword,
+            "role_id" => 3
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["staff_id"];
+            $r->text = $r["staff_name"];
         };
 
         echo json_encode(array(

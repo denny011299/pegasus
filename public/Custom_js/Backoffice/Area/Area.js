@@ -2,26 +2,26 @@
     var table;
     $(document).ready(function(){
         inisialisasi();
-        refreshCategory();
+        refreshArea();
     });
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        $('#add_category .modal-title').html("Tambah Kategori");
-        $('#add_category input').val("");
+        $('#add_area .modal-title').html("Tambah Wilayah");
+        $('#add_area input').val("");
         $('.is-invalid').removeClass('is-invalid');
-        $('#add_category').modal("show");
+        $('#add_area').modal("show");
     });
     
     function inisialisasi() {
-        table = $('#tableCategory').DataTable({
+        table = $('#tableArea').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Kategori",
+                searchPlaceholder: "Cari Wilayah",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -29,8 +29,8 @@
                 },
             },
             columns: [
-                { data: "category_name" },
-                { data: "category_date" },
+                { data: "area_code" },
+                { data: "area_name" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -41,9 +41,9 @@
         });
     }
 
-    function refreshCategory() {
+    function refreshArea() {
         $.ajax({
-            url: "/getCategory",
+            url: "/getArea",
             method: "get",
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -53,12 +53,11 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].category_date = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].category_id}" data-bs-target="#edit-category">
+                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].area_id}" data-bs-target="#edit-area">
                             <i class="fe fe-edit"></i>
                         </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].category_id}" href="javascript:void(0);">
+                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].area_id}" href="javascript:void(0);">
                             <i class="fe fe-trash-2"></i>
                         </a>
                     `;
@@ -68,7 +67,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
-                console.error("Gagal load kategori:", err);
+                console.error("Gagal load wilayah:", err);
             }
         });
     }
@@ -76,10 +75,10 @@
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
-        var url ="/insertCategory";
+        var url ="/insertArea";
         var valid=1;
 
-        $("#add_category .fill").each(function(){
+        $("#add_area .fill").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
@@ -93,13 +92,14 @@
         };
 
         param = {
-            category_name:$('#category_name').val(),
-             _token:token
+            area_name:$('#area_name').val(),
+            area_code:$('#area_code').val(),
+            _token:token
         };
 
         if(mode==2){
-            url="/updateCategory";
-            param.category_id = $('#add_category').attr("category_id");
+            url="/updateArea";
+            param.area_id = $('#add_area').attr("area_id");
         }
 
         LoadingButton($(this));
@@ -123,47 +123,48 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Kategori");
-        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Kategori");
-        refreshCategory();
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Wilayah");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Wilayah");
+        refreshArea();
     }
 
-    $(document).on("keyup","#filter_category_name",function(){
-        refreshCategory();
-    });
+    // $(document).on("keyup","#filter_category_name",function(){
+    //     refreshArea();
+    // });
     //edit
     $(document).on("click",".btn_edit",function(){
-        var data = $('#tableCategory').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var data = $('#tableArea').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
-        $('#add_category .modal-title').html("Update Kategori");
-        $('#add_category input').empty().val("");
-        $('#category_name').val(data.category_name);
+        $('#add_area .modal-title').html("Update Wilayah");
+        $('#add_area input').empty().val("");
+        $('#area_code').val(data.area_code);
+        $('#area_name').val(data.area_name);
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Simpan perubahan');
-        $('#add_category').modal("show");
-        $('#add_category').attr("category_id", data.category_id);
+        $('#add_area').modal("show");
+        $('#add_area').attr("area_id", data.area_id);
     });
 
     //delete
     $(document).on("click",".btn_delete",function(){
-        var data = $('#tableCategory').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin menghapus kategori ini?","btn-delete-category");
-        $('#btn-delete-category').attr("category_id", data.category_id);
+        var data = $('#tableArea').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin menghapus wilayah ini?","btn-delete-area");
+        $('#btn-delete-area').attr("area_id", data.area_id);
     });
 
 
-    $(document).on("click","#btn-delete-category",function(){
+    $(document).on("click","#btn-delete-area",function(){
         $.ajax({
-            url:"/deleteCategory",
+            url:"/deleteArea",
             data:{
-                category_id:$('#btn-delete-category').attr('category_id'),
+                area_id:$('#btn-delete-area').attr('area_id'),
                 _token:token
             },
             method:"post",
             success:function(e){
                 $('.modal').modal("hide");
-                refreshCategory();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete kategori");
+                refreshArea();
+                notifikasi('success', "Berhasil Delete", "Berhasil delete wilayah");
                 
             },
             error:function(e){

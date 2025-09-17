@@ -1,24 +1,23 @@
 autocompleteProv('#state_id');
 autocompleteCity('#city_id');
+autocompleteArea('#area_id');
+autocompleteStaffSales('#sales_id');
 
 $(document).ready(function(){
     if(mode==2) {
         console.log(data)
+        $('#area_id').append(`<option value="${data.area_id}">${data.area_name}</option>`);
         $('#customer_name').val(data.customer_name);
         $('#customer_email').val(data.customer_email);
-        $('#customer_birthdate').val(data.customer_birthdate);
-        $('#customer_phone').val(data.customer_phone);
-        $('#customer_notes').val(data.customer_notes);
-        $('#customer_address').val(data.customer_address);
         $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`).trigger('change');
         $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`);
-        $('#customer_zipcode').val(data.customer_zipcode);
-        $('#customer_bank').val(data.customer_bank);
-        $('#customer_branch').val(data.customer_branch);
-        $('#customer_account_name').val(data.customer_account_name);
-        $('#customer_account_number').val(data.customer_account_number);
-        $('#customer_ifsc').val(data.customer_ifsc);
-        $('#preview_image').attr("src",public+data.customer_image); 
+        $('#subdistrict_id').append(`<option value="${data.subdistrict_id}">${data.subdistrict_name}</option>`);
+        $('#customer_address').val(data.customer_address);
+        $('#customer_phone').val(data.customer_phone);
+        $('#customer_pic').val(data.customer_pic);
+        $('#customer_pic_phone').val(data.customer_pic_phone);
+        $('#customer_notes').val(data.customer_notes);
+        $('#sales_id').append(`<option value="${data.sales_id}">${data.sales_name}</option>`);
     }
 })
 
@@ -47,20 +46,18 @@ $(document).on("click", ".btn-save", function () {
 
     // Siapkan data untuk dikirim
     param = {
+        area_id: $('#area_id').val(),
         customer_name: $("#customer_name").val(),
         customer_email: $("#customer_email").val(),
-        customer_birthdate: $("#customer_birthdate").val(),
-        customer_phone: $("#customer_phone").val(),
-        customer_address: $("#customer_address").val(),
-        customer_notes: $("#customer_notes").val(),
         state_id: $("#state_id").val(),
         city_id: $("#city_id").val(),
-        customer_zipcode: $("#customer_zipcode").val(),
-        customer_bank: $("#customer_bank").val(),
-        customer_branch: $("#customer_branch").val(),
-        customer_account_name: $("#customer_account_name").val(),
-        customer_account_number: $("#customer_account_number").val(),
-        customer_ifsc: $("#customer_ifsc").val(),
+        subdistrict_id: $("#subdistrict_id").val(),
+        customer_address: $("#customer_address").val(),
+        customer_phone: $("#customer_phone").val(),
+        customer_pic: $("#customer_pic").val(),
+        customer_pic_phone: $("#customer_pic_phone").val(),
+        customer_notes: $("#customer_notes").val(),
+        sales_id: $('#sales_id').val(),
         customer_payment: 0,
         _token:token
     };
@@ -70,18 +67,11 @@ $(document).on("click", ".btn-save", function () {
         param.customer_id = data.customer_id;
     }
 
-    const fd = new FormData();
-    for (const [key, value] of Object.entries(param)) {
-        fd.append(key, value);
-    }
-    fd.append('image', $('#customer_image')[0].files[0]);
-    console.log($('#customer_image')[0].files[0])
-
     LoadingButton($(this));
     $.ajax({
         url: url,
         method: "POST",
-        data: fd,
+        data: param,
         contentType: false,
         processData: false,
         headers: {
@@ -101,21 +91,6 @@ $(document).on("click", ".btn-save", function () {
         },
     });
 });
-    
-$(document).on("change", "#customer_image", function () {
-    let file = this.files[0];
-    if (file) {
-        // ganti preview gambar
-        let reader = new FileReader();
-        reader.onload = function (e) {
-            $("#preview_image").attr("src", e.target.result);
-        };
-        reader.readAsDataURL(file);
-        // ganti nama file
-        $("#file_name").text(file.name);
-    }
-    console.log($('#customer_image')[0].files[0])
-});
 
 $('#state_id').on('change', function() {
     let prov_id = $(this).val();
@@ -134,4 +109,9 @@ function afterInsert() {
 
 $(document).on('click', '.btn-back', function(){
     history.go(-1);
+})
+
+$(document).on('click', '.btn-clear', function(){
+    $('.form-control').val("");
+    $('.form-select').empty();
 })

@@ -19,6 +19,7 @@ Route::get('/', function () {
 });
 Route::post('/autocompleteCity', [AutocompleteController::class, "autocompleteCity"])->name('autocompleteCity');
 Route::post('/autocompleteProv', [AutocompleteController::class, "autocompleteProv"])->name('autocompleteProv');
+Route::post('/autocompleteArea', [AutocompleteController::class, "autocompleteArea"])->name('autocompleteArea');
 Route::post('/autocompleteCountry', [AutocompleteController::class, "autocompleteCountry"])->name('autocompleteCountry');
 Route::post('/autocompleteCategory', [AutocompleteController::class, "autocompleteCategory"])->name('autocompleteCategory');
 Route::post('/autocompleteUnit', [AutocompleteController::class, "autocompleteUnit"])->name('autocompleteUnit');
@@ -31,6 +32,8 @@ Route::post('/autocompleteProductVariant', [AutocompleteController::class, "auto
 Route::post('/autocompleteProductVariants', [AutocompleteController::class, "autocompleteProductVariants"])->name('autocompleteProductVariant');
 Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocompleteCustomer"])->name('autocompleteCustomer');
 Route::post('/autocompleteSupplier', [AutocompleteController::class, "autocompleteSupplier"])->name('autocompleteSupplier');
+Route::post('/autocompleteStaffSales', [AutocompleteController::class, "autocompleteStaffSales"])->name('autocompleteStaffSales');
+Route::post('/autocompleteSubdistrict', [AutocompleteController::class, "autocompleteSubdistrict"])->name('autocompleteSubdistrict');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
@@ -200,3 +203,10 @@ Route::get('/settings',[SettingController::class,"Settings"])->name('settings');
 Route::post('/getSetting', [SettingController::class, "getSetting"])->name('getSetting');
 Route::post('/insertSetting', [SettingController::class, "insertSetting"])->name('insertSetting');
 Route::post('/updateSetting', [SettingController::class, "updateSetting"])->name('updateSetting');
+
+// Wilayah
+Route::get('/area',[GeneralController::class,"Area"])->name('area');
+Route::get('/getArea', [GeneralController::class, "getArea"])->name('getArea');
+Route::post('/insertArea', [GeneralController::class, "insertArea"])->name('insertArea');
+Route::post('/updateArea', [GeneralController::class, "updateArea"])->name('updateArea');
+Route::post('/deleteArea', [GeneralController::class, "deleteArea"])->name('deleteArea');

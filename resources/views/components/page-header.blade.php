@@ -112,7 +112,7 @@
                             Staff</a>
                     </li>
                 @endif
-                  @if (Route::is(['bom']))
+                @if (Route::is(['bom']))
                     <li>
                         <a class="btn btn-primary btnAdd" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Resep</a>
@@ -143,6 +143,12 @@
                 @if (Route::is(['supplierDetail']))
                     <li>
                         <a class="btn btn-outline-secondary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
+                    </li>
+                @endif
+                @if (Route::is(['area']))
+                    <li>
+                        <a class="btn btn-primary btnAdd" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Wilayah</a>
                     </li>
                 @endif
             </ul>

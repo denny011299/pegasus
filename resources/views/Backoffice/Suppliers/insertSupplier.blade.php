@@ -61,7 +61,13 @@
                                                     placeholder="08xxx" name="name">
                                             </div>
                                         </div>
-                                       
+                                        <div class="col-lg-4 col-md-6 col-sm-12">
+                                            <div class="input-block mb-3">
+                                                <label>Nama PIC <span class="text-danger">*</span></label>
+                                                <input type="text" id="supplier_pic" class="form-control fill"
+                                                    placeholder="Input Nama PIC" name="name">
+                                            </div>
+                                        </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Catatan</label>
@@ -134,6 +140,17 @@
                                                 <label>Nomor Rekening <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill number-only" id="supplier_account_number"
                                                     placeholder="Masukkan Nomor Rekening">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4 col-md-12 col-sm-12">
+                                            <div class="input-block mb-3">
+                                                <label>Term of Payment (TOP) <span class="text-danger">*</span></label>
+                                                <select class="form-select fill" id="supplier_top">
+                                                    <option value="1" checked>Net 30</option>
+                                                    <option value="2">COD</option>
+                                                    <option value="3">CBD</option>
+                                                    <option value="4">Pembayaran Tempo</option>
+                                                </select>
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-12 col-sm-12">

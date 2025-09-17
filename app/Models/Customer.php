@@ -32,6 +32,8 @@ class Customer extends Model
 
             $v = Provinces::find($value->state_id);
             $value->state_name = $v->prov_name;
+
+            $value->staff_name = Staff::find($value->sales_id)->staff_name ?? "-";
         }
         
         return $result;
@@ -40,48 +42,43 @@ class Customer extends Model
     function insertCustomer($data)
     {
         $t = new self();
+        $t->area_id = $data["area_id"];
         $t->customer_name = $data["customer_name"];
         $t->customer_code = $this->generateCustomerID();
         $t->customer_email = $data["customer_email"];
-        $t->customer_birthdate = $data["customer_birthdate"];
-        $t->customer_phone = $data["customer_phone"];
-        $t->customer_address = $data["customer_address"];
-        $t->customer_notes = $data["customer_notes"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
-        $t->customer_zipcode = $data["customer_zipcode"];
-        $t->customer_bank = $data["customer_bank"];
-        $t->customer_branch = $data["customer_branch"];
-        $t->customer_account_name = $data["customer_account_name"];
-        $t->customer_account_number = $data["customer_account_number"];
-        $t->customer_ifsc = $data["customer_ifsc"];
+        $t->subdistrict_id = $data["subdistrict_id"];
+        $t->customer_address = $data["customer_address"];
+        $t->customer_phone = $data["customer_phone"];
+        $t->customer_pic = $data["customer_pic"];
+        $t->customer_pic_phone = $data["customer_pic_phone"];
+        $t->customer_notes = $data["customer_notes"];
+        $t->sales_id = $data["sales_id"];
         $t->customer_payment = $data["customer_payment"];
-        if(isset($data["customer_image"])) $t->customer_image = $data["customer_image"];
         $t->save();
-        return $t->pu_id;
+        return $t->customer_id;
     }
 
     function updateCustomer($data)
     {
         $t = self::find($data["customer_id"]);
+        $t->area_id = $data["area_id"];
         $t->customer_name = $data["customer_name"];
+        $t->customer_code = $data["customer_code"];
         $t->customer_email = $data["customer_email"];
-        $t->customer_birthdate = $data["customer_birthdate"];
-        $t->customer_phone = $data["customer_phone"];
-        $t->customer_address = $data["customer_address"];
-        $t->customer_notes = $data["customer_notes"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
-        $t->customer_zipcode = $data["customer_zipcode"];
-        $t->customer_bank = $data["customer_bank"];
-        $t->customer_branch = $data["customer_branch"];
-        $t->customer_account_name = $data["customer_account_name"];
-        $t->customer_account_number = $data["customer_account_number"];
-        $t->customer_ifsc = $data["customer_ifsc"];
+        $t->subdistrict_id = $data["subdistrict_id"];
+        $t->customer_address = $data["customer_address"];
+        $t->customer_phone = $data["customer_phone"];
+        $t->customer_pic = $data["customer_pic"];
+        $t->customer_pic_phone = $data["customer_pic_phone"];
+        $t->customer_notes = $data["customer_notes"];
+        $t->sales_id = $data["sales_id"];
         $t->customer_payment = $data["customer_payment"];
-        if(isset($data["customer_image"])) $t->customer_image = $data["customer_image"];
         $t->save();
-        return $t->pu_id;
+        return $t->customer_id;
     }
 
     function deleteCustomer($data)

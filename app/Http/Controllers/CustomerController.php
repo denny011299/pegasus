@@ -104,15 +104,13 @@ class CustomerController extends Controller
     function insertCustomer(Request $req)
     {
         $data = $req->all();
-        if(isset($req->image)&&$req->image!="undefined")$data["customer_image"] = (new HelperController)->insertFile($req->image, "customer");
         return (new Customer())->insertCustomer($data);
     }
 
     function updateCustomer(Request $req)
     {
         $data = $req->all();
-        if(isset($req->image)&&$req->image!="undefined")$data["customer_image"] = (new HelperController)->insertFile($req->image, "customer");
-        (new Customer())->updateCustomer($data);
+        return (new Customer())->updateCustomer($data);
     }
 
     function deleteCustomer(Request $req)

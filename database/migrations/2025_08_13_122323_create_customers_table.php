@@ -12,24 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('customers', function (Blueprint $table) {
-            $table->id('customer_id');
+            $table->integerIncrements('customer_id');
+            $table->integer('area_id')->nullable();
             $table->string('customer_name', 255);
-            $table->string('customer_code', 10)->unique()->nullable();
+            $table->string('customer_code', 100)->unique();
             $table->string('customer_email', 255)->nullable();
-            $table->date('customer_birthdate')->nullable();
-            $table->string('customer_phone', 50)->nullable();
-            $table->string('customer_address', 255)->nullable();
-            $table->text('customer_notes')->nullable();
             $table->integer('state_id')->nullable();
             $table->integer('city_id')->nullable();
-            $table->string('customer_zipcode', 20)->nullable();
-            $table->string('customer_bank', 255)->nullable();
-            $table->string('customer_branch', 255)->nullable();
-            $table->string('customer_account_name', 255)->nullable();
-            $table->string('customer_account_number', 100)->nullable();
-            $table->string('customer_ifsc', 100)->nullable();
+            $table->integer('subdistrict_id')->nullable();
+            $table->text('customer_address')->nullable();
+            $table->string('customer_phone', 50)->nullable();
+            $table->string('customer_pic', 255)->nullable();
+            $table->string('customer_pic_phone', 50)->nullable();
+            $table->text('customer_notes')->nullable();
+            $table->integer('sales_id')->nullable();
             $table->integer('customer_payment')->default(0);
-            $table->string('customer_image', 255)->nullable();
             $table->tinyInteger('status')->default(1)->comment('1 = active, 0 = inactive');
             $table->timestamps();
         });

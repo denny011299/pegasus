@@ -538,15 +538,32 @@
                             <div class="row">
                                 <div class="col-12 row">
                                     <div class="col-6">
-                                        <div class="input-block">
+                                        <div class="input-block mb-3">
+                                            <label>Tanggal<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="so_date">
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Metode Pembayaran<span class="text-danger">*</span></label>
+                                            <select id="so_payment" class="form-select fill">
+                                                <option value="1" checked>Tunai</option>
+                                                <option value="2">Transfer Bank</option>
+                                                <option value="3">Cek</option>
+                                                <option value="4">Kredit</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
                                             <label>Nama Pelanggan<span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="so_date">
+                                            <label>Nama Sales<span class="text-danger">*</span></label>
+                                            <select id="sales_id" class="form-control fill"></select>
                                         </div>
                                     </div>
                                 </div>
@@ -1424,4 +1441,50 @@
             </div>
         </div>
     </div>
+@endif
+
+@if (Route::is(['area']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_area" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Wilayah</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="input-block mb-3">
+                                        <label>Kode Wilayah<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="area_code"
+                                            placeholder="Input Kode Wilayah">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-block mb-3">
+                                        <label>Nama Wilayah<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="area_name"
+                                            placeholder="Input Nama Wilayah">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Wilayah</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 @endif

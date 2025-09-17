@@ -2,6 +2,7 @@
     var table;
     var products = [];
     autocompleteCustomer('#so_customer', "#add_sales_order");
+    autocompleteStaffSales('#sales_id', "#add_sales_order");
     $(document).ready(function(){
         inisialisasi();
         refreshSalesOrder();
@@ -20,8 +21,8 @@
         $('#add_sales_order input').val("");
         $('#so_discount').val(0).trigger('blur');
         $('#so_cost').val(0).trigger('blur');
-        $('#so_ppn').val(11).trigger('blur');
-        $('#so_customer').empty();
+        $('#so_ppn').val(0).trigger('blur');
+        $('.form-select').not("#so_payment").empty();
         $('.is-invalid').removeClass('is-invalid');
         $('#add_sales_order').modal("show");
         updateTotal();
@@ -168,7 +169,9 @@
                         <input type="text" class="form-control fill number-only so_qty"
                             data-price="${p.product_variant_price}"
                             data-index="${index}" style="width: 3rem" value="${p.so_qty || 1}">
-                        <span class="pt-2 ps-2">${p.unit_name}</span>
+                        <span class="pt-2 ps-2">
+                            <select class="form-select fill" id="unit_id"></select>
+                        </span>
                     </td>
                     <td style="width: 15%" class="text-end">${p.product_variant_price}</td>
                     <td style="width: 15%" class="subtotal text-end">${p.so_subtotal || 0}</td>
@@ -261,6 +264,7 @@
 
         param = {
             so_customer: $('#so_customer').val(),
+            sales_id: $('#sales_id').val(),
             so_date: $('#so_date').val(),
             so_total: convertToAngka($('#value_grand').html()),
             so_ppn: convertToAngka($('#so_ppn').val()),
@@ -322,10 +326,12 @@
         $('#add_sales_order .modal-title').html("Update Pesanan Penjualan");
         $('#add_sales_order input').empty().val("");
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
+        $('#sales_id').append(`<option value="${data.sales_id}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date)
         $('#so_discount').val(data.so_discount)
         $('#so_ppn').val(data.so_ppn)
         $('#so_cost').val(data.so_cost)
+        $('#so_payment').val(data.so_payment)
         data.items.forEach(e => {
             var temp = {
                 "sod_id" : e.sod_id,
