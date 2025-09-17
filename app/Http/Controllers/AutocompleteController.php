@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\Provinces;
 use App\Models\Staff;
 use App\Models\Store;
+use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\Unit;
 use App\Models\Variant;
@@ -255,6 +256,26 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["customer_id"];
             $r->text = $r["customer_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteSupplier(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Supplier();
+        $data_city = $p->getSupplier([
+            "supplier_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["supplier_id"];
+            $r->text = $r["supplier_name"];
         };
 
         echo json_encode(array(

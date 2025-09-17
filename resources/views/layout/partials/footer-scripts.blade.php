@@ -559,6 +559,35 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
 
+    function autocompleteSupplier(id, modalParent = null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteSupplier",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Pilih Supplier",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
     function autocompleteSuppliesVariant(id, modalParent = null) {
         //search country dan city
         $(id).select2({

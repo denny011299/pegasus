@@ -35,13 +35,15 @@
                                             <div class="col-4">
                                                 <div class="input-block">
                                                     <label>Nama Supplier</label>
-                                                    <select id="po_name" class="form-control fill"></select>
+                                                    <select id="po_supplier" class="form-control fill">
+                                                        <option value="{{$data["po_supplier"]}}">{{$data["po_supplier_name"]}}</option>
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div class="col-4">
                                                 <div class="input-block mb-3">
                                                     <label>Tanggal</label>
-                                                    <input type="date" class="form-control fill" id="po_date">
+                                                    <input type="date" class="form-control fill" id="po_date" value="{{$data["po_date"]}}">
                                                 </div>
                                             </div>
                                             <div class="col-4">
@@ -49,6 +51,11 @@
                                                     <label>Status</label>
                                                     <select id="po_status" class="form-control fill">
                                                         <option value="" checked>Pilih Status</option>
+                                                        <option value="1" checked>Dibuat</option>
+                                                        <option value="2" checked>Diterima</option>
+                                                        <option value="3" checked>Pembayaran</option>
+                                                        <option value="4" checked>Selesai</option>
+                                                        <option value="-1" checked>Cancel</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -57,7 +64,7 @@
                                                     <label>Total</label>
                                                     <div class="input-group mb-3">
                                                         <span class="input-group-text">Rp </span>
-                                                        <input type="text" class="form-control fill" id="po_total" value="0">
+                                                        <input type="text" class="form-control fill" id="po_total" value="{{$data["po_total"]}}">
                                                     </div>
                                                 </div>
                                             </div>

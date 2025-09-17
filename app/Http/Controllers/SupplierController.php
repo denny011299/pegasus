@@ -7,6 +7,8 @@ use App\Models\PurchaseOrderDelivery;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\PurchaseOrderReceipt;
 use App\Models\Supplier;
+use App\Models\Supplies;
+use App\Models\SuppliesVariant;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
@@ -16,12 +18,29 @@ class SupplierController extends Controller
     }
 
     function PurchaseOrderDetail($id){
-        return view('Backoffice.Suppliers.Purchase_Order_Detail');
+        $param["data"] = (new PurchaseOrder())->insertPurchaseOrder(["po_id"=>$id]);
+        return view('Backoffice.Suppliers.Purchase_Order_Detail')->with($param);
     }
 
     function getPurchaseOrder(Request $req){
         $data = (new PurchaseOrder())->getPurchaseOrder();
         return response()->json($data);
+    }
+    
+    function InsertPurchaseOrder(Request $req){
+        $data = (new PurchaseOrder())->InsertPurchaseOrder($req->all());
+        return response()->json($data);
+    }
+
+    function deletePurchaseOrder(Request $req){
+        $data = (new PurchaseOrder())->deletePurchaseOrder($req->all());
+        return response()->json($data);
+    }
+
+    function searchSupplies(Request $req) {
+        $data = (new SuppliesVariant())->getSuppliesVariant(["search"=>$req->search]);
+        if(count($data)>0)return response()->json($data[0]);
+        else return -1;
     }
 
     function getPoDelivery(Request $req){

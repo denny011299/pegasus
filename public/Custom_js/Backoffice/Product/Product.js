@@ -30,7 +30,7 @@
         $('#tbVariant').html("")
          addRow();
           $('#tbRelasi').html("");
-          
+          reset();
         $('#add_product').modal("show");
     });
 
@@ -304,16 +304,15 @@
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
         console.log(data);
-        
         $('#add_product .modal-title').html("Update Produk");
         $('#add_product input').empty().val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#product_name').val(data.product_name);
         $('#product_category').empty().append(`<option value="${data.category_id}">${data.product_category}</option>`);
         $('#tbVariant').html("");
-
+        
         data.pr_variant.forEach(element => {
-           
+            
             addRow(element.product_variant_name);
             $('.row-variant').last().find('.variant_sku').val(element.product_variant_sku);
             $('.row-variant').last().find('.variant_price').val(formatRupiah(element.product_variant_price));
@@ -327,10 +326,11 @@
         dataRelasi = data.pr_relasi;
         console.log(data.pr_relasi)
         dataRelasi.forEach((element,index) => {
-             canAdd=false;
+            canAdd=false;
             addRowRelasi(element,element);
-             canAdd=true;
+            canAdd=true;
         })
+        reset();
         console.log(canAdd);
         
         $('#product_unit').empty();
@@ -341,6 +341,7 @@
         });
         $('#product_alert').val(data.product_alert);
         $('#unit_id').val(data.unit_id).trigger("change");
+
         $('#add_product').attr("product_id",data.product_id);
         $('#add_product').modal("show");
         // $('#add_product').attr("category_id", data.category_id);
@@ -383,3 +384,14 @@
             }
         });
     });
+
+
+    function reset() {
+        $('#tbRelasi').html(`
+            <tr>
+                 <td class="text-center" colspan="2">
+                     Pilih Minimal 2 unit untuk mengatur relasi unit
+                 </td>
+            </tr>
+        `);
+    }

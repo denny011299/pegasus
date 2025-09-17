@@ -16,7 +16,9 @@ class SuppliesVariant extends Model
         $data = array_merge([
             "supplies_id" => null,
             "supplies_variant_sku" => null,
+            "supplies_variant_barcode" => null,
             "supplies_variant_id" => null,
+            "search" => null,
             "status" => 1,
         ], $data);
 
@@ -35,6 +37,10 @@ class SuppliesVariant extends Model
         // Filter berdasarkan supplies_variant_id
         if ($data["supplies_variant_id"]) {
             $result->where("supplies_variant_id", "=", $data["supplies_variant_id"]);
+        }
+        if ($data["search"]) {
+            $result->where("supplies_variant_sku", "=", $data["search"])
+            ->orWhere("supplies_variant_barcode", "=", $data["search"]);
         }
 
         $result->orderBy("created_at", "asc");

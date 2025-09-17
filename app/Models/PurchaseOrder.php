@@ -12,44 +12,72 @@ class PurchaseOrder extends Model
     public $incrementing = true;
 
     function getPurchaseOrder($data = []){
-        $data = [
-            [
-                'po_id' => 1,
-                'po_date' => '2025-07-20',
-                'po_reference' => 'PO001',
-                'po_invoice_number' => 'INV-001',
-                'po_name' => 'CV Mitra Sejahtera',
-                'po_total' => 9500000,
-                'po_status' => 1,
-                'po_created_by' => "Dewi",
-                'po_payables' => 0,
-                'po_paid' => 9500000
-            ],
-            [
-                'po_id' => 2,
-                'po_date' => '2025-07-22',
-                'po_reference' => 'PO002',
-                'po_invoice_number' => 'INV-002',
-                'po_name' => 'PT Sumber Elektronik',
-                'po_total' => 13250000,
-                'po_status' => 2,
-                'po_created_by' => "Dewi",
-                'po_payables' => 250000,
-                'po_paid' => 13000000
-            ],
-            [
-                'po_id' => 3,
-                'po_date' => '2025-07-25',
-                'po_reference' => 'PO003',
-                'po_invoice_number' => 'INV-003',
-                'po_name' => 'UD Sinar Logam',
-                'po_total' => 7800000,
-                'po_status' => 2,
-                'po_created_by' => "Dewi",
-                'po_payables' => 7800000,
-                'po_paid' => 0
-            ],
-        ];
-        return $data;
+        $data = array_merge([
+            "po_number"   => null,
+            "po_id"   => null,
+            "po_customer" => null,
+        ], $data);
+
+        $result = PurchaseOrder::where("status", ">=", 1);
+
+        if ($data["po_supplier"])$result->where("po_supplier", "like", "%".$data["po_supplier"]."%");
+        if ($data["po_id"])$result->where("po_id", "=", $data["po_customer"]);
+
+        $result->orderBy("created_at", "asc");
+        $result = $result->get();
+
+        foreach ($result as $key => $value) {
+            $value->po_supplier_name = Supplier::find($value->po_supplier)->supplier_name;
+            // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
+            // contoh:
+            // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";
+            // $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id"=>$value->po_id]);
+        }
+
+        return $result;
+    }
+   
+    function insertPurchaseOrder($data){
+        $t = new PurchaseOrder();
+        $t->po_number   = $this->generatePurchaseOrderID();
+        $t->po_supplier = $data["po_supplier"];
+        $t->po_date     = $data["po_date"];
+        $t->po_total    = $data["po_total"];
+        $t->po_ppn      = $data["po_ppn"] ?? 0;
+        $t->po_discount = $data["po_discount"] ?? 0;
+        $t->po_cost     = $data["po_cost"] ?? 0;
+        $t->status      = 1;
+        $t->save();
+
+        return $t->po_id;
+    }
+
+    function updatePurchaseOrder($data){
+        $t = PurchaseOrder::find($data["po_id"]);
+        $t->po_number   = $data["po_number"];
+        $t->po_customer = $data["po_customer"];
+        $t->po_date     = $data["po_date"];
+        $t->po_total    = $data["po_total"];
+        $t->po_ppn      = $data["po_ppn"] ?? 0;
+        $t->po_discount = $data["po_discount"] ?? 0;
+        $t->po_cost     = $data["po_cost"] ?? 0;
+        $t->status      = $data["status"] ?? $t->status;
+        $t->save();
+
+        return $t->po_id;
+    }
+
+    function deletePurchaseOrder($data){
+        $t = PurchaseOrder::find($data["po_id"]);
+        $t->status = 0; // soft delete
+        $t->save();
+    }
+
+    function generatePurchaseOrderID()
+    {
+        $id = self::max('po_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "PO".str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

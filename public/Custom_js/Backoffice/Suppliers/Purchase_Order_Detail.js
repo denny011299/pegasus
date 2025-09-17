@@ -1,5 +1,6 @@
     var mode=1;
     var tablePr, tableDn, tableInv, tableRcp, tablePrModal;
+    autocompleteSupplier("#po_supplier",null);
     $(document).ready(function(){
         inisialisasi();
         refresh();

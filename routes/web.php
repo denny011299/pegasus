@@ -30,6 +30,7 @@ Route::post('/autocompleteSuppliesVariant', [AutocompleteController::class, "aut
 Route::post('/autocompleteProductVariant', [AutocompleteController::class, "autocompleteProductVariant"])->name('autocompleteProductVariant');
 Route::post('/autocompleteProductVariants', [AutocompleteController::class, "autocompleteProductVariants"])->name('autocompleteProductVariant');
 Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocompleteCustomer"])->name('autocompleteCustomer');
+Route::post('/autocompleteSupplier', [AutocompleteController::class, "autocompleteSupplier"])->name('autocompleteSupplier');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
@@ -90,8 +91,11 @@ Route::post('/updateSalesOrder', [CustomerController::class, "updateSalesOrder"]
 Route::post('/deleteSalesOrder', [CustomerController::class, "deleteSalesOrder"])->name('deleteSalesOrder');
 
 Route::get('/purchaseOrder',[SupplierController::class,"PurchaseOrder"])->name('purchaseOrder');
+Route::get('/searchSupplies',[SupplierController::class,"searchSupplies"])->name('searchSupplies');
 Route::get('/purchaseOrderDetail/{id}',[SupplierController::class,"PurchaseOrderDetail"])->name('purchaseOrderDetail');
 Route::get('/getPurchaseOrder', [SupplierController::class, "getPurchaseOrder"])->name('getPurchaseOrder');
+Route::post('/insertPurchaseOrder', [SupplierController::class, "insertPurchaseOrder"])->name('insertPurchaseOrder');
+Route::post('/deletePurchaseOrder', [SupplierController::class, "deletePurchaseOrder"])->name('deletePurchaseOrder');
 Route::get('/getPoDelivery', [SupplierController::class, "getPoDelivery"])->name('getPoDelivery');
 Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('getPoInvoice');
 Route::get('/getPoReceipt', [SupplierController::class, "getPoReceipt"])->name('getPoReceipt');

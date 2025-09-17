@@ -1,6 +1,11 @@
 <?php $page = 'purchase_order'; ?>
 @extends('layout.mainlayout')
 @section('content')
+<style>
+    .badgeStatus{
+        font-size:9pt!important;
+    }
+</style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -27,14 +32,11 @@
                                 <table class="table table-center table-hover" id="tablePurchaseOrder">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Nama Pemasok</th>
-                                            <th>Referensi</th>
                                             <th>Tanggal</th>
+                                            <th>PO No.</th>
+                                            <th>Nama Pemasok</th>
                                             <th>Total</th>
-                                            <th>Dibayar</th>
-                                            <th>Hutang</th>
                                             <th>Status</th>
-                                            <th>Dibuat Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
