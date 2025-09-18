@@ -27,11 +27,17 @@ class Customer extends Model
         $result = $result->get();
         
         foreach ($result as $key => $value) {
+            $a = Area::find($value->area_id);
+            $value->area_name = $a->area_name;
+
             $u = Cities::find($value->city_id);
             $value->city_name = $u->city_name;
 
             $v = Provinces::find($value->state_id);
             $value->state_name = $v->prov_name;
+
+            $v = District::find($value->district_id);
+            $value->district_name = $v->name;
 
             $value->staff_name = Staff::find($value->sales_id)->staff_name ?? "-";
         }
@@ -48,7 +54,7 @@ class Customer extends Model
         $t->customer_email = $data["customer_email"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
-        $t->subdistrict_id = $data["subdistrict_id"];
+        $t->district_id = $data["district_id"];
         $t->customer_address = $data["customer_address"];
         $t->customer_phone = $data["customer_phone"];
         $t->customer_pic = $data["customer_pic"];
@@ -69,7 +75,7 @@ class Customer extends Model
         $t->customer_email = $data["customer_email"];
         $t->state_id = $data["state_id"];
         $t->city_id = $data["city_id"];
-        $t->subdistrict_id = $data["subdistrict_id"];
+        $t->district_id = $data["district_id"];
         $t->customer_address = $data["customer_address"];
         $t->customer_phone = $data["customer_phone"];
         $t->customer_pic = $data["customer_pic"];

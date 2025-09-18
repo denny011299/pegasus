@@ -160,17 +160,24 @@
         var html ="";
         console.log(products)
         products.forEach((p, index) => {
+            let options = "";
+            if (p.pr_unit && Array.isArray(p.pr_unit)) {
+                p.pr_unit.forEach(u => {
+                    options += `<option value="${u.unit_id}" ${u.unit_id == p.unit_id ? 'selected' : ''}>${u.unit_name}</option>`;
+                });
+            }
+
             html += `
                 <tr>
-                    <td style="width: 25%">${p.product_name}</td>
+                    <td style="width: 22%">${p.product_name}</td>
                     <td style="width: 15%">${p.product_variant_name}</td>
                     <td style="width: 15%">${p.product_variant_sku}</td>
-                    <td style="width: 15%" class="text-center p-2 d-flex">
+                    <td style="width: 18%" class="text-center p-2 d-flex">
                         <input type="text" class="form-control fill number-only so_qty"
                             data-price="${p.product_variant_price}"
-                            data-index="${index}" style="width: 3rem" value="${p.so_qty || 1}">
+                            data-index="${index}" style="width: 2.5rem" value="${p.so_qty || 1}">
                         <span class="pt-2 ps-2">
-                            <select class="form-select fill" id="unit_id"></select>
+                            <select class="form-select fill" id="unit_id" style="width: 6.5rem">${options}</select>
                         </span>
                     </td>
                     <td style="width: 15%" class="text-end">${p.product_variant_price}</td>
@@ -273,6 +280,7 @@
             products: JSON.stringify(products),
             _token:token
         };
+        console.log(products)
 
         if(mode==2){
             url="/updateSalesOrder";

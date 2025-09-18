@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class District extends Model
 {
-    protected $table = "disticts";
+    protected $table = "districts";
     protected $primaryKey = "id";
     public $timestamps = true;
     public $incrementing = true;
@@ -16,10 +16,9 @@ class District extends Model
             "id" =>null,
             "city_id" =>null,
         ), $data);
-        
-        $pc = District::where('id','=',$data["prov_id"]);
-        if($data["prov_id"]) $pc->where('prov_id', '=', $data["prov_id"]);
-        if($data["prov_id"]) $pc->where('prov_id', '=', $data["prov_id"]);
+        $pc = District::where('city_id','=',$data["city_id"]);
+        if($data["id"]) $pc->where('id', '=', $data["id"]);
+        if($data["city_id"]) $pc->where('city_id', '=', $data["city_id"]);
         return [
             "data"=>$pc->get(),
             "count"=>$pc->count()

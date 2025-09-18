@@ -57,7 +57,7 @@
                                         <div class="col-lg-4 col-md-12">
                                             <div class="input-block mb-3">
                                                 <label>Kecamatan <span class="text-danger">*</span></label>
-                                                <select class="form-select fill" id="subdistrict_id"></select>
+                                                <select class="form-select fill" id="district_id"></select>
                                             </div> 
                                         </div>
                                         <div class="input-block mb-3">

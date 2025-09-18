@@ -412,16 +412,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
     
-    function autocompleteSubdistrict(id, modalParent = null) {
+    function autocompleteDistrict(id, modalParent = null, city_id=null) {
         //search country dan city
         $(id).select2({
             ajax: {
-                url: "/autocompleteSubdistrict",
+                url: "/autocompleteDistrict",
                 dataType: "json",
                 type: "post",
                 data: function data(params) {
                     return {
                         "keyword": params.term,
+                        "city_id": city_id,
                         '_token': $('meta[name="csrf-token"]').attr('content')
                     };
                 },

@@ -20,6 +20,7 @@ Route::get('/', function () {
 Route::post('/autocompleteCity', [AutocompleteController::class, "autocompleteCity"])->name('autocompleteCity');
 Route::post('/autocompleteProv', [AutocompleteController::class, "autocompleteProv"])->name('autocompleteProv');
 Route::post('/autocompleteArea', [AutocompleteController::class, "autocompleteArea"])->name('autocompleteArea');
+Route::post('/autocompleteDistrict', [AutocompleteController::class, "autocompleteDistrict"])->name('autocompleteDistrict');
 Route::post('/autocompleteCountry', [AutocompleteController::class, "autocompleteCountry"])->name('autocompleteCountry');
 Route::post('/autocompleteCategory', [AutocompleteController::class, "autocompleteCategory"])->name('autocompleteCategory');
 Route::post('/autocompleteUnit', [AutocompleteController::class, "autocompleteUnit"])->name('autocompleteUnit');

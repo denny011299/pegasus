@@ -9,6 +9,7 @@ use App\Models\CategoryCoa;
 use App\Models\Cities;
 use App\Models\Coa;
 use App\Models\Customer;
+use App\Models\District;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Provinces;
@@ -85,18 +86,18 @@ class AutocompleteController extends Controller
         ));
     }
 
-    public function autocompleteSubdistrict(Request $req)
+    public function autocompleteDistrict(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
 
-        $p = new Area();
-        $data_city = $p->getArea([
-            "area_name" => $keyword
+        $p = new District();
+        $data_city = $p->getDistrict([
+            "name" => $keyword,
+            "city_id" => $req->city_id,
         ]);
-        
-        foreach ($data_city as $r) {
-            $r->id = $r["area_id"];
-            $r->text = $r["area_name"];
+        foreach ($data_city["data"] as $r) {
+            $r->id = $r["id"];
+            $r->text = $r["name"];
         };
 
         echo json_encode(array(

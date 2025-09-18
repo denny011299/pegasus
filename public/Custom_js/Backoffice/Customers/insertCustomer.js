@@ -1,6 +1,7 @@
 autocompleteProv('#state_id');
 autocompleteCity('#city_id');
 autocompleteArea('#area_id');
+autocompleteDistrict('#district_id');
 autocompleteStaffSales('#sales_id');
 
 $(document).ready(function(){
@@ -11,13 +12,13 @@ $(document).ready(function(){
         $('#customer_email').val(data.customer_email);
         $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`).trigger('change');
         $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`);
-        $('#subdistrict_id').append(`<option value="${data.subdistrict_id}">${data.subdistrict_name}</option>`);
+        $('#district_id').append(`<option value="${data.district_id}">${data.district_name}</option>`);
         $('#customer_address').val(data.customer_address);
         $('#customer_phone').val(data.customer_phone);
         $('#customer_pic').val(data.customer_pic);
         $('#customer_pic_phone').val(data.customer_pic_phone);
         $('#customer_notes').val(data.customer_notes);
-        $('#sales_id').append(`<option value="${data.sales_id}">${data.sales_name}</option>`);
+        $('#sales_id').append(`<option value="${data.sales_id}">${data.staff_name}</option>`);
     }
 })
 
@@ -25,10 +26,6 @@ $(document).on("click", ".btn-save", function () {
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
     var url = "/insertCustomer";
-
-    // check image
-    if (mode==2)$('#customer_image').removeClass('fill');
-    else if (mode==1) $('#customer_image').addClass('fill');
 
     var valid = 1;
     $(".fill").each(function(){
@@ -51,7 +48,7 @@ $(document).on("click", ".btn-save", function () {
         customer_email: $("#customer_email").val(),
         state_id: $("#state_id").val(),
         city_id: $("#city_id").val(),
-        subdistrict_id: $("#subdistrict_id").val(),
+        district_id: $("#district_id").val(),
         customer_address: $("#customer_address").val(),
         customer_phone: $("#customer_phone").val(),
         customer_pic: $("#customer_pic").val(),
@@ -65,15 +62,15 @@ $(document).on("click", ".btn-save", function () {
     if(mode==2){
         url = "/updateCustomer";
         param.customer_id = data.customer_id;
+        param.customer_code = data.customer_code;
     }
+    console.log(param);
 
     LoadingButton($(this));
     $.ajax({
         url: url,
         method: "POST",
         data: param,
-        contentType: false,
-        processData: false,
         headers: {
             "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
         },
@@ -101,6 +98,23 @@ $('#state_id').on('change', function() {
     } else {
         $('#city_id').empty(); // kosongkan jika tidak ada provinsi
     }
+});
+
+$('#city_id').on('change', function() {
+    let city_id = $(this).val();
+    console.log(city_id);
+    if (city_id) {
+        // Panggil autocompleteDistrict dengan city_id
+        autocompleteDistrict('#district_id', null, city_id);
+    } else {
+        $('#district_id').empty(); // kosongkan jika tidak ada city
+    }
+});
+
+$('#district_id').on('change', function() {
+    let district_id = $(this).val();
+    console.log(district_id);
+    
 });
 
 function afterInsert() {

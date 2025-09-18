@@ -34,6 +34,7 @@ class SalesOrder extends Model
     }
 
     function insertSalesOrder($data){
+        dd($data);
         foreach (json_decode($data["products"], true) as $key => $value) {
             $m = ProductVariant::find($value["product_variant_id"]);
             $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$value["unit_id"])->first();
