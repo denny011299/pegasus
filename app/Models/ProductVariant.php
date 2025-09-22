@@ -52,7 +52,7 @@ class ProductVariant extends Model
             $p = Product::find($variant->product_id);
             $u =  Unit::whereIn('unit_id', json_decode($p->product_unit,true))->first();
 
-            $variant->product_name = $p ? $p->product_name : "-";
+            $variant->pr_name = $p ? $p->product_name : "-";
             $variant->product_unit = $u ? $u->unit_name : "-";
             $variant->product_category = Category::find($p->category_id)->category_name ?? "-";
             $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit,true))->get();

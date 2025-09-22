@@ -155,7 +155,7 @@ Route::post('/deleteCustomer', [CustomerController::class, "deleteCustomer"])->n
 //reporting
 Route::get('/reportBahanBaku', [ReportController::class, "reportBahanBaku"])->name('reportBahanBaku');
 Route::get('/reportProduksi', [ReportController::class, "reportProduksi"])->name('reportProduksi');
-Route::get('/SuppliesReturn', [ReportController::class, "SuppliesReturn"])->name('SuppliesReturn');
+Route::get('/ProductReturn', [ReportController::class, "ProductReturn"])->name('ProductReturn');
 Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
 Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');
 Route::post('/insertCash',[ReportController::class,"insertCash"])->name('insertCash');

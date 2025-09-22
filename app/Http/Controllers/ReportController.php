@@ -75,8 +75,8 @@ class ReportController extends Controller
         return view('Backoffice.Reports.Bahan_Baku');
     }
     
-    function SuppliesReturn(){
-        return view('Backoffice.Reports.SuppliesReturn');
+    function ProductReturn(){
+        return view('Backoffice.Reports.ProductReturn');
     }
     
     function reportProduksi(){

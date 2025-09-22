@@ -18,9 +18,11 @@ class Production extends Model
             "date"=>null,
             "report" => null
         ], $data);
+
         if($data["report"] == null) $result = Production::where('status', '=', 1);
         else if($data["report"]) $result = Production::where('status', '>=', 0);
         if($data["production_product_id"]) $result->where('production_product_id','=',$data["production_product_id"]);
+        
         if($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
                 // Jika date adalah array [start_date, end_date]]
@@ -35,6 +37,7 @@ class Production extends Model
                 $result->where('production_date', '=', $date);
             }
         }
+        
         $result->orderBy('created_at', 'asc');
         
         $result = $result->get();

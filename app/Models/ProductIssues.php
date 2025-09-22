@@ -16,32 +16,34 @@ class ProductIssues extends Model
     {
         $data = array_merge([
             "pi_type"=>null,
-            "ms_start_date"=>null,
-            "ms_end_date"=>null,
+            "date"=>null,
             "all"=>null,
-            "type"=>2,//default = product
+            "tipe_return"=>null,//default = product
         ], $data);
 
         $result = self::where('status', '=', 1);
         if($data["pi_type"])$result->where('pi_type','=',$data["pi_type"]);
+        if($data["tipe_return"])$result->where('tipe_return','=',$data["tipe_return"]);
         
-
-        if($data["ms_start_date"] && $data["ms_end_date"]) {
-            $endDate = Carbon::parse($data["ms_end_date"])->addDay();
-            $result->whereBetween('created_at', [$data["ms_start_date"], $endDate]);
-        } elseif($data["ms_start_date"]) {
-      
-            $result->where('created_at', '>=', $data["ms_start_date"]);
-        } elseif($data["ms_end_date"]) {
-            $result->where('created_at', '<=', $data["ms_end_date"]);
+        if($data["date"]) {
+            if (is_array($data["date"]) && count($data["date"]) === 2) {
+                // Jika date adalah array [start_date, end_date]]
+                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
+                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
+                $result->whereBetween('created_at', [$startDate, $endDate]);
+            } else {
+                // Jika date hanya satu nilai
+                $date = $data["date"];
+                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d'))$date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                
+                $result->where('created_at', '=', $date);
+            }
         }
-        
+
         $result->orderBy('created_at', 'asc');
        
         $result = $result->get();
-
         foreach ($result as $key => $value) {
-            
             $pvr = ProductVariant::find($value->product_variant_id);
             $sup = Product::find($pvr->product_id);
             $value->pr_name = $sup->product_name." ".$pvr->product_variant_name;
@@ -68,6 +70,7 @@ class ProductIssues extends Model
                 return -1;
             }
         }
+        
         // Return from customer
         elseif ($data["tipe_return"] == 2) {
             $stocks += $data["pi_qty"];

@@ -98,7 +98,11 @@ class StockController extends Controller
     }
 
     function getProductIssue(Request $req){
-        $data = (new ProductIssues())->getProductIssues();
+        $data = (new ProductIssues())->getProductIssues([
+            "pi_type"=>$req->pi_type,
+            "tipe_return"=>$req->tipe_return,
+            "date"=>$req->date,
+        ]);
         return response()->json($data);
     }
 

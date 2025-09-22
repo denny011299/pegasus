@@ -606,9 +606,9 @@
                                 <li><a href="/reportBahanBaku"
                                     class="{{ Request::is('reportBahanBaku') ? 'active' : '' }}">
                                     Pengelolaan Bahan Mentah</a></li>
-                            <li><a href="/SuppliesReturn"
-                                    class="{{ Request::is('SuppliesReturn') ? 'active' : '' }}">
-                                    Retur Bahan Mentah</a></li>
+                            <li><a href="/ProductReturn"
+                                    class="{{ Request::is('ProductReturn') ? 'active' : '' }}">
+                                    Retur Product</a></li>
                             <li><a href="/reportProduksi"
                                     class="{{ Request::is('reportProduksi') ? 'active' : '' }}">
                                     Laporan Produksi</a></li>
