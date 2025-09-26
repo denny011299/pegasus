@@ -247,7 +247,7 @@
         $('#unit_id').trigger("change");
 
         if(canAdd==true){
-            
+            console.log(dataRelasi)
             $('#tbRelasi').html("");
             dataRelasi.forEach((element,index) => {
                 if(index>0)addRowRelasi(dataRelasi[index-1],element); 
@@ -274,7 +274,8 @@
     });
 
     function addRowRelasi(element1,element2) {
-        
+        console.log(element1)
+        console.log(element2.pr_unit_value_2)
         $('#tbRelasi').append(`
                 <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${element2.pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : dataRelasi[dataRelasi.length-1].id}">
                     <td>
@@ -290,9 +291,9 @@
                     <td>
                         <div class="input-group">
                             <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai"
-                            data-unit_id="${element1.pr_unit_id_2 ? element1.pr_unit_id_2 : element2.id}" value="${element1.pr_unit_value_2 ? element1.pr_unit_value_2 : ""}">
+                            data-unit_id="${element2.pr_unit_id_2 ? element2.pr_unit_id_2 : element2.id}" value="${element2.pr_unit_value_2 ? element2.pr_unit_value_2 : ""}">
                             <span class="input-group-text unit_text_2">
-                                ${element1.pr_unit_name_2 ? element1.pr_unit_name_2 : element2.text}
+                                ${element2.pr_unit_name_2 ? element2.pr_unit_name_2 : element2.text}
                             </span>
                         </div>
                     </td>
@@ -326,6 +327,7 @@
         dataRelasi = data.pr_relasi;
         console.log(data.pr_relasi)
         dataRelasi.forEach((element,index) => {
+            console.log(element)
             canAdd=false;
             addRowRelasi(element,element);
             canAdd=true;
