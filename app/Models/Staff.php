@@ -34,6 +34,9 @@ class Staff extends Model
 
             // $v = Provinces::find($value->state_id);
             // $value->state_name = $v->prov_name;
+
+            $r = Role::find($value->role_id);
+            $value->role_name = $r->role_name;
         }
         
         return $result;
@@ -42,23 +45,12 @@ class Staff extends Model
     function insertStaff($data)
     {
         $t = new self();
-        $t->staff_first_name = $data["staff_first_name"];
-        $t->staff_last_name = $data["staff_last_name"];
+        $t->staff_name = $data["staff_first_name"] . " " . $data["staff_last_name"];
         $t->staff_email = $data["staff_email"];
         $t->staff_phone = $data["staff_phone"];
-        $t->staff_birthdate = $data["staff_birthdate"];
-        $t->staff_gender = $data["staff_gender"];
-        $t->staff_join_date = $data["staff_join_date"];
-        $t->staff_shift = $data["staff_shift"];
-        $t->staff_departement = $data["staff_departement"];
-        $t->staff_position = $data["staff_position"];
-        $t->staff_emergency1 = $data["staff_emergency1"];
+        $t->role_id = $data["role_id"];
         $t->staff_address = $data["staff_address"];
-        $t->state_id = $data["state_id"];
-        $t->city_id = $data["city_id"];
-        $t->staff_zipcode = $data["staff_zipcode"];
-        $t->staff_password = bcrypt($data["staff_password"]);
-        if(isset($data["staff_image"])) $t->staff_image = $data["staff_image"];
+        $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;
     }
@@ -66,23 +58,12 @@ class Staff extends Model
     function updateStaff($data)
     {
         $t = self::find($data["staff_id"]);
-        $t->staff_first_name = $data["staff_first_name"];
-        $t->staff_last_name = $data["staff_last_name"];
+        $t->staff_name = $data["staff_first_name"] . " " . $data["staff_last_name"];
         $t->staff_email = $data["staff_email"];
         $t->staff_phone = $data["staff_phone"];
-        $t->staff_birthdate = $data["staff_birthdate"];
-        $t->staff_gender = $data["staff_gender"];
-        $t->staff_join_date = $data["staff_join_date"];
-        $t->staff_shift = $data["staff_shift"];
-        $t->staff_departement = $data["staff_departement"];
-        $t->staff_position = $data["staff_position"];
-        $t->staff_emergency1 = $data["staff_emergency1"];
+        $t->role_id = $data["role_id"];
         $t->staff_address = $data["staff_address"];
-        $t->state_id = $data["state_id"];
-        $t->city_id = $data["city_id"];
-        $t->staff_zipcode = $data["staff_zipcode"];
-        $t->staff_password = bcrypt($data["staff_password"]);
-        if(isset($data["staff_image"])) $t->staff_image = $data["staff_image"];
+        $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;
     }

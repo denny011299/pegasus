@@ -77,7 +77,6 @@
                 if (!Array.isArray(e)) {
                     e = e.original || [];
                 }
-                console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach((item,index) => {
                     var def = -1;
@@ -99,6 +98,7 @@
                             
                         }
                     });
+                    if (item.product_variant_stock_text == "") item.product_variant_stock_text = "-"
                     item.habis=habis;
 
                     if(def>0){
@@ -121,14 +121,16 @@
                     // Asumsi 'item' adalah objek produk lengkap dengan relasi dan stok.
                     // item.stock sudah diurutkan dari unit terbesar ke terkecil.
 
+                    let stocks = item.stock?.[0]?.ps_stock || 0;
+                    let unit_name = item?.stock[0]?.unit_name || "-";
                     if (item.relation.length <= 1) {
                         // Logika untuk produk dengan 1 varian atau tanpa relasi
-                        let needed = Math.max(0, item.product_alert - item.stock[0].ps_stock);
-                        item.minim_order = needed + " " + item.stock[0].unit_name;
+                        let needed = Math.max(0, item.product_alert - stocks);
+                        item.minim_order = needed + " " + unit_name;
                     } else {
                         // Logika untuk produk dengan banyak relasi/varian
                         // 1. Konversi semua stok ke satuan terkecil (base unit)
-                        let totalStockInSmallestUnit = item.stock[0].ps_stock;
+                        let totalStockInSmallestUnit = stocks;
                         
                         // Cari faktor konversi untuk setiap unit
                         let conversionFactors = {};
@@ -189,7 +191,7 @@
                     }
                 });
                 
-                let stockLow = e.filter(item => item.stock[0].ps_stock <= item.product_alert&&  item.habis==-1);
+                let stockLow = e.filter(item => ((item.stock[0]?.ps_stock || 0) <= item.product_alert) && item.habis == -1);
                 let stockOut = e.filter(item => item.habis==1);
 
                 tableLow.clear().rows.add(stockLow).draw();

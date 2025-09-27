@@ -30,7 +30,7 @@
                 { data: "staff_name" },
                 { data: "staff_phone" },
                 { data: "staff_email" },
-                { data: "staff_position" },
+                { data: "role_name" },
                 { data: "created" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -54,7 +54,6 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].staff_name = `${e[i].staff_first_name} ${e[i].staff_last_name}`;
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY'); 
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_view" href="/staffDetail/${e[i].staff_id}" data-bs-target="#view-supplier">
