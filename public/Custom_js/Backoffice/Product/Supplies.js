@@ -72,7 +72,7 @@
             columns: [
                 { data: "supplies_name", width: "25%" },
                 { data: "variant_values", width: "20%" },
-                { data: "unit_name", width: "15%" },
+                { data: "unit_values", width: "15%" },
                 { data: "desc", width: "25%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -104,6 +104,13 @@
                          e[i].variant_values += element.supplies_variant_name;
                          if(index< e[i].sup_variant.length-1){
                             e[i].variant_values += ", ";
+                         }
+                    });
+                    e[i].unit_values = "";
+                    e[i].units.forEach((element,index) => {
+                         e[i].unit_values += element.unit_name;
+                         if(index< e[i].units.length-1){
+                            e[i].unit_values += ", ";
                          }
                     });
                     e[i].action = `
@@ -249,10 +256,10 @@
             $('.row-variant').last().find('.variant_barcode').val(element.supplies_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
         });
-        // data.sup_unit.forEach(element => {
-        //     var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
-        //     $('#supplies_unit').append(newOption).trigger('change');
-        // });
+        data.units.forEach(element => {
+            var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
+            $('#supplies_unit').append(newOption).trigger('change');
+        });
 
 
         // $.ajax({

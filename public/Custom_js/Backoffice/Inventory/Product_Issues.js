@@ -252,7 +252,7 @@ $(document).on("click", ".btn_edit", function () {
     $("#unit_id").val(data.pi_qty);
     $("#pi_qty").val(data.pi_qty);
     $("#pi_notes").val(data.pi_notes);
-    $("#product_id").append(
+    $("#product_id").empty().append(
         `<option value="${data.product_variant_id}">${data.pr_name}</option>`
     );
     $("#unit_id").empty().append(
@@ -279,7 +279,7 @@ $(document).on("click", ".btn_delete", function () {
         .row($(this).parents("tr"))
         .data(); //ambil data dari table
     showModalDelete(
-        "Apakah yakin ingin mengahapus Masalah Produk ini?",
+        "Apakah yakin ingin menghapus Masalah Produk ini?",
         "btn-delete-issues"
     );
     $("#btn-delete-issues").attr("pi_id", data.pi_id);
