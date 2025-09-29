@@ -11,7 +11,7 @@ $(document).ready(function(){
         $('#customer_name').val(data.customer_name);
         $('#customer_email').val(data.customer_email);
         $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`).trigger('change');
-        $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`);
+        $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`).trigger('change');
         $('#district_id').append(`<option value="${data.district_id}">${data.district_name}</option>`);
         $('#customer_address').val(data.customer_address);
         $('#customer_phone').val(data.customer_phone);
@@ -91,7 +91,7 @@ $(document).on("click", ".btn-save", function () {
 
 $('#state_id').on('change', function() {
     let prov_id = $(this).val();
-
+    console.log(prov_id);
     if (prov_id) {
         // Panggil autocompleteCity dengan prov_id
         autocompleteCity('#city_id', null, prov_id);
@@ -109,12 +109,6 @@ $('#city_id').on('change', function() {
     } else {
         $('#district_id').empty(); // kosongkan jika tidak ada city
     }
-});
-
-$('#district_id').on('change', function() {
-    let district_id = $(this).val();
-    console.log(district_id);
-    
 });
 
 function afterInsert() {
