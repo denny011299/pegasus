@@ -1031,7 +1031,7 @@
                                         <label>Jumlah<span class="text-danger">*</span></label>
                                         <div class="input-group mb-3">
                                             <span class="input-group-text">Rp </span>
-                                            <input type="text" class="form-control fill" id="poi_total" value="0" placeholder="20.000">
+                                            <input type="text" class="form-control fill number_only" id="poi_total" value="0" placeholder="20.000">
                                         </div>
                                     </div>
                                 </div>
@@ -1042,7 +1042,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Faktur</button>
+                            class="btn btn-primary paid-continue-btn btn-save btn-save-invoice">Tambah Faktur</button>
                     </div>
                 </form>
             </div>

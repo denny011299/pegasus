@@ -9,21 +9,9 @@
             <div class="d-flex justify-content-between">
                 @component('components.page-header')
                         @slot('title')
-                            Hutang & Piutang
+                            Hutang
                         @endslot
                 @endcomponent
-                <ul class="nav nav-pills navtab-bg">
-                    <li class="nav-item">
-                        <a href="#payables" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
-                            Hutang
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#receiveables" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                            Piutang
-                        </a>
-                    </li>
-                </ul>
             </div>
             <!-- /Page Header -->
 
@@ -38,13 +26,13 @@
                     <div class=" card-table">
                         <div class="card-body">
 							<div class="tab-content">
-								<div class="tab-pane show active" id="payables">
 									<div class="table-responsive">
                                         <table class="table table-center table-hover" id="tablePayables">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Tanggal Pesanan Pembelian</th>
-                                                    <th>Nomor Pesanan Pembelian</th>
+                                                    <th>Tgl. Pemesanan</th>
+                                                    <th>Tgl. Jatuh Tempo</th>
+                                                    <th>No. PO</th>
                                                     <th>Nomor Faktur</th>
                                                     <th>Nama Pemasok</th>
                                                     <th>Total</th>
@@ -57,28 +45,6 @@
                                             </tbody>
                                         </table>
                                     </div>
-								</div>
-								<div class="tab-pane" id="receiveables">
-									<div class="table-responsive">
-                                        <table class="table table-center table-hover" id="tableReceiveables">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th>Tanggal Order</th>
-                                                    <th>Jatuh Tempo</th>
-                                                    <th>Nomor Pesanan Penjualan</th>
-                                                    <th>Nomor Faktur</th>
-                                                    <th>Nama Pelanggan</th>
-                                                    <th>Total</th>
-                                                    <th>Status</th>
-                                                    <th class="no-sort">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                
-                                            </tbody>
-                                        </table>
-                                    </div>
-								</div>
 							</div>
                         </div>
                     </div>
