@@ -75,6 +75,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].bom_date = moment(e[i].created_at).format('D MMM YYYY');
+                    console.log(e[i]);
                     e[i].unit = e[i].details[0].unit_name;
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
@@ -114,6 +115,12 @@
             ResetLoadingButton('.btn-save', 'Simpan perubahan');
             return false;
         };
+
+        if ($("#tableSupply tbody tr").length == 0) {
+            notifikasi('error', "Gagal Insert", 'Minimal input 1 bahan mentah');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            return false;
+        }
         console.log(bahan);
         param = {
             bom_qty:$('#bom_qty').val(),
@@ -203,12 +210,13 @@
             return false;
         };
         var temp = $('#supplies_id').select2("data")[0];
+        console.log(temp)
         var data  = {
             "supplies_id": temp.supplies_variant_id,
             "supplies_name": temp.supplies_name+" "+temp.supplies_variant_name,
             "bom_detail_qty": parseInt($('#bom_detail_qty').val()),
-            "unit_name": temp.unit_name,
-            "unit_id": temp.unit_id
+            "unit_name": temp.unit_name || temp.supplies_unit,
+            "unit_id": temp.unit_id || temp.supplies_unit_id
         };
         bahan.push(data);
         addRow(data)

@@ -80,9 +80,8 @@
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach((item,index) => {
                     var def = -1;
-
                     item.product_name_text = item.product_name + " " +item.product_variant_name;
-                    item.product_alert_text = item.product_alert+" " +item.product_unit;
+                    item.product_alert_text = item.product_variant_alert+" " +item.product_unit;
                     
                     item.product_variant_stock_text="";
                     var habis = 1;
@@ -90,6 +89,7 @@
                         item.product_variant_stock_text += `${element.ps_stock} ${element.unit_name}`;
                         if(index<item.stock.length-1)item.product_variant_stock_text +=", ";
                         if(item.unit_id == element.unit_id){
+                            console.log(item)
                             def=index;
                         }
                         
@@ -98,7 +98,7 @@
                             
                         }
                     });
-                    if (item.product_variant_stock_text == "") item.product_variant_stock_text = "-"
+                    if (item.product_variant_stock_text == "") item.product_variant_stock_text = `0 ${item.product_unit}`
                     item.habis=habis;
 
                     if(def>0){
@@ -109,7 +109,7 @@
                     }
                     
                     item.product = `<img src="${public+item.stal_image}" class="me-2" style="width:30px">`+item.stal_name;
-                    item.min_order = `${item.product_alert - item.product_variant_stock} ${item.product_unit}`;
+                    item.min_order = `${item.product_variant_alert - item.product_variant_stock} ${item.product_unit}`;
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
                             <i class="fe fe-edit"></i>
@@ -122,10 +122,10 @@
                     // item.stock sudah diurutkan dari unit terbesar ke terkecil.
 
                     let stocks = item.stock?.[0]?.ps_stock || 0;
-                    let unit_name = item?.stock[0]?.unit_name || "-";
+                    let unit_name = item?.stock[0]?.unit_name || item.product_unit;
                     if (item.relation.length <= 1) {
                         // Logika untuk produk dengan 1 varian atau tanpa relasi
-                        let needed = Math.max(0, item.product_alert - stocks);
+                        let needed = Math.max(0, item.product_variant_alert - stocks);
                         item.minim_order = needed + " " + unit_name;
                     } else {
                         // Logika untuk produk dengan banyak relasi/varian
@@ -140,16 +140,18 @@
                             conversionFactors[item.relation[i].pr_unit_id_2] = tempFactor;
                         }
                         conversionFactors[item.product_unit_id] = 1;
+                        console.log(conversionFactors)
 
                         for (const stockItem of item.stock) {
                             let factor = conversionFactors[stockItem.unit_id] || 1;
+                            console.log(stockItem.unit_id);
 
                             totalStockInSmallestUnit = stockItem.ps_stock + totalStockInSmallestUnit * factor;
                         }
                         
-                        // 2. Konversi product_alert ke satuan terkecil
-                        let totalAlertInSmallestUnit = item.product_alert;
-                        // Asumsi: product_alert dalam satuan unit terbesar
+                        // 2. Konversi product_variant_alert ke satuan terkecil
+                        let totalAlertInSmallestUnit = item.product_variant_alert;
+                        // Asumsi: product_variant_alert dalam satuan unit terbesar
                         for (const relation of item.relation) {
                             totalAlertInSmallestUnit *= relation.pr_unit_value_2;
                         }
@@ -191,7 +193,7 @@
                     }
                 });
                 
-                let stockLow = e.filter(item => ((item.stock[0]?.ps_stock || 0) <= item.product_alert) && item.habis == -1);
+                let stockLow = e.filter(item => ((item.stock[0]?.ps_stock || 0) <= item.product_variant_alert) && item.habis == -1);
                 let stockOut = e.filter(item => item.habis==1);
 
                 tableLow.clear().rows.add(stockLow).draw();

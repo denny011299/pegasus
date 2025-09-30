@@ -74,6 +74,7 @@ class ProductVariant extends Model
         $t->product_variant_sku = $data["variant_sku"];
         $t->product_variant_price = $data["variant_price"];
         $t->product_variant_barcode = $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
+        $t->product_variant_alert = $data["variant_alert"];
         $t->product_variant_stock = 0;
         $t->save();
         return $t->product_variant_id;
@@ -88,6 +89,7 @@ class ProductVariant extends Model
                 "variant_name"    => $data["variant_name"],
                 "variant_sku"     => $data["variant_sku"],
                 "variant_price"   => $data["variant_price"],
+                "variant_alert"   => $data["variant_alert"],
                 "variant_barcode" => $data["variant_barcode"] ?? "",
             ]);
         }
@@ -96,6 +98,7 @@ class ProductVariant extends Model
         $t->product_variant_sku = $data["variant_sku"];
         $t->product_variant_price = $data["variant_price"];
         $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
+        $t->product_variant_alert = $data["variant_alert"];
         $t->save();
 
         return $t->product_variant_id;

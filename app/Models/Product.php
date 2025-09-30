@@ -46,7 +46,6 @@ class Product extends Model
         $t->product_name = $data["product_name"];
         $t->category_id  = $data["category_id"];
         $t->product_unit = $data["product_unit"];
-        $t->product_alert = $data["product_alert"];
         $t->unit_id = $data["unit_id"];
         $t->status       = $data["status"] ?? 1;
         $t->save();
@@ -60,7 +59,6 @@ class Product extends Model
         $t->product_name = $data["product_name"];
         $t->category_id  = $data["category_id"];
         $t->product_unit = $data["product_unit"];
-        $t->product_alert = $data["product_alert"];
         $t->unit_id = $data["unit_id"];
         $t->save();
         

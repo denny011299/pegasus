@@ -53,6 +53,7 @@ class SuppliesVariant extends Model
          
             $u =  Unit::whereIn('unit_id', json_decode($s->supplies_unit,true))->first();
             $variant->supplies_unit = $u ? $u->unit_name : "-";
+            $variant->supplies_unit_id = $u ? $u->unit_id : "-";
         }
 
         return $variants;

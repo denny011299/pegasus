@@ -154,7 +154,7 @@
         param = {
             supplies_name:$('#supplies_name').val(),
             supplies_desc:$('#supplies_desc').val(),
-            supplies_unit:$('#supplies_unit').val(),
+            supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token
         };
 
@@ -261,50 +261,6 @@
             $('#supplies_unit').append(newOption).trigger('change');
         });
 
-
-        // $.ajax({
-        //     url: "/getSuppliesRelation",
-        //     method: "get",
-        //     data: { supplies_id: data.supplies_id },
-        //     headers: { "X-CSRF-TOKEN": token },
-        //     success: function(resp){
-        //         // resp misalnya [{su_id_1, su_id_2, sr_value_1, sr_value_2}]
-        //         $(".relationContainer").empty();
-
-        //         // render input stok berdasarkan units
-        //         units.forEach((item, index) => {
-        //             let html = '';
-        //             html = `
-        //                 <div class="col-2 pb-3">
-        //                     <label id="pu_id_${index+1}">${item}</label>
-        //                     <input type="text" class="form-control fill" id="supplies_stock${index+1}" 
-        //                     placeholder="Input Stock">
-        //                 </div>
-        //             `;
-        //             if (index < units.length - 1) {
-        //                 html += `
-        //                     <div class="col-1 pt-4 fs-3 px-0 mx-0 text-center">
-        //                         =
-        //                     </div>
-        //                 `;
-        //             }
-        //             $(".relationContainer").append(html);
-        //         });
-
-        //         // isi nilai stock sesuai relasi
-        //         if(resp && resp.length > 0){
-        //             let total = 1;
-        //             for (let i = 0; i < resp.length; i++) {
-        //                 let nilai1 = resp[i].sr_value_1;
-        //                 let nilai2 = resp[i].sr_value_2;
-
-        //                 $(`#supplies_stock${i+1}`).val(nilai1 * total);
-        //                 total = total * nilai2;
-        //                 $(`#supplies_stock${i+2}`).val(total);
-        //             }
-        //         }
-        //     }
-        // });
         $('.btn-save').html('Simpan perubahan');
         $('#add_supplies').modal("show");
         $('#add_supplies').attr("supplies_id", data.supplies_id);

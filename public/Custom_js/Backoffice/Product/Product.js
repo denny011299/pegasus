@@ -27,6 +27,7 @@
         $('#product_variant').empty();
         $('#add_product #product_category').empty();
         $('.is-invalid').removeClass('is-invalid');
+        $('#unit_id').empty();
         $('#tbVariant').html("")
          addRow();
           $('#tbRelasi').html("");
@@ -57,7 +58,7 @@
                 <td>
                     <div class="input-group mb-3">
                         <input type="text" class="form-control fill variant_alert" aria-describedby="basic-addon3">
-                        <span class="input-group-text" id="unit_alert">-</span>
+                        <span class="input-group-text unit_alert">-</span>
                     </div>
                 </td>
                 <td class="text-center d-flex align-items-center">
@@ -180,6 +181,7 @@
                 variant_sku: $(this).find('.variant_sku').val(),
                 variant_price: convertToAngka($(this).find('.variant_price').val()),
                 variant_barcode: $(this).find('.variant_barcode').val(),
+                variant_alert: $(this).find('.variant_alert').val(),
                 product_variant_id: $(this).find('.variant_id').val(),
             };
             temp.push(variant);
@@ -264,13 +266,17 @@
         }
         else if (dataRelasi.length < 1) {
             $('#tbRelasi').html("");
-            $('#unit_alert').html("-");
+            $('.unit_alert').each(function() {
+                $(this).html("-");
+            })
             $('#unit_id').val("");
         }
     });
     
     $(document).on("change","#unit_id",function(){
-        $('#unit_alert').html($('#unit_id option:selected').text().trim());
+        $('.unit_alert').each(function() {
+            $(this).html($('#unit_id option:selected').text().trim());
+        });
         $('.select2-search__field').remove();
     });
 
