@@ -56,7 +56,7 @@
                 <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukan Barcode"><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
                 <td>
                     <div class="input-group mb-3">
-                        <input type="text" class="form-control" id="product_alert" aria-describedby="basic-addon3">
+                        <input type="text" class="form-control fill variant_alert" aria-describedby="basic-addon3">
                         <span class="input-group-text" id="unit_alert">-</span>
                     </div>
                 </td>
@@ -169,7 +169,6 @@
              product_name:$('#product_name').val(),
              category_id:$('#product_category').val(),
              unit_id:$('#unit_id').val(),
-             product_alert:$('#product_alert').val(),
              product_unit:JSON.stringify($('#product_unit').val()),
              _token:token
         };
@@ -325,6 +324,7 @@
             $('.row-variant').last().find('.variant_price').val(formatRupiah(element.product_variant_price));
             $('.row-variant').last().find('.variant_barcode').val(element.product_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
+            $('.row-variant').last().find('.variant_alert').val(element.product_variant_alert);
         
         });
         console.log(canAdd);
@@ -347,7 +347,6 @@
             var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
             $('#product_unit').append(newOption).trigger("change");
         });
-        $('#product_alert').val(data.product_alert);
         $('#unit_id').val(data.unit_id).trigger("change");
 
         $('#add_product').attr("product_id",data.product_id);
