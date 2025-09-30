@@ -112,11 +112,10 @@
                                         <div class="col-12">
                                             <table class="table table-center table-hover" id="tableProduct">
                                                 <thead>
+                                                    <th>SKU</th>
                                                     <th>Produk</th>
                                                     <th>Qty</th>
                                                     <th>Harga Beli (Rp)</th>
-                                                    <th>Diskon (Rp)</th>
-                                                    <th>Biaya Unit (Rp)</th>
                                                     <th>Subtotal</th>
                                                 </thead>
                                                 <tbody></tbody>
@@ -125,21 +124,25 @@
                                         <div class="col-12 row pt-3">
                                             <div class="col-6"></div>
                                             <div class="col-6">
+                                               <div class="d-flex justify-content-between">
+                                                    <p>Total</p>
+                                                    <p id="value_total">0</p>
+                                                </div>
                                                 <div class="d-flex justify-content-between">
-                                                    <p>PPN</p>
-                                                    <p>0</p>
+                                                    <p>Ppn</p>
+                                                    <p id="value_ppn">0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
                                                     <p>Diskon</p>
-                                                    <p>0</p>
+                                                    <p id="value_discount">0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
                                                     <p>Biaya Pengiriman</p>
-                                                    <p>0</p>
+                                                    <p id="value_cost">0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
-                                                    <p>Total Akhir</p>
-                                                    <p>Rp 320000</p>
+                                                    <b>Grand Total</b>
+                                                    <b id="value_grand">0</b>
                                                 </div>
                                             </div>
                                         </div>
@@ -194,11 +197,12 @@
                                         <div class="col-12 pb-5">
                                             <table class="table table-center table-hover" id="tableInvoice">
                                                 <thead>
-                                                    <th>Tanggal Pesanan</th>
+                                                    <th style="width:15%">Tgl. Pesanan</th>
+                                                    <th style="width:15%">Tgl. Jatuh Tempo</th>
                                                     <th>No. Faktur</th>
-                                                    <th>Total</th>
                                                     <th>Status</th>
-                                                    <th class="no-sort">Aksi</th>
+                                                    <th>Total</th>
+                                                    <th class="no-sort text-center">Aksi</th>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>
@@ -252,6 +256,7 @@
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";    
+        var data = @json($data);
     </script>
     <script src="{{asset('Custom_js/Backoffice/Suppliers/Purchase_Order_Detail.js')}}"></script>
 @endsection

@@ -4,6 +4,7 @@
     $(document).ready(function(){
         inisialisasi();
         refresh();
+        refreshSummary();
     });
     
     function inisialisasi() {
@@ -23,12 +24,11 @@
                 },
             },
             columns: [
-                { data: "pr_name" },
-                { data: "pr_qty" },
-                { data: "pr_buy_price" },
-                { data: "pr_discount" },
-                { data: "pr_price" },
-                { data: "pr_subtotal" },
+                { data: "pod_sku" },
+                { data: "pod_nama" },
+                { data: "pod_qty",class:"text-center"   },
+                { data: "pod_harga_text",class:"text-end"  },
+                { data: "pod_subtotal_text",class:"text-end" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -87,9 +87,10 @@
             },
             columns: [
                 { data: "date" },
+                { data: "date_due_date" },
                 { data: "poi_code" },
-                { data: "poi_total" },
-                { data: "status" },
+                { data: "poi_total_text" },
+                { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -131,31 +132,17 @@
     }
 
     function refresh() {
-        $.ajax({
-            url: "/getProduct",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                console.log(e);
-                tablePr.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].pr_qty = 2;
-                    e[i].pr_buy_price = 100000;
-                    e[i].pr_price = 80000;
-                    e[i].pr_discount = 20000;
-                    e[i].pr_subtotal = 160000;
-                }
+        tablePr.clear().draw(); 
+        // Manipulasi data sebelum masuk ke tabel
 
-                tablePr.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                console.error("Gagal load:", err);
-            }
+        data.items.forEach(element => {
+           element.pod_nama += ` ${element.pod_variant}`;
+           element.pod_harga_text = formatRupiah(element.pod_harga,"Rp.");
+           element.pod_subtotal_text = formatRupiah(element.pod_subtotal,"Rp.");
         });
+
+        tablePr.rows.add(data.items).draw();
+        feather.replace(); // Biar icon feather muncul lagi
 
         $.ajax({
             url: "/getPoDelivery",
@@ -174,6 +161,7 @@
                     } else if (e[i].pod_status == 2){
                         e[i].status = `<span class="badge bg-success" style="font-size: 12px">Terkirim</span>`;
                     }
+                    
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_print_dn" data-id="${e[i].pod_id}" data-bs-target="#print-sales">
                             <i class="fe fe-file"></i>
@@ -195,40 +183,7 @@
             }
         });
 
-        $.ajax({
-            url: "/getPoInvoice",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                console.log(e);
-                tableInv.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
-                    if (e[i].poi_status == 1){
-                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Tertunda</span>`;
-                    } else if (e[i].poi_status == 2){
-                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
-                    }
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_print_inv" data-id="${e[i].poi_id}" data-bs-target="#print-sales">
-                            <i class="fe fe-file"></i>
-                        </a>
-                        <a class="me-2 btn-action-icon p-2 btn_edit_inv" data-id="${e[i].poi_id}" data-bs-target="#edit-sales">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                    `;
-                }
-
-                tableInv.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                console.error("Gagal load:", err);
-            }
-        });
+       
 
         $.ajax({
             url: "/getPoReceipt",
@@ -264,8 +219,47 @@
                 console.error("Gagal load:", err);
             }
         });
+        refreshInvoice();
     }
+    
+    function refreshInvoice() {
+         $.ajax({
+            url: "/getPoInvoice",
+            method: "get",
+            success: function (e) {
+                if (!Array.isArray(e)) {
+                    e = e.original || [];
+                }
+                console.log(e);
+                tableInv.clear().draw(); 
+                // Manipulasi data sebelum masuk ke tabel
+                for (let i = 0; i < e.length; i++) {
+                    e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
+                    e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
+                    e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp.");
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
+                    } else if (e[i].status == 2){
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
+                    }
+                    e[i].action = `
+                        <a class="me-2 btn-action-icon p-2 btn_edit_invoice" >
+                            <i class="fe fe-edit"></i>
+                        </a>
+                        <a class="me-2 btn-action-icon p-2 btn_delete_invoice">
+                            <i class="fe fe-trash"></i>
+                        </a>
+                    `;
+                }
 
+                tableInv.rows.add(e).draw();
+                feather.replace(); // Biar icon feather muncul lagi
+            },
+            error: function (err) {
+                console.error("Gagal load:", err);
+            }
+        });
+    }
     $(document).on('click', '.btnBack', function(){
         window.open('/purchaseOrder', '_self');
     })
@@ -280,6 +274,7 @@
     })
 
     $(document).on('click', '.btnAddInv', function(){
+        mode=1;
         $('#add_purchase_invoice .modal-title').html("Tambah Faktur");
         $('#add_purchase_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
@@ -391,3 +386,140 @@
         var data = $('#tableReceipt').DataTable().row($(this).parents('tr')).data();
         $('#modalDelete').modal("show");
     })
+
+
+    function refreshSummary() {
+        var total = 0;
+        data.items.forEach(item => {
+            console.log(item);
+            
+            total+=(item.pod_harga*item.pod_qty);
+        });
+        $('#value_total').html(formatRupiah(total,"Rp."))
+        var diskon = data.po_discount;
+        total -= diskon;
+        var ppn = data.po_ppn;
+        var cost = data.po_cost;
+        total +=ppn +cost;
+        grand = total;
+        console.log(grand);
+        
+        $('#value_discount').html(formatRupiah(diskon,"Rp."))
+        $('#value_ppn').html(formatRupiah(ppn,"Rp."))
+        $('#value_cost').html(formatRupiah(cost,"Rp."))
+        $('#value_grand').html(formatRupiah(grand,"Rp."))
+    }
+
+
+    
+$(document).on("click", ".btn-save-invoice", function () {
+    //LoadingButton(this);
+    $(".is-invalid").removeClass("is-invalid");
+    var url = "/insertInvoicePO";
+    var valid = 1;
+    $("#add_purchase_invoice .fill").each(function () {
+        if (
+            $(this).val() == null ||
+            $(this).val() == "null" ||
+            $(this).val() == ""
+        ) {
+            valid = -1;
+            $(this).addClass("is-invalid");
+        }
+    });
+
+    if (valid == -1) {
+        notifikasi(
+            "error",
+            "Gagal Insert",
+            "Silahkan cek kembali inputan anda"
+        );
+        // ResetLoadingButton('.btn-save', 'Save changes');
+        return false;
+    }
+
+    param = {
+        po_id: data.po_id,
+        poi_date: $("#poi_date").val(),
+        poi_code: $("#poi_code").val(),
+        poi_due: $("#poi_due").val(),
+        poi_total: convertToAngka($("#poi_total").val()),
+        _token: token,
+    };
+    console.log(param);
+    //LoadingButton($(this));
+
+    if (mode == 2) {
+        url = "/updateInvoicePO";
+        param.poi_id = $("#add_purchase_invoice").attr("poi_id");
+    }
+
+    $.ajax({
+        url: url,
+        data: param,
+        method: "post",
+        headers: {
+            "X-CSRF-TOKEN": token,
+        },
+        success: function (e) {
+            $(".modal").modal("hide");
+            refreshInvoice();
+            if (mode == 1){
+                notifikasi(
+                    "success",
+                    "Berhasil Insert",
+                    "Berhasil Data Ditambahkan"
+                );
+            }
+            else if (mode == 2){
+                notifikasi(
+                    "success",
+                    "Berhasil Update",
+                    "Berhasil Data Diupdate"
+                );
+            }
+
+        },
+        error: function (e) {
+            console.log(e);
+        },
+    });
+});
+    //edit invoice
+    $(document).on("click",".btn_edit_invoice",function(){
+        mode=2;
+        var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin mengahapus resep ini?","btn-delete-invoice");
+        $('#poi_total').val(formatRupiah(data.poi_total))
+        $('#poi_due').val(data.poi_due)
+        $('#poi_date').val(data.poi_date)
+        $('#poi_code').val(data.poi_code)
+        $('#add_purchase_invoice').attr("poi_id", data.poi_id);
+        $('#add_purchase_invoice').modal("show");
+    });
+ //delete invoice
+    $(document).on("click",".btn_delete_invoice",function(){
+        var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin mengahapus resep ini?","btn-delete-invoice");
+        $('#btn-delete-invoice').attr("poi_id", data.poi_id);
+
+    });
+    
+    $(document).on("click","#btn-delete-invoice",function(){
+        $.ajax({
+            url:"/deleteInvoicePO",
+            data:{
+                poi_id:$('#btn-delete-invoice').attr('poi_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                refreshInvoice();
+                notifikasi('success', "Berhasil Delete", "Berhasil delete invoice");
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    });

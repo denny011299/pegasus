@@ -103,6 +103,9 @@ Route::post('/deletePurchaseOrder', [SupplierController::class, "deletePurchaseO
 Route::get('/getPoDelivery', [SupplierController::class, "getPoDelivery"])->name('getPoDelivery');
 Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('getPoInvoice');
 Route::get('/getPoReceipt', [SupplierController::class, "getPoReceipt"])->name('getPoReceipt');
+Route::post('/insertInvoicePO', [SupplierController::class, "insertInvoicePO"])->name('insertInvoicePO');
+Route::post('/updateInvoicePO', [SupplierController::class, "updateInvoicePO"])->name('updateInvoicePO');
+Route::post('/deleteInvoicePO', [SupplierController::class, "deleteInvoicePO"])->name('deleteInvoicePO');
 
 Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
 Route::post('/insertManageStocks',[StockController::class,"insertManageStocks"])->name('insertManageStocks');

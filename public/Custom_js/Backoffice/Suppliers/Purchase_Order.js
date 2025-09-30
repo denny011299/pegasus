@@ -12,9 +12,11 @@
     $(document).on('click','.btnAdd',function(){
         mode=1;
         console.log(moment().format('dd/MM/YYYY'));
-        
+        item  = [];
+        refreshSummary();
         $('#add_purchase_order .modal-title').html("Tambah Pesanan Pembelian");
         $('#add_purchase_order input').val("");
+        $('#add_purchase_order select2').empty();
         $('#add_purchase_order #po_discount').val(0);
         $('#add_purchase_order #po_ppn').val(0);
         $('#add_purchase_order #po_cost').val(0);
@@ -169,7 +171,7 @@
                     if(e[i].status == 4)e[i].status_po = `<label class="badge bg-success badgeStatus">Done</label>`;
 
                     e[i].action = `
-                        <a href="/salesOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" >
+                        <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" >
                             <i class="fe fe-eye"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">

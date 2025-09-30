@@ -626,7 +626,7 @@
                                     Barang Masuk Keluar</a></li>
                             <li><a href="{{ url('payReceive') }}"
                                     class="{{ Request::is('payReceive') ? 'active' : '' }}">
-                                    Hutang & Piutang</a></li>
+                                    Hutang</a></li>
                            
                         </ul>
                     </li>

@@ -14,6 +14,7 @@ class PurchaseOrder extends Model
     function getPurchaseOrder($data = []){
         $data = array_merge([
             "po_number"   => null,
+            "po_supplier"   => null,
             "po_id"   => null,
             "po_customer" => null,
         ], $data);
@@ -21,7 +22,7 @@ class PurchaseOrder extends Model
         $result = PurchaseOrder::where("status", ">=", 1);
 
         if ($data["po_supplier"])$result->where("po_supplier", "like", "%".$data["po_supplier"]."%");
-        if ($data["po_id"])$result->where("po_id", "=", $data["po_customer"]);
+        if ($data["po_id"])$result->where("po_id", "=", $data["po_id"]);
 
         $result->orderBy("created_at", "asc");
         $result = $result->get();
@@ -31,7 +32,7 @@ class PurchaseOrder extends Model
             // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
             // contoh:
             // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";
-            // $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id"=>$value->po_id]);
+             $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id"=>$value->po_id]);
         }
 
         return $result;

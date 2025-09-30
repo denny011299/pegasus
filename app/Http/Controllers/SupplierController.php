@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
+use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\PurchaseOrderReceipt;
 use App\Models\Supplier;
@@ -18,7 +19,7 @@ class SupplierController extends Controller
     }
 
     function PurchaseOrderDetail($id){
-        $param["data"] = (new PurchaseOrder())->insertPurchaseOrder(["po_id"=>$id]);
+        $param["data"] = (new PurchaseOrder())->getPurchaseOrder(["po_id"=>$id])[0];
         return view('Backoffice.Suppliers.Purchase_Order_Detail')->with($param);
     }
 
@@ -29,6 +30,16 @@ class SupplierController extends Controller
     
     function InsertPurchaseOrder(Request $req){
         $data = (new PurchaseOrder())->InsertPurchaseOrder($req->all());
+        foreach (json_decode($req->po_detail,true) as $key => $value) {
+            $value["po_id"] = $data;
+            $value["pod_nama"] = $value["supplies_name"];
+            $value["pod_variant"] =$value["supplies_variant_name"];
+            $value["pod_sku"] = $value["supplies_variant_sku"];
+            $value["pod_qty"] = $value["qty"];
+            $value["pod_harga"] = $value["supplies_variant_price"];
+            $value["pod_subtotal"] = intval($value["pod_qty"])*intval($value["pod_harga"]);
+            (new PurchaseOrderDetail())->insertPurchaseOrderDetail($value);
+        }
         return response()->json($data);
     }
 
@@ -52,6 +63,23 @@ class SupplierController extends Controller
         $data = (new PurchaseOrderDetailInvoice())->getPoInvoice();
         return response()->json($data);
     }
+
+    function insertInvoicePO(Request $req){
+        $data = $req->all();
+        return (new PurchaseOrderDetailInvoice())->insertInvoicePO($data);
+    }
+
+    function updateInvoicePO(Request $req){
+        $data = $req->all();
+        if(isset($req->image)&&$req->image!="undefined")$data["supplier_image"] = (new HelperController)->insertFile($req->image, "supplier");
+        return (new PurchaseOrderDetailInvoice())->updateInvoicePO($data);
+    }
+
+    function deleteInvoicePO(Request $req){
+        $data = $req->all();
+        return (new PurchaseOrderDetailInvoice())->deleteInvoicePO($data);
+    }
+
 
     function getPoReceipt(Request $req){
         $data = (new PurchaseOrderReceipt())->getPoReceipt();

@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('purchase_order_detail_invoices', function (Blueprint $table) {
-            $table->id();
+            $table->integerIncrements('poi_id');
+            $table->string('poi_date',100);
+            $table->string('poi_due',100);
+            $table->string('poi_code',100);
+            $table->integer('poi_total');
             $table->timestamps();
         });
     }

@@ -21,12 +21,13 @@
                 },
             },
             columns: [
-                { data: 'po_date' },
-                { data: 'po_reference' },
-                { data: 'po_invoice_number' },
-                { data: 'po_name' },
-                { data: 'po_total' },
-                { data: 'status_bayar' },
+                { data: "date" },
+                { data: "date_due_date" },
+                { data: "po_code" },
+                { data: "poi_code" },
+                { data: "supplier_name" },
+                { data: "poi_total_text" },
+                { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -36,94 +37,37 @@
             },
         });
 
-        tableReceiveables = $('#tableReceiveables').DataTable({
-            bFilter: true,
-            sDom: 'fBtlpi',
-            ordering: true,
-            language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Piutang",
-                info: "_START_ - _END_ of _TOTAL_ items",
-                paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
-                },
-            },
-            autoWidth: false,
-            columns: [
-                { data: 'so_order_date' },
-                { data: 'so_due_date' },
-                { data: 'so_reference' },
-                { data: 'so_invoice_number' },
-                { data: 'so_name' },
-                { data: 'so_total' },
-                { data: 'status_bayar' },
-                { data: 'action', class: "d-flex align-items-center" },
-            ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
-            },
-        });
     }
 
     function refreshPayReceive() {
-        $.ajax({
-            url: "/getPurchaseOrder",
+         $.ajax({
+            url: "/getPoInvoice",
             method: "get",
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
                 }
                 console.log(e);
+                tablePayables.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
-                e.forEach(item => {
-                    if (item.po_status == 1){
-                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Belum Dibayar</span>`;
-                    } else if (item.po_status == 2){
-                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Menunggu Pembayaran</span>`;
-                    } else if (item.po_status == 3){
-                        item.status_bayar = `<span class="badge bg-danger" style="font-size: 12px">Jatuh Tempo</span>`;
+                for (let i = 0; i < e.length; i++) {
+                    e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
+                    e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
+                    e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp.");
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
+                    } else if (e[i].status == 2){
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
                     }
-                    item.action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view" data-bs-target="#view-opname">
+                    e[i].action = `
+                        <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_edit_invoice" >
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
-                });
-                tablePayables.clear().rows.add(e).draw();
-            },
-            error: function (err) {
-                console.error("Gagal load:", err);
-            }
-        });
-        $.ajax({
-            url: "/getSalesOrder",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
                 }
-                console.log(e);
-                // Manipulasi data sebelum masuk ke tabel
-                e.forEach(item => {
-                    if (item.so_status == 1){
-                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Belum Dibayar</span>`;
-                    } else if (item.so_status == 2){
-                        item.status_bayar = `<span class="badge bg-warning" style="font-size: 12px">Menunggu Pembayaran</span>`;
-                    } else if (item.so_status == 3){
-                        item.status_bayar = `<span class="badge bg-danger" style="font-size: 12px">Jatuh Tempo</span>`;
-                    }
-                    item.action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view" data-bs-target="#view-opname">
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
-                });
 
-                tableReceiveables.clear().rows.add(e).draw();
+                tablePayables.rows.add(e).draw();
+                feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
                 console.error("Gagal load:", err);
