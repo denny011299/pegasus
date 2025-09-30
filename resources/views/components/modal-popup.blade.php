@@ -193,15 +193,6 @@
 										</select>
                                     </div>
                                 </div>
-                                <div class="col-3">
-                                    <div class="input-block mb-3">
-                                        <label>Stock Alert<span class="text-danger">*</span></label>
-                                        <div class="input-group mb-3">
-                                            <input type="text" class="form-control" id="product_alert" aria-describedby="basic-addon3">
-                                              <span class="input-group-text" id="unit_alert">-</span>
-                                        </div>
-                                    </div>
-                                </div>
                                 <hr>
                                 <div class="row mb-3">
                                     <div class="col-8">
@@ -228,6 +219,7 @@
                                                 <td>SKU</td>
                                                 <td>Harga</td>
                                                 <td>Barcode</td>
+                                                <td>Stock Alert</td>
                                                 <td class="text-center" style="width:15%">Aksi</td>
                                             </tr>
                                         </thead>

@@ -54,6 +54,12 @@
                 <td><input type="text" class="form-control fill variant_sku" name="" id="" placeholder="Masukan Sku"></td>
                 <td><input type="text" class="form-control fill variant_price nominal_only" name="" id="" placeholder="Masukan Harga"></td>
                 <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukan Barcode"><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
+                <td>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="product_alert" aria-describedby="basic-addon3">
+                        <span class="input-group-text" id="unit_alert">-</span>
+                    </div>
+                </td>
                 <td class="text-center d-flex align-items-center">
                     <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                             <i data-feather="trash-2" class="feather-trash-2"></i>
