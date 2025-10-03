@@ -48,6 +48,12 @@ class SupplierController extends Controller
         return response()->json($data);
     }
 
+    function updatePurchaseOrderDetail(Request $req){
+        foreach (json_decode($req->po_detail, true) as $key => $value) {
+            (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
+        }
+    }
+
     function searchSupplies(Request $req) {
         $data = (new SuppliesVariant())->getSuppliesVariant(["search"=>$req->search]);
         if(count($data)>0)return response()->json($data[0]);

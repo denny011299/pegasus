@@ -146,6 +146,12 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="col-12 row pt-3">
+                                            <div class="col-7"></div>
+                                            <div class="col-5 text-end">
+                                                <button class="btn btn-primary save-qty">Simpan Perubahan</button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
