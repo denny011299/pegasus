@@ -101,6 +101,18 @@ class ProductController extends Controller
     public function Product(){
         return view('Backoffice.Product.Product');
     }
+
+    function viewInsertProduct() {
+        $param["mode"] =1; // 1 = insert, 2 = update
+        $param["data"] =[];
+        return view('Backoffice.Product.insertProduct')->with($param);
+    }
+
+    function ViewUpdateProduct($id) {
+        $param["mode"]=2; // 1 = insert, 2 = update
+        $param["data"] = (new Product())->getProduct(["product_id"=>$id])[0];
+        return view('Backoffice.Product.insertProduct')->with($param);
+    }
     
     function getProduct(Request $req){
         $data = (new Product())->getProduct();

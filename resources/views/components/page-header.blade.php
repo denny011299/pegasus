@@ -29,8 +29,8 @@
                 @endif
                 @if (Route::is(['product']))
                     <li>
-                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Produk</a>
+                        <a class="btn btn-primary" href="/insertProduct"><i class="fa fa-plus-circle me-2"
+                                aria-hidden="true"></i>Tambah Produk</a>
                     </li>
                 @endif
                 @if (Route::is(['supplies']))

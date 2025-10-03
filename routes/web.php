@@ -114,7 +114,9 @@ Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('g
 Route::get('/product',[ProductController::class,"Product"])->name('product');
 Route::get('/getProduct',[ProductController::class,"getProduct"])->name('getProduct');
 Route::get('/getProductVariant',[ProductController::class,"getProductVariant"])->name('getProductVariant');
+Route::get('/insertProduct', [ProductController::class, "viewInsertProduct"])->name('viewInsertProduct');
 Route::post('/insertProduct', [ProductController::class, "insertProduct"])->name('insertProduct');
+Route::get('/updateProduct/{id}', [ProductController::class, "ViewUpdateProduct"])->name('ViewUpdateProduct');
 Route::post('/updateProduct', [ProductController::class, "updateProduct"])->name('updateProduct');
 Route::post('/deleteProduct', [ProductController::class, "deleteProduct"])->name('deleteProduct');
 

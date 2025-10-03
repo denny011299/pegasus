@@ -244,10 +244,11 @@
         $('#add_supplies .modal-title').html("Update Bahan Mentah");
         $('#add_supplies input').empty().val("");
         $('.is-invalid').removeClass('is-invalid');
-        $('#supplies_unit').val(null);
         $('#supplies_name').val(data.supplies_name);
         $('#supplies_desc').val(data.supplies_desc);
-        $('#supplies_unit').append(`<option value="${data.supplies_unit}">${data.unit_name}</option>`);
+        $('#supplies_unit').empty();
+        $('#supplies_unit').append(`<option value="${data.supplies_unit}" selected>${data.unit_name}</option>`);
+        $('#supplies_unit').val(data.supplies_unit).trigger('change');
         $('#tbVariant').html("");
         data.sup_variant.forEach(element => {
             addRow(element.supplies_variant_name);
@@ -256,10 +257,13 @@
             $('.row-variant').last().find('.variant_barcode').val(element.supplies_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
         });
-        data.units.forEach(element => {
-            var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
-            $('#supplies_unit').append(newOption).trigger('change');
+        data.units.forEach(u => {
+            $('#supplies_unit').append(
+                `<option value="${u.unit_id}">${u.unit_short_name}</option>`
+            );
         });
+        let unitIds = data.units.map(u => u.unit_id);
+        $('#supplies_unit').val(unitIds).trigger('change');
 
         $('.btn-save').html('Simpan perubahan');
         $('#add_supplies').modal("show");
