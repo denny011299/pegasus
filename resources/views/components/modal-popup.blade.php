@@ -350,9 +350,9 @@
                                     <table class="table">
                                         <thead>
                                             <tr>
-                                                <td>Nama Variasi</td>
-                                                <td>SKU</td>
-                                                <td>Harga</td>
+                                                <td>Nama Variasi<span class="text-danger">*</span></td>
+                                                <td>SKU<span class="text-danger">*</span></td>
+                                                <td>Harga<span class="text-danger">*</span></td>
                                                 <td>Barcode</td>
                                                 <td class="text-center" style="width:15%">Aksi</td>
                                             </tr>
@@ -815,19 +815,19 @@
                                     <div class="col-4">
                                         <div class="input-block">
                                             <label>Nama Penerima<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill" id="pdo_penerima">
+                                            <input type="text" class="form-control fill" id="pdo_receiver" placeholder="Input nama penerima">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="pdo_tanggal">
+                                            <input type="date" class="form-control fill" id="pdo_date">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>No. Telepon<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill number-only" id="pdo_telepon">
+                                            <input type="text" class="form-control fill number-only" id="pdo_phone" placeholder="Input nomor telepon">
                                         </div>
                                     </div>
                                 </div>
@@ -835,22 +835,21 @@
                                     <div class="col-6">
                                         <div class="input-block mb-3">
                                             <label>Alamat<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pdo_alamat" cols="30" rows="5"></textarea>
+                                            <textarea class="form-control fill" id="pdo_address" cols="30" rows="3"></textarea>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pdo_keterangan" cols="30" rows="5"></textarea>
+                                            <textarea class="form-control fill" id="pdo_desc" cols="30" rows="3"></textarea>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12">
                                     <table class="table table-center" id="tablePurchaseDelivery">
                                         <thead>
-                                            <th>Produk</th>
+                                            <th>Supplies</th>
                                             <th>SKU</th>
-                                            <th>Kategori</th>
                                             <th>Qty</th>
                                         </thead>
                                         <tbody></tbody>

@@ -110,10 +110,10 @@
                                             </div>
                                         </div>
                                         <div class="col-12">
-                                            <table class="table table-center table-hover" id="tableProduct">
+                                            <table class="table table-center table-hover" id="tableSupplies">
                                                 <thead>
                                                     <th>SKU</th>
-                                                    <th>Produk</th>
+                                                    <th>Supplies</th>
                                                     <th>Qty</th>
                                                     <th>Harga Beli (Rp)</th>
                                                     <th>Subtotal</th>
@@ -169,7 +169,7 @@
                                                 <a class="btn btn-primary btnAddDn"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah Catatan Pengiriman</a>
                                             </div>
                                         </div>
-                                        <div class="col-12 pb-5">
+                                        <div class="table-responsice pb-5">
                                             <table class="table table-center table-hover" id="tableDelivery">
                                                 <thead>
                                                     <th>No. Catatan Pengiriman</th>

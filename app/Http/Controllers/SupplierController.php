@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
+use App\Models\PurchaseOrderDeliveryDetail;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\PurchaseOrderReceipt;
@@ -63,6 +64,33 @@ class SupplierController extends Controller
     function getPoDelivery(Request $req){
         $data = (new PurchaseOrderDelivery())->getPoDelivery();
         return response()->json($data);
+    }
+
+    function insertPoDelivery(Request $req){
+        $data = $req->all();
+        $id = (new PurchaseOrderDelivery())->insertPoDelivery($data);
+        foreach (json_decode($data['pdo_detail'],true) as $key => $value) {
+            $value['pdo_id'] = $id;
+            (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
+        }
+    }
+
+    function updatePoDelivery(Request $req){
+        $data = $req->all();
+        $id = [];
+        (new PurchaseOrderDelivery())->updatePoDelivery($data);
+          foreach (json_decode($data['pdo_detail'],true) as $key => $value) {
+            $value['pdo_id'] = $data["pdo_id"];
+            if(!isset($value["pdod_id"])) $t = (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
+            else $t = (new PurchaseOrderDeliveryDetail())->updatePoDeliveryDetail($value);
+            array_push($id,$t);
+        }
+        PurchaseOrderDeliveryDetail::where('pdo_id','=',$data["pdo_id"])->whereNotIn("pdod_id",$id)->update(["status"=>0]);
+    }
+
+    function deletePoDelivery(Request $req){
+        $data = $req->all();
+        return (new PurchaseOrderDelivery())->deletePoDelivery($data);
     }
 
     function getPoInvoice(Request $req){

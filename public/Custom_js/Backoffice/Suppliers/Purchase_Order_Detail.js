@@ -1,5 +1,7 @@
     var mode=1;
     var tablePr, tableDn, tableInv, tableRcp, tablePrModal;
+    let detail_delivery = []
+
     autocompleteSupplier("#po_supplier",null);
     $(document).ready(function(){
         inisialisasi();
@@ -8,7 +10,7 @@
     });
     
     function inisialisasi() {
-        tablePr = $('#tableProduct').DataTable({
+        tablePr = $('#tableSupplies').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
@@ -16,7 +18,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Produk",
+                searchPlaceholder: "Cari Supplies",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -54,12 +56,12 @@
                 },
             },
             columns: [
-                { data: "pod_id" },
+                { data: "pdo_number" },
                 { data: "date" },
-                { data: "pod_receiver" },
-                { data: "pod_address" },
-                { data: "pod_phone" },
-                { data: "status" },
+                { data: "pdo_receiver" },
+                { data: "pdo_address" },
+                { data: "pdo_phone" },
+                { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -159,10 +161,10 @@
                 for (let i = 0; i < e.length; i++) {
                     
                     e[i].date = moment(e[i].pod_date).format('D MMM YYYY');
-                    if (e[i].pod_status == 1){
-                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Tertunda</span>`;
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Dibuat</span>`;
                     } else if (e[i].pod_status == 2){
-                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Terkirim</span>`;
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
                     }
                     
                     e[i].action = `
@@ -268,11 +270,12 @@
     })
 
     $(document).on('click', '.btnAddDn', function(){
+        mode=1;
         $('#add_purchase_delivery .modal-title').html("Tambah Catatan Pengiriman");
-        $('#add_purchase_delivery input').val("");
+        $('#add_purchase_delivery .form-control').val("");
         $('.is-invalid').removeClass('is-invalid');
         tablePurchaseDelivery();
-        refreshTableProduct();
+        refreshTableProduct(data.items);
         $('#add_purchase_delivery').modal("show");
     })
 
@@ -298,55 +301,46 @@
         }
         tablePrModal = $('#tablePurchaseDelivery').DataTable({
             bFilter: true,
-            sDom: 'fBtlpi',
-            ordering: true,
-            language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Produk",
-                info: "_START_ - _END_ of _TOTAL_ items",
-                paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
-                },
-            },
-            columns: [
-                { data: "name" },
-                { data: "product_variant_sku" },
-                { data: "product_category" },
-                { data: "stock" },
-            ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
-            },
-        });
+            sDom: 'fBtlpi', 
+            ordering: true, 
+            autoWidth: false, 
+            searching: false, 
+            language: { 
+                search: ' ', 
+                sLengthMenu: '_MENU_', 
+                searchPlaceholder: "Cari Supplies", 
+                info: "_START_ - _END_ of _TOTAL_ items", 
+                paginate: { 
+                    next: ' <i class=" fa fa-angle-right"></i>', 
+                    previous: '<i class="fa fa-angle-left"></i> ' 
+                }, 
+            }, 
+            columns: [ 
+                { data: "name", width: "40%" }, 
+                { data: "sku", width: "40%" }, 
+                { data: "stock", width: "20%" }, 
+            ], 
+            initComplete: (settings, json) => { 
+                $('.dataTables_filter').appendTo('#tableSearch'); 
+                $('.dataTables_filter').appendTo('.search-input'); 
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> '); 
+            }, 
+        }); 
     }
 
-    function refreshTableProduct(){
-        $.ajax({
-            url: "/getProductVariant",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                console.log(e);
-                tablePrModal.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].name = `${e[i].pr_name} - ${e[i].product_variant_name}`;
-                    e[i].stock = `<input type="number" class="form-control qtyDn" index="${i+1}" value="${e[i].qty ? e[i].qty : 0}">`;
-                }
+    function refreshTableProduct(e){
+        console.log(e);
+        tablePrModal.clear().draw();
+        // Manipulasi data sebelum dimasukkan ke tabel
+        for (let i = 0; i < e.length; i++) {
+            e[i].stock = `<input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].pod_qty || e[i].pdod_qty}">`;
+            e[i].name = e[i].pod_nama || `${e[i].supplies_name} ${e[i].supplies_variant_name}`;
+            console.log(e[i])
+            e[i].sku = e[i].pod_sku || e[i].pdod_sku;
+        }
 
-                tablePrModal.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                console.error("Gagal load:", err);
-            }
-        });
+        tablePrModal.rows.add(e).draw();
+        feather.replace(); // biar icon feather muncul lagi
     }
 
     // Refresh Summary & Input qty
@@ -408,7 +402,7 @@
 
         $(".qtySummary").each(function() {
             let qty = $(this).val();
-            var search = $('#tableProduct').DataTable().row($(this).parents('tr')).data()
+            var search = $('#tableSupplies').DataTable().row($(this).parents('tr')).data()
             pod_id = search.pod_id;
 
             let item = data.items.find(i => i.pod_id == pod_id);
@@ -443,22 +437,132 @@
         });
     })
 
+    function insertDeliveryDetail(){
+        $('#tablePurchaseDelivery tbody tr').each(function() {
+            var dataDelivery = $('#tablePurchaseDelivery').DataTable().row(this).data(); // pakai this saja
+            if (mode == 1) dataDelivery = dataDelivery.supplies_variant;
+
+            let qty = parseInt($(this).find('.qtyDn').val()) || 0;
+
+            let item = {
+                supplies_variant_id: dataDelivery.supplies_variant_id,
+                pdod_sku: dataDelivery.supplies_variant_sku || dataDelivery.pdod_sku,
+                pdod_qty: qty
+            };
+
+            detail_delivery.push(item);
+        });
+    };
+    
+    $(document).on('click', '.btn-save-delivery', function(){
+        LoadingButton(this);
+        $('.is-invalid').removeClass('is-invalid');
+        var url ="/insertPoDelivery";
+        var valid=1;
+
+        $("#add_purchase_delivery .fill").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save-delivery', 'Simpan perubahan');
+            return false;
+        };
+
+        insertDeliveryDetail();
+
+        param = {
+            pdo_receiver: $('#pdo_receiver').val(),
+            pdo_date: $('#pdo_date').val(),
+            pdo_phone: $('#pdo_phone').val(),
+            pdo_address: $('#pdo_address').val(),
+            pdo_desc: $('#pdo_desc').val(),
+            pdo_detail: JSON.stringify(detail_delivery),
+            _token: token
+        };
+
+        if(mode==2){
+            url="/updatePoDelivery";
+            param.pdo_id = $('#add_purchase_delivery').attr("pdo_id");
+        }
+
+        LoadingButton($(this));
+        $.ajax({
+            url:url,
+            data: param,
+            method:"post",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){      
+                ResetLoadingButton(".btn-save-delivery", 'Simpan perubahan');      
+                afterInsertDelivery();
+            },
+            error:function(e){
+                ResetLoadingButton(".btn-save-delivery", 'Simpan perubahan');
+                console.log(e);
+            }
+        });
+    })
+
+    function afterInsertDelivery() {
+        $(".modal").modal("hide");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Catatan Pengiriman");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Catatan Pengiriman");
+        refresh();
+    }
+
     $(document).on('click', '.btn_edit_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
+        console.log(data);
         mode = 2;
         $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
         $('#add_purchase_delivery input').val("");
         $('.is-invalid').removeClass('is-invalid');
+
+        $('#pdo_receiver').val(data.pdo_receiver);
+        $('#pdo_date').val(data.pdo_date);
+        $('#pdo_phone').val(data.pdo_phone);
+        $('#pdo_address').val(data.pdo_address);
+        $('#pdo_desc').val(data.pdo_desc);
+
         tablePurchaseDelivery();
-        refreshTableProduct();
+        refreshTableProduct(data.items);
+        
         $('.btn-save').html('Simpan perubahan');
         $('#add_purchase_delivery').modal("show");
+        $('#add_purchase_delivery').attr("pdo_id", data.pdo_id);
     })
 
     $(document).on('click', '.btn_delete_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
-        $('#modalDelete').modal("show");
+        showModalDelete("Apakah yakin ingin menghapus catatan pengiriman ini?","btn-delete-delivery");
+        $('#btn-delete-delivery').attr("pdo_id", data.pdo_id);
     })
+
+    $(document).on("click","#btn-delete-delivery",function(){
+        $.ajax({
+            url:"/deletePoDelivery",
+            data:{
+                pdo_id:$('#btn-delete-delivery').attr('pdo_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                refresh();
+                notifikasi('success', "Berhasil Delete", "Berhasil delete catatan pengiriman");
+                
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    });
 
     $(document).on('click', '.btn_edit_inv', function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();

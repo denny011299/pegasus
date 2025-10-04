@@ -6,32 +6,71 @@ use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrderDelivery extends Model
 {
-    protected $table = "purchase_order_deliveries";
-    protected $primaryKey = "pod_id";
+    protected $table = "purchase_delivery_orders";
+    protected $primaryKey = "pdo_id";
     public $timestamps = true;
     public $incrementing = true;
 
     function getPoDelivery($data = []){
-        $data = [
-            [
-                'pod_id' => 1,
-                'pod_date' => '2025-07-20',
-                'pod_receiver' => 'Andi',
-                'pod_address' => 'Jl Maju Lancar 1 no.14',
-                'pod_phone' => '082516727346',
-                'pod_number' => "DN-0001",
-                'pod_status' => 1
-            ],
-            [
-                'pod_id' => 2,
-                'pod_date' => '2025-08-10',
-                'pod_receiver' => 'Susanti',
-                'pod_address' => 'Jl Jaya Negara 2 no.18',
-                'pod_phone' => '081857238874',
-                'pod_number' => "DN-0002",
-                'pod_status' => 2
-            ],
-        ];
-        return $data;
+        $data = array_merge([
+            "pdo_number"   => null,
+            "pdo_receiver"   => null,
+            "pdo_id"   => null,
+            "pdo_date" => null,
+        ], $data);
+
+        $result = PurchaseOrderDelivery::where("status", ">=", 1);
+
+        if ($data["pdo_receiver"])$result->where("pdo_receiver", "like", "%".$data["pdo_receiver"]."%");
+        if ($data["pdo_id"])$result->where("pdo_id", "=", $data["pdo_id"]);
+
+        $result->orderBy("created_at", "asc");
+        $result = $result->get();
+
+        foreach ($result as $key => $value) {
+            $value->items = (new PurchaseOrderDeliveryDetail())->getPoDeliveryDetail(["pdo_id"=>$value->pdo_id]);
+        }
+
+        return $result;
+    }
+   
+    function insertPoDelivery($data)
+    {
+        $t = new PurchaseOrderDelivery();
+        $t->pdo_number   = $this->generatePoDeliveryID();
+        $t->pdo_receiver = $data["pdo_receiver"];
+        $t->pdo_date     = $data["pdo_date"];
+        $t->pdo_phone    = $data["pdo_phone"];
+        $t->pdo_address  = $data["pdo_address"];
+        $t->pdo_desc     = $data["pdo_desc"];
+        $t->save();
+
+        return $t->pdo_id;
+    }
+
+    function updatePoDelivery($data){
+        $t = PurchaseOrderDelivery::find($data["pdo_id"]);
+        $t->pdo_receiver = $data["pdo_receiver"];
+        $t->pdo_date     = $data["pdo_date"];
+        $t->pdo_phone    = $data["pdo_phone"];
+        $t->pdo_address  = $data["pdo_address"];
+        $t->pdo_desc     = $data["pdo_desc"];
+        $t->save();
+
+        return $t->pdo_id;
+    }
+
+    function deletePoDelivery($data){
+        $t = PurchaseOrderDelivery::find($data["pdo_id"]);
+        $t->status = 0; // soft delete
+        $t->save();
+    }
+
+    function generatePoDeliveryID()
+    {
+        $id = self::max('pdo_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "PDO".str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('purchase_order_deliveries', function (Blueprint $table) {
-            $table->integerIncrements('pdo_id');
-            $table->string('pdo_number', 10);
-            $table->string('pdo_receiver', 150);
-            $table->date('pdo_date');
-            $table->string('pdo_phone', 50);
-            $table->text('pdo_address');
-            $table->text('pdo_desc');
+        Schema::create('purchase_order_delivery_details', function (Blueprint $table) {
+            $table->integerIncrements('pdod_id');
+            $table->integer('pdo_id');
+            $table->integer('product_variant_id');
+            $table->string('pdod_sku', 50);
+            $table->integer('category_id');
+            $table->integer('pdod_qty')->default(0);
             $table->tinyInteger('status')->default(1);
             $table->timestamps();
         });
@@ -29,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('purchase_order_deliveries');
+        Schema::dropIfExists('purchase_order_delivery_details');
     }
 };

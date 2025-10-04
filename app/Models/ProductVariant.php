@@ -55,6 +55,7 @@ class ProductVariant extends Model
             $variant->pr_name = $p ? $p->product_name : "-";
             $variant->product_unit = $u ? $u->unit_name : "-";
             $variant->product_category = Category::find($p->category_id)->category_name ?? "-";
+            $variant->category_id = $p->category_id;
             $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit,true))->get();
 
             // Get nama unit default

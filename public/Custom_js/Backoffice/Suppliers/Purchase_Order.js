@@ -190,7 +190,7 @@
     }
 
     $(document).on("click",".btn-save",function(){
-       // LoadingButton(this);
+        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         var url ="/insertPurchaseOrder";
         var valid=1;
