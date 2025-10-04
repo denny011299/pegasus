@@ -64,7 +64,7 @@
                          }
                     });
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].pr_id}" data-bs-target="#edit-category">
+                        <a href="/updateProduct/${e[i].product_id}" class="me-2 btn-action-icon p-2 " >
                             <i class="fe fe-edit"></i>
                         </a>
                         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].pr_id}" href="javascript:void(0);">

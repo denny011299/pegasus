@@ -10,7 +10,7 @@
                     <div class="page-header">
                         <div class="content-page-header">
                             <div class="d-flex justify-content-between w-100">
-                                <h4>Tambah Produk</h4>
+                                <h4>{{$title}}</h4>
                                 <button class="btn btn-back">Kembali</button>
                             </div>
                         </div>
@@ -85,6 +85,8 @@
                                                 </tbody>
                                             </table>
                                         </div>
+
+                                        
                                     </div>
                                 </div>
                                 <div class="add-customer-btns text-end">
@@ -94,6 +96,35 @@
                             </form>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal " tabindex="-1" id="modalRelasi" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Atur Relasi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <table class="table table-bordered mb-2">
+                            <thead>
+                                <tr>
+                                    <td>Name Unit 1</td>
+                                    <td>Name Unit 2</td>
+                                </tr>
+                            </thead>
+                            <tbody class="tbRelasi" id="tbRelasi">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary ms-2" id="btnSaveRelasi">Save changes</button>
                 </div>
             </div>
         </div>

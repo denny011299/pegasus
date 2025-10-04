@@ -105,12 +105,14 @@ class ProductController extends Controller
     function viewInsertProduct() {
         $param["mode"] =1; // 1 = insert, 2 = update
         $param["data"] =[];
+        $param["title"] = "Insert Produk";
         return view('Backoffice.Product.insertProduct')->with($param);
     }
 
     function ViewUpdateProduct($id) {
         $param["mode"]=2; // 1 = insert, 2 = update
         $param["data"] = (new Product())->getProduct(["product_id"=>$id])[0];
+        $param["title"] = "Update Produk";
         return view('Backoffice.Product.insertProduct')->with($param);
     }
     
@@ -118,41 +120,52 @@ class ProductController extends Controller
         $data = (new Product())->getProduct();
         return $data;
     }
+
     function insertProduct(Request $req){
         $data = $req->all();
         $id = (new Product())->insertProduct($data);
-
-        foreach (json_decode($data['product_variant'],true) as $key => $value) {
+        $variant = json_decode($data['product_variant'],true);
+        $relasi = json_decode($data['product_relasi'],true);
+        foreach ($variant as $key => $value) {
             $value['product_id'] = $id;
-            (new ProductVariant())->insertProductVariant($value);
+            $variant[$key]["product_variant_id"] = (new ProductVariant())->insertProductVariant($value);
         }
 
-        foreach (json_decode($data['product_relasi'],true) as $key => $value) {
-            $value['product_id'] = $id;
-            (new ProductRelation())->insertProductRelation($value);
+        foreach ( $relasi as $keyRelasi => $value) {
+            foreach ($value as $key => $perVariant) {
+                $perVariant['product_id'] = $id;
+                $perVariant['product_variant_id'] = $variant[$keyRelasi]['product_variant_id'];
+                (new ProductRelation())->insertProductRelation($perVariant);
+            }
         }
-         (new ProductStock())->syncStock($id);
+        
+        (new ProductStock())->syncStock($id);
     }
 
     function updateProduct(Request $req){
         $data = $req->all();
         $id = [];
+        $variant = json_decode($data['product_variant'],true);
         (new Product())->updateProduct($data);
-        foreach (json_decode($data['product_variant'],true) as $key => $value) {
+        foreach ($variant as $key => $value) {
             $value['product_id'] = $data["product_id"];
             if(!isset($value["product_variant_id"])) $t = (new ProductVariant())->insertProductVariant($value);
             else $t = (new ProductVariant())->updateProductVariant($value);
+            $variant[$key]["product_variant_id"] = $t;
             array_push($id,$t);
         }
         ProductVariant::where('product_id','=',$data["product_id"])->whereNotIn("product_variant_id",$id)->update(["status"=>0]);
+        $id= [];
+        foreach (json_decode($data['product_relasi'],true) as $keyRelasi => $value) {
+            foreach ($value as $key => $perVariant) {
+                $perVariant['product_variant_id'] = $variant[$keyRelasi]['product_variant_id'];
+                if(!isset($perVariant["pr_id"])) $t = (new ProductRelation())->insertProductRelation($perVariant);
+                else $t = (new ProductRelation())->updateProductRelation($perVariant);
+                array_push($id,$t);
+            }
             
-        foreach (json_decode($data['product_relasi'],true) as $key => $value) {
-            $value['product_id'] = $data["product_id"];
-            if(!isset($value["pr_id"])) $t = (new ProductRelation())->insertProductRelation($value);
-            else $t = (new ProductRelation())->updateProductRelation($value);
-            array_push($id,$t);
         }
-        ProductRelation::where('product_id','=',$data["product_id"])->whereNotIn("pr_id",$id)->update(["status"=>0]);
+        ProductRelation::whereNotIn("pr_id",$id)->update(["status"=>0]);
 
     }
 
