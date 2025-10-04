@@ -33,7 +33,7 @@ class ProductRelation extends Model
     function insertProductRelation($data)
     {
         $t = new self();
-        $t->product_id = $data["product_id"];
+        $t->product_variant_id = $data["product_variant_id"];
         $t->pr_unit_id_1 = $data["unit_id_1"];
         $t->pr_unit_value_1 = $data["unit_value_1"];
         $t->pr_unit_id_2 = $data["unit_id_2"];
@@ -45,7 +45,7 @@ class ProductRelation extends Model
     function updateProductRelation($data)
     {
         $t = self::find($data["pr_id"]);
-        $t->product_id = $data["product_id"];
+        $t->product_variant_id = $data["product_variant_id"];
         $t->pr_unit_id_1 = $data["unit_id_1"];
         $t->pr_unit_value_1 = $data["unit_value_1"];
         $t->pr_unit_id_2 = $data["unit_id_2"];

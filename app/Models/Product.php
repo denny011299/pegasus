@@ -16,6 +16,7 @@ class Product extends Model
         $data = array_merge([
             "product_name" => null,
             "category_id"  => null,
+            "product_id"  => null,
         ], $data);
 
         $result = Product::where("status", "=", 1);
@@ -27,6 +28,9 @@ class Product extends Model
         if ($data["category_id"]) {
             $result->where("category_id", "=", $data["category_id"]);
         }
+        if ($data["product_id"]) {
+            $result->where("product_id", "=", $data["product_id"]);
+        }
 
         $result->orderBy("created_at", "asc");
         $result= $result->get();
@@ -34,7 +38,7 @@ class Product extends Model
             $value->product_unit = json_decode($value->product_unit);
             $value->pr_unit = Unit::whereIn('unit_id', $value->product_unit)->get();
             $value->pr_variant = (new ProductVariant())->getProductVariant(['product_id'=>$value->product_id]);
-            $value->pr_relasi = (new ProductRelation())->getProductRelation(['product_id'=>$value->product_id]);
+            //$value->pr_relasi = (new ProductRelation())->getProductRelation(['product_id'=>$value->product_id]);
             $value->product_category = Category::find($value->category_id)->category_name ?? "-";
         }
         return $result;
