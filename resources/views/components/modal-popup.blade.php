@@ -148,120 +148,6 @@
     </div>
 @endif
 
-@if (Route::is(['product']))
-    <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_product" role="dialog" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Produk</h4>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
-                </div>
-                <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-4">
-                                    <div class="input-block mb-3">
-                                        <label>Nama<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="product_name"
-                                            placeholder="Input Nama Produk">
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-block mb-3">
-                                        <label>Kategori<span class="text-danger">*</span></label>
-                                        <select class="form-select fill select2" id="product_category">
-										</select>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-block mb-3">
-                                        <label>Satuan<span class="text-danger">*</span></label>
-                                        <div class="container-satuan">
-                                            <select class="form-control fill" id="product_unit"  name="product_unit[]" ></select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-3">
-                                    <div class="input-block mb-3">
-                                        <label>Default Unit<span class="text-danger">*</span></label>
-                                        <select class="form-select fill select2" id="unit_id">
-										</select>
-                                    </div>
-                                </div>
-                                <hr>
-                                <div class="row mb-3">
-                                    <div class="col-8">
-                                        <label>Variasi Produk</label>
-                                    </div>
-                                    <div class="col-4 text-end">
-                                        <div class="row">
-                                            <div class="col-9">
-                                                <select name="" id="product_variant" class="form-select select2">
-                                                </select>
-                                            </div>
-                                            <div class="col-3">
-                                                 <button type="button" class="btn btn-primary btnAddRow"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i></button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="table-responsive">
-
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <td>Nama Variasi</td>
-                                                <td>SKU</td>
-                                                <td>Harga</td>
-                                                <td>Barcode</td>
-                                                <td>Stock Alert</td>
-                                                <td class="text-center" style="width:15%">Aksi</td>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tbVariant">
-                                           
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <hr>
-                            <div class="col-12">
-                                <div class="input-block mb-3">
-                                    <label>Relasi Unit<span class="text-danger">*</span></label>
-                                    <table class="table">
-                                        <thead>
-                                            <tr>
-                                                <td>Name Unit 1</td>
-                                                <td>Name Unit 2</td>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tbRelasi">
-                                           
-                                        </tbody>
-                                    </table>
-                                   
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Produk</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-@endif
-
 @if (Route::is(['productIssue']))
     <!-- Add coupons -->
     <div class="modal fade" id="add-product-issues">
@@ -929,19 +815,19 @@
                                     <div class="col-4">
                                         <div class="input-block">
                                             <label>Nama Penerima<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill" id="pod_name">
+                                            <input type="text" class="form-control fill" id="pdo_penerima">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="pod_date">
+                                            <input type="date" class="form-control fill" id="pdo_tanggal">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>No. Telepon<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill number-only" id="pod_phone">
+                                            <input type="text" class="form-control fill number-only" id="pdo_telepon">
                                         </div>
                                     </div>
                                 </div>
@@ -949,13 +835,13 @@
                                     <div class="col-6">
                                         <div class="input-block mb-3">
                                             <label>Alamat<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pod_address" cols="30" rows="5"></textarea>
+                                            <textarea class="form-control fill" id="pdo_alamat" cols="30" rows="5"></textarea>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pod_desc" cols="30" rows="5"></textarea>
+                                            <textarea class="form-control fill" id="pdo_keterangan" cols="30" rows="5"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -977,7 +863,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Simpan Perubahan</button>
+                            class="btn btn-primary paid-continue-btn btn-save-delivery">Simpan Perubahan</button>
                     </div>
                 </form>
             </div>

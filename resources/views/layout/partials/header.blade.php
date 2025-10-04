@@ -49,7 +49,7 @@
     <!-- Header Menu -->
     <ul class="nav nav-tabs user-menu">
         <li class="nav-item dropdown-heads">
-            <a class="nav-link" href="/stock" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Stok Barang">
+            <a class="nav-link" href="/stockProduct" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Stok Barang">
                 <i class="fe fe-layers"></i>
             </a>
         </li>

@@ -62,6 +62,12 @@ class ProductVariant extends Model
             $v = Unit::find($p->unit_id);
             $variant->unit_id = $v->unit_id;
             $variant->unit_name = $v->unit_name;
+
+            // Get stock
+            $s = ProductStock::where('product_variant_id', $variant->product_variant_id)
+                ->where('unit_id', $variant->unit_id)
+                ->first();
+            $variant->ps_stock = $s ? $s->ps_stock : 0;
         }
 
         return $variants;

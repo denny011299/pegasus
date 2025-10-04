@@ -26,9 +26,9 @@
             columns: [
                 { data: "pod_sku" },
                 { data: "pod_nama" },
-                { data: "pod_qty",class:"text-center"   },
+                { data: "qty",class:"text-center"   },
                 { data: "pod_harga_text",class:"text-end"  },
-                { data: "pod_subtotal_text",class:"text-end" },
+                { data: "pod_subtotal_text",class:"text-end subtotal" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -135,10 +135,12 @@
         tablePr.clear().draw(); 
         // Manipulasi data sebelum masuk ke tabel
 
-        data.items.forEach(element => {
-           element.pod_nama += ` ${element.pod_variant}`;
-           element.pod_harga_text = formatRupiah(element.pod_harga,"Rp.");
-           element.pod_subtotal_text = formatRupiah(element.pod_subtotal,"Rp.");
+        data.items.forEach((element, index) => {
+            element.qty = `
+                <input type="number" class="form-control text-center qtySummary" data-price="${element.pod_harga}" index="${index}" value="${element.pod_qty}">
+            `;
+            element.pod_harga_text = formatRupiah(element.pod_harga,"Rp.");
+            element.pod_subtotal_text = formatRupiah(element.pod_subtotal,"Rp.");
         });
 
         tablePr.rows.add(data.items).draw();
@@ -155,6 +157,7 @@
                 tableDn.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
+                    
                     e[i].date = moment(e[i].pod_date).format('D MMM YYYY');
                     if (e[i].pod_status == 1){
                         e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Tertunda</span>`;
@@ -308,10 +311,10 @@
                 },
             },
             columns: [
-                { data: "pr_name" },
-                { data: "pr_sku" },
-                { data: "pr_category" },
-                { data: "pr_qty" },
+                { data: "name" },
+                { data: "product_variant_sku" },
+                { data: "product_category" },
+                { data: "stock" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -323,7 +326,7 @@
 
     function refreshTableProduct(){
         $.ajax({
-            url: "/getProduct",
+            url: "/getProductVariant",
             method: "get",
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -333,7 +336,8 @@
                 tablePrModal.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].pr_qty = 2;
+                    e[i].name = `${e[i].pr_name} - ${e[i].product_variant_name}`;
+                    e[i].stock = `<input type="number" class="form-control qtyDn" index="${i+1}" value="${e[i].qty ? e[i].qty : 0}">`;
                 }
 
                 tablePrModal.rows.add(e).draw();
@@ -344,6 +348,100 @@
             }
         });
     }
+
+    // Refresh Summary & Input qty
+    $(document).on('blur', '.qtySummary', function () {
+        const index = $(this).data('index');
+        let qty = parseInt($(this).val());
+        let price = parseInt($(this).data('price'));
+        let subtotal = qty * price;
+        console.log($(this).closest('tr').find('.subtotal'))
+        $(this).closest('tr').find('.subtotal').html(formatRupiah(subtotal, 'Rp '));
+        updateTotal();
+    });
+
+    function updateTotal() {
+        let total = 0;
+        $(".subtotal").each(function () {
+            total += parseInt($(this).text().replace(/[^0-9]/g, "")) || 0;
+            console.log(total)
+        });
+        $("#value_total").html(formatRupiah(total, 'Rp '));
+        grandTotal()
+    }
+
+    function grandTotal(){
+        var total = convertToAngka($('#value_total').html());
+        var ppn = convertToAngka($('#value_ppn').html());
+        var discount = convertToAngka($('#value_discount').html());
+        var cost = convertToAngka($('#value_cost').html());
+        var grand = total + ppn - discount + cost;
+        $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
+    }
+
+    $(document).on('click', '.save-qty', function(){
+        LoadingButton(this);
+        $(".is-invalid").removeClass("is-invalid");
+        console.log(data)
+        var url = "/updatePurchaseOrderDetail";
+        var valid = 1;
+        $(".qtySummary").each(function () {
+            if (
+                $(this).val() == null ||
+                $(this).val() == "null" ||
+                $(this).val() == ""
+            ) {
+                valid = -1;
+                $(this).addClass("is-invalid");
+            }
+        });
+
+        if (valid == -1) {
+            notifikasi(
+                "error",
+                "Gagal Insert",
+                "Silahkan cek kembali inputan anda"
+            );
+            ResetLoadingButton('.save-qty', 'Save changes');
+            return false;
+        }
+
+        $(".qtySummary").each(function() {
+            let qty = $(this).val();
+            var search = $('#tableProduct').DataTable().row($(this).parents('tr')).data()
+            pod_id = search.pod_id;
+
+            let item = data.items.find(i => i.pod_id == pod_id);
+            if (item) {
+                item.pod_qty = qty;
+                item.pod_subtotal = parseInt(item.pod_harga) * parseInt(qty);
+            }
+        });
+        console.log(data.items);
+        param = {
+            po_detail: JSON.stringify(data.items),
+            _token:token
+        };
+
+        LoadingButton($(this));
+        $.ajax({
+            url:url,
+            data: param,
+            method:"post",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){      
+                ResetLoadingButton(".save-qty", 'Simpan perubahan');      
+                notifikasi('success', 'Berhasil Update', 'Berhasil Update Qty');
+                refresh();
+            },
+            error:function(e){
+                ResetLoadingButton(".save-qty", 'Simpan perubahan');
+                console.log(e);
+            }
+        });
+    })
 
     $(document).on('click', '.btn_edit_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
@@ -413,7 +511,7 @@
 
     
 $(document).on("click", ".btn-save-invoice", function () {
-    //LoadingButton(this);
+    LoadingButton(this);
     $(".is-invalid").removeClass("is-invalid");
     var url = "/insertInvoicePO";
     var valid = 1;
@@ -434,7 +532,7 @@ $(document).on("click", ".btn-save-invoice", function () {
             "Gagal Insert",
             "Silahkan cek kembali inputan anda"
         );
-        // ResetLoadingButton('.btn-save', 'Save changes');
+        ResetLoadingButton('.btn-save', 'Save changes');
         return false;
     }
 
@@ -447,7 +545,7 @@ $(document).on("click", ".btn-save-invoice", function () {
         _token: token,
     };
     console.log(param);
-    //LoadingButton($(this));
+    LoadingButton($(this));
 
     if (mode == 2) {
         url = "/updateInvoicePO";
