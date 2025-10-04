@@ -131,103 +131,6 @@
         });
     }
 
-    $(document).on('blur', '.qtySummary', function(){
-
-    })
-
-    $(document).on('blur', '.qtySummary', function () {
-        const index = $(this).data('index');
-        let qty = parseInt($(this).val());
-        let price = parseInt($(this).data('price'));
-        let subtotal = qty * price;
-        console.log($(this).closest('tr').find('.subtotal'))
-        $(this).closest('tr').find('.subtotal').html(formatRupiah(subtotal, 'Rp '));
-        updateTotal();
-    });
-
-    function updateTotal() {
-        let total = 0;
-        $(".subtotal").each(function () {
-            total += parseInt($(this).text().replace(/[^0-9]/g, "")) || 0;
-            console.log(total)
-        });
-        $("#value_total").html(formatRupiah(total, 'Rp '));
-        grandTotal()
-    }
-
-    function grandTotal(){
-        var total = convertToAngka($('#value_total').html());
-        var ppn = convertToAngka($('#value_ppn').html());
-        var discount = convertToAngka($('#value_discount').html());
-        var cost = convertToAngka($('#value_cost').html());
-        var grand = total + ppn - discount + cost;
-        $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
-    }
-
-    $(document).on('click', '.save-qty', function(){
-        LoadingButton(this);
-        $(".is-invalid").removeClass("is-invalid");
-        console.log(data)
-        var url = "/updatePurchaseOrderDetail";
-        var valid = 1;
-        $(".qtySummary").each(function () {
-            if (
-                $(this).val() == null ||
-                $(this).val() == "null" ||
-                $(this).val() == ""
-            ) {
-                valid = -1;
-                $(this).addClass("is-invalid");
-            }
-        });
-
-        if (valid == -1) {
-            notifikasi(
-                "error",
-                "Gagal Insert",
-                "Silahkan cek kembali inputan anda"
-            );
-            ResetLoadingButton('.save-qty', 'Save changes');
-            return false;
-        }
-
-        $(".qtySummary").each(function() {
-            let qty = $(this).val();
-            var search = $('#tableProduct').DataTable().row($(this).parents('tr')).data()
-            pod_id = search.pod_id;
-
-            let item = data.items.find(i => i.pod_id == pod_id);
-            if (item) {
-                item.pod_qty = qty;
-                item.pod_subtotal = parseInt(item.pod_harga) * parseInt(qty);
-            }
-        });
-        console.log(data.items);
-        param = {
-            po_detail: JSON.stringify(data.items),
-            _token:token
-        };
-
-        LoadingButton($(this));
-        $.ajax({
-            url:url,
-            data: param,
-            method:"post",
-            headers: {
-                'X-CSRF-TOKEN': token
-            },
-            success:function(e){      
-                ResetLoadingButton(".save-qty", 'Simpan perubahan');      
-                notifikasi('success', 'Berhasil Update', 'Berhasil Update Qty');
-                refresh();
-            },
-            error:function(e){
-                ResetLoadingButton(".save-qty", 'Simpan perubahan');
-                console.log(e);
-            }
-        });
-    })
-
     function refresh() {
         tablePr.clear().draw(); 
         // Manipulasi data sebelum masuk ke tabel
@@ -445,6 +348,100 @@
             }
         });
     }
+
+    // Refresh Summary & Input qty
+    $(document).on('blur', '.qtySummary', function () {
+        const index = $(this).data('index');
+        let qty = parseInt($(this).val());
+        let price = parseInt($(this).data('price'));
+        let subtotal = qty * price;
+        console.log($(this).closest('tr').find('.subtotal'))
+        $(this).closest('tr').find('.subtotal').html(formatRupiah(subtotal, 'Rp '));
+        updateTotal();
+    });
+
+    function updateTotal() {
+        let total = 0;
+        $(".subtotal").each(function () {
+            total += parseInt($(this).text().replace(/[^0-9]/g, "")) || 0;
+            console.log(total)
+        });
+        $("#value_total").html(formatRupiah(total, 'Rp '));
+        grandTotal()
+    }
+
+    function grandTotal(){
+        var total = convertToAngka($('#value_total').html());
+        var ppn = convertToAngka($('#value_ppn').html());
+        var discount = convertToAngka($('#value_discount').html());
+        var cost = convertToAngka($('#value_cost').html());
+        var grand = total + ppn - discount + cost;
+        $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
+    }
+
+    $(document).on('click', '.save-qty', function(){
+        LoadingButton(this);
+        $(".is-invalid").removeClass("is-invalid");
+        console.log(data)
+        var url = "/updatePurchaseOrderDetail";
+        var valid = 1;
+        $(".qtySummary").each(function () {
+            if (
+                $(this).val() == null ||
+                $(this).val() == "null" ||
+                $(this).val() == ""
+            ) {
+                valid = -1;
+                $(this).addClass("is-invalid");
+            }
+        });
+
+        if (valid == -1) {
+            notifikasi(
+                "error",
+                "Gagal Insert",
+                "Silahkan cek kembali inputan anda"
+            );
+            ResetLoadingButton('.save-qty', 'Save changes');
+            return false;
+        }
+
+        $(".qtySummary").each(function() {
+            let qty = $(this).val();
+            var search = $('#tableProduct').DataTable().row($(this).parents('tr')).data()
+            pod_id = search.pod_id;
+
+            let item = data.items.find(i => i.pod_id == pod_id);
+            if (item) {
+                item.pod_qty = qty;
+                item.pod_subtotal = parseInt(item.pod_harga) * parseInt(qty);
+            }
+        });
+        console.log(data.items);
+        param = {
+            po_detail: JSON.stringify(data.items),
+            _token:token
+        };
+
+        LoadingButton($(this));
+        $.ajax({
+            url:url,
+            data: param,
+            method:"post",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){      
+                ResetLoadingButton(".save-qty", 'Simpan perubahan');      
+                notifikasi('success', 'Berhasil Update', 'Berhasil Update Qty');
+                refresh();
+            },
+            error:function(e){
+                ResetLoadingButton(".save-qty", 'Simpan perubahan');
+                console.log(e);
+            }
+        });
+    })
 
     $(document).on('click', '.btn_edit_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();

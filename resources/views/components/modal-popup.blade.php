@@ -815,19 +815,19 @@
                                     <div class="col-4">
                                         <div class="input-block">
                                             <label>Nama Penerima<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill" id="pod_name">
+                                            <input type="text" class="form-control fill" id="pdo_penerima">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="pod_date">
+                                            <input type="date" class="form-control fill" id="pdo_tanggal">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>No. Telepon<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill number-only" id="pod_phone">
+                                            <input type="text" class="form-control fill number-only" id="pdo_telepon">
                                         </div>
                                     </div>
                                 </div>
@@ -835,13 +835,13 @@
                                     <div class="col-6">
                                         <div class="input-block mb-3">
                                             <label>Alamat<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pod_address" cols="30" rows="5"></textarea>
+                                            <textarea class="form-control fill" id="pdo_alamat" cols="30" rows="5"></textarea>
                                         </div>
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pod_desc" cols="30" rows="5"></textarea>
+                                            <textarea class="form-control fill" id="pdo_keterangan" cols="30" rows="5"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -863,7 +863,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Simpan Perubahan</button>
+                            class="btn btn-primary paid-continue-btn btn-save-delivery">Simpan Perubahan</button>
                     </div>
                 </form>
             </div>

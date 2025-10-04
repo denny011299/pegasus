@@ -22,7 +22,7 @@
             },
             columns: [
                 { data: "product_variant_sku" },
-                { data: "product_name" },
+                { data: "pr_name" },
                 { data: "product_variant_name" },
                 { data: "product_category" },
                 { data: "product_variant_stock_text" },
@@ -49,10 +49,11 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].product_variant_stock_text="";
-                   e[i].stock.forEach((element,index) => {
+                    e[i].stock.forEach((element,index) => {
                             e[i].product_variant_stock_text += `${element.ps_stock} ${element.unit_name}`;
                             if(index<e[i].stock.length-1)e[i].product_variant_stock_text +=", ";
                         });
+                    if (e[i].product_variant_stock_text=="") e[i].product_variant_stock_text="-"
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].stk_id}" data-bs-target="#edit-category">
                             <i class="fe fe-edit"></i>
