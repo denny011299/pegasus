@@ -98,19 +98,25 @@
                                             </div>
                                         </div>
                                         <hr>
-                                        <div class="row mb-3">
-                                            <div class="col-8">
+                                       <div class="row mb-3">
+                                            <div class="col-12">
                                                 <label>Variasi Produk</label>
                                             </div>
-                                            <div class="col-4 text-end">
-                                                <div class="row">
-                                                    <div class="col-9">
-                                                        <select name="" id="product_variant" class="form-select select2">
+
+                                            <div class="col-12 d-lg-flex align-items-center">
+                                                
+                                                <div class="col-12 col-lg-3 offset-lg-7 mb-2 mb-lg-0">
+                                                    <select name="" id="product_variant" class="form-select select2">
+                                                        <option value="">Pilih Variasi</option>
                                                         </select>
-                                                    </div>
-                                                    <div class="col-3">
-                                                        <button type="button" class="btn btn-primary btnAddRow"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i></button>
-                                                    </div>
+                                                </div>
+
+                                                <div class="col-12 col-lg-2 text-start text-lg-end">
+                                                    <button type="button" class="btn btn-primary btnAddRow w-100 w-lg-auto">
+                                                        <i class="fa fa-plus-circle me-2 d-lg-inline" aria-hidden="true"></i> 
+                                                        <span class="d-none d-lg-inline">Tambah</span>
+                                                        <span class="d-inline d-lg-none">Tambah Variasi</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
