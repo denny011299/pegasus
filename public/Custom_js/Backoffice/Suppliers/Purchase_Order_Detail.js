@@ -725,3 +725,7 @@ $(document).on("click", ".btn-save-invoice", function () {
             }
         });
     });
+    
+    $(document).on("click","#btnAddTerima",function(){
+        $('#modalTerima').modal("show");
+    });

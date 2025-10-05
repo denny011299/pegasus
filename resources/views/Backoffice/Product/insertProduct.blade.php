@@ -1,6 +1,27 @@
 @extends('layout.mainlayout')
 
 @section('content')
+<style>
+    @media (max-width: 767.98px) {
+    /* Target tabel variasi di halaman update product */
+    #productVariantTable input.form-control {
+        /* Memaksa input memiliki lebar minimum agar tidak terlalu kecil */
+        min-width: 100px; 
+    }
+    
+    /* Memastikan sel (td) tabel tidak terlalu menekan konten */
+    #productVariantTable td {
+        white-space: nowrap; /* Mencegah teks/input membungkus, memaksa scroll horizontal */
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+    }
+
+    /* Memastikan header tabel juga tidak membungkus */
+    #productVariantTable th {
+        white-space: nowrap;
+    }
+}
+</style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -21,21 +42,21 @@
                             <form action="#">
                                 <div class="form-group-item">
                                     <div class="row">
-                                        <div class="col-4">
+                                        <div class="col-12 col-md-4">
                                             <div class="input-block mb-3">
                                                 <label>Nama<span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="product_name"
                                                     placeholder="Input Nama Produk">
                                             </div>
                                         </div>
-                                        <div class="col-4">
+                                        <div class="col-12 col-md-4">
                                             <div class="input-block mb-3">
                                                 <label>Kategori<span class="text-danger">*</span></label>
                                                 <select class="form-select fill select2" id="product_category">
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-4">
+                                        <div class="col-12 col-md-4">
                                             <div class="input-block mb-3">
                                                 <label>Satuan<span class="text-danger">*</span></label>
                                                 <div class="container-satuan">
@@ -43,7 +64,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-3">
+                                        <div class="col-12 col-md-3">
                                             <div class="input-block mb-3">
                                                 <label>Default Unit<span class="text-danger">*</span></label>
                                                 <select class="form-select fill select2" id="unit_id">
@@ -69,7 +90,7 @@
                                         </div>
                                         <div class="table-responsive">
 
-                                            <table class="table">
+                                            <table class="table" id="productVariantTable">
                                                 <thead>
                                                     <tr>
                                                         <td>Nama Variasi</td>
@@ -137,5 +158,5 @@
         var mode="{{$mode}}";
         var data=@json($data);
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Product/insertProduct.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Product/insertProduct.js')}}?v={{time()}}"></script>
 @endsection

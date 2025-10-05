@@ -795,11 +795,10 @@
         </div>
     </div>
 @endif
-
 @if (Route::is(['purchaseOrderDetail']))
-    <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_purchase_delivery" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+    <!-- modal: Tambah Delivery Notes -->
+    <div class="modal fade custom-modal" id="add_purchase_delivery" role="dialog" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title text-start mb-0">
@@ -810,68 +809,68 @@
                 <form action="#">
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-12 row">
-                                    <div class="col-4">
-                                        <div class="input-block">
-                                            <label>Nama Penerima<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill" id="pdo_receiver" placeholder="Input nama penerima">
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="input-block mb-3">
-                                            <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="pdo_date">
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="input-block mb-3">
-                                            <label>No. Telepon<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill number-only" id="pdo_phone" placeholder="Input nomor telepon">
-                                        </div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <div class="input-block">
+                                        <label>Nama Penerima<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="pdo_receiver" placeholder="Input nama penerima">
                                     </div>
                                 </div>
-                                <div class="col-12 row">
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Alamat<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pdo_address" cols="30" rows="3"></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Keterangan<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="pdo_desc" cols="30" rows="3"></textarea>
-                                        </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="input-block">
+                                        <label>Tanggal<span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control fill" id="pdo_date">
                                     </div>
                                 </div>
+                                <div class="col-12 col-md-4">
+                                    <div class="input-block">
+                                        <label>No. Telepon<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill number-only" id="pdo_phone" placeholder="Input nomor telepon">
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="input-block">
+                                        <label>Alamat<span class="text-danger">*</span></label>
+                                        <textarea class="form-control fill" id="pdo_address" rows="3" placeholder="Alamat penerima"></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="input-block">
+                                        <label>Keterangan<span class="text-danger">*</span></label>
+                                        <textarea class="form-control fill" id="pdo_desc" rows="3" placeholder="Keterangan pengiriman"></textarea>
+                                    </div>
+                                </div>
+
                                 <div class="col-12">
-                                    <table class="table table-center" id="tablePurchaseDelivery">
-                                        <thead>
-                                            <th>Supplies</th>
-                                            <th>SKU</th>
-                                            <th>Qty</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-center table-bordered align-middle" id="tablePurchaseDelivery">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Supplies</th>
+                                                    <th>SKU</th>
+                                                    <th>Qty</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save-delivery">Simpan Perubahan</button>
+                    <div class="modal-footer d-flex justify-content-end">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-2">Batal</button>
+                        <button type="button" class="btn btn-primary btn-save-delivery">Simpan Perubahan</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_purchase_invoice" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+    <!-- modal: Tambah Faktur Pembelian -->
+    <div class="modal fade custom-modal" id="add_purchase_invoice" role="dialog" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title text-start mb-0">
@@ -882,44 +881,43 @@
                 <form action="#">
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
+                            <div class="row g-3">
                                 <div class="col-12">
                                     <div class="input-block">
                                         <label>Nomor Faktur<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="poi_code">
+                                        <input type="text" class="form-control fill" id="poi_code" placeholder="Masukkan nomor faktur">
                                     </div>
                                 </div>
-                                <div class="col-12 row">
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Tanggal Faktur<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="poi_date">
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Jatuh Tempo<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="poi_due">
-                                        </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="input-block">
+                                        <label>Tanggal Faktur<span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control fill" id="poi_date">
                                     </div>
                                 </div>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="input-block">
+                                        <label>Jatuh Tempo<span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control fill" id="poi_due">
+                                    </div>
+                                </div>
+
                                 <div class="col-12">
                                     <div class="input-block">
                                         <label>Jumlah<span class="text-danger">*</span></label>
-                                        <div class="input-group mb-3">
-                                            <span class="input-group-text">Rp </span>
-                                            <input type="text" class="form-control fill number_only" id="poi_total" value="0" placeholder="20.000">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" class="form-control fill number_only" id="poi_total" value="0" placeholder="Masukkan jumlah">
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save btn-save-invoice">Tambah Faktur</button>
+                    <div class="modal-footer d-flex justify-content-end">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-2">Batal</button>
+                        <button type="button" class="btn btn-primary btn-save-invoice">Tambah Faktur</button>
                     </div>
                 </form>
             </div>
@@ -1358,6 +1356,59 @@
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Wilayah</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+@endif
+
+@if (Route::is(['purchaseOrderDetail']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="modalTerima" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Penerbitan Tanda Terima</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="container-fluid">
+                            <label>Detail Barang</label>
+                            <small class="text-muted">Berikut adalah detail barang yang dipesan berdasarkan surat jalan</small>
+                            
+                            <table class="table table-center mt-2" id="tablePurchaseDelivery">
+                                        <thead>
+                                            <th>Supplies</th>
+                                            <th>SKU</th>
+                                            <th>Qty</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                            <label class="my-2">Detail Faktur</label>
+                            <table class="table table-center table-hover" id="tableInvoice">
+                                <thead>
+                                    <th style="width:15%">Tgl. Pesanan</th>
+                                    <th style="width:15%">Tgl. Jatuh Tempo</th>
+                                    <th>No. Faktur</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                    <th class="no-sort text-center">Aksi</th>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Konfirmasi Penerimaan</button>
                     </div>
                 </form>
             </div>

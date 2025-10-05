@@ -8,6 +8,9 @@
     
     function inisialisasi() {
         table = $('#tableProduct').DataTable({
+            responsive: true,
+            scrollX: true,
+            autoWidth: false,
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,

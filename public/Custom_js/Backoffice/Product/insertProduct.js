@@ -112,10 +112,10 @@ function addRow(names="",idx=0) {
         <tr class="row-variant">
             <td><input type="text" class="form-control fill variant_name" name="" id="" placeholder="Masukan Nama" value="${names}"></td>
             <td><input type="text" class="form-control fill variant_sku" name="" id="" placeholder="Masukan Sku"></td>
-            <td><input type="text" class="form-control fill variant_price nominal_only" name="" id="" placeholder="Masukan Harga"></td>
+            <td><input type="text" class="form-control fill variant_price nominal_only" name="" id="" placeholder="Masukan Harga*"></td>
             <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukan Barcode"><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
             <td>
-                <div class="input-group mb-3">
+                <div class="input-group">
                     <input type="text" class="form-control fill variant_alert" aria-describedby="basic-addon3">
                     <span class="input-group-text unit_alert">-</span>
                 </div>
@@ -125,7 +125,7 @@ function addRow(names="",idx=0) {
                     <i data-feather="trash-2" class="feather-trash-2"></i>
                 </a>
                 <a class="p-2 btn-action-icon btn_edit_relasi ms-2 "  href="javascript:void(0);">
-                    <i data-feather="git-merge" class="feather-trash-2"></i>
+                    <i data-feather="git-merge" class="feather-git"></i>
                 </a>
             </td>
         </tr>
