@@ -51,7 +51,7 @@
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
-            <div class="card mb-0">
+            <div class="card mb-0 p-3">
                 <div class="card-body">
                     <!-- Page Header -->
                     <div class="page-header">
@@ -86,7 +86,7 @@
                                             <div class="input-block mb-3">
                                                 <label>Satuan<span class="text-danger">*</span></label>
                                                 <div class="container-satuan">
-                                                    <select class="form-control fill" id="product_unit"  name="product_unit[]" ></select>
+                                                    <select class="form-select fill" id="product_unit"  name="product_unit[]" ></select>
                                                 </div>
                                             </div>
                                         </div>
@@ -99,25 +99,24 @@
                                         </div>
                                         <hr>
                                        <div class="row mb-3">
-                                            <div class="col-12">
+                                            <div class="col-12 col-lg-2">
                                                 <label>Variasi Produk</label>
                                             </div>
 
-                                            <div class="col-12 d-lg-flex align-items-center">
-                                                
-                                                <div class="col-12 col-lg-3 offset-lg-7 mb-2 mb-lg-0">
-                                                    <select name="" id="product_variant" class="form-select select2">
-                                                        <option value="">Pilih Variasi</option>
-                                                        </select>
-                                                </div>
+                                            <div class="col-0 col-lg-5"></div>
 
-                                                <div class="col-12 col-lg-2 text-start text-lg-end">
-                                                    <button type="button" class="btn btn-primary btnAddRow w-100 w-lg-auto">
-                                                        <i class="fa fa-plus-circle me-2 d-lg-inline" aria-hidden="true"></i> 
-                                                        <span class="d-none d-lg-inline">Tambah</span>
-                                                        <span class="d-inline d-lg-none">Tambah Variasi</span>
-                                                    </button>
-                                                </div>
+                                            <div class="col-12 col-lg-3 mb-2 mb-lg-0">
+                                                <select id="product_variant" class="form-select select2">
+                                                    <option value="">Pilih Variasi</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-12 col-lg-2 text-start text-lg-end">
+                                                <button type="button" class="btn btn-primary btnAddRow w-100 w-lg-auto">
+                                                    <i class="fa fa-plus-circle me-2"></i>
+                                                    <span class="d-none d-lg-inline">Tambah</span>
+                                                    <span class="d-inline d-lg-none">Tambah Variasi</span>
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="table-responsive">
@@ -125,11 +124,11 @@
                                             <table class="table" id="productVariantTable">
                                                 <thead>
                                                     <tr>
-                                                        <td>Nama Variasi</td>
-                                                        <td>SKU</td>
-                                                        <td>Harga</td>
+                                                        <td>Nama Variasi<span class="text-danger">*</span></td>
+                                                        <td>SKU<span class="text-danger">*</span></td>
+                                                        <td>Harga<span class="text-danger">*</span></td>
                                                         <td>Barcode</td>
-                                                        <td>Stock Alert</td>
+                                                        <td>Stock Alert<span class="text-danger">*</span></td>
                                                         <td class="text-center" style="width:15%">Aksi</td>
                                                     </tr>
                                                 </thead>
@@ -166,8 +165,8 @@
                         <table class="table table-bordered mb-2">
                             <thead>
                                 <tr>
-                                    <td>Name Unit 1</td>
-                                    <td>Name Unit 2</td>
+                                    <td>Name Unit 1<span class="text-danger">*</span></td>
+                                    <td>Name Unit 2<span class="text-danger">*</span></td>
                                 </tr>
                             </thead>
                             <tbody class="tbRelasi" id="tbRelasi">
