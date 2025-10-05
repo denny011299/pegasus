@@ -6,7 +6,7 @@
     /* Target tabel variasi di halaman update product */
     #productVariantTable input.form-control {
         /* Memaksa input memiliki lebar minimum agar tidak terlalu kecil */
-        min-width: 100px; 
+        min-width: 150px; 
     }
     
     /* Memastikan sel (td) tabel tidak terlalu menekan konten */
@@ -19,6 +19,32 @@
     /* Memastikan header tabel juga tidak membungkus */
     #productVariantTable th {
         white-space: nowrap;
+    }
+      /* 2. Paksa Input Group untuk TIDAK MEMBUNGKUS */
+    #productVariantTable .input-group {
+        /* KUNCI: Memaksa elemen flex (input dan span) tetap sejajar */
+        flex-wrap: nowrap !important;
+        /* Memastikan input group punya lebar minimum yang cukup */
+        min-width: 120px; 
+    }
+
+    /* 3. Atur Lebar Input Angka sekecil mungkin agar span satuan (kg) mendapat tempat */
+    #productVariantTable .input-group input.form-control {
+        min-width: 40px; 
+        /* Pastikan input mengisi sisa ruang setelah satuan */
+        width: 100%; 
+    }
+
+    /* 4. Pastikan span satuan (kg) tidak terpotong */
+    #productVariantTable .input-group .input-group-text {
+        min-width: 30px; 
+        padding: 0.375rem 0.5rem; /* Sesuaikan padding agar terlihat bagus */
+    }
+
+    /* Opsional: Memperbaiki tampilan input group di kolom yang hanya berisi input group */
+    #productVariantTable td:has(.input-group) {
+        /* Menghilangkan padding yang berlebihan di sel, memberikan ruang lebih ke input group */
+        padding: 0.5rem !important;
     }
 }
 </style>
