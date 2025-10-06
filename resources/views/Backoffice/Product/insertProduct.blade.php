@@ -106,7 +106,7 @@
                                             <div class="col-0 col-lg-5"></div>
 
                                             <div class="col-12 col-lg-3 mb-2 mb-lg-0">
-                                                <select id="product_variant" class="form-select select2">
+                                                <select id="product_variant" class="form-select select2 fill">
                                                     <option value="">Pilih Variasi</option>
                                                 </select>
                                             </div>

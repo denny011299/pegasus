@@ -155,7 +155,7 @@ $(document).on("click",".btn-save",function(){
 
     var url ="/insertProduct";
     var valid=1;
-    $("#add_product .fill").each(function(){
+    $(".fill").each(function(){
         if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
             valid=-1;
             $(this).addClass('is-invalid');
