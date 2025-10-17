@@ -59,7 +59,7 @@
             </a>
         </li>
         <li class="nav-item dropdown-heads ">
-            <a href="/cash" class="nav-link" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kas">
+            <a href="/pettyCash" class="nav-link" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kas Kecil">
                 <i class="fe fe-dollar-sign"></i>
             </a>
         </li>

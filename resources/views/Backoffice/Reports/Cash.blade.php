@@ -33,6 +33,7 @@
                                             <th>Kredit 1</th>
                                             <th>Kredit 2</th>
                                             <th>Saldo</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>

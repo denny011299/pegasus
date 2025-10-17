@@ -24,7 +24,7 @@
         table = $('#tablePettyCash').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            ordering: true,
+            ordering: false,
             autoWidth: false,
             language: {
                 search: ' ',
@@ -42,6 +42,7 @@
                 { data: "debit" },
                 { data: "credit_text" },
                 { data: "balance_text" },
+                { data: "status_text" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -72,11 +73,19 @@
                         e[i].debit = "Rp " + 0;
                     }
                     e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
-                    if (e[i].pc_balance < 0) {
-                        e[i].balance = "(Rp " + formatRupiah(e[i].pc_balance) + ")";
-                        e[i].balance_text = `<label class='text-danger'>${e[i].balance}</label>`
+                    if (e[i].balance < 0) {
+                        e[i].balances = "(Rp " + formatRupiah(e[i].balance) + ")";
+                        e[i].balance_text = `<label class='text-danger'>${e[i].balances}</label>`
                     }
-                    else e[i].balance_text = "Rp " + formatRupiah(e[i].pc_balance);
+                    else e[i].balance_text = "Rp " + formatRupiah(e[i].balance);
+
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Menunggu</span>`;
+                    } else if (e[i].status == 2){
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
+                    } else if (e[i].status == 3){
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
+                    }
                 }
 
                 table.rows.add(e).draw();
@@ -116,9 +125,10 @@
 
         param = {
             pc_date:$('#pc_date').val(),
+            staff_id:$('#staff_id').val(),
             pc_description:$('#pc_description').val(),
             pc_type:type,
-            pc_nominal:$('#pc_nominal').val(),
+            pc_nominal:convertToAngka($('#pc_nominal').val()),
             _token:token
         };
 
