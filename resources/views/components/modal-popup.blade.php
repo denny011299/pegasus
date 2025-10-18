@@ -1161,18 +1161,10 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-6">
+                                <div class="col-12">
                                     <div class="input-block mb-3">
                                         <label>Tanggal<span class="text-danger">*</span></label>
                                         <input type="date" class="form-control fill" id="pc_date">
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="input-block mb-3">
-                                        <label>Nama Staff<span class="text-danger">*</span></label>
-                                        <select class="form-select fill" id="staff_id">
-                                            <option value="dummy" selected>dummy</option>
-                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-12">

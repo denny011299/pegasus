@@ -31,8 +31,7 @@
                                             <th>Keterangan</th>
                                             <th>Debit</th>
                                             <th>Kredit</th>
-                                            <th>Sisa Tunai</th>
-                                            <th>Status</th>
+                                            <th>Saldo</th>
                                         </tr>
                                     </thead>
                                     <tbody>
