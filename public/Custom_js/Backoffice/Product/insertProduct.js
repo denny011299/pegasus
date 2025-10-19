@@ -159,6 +159,7 @@ $(document).on("click",".btn-save",function(){
         if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
             valid=-1;
             $(this).addClass('is-invalid');
+            console.log(this)
         }
     });
 

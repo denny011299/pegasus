@@ -151,6 +151,12 @@
                             Wilayah</a>
                     </li>
                 @endif
+                @if (Route::is(['cashCategory']))
+                    <li>
+                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Kategori Kas</a>
+                    </li>
+                @endif
             </ul>
         </div>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))

@@ -527,6 +527,8 @@
                                     class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                             <li><a href="{{ url('area') }}"
                                     class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li>
+                            <li><a href="{{ url('cashCategory') }}"
+                                    class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>
                         </ul>
                     </li>
                     <li class="submenu">
@@ -598,8 +600,18 @@
                         </li>
                     </li>
                     {{-- Report --}}
-                    <li class="menu-title"><span>Laporan</span></li>
+                    <li class="menu-title"><span>Akuntansi & Laporan</span></li>
                     <li class="submenu">
+                        <a href="#"><i class="fa-solid fa-money"></i> <span> Akuntansi</span> <span
+                                class="menu-arrow"></span></a>
+                        <ul style="display: none;">
+                            <li><a href="{{ url('cash') }}"
+                                    class="{{ Request::is('cash') ? 'active' : '' }}">
+                                    Kas</a></li>
+                            <li><a href="{{ url('pettyCash') }}"
+                                    class="{{ Request::is('pettyCash') ? 'active' : '' }}">
+                                    Kas Kecil</a></li>
+                        </ul>
                         <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
@@ -615,12 +627,6 @@
                             <li><a href="{{ url('profitLoss') }}"
                                     class="{{ Request::is('profitLoss') ? 'active' : '' }}">
                                     Untung & Rugi</a></li>
-                            <li><a href="{{ url('cash') }}"
-                                    class="{{ Request::is('cash') ? 'active' : '' }}">
-                                    Kas</a></li>
-                            <li><a href="{{ url('pettyCash') }}"
-                                    class="{{ Request::is('pettyCash') ? 'active' : '' }}">
-                                    Kas Kecil</a></li>
                             <li><a href="{{ url('inwardOutward') }}"
                                     class="{{ Request::is('inwardOutward') ? 'active' : '' }}">
                                     Barang Masuk Keluar</a></li>

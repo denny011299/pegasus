@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cash;
+use App\Models\CashCategory;
 use App\Models\InwardOutward;
 use App\Models\PettyCash;
 use App\Models\ReportLoss;
@@ -81,5 +82,30 @@ class ReportController extends Controller
     
     function reportProduksi(){
         return view('Backoffice.Reports.ReportProduksi');
+    }
+
+    // Cash Category
+    public function CashCategory(){
+        return view('Backoffice.Reports.Cash_Category');
+    }
+
+    function getCashCategory(Request $req){
+        $data = (new CashCategory())->getCashCategory();
+        return response()->json($data);
+    }
+
+    function insertCashCategory(Request $req){
+        $data = $req->all();
+        return (new CashCategory())->insertCashCategory($data);
+    }
+
+    function updateCashCategory(Request $req){
+        $data = $req->all();
+        return (new CashCategory())->updateCashCategory($data);
+    }
+
+    function deleteCashCategory(Request $req){
+        $data = $req->all();
+        return (new CashCategory())->deleteCashCategory($data);
     }
 }
