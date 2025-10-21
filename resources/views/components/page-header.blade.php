@@ -80,7 +80,7 @@
                 @endif
                 @if (Route::is(['stockOpname']))
                     <li>
-                        <a class="btn btn-primary" href="/detailStockOpname/1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                        <a class="btn btn-primary" href="/detailStockOpname/-1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Stok Opname</a>
                     </li>
                 @endif

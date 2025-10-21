@@ -24,8 +24,9 @@ class ProductStock extends Model
        
         $result = $result->get();
         foreach ($result as $key => $value) {
-            
-            $value->unit_name = Unit::find($value->unit_id)->unit_name;
+            $u = Unit::find($value->unit_id);
+            $value->unit_name = $u->unit_name;
+            $value->unit_short_name = $u->unit_short_name;
         }
         return $result;
     }

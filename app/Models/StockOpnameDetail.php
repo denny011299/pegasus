@@ -11,100 +11,105 @@ class StockOpnameDetail extends Model
     public $timestamps = true;
     public $incrementing = true;
 
-    function getDetailStockOpname($data = [])
+    protected $fillable = [
+        'sto_id',
+        'product_id',
+        'product_variant_id',
+        'stod_system',
+        'stod_real',
+        'stod_selisih',
+        'stod_notes',
+        'status'
+    ];
+
+    /**
+     * Get detail list
+     */
+    public static function getDetail($data = [])
     {
-        $data = [
-            [
-                'pr_sku' => 'SKU-001',
-                'pr_name' => 'Logitech Wireless Mouse',
-                'pr_stock' => 15,
-                'stpd_stock' => 15,
-                'stpd_real_stock' => 14,
-                'stpd_note' => '1 unit rusak',
-                'selisih' => -1
-            ],
-            [
-                'pr_sku' => 'SKU-002',
-                'pr_name' => 'Dell Mechanical Keyboard',
-                'pr_stock' => 8,
-                'stpd_stock' => 8,
-                'stpd_real_stock' => 8,
-                'stpd_note' => '',
-                'selisih' => 0
-            ],
-            [
-                'pr_sku' => 'SKU-003',
-                'pr_name' => 'Samsung 24-inch Monitor',
-                'pr_stock' => 5,
-                'stpd_stock' => 5,
-                'stpd_real_stock' => 6,
-                'stpd_note' => 'Tambahan 1 unit dari gudang lama',
-                'selisih' => 1
-            ]
-        ];
-        return $data;
-        // $data = array_merge([
-        //     "stp_id"=>null,
-        // ], $data);
+        $data = array_merge([
+            'sto_id' => null,
+            'product_id' => null,
+            'product_variant_id' => null,
+        ], $data);
 
-        // $result = self::query();
-        // if($data["stp_id"]) $result->where('stp_id','=',$data["stp_id"]);
-        // $result->orderBy('created_at', 'asc');
-       
-        // $result =   $result->get();
+        $result = self::where('status', 1);
 
-        // foreach ($result as $key => $value) {
-        //      $sup = Supplies::find($value->sup_id);
-        //     if($sup){
-        //         $value->sup_name = $sup->sup_name;
-        //         $value->sup_unit = $sup->sup_unit;
-        //         $value->sup_sku = $sup->sup_sku;
-        //     }
-        //     else{
-        //         $sup = Product::find($value->pr_id);
-        //         if($sup){
-        //             $value->pr_name = $sup->pr_name;
-        //             $value->pr_unit = $sup->pr_unit;
-        //             $value->pr_sku = $sup->pr_sku;
-        //         }
-        //     }
-        // }
+        if ($data['sto_id']) $result->where('sto_id', $data['sto_id']);
+        if ($data['product_id']) $result->where('product_id', $data['product_id']);
+        if ($data['product_variant_id']) $result->where('product_variant_id', $data['product_variant_id']);
 
-        // return $result;
+        $result->orderBy('created_at', 'asc');
+        $result = $result->get();
+        foreach ($result as $key => $value) {
+            $pv = (new ProductVariant())->getProductVariant(["product_variant_id"=>$value->product_variant_id])[0];
+            $temp = $pv;
+            $temp->stod_system = $value->stod_system;
+            $temp->stod_real =  $value->stod_real;
+            $temp->stod_selisih =  $value->stod_selisih;
+            $temp->stod_notes =  $value->stod_notes;
+            $temp->stod_id  =  $value->stod_id ;
+            $temp->sto_id  =  $value->sto_id ;
+            $result[$key] = $temp;
+        }
+        return $result;
     }
 
-    function insertDetailStockOpname($data)
+    /**
+     * Insert detail
+     */
+    public static function insertDetail($data)
     {
-        // $t = new self();
-        // $t->stp_id = $data["stp_id"];
-        // if(isset($data["pr_id"]))$t->pr_id = $data["pr_id"];
-        // if(isset($data["sup_id"]))$t->sup_id = $data["sup_id"];
-        // $t->stpd_stock = $data["stpd_stock"];
-        // $t->stpd_real_stock = $data["stpd_real_stock"];
-        // $t->stpd_selisih = $data["stpd_selisih"];
-        // $t->stpd_note = $data["stpd_note"];
-        // $t->save();
-        // return $t->stpd_id;
+        $t = new self();
+        $t->sto_id = $data['sto_id'];
+        $t->product_id = $data['product_id'];
+        $t->product_variant_id = $data['product_variant_id'];
+        $t->stod_system = $data['stod_system'] ?? null;
+        $t->stod_real = $data['stod_real'] ?? null;
+        $t->stod_selisih = $data['stod_selisih'] ?? null;
+        $t->stod_notes = $data['stod_notes'] ?? null;
+        $t->save();
+
+        return $t->stod_id;
     }
 
-    function updateDetailStockOpname($data)
+    /**
+     * Update detail
+     */
+    public static function updateDetail($data)
     {
-        // $t = self::find($data["stpd_id"]);
-        // $t->stp_id = $data["stp_id"];
-        // if(isset($data["pr_id"]))$t->pr_id = $data["pr_id"];
-        // if(isset($data["sup_id"]))$t->sup_id = $data["sup_id"];
-        // $t->stpd_stock = $data["stpd_stock"];
-        // $t->stpd_real_stock = $data["stpd_real_stock"];
-        // $t->stpd_selisih = $data["stpd_selisih"];
-        // $t->stpd_note = $data["stpd_note"];
-        // $t->save();
-        // return $t->stp_id;
+        $t = self::find($data['stod_id']);
+        if (!$t) return null;
+
+        $t->sto_id = $data['sto_id'];
+        $t->product_id = $data['product_id'];
+        $t->product_variant_id = $data['product_variant_id'];
+        $t->stod_system = $data['stod_system'] ?? null;
+        $t->stod_real = $data['stod_real'] ?? null;
+        $t->stod_selisih = $data['stod_selisih'] ?? null;
+        $t->stod_notes = $data['stod_notes'] ?? null;
+        $t->save();
+
+        return $t->stod_id;
     }
 
-    function deleteDetailStockOpname($data)
+    /**
+     * Soft delete detail (status = 0)
+     */
+    public static function deleteDetail($data)
     {
-        // $t = self::find($data["stpd_id"]);
-        // $t->status = 0;
-        // $t->save();
+        $t = self::find($data['stod_id']);
+        if ($t) {
+            $t->status = 0;
+            $t->save();
+        }
+    }
+
+    /**
+     * Relasi ke Stock Opname
+     */
+    public function stockOpname()
+    {
+        return $this->belongsTo(StockOpname::class, 'sto_id', 'sto_id');
     }
 }

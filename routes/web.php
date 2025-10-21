@@ -33,6 +33,7 @@ Route::post('/autocompleteProductVariant', [AutocompleteController::class, "auto
 Route::post('/autocompleteProductVariants', [AutocompleteController::class, "autocompleteProductVariants"])->name('autocompleteProductVariant');
 Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocompleteCustomer"])->name('autocompleteCustomer');
 Route::post('/autocompleteSupplier', [AutocompleteController::class, "autocompleteSupplier"])->name('autocompleteSupplier');
+Route::post('/autocompleteStaff', [AutocompleteController::class, "autocompleteStaff"])->name('autocompleteStaff');
 Route::post('/autocompleteStaffSales', [AutocompleteController::class, "autocompleteStaffSales"])->name('autocompleteStaffSales');
 Route::post('/autocompleteSubdistrict', [AutocompleteController::class, "autocompleteSubdistrict"])->name('autocompleteSubdistrict');
 Route::post('/autocompleteCashCategory', [AutocompleteController::class, "autocompleteCashCategory"])->name('autocompleteCashCategory');

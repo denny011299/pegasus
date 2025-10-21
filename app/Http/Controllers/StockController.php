@@ -17,7 +17,7 @@ use Illuminate\Http\Request;
 class StockController extends Controller
 {
     // Stock Opname
-    public function StockOpname(){
+        public function StockOpname(){
         return view('Backoffice.Inventory.Stock_Opname');
     }
 
@@ -28,12 +28,21 @@ class StockController extends Controller
 
     function insertStockOpname(Request $req){
         $data = $req->all();
-        return (new StockOpname())->insertStockOpname($data);
+        $id =  (new StockOpname())->insertStockOpname($data);
+        foreach (json_decode($req->item,true) as $key => $value) {
+            $value["sto_id"] = $id;
+            (new StockOpnameDetail())->insertDetail($value);
+        }
     }
 
     function updateStockOpname(Request $req){
         $data = $req->all();
-        return (new StockOpname())->updateStockOpname($data);
+        $id = (new StockOpname())->updateStockOpname($data);
+        foreach (json_decode($req->item,true) as $key => $value) {
+            $value["sto_id"] = $id;
+            if(isset($value["stod_id"]))(new StockOpnameDetail())->updateDetail($value);
+            else (new StockOpnameDetail())->insertDetail($value);
+        }
     }
 
     function deleteStockOpname(Request $req){
@@ -43,7 +52,15 @@ class StockController extends Controller
 
     // Stock Opname Detail
     public function DetailStockOpname($id){
-        return view('Backoffice.Inventory.CreateStockOpname');
+        if($id!=-1){
+            $param["data"] = (new StockOpname())->getStockOpname(["sto_id"=>$id])[0];
+            $param["mode"] = 2;
+        }
+        else {
+            $param["data"] = [];
+            $param["mode"] = 1;
+        }
+        return view('Backoffice.Inventory.CreateStockOpname')->with($param);
     }
 
     function getDetailStockOpname(Request $req){

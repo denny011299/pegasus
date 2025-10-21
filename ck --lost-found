@@ -1,0 +1,55 @@
+[33m695c9f3[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{0}: pull --ff --recurse-submodules --progress origin: Merge made by the 'ort' strategy.
+[33m3292819[m HEAD@{1}: revert: Reapply "Tampilan kas kecil"
+[33m468bf0e[m HEAD@{2}: revert: Revert "Tampilan kas kecil"
+[33m28e582b[m HEAD@{3}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m4bf40f6[m HEAD@{4}: reset: moving to HEAD
+[33m4bf40f6[m HEAD@{5}: commit: button variasi
+[33m6bc6f16[m HEAD@{6}: commit: responsive
+[33m4ca4436[m HEAD@{7}: commit: perbaikan tampilan
+[33m651603d[m HEAD@{8}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33mbfa1f5e[m HEAD@{9}: pull --ff --recurse-submodules --progress origin: Merge made by the 'ort' strategy.
+[33mfdea7df[m HEAD@{10}: commit: fixing relasi
+[33m091ca32[m HEAD@{11}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33me1df6a4[m HEAD@{12}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m0255607[m HEAD@{13}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33mf3be0d3[m HEAD@{14}: commit: PO , hutang
+[33md4125a1[m HEAD@{15}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m25e1c68[m HEAD@{16}: commit: laporan product return
+[33mdb15e5c[m HEAD@{17}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33me520e1c[m HEAD@{18}: reset: moving to HEAD
+[33me520e1c[m HEAD@{19}: commit: laporan bahan
+[33m2f5b38e[m HEAD@{20}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m85798b2[m HEAD@{21}: reset: moving to HEAD
+[33m85798b2[m HEAD@{22}: commit: bom
+[33m61f64ce[m HEAD@{23}: commit: PO
+[33madd946a[m HEAD@{24}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m4f41906[m HEAD@{25}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33mb91585e[m HEAD@{26}: reset: moving to HEAD
+[33mb91585e[m HEAD@{27}: pull --ff --recurse-submodules --progress origin: Merge made by the 'ort' strategy.
+[33m8bbec13[m HEAD@{28}: commit: stock
+[33m9f07c73[m HEAD@{29}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33md98bf6f[m HEAD@{30}: reset: moving to HEAD
+[33md98bf6f[m HEAD@{31}: commit: production
+[33mf78e67c[m HEAD@{32}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m46ab9cf[m HEAD@{33}: reset: moving to HEAD
+[33m46ab9cf[m HEAD@{34}: reset: moving to HEAD
+[33m46ab9cf[m HEAD@{35}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m0689cc9[m HEAD@{36}: reset: moving to HEAD
+[33m0689cc9[m HEAD@{37}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m61a854f[m HEAD@{38}: commit: produksi
+[33m605657c[m HEAD@{39}: commit: Inventory
+[33m680c8ba[m HEAD@{40}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33me4ab1fc[m HEAD@{41}: reset: moving to HEAD
+[33me4ab1fc[m HEAD@{42}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m33ce3a5[m HEAD@{43}: commit: sinkronisasi
+[33mfbd57b9[m HEAD@{44}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m6866279[m HEAD@{45}: reset: moving to HEAD
+[33m6866279[m HEAD@{46}: commit: manage stock
+[33m0a1d5f8[m HEAD@{47}: commit: productissuses#2
+[33m8252238[m HEAD@{48}: commit: Product Issues
+[33m2afb42d[m HEAD@{49}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33m862ac38[m HEAD@{50}: reset: moving to HEAD
+[33m862ac38[m HEAD@{51}: commit: stock alert
+[33md863e58[m HEAD@{52}: pull --ff --recurse-submodules --progress origin: Fast-forward
+[33mea25352[m HEAD@{53}: commit: Update
+[33m8bb7469[m HEAD@{54}: clone: from https://github.com/denny011299/pegasus.git

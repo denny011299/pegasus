@@ -3,6 +3,7 @@
     $(document).ready(function(){
         inisialisasi();
         refreshStockAlert();
+        
     });
     
     function inisialisasi() {
@@ -78,6 +79,7 @@
                     e = e.original || [];
                 }
                 // Manipulasi data sebelum masuk ke tabel
+                console.log("data");
                 e.forEach((item,index) => {
                     var def = -1;
                     item.product_name_text = item.product_name + " " +item.product_variant_name;
@@ -89,7 +91,7 @@
                         item.product_variant_stock_text += `${element.ps_stock} ${element.unit_name}`;
                         if(index<item.stock.length-1)item.product_variant_stock_text +=", ";
                         if(item.unit_id == element.unit_id){
-                            console.log(item)
+                            
                             def=index;
                         }
                         
@@ -192,6 +194,7 @@
                         }
                     }
                 });
+                console.log(e);
                 
                 let stockLow = e.filter(item => ((item.stock[0]?.ps_stock || 0) <= item.product_variant_alert) && item.habis == -1);
                 let stockOut = e.filter(item => item.habis==1);

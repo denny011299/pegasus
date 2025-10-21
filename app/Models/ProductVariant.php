@@ -19,31 +19,40 @@ class ProductVariant extends Model
             "product_variant_id" => null,
             "status" => 1,
             "search_product" => null,
+            "category_id" => null,
         ], $data);
 
-        $result = self::where("status", "=", 1);
+        $result = self::where("product_variants.status", "=", 1);
 
 
         // Filter berdasarkan product_id
         if ($data["product_id"]) {
-            $result->where("product_id", "=", $data["product_id"]);
+            $result->where("product_variants.product_id", "=", $data["product_id"]);
         }
 
         // Filter berdasarkan SKU
         if ($data["product_variant_sku"]) {
-            $result->where("product_variant_sku", "like", "%" . $data["product_variant_sku"] . "%");
+            $result->where("product_variants.product_variant_sku", "like", "%" . $data["product_variant_sku"] . "%");
         }
 
         if ($data["search_product"]){
-            $result->where("product_variant_sku", "like", "%" . $data["search_product"])
-            ->orwhere("product_variant_barcode", "=", $data["search_product"]);
+            $result->where("product_variants.product_variant_sku", "like", "%" . $data["search_product"])
+            ->orwhere("product_variants.product_variant_barcode", "=", $data["search_product"]);
         }
 
         // Filter berdasarkan product_variant_id
         if ($data["product_variant_id"]) {
-            $result->where("product_variant_id", "=", $data["product_variant_id"]);
+            $result->where("product_variants.product_variant_id", "=", $data["product_variant_id"]);
         }
+        
 
+        // Filter berdasarkan product_variant_id
+        if ($data["category_id"]) {
+            $result->join("products as p ", 'p.product_id','product_variants.product_id');
+            $result->where('p.category_id','=',$data["category_id"]);
+        }
+        
+        $result->select('product_variants.*');
         $result->orderBy("created_at", "asc");
         $variants = $result->get();
         
@@ -57,8 +66,9 @@ class ProductVariant extends Model
             $variant->product_category = Category::find($p->category_id)->category_name ?? "-";
             $variant->category_id = $p->category_id;
             $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit,true))->get();
-            $variant->relasi = ProductRelation::where('product_variant_id', '=', $variant->product_variant_id)->get();
-
+            $variant->relasi = ProductRelation::where('product_variant_id', '=', $variant->product_variant_id)->where('status','=',1)->get();
+            $variant->stock = (new ProductStock())->getProductStock(["product_variant_id"=>$variant->product_variant_id]);
+            
             // Get nama unit default
             $v = Unit::find($p->unit_id);
             $variant->unit_id = $v->unit_id;
@@ -76,6 +86,7 @@ class ProductVariant extends Model
 
     public function insertProductVariant($data)
     {
+        if($data["variant_name"]=="standar")$data["variant_name"] = "";
         $t = new self();
         $t->product_id = $data["product_id"];
         $t->product_variant_name = $data["variant_name"];

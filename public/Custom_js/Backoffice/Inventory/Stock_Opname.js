@@ -29,10 +29,10 @@
                 },
             },
             columns: [
-                { data: "stop_date" },
-                { data: "stop_pic" },
-                { data: "stop_category" },
-                { data: "stop_id" },
+                { data: "sto_date"},
+                { data: "staff_name" },
+                { data: "category_name" },
+                { data: "sto_id_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -54,9 +54,10 @@
                 console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].stop_date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].sto_date = moment(e[i].sto_date).format('D MMM YYYY');
+                    e[i].sto_id_text = "SPN"+(e[i].sto_id+"").padStart(3,"0");
                     e[i].action = `
-                        <a href="/detailStockOpname/${e[i].stop_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
+                        <a href="/detailStockOpname/${e[i].sto_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
@@ -70,3 +71,34 @@
             }
         });
     }
+
+    
+function loadCategory() {
+    $.ajax({
+        url: "/admin/getCategory",
+        method: "GET",
+        success: function (data) {
+            data = JSON.parse(data);
+            if (data) {
+                $("#kategori").empty();
+                $("#kategori").append(
+                    $("<option>", {
+                        value: -1,
+                        text: "Semua Kategori",
+                    })
+                );
+                data.forEach((element) => {
+                    $("#kategori").append(
+                        $("<option>", {
+                            value: element.category_id,
+                            text: element.category_name,
+                        })
+                    );
+                });
+            }
+        },
+        error: function (e) {
+            console.log(e);
+        },
+    });
+}

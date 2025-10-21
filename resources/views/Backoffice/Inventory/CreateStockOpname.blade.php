@@ -25,10 +25,8 @@
                             aria-controls="collapseOne">
                             <div class="text-editor add-list">
                                 <div class="addproduct-icon list icon">
-                                    <h6><i data-feather="life-buoy" class="add-info"></i><span>Header Stok Opname</span>
+                                    <h6><i data-feather="life-buoy" class="add-info me-2"></i><span>Header Stok Opname</span>
                                     </h6>
-                                    <a href="javascript:void(0);"><i data-feather="chevron-down"
-                                            class="chevron-down-add"></i></a>
                                 </div>
                             </div>
                         </div>
@@ -40,26 +38,26 @@
                                 <div class="col-lg-4">
                                     <div class="input-blocks">
                                         <label>Nama Penanggung Jawab</label>
-                                        <input type="text" class="form-control" value="Shawn" readonly>
+                                        <select name="" id="penanggung-jawab" class="form-select"></select>
                                     </div>
                                 </div>
                                 <div class="col-lg-4">
                                     <div class="input-blocks">
                                         <label>Tanggal</label>
-                                        <input type="date" class="form-control">
+                                        <input type="date" class="form-control" id="tanggal">
                                     </div>
                                 </div>
                                 <div class="col-lg-4">
                                     <div class="add-newplus">
                                         <label class="form-label">Kategori</label>
                                     </div>
-                                    <select class="select" id="kategori" name="kategori[]" multiple>
+                                    <select class="select" id="kategori" >
                                     </select>
                                 </div>
                                 <div class="col-lg-12 mt-2">
                                     <div class="input-blocks">
                                         <label>Catatan</label>
-                                        <textarea class="form-control" placeholder="Masukkan catatan"></textarea>
+                                        <textarea class="form-control" placeholder="Masukkan catatan" id="catatan"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -77,20 +75,22 @@
                                 <div class="col-6 text-end">
                                 </div>
                             </div>
-                            <table class="table mt-3" id="tableStockOpname">
-                                <thead>
-                                    <tr>
-                                        <td class="text-center">No.</td>
-                                        <td>SKU</td>
-                                        <td style="width:15%">Nama</td>
-                                        <td class="text-center">Stok Komp.</td>
-                                        <td class="text-center">Stok Real</td>
-                                        <td class="text-center">Selisih</td>
-                                        <td>Catatan</td>
-                                    </tr>
-                                </thead>
-                                <tbody id="tbStock"></tbody>
-                            </table>
+                           <div class="table-responsive">
+                                <table class="table mt-3" id="tb-stock-table">
+                                    <thead>
+                                        <tr>
+                                            <td>SKU</td>
+                                            <td style="width:15%">Nama</td>
+                                            <td class="text-center">Stok Komp.</td>
+                                            <td class="text-center" style="width:35%">Stok Real</td>
+                                            <td class="text-center">Selisih</td>
+                                            <td>Catatan</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbStock"></tbody>
+                                </table>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -110,6 +110,8 @@
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";    
+        var data = @json($data);
+        var mode = @json($mode);
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js')}}?v=1"></script>
 @endsection

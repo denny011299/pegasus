@@ -363,4 +363,24 @@ class AutocompleteController extends Controller
             "data" => $data_city
         ));
     }
+
+     public function autocompleteStaff(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Staff();
+        $data_city = $p->getStaff([
+            "staff_name" => $keyword
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["staff_id"];
+            $r->text = $r["staff_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
 }
