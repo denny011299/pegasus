@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\Bom;
+use App\Models\CashCategory;
 use App\Models\Category;
 use App\Models\CategoryCoa;
 use App\Models\Cities;
@@ -337,6 +338,25 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["staff_id"];
             $r->text = $r["staff_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+    public function autocompleteCashCategory(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new CashCategory();
+        $data_city = $p->getCashCategory([
+            "cc_name" => $keyword,
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["cc_id"];
+            $r->text = $r["cc_name"];
         };
 
         echo json_encode(array(

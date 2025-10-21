@@ -1,4 +1,4 @@
-<?php $page = 'pettyCash'; ?>
+<?php $page = 'categoryCash'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Kas Kecil
+                    Kategori Kas
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -24,26 +24,17 @@
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tablePettyCash">
+                                <table class="table table-center table-hover" id="tableCategory">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Tanggal</th>
-                                            <th>Keterangan</th>
-                                            <th>Status</th>
-                                            <th>Debit</th>
-                                            <th>Kredit</th>
+                                            <th>Nama Kategori</th>
+                                            <th>Tipe</th>
+                                            <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         
                                     </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="3" class="text-end">Total : </td>
-                                            <td class="debits"></td>
-                                            <td class="credits text-danger"></td>
-                                        </tr>
-                                    </tfoot>
                                 </table>
                             </div>
                         </div>
@@ -61,5 +52,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Petty_Cash.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/Category_Cash.js')}}"></script>
 @endsection

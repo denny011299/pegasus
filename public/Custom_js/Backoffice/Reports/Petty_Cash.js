@@ -1,5 +1,8 @@
     var mode=1;
     var table;
+
+    autocompleteCashCategory('#cc_id', '#add_petty_cash')
+
     $(document).ready(function(){
         inisialisasi();
         refreshPettyCash();
@@ -9,6 +12,7 @@
         mode=1;
         $('#add_petty_cash .modal-title').html("Tambah Kas Kecil");
         $('#add_petty_cash input').val("");
+        $('#add_petty_cash select').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('#add_petty_cash').modal("show");
 
@@ -19,6 +23,12 @@
         let todayStr = yyyy + '-' + mm + '-' + dd;
         $("#pc_date").val(todayStr);
     });
+
+    $(document).on('change', '#cc_id', function(){
+        var data = $(this).select2('data')[0];
+        console.log(data);
+        $('#cc_type').val(data.cc_type);
+    })
     
     function inisialisasi() {
         table = $('#tablePettyCash').DataTable({
@@ -39,10 +49,9 @@
             columns: [
                 { data: "date" },
                 { data: "pc_description" },
+                { data: "status_text" },
                 { data: "debit" },
                 { data: "credit_text" },
-                { data: "balance_text" },
-                { data: "status_text" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -61,23 +70,23 @@
                     e = e.original || [];
                 }
                 table.clear().draw(); 
+
+                var debits = 0;
+                var credits = 0;
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].pc_date).format('D MMM YYYY');
                     if (e[i].pc_type == 1) {
                         e[i].debit = "Rp " + formatRupiah(e[i].pc_nominal);
                         e[i].credit = "Rp " + 0;
+                        debits += e[i].pc_nominal;
                     }
                     else if (e[i].pc_type == 2) {
                         e[i].credit = "(Rp " + formatRupiah(e[i].pc_nominal) + ")";
                         e[i].debit = "Rp " + 0;
+                        credits += e[i].pc_nominal;
                     }
                     e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
-                    if (e[i].balance < 0) {
-                        e[i].balances = "(Rp " + formatRupiah(e[i].balance) + ")";
-                        e[i].balance_text = `<label class='text-danger'>${e[i].balances}</label>`
-                    }
-                    else e[i].balance_text = "Rp " + formatRupiah(e[i].balance);
 
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Menunggu</span>`;
@@ -87,7 +96,8 @@
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
                 }
-
+                $('.debits').html(`Rp ${formatRupiah(debits)}`);
+                $('.credits').html(`(Rp ${formatRupiah(credits)})`);
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
             },

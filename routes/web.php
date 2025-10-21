@@ -35,6 +35,7 @@ Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocomple
 Route::post('/autocompleteSupplier', [AutocompleteController::class, "autocompleteSupplier"])->name('autocompleteSupplier');
 Route::post('/autocompleteStaffSales', [AutocompleteController::class, "autocompleteStaffSales"])->name('autocompleteStaffSales');
 Route::post('/autocompleteSubdistrict', [AutocompleteController::class, "autocompleteSubdistrict"])->name('autocompleteSubdistrict');
+Route::post('/autocompleteCashCategory', [AutocompleteController::class, "autocompleteCashCategory"])->name('autocompleteCashCategory');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');
@@ -221,3 +222,10 @@ Route::get('/getArea', [GeneralController::class, "getArea"])->name('getArea');
 Route::post('/insertArea', [GeneralController::class, "insertArea"])->name('insertArea');
 Route::post('/updateArea', [GeneralController::class, "updateArea"])->name('updateArea');
 Route::post('/deleteArea', [GeneralController::class, "deleteArea"])->name('deleteArea');
+
+// kategori kas
+Route::get('/cashCategory',[ReportController::class,"CashCategory"])->name('cashCategory');
+Route::get('/getCashCategory', [ReportController::class, "getCashCategory"])->name('getCashCategory');
+Route::post('/insertCashCategory', [ReportController::class, "insertCashCategory"])->name('insertCashCategory');
+Route::post('/updateCashCategory', [ReportController::class, "updateCashCategory"])->name('updateCashCategory');
+Route::post('/deleteCashCategory', [ReportController::class, "deleteCashCategory"])->name('deleteCashCategory');
