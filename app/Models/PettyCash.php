@@ -49,7 +49,7 @@ class PettyCash extends Model
     function insertPettyCash($data){
         $t = new self();
         $t->pc_date = $data["pc_date"];
-        $t->staff_id = 1;
+        $t->staff_id = $data["staff_id"];
         $t->pc_description = $data["pc_description"];
         $t->pc_nominal = $data["pc_nominal"];
         $t->pc_type = $data["pc_type"];

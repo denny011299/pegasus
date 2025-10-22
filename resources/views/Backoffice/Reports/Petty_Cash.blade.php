@@ -40,7 +40,7 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="3" class="text-end">Total : </td>
+                                            <td colspan="4" class="text-end">Total : </td>
                                             <td class="debits"></td>
                                             <td class="credits text-danger"></td>
                                         </tr>
