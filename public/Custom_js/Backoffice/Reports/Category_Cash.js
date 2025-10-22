@@ -139,6 +139,7 @@
         $('#add_cash_category .modal-title').html("Update Kategori Kas");
         $('#add_cash_category input').empty().val("");
         $('#cc_name').val(data.cc_name);
+        $('#cc_type').val(data.cc_type);
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Simpan perubahan');
         $('#add_cash_category').modal("show");
