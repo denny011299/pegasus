@@ -6,7 +6,7 @@
             <div class="input-block mb-3">
                 <label>Dari</label>
                 <div class="cal-icon cal-icon-info"> 
-                    <input type="text" id="start_date" class="datetimepicker form-control" placeholder="01 Jan 2023">
+                    <input type="text" id="start_date" class="datetimepicker form-control" placeholder="01-01-2025">
                 </div>
             </div>
         </div>
@@ -14,7 +14,7 @@
             <div class="input-block mb-3">
                 <label>Sampai</label>
                 <div class="cal-icon cal-icon-info"> 
-                    <input type="text" id="end_date" class="datetimepicker form-control" placeholder="31 Mar 2023">
+                    <input type="text" id="end_date" class="datetimepicker form-control" placeholder="01-01-2025">
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
                 <div class="input-block mb-3">
                     <label>Dari</label>
                     <div class="cal-icon cal-icon-info">
-                        <input type="text" class="datetimepicker form-control " id="start_date" placeholder="01 Jan 2023">
+                        <input type="text" class="datetimepicker form-control " id="start_date" placeholder="01-01-2025">
                     </div>
                 </div>
             </div>
@@ -45,7 +45,7 @@
                 <div class="input-block mb-3">
                     <label>Sampai</label>
                     <div class="cal-icon cal-icon-info">
-                        <input type="text" class="datetimepicker form-control" id="end_date" placeholder="31 Mar 2023">
+                        <input type="text" class="datetimepicker form-control" id="end_date" placeholder="31-01-2025">
                     </div>
                 </div>
             </div>

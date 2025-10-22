@@ -36,7 +36,7 @@ class StockAlert extends Model
             $value->product_unit = $u ? $u->unit_name : "-";
             $value->product_category = Category::find($value->category_id)->category_name ?? "-";
             $value->stock = (new ProductStock())->getProductStock(["product_variant_id"=>$value->product_variant_id]);
-            $value->relation = (new ProductRelation())->getProductRelation(["product_id"=>$value->product_id]);
+            $value->relation = (new ProductRelation())->getProductRelation(["product_variant_id"=>$value->product_variant_id]);
         }
         
         return $result;
