@@ -29,6 +29,7 @@
                                         <tr>
                                             <th>Tanggal</th>
                                             <th>Keterangan</th>
+                                            <th>Diajukan Oleh</th>
                                             <th>Status</th>
                                             <th>Debit</th>
                                             <th>Kredit</th>

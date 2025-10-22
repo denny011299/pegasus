@@ -2,6 +2,7 @@
     var table;
 
     autocompleteCashCategory('#cc_id', '#add_petty_cash')
+    autocompleteStaff('#staff_id', '#add_petty_cash')
 
     $(document).ready(function(){
         inisialisasi();
@@ -49,6 +50,7 @@
             columns: [
                 { data: "date" },
                 { data: "pc_description" },
+                { data: "staff_name" },
                 { data: "status_text" },
                 { data: "debit" },
                 { data: "credit_text" },
@@ -126,18 +128,17 @@
             return false;
         };
 
-        let type;
-        if ($('#pc_select').val() == "debit"){
-            type = 1;
-        } else if ($('#pc_select').val() == "credit") {
-            type = 2;
-        }
+        var data = $('#cc_id').select2('data')[0];
+        var type = data.cc_type;
+        if (type == 'Debit') type = 1;
+        else type = 2;
 
         param = {
             pc_date:$('#pc_date').val(),
             staff_id:$('#staff_id').val(),
             pc_description:$('#pc_description').val(),
             pc_type:type,
+            cc_id:$('#cc_id').val(),
             pc_nominal:convertToAngka($('#pc_nominal').val()),
             _token:token
         };

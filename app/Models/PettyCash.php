@@ -15,13 +15,22 @@ class PettyCash extends Model
         $data = array_merge([
             "pc_id"=>null,
             "pc_date"=>null,
+            "staff_id"=>null,
+            "cc_id"=>null,
         ], $data);
 
         $result = self::where('status', '>=', 1);
         if($data["pc_id"]) $result->where('pc_id','=',$data["pc_id"]);
         if($data["pc_date"]) $result->where('pc_date','=',$data["pc_date"]);
+        if($data["staff_id"]) $result->where('staff_id','=',$data["staff_id"]);
+        if($data["cc_id"]) $result->where('cc_id','=',$data["cc_id"]);
         $result->orderBy('status', 'asc')->orderBy('pc_date', 'desc')->orderBy('created_at', 'desc');
         $result = $result->get();
+
+        foreach ($result as $key => $value) {
+            $s = Staff::find($value->staff_id);
+            $value->staff_name = $s->staff_name;
+        }
 
         $balance = 0;
         $reversed = $result->reverse()->values();
@@ -44,16 +53,7 @@ class PettyCash extends Model
         $t->pc_description = $data["pc_description"];
         $t->pc_nominal = $data["pc_nominal"];
         $t->pc_type = $data["pc_type"];
-
-        // Saldo
-        $last = self::orderBy('pc_id', 'desc')->first();
-        $balance = $last ? $last->pc_balance : 0;
-        if ($data['pc_type'] == 1){
-            $balance += $data['pc_nominal'];
-        } else if ($data['pc_type'] == 2){
-            $balance -= $data['pc_nominal'];
-        }
-        $t->pc_balance = $balance;
+        $t->cc_id = $data["cc_id"];
         
         $t->save();
         return $t->pc_id;

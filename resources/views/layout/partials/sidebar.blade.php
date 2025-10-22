@@ -602,7 +602,7 @@
                     {{-- Report --}}
                     <li class="menu-title"><span>Akuntansi & Laporan</span></li>
                     <li class="submenu">
-                        <a href="#"><i class="fa-solid fa-money"></i> <span> Akuntansi</span> <span
+                        <a href="#"><i class="fe fe-book"></i> <span> Akuntansi</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
                             <li><a href="{{ url('cash') }}"
@@ -612,6 +612,8 @@
                                     class="{{ Request::is('pettyCash') ? 'active' : '' }}">
                                     Kas Kecil</a></li>
                         </ul>
+                    </li>
+                    <li class="submenu">
                         <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">

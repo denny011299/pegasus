@@ -1170,9 +1170,7 @@
                                 <div class="col-6">
                                     <div class="input-block mb-3">
                                         <label>Nama Staff<span class="text-danger">*</span></label>
-                                        <select class="form-select fill" id="staff_id">
-                                            <option value="dummy" selected>dummy</option>
-                                        </select>
+                                        <select class="form-select fill" id="staff_id"></select>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -1460,8 +1458,8 @@
                                         <label>Tipe Kategori<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="cc_type">
                                             <option value="" selected disabled>Pilih Tipe Kategori</option>
-                                            <option value="Credit1">Credit 1</option>
-                                            <option value="Credit2">Credit 2</option>
+                                            <option value="Credit 1">Credit 1</option>
+                                            <option value="Credit 2">Credit 2</option>
                                             <option value="Debit">Debit / Setoran Tunai</option>
                                         </select>
                                     </div>
