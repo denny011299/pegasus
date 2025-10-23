@@ -1,6 +1,19 @@
 <?php $page = 'view_stock_opname'; ?>
 @extends('layout.mainlayout')
 @section('content')
+    <style>
+        .table-responsive {
+            display: block;
+            width: 100%;
+            overflow-x: auto !important;
+            overflow-y: hidden;
+            white-space: nowrap; /* biar kolom tidak turun ke bawah */
+        }
+
+        .table {
+         min-width: 1200px; /* paksa tabel jadi lebih lebar dari layar */
+        }
+    </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -75,16 +88,16 @@
                                 <div class="col-6 text-end">
                                 </div>
                             </div>
-                           <div class="table-responsive">
-                                <table class="table mt-3" id="tb-stock-table">
+                           <div class="table-responsive" style="overflow-x: auto;">
+                                <table class="table mt-3" id="tb-stock-table" style="min-width: 800px;">
                                     <thead>
                                         <tr>
                                             <td>SKU</td>
-                                            <td style="width:15%">Nama</td>
+                                            <td style="width:5%">Nama</td>
                                             <td class="text-center">Stok Komp.</td>
                                             <td class="text-center" style="width:35%">Stok Real</td>
                                             <td class="text-center">Selisih</td>
-                                            <td>Catatan</td>
+                                            <td style="width:25%">Catatan</td>
                                         </tr>
                                     </thead>
                                     <tbody id="tbStock"></tbody>

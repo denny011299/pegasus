@@ -176,7 +176,8 @@ class ProductController extends Controller
 
     function getProductVariant(Request $req){
         $data = (new ProductVariant())->getProductVariant([
-            "search_product" => $req->search_product
+            "search_product" => $req->search_product,
+            "category_id" => $req->category_id
         ]);
         return response()->json($data);
     }

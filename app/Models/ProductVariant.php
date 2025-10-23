@@ -48,8 +48,8 @@ class ProductVariant extends Model
 
         // Filter berdasarkan product_variant_id
         if ($data["category_id"]) {
-            $result->join("products as p ", 'p.product_id','product_variants.product_id');
-            $result->where('p.category_id','=',$data["category_id"]);
+            $result->join("products as p", 'p.product_id','product_variants.product_id');
+            $result->where('category_id','=',$data["category_id"]);
         }
         
         $result->select('product_variants.*');

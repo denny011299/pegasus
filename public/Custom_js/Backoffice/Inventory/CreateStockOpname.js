@@ -50,7 +50,7 @@
                                 <input type="hidden" class="stod_id"  value="${item.stod_id}">
                             </td>
                             <td class="text-center pt-2 selisih">${item.stod_selisih}</td>
-                            <td class="">
+                            <td class="" >
                                 <input type="text" class="form-control notes" placeholder="Catatan.." value="${item.stod_notes}">
                                 <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
                             </td>
@@ -58,6 +58,8 @@
                     `);
           
             });
+            $('#tbStock input').prop("disabled",true);
+            $('.btn-save').hide();
         }
         
     })
@@ -116,7 +118,9 @@
                     `);
                     $('.real-stock').trigger("keyup");
                 });
-                
+                if(e.length==0){
+                    $('#tbStock').html(`<tr><td colspan="6" class="text-center">Tidak ada produk pada kategori ini</td></tr>`);
+                }
                 if(mode==2){
                     $(".real-stock, .notes").attr("disabled","disabled");
                 }
@@ -239,7 +243,6 @@ function insertData() {
 $(document).on("change", "#kategori", async function () {
 
     var param = {
-        _token: $('meta[name="csrf-token"]').attr("content"),
     };
     if ($("#kategori").val() != -1) {
         param.category_id = $("#kategori").val();
@@ -249,12 +252,15 @@ $(document).on("change", "#kategori", async function () {
         type: "GET",
         dataType: "json",
         data: param,
+         headers: {
+            'X-CSRF-TOKEN': token
+        },
         success: function (data) {
             data.forEach((element) => {
                 element.real_stock = 0;
             });
             StockOpname = data;
-            refreshStockTable();
+            refreshStockOpname();
         },
     });
 });
