@@ -28,9 +28,6 @@ $(document).on("click", ".btn-save", function () {
     $('.is-invalid').removeClass('is-invalid');
     var url = "/insertSupplier";
 
-    // check image
-    if (mode==2)$('#supplier_image').removeClass('fill');
-    else if (mode==1) $('#supplier_image').addClass('fill');
 
     var valid = 1;
     $(".fill").each(function(){
@@ -58,10 +55,10 @@ $(document).on("click", ".btn-save", function () {
         city_id: $("#city_id").val(),
         supplier_zipcode: $("#supplier_zipcode").val(),
         supplier_bank: $("#supplier_bank").val(),
-        supplier_branch: $("#supplier_branch").val(),
+        supplier_branch: null,
         supplier_account_name: $("#supplier_account_name").val(),
         supplier_account_number: $("#supplier_account_number").val(),
-        supplier_ifsc: $("#supplier_ifsc").val(),
+        supplier_ifsc: null,
         supplier_top: $("#supplier_top").val(),
         supplier_payment: 0,
         _token:token

@@ -2,10 +2,11 @@ var dataRelasi=[];
 var canAdd = true;
 var rowId = 0;
 var relasi =[];
-
+var modeRelasi=0;
 autocompleteVariant("#product_variant");
 autocompleteCategory("#product_category");
 autocompleteUnit("#product_unit");
+
 
 $(document).ready(function() {
     if (mode == 1) {
@@ -155,13 +156,15 @@ $(document).on("click",".btn-save",function(){
 
     var url ="/insertProduct";
     var valid=1;
-    $(".fill").each(function(){
-        if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
-            valid=-1;
-            $(this).addClass('is-invalid');
-            console.log(this)
-        }
-    });
+    if(modeRelasi==0){
+        $(".fill").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+                console.log(this)
+            }
+        });
+    }
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
@@ -174,6 +177,7 @@ $(document).on("click",".btn-save",function(){
          category_id:$('#product_category').val(),
          unit_id:$('#unit_id').val(),
          product_unit:JSON.stringify($('#product_unit').val()),
+         modeRelasi:modeRelasi,
          _token:token
     };
     
@@ -219,9 +223,16 @@ $(document).on("click",".btn-save",function(){
         },
         success:function(e){      
             ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
-            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");
-            afterInsert();
+            if(modeRelasi==0){
+                if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
+                else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");
+                afterInsert();
+            }
+            else{
+                $('#modalRelasi').modal('hide');
+                notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
+                modeRelasi=0;
+            }
         },
         error:function(e){
             ResetLoadingButton(".btn-save", 'Simpan perubahan');
@@ -350,6 +361,11 @@ $(document).on("click",".btn_delete_row",function(){
     var index = $(this).closest("tr").index();
     relasi.splice(index,1);
     $(this).closest("tr").remove();
+      if(mode==2){
+
+         modeRelasi=1;
+        $(".btn-save").trigger("click");
+    }
 });
 
 function reset() {
@@ -395,8 +411,22 @@ $(document).on('click', '#btnSaveRelasi', function(){
     }); 
     console.log(relasi[index]);
 
-    $('#modalRelasi').modal('hide');
-    notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
+   
+    if(mode==1){
+       
+        $('#modalRelasi').modal('hide');
+       notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
+    }
+    else{
+
+         modeRelasi=1;
+        $(".btn-save").trigger("click");
+    }
+});
+
+$(document).on('click', '.btnAddRow', function(){
+       modeRelasi=1;
+        $(".btn-save").trigger("click");
 });
 
 $(document).on('click', '.btn_edit_relasi', function(){

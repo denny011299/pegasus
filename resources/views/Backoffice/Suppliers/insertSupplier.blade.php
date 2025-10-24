@@ -35,7 +35,7 @@
                                         </div>
                                         <div class="img-upload">
                                             <label class="btn btn-upload">
-                                                Unggah <input type="file" class="form-control fill input-gambar"
+                                                Unggah <input type="file" class="form-control  input-gambar"
                                                 accept="image/png, image/jpeg" id="supplier_image">
                                             </label>
                                         </div>
@@ -45,13 +45,6 @@
                                             <div class="input-block mb-3">
                                                 <label>Nama <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="supplier_name" placeholder="Masukkan Nama">
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Email <span class="text-danger">*</span></label>
-                                                <input type="email" class="form-control fill" id="supplier_email"
-                                                    placeholder="Masukkan Alamat Email">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
@@ -80,7 +73,7 @@
                                     <div class="row">
                                         <div class="col-md-12">
                                             <div class="billing-btn mb-2">
-                                                <h5 class="form-title">Alamat Penagihan</h5>
+                                                <h5 class="form-title">Alamat Supplier</h5>
                                             </div>
                                             <div class="input-block mb-3">
                                                 <label>Alamat <span class="text-danger">*</span></label>
@@ -101,13 +94,7 @@
                                                     </div>
                                                    
                                                 </div>
-                                                <div class="col-lg-4 col-md-12">
-                                                    <div class="input-block mb-3">
-                                                        <label>Kode Pos <span class="text-danger">*</span></label>
-                                                        <input type="text" class="form-control fill number-only" id="supplier_zipcode"
-                                                            placeholder="Masukkan Kode Pos">
-                                                    </div>
-                                                </div>
+                                               
                                             </div>
                                         </div>
                                     </div>
@@ -119,13 +106,6 @@
                                             <div class="input-block mb-3">
                                                 <label>Nama Bank <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="supplier_bank" placeholder="Masukkan Nama Bank">
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Cabang <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill" id="supplier_branch"
-                                                    placeholder="Masukkan Nama Cabang">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-12 col-sm-12">
@@ -151,12 +131,6 @@
                                                     <option value="3">CBD</option>
                                                     <option value="4">Pembayaran Tempo</option>
                                                 </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-12 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Kode IFSC <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill" id="supplier_ifsc" placeholder="Masukkan Kode IFSC">
                                             </div>
                                         </div>
                                     </div>
