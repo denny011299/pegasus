@@ -211,7 +211,7 @@ function insertData() {
     
     param = {
         sto_date:$('#tanggal').val(),//1 = In , 2 = Out
-        category_id:$('#kategori').val(),
+        category_id:-1,
         staff_id:$('#penanggung-jawab').val(),
         sto_notes:$('#catatan').val(),//1 = Product , 2 = supplies
         item:JSON.stringify(product),

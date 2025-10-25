@@ -60,13 +60,6 @@
                                         <input type="date" class="form-control" id="tanggal">
                                     </div>
                                 </div>
-                                <div class="col-lg-4">
-                                    <div class="add-newplus">
-                                        <label class="form-label">Kategori</label>
-                                    </div>
-                                    <select class="select" id="kategori" >
-                                    </select>
-                                </div>
                                 <div class="col-lg-12 mt-2">
                                     <div class="input-blocks">
                                         <label>Catatan</label>
