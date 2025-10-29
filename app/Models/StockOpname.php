@@ -54,7 +54,7 @@ class StockOpname extends Model
         
         foreach ($result as $key => $value) {
            $value->staff_name = Staff::find($value->staff_id)->staff_name;
-           $value->category_name = Category::find($value->category_id)->category_name;
+        //    $value->category_name = Category::find($value->category_id)->category_name;
            $value->item = (new StockOpnameDetail())->getDetail(["sto_id"=>$value->sto_id]);
         }
         return $result;

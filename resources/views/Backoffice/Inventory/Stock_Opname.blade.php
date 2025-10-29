@@ -29,7 +29,6 @@
                                         <tr>
                                             <th>Tanggal Opname</th>
                                             <th>Penanggung Jawab</th>
-                                            <th>Kategori</th>
                                             <th>ID Opname</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>

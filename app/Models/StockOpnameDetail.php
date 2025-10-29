@@ -60,6 +60,16 @@ class StockOpnameDetail extends Model
      */
     public static function insertDetail($data)
     {
+        $m = ProductVariant::find($data["product_variant_id"]);
+        $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
+        if ($s->ps_stock - $data["so_qty"] > 0) {
+            $s->ps_stock -= $data["so_qty"];
+        } else {
+            return -1;
+        }
+        $m->save();
+        $s->save();
+        
         $t = new self();
         $t->sto_id = $data['sto_id'];
         $t->product_id = $data['product_id'];

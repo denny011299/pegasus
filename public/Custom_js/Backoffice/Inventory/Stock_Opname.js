@@ -31,7 +31,6 @@
             columns: [
                 { data: "sto_date"},
                 { data: "staff_name" },
-                { data: "category_name" },
                 { data: "sto_id_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],

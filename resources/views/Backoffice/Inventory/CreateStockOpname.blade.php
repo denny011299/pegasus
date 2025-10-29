@@ -51,13 +51,13 @@
                                 <div class="col-lg-4">
                                     <div class="input-blocks">
                                         <label>Nama Penanggung Jawab</label>
-                                        <select name="" id="penanggung-jawab" class="form-select"></select>
+                                        <select name="" id="penanggung-jawab" class="form-select fill"></select>
                                     </div>
                                 </div>
                                 <div class="col-lg-4">
                                     <div class="input-blocks">
                                         <label>Tanggal</label>
-                                        <input type="date" class="form-control" id="tanggal">
+                                        <input type="date" class="form-control fill" id="tanggal">
                                     </div>
                                 </div>
                                 <div class="col-lg-12 mt-2">

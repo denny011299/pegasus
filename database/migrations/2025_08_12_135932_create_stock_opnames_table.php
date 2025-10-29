@@ -12,7 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('stock_opnames', function (Blueprint $table) {
-            $table->id();
+            $table->integerIncrements('sto_id');
+            $table->date('sto_date');
+            $table->integer('staff_id');
+            $table->integer('category_id');
+            $table->longText('sto_notes')->nullable();
+            $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive');
             $table->timestamps();
         });
     }

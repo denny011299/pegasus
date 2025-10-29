@@ -571,7 +571,7 @@
                             <li><a href="{{ url('stockAlert') }}"
                                 class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok</a></li>
                             <li><a href="{{ url('stockOpname') }}"
-                                    class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname</a></li>
+                                    class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname Produk</a></li>
                         </ul>
                     </li>
                     <!-- /Master -->
