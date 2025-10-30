@@ -40,10 +40,7 @@ class StockOpname extends Model
         if ($data['staff_id']) {
             $result->where('staff_id', $data['staff_id']);
         }
-
-        if ($data['category_id']) {
-            $result->where('category_id', $data['category_id']);
-        }
+        
         if ($data['sto_id']) {
             $result->where('sto_id','=', $data['sto_id']);
         }

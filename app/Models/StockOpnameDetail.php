@@ -42,7 +42,9 @@ class StockOpnameDetail extends Model
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $pv = (new ProductVariant())->getProductVariant(["product_variant_id"=>$value->product_variant_id])[0];
+            $pv = (new ProductVariant())->getProductVariant(["product_variant_id"=>$value->product_variant_id]);
+            if(isset($pv[0]->product_variant_id)) $pv = $pv[0];
+
             $temp = $pv;
             $temp->stod_system = $value->stod_system;
             $temp->stod_real =  $value->stod_real;

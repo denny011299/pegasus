@@ -119,5 +119,5 @@
         var data = @json($data);
         var mode = @json($mode);
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js')}}?v=1"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js')}}?v=2"></script>
 @endsection
