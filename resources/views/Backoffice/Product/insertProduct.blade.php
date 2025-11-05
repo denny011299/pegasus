@@ -162,7 +162,19 @@
                 </div>
                 <div class="modal-body">
                     <div class="container-fluid">
-                        <table class="table table-bordered mb-2">
+                        <div class="row">
+                            <div class="col-3">
+                                <select name="" id="relasi1" class="form-select"></select>
+                            </div>
+                            <div class="col-1"> <h6 class="text-center pt-2"> - </h6> </div>
+                            <div class="col-3">
+                                <select name="" id="relasi2" class="form-select"></select>
+                            </div>
+                            <div class="col-3">
+                                <button class="btn btn-primary w-100 btn-sm" id="btnAddRowRelasi">Tambah Row Relasi</button>
+                            </div>
+                        </div>
+                        <table class="table table-bordered mb-2 mt-4">
                             <thead>
                                 <tr>
                                     <td>Name Unit 1<span class="text-danger">*</span></td>

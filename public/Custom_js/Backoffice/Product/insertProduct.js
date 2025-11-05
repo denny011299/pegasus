@@ -12,6 +12,7 @@ $(document).ready(function() {
     if (mode == 1) {
         canAdd=true;
         $('#tbVariant').html("")
+        relasi.push([]);
         addRow();
         $('#tbRelasi').html("");
         reset();
@@ -97,9 +98,10 @@ $(document).on('click','.btnAddRow',function(){
         var data = $('#product_variant').select2('data')[0];
         data.name = JSON.parse(data.variant_attribute);
         data.name.forEach((element,idx) => {
-            relasi.push([]);
+           
             addRow(element,idx);
         });
+        relasi.push([]);
         $('#product_variant').empty();
     }
    else{ 
@@ -125,7 +127,7 @@ function addRow(names="",idx=0) {
                 <a class="p-2 btn-action-icon btn_delete_row"  href="javascript:void(0);">
                     <i data-feather="trash-2" class="feather-trash-2"></i>
                 </a>
-                <a class="p-2 btn-action-icon btn_edit_relasi ms-2 "  href="javascript:void(0);">
+                <a class="p-2 btn-action-icon btn_edit_relasi ms-2 " index="${$('.row-variant').length}" href="javascript:void(0);">
                     <i data-feather="git-merge" class="feather-git"></i>
                 </a>
             </td>
@@ -245,14 +247,29 @@ function afterInsert() {
     window.location.href = "/product";
 }
 
+$(document).on("click","#btnAddRowRelasi",function(){
+    var r1 = $('#relasi1').val();
+    var r2 = $('#relasi2').val();
+    if(!r1 || !r2){
+        notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh kosong");
+        return false;
+    }
+    if(r1==r2){
+        notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh sama");
+        return false;
+    }
+    addRowRelasi({pr_unit_id_1: r1, pr_unit_name_1: $('#relasi1 option:selected').text().trim()},{pr_unit_id_2: r2, pr_unit_name_2: $('#relasi2 option:selected').text().trim()});
+});
+
 $(document).on("change","#product_unit",function(){
     dataRelasi = $(this).select2("data");
     // Pengecekan apakah sudah selected atau belum
     var select = dataRelasi.length==1?1:$('#unit_id').val();
-    
-    $('#unit_id').html("");
+
+    $('#unit_id,#relasi1,#relasi2').html("");
     dataRelasi.forEach(item => {
         $('#unit_id').append(`<option value="${item.id}">${item.text}</option>`);
+        $('#relasi1,#relasi2').append(`<option value="${item.id}">${item.text}</option>`);
     });
 
     if(dataRelasi.length>1)$('#unit_id').val(select);
@@ -264,7 +281,7 @@ $(document).on("change","#product_unit",function(){
         
         $('#tbRelasi').html("");
         dataRelasi.forEach((element,index) => {
-            if(index>0)addRowRelasi(dataRelasi[index-1],element); 
+           // if(index>0)addRowRelasi(dataRelasi[index-1],element); 
         });
 
     }
@@ -309,7 +326,7 @@ function addRowRelasi(element1,element2) {
             <td>
                 <div class="input-group">
                     <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai"
-                    data-unit_id="${element2.pr_unit_id_2 ? element2.pr_unit_id_2 : element2.id}" value="${element2.pr_unit_value_2 ? element2.pr_unit_value_2 : ""}">
+                    data-unit_id="${element2.pr_unit_id_2 ? element2.pr_unit_id_2 : element2.id}" value="${element2.pr_unit_value_2 ? element2.pr_unit_value_2 : element2.unit_value_2??0}">
                     <span class="input-group-text unit_text_2">
                         ${element2.pr_unit_name_2 ? element2.pr_unit_name_2 : element2.text}
                     </span>
@@ -317,33 +334,7 @@ function addRowRelasi(element1,element2) {
             </td>
         </tr>    
     `);      
-    if($('.row-variant').length > relasi.length) {
-        for (let i = 0; i < $('.row-variant').length - relasi.length ; i++) {
-            relasi.push([]);
-        }
-    }
-    console.log("length variant "+relasi.length);
-    
-    for (let i = 0; i < relasi.length; i++) {
-        var cari=-1;
-        
-        relasi[i].forEach(element => {
-            
-            if(element.unit_id_1==element1.unit_id && element.unit_id_2==element2.unit_id) cari=i;
-            
-        });
-
-         if(cari==-1&&element1.unit_id!=element2.unit_id) {
-            relasi[i].push({
-                pvr_id : null,
-                unit_id_1: element1.id,
-                unit_value_1: 1,
-                unit_id_2: element2.id,
-                unit_value_2: 0,
-            });
-        }
-    }
-   cekKembar();
+    feather.replace();
 }
 
 function cekKembar() {
@@ -388,7 +379,7 @@ $(document).on('click', '.btn-clear', function(){
 })
 
 $(document).on('click', '#btnSaveRelasi', function(){
-    var index = $(this).attr('index');
+    var index = parseInt($(this).attr('index'));
     var valid=1;
     $('.is-invalid').removeClass('is-invalid');
     $(".unit2").each(function(){
@@ -408,14 +399,16 @@ $(document).on('click', '#btnSaveRelasi', function(){
     }
     relasi[index].forEach((element,idx) => {
         element.unit_value_2 = $('.unit2').eq(idx).val();
+        element.index = index;
+        element.pr_unit_name_1 = $('#relasi1 option:selected').text().trim();
+        element.pr_unit_name_2 = $('#relasi2 option:selected').text().trim();
     }); 
     console.log(relasi[index]);
 
    
     if(mode==1){
-       
         $('#modalRelasi').modal('hide');
-       notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
+        notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
     }
     else{
 
@@ -431,12 +424,27 @@ $(document).on('click', '.btnAddRow', function(){
 
 $(document).on('click', '.btn_edit_relasi', function(){
     $('.is-invalid').removeClass('is-invalid');
-    var index = $(this).closest("tr").index();
+    var index = $(this).attr('index');
     
     $('#btnSaveRelasi').attr('index',index);
+    /*
     $('.unit2').each(function(indexRow) {
         if(relasi[index][[indexRow]])$(this).val(relasi[index][indexRow].unit_value_2);
         else  $(this).val(0);
+    });*/
+    console.log(relasi);
+    
+    $('#tbRelasi').html("");
+    relasi.forEach((element,index) => {
+        element.forEach((item,idx) => {
+            console.log(item);
+            
+            if(index == item.index){
+                console.log("masuk");
+                
+                addRowRelasi(item,item);  
+            }
+        });
     });
     
     $('#modalRelasi').modal('show');

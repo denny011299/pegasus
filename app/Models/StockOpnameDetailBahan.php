@@ -4,9 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class StockOpnameDetail extends Model
+class StockOpnameDetailBahan extends Model
 {
-    protected $table = "stock_opname_details";
+    protected $table = "stock_opname_detail_bahans";
     protected $primaryKey = "stod_id";
     public $timestamps = true;
     public $incrementing = true;
@@ -30,8 +30,8 @@ class StockOpnameDetail extends Model
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $pv = (new ProductVariant())->getProductVariant(["product_variant_id"=>$value->product_variant_id]);
-            if(isset($pv[0]->product_variant_id)) $pv = $pv[0];
+            $pv = (new SuppliesVariant())->getSuppliesVariant(["supplies_variant_id"=>$value->supplies_variant_id]);
+            if(isset($pv[0]->supplies_variant_id)) $pv = $pv[0];
 
             $temp = $pv;
             $temp->stod_system = $value->stod_system;
@@ -50,16 +50,15 @@ class StockOpnameDetail extends Model
      */
     public static function insertDetail($data)
     {
-        $m = ProductVariant::find($data["product_variant_id"]);
-        $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
-        $s->ps_stock = $data["so_qty"];
+        $m = SuppliesVariant::find($data["supplies_variant_id"]);
+        $m->supplies_variant_stock = $data["so_qty"];
+
         $m->save();
-        $s->save();
         
         $t = new self();
         $t->sto_id = $data['sto_id'];
-        $t->product_id = $data['product_id'];
-        $t->product_variant_id = $data['product_variant_id'];
+        $t->supplies_id = $data['supplies_id'];
+        $t->supplies_variant_id = $data['supplies_variant_id'];
         $t->stod_system = $data['stod_system'] ?? null;
         $t->stod_real = $data['stod_real'] ?? null;
         $t->stod_selisih = $data['stod_selisih'] ?? null;
@@ -78,8 +77,8 @@ class StockOpnameDetail extends Model
         if (!$t) return null;
 
         $t->sto_id = $data['sto_id'];
-        $t->product_id = $data['product_id'];
-        $t->product_variant_id = $data['product_variant_id'];
+        $t->supplies_id = $data['supplies_id'];
+        $t->supplies_variant_id = $data['supplies_variant_id'];
         $t->stod_system = $data['stod_system'] ?? null;
         $t->stod_real = $data['stod_real'] ?? null;
         $t->stod_selisih = $data['stod_selisih'] ?? null;

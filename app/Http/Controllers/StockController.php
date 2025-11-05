@@ -83,6 +83,73 @@ class StockController extends Controller
         return (new StockOpnameDetail())->deleteDetailStockOpname($data);
     }
 
+    // Stock Opname
+        public function StockOpnameBahan(){
+        return view('Backoffice.Inventory.Stock_Opname_Bahan');
+    }
+
+    function getStockOpnameBahan(Request $req){
+        $data = (new StockOpname())->getStockOpname();
+        return response()->json($data);
+    }
+
+    function insertStockOpnameBahan(Request $req){
+        $data = $req->all();
+        $id =  (new StockOpname())->insertStockOpname($data);
+        foreach (json_decode($req->item,true) as $key => $value) {
+            $value["sto_id"] = $id;
+            (new StockOpnameDetail())->insertDetail($value);
+        }
+    }
+
+    function updateStockOpnameBahan(Request $req){
+        $data = $req->all();
+        $id = (new StockOpname())->updateStockOpname($data);
+        foreach (json_decode($req->item,true) as $key => $value) {
+            $value["sto_id"] = $id;
+            if(isset($value["stod_id"]))(new StockOpnameDetail())->updateDetail($value);
+            else (new StockOpnameDetail())->insertDetail($value);
+        }
+    }
+
+    function deleteStockOpnameBahan(Request $req){
+        $data = $req->all();
+        return (new StockOpname())->deleteStockOpname($data);
+    }
+
+    // Stock Opname Detail
+    public function DetailStockOpnameBahan($id){
+        if($id!=-1){
+            $param["data"] = (new StockOpname())->getStockOpname(["sto_id"=>$id])[0];
+            $param["mode"] = 2;
+        }
+        else {
+            $param["data"] = [];
+            $param["mode"] = 1;
+        }
+        return view('Backoffice.Inventory.CreateStockOpname')->with($param);
+    }
+
+    function getDetailStockOpnameBahan(Request $req){
+        $data = (new StockOpnameDetail())->getDetailStockOpname();
+        return response()->json($data);
+    }
+
+    function insertDetailStockOpnameBahan(Request $req){
+        $data = $req->all();
+        return (new StockOpnameDetail())->insertDetailStockOpname($data);
+    }
+
+    function updateDetailStockOpnameBahan(Request $req){
+        $data = $req->all();
+        return (new StockOpnameDetail())->updateDetailStockOpname($data);
+    }
+
+    function deleteDetailStockOpnameBahan(Request $req){
+        $data = $req->all();
+        return (new StockOpnameDetail())->deleteDetailStockOpname($data);
+    }
+
     // Stock Alert
     public function StockAlert(){
         return view('Backoffice.Inventory.Stock_Alert');
