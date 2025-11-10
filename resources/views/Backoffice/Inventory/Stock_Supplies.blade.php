@@ -53,5 +53,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Supplies.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Supplies.js')}}?v={{time()}}"></script>
 @endsection
