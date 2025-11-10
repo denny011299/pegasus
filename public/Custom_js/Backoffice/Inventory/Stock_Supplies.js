@@ -47,7 +47,7 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].supplies_variant_stock_text = `${e[i].supplies_variant_stock} ${e[i].unit_name}`;
+                    e[i].supplies_variant_stock_text = `${e[i].supplies_variant_stock} ${e[i].unit_name || e[i].supplies_unit}`;
                 }
 
                 table.rows.add(e).draw();
