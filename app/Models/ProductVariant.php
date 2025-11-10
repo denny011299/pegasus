@@ -66,13 +66,10 @@ class ProductVariant extends Model
             $variant->product_category = Category::find($p->category_id)->category_name ?? "-";
             $variant->category_id = $p->category_id;
             $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit,true))->get();
-            $variant->relasi = ProductRelation::where('product_variant_id', '=', $variant->product_variant_id)->where('status','=',1)->get();
+            $variant->relasi = (new ProductRelation())->getProductRelation(['product_variant_id' =>$variant->product_variant_id]);
             $variant->stock = (new ProductStock())->getProductStock(["product_variant_id"=>$variant->product_variant_id]);
             
             // Get nama unit default
-            $v = Unit::find($p->unit_id);
-            $variant->unit_id = $v->unit_id;
-            $variant->unit_name = $v->unit_name;
 
             // Get stock
             $s = ProductStock::where('product_variant_id', $variant->product_variant_id)
@@ -91,6 +88,7 @@ class ProductVariant extends Model
         $t->product_id = $data["product_id"];
         $t->product_variant_name = $data["variant_name"];
         $t->product_variant_sku = $data["variant_sku"];
+        $t->unit_id = $data["unit_id"];
         $t->product_variant_price = $data["variant_price"]!=""? $data["variant_price"] : 0;
         $t->product_variant_barcode = $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"]!="" ? $data["variant_alert"] : 0;
@@ -110,6 +108,7 @@ class ProductVariant extends Model
                 "variant_price"   => $data["variant_price"],
                 "variant_alert"   => $data["variant_alert"],
                 "variant_barcode" => $data["variant_barcode"] ?? "",
+                "unit_id" => $data["unit_id"] ?? 0,
             ]);
         }
         $t->product_id = $data["product_id"];
@@ -118,6 +117,7 @@ class ProductVariant extends Model
         $t->product_variant_price = $data["variant_price"];
         $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"];
+        $t->unit_id = $data["unit_id"];
         $t->save();
 
         return $t->product_variant_id;

@@ -13,11 +13,11 @@ class ProductRelation extends Model
 
     function getProductRelation($data = []){
         $data = array_merge([
-            "product_id"=>null
+            "product_variant_id"=>null
         ], $data);
 
         $result = self::where('status', '=', 1);
-        if($data["product_id"]) $result->where('product_id','=',$data["product_id"]);
+        if($data["product_variant_id"]) $result->where('product_variant_id','=',$data["product_variant_id"]);
         $result->orderBy('created_at', 'asc');
        
         $result = $result->get();
@@ -34,9 +34,9 @@ class ProductRelation extends Model
     {
         $t = new self();
         $t->product_variant_id = $data["product_variant_id"];
-        $t->pr_unit_id_1 = $data["unit_id_1"];
+        $t->pr_unit_id_1 = $data["pr_unit_id_1"];
         $t->pr_unit_value_1 = $data["unit_value_1"];
-        $t->pr_unit_id_2 = $data["unit_id_2"];
+        $t->pr_unit_id_2 = $data["pr_unit_id_2"];
         $t->pr_unit_value_2 = $data["unit_value_2"];
         $t->save();
         return $t->pr_id;

@@ -130,7 +130,6 @@ class ProductController extends Controller
             $value['product_id'] = $id;
             $variant[$key]["product_variant_id"] = (new ProductVariant())->insertProductVariant($value);
         }
-
         foreach ( $relasi as $keyRelasi => $value) {
             foreach ($value as $key => $perVariant) {
                 $perVariant['product_id'] = $id;
@@ -159,6 +158,7 @@ class ProductController extends Controller
         foreach (json_decode($data['product_relasi'],true) as $keyRelasi => $value) {
             foreach ($value as $key => $perVariant) {
                 $perVariant['product_variant_id'] = $variant[$keyRelasi]['product_variant_id'];
+             
                 if(!isset($perVariant["pr_id"])) $t = (new ProductRelation())->insertProductRelation($perVariant);
                 else $t = (new ProductRelation())->updateProductRelation($perVariant);
                 array_push($id,$t);

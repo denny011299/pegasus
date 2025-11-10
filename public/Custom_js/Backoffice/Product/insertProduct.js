@@ -34,12 +34,6 @@ $(document).ready(function() {
             
         });
 
-        $('#tbRelasi').html("");
-        dataRelasi.forEach((element,index) => {
-            addRowRelasi(element,element);
-            canAdd=true;
-        })
-        reset();
         
         $('#product_unit').empty();
         $('#unit_id').empty(); 
@@ -52,35 +46,37 @@ $(document).ready(function() {
         relasi = [];
         data.pr_variant.forEach((element,index) => {
             relasi.push([]);
-
+            console.log("------------------------------------");
+            console.log(element);
+            
             element.relasi.forEach(rl => {
+                console.log(rl);
+                
                 relasi[index].push({
                     ...rl,
-                    unit_id_1: rl.pr_unit_id_1,
+                    unit_id_1: rl.pr_unit_id_1, 
                     unit_value_1: rl.pr_unit_value_1,
                     unit_id_2: rl.pr_unit_id_2,
                     unit_value_2: rl.pr_unit_value_2,
+                    index: index,
                 });
             });
-            if(element.relasi.length==0){
-              syncRelasi();
-            }
+            $('.unit_alert').eq(index).val(element.unit_id);
         });
+        console.log('----------------------------');
+        console.log(relasi);
+        
+        
     }
 })
-function syncRelasi() {
-    var idx = relasi.length-1;
-    dataRelasi.forEach((element,index) => {
-         if(index>0){
-             relasi[idx].push({
-                 pvr_id : null,
-                 unit_id_1: element.id,
-                 unit_value_1: 1,
-                 unit_id_2: element.id,
-                 unit_value_2: 0,
-             });
-         }
-     });
+function syncRelasi(idx) {
+    relasi[idx].push({
+        pvr_id : null,
+        unit_id_1: null,
+        unit_value_1: 1,
+        unit_id_2: null,
+        unit_value_2: 0,
+    });
 
 }
 $('#unit_id').on('click', function() {
@@ -108,6 +104,14 @@ $(document).on('click','.btnAddRow',function(){
         relasi.push([]);
         addRow();
     }
+    modeRelasi=1;
+    var units = $('.unit_alert').last();
+    units.html("");
+    dataRelasi.forEach(item => {
+        units.append(`<option value="${item.id}" >${item.text}</option>`);
+    });
+    units.val(units.find('option:first').val());
+   if(mode==2) $(".btn-save").trigger("click");
 });
 
 function addRow(names="",idx=0) {
@@ -120,7 +124,9 @@ function addRow(names="",idx=0) {
             <td>
                 <div class="input-group">
                     <input type="text" class="form-control fill variant_alert" aria-describedby="basic-addon3">
-                    <span class="input-group-text unit_alert">-</span>
+                    <select class="form-select ms-2 variant_alert_type fill unit_alert" aria-label="Default select example">
+                       
+                    </select>
                 </div>
             </td>
             <td class="text-center d-flex align-items-center text-center">
@@ -135,18 +141,6 @@ function addRow(names="",idx=0) {
     `);
 
         
-    dataRelasi.forEach((element,index) => {
-        if(index>0){
-            relasi[idx].push({
-                pvr_id : null,
-                unit_id_1: element.id,
-                unit_value_1: 1,
-                unit_id_2: element.id,
-                unit_value_2: 0,
-            });
-        }
-    });
-
 
     feather.replace();
     rowId++;
@@ -192,24 +186,15 @@ $(document).on("click",".btn-save",function(){
             variant_barcode: $(this).find('.variant_barcode').val(),
             variant_alert: $(this).find('.variant_alert').val(),
             product_variant_id: $(this).find('.variant_id').val(),
+            unit_id: $(this).find('.unit_alert').val(),
         };
         temp.push(variant);
     });
 
-   // var relasi = [];
-    $('.row-relasi').each(function(){
-        var tmp = {
-            unit_id_1: $(this).find('.unit1').data('unit_id'),
-            unit_value_1: $(this).find('.unit1').val(),
-            unit_id_2: $(this).find('.unit2').data('unit_id'),
-            unit_value_2: $(this).find('.unit2').val(),
-        };
-       // relasi.push(tmp);
-    });
-
     param.product_variant = JSON.stringify(temp);
     param.product_relasi = JSON.stringify(relasi);
-
+    console.log(relasi);
+    
     if(mode==2){
         url="/updateProduct";
         param.product_id = data.product_id;
@@ -258,6 +243,8 @@ $(document).on("click","#btnAddRowRelasi",function(){
         notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh sama");
         return false;
     }
+    console.log(r1+" - "+r2);
+    
     addRowRelasi({pr_unit_id_1: r1, pr_unit_name_1: $('#relasi1 option:selected').text().trim()},{pr_unit_id_2: r2, pr_unit_name_2: $('#relasi2 option:selected').text().trim()});
 });
 
@@ -292,18 +279,31 @@ $(document).on("change","#product_unit",function(){
 
     else if (dataRelasi.length < 1) {
         $('#tbRelasi').html("");
-        $('.unit_alert').each(function() {
-            $(this).html("-");
-        })
         $('#unit_id').val("");
     }
+    $('.unit_alert').each(function() {
+        var units = $(this);
+        var vl = units.val();
+        console.log(vl);
+        units.html("");
+        dataRelasi.forEach(item => {
+            units.append(`<option value="${item.id}" ${vl==item.id?'selected':''}>${item.text}</option>`);
+        });
+
+        if (vl != null && vl !== "") {
+            units.val(vl);
+        } else {
+            units.val(units.find('option:first').val());
+        }
+    });
 });
 
 $(document).on("change","#unit_id",function(){
-    $('.unit_alert').each(function() {
-        $(this).html($('#unit_id option:selected').text().trim());
-    });
     $('.select2-search__field').remove();
+});
+$(document).on("change",".unit_alert",function(){
+    modeRelasi=1;
+    if(mode==2) $(".btn-save").trigger("click");
 });
 
 $('#unit_id').on('click', function() {
@@ -311,8 +311,10 @@ $('#unit_id').on('click', function() {
 });
 
 function addRowRelasi(element1,element2) {
+    console.log(element2);
+    
     $('#tbRelasi').append(`
-        <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${element2.pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : dataRelasi[dataRelasi.length-1].id}">
+        <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${dataRelasi[dataRelasi.length-1].pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : element2.pr_unit_id_2}">
             <td>
                 <div class="input-group">
                     <input type="text" class="form-control nominal-only unit1 fill" value="1"
@@ -393,16 +395,16 @@ $(document).on('click', '#btnSaveRelasi', function(){
         return false;
     }
     console.log(relasi[index]);
-    
-    if(relasi[index].length==0){
-        syncRelasi();
-    }
+
+    if($('.row-relasi').length>relasi[index].length) syncRelasi(index);
     relasi[index].forEach((element,idx) => {
-        element.unit_value_2 = $('.unit2').eq(idx).val();
         element.index = index;
-        element.pr_unit_name_1 = $('#relasi1 option:selected').text().trim();
-        element.pr_unit_name_2 = $('#relasi2 option:selected').text().trim();
-    }); 
+        element.unit_value_2 = $('.unit2').eq(idx).val();
+        element.pr_unit_id_1 = $('.row-relasi').eq(idx).attr('left');
+        element.pr_unit_id_2 = $('.row-relasi').eq(idx).attr('right');
+        element.pr_unit_name_1 = $('.row-relasi').eq(idx).find('.unit_text_1').text().trim();
+        element.pr_unit_name_2 = $('.row-relasi').eq(idx).find('.unit_text_2').text().trim();
+    });
     console.log(relasi[index]);
 
    
@@ -411,20 +413,15 @@ $(document).on('click', '#btnSaveRelasi', function(){
         notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
     }
     else{
-
          modeRelasi=1;
         $(".btn-save").trigger("click");
     }
 });
 
-$(document).on('click', '.btnAddRow', function(){
-       modeRelasi=1;
-        $(".btn-save").trigger("click");
-});
-
 $(document).on('click', '.btn_edit_relasi', function(){
     $('.is-invalid').removeClass('is-invalid');
     var index = $(this).attr('index');
+    console.log(index);
     
     $('#btnSaveRelasi').attr('index',index);
     /*
@@ -435,8 +432,7 @@ $(document).on('click', '.btn_edit_relasi', function(){
     console.log(relasi);
     
     $('#tbRelasi').html("");
-    relasi.forEach((element,index) => {
-        element.forEach((item,idx) => {
+    relasi[index].forEach((item,idx) => {
             console.log(item);
             
             if(index == item.index){
@@ -444,7 +440,6 @@ $(document).on('click', '.btn_edit_relasi', function(){
                 
                 addRowRelasi(item,item);  
             }
-        });
     });
     
     $('#modalRelasi').modal('show');
