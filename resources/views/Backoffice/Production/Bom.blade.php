@@ -30,7 +30,7 @@
                                             <th>SKU</th>
                                             <th>Produk</th>
                                             <th>Material</th>
-                                            <th>Satuan</th>
+                                            <th>Qty Produksi</th>
                                             <th class="no-sort text-center">Aksi</th>
                                         </tr>
                                     </thead>

@@ -15,13 +15,13 @@ class Bom extends Model
     {
 
         $data = array_merge([
-            "bom_id"=>null,
-            "product_id"=>null,
+            "bom_id" => null,
+            "product_id" => null,
         ], $data);
 
         $result = Bom::where('status', '=', 1);
-        if($data["product_id"]) $result->where('product_id','=',$data["product_id"]);
-        if($data["bom_id"]) $result->where('bom_id','=',$data["bom_id"]);
+        if ($data["product_id"]) $result->where('product_id', '=', $data["product_id"]);
+        if ($data["bom_id"]) $result->where('bom_id', '=', $data["bom_id"]);
         $result->orderBy('created_at', 'asc');
 
         $result = $result->get();
@@ -31,8 +31,8 @@ class Bom extends Model
             $value->product_sku = $v->product_variant_sku;
             $u = Product::find($v->product_id);
             $value->product_name = $u->product_name;
-            $value->unit_id = $u->unit_id;
-            $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit,true))->get();
+            $value->unit_name = Unit::find($value->unit_id)->unit_short_name;
+            $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit, true))->get();
         }
 
         return $result;
@@ -43,6 +43,7 @@ class Bom extends Model
         $t = new Bom();
         $t->product_id = $data["product_id"];
         $t->bom_qty = $data["bom_qty"];
+        $t->unit_id = $data["unit_id"];
         $t->save();
         return $t->bom_id;
     }
@@ -52,6 +53,7 @@ class Bom extends Model
         $t = Bom::find($data["bom_id"]);
         $t->product_id = $data["product_id"];
         $t->bom_qty = $data["bom_qty"];
+        $t->unit_id = $data["unit_id"];
         $t->save();
         return $t->bom_id;
     }

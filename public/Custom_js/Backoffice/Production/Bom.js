@@ -12,12 +12,23 @@
     $(document).on('change','#supplies_id',function(){
         var data = $(this).select2("data")[0];
         console.log(data);
-        $('#unit_id').empty();
+       // $('#unit_id').empty();
         /*
         data.sup_unit.forEach(element => {
             $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
         });*/
     });
+
+    $(document).on('change','#product_id',function(){
+        var data = $(this).select2("data")[0];
+        console.log(data);
+        $('#unit_id').empty();
+        
+        data.pr_unit.forEach(element => {
+            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_short_name}</option>`);
+        });
+    });
+    
     $(document).on('click','.btnAdd',function(){
         mode=1;
         $('#add_bom .modal-title').html("Tambah Resep Bahan Mentah");
@@ -51,7 +62,7 @@
                 { data: "product_sku" },
                 { data: "product_name" },
                 { data: "supplies" },
-                { data: "unit" },
+                { data: "unit_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -76,7 +87,7 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].bom_date = moment(e[i].created_at).format('D MMM YYYY');
                     console.log(e[i]);
-                    e[i].unit = e[i].details[0].unit_name;
+                    e[i].unit_text = e[i].bom_qty + " " + e[i].unit_name;
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
                             <i class="fe fe-edit"></i>
@@ -124,6 +135,7 @@
         console.log(bahan);
         param = {
             bom_qty:$('#bom_qty').val(),
+            unit_id:$('#unit_id').val(),
             product_id:$('#product_id').val(),
             bahan : JSON.stringify(bahan),
              _token:token
@@ -188,6 +200,13 @@
             };
             bahan.push(data);
             addRow(data)
+        });
+
+        $('#unit_id').empty();
+        data.pr_unit.forEach(element => {
+            var active = "";
+            if(element.unit_id == data.unit_id) active = "selected";
+            $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_short_name}</option>`);
         });
         $('.btn-save').html('Simpan perubahan');
         $('#add_bom').modal("show");

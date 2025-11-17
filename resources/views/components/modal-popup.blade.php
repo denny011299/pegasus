@@ -267,7 +267,7 @@
                                         <label class="form-label">Jumlah Produksi</label>
                                         <div class="input-group">
                                             <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
-                                            <select class="form-select w-25" id="unit_id">
+                                            <select class="form-select w-25" id="unit_id" disabled>
                                             </select>
                                         </div>
                                     </div>
@@ -1272,16 +1272,21 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-8">
+                                <div class="col-7">
                                     <div class="input-block mb-3">
                                         <label>Produk<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="product_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-5">
                                     <div class="input-block mb-3">
                                         <label>Qty Produksi<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill number-only" id="bom_qty" placeholder="Qty Produksi">
+                                        
+                                        <div class="input-group">
+                                            <input type="text" class="form-control fill number-only" id="bom_qty" placeholder="Qty Produksi">
+                                            <select class="form-select w-25 fill" id="unit_id">
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12 py-3 mb-3">
