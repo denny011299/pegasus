@@ -296,7 +296,7 @@
 @endif
 @if (Route::is(['supplies']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_supplies" role="dialog">
+    <div class="modal modal-xl custom-modal fade" id="add_supplies" role="dialog">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -350,6 +350,7 @@
                                     <table class="table">
                                         <thead>
                                             <tr>
+                                                <td>Supplier<span class="text-danger"  style="width:15%">*</span></td>
                                                 <td>Nama Variasi<span class="text-danger">*</span></td>
                                                 <td>SKU<span class="text-danger">*</span></td>
                                                 <td>Harga<span class="text-danger">*</span></td>

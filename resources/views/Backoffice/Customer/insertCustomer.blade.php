@@ -36,8 +36,8 @@
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Email <span class="text-danger">*</span></label>
-                                                <input type="email" class="form-control fill" id="customer_email"
+                                                <label>Email </label>
+                                                <input type="email" class="form-control " id="customer_email"
                                                     placeholder="Masukkan Alamat Email">
                                             </div>
                                         </div>
@@ -63,13 +63,6 @@
                                         <div class="input-block mb-3">
                                             <label>Alamat <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control fill" id="customer_address" placeholder="Masukkan Alamat">
-                                        </div>
-                                        <div class="col-lg-4 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Nomor Telepon <span class="text-danger">*</span></label>
-                                                <input type="text" id="customer_phone" class="form-control fill number-only"
-                                                    placeholder="08xxx" name="name">
-                                            </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">

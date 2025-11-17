@@ -29,7 +29,7 @@
             columns: [
                 { data: "customer_name" },
                 { data: "customer_code" },
-                { data: "customer_phone" },
+                { data: "customer_pic_phone" },
                 { data: "city_name" },
                 { data: "customer_payment" },
                 { data: "created" },

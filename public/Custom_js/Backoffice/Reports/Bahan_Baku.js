@@ -1,6 +1,7 @@
 
     const hariIni = moment().format('DD-MM-YYYY');
     var dates = [];
+    
     $(document).ready(function(){
         inisialisasi();
         $('#start_date').val(hariIni);

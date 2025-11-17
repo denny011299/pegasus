@@ -40,18 +40,21 @@ class SuppliesVariant extends Model
         }
         if ($data["search"]) {
             $result->where("supplies_variant_sku", "=", $data["search"])
-            ->orWhere("supplies_variant_barcode", "=", $data["search"]);
+                ->orWhere("supplies_variant_barcode", "=", $data["search"]);
         }
 
         $result->orderBy("created_at", "asc");
         $variants = $result->get();
-        
+
         // Menambahkan nama produk dari relasi
-       foreach ($variants as $key  =>  $variant) {
+        foreach ($variants as $key  =>  $variant) {
             $s = Supplies::find($variant->supplies_id);
             $variant->supplies_name = $s ? $s->supplies_name : "-";
-         
-            $u =  Unit::whereIn('unit_id', json_decode($s->supplies_unit,true))->first();
+
+            $ss = Supplier::find($variant->supplier_id);
+            $variant->supplier_name = $ss ? $ss->supplier_name : null;
+
+            $u =  Unit::whereIn('unit_id', json_decode($s->supplies_unit, true))->first();
             $variant->supplies_unit = $u ? $u->unit_name : "-";
             $variant->supplies_unit_id = $u ? $u->unit_id : "-";
         }
@@ -63,10 +66,11 @@ class SuppliesVariant extends Model
     {
         $t = new self();
         $t->supplies_id = $data["supplies_id"];
+        $t->supplier_id = $data["supplier_id"] ?? null;
         $t->supplies_variant_name = $data["supplies_variant_name"];
         $t->supplies_variant_sku = $data["supplies_variant_sku"];
         $t->supplies_variant_price = $data["supplies_variant_price"];
-        $t->supplies_variant_barcode = $t->generateBarcode();
+        $t->supplies_variant_barcode = $data["supplies_variant_barcode"] ?? $t->generateBarcode();
         $t->supplies_variant_stock = 0;
         $t->save();
 
@@ -85,6 +89,7 @@ class SuppliesVariant extends Model
             ]);
         }
         $t->supplies_id = $data["supplies_id"];
+        $t->supplier_id = $data["supplier_id"] ?? null;
         $t->supplies_variant_name = $data["supplies_variant_name"];
         $t->supplies_variant_sku = $data["supplies_variant_sku"];
         $t->supplies_variant_price = $data["supplies_variant_price"];
@@ -103,10 +108,11 @@ class SuppliesVariant extends Model
         $t->status = 0; // soft delete
         $t->save();
     }
-    
-    function generateBarcode() {
-       do {
-        // Generate angka acak sebanyak 12 digit
+
+    function generateBarcode()
+    {
+        do {
+            // Generate angka acak sebanyak 12 digit
             $barcode = (string) random_int(100000000000, 999999999999);
         } while (self::where('supplies_variant_barcode', $barcode)->exists());
         return $barcode;

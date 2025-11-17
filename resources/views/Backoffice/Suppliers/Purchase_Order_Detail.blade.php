@@ -232,3 +232,11 @@
         </div>
     </div>
     @endsection
+
+@section('custom_js')
+    <script>
+        var public = "{{ asset('') }}";    
+        var data = @json($data);
+    </script>
+    <script src="{{asset('Custom_js/Backoffice/Suppliers/Purchase_Order_Detail.js')}}"></script>
+@endsection

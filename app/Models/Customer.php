@@ -56,7 +56,6 @@ class Customer extends Model
         $t->city_id = $data["city_id"];
         $t->district_id = $data["district_id"];
         $t->customer_address = $data["customer_address"];
-        $t->customer_phone = $data["customer_phone"];
         $t->customer_pic = $data["customer_pic"];
         $t->customer_pic_phone = $data["customer_pic_phone"];
         $t->customer_notes = $data["customer_notes"];
@@ -77,7 +76,6 @@ class Customer extends Model
         $t->city_id = $data["city_id"];
         $t->district_id = $data["district_id"];
         $t->customer_address = $data["customer_address"];
-        $t->customer_phone = $data["customer_phone"];
         $t->customer_pic = $data["customer_pic"];
         $t->customer_pic_phone = $data["customer_pic_phone"];
         $t->customer_notes = $data["customer_notes"];

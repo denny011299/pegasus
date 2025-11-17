@@ -11,23 +11,27 @@ class Supplies extends Model
     public $timestamps = true;
     public $incrementing = true;
 
-    function getSupplies($data = []){
+    function getSupplies($data = [])
+    {
         $data = array_merge([
-            "supplies_id"=>null,
-            "supplies_name"=>null,
-            "supplies_desc"=>null,
+            "supplies_id" => null,
+            "supplies_name" => null,
+            "supplies_desc" => null,
         ], $data);
         $result = Supplies::where('status', '=', 1);
-        if($data["supplies_id"]) $result->where('supplies_id','=', $data["supplies_id"]);
-        if($data["supplies_name"]) $result->where('supplies_name','like','%'.$data["supplies_name"].'%');
-        if($data["supplies_desc"]) $result->where('supplies_desc','like','%'.$data["supplies_desc"].'%');
+        if ($data["supplies_id"]) $result->where('supplies_id', '=', $data["supplies_id"]);
+        if ($data["supplies_name"]) $result->where('supplies_name', 'like', '%' . $data["supplies_name"] . '%');
+        if ($data["supplies_desc"]) $result->where('supplies_desc', 'like', '%' . $data["supplies_desc"] . '%');
         $result->orderBy('created_at', 'asc');
-        
+
         $result = $result->get();
         foreach ($result as $key => $value) {
             $value->sup_variant = (new SuppliesVariant())->getSuppliesVariant([
                 "supplies_id" => $value->supplies_id
             ]);
+            if ($value->supplies_supplier) {
+                $value->supplier =  Supplier::whereIn('supplier_id', json_decode($value->supplies_supplier, true))->get();
+            }
             $value->supplies_unit = json_decode($value->supplies_unit);
             $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
         }

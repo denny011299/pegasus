@@ -6,6 +6,8 @@
         refreshSupplies();
         autocompleteUnit("#supplies_unit","#add_supplies");
         autocompleteVariant("#supplies_variant","#add_supplies");
+        
+        
     });
     
     $(document).on('click','.btnAdd',function(){
@@ -24,7 +26,6 @@
     });
 
     $(document).on('click','.btnAddRow',function(){
-        $('#tbVariant').html("")
         if($('#supplies_variant').val()!=""&&$('#supplies_variant').val()!=null) {
             var data = $('#supplies_variant').select2('data')[0];
             data.name = JSON.parse(data.variant_attribute);
@@ -34,12 +35,16 @@
             console.log(data);
             $('#supplies_variant').empty();
         }
-       else addRow();
+        else addRow();
     });
     function addRow(names="") {
         
         $('#tbVariant').append(`
             <tr class="row-variant">
+                <td style="width:15%;">
+                    <select class="form-select supplier_id select2" name="" id="" style="width:100%;">
+                    </select>
+                </td>
                 <td><input type="text" class="form-control fill variant_name" name="" id="" value="${names}"></td>
                 <td><input type="text" class="form-control fill variant_sku" name="" id=""></td>
                 <td><input type="text" class="form-control fill variant_price nominal_only" name="" id=""></td>
@@ -52,6 +57,7 @@
                 </tr>    
         `);
          feather.replace();
+         autocompleteSupplier('.supplier_id','#add_supplies');
     }
     
     function inisialisasi() {
@@ -154,6 +160,7 @@
         param = {
             supplies_name:$('#supplies_name').val(),
             supplies_desc:$('#supplies_desc').val(),
+            supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
             supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token
         };
@@ -161,6 +168,7 @@
         var temp=[];
         $('.row-variant').each(function(){
             var variant = {
+                supplier_id: $(this).find('.supplier_id').val(),
                 supplies_variant_name: $(this).find('.variant_name').val(),
                 supplies_variant_sku: $(this).find('.variant_sku').val(),
                 supplies_variant_price: convertToAngka($(this).find('.variant_price').val()),
@@ -246,6 +254,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#supplies_name').val(data.supplies_name);
         $('#supplies_desc').val(data.supplies_desc);
+        $('#supplies_supplier').empty();
         $('#supplies_unit').empty();
         $('#supplies_unit').append(`<option value="${data.supplies_unit}" selected>${data.unit_name}</option>`);
         $('#supplies_unit').val(data.supplies_unit).trigger('change');
@@ -256,12 +265,20 @@
             $('.row-variant').last().find('.variant_price').val(formatRupiah(element.supplies_variant_price));
             $('.row-variant').last().find('.variant_barcode').val(element.supplies_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
+            if(element.supplier_id)$('.row-variant').last().find('.supplier_id').append(`<option value="${element.supplier_id}" selected>${element.supplier_name}</option>`);
         });
         data.units.forEach(u => {
             $('#supplies_unit').append(
                 `<option value="${u.unit_id}">${u.unit_short_name}</option>`
             );
         });
+        if(data.supplier){
+            data.supplier.forEach(u => {
+                console.log(u);
+                var newOption = new Option(u.supplier_name, u.supplier_id, true, true);
+                $('#supplies_supplier').append(newOption).trigger("change");
+            });
+        }
         let unitIds = data.units.map(u => u.unit_id);
         $('#supplies_unit').val(unitIds).trigger('change');
 
