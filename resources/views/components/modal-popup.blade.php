@@ -909,7 +909,7 @@
                                         <label>Jumlah<span class="text-danger">*</span></label>
                                         <div class="input-group">
                                             <span class="input-group-text">Rp</span>
-                                            <input type="text" class="form-control fill number_only" id="poi_total" value="0" placeholder="Masukkan jumlah">
+                                            <input type="text" class="form-control fill number_only nominal_only" id="poi_total" value="0" placeholder="Masukkan jumlah">
                                         </div>
                                     </div>
                                 </div>

@@ -1,5 +1,5 @@
     var mode=1;
-    var tablePr, tableDn, tableInv, tableRcp, tablePrModal;
+    var tablePr, tableDn, tableInv, tablePrModal;
     let detail_delivery = []
 
     autocompleteSupplier("#po_supplier",null);
@@ -101,36 +101,6 @@
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
         });
-
-        tableRcp = $('#tableReceipt').DataTable({
-            bFilter: true,
-            sDom: 'fBtlpi',
-            ordering: true,
-            searching: false,
-            autoWidth: false,
-            language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Penerimaan Barang",
-                info: "_START_ - _END_ of _TOTAL_ items",
-                paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
-                },
-            },
-            columns: [
-                { data: "date" },
-                { data: "por_ref" },
-                { data: "por_receiver" },
-                { data: "status" },
-                { data: "action", class: "d-flex align-items-center" },
-            ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
-            },
-        });
     }
 
     function refresh() {
@@ -168,9 +138,6 @@
                     }
                     
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_print_dn" data-id="${e[i].pod_id}" data-bs-target="#print-sales">
-                            <i class="fe fe-file"></i>
-                        </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit_dn" data-id="${e[i].pod_id}" data-bs-target="#edit-sales">
                             <i class="fe fe-edit"></i>
                         </a>
@@ -188,42 +155,6 @@
             }
         });
 
-       
-
-        $.ajax({
-            url: "/getPoReceipt",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                console.log(e);
-                tableRcp.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].por_date).format('D MMM YYYY');
-                    if (e[i].por_status == 1){
-                        e[i].status = `<span class="badge bg-warning" style="font-size: 12px">Sedang Dikirim</span>`;
-                    } else if (e[i].por_status == 2){
-                        e[i].status = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
-                    }
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit_rcp" data-id="${e[i].por_id}" data-bs-target="#edit-sales">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete_rcp" data-id="${e[i].pod_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
-                }
-
-                tableRcp.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                console.error("Gagal load:", err);
-            }
-        });
         refreshInvoice();
     }
     
@@ -241,7 +172,7 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
-                    e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp.");
+                    e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
                     } else if (e[i].status == 2){
@@ -396,7 +327,7 @@
                 "Gagal Insert",
                 "Silahkan cek kembali inputan anda"
             );
-            ResetLoadingButton('.save-qty', 'Save changes');
+            ResetLoadingButton('.save-qty', 'Simpan Perubahan');
             return false;
         }
 
@@ -533,7 +464,7 @@
         tablePurchaseDelivery();
         refreshTableProduct(data.items);
         
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save-delivery').html('Simpan perubahan');
         $('#add_purchase_delivery').modal("show");
         $('#add_purchase_delivery').attr("pdo_id", data.pdo_id);
     })
@@ -570,25 +501,9 @@
         $('#add_purchase_invoice .modal-title').html("Update Faktur");
         $('#add_purchase_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save-invoice').html('Simpan perubahan');
         $('#add_purchase_invoice').modal("show");
     })
-
-    $(document).on('click', '.btn_edit_rcp', function(){
-        var data = $('#tableReceipt').DataTable().row($(this).parents('tr')).data();
-        mode = 2;
-        $('#add_purchase_receipt .modal-title').html("Update Penerimaan Barang");
-        $('#add_purchase_receipt input').val("");
-        $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Simpan perubahan');
-        $('#add_purchase_receipt').modal("show");
-    })
-
-    $(document).on('click', '.btn_delete_rcp', function(){
-        var data = $('#tableReceipt').DataTable().row($(this).parents('tr')).data();
-        $('#modalDelete').modal("show");
-    })
-
 
     function refreshSummary() {
         var total = 0;
@@ -636,7 +551,7 @@ $(document).on("click", ".btn-save-invoice", function () {
             "Gagal Insert",
             "Silahkan cek kembali inputan anda"
         );
-        ResetLoadingButton('.btn-save', 'Save changes');
+        ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
         return false;
     }
 
@@ -680,7 +595,7 @@ $(document).on("click", ".btn-save-invoice", function () {
                     "Berhasil Data Diupdate"
                 );
             }
-
+            ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
         },
         error: function (e) {
             console.log(e);
@@ -691,7 +606,6 @@ $(document).on("click", ".btn-save-invoice", function () {
     $(document).on("click",".btn_edit_invoice",function(){
         mode=2;
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus resep ini?","btn-delete-invoice");
         $('#poi_total').val(formatRupiah(data.poi_total))
         $('#poi_due').val(data.poi_due)
         $('#poi_date').val(data.poi_date)
@@ -702,7 +616,7 @@ $(document).on("click", ".btn-save-invoice", function () {
  //delete invoice
     $(document).on("click",".btn_delete_invoice",function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus resep ini?","btn-delete-invoice");
+        showModalDelete("Apakah yakin ingin menghapus resep ini?","btn-delete-invoice");
         $('#btn-delete-invoice').attr("poi_id", data.poi_id);
 
     });

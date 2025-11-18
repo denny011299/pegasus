@@ -167,9 +167,7 @@
 
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                        data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false"
-                                        aria-controls="panelsStayOpen-collapseTwo">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
                                         Catatan Pengiriman
                                     </button>
                                 </h2>
@@ -181,20 +179,16 @@
                                                         class="fa fa-plus-circle me-2"></i>Tambah Catatan Pengiriman</a>
                                             </div>
                                         </div>
-                                        
                                         <div class="table-responsive pb-5">
-                                            <table class="table table-center table-hover table-bordered w-100"
-                                                id="tableDelivery">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>No. Catatan Pengiriman</th>
-                                                        <th>Tanggal Pengiriman</th>
-                                                        <th>Penerima</th>
-                                                        <th>Alamat</th>
-                                                        <th>No. Telepon</th>
-                                                        <th>Status</th>
-                                                        <th class="no-sort text-center">Aksi</th>
-                                                    </tr>
+                                            <table class="table table-center table-hover w-100" id="tableDelivery">
+                                                <thead>
+                                                    <th>No. Catatan Pengiriman</th>
+                                                    <th>Tanggal Pengiriman</th>
+                                                    <th>Penerima</th>
+                                                    <th>Alamat</th>
+                                                    <th>No. Telepon</th>
+                                                    <th>Status</th>
+                                                    <th class="no-sort text-center">Aksi</th>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>
@@ -205,9 +199,7 @@
 
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                        data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false"
-                                        aria-controls="panelsStayOpen-collapseThree">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
                                         Faktur dan Pembayaran
                                     </button>
                                 </h2>
@@ -215,15 +207,27 @@
                                     <div class="accordion-body">
                                         <div class="row pb-3">
                                             <div class="col-12 text-end">
-                                                <a class="btn btn-primary btnAddInv"><i
-                                                        class="fa fa-plus-circle me-2"></i>Tambah Faktur</a>
+                                                <a class="btn btn-primary btnAddInv">
+                                                    <i class="fa fa-plus-circle me-2"></i>Tambah Faktur
+                                                </a>
                                             </div>
                                         </div>
-                                        {{-- (Assuming the table here will also use table-responsive) --}}
+                                        <div class="table-responsive pb-5">
+                                            <table class="table table-center table-hover w-100" id="tableInvoice">
+                                                <thead>
+                                                    <th style="width:15%">Tgl. Pesanan</th>
+                                                    <th style="width:15%">Tgl. Jatuh Tempo</th>
+                                                    <th>No. Faktur</th>
+                                                    <th>Total</th>
+                                                    <th>Status</th>
+                                                    <th class="no-sort text-center">Aksi</th>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
@@ -231,7 +235,7 @@
 
         </div>
     </div>
-    @endsection
+@endsection
 
 @section('custom_js')
     <script>
