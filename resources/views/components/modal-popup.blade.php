@@ -426,6 +426,7 @@
                                         <div class="input-block mb-3">
                                             <label>Metode Pembayaran<span class="text-danger">*</span></label>
                                             <select id="so_payment" class="form-select fill">
+                                                <option value="" selected disabled>Pilih Metode</option>
                                                 <option value="1" checked>Tunai</option>
                                                 <option value="2">Transfer Bank</option>
                                                 <option value="3">Cek</option>

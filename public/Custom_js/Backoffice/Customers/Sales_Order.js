@@ -19,6 +19,7 @@
         refreshTableProduct();
         $('#add_sales_order .modal-title').html("Tambah Pesanan Penjualan");
         $('#add_sales_order input').val("");
+        $('#so_customer, #sales_id').empty();
         $('#so_discount').val(0).trigger('blur');
         $('#so_cost').val(0).trigger('blur');
         $('#so_ppn').val(0).trigger('blur');
