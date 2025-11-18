@@ -3,6 +3,7 @@
     var item = [];
     var grand = 0;
     autocompleteSupplier("#po_supplier","#add_purchase_order");
+    autocompleteSuppliesVariant('#po_sku', '#add_purchase_order')
     
     $(document).ready(function(){
         inisialisasi();
@@ -13,6 +14,7 @@
         mode=1;
         console.log(moment().format('dd/MM/YYYY'));
         item  = [];
+        $('#tablePurchaseModal tbody').html("");
         refreshSummary();
         $('#add_purchase_order .modal-title').html("Tambah Pesanan Pembelian");
         $('#add_purchase_order input').val("");
@@ -24,48 +26,30 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_order').modal("show");
     });
-    
-    $('#po_sku').on('keyup', function(e) {
-        if (e.which === 13) { // 13 = Enter
-            const value = $(this).val();
-            $('#po_barcode').prop("disabled",true);
-            $.ajax({
-                url:"/searchSupplies",
-                method:"get",
-                data:{
-                    search: value
-                },
-                success: function(e) {
-                    if (e != -1){
-                        var cari =-1;
-                        item.forEach((element,index) => {
-                            if(e.supplies_variant_id == element.supplies_variant_id) cari=index;
-                        });
-                        if(cari==-1) {
-                            e.qty=1;
-                            item.push(e);
-                        }else{
-                             e.qty++;
-                        }
-                        toastr.success('', 'Berhasil menambahkan Bahan');
-                        refreshItem();
-                    } else{
-                        toastr.error('', 'Bahan tidak ditemukan');
-                    }
-                    //refreshTableProduct();
-                    $('#po_sku').prop("disabled",false);
-                    $('#po_sku').val("");
-                    $('#po_sku').trigger("focus");
-                },
-                error: function(e) {
-                    $('#po_sku').prop("disabled",false);
-                    $('#po_sku').val("");
-                    $('#po_sku').trigger("focus");
-                }
-            })
-            
-        } 
+
+    $('#po_sku').on('change', function () {
+        var data = $(this).select2('data')[0];
+
+        var cari = -1;
+        item.forEach((element, index) => {
+            if (data.supplies_variant_id == element.supplies_variant_id) {
+                cari = index;
+            }
+        });
+
+        if (cari == -1) {
+            data.qty = 1;
+            item.push(data);
+        } else {
+            item[cari].qty++;
+        }
+
+        toastr.success('', 'Berhasil menambahkan Bahan');
+        refreshItem();
+
+        $('#po_sku').empty();
     });
+
 
     function refreshItem() {
         $('#tablePurchaseModal tbody').html("");

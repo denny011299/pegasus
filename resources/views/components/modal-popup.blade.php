@@ -481,9 +481,8 @@
                                 <div class="col-12 row">
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>SKU/Barcode<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="so_barcode"
-                                            placeholder="SKU Produk">
+                                            <label>SKU<span class="text-danger">*</span></label>
+                                            <select class="form-select" id="so_sku"></select>
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -741,8 +740,7 @@
                                 <div class="col-6">
                                     <div class="input-block mb-3">
                                         <label>SKU/Barcode Produk<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control " id="po_sku"
-                                        placeholder="SKU/Barcode Produk">
+                                        <select class="form-select" id="po_sku"></select>
                                     </div>
                                 </div>
                                 <div class="col-12">

@@ -3,6 +3,7 @@
     var products = [];
     autocompleteCustomer('#so_customer', "#add_sales_order");
     autocompleteStaffSales('#sales_id', "#add_sales_order");
+    autocompleteProductVariant('#so_sku', "#add_sales_order");
     $(document).ready(function(){
         inisialisasi();
         refreshSalesOrder();
@@ -10,12 +11,12 @@
 
     // Supaya bisa focus saat load modal
     $('#add_sales_order').on('shown.bs.modal', function () {
-        $('#so_barcode').trigger("focus");
     });
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
         products = [];
+        $('#tableSalesModal').html("");
         refreshTableProduct();
         $('#add_sales_order .modal-title').html("Tambah Pesanan Penjualan");
         $('#add_sales_order input').val("");
@@ -51,39 +52,28 @@
         viewSummary(value, "discount")
     })
 
-    $(document).on('change', '#so_customer', function(){
-        $('#so_barcode').trigger("focus");
-    })
+    $('#so_sku').on('change', function () {
+        var data = $(this).select2('data')[0];
+        console.log(data);
 
-    $('#so_barcode').on('keyup', function(e) {
-        if (e.which === 13) { // 13 = Enter
-            const value = $(this).val();
+        var cari = -1;
+        products.forEach((element, index) => {
+            if (data.product_variant_id == element.product_variant_id) {
+                cari = index;
+            }
+        });
 
-            $.ajax({
-                url:"/getProductVariant",
-                method:"get",
-                data:{
-                    search_product: value
-                },
-                success: function(e) {
-                    if (e.length == 1){
-                        e.forEach(element => {
-                            console.log(element)
-                            products.push(element);
-                        });
-                        toastr.success('', 'Berhasil menambahkan produk');
-                    } else{
-                        toastr.error('', 'Produk tidak ditemukan');
-                    }
-                    refreshTableProduct();
-                },
-                error: function(e) {
+        if (cari == -1) {
+            data.qty = 1;
+            products.push(data);
+        } else {
+            products[cari].qty++;
+        }
 
-                }
-            })
-            $('#so_barcode').val("");
-            $('#so_barcode').trigger("focus");
-        } 
+        toastr.success('', 'Berhasil menambahkan Produk');
+        refreshTableProduct();
+
+        $('#so_sku').empty();
     });
     
     function inisialisasi() {
@@ -170,7 +160,7 @@
 
             html += `
                 <tr>
-                    <td style="width: 22%">${p.product_name}</td>
+                    <td style="width: 22%">${p.product_name || p.pr_name}</td>
                     <td style="width: 15%">${p.product_variant_name}</td>
                     <td style="width: 15%">${p.product_variant_sku}</td>
                     <td style="width: 18%" class="text-center p-2 d-flex">
@@ -204,7 +194,6 @@
             refreshTableProduct();
         }
         updateTotal();
-        $('#so_barcode').trigger("focus");
         console.log(products);
     });
 
@@ -219,7 +208,6 @@
         $('#so_discount').trigger('blur')
         $('#so_cost').trigger('blur')
         grandTotal()
-        $('#so_barcode').trigger("focus");
     }
 
     function viewSummary(value, from){
@@ -230,7 +218,6 @@
         else hasil += total*(value/100);
         $(`#value_${from}`).html(`Rp ${formatRupiah(hasil)}`);
         grandTotal()
-        $('#so_barcode').trigger("focus");
     }
 
     function grandTotal(){
@@ -239,10 +226,7 @@
         var discount = convertToAngka($('#value_discount').html());
         var cost = convertToAngka($('#value_cost').html());
         var grand = total + ppn - discount + cost;
-        $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
-
-        
-        $('#so_barcode').trigger("focus");
+        $('#value_grand').html(`Rp ${formatRupiah(grand)}`);
     }
 
     $(document).on("click",".btn-save",function(){
@@ -363,7 +347,6 @@
         $('#so_discount').trigger('blur')
         $('#so_cost').trigger('blur')
         updateTotal()
-        $('#so_barcode').trigger("focus");
 
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Simpan perubahan');
