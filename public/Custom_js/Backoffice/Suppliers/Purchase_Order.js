@@ -23,6 +23,7 @@
         $('#add_purchase_order #po_ppn').val(0);
         $('#add_purchase_order #po_cost').val(0);
         $('#add_purchase_order #po_date').val(moment().format('dd/MM/YYYY'));
+        $('#add_purchase_order #po_supplier').empty();
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_order').modal("show");
     });

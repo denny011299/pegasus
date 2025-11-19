@@ -27,7 +27,7 @@ class PurchaseOrderDeliveryDetail extends Model
         $result = $result->get();
 
         foreach ($result as $key => $value) {
-
+            dd($value);
             $sv = SuppliesVariant::find($value->supplies_variant_id);
             $s = Supplies::find($sv->supplies_id);
             $value->supplies_name = $s->supplies_name;
@@ -71,7 +71,7 @@ class PurchaseOrderDeliveryDetail extends Model
         //ditambah lagi
         $s->supplies_variant_stock += $data["pdod_qty"];
         $s->save();
-        return $t->pdod_id;
+        return $t->pdo_id;
     }
 
     function deletePoDeliveryDetail($data)

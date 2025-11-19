@@ -263,14 +263,16 @@
         console.log(e);
         tablePrModal.clear().draw();
         // Manipulasi data sebelum dimasukkan ke tabel
-        for (let i = 0; i < e.length; i++) {
-            e[i].stock = `<input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].pod_qty || e[i].pdod_qty}">`;
-            e[i].name = e[i].pod_nama || `${e[i].supplies_name} ${e[i].supplies_variant_name}`;
-            console.log(e[i])
-            e[i].sku = e[i].pod_sku || e[i].pdod_sku;
+        if(e){
+            for (let i = 0; i < e.length; i++) {
+                e[i].stock = `<input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].pod_qty || e[i].pdod_qty}">`;
+                e[i].name = e[i].pod_nama || `${e[i].supplies_name} ${e[i].supplies_variant_name}`;
+                console.log(e[i])
+                e[i].sku = e[i].pod_sku || e[i].pdod_sku;
+            }
+            tablePrModal.rows.add(e).draw();
         }
 
-        tablePrModal.rows.add(e).draw();
         feather.replace(); // biar icon feather muncul lagi
     }
 
@@ -369,6 +371,7 @@
     })
 
     function insertDeliveryDetail(){
+        detail_delivery = [];
         $('#tablePurchaseDelivery tbody tr').each(function() {
             var dataDelivery = $('#tablePurchaseDelivery').DataTable().row(this).data(); // pakai this saja
             if (mode == 1) dataDelivery = dataDelivery.supplies_variant;
@@ -380,7 +383,9 @@
                 pdod_sku: dataDelivery.supplies_variant_sku || dataDelivery.pdod_sku,
                 pdod_qty: qty
             };
-
+            if(mode==2){
+                item.pdod_id = dataDelivery.pdod_id;
+            }
             detail_delivery.push(item);
         });
     };

@@ -589,8 +589,8 @@
                                     </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Deskripsi<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="sod_desc" cols="30" rows="5"></textarea>
+                                            <label>Deskripsi</label>
+                                            <textarea class="form-control " id="sod_desc" cols="30" rows="5"></textarea>
                                         </div>
                                     </div>
                                 </div>

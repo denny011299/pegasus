@@ -72,6 +72,8 @@ class PurchaseOrder extends Model
         $t = PurchaseOrder::find($data["po_id"]);
         $t->status = 0; // soft delete
         $t->save();
+
+     
     }
 
     function generatePurchaseOrderID()
