@@ -63,5 +63,7 @@ class Supplies extends Model
         $t = Supplies::find($data["supplies_id"]);
         $t->status = 0;
         $t->save();
+
+        SuppliesVariant::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
     }
 }

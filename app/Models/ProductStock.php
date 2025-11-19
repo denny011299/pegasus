@@ -11,17 +11,18 @@ class ProductStock extends Model
     public $timestamps = true;
     public $incrementing = true;
 
-    function getProductStock($data = []){
+    function getProductStock($data = [])
+    {
         $data = array_merge([
-            "product_id"=>null,
-            "product_variant_id"=>null
+            "product_id" => null,
+            "product_variant_id" => null
         ], $data);
 
         $result = self::where('status', '=', 1);
-        if($data["product_id"]) $result->where('product_id','=',$data["product_id"]);
-        if($data["product_variant_id"]) $result->where('product_variant_id','=',$data["product_variant_id"]);
+        if ($data["product_id"]) $result->where('product_id', '=', $data["product_id"]);
+        if ($data["product_variant_id"]) $result->where('product_variant_id', '=', $data["product_variant_id"]);
         $result->orderBy('created_at', 'asc');
-       
+
         $result = $result->get();
         foreach ($result as $key => $value) {
             $u = Unit::find($value->unit_id);
@@ -61,53 +62,53 @@ class ProductStock extends Model
         $t->save();
     }
 
-    function syncStock($product_id) {
-        $variant = ProductVariant::where("product_id","=",$product_id)->get();
+    function syncStock($product_id)
+    {
+        $variant = ProductVariant::where("product_id", "=", $product_id)->where('status', '=', 1)->get();
         $product = Product::find($product_id);
         foreach ($variant as $key => $value) {
-            self::where('product_variant_id','=',$value["product_variant_id"])->whereNotIn('unit_id',json_decode($product->product_unit,true))->update(["status"=>0]);
-            foreach (json_decode($product->product_unit,true) as $key => $unit) {
-                $dt = self::where('product_variant_id','=',$value["product_variant_id"])->where('unit_id','=',$unit)->count();
-                if($dt==0){
+            self::where('product_variant_id', '=', $value["product_variant_id"])->whereNotIn('unit_id', json_decode($product->product_unit, true))->update(["status" => 0]);
+            foreach (json_decode($product->product_unit, true) as $key => $unit) {
+                $dt = self::where('product_variant_id', '=', $value["product_variant_id"])->where('unit_id', '=', $unit)->count();
+                if ($dt == 0) {
                     self::insertProductStock([
-                        "product_id"=>$product_id,
-                        "product_variant_id"=>$value->product_variant_id,
-                        "unit_id"=>$unit,
-                        "ps_stock"=>0,
+                        "product_id" => $product_id,
+                        "product_variant_id" => $value->product_variant_id,
+                        "unit_id" => $unit,
+                        "ps_stock" => 0,
                     ]);
                 }
             }
         }
     }
 
-    function cekStockBerlebih($data) {
+    function cekStockBerlebih($data)
+    {
         $t = self::find($data["ps_id"]);
         $p = Product::find($data["product_id"]);
-        if($p->unit_id != $data["unit_id"]){
+        if ($p->unit_id != $data["unit_id"]) {
             $ada = 1;
-            while ($ada==1) {
-                $r = ProductRelation::where('pr_unit_id_2','=',$data["unit_id"])
-                ->where('product_id','=',$data["product_id"])->first();
-                if($t->ps_stock>=$r->pr_unit_value_2){
-                  
-                    $tambah = floor($t->ps_stock /$r->pr_unit_value_2);
+            while ($ada == 1) {
+                $r = ProductRelation::where('pr_unit_id_2', '=', $data["unit_id"])
+                    ->where('product_variant_id', '=', $data["product_variant_id"])->first();
+                if ($t->ps_stock >= $r->pr_unit_value_2) {
+
+                    $tambah = floor($t->ps_stock / $r->pr_unit_value_2);
                     $t->ps_stock %= $r->pr_unit_value_2;
-                    
+
                     $t->save();
-                    $stBaru = self::where('product_variant_id','=',$data["product_variant_id"])
-                    ->where("unit_id",'=',$r->pr_unit_id_1)->first();
+                    $stBaru = self::where('product_variant_id', '=', $data["product_variant_id"])
+                        ->where("unit_id", '=', $r->pr_unit_id_1)->first();
                     $stBaru->ps_stock += $tambah;
                     $stBaru->save();
-    
-                    $cek = $r = ProductRelation::where('pr_unit_id_2','=',$r->pr_unit_id_1)
-                    ->where('product_id','=',$data["product_id"]);
-                    if($cek->count()<=0){
-                        $ada=-1;
+
+                    $cek = $r = ProductRelation::where('pr_unit_id_2', '=', $r->pr_unit_id_1)
+                        ->where('product_variant_id', '=', $data["product_variant_id"]);
+                    if ($cek->count() <= 0) {
+                        $ada = -1;
                     }
-                }
-                else  $ada=-1;
+                } else  $ada = -1;
             }
         }
-
     }
 }

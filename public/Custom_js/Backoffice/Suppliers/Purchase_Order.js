@@ -3,7 +3,7 @@
     var item = [];
     var grand = 0;
     autocompleteSupplier("#po_supplier","#add_purchase_order");
-    autocompleteSuppliesVariant('#po_sku', '#add_purchase_order')
+    
     
     $(document).ready(function(){
         inisialisasi();
@@ -25,6 +25,10 @@
         $('#add_purchase_order #po_date').val(moment().format('dd/MM/YYYY'));
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_order').modal("show");
+    });
+
+    $(document).on('change','#po_supplier', function () {
+        autocompleteSuppliesVariant('#po_sku', '#add_purchase_order',$(this).val());
     });
 
     $('#po_sku').on('change', function () {
@@ -62,12 +66,20 @@
                     <td style="width:15%"><input type="number" class="form-control qtyPesanan" index="${index}" value="${item.qty}"></td>
                     <td class="text-end">${formatRupiah(item.supplies_variant_price+"")}</td>
                     <td class="text-end">${formatRupiah((item.supplies_variant_price*item.qty)+"")}</td>
+                    <td class="text-center text-danger" style="cursor:pointer"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
                 </tr>    
             `);
         });
+        feather.replace();
         refreshSummary();
     }
     
+    $(document).on("click",".deleteRow",function(){
+        var index = $(this).attr("index");
+        item.splice(index,1);
+        refreshItem();
+    });
+
     $(document).on("change",".qtyPesanan",function(){
         var index = $(this).attr("index");
         if($(this).val()<=0){

@@ -109,7 +109,7 @@
 
         data.items.forEach((element, index) => {
             element.qty = `
-                <input type="number" class="form-control text-center qtySummary" data-price="${element.pod_harga}" index="${index}" value="${element.pod_qty}">
+                <input type="number" class="form-control text-center qtySummary" data-price="${element.pod_harga}" index="${index}" value="${element.pod_qty}" min="0">
             `;
             element.pod_harga_text = formatRupiah(element.pod_harga,"Rp.");
             element.pod_subtotal_text = formatRupiah(element.pod_subtotal,"Rp.");
@@ -275,7 +275,7 @@
     }
 
     // Refresh Summary & Input qty
-    $(document).on('blur', '.qtySummary', function () {
+    $(document).on('change', '.qtySummary', function () {
         const index = $(this).data('index');
         let qty = parseInt($(this).val());
         let price = parseInt($(this).data('price'));

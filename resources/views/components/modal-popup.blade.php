@@ -752,6 +752,7 @@
                                             <th>Qty</th>
                                             <th class="text-end">Harga Beli</th>
                                             <th class="text-end">Subtotal</th>
+                                            <th class="text-center">Action</th>
                                         </thead>
                                         <tbody></tbody>
                                     </table>

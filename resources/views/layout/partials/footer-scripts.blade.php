@@ -647,7 +647,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
 
-    function autocompleteSuppliesVariant(id, modalParent = null) {
+    function autocompleteSuppliesVariant(id, modalParent = null,supplier_id=null) {
         //search country dan city
         $(id).select2({
             ajax: {
@@ -657,6 +657,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                 data: function data(params) {
                     return {
                         "keyword": params.term,
+                        "supplier_id": supplier_id,
                         '_token': $('meta[name="csrf-token"]').attr('content')
                     };
                 },

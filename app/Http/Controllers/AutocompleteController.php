@@ -76,10 +76,10 @@ class AutocompleteController extends Controller
         $data_city = $p->getArea([
             "area_name" => $keyword
         ]);
-        
+
         foreach ($data_city as $r) {
             $r->id = $r["area_id"];
-            $r->text = $r["area_code"]." - ".$r["area_name"];
+            $r->text = $r["area_code"] . " - " . $r["area_name"];
         };
 
         echo json_encode(array(
@@ -224,7 +224,7 @@ class AutocompleteController extends Controller
             "data" => $data_city
         ));
     }
-    
+
 
     public function autocompleteSuppliesVariant(Request $req)
     {
@@ -233,12 +233,13 @@ class AutocompleteController extends Controller
         $p = new SuppliesVariant();
         $data_city = $p->getSuppliesVariant([
             "supplies_variant_sku" => $keyword,
+            "supplier_id" => $req->supplier_id,
         ]);
 
 
         foreach ($data_city as $r) {
             $r->id = $r["supplies_id"];
-            $r->text = $r["supplies_name"]." ".$r["supplies_variant_name"];
+            $r->text = $r["supplies_name"] . " " . $r["supplies_variant_name"];
         };
 
         echo json_encode(array(
@@ -258,7 +259,7 @@ class AutocompleteController extends Controller
 
         foreach ($data_city as $r) {
             $r->id = $r["product_id"];
-            $r->text = $r["pr_name"] ." ". $r["product_variant_name"];
+            $r->text = $r["pr_name"] . " " . $r["product_variant_name"];
         };
 
         echo json_encode(array(
@@ -272,11 +273,11 @@ class AutocompleteController extends Controller
         $data_city = $p->getProductVariant([
             "product_id" => $keyword,
         ]);
-        
-        
+
+
         foreach ($data_city as $r) {
             $r->id = $r["product_variant_id"];
-            $r->text = $r["pr_name"] ." ". $r["product_variant_name"];
+            $r->text = $r["pr_name"] . " " . $r["product_variant_name"];
         };
 
         echo json_encode(array(
@@ -364,7 +365,7 @@ class AutocompleteController extends Controller
         ));
     }
 
-     public function autocompleteStaff(Request $req)
+    public function autocompleteStaff(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
 

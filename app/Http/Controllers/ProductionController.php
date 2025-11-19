@@ -125,7 +125,6 @@ class ProductionController extends Controller
         $b = bom::find($data["production_bom_id"]);
         $v = ProductStock::where("product_variant_id", "=", $data["production_product_id"])
             ->where("unit_id", "=", $data["unit_id"])->first();
-        dd($v);
         $v->ps_stock += intval($data['production_qty']) * $b->bom_qty;
         $v->save();
 

@@ -18,6 +18,7 @@ class SuppliesVariant extends Model
             "supplies_variant_sku" => null,
             "supplies_variant_barcode" => null,
             "supplies_variant_id" => null,
+            "supplier_id" => null,
             "search" => null,
             "status" => 1,
         ], $data);
@@ -27,6 +28,9 @@ class SuppliesVariant extends Model
         // Filter berdasarkan supplies_id
         if ($data["supplies_id"]) {
             $result->where("supplies_id", "=", $data["supplies_id"]);
+        }
+        if ($data["supplier_id"]) {
+            $result->where("supplier_id", "=", $data["supplier_id"]);
         }
 
         // Filter berdasarkan SKU
