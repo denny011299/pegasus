@@ -11,7 +11,8 @@ class PurchaseOrder extends Model
     public $timestamps = true;
     public $incrementing = true;
 
-    function getPurchaseOrder($data = []){
+    function getPurchaseOrder($data = [])
+    {
         $data = array_merge([
             "po_number"   => null,
             "po_supplier"   => null,
@@ -21,8 +22,8 @@ class PurchaseOrder extends Model
 
         $result = PurchaseOrder::where("status", ">=", 1);
 
-        if ($data["po_supplier"])$result->where("po_supplier", "like", "%".$data["po_supplier"]."%");
-        if ($data["po_id"])$result->where("po_id", "=", $data["po_id"]);
+        if ($data["po_supplier"]) $result->where("po_supplier", "like", "%" . $data["po_supplier"] . "%");
+        if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);
 
         $result->orderBy("created_at", "asc");
         $result = $result->get();
@@ -32,13 +33,14 @@ class PurchaseOrder extends Model
             // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
             // contoh:
             // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";
-             $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id"=>$value->po_id]);
+            $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id" => $value->po_id]);
         }
 
         return $result;
     }
-   
-    function insertPurchaseOrder($data){
+
+    function insertPurchaseOrder($data)
+    {
         $t = new PurchaseOrder();
         $t->po_number   = $this->generatePurchaseOrderID();
         $t->po_supplier = $data["po_supplier"];
@@ -53,7 +55,8 @@ class PurchaseOrder extends Model
         return $t->po_id;
     }
 
-    function updatePurchaseOrder($data){
+    function updatePurchaseOrder($data)
+    {
         $t = PurchaseOrder::find($data["po_id"]);
         $t->po_number   = $data["po_number"];
         $t->po_customer = $data["po_customer"];
@@ -68,12 +71,12 @@ class PurchaseOrder extends Model
         return $t->po_id;
     }
 
-    function deletePurchaseOrder($data){
+    function deletePurchaseOrder($data)
+    {
         $t = PurchaseOrder::find($data["po_id"]);
         $t->status = 0; // soft delete
         $t->save();
 
-     
     }
 
     function generatePurchaseOrderID()
@@ -81,6 +84,6 @@ class PurchaseOrder extends Model
         $id = self::max('po_id');
         if (is_null($id)) $id = 0;
         $id++;
-        return "PO".str_pad($id, 4, "0", STR_PAD_LEFT);
+        return "PO" . str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

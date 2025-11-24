@@ -8,6 +8,7 @@ use App\Models\Production;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
+use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use Illuminate\Http\Request;
@@ -98,9 +99,9 @@ class ProductionController extends Controller
         $bahan = json_decode($req->detail, true)[0];
         $cek = -1;
         $bahan_kurang = [];
-
         foreach ($bahan as $key => $value) {
-            $stok = SuppliesVariant::find($value['supplies_id'])->supplies_variant_stock;
+            $stok = SuppliesStock::where("supplies_id", "=", $value['supplies_id'])
+                ->where("unit_id", "=", $value['unit_id'])->first()->ss_stock;
             if ($stok - ($value['bom_detail_qty'] * $data['production_qty']) < 0) {
                 $cek = 1;
                 array_push($bahan_kurang, $value['supplies_name']);
@@ -115,8 +116,9 @@ class ProductionController extends Controller
         }
 
         foreach ($bahan as $key => $value) {
-            $stok = SuppliesVariant::find($value['supplies_id']);
-            $stok->supplies_variant_stock -=  ($value['bom_detail_qty'] * $data['production_qty']);
+            $stok = SuppliesStock::where("supplies_id", "=", $value['supplies_id'])
+                ->where("unit_id", "=", $value['unit_id'])->first();
+            $stok->ss_stock -=  ($value['bom_detail_qty'] * $data['production_qty']);
             $stok->save();
         }
 
@@ -124,7 +126,7 @@ class ProductionController extends Controller
 
         $b = bom::find($data["production_bom_id"]);
         $v = ProductStock::where("product_variant_id", "=", $data["production_product_id"])
-            ->where("unit_id", "=", $data["unit_id"])->first();
+            ->where("unit_id", "=", $b["unit_id"])->first();
         $v->ps_stock += intval($data['production_qty']) * $b->bom_qty;
         $v->save();
 
@@ -136,16 +138,19 @@ class ProductionController extends Controller
         ]);
     }
 
-    function updateProduction(Request $req)
-    {
-        $data = $req->all();
-        return (new Production())->updateProduction($data);
-    }
+    function updateProduction(Request $req) {}
 
     function deleteProduction(Request $req)
     {
         $data = $req->all();
-        return (new Production())->deleteProduction($data);
+        (new Production())->deleteProduction($data);
+        $p = production::find($data["production_id"]);
+
+        $b = bom::find($p->production_bom_id);
+        $v = ProductStock::where("product_variant_id", "=", $b["product_id"])
+            ->where("unit_id", "=", $b["unit_id"])->first();
+        $v->ps_stock -= intval($p['production_qty']) * $b->bom_qty;
+        $v->save();
     }
 
     function getPemakaian(Request $req)

@@ -317,16 +317,23 @@
                                             placeholder="Input Nama Bahan Mentah">
                                     </div>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-6">
                                     <div class="input-block mb-3">
                                         <label>Satuan<span class="text-danger">*</span></label>
                                         <select id="supplies_unit" class="form-select fill"></select>
                                     </div>
                                 </div>
+                                <div class="col-6">
+                                    <div class="input-block mb-3">
+                                        <label>Default Unit<span class="text-danger">*</span></label>
+                                        <select class="form-select fill select2" id="unit_id">
+                                        </select>
+                                    </div>
+                                </div>
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Deskripsi<span class="text-danger">*</span></label>
-                                        <textarea class="form-control fill" id="supplies_desc" cols="30" rows="5"></textarea>
+                                        <label>Deskripsi</label>
+                                        <textarea class="form-control " id="supplies_desc" cols="30" rows="5"></textarea>
                                     </div>
                                 </div>
                                 <hr>
@@ -363,6 +370,30 @@
                                         </tbody>
                                     </table>
                                 </div>
+                                <hr>
+                                <label class="mb-3">Atur Relasi</label>
+                                <div class="row">
+                                    <div class="col-3">
+                                        <select name="" id="relasi1" class="form-select"></select>
+                                    </div>
+                                    <div class="col-1"> <h6 class="text-center pt-2"> - </h6> </div>
+                                    <div class="col-3">
+                                        <select name="" id="relasi2" class="form-select"></select>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-primary w-100 btn-sm" type="button" id="btnAddRowRelasi">Tambah Row Relasi</button>
+                                    </div>
+                                </div>
+                                 <table class="table table-bordered mb-2 mt-4">
+                                    <thead>
+                                        <tr>
+                                            <td>Name Unit 1<span class="text-danger">*</span></td>
+                                            <td>Name Unit 2<span class="text-danger">*</span></td>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="tbRelasi" id="tbRelasi">
+                                    </tbody>
+                                </table>
                                 {{-- 
                                 <div class="col-12">
                                     <div class="input-block">
@@ -838,8 +869,8 @@
                                 </div>
                                 <div class="col-12 col-md-6">
                                     <div class="input-block">
-                                        <label>Keterangan<span class="text-danger">*</span></label>
-                                        <textarea class="form-control fill" id="pdo_desc" rows="3" placeholder="Keterangan pengiriman"></textarea>
+                                        <label>Keterangan</label>
+                                        <textarea class="form-control" id="pdo_desc" rows="3" placeholder="Keterangan pengiriman"></textarea>
                                     </div>
                                 </div>
 
@@ -1312,13 +1343,13 @@
                                         <input type="text" class="form-control fill_supply number-only" id="bom_detail_qty" placeholder="Qty Bahan">
                                     </div>
                                 </div>
-                                {{-- 
+                                
                                 <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Nama Satuan<span class="text-danger">*</span></label>
-                                        <select class="form-select fill_supply" id="unit_id"></select>
+                                        <select class="form-select fill_supply" id="unit_supplies_id"></select>
                                     </div>
-                                </div>--}}
+                                </div>
                                 <div class="col-1 pt-4">
                                     <a class="btn btn-primary btn-add-supply">+</a>
                                 </div>

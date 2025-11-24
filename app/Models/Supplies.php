@@ -33,7 +33,13 @@ class Supplies extends Model
                 $value->supplier =  Supplier::whereIn('supplier_id', json_decode($value->supplies_supplier, true))->get();
             }
             $value->supplies_unit = json_decode($value->supplies_unit);
+            $value->supplies_relasi = (new SuppliesRelation())->getSuppliesRelation([
+                "supplies_id" => $value->supplies_id
+            ]);
             $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
+            $value->stock = (new SuppliesStock())->getProductStock([
+                "supplies_id" => $value->supplies_id
+            ]);
         }
         return $result;
     }
@@ -44,6 +50,7 @@ class Supplies extends Model
         $t->supplies_name = $data["supplies_name"];
         $t->supplies_desc = $data["supplies_desc"];
         $t->supplies_unit = $data["supplies_unit"];
+        $t->supplies_default_unit = $data["supplies_default_unit"];
         $t->save();
         return $t->supplies_id;
     }
@@ -54,6 +61,7 @@ class Supplies extends Model
         $t->supplies_name = $data["supplies_name"];
         $t->supplies_desc = $data["supplies_desc"];
         $t->supplies_unit = $data["supplies_unit"];
+        $t->supplies_default_unit = $data["supplies_default_unit"];
         $t->save();
         return $t->supplies_id;
     }
@@ -65,5 +73,6 @@ class Supplies extends Model
         $t->save();
 
         SuppliesVariant::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
+        SuppliesStock::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
     }
 }

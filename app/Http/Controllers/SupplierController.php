@@ -43,6 +43,8 @@ class SupplierController extends Controller
             $value["pod_qty"] = $value["qty"];
             $value["pod_harga"] = $value["supplies_variant_price"];
             $value["pod_subtotal"] = intval($value["pod_qty"]) * intval($value["pod_harga"]);
+
+
             (new PurchaseOrderDetail())->insertPurchaseOrderDetail($value);
         }
         return response()->json($data);
@@ -70,7 +72,9 @@ class SupplierController extends Controller
 
     function getPoDelivery(Request $req)
     {
-        $data = (new PurchaseOrderDelivery())->getPoDelivery();
+        $data = (new PurchaseOrderDelivery())->getPoDelivery([
+            "po_id" => $req->po_id
+        ]);
         return response()->json($data);
     }
 
@@ -93,7 +97,7 @@ class SupplierController extends Controller
             $value['pdo_id'] = $data["pdo_id"];
             if (!isset($value["pdod_id"])) $t = (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
             else {
-               
+
                 $t = (new PurchaseOrderDeliveryDetail())->updatePoDeliveryDetail($value);
             }
             array_push($id, $t);

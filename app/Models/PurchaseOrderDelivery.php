@@ -17,6 +17,7 @@ class PurchaseOrderDelivery extends Model
             "pdo_number"   => null,
             "pdo_receiver"   => null,
             "pdo_id"   => null,
+            "po_id"   => null,
             "pdo_date" => null,
         ], $data);
 
@@ -24,6 +25,7 @@ class PurchaseOrderDelivery extends Model
 
         if ($data["pdo_receiver"]) $result->where("pdo_receiver", "like", "%" . $data["pdo_receiver"] . "%");
         if ($data["pdo_id"]) $result->where("pdo_id", "=", $data["pdo_id"]);
+        if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);
 
         $result->orderBy("created_at", "asc");
         $result = $result->get();
@@ -40,6 +42,7 @@ class PurchaseOrderDelivery extends Model
         $t = new PurchaseOrderDelivery();
         $t->pdo_number   = $this->generatePoDeliveryID();
         $t->pdo_receiver = $data["pdo_receiver"];
+        $t->po_id = $data["po_id"];
         $t->pdo_date     = $data["pdo_date"];
         $t->pdo_phone    = $data["pdo_phone"];
         $t->pdo_address  = $data["pdo_address"];

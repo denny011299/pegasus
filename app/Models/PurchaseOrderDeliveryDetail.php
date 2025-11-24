@@ -47,7 +47,11 @@ class PurchaseOrderDeliveryDetail extends Model
         $t->save();
 
         $s = SuppliesVariant::find($data["supplies_variant_id"]);
-        $s->supplies_variant_stock += $data["pdod_qty"];
+        $s = SuppliesStock::where("supplies_id", "=", $s->supplies_id)
+            ->where("unit_id", "=", $data["unit_id"])
+            ->where("status", "=", 1)
+            ->first();
+        $s->ss_stock += $data["pdod_qty"];
         $s->save();
 
         return $t->pdod_id;
@@ -56,11 +60,15 @@ class PurchaseOrderDeliveryDetail extends Model
     function updatePoDeliveryDetail($data)
     {
         $s = SuppliesVariant::find($data["supplies_variant_id"]);
+        $st = SuppliesStock::where("supplies_id", "=", $s->supplies_id)
+            ->where("unit_id", "=", $data["unit_id"])
+            ->where("status", "=", 1)
+            ->first();
 
         $t = PurchaseOrderDeliveryDetail::find($data["pdod_id"]);
 
-        $s->supplies_variant_stock -= $t->pdod_qty;
-        $s->save();
+        $st->ss_stock -= $t->pdod_qty;
+        $st->save();
 
 
         $t->supplies_variant_id = $data["supplies_variant_id"];
@@ -69,7 +77,7 @@ class PurchaseOrderDeliveryDetail extends Model
         $t->save();
 
         //ditambah lagi
-        $s->supplies_variant_stock += $data["pdod_qty"];
+        $s->ss_stock += $data["pdod_qty"];
         $s->save();
         return $t->pdod_id;
     }

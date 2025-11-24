@@ -27,9 +27,7 @@
                                 <table class="table table-center table-hover" id="tableStock">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>SKU</th>
                                             <th>Nama Bahan Mentah</th>
-                                            <th>Varian</th>
                                             <th>Stok</th>
                                         </tr>
                                     </thead>

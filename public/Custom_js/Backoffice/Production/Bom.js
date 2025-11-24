@@ -1,4 +1,4 @@
-    autocompleteSuppliesVariant('#supplies_id', '#add_bom');
+    autocompleteSupplies('#supplies_id', '#add_bom');
     autocompleteProductVariantOnly('#product_id', '#add_bom');
 
     var mode=1;
@@ -12,11 +12,13 @@
     $(document).on('change','#supplies_id',function(){
         var data = $(this).select2("data")[0];
         console.log(data);
-       // $('#unit_id').empty();
-        /*
-        data.sup_unit.forEach(element => {
-            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
-        });*/
+        $('#unit_supplies_id').empty();
+        
+        data.units.forEach(element => {
+            console.log(element);
+            
+            $('#unit_supplies_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
+        });
     });
 
     $(document).on('change','#product_id',function(){
@@ -231,17 +233,17 @@
         var temp = $('#supplies_id').select2("data")[0];
         console.log(temp)
         var data  = {
-            "supplies_id": temp.supplies_variant_id,
-            "supplies_name": temp.supplies_name+" "+temp.supplies_variant_name,
+            "supplies_id": temp.supplies_id,
+            "supplies_name": temp.supplies_name,
             "bom_detail_qty": parseInt($('#bom_detail_qty').val()),
-            "unit_name": temp.unit_name || temp.supplies_unit,
-            "unit_id": temp.unit_id || temp.supplies_unit_id
+            "unit_name": $('#unit_supplies_id option:selected').text(),
+            "unit_id": $('#unit_supplies_id').val(),
         };
         bahan.push(data);
         addRow(data)
 
-        $('#supplies_id').empty();
-        $('#unit_id').empty();
+        $('#supplies_id ').empty();
+        $('#unit_supplies_id').empty();
         $('#bom_detail_qty').val("");
     })
     

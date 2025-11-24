@@ -58,9 +58,12 @@ class SuppliesVariant extends Model
             $ss = Supplier::find($variant->supplier_id);
             $variant->supplier_name = $ss ? $ss->supplier_name : null;
 
-            $u =  Unit::whereIn('unit_id', json_decode($s->supplies_unit, true))->first();
-            $variant->supplies_unit = $u ? $u->unit_name : "-";
-            $variant->supplies_unit_id = $u ? $u->unit_id : "-";
+            $u =  Unit::whereIn('unit_id', json_decode($s->supplies_unit, true))->get();
+            $variant->supplies_unit = $u;
+
+            $variant->stock =  (new SuppliesStock())->getProductStock([
+                "supplies_id" => $variant->supplies_id
+            ]);
         }
 
         return $variants;

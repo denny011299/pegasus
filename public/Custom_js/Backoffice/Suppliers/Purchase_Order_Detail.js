@@ -121,6 +121,9 @@
         $.ajax({
             url: "/getPoDelivery",
             method: "get",
+            data:{
+                po_id: data.po_id
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
@@ -248,8 +251,8 @@
             }, 
             columns: [ 
                 { data: "name", width: "40%" }, 
-                { data: "sku", width: "40%" }, 
-                { data: "stock", width: "20%" }, 
+                { data: "sku", width: "30%" }, 
+                { data: "stock", width: "30%" }, 
             ], 
             initComplete: (settings, json) => { 
                 $('.dataTables_filter').appendTo('#tableSearch'); 
@@ -260,12 +263,20 @@
     }
 
     function refreshTableProduct(e){
-        console.log(e);
         tablePrModal.clear().draw();
         // Manipulasi data sebelum dimasukkan ke tabel
         if(e){
+            console.log(e);
+            console.log(data);
+            
             for (let i = 0; i < e.length; i++) {
-                e[i].stock = `<input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].pod_qty || e[i].pdod_qty}">`;
+                e[i].stock = `
+                    
+                    <div class="input-group">
+                        <input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].pod_qty || e[i].pdod_qty}">
+                        <span class="input-group-text">${data.items[i].unit_name}</span>
+                    </div>
+                `;
                 e[i].name = e[i].pod_nama || `${e[i].supplies_name} ${e[i].supplies_variant_name}`;
                 console.log(e[i])
                 e[i].sku = e[i].pod_sku || e[i].pdod_sku;
@@ -340,6 +351,8 @@
 
             let item = data.items.find(i => i.pod_id == pod_id);
             if (item) {
+                console.log(item);
+                
                 item.pod_qty = qty;
                 item.pod_subtotal = parseInt(item.pod_harga) * parseInt(qty);
             }
@@ -372,17 +385,22 @@
 
     function insertDeliveryDetail(){
         detail_delivery = [];
-        $('#tablePurchaseDelivery tbody tr').each(function() {
+        $('#tablePurchaseDelivery tbody tr').each(function(index) {
             var dataDelivery = $('#tablePurchaseDelivery').DataTable().row(this).data(); // pakai this saja
-            if (mode == 1) dataDelivery = dataDelivery.supplies_variant;
-
+            
+            //if (mode == 1) dataDelivery = dataDelivery.supplies_variant;
+            
             let qty = parseInt($(this).find('.qtyDn').val()) || 0;
+            console.log(index);
 
             let item = {
+                ...dataDelivery,
                 supplies_variant_id: dataDelivery.supplies_variant_id,
-                pdod_sku: dataDelivery.supplies_variant_sku || dataDelivery.pdod_sku,
-                pdod_qty: qty
+                pdod_sku: dataDelivery.supplies_variant_sku || dataDelivery.pod_sku,
+                pdod_qty: qty,
+                unit_id: data.items[index].unit_id
             };
+            
             if(mode==2){
                 item.pdod_id = dataDelivery.pdod_id;
             }
@@ -410,8 +428,10 @@
         };
 
         insertDeliveryDetail();
-
+        console.log(data.po_id);
+        
         param = {
+            po_id: data.po_id,
             pdo_receiver: $('#pdo_receiver').val(),
             pdo_date: $('#pdo_date').val(),
             pdo_phone: $('#pdo_phone').val(),

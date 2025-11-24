@@ -11,20 +11,21 @@ class PurchaseOrderDetail extends Model
     public $timestamps = true;
     public $incrementing = true;
 
-    function getPurchaseOrderDetail($data = []){
+    function getPurchaseOrderDetail($data = [])
+    {
         $data = array_merge([
             "po_id"              => null,
-            "supplies_variant_id"=> null,
+            "supplies_variant_id" => null,
         ], $data);
 
         $result = PurchaseOrderDetail::where("status", "=", 1);
 
         if ($data["po_id"]) {
-            $result->where("po_id", "=" ,$data["po_id"]);
+            $result->where("po_id", "=", $data["po_id"]);
         }
 
         if ($data["supplies_variant_id"]) {
-            $result->where("supplies_variant_id", "=" ,$data["supplies_variant_id"]);
+            $result->where("supplies_variant_id", "=", $data["supplies_variant_id"]);
         }
 
         $result->orderBy("created_at", "asc");
@@ -38,7 +39,9 @@ class PurchaseOrderDetail extends Model
         return $result;
     }
 
-    function insertPurchaseOrderDetail($data){
+    function insertPurchaseOrderDetail($data)
+    {
+
         $t = new PurchaseOrderDetail();
         $t->po_id               = $data["po_id"];
         $t->supplies_variant_id = $data["supplies_variant_id"];
@@ -48,13 +51,15 @@ class PurchaseOrderDetail extends Model
         $t->pod_harga           = $data["pod_harga"];
         $t->pod_qty             = $data["pod_qty"];
         $t->pod_subtotal        = $data["pod_subtotal"];
+        $t->unit_id             = $data["unit_selected_id"];
         $t->status              = 1;
         $t->save();
 
         return $t->po_id;
     }
 
-    function updatePurchaseOrderDetail($data){
+    function updatePurchaseOrderDetail($data)
+    {
         $t = PurchaseOrderDetail::find($data["pod_id"]);
         $t->po_id               = $data["po_id"];
         $t->supplies_variant_id = $data["supplies_variant_id"];
@@ -64,12 +69,14 @@ class PurchaseOrderDetail extends Model
         $t->pod_harga           = $data["pod_harga"];
         $t->pod_qty             = $data["pod_qty"];
         $t->pod_subtotal        = $data["pod_subtotal"];
+        $t->unit_id             = $data["unit_selected_id"];
         $t->save();
 
         return $t->po_id;
     }
 
-    function deletePurchaseOrderDetail($data){
+    function deletePurchaseOrderDetail($data)
+    {
         $t = PurchaseOrderDetail::find($data["pod_id"]);
         $t->status = 0; // soft delete
         $t->save();

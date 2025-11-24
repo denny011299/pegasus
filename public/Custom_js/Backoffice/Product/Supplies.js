@@ -37,6 +37,7 @@
         }
         else addRow();
     });
+    
     function addRow(names="") {
         
         $('#tbVariant').append(`
@@ -114,6 +115,8 @@
                     });
                     e[i].unit_values = "";
                     e[i].units.forEach((element,index) => {
+                        console.log(element);
+                        
                          e[i].unit_values += element.unit_name;
                          if(index< e[i].units.length-1){
                             e[i].unit_values += ", ";
@@ -160,6 +163,7 @@
         param = {
             supplies_name:$('#supplies_name').val(),
             supplies_desc:$('#supplies_desc').val(),
+            supplies_default_unit:$('#unit_id').val(),
             supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
             supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token
@@ -174,10 +178,25 @@
                 supplies_variant_price: convertToAngka($(this).find('.variant_price').val()),
                 supplies_variant_barcode: $(this).find('.variant_barcode').val(),
                 supplies_variant_id: $(this).find('.variant_id').val(),
+                
             };
             temp.push(variant);
         });
+
+        var relasi = [];
+        $('.row-relasi').each(function(){
+            relasi.push({
+                unit_value_2 : $(this).find('.unit2').val(),
+                sr_unit_id_1 : $(this).attr('left'),
+                sr_unit_id_2 : $(this).attr('right'),
+                sr_unit_name_1 : $(this).find('.unit_text_1').text().trim(),
+                sr_unit_name_2 : $(this).find('.unit_text_2').text().trim(),
+                sr_id: $(this).find('.sr_id').val(),
+            });
+        });
+        
         param.supplies_variant = JSON.stringify(temp);
+        param.supplies_relasi = JSON.stringify(relasi);
 
         if(mode==2){
             url="/updateSupplies";
@@ -259,6 +278,7 @@
         $('#supplies_unit').append(`<option value="${data.supplies_unit}" selected>${data.unit_name}</option>`);
         $('#supplies_unit').val(data.supplies_unit).trigger('change');
         $('#tbVariant').html("");
+
         data.sup_variant.forEach(element => {
             addRow(element.supplies_variant_name);
             $('.row-variant').last().find('.variant_sku').val(element.supplies_variant_sku);
@@ -267,11 +287,18 @@
             $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
             if(element.supplier_id)$('.row-variant').last().find('.supplier_id').append(`<option value="${element.supplier_id}" selected>${element.supplier_name}</option>`);
         });
+
         data.units.forEach(u => {
             $('#supplies_unit').append(
                 `<option value="${u.unit_id}">${u.unit_short_name}</option>`
             );
         });
+        console.log(data);
+        
+        data.supplies_relasi.forEach((item) => {
+            addRowRelasi(item,item); 
+        });
+        
         if(data.supplier){
             data.supplier.forEach(u => {
                 console.log(u);
@@ -281,7 +308,10 @@
         }
         let unitIds = data.units.map(u => u.unit_id);
         $('#supplies_unit').val(unitIds).trigger('change');
-
+        
+        $('#unit_id').val(data.supplies_default_unit).trigger('change');
+        console.log(data);
+        
         $('.btn-save').html('Simpan perubahan');
         $('#add_supplies').modal("show");
         $('#add_supplies').attr("supplies_id", data.supplies_id);
@@ -314,3 +344,113 @@
             }
         });
     });
+
+    
+$(document).on("change","#supplies_unit",function(){
+    dataRelasi = $(this).select2("data");
+    // Pengecekan apakah sudah selected atau belum
+    var select = dataRelasi.length==1?1:$('#unit_id').val();
+
+    $('#unit_id,#relasi1,#relasi2').html("");
+    dataRelasi.forEach(item => {
+        $('#unit_id').append(`<option value="${item.id}">${item.text}</option>`);
+        $('#relasi1,#relasi2').append(`<option value="${item.id}">${item.text}</option>`);
+    });
+
+    if(dataRelasi.length>1)$('#unit_id').val(select);
+    else $('#unit_id').eq(select).prop('selected', true);
+
+    $('#unit_id').trigger("change");
+    
+    
+    if (dataRelasi.length == 1) {
+        $('#tbRelasi').html("");
+    }
+
+    else if (dataRelasi.length < 1) {
+        $('#tbRelasi').html("");
+        $('#unit_id').val("");
+    }
+});
+
+
+
+function addRowRelasi(element1,element2) {
+    console.log(element2);
+    
+    $('#tbRelasi').append(`
+        <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${ element2.pr_unit_id_2}">
+            <td>
+                <div class="input-group">
+                    <input type="text" class="form-control nominal-only unit1 fill" value="1"
+                    data-unit_id="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element1.id}" disabled>
+                    <span class="input-group-text unit_text_1">
+                        ${element1.pr_unit_name_1 ? element1.pr_unit_name_1 : element1.text}
+                    </span>
+                    <input type="hidden" class="form-control sr_id" value="${element1.sr_id??''}">
+                </div>
+            </td>
+            <td>
+                <div class="input-group">
+                    <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai"
+                    data-unit_id="${element2.pr_unit_id_2 ? element2.pr_unit_id_2 : element2.id}" value="${element2.sr_value_2 ? element2.sr_value_2 : element2.sr_value_2??0}">
+                    <span class="input-group-text unit_text_2">
+                        ${element2.pr_unit_name_2 ? element2.pr_unit_name_2 : element2.text}
+                    </span>
+                </div>
+            </td>
+        </tr>    
+    `);      
+    feather.replace();
+}
+
+
+
+function cekKembar() {
+    relasi.forEach(element => {
+        element.forEach((item,index) => {
+            if(item.unit_id_1==item.unit_id_2) element.splice(index,1);
+        });
+    });
+}
+$(document).on("click",".btn_delete_row",function(){
+    if($('.row-variant').length<2) {
+        notifikasi('error', "Gagal Hapus", "Minimal 1 varian harus ada");
+        return false;
+    }
+    var index = $(this).closest("tr").index();
+    relasi.splice(index,1);
+    $(this).closest("tr").remove();
+      if(mode==2){
+
+         modeRelasi=1;
+        $(".btn-save").trigger("click");
+    }
+});
+
+function reset() {
+    $('#tbRelasi').html(`
+        <tr>
+             <td class="text-center" colspan="2">
+                 Pilih Minimal 2 unit untuk mengatur relasi unit
+             </td>
+        </tr>
+    `);
+}
+
+$(document).on("click","#btnAddRowRelasi",function(){
+    var r1 = $('#relasi1').val();
+    var r2 = $('#relasi2').val();
+    if(!r1 || !r2){
+        notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh kosong");
+        return false;
+    }
+    if(r1==r2){
+        notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh sama");
+        return false;
+    }
+    console.log(r1+" - "+r2);
+    
+    addRowRelasi({pr_unit_id_1: r1, pr_unit_name_1: $('#relasi1 option:selected').text().trim()},{pr_unit_id_2: r2, pr_unit_name_2: $('#relasi2 option:selected').text().trim()});
+});
+

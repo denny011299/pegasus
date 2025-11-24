@@ -14,16 +14,16 @@ class Production extends Model
     function getProduction($data = [])
     {
         $data = array_merge([
-            "production_product_id"=>null,
-            "date"=>null,
+            "production_product_id" => null,
+            "date" => null,
             "report" => null
         ], $data);
 
-        if($data["report"] == null) $result = Production::where('status', '=', 1);
-        else if($data["report"]) $result = Production::where('status', '>=', 0);
-        if($data["production_product_id"]) $result->where('production_product_id','=',$data["production_product_id"]);
-        
-        if($data["date"]) {
+        if ($data["report"] == null) $result = Production::where('status', '=', 1);
+        else if ($data["report"]) $result = Production::where('status', '>=', 0);
+        if ($data["production_product_id"]) $result->where('production_product_id', '=', $data["production_product_id"]);
+
+        if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
                 // Jika date adalah array [start_date, end_date]]
                 $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
@@ -32,14 +32,14 @@ class Production extends Model
             } else {
                 // Jika date hanya satu nilai
                 $date = $data["date"];
-                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d'))$date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
-                
+                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d')) $date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+
                 $result->where('production_date', '=', $date);
             }
         }
-        
+
         $result->orderBy('created_at', 'asc');
-        
+
         $result = $result->get();
         foreach ($result as $key => $value) {
             $u = ProductVariant::find($value->production_product_id);
@@ -82,13 +82,17 @@ class Production extends Model
         $t->status = 0;
         $t->save();
 
+        
+
         $b = (new BomDetail())->getBomDetail([
             "bom_id" => $t->production_bom_id
         ]);
 
         foreach ($b as $key => $value) {
-            $s = SuppliesVariant::find($value->supplies_id);
-            $s->supplies_variant_stock +=  ($value->bom_detail_qty * $t->production_qty);
+            $s = SuppliesStock::where("supplies_id", "=", $value->supplies_id)
+                ->where("unit_id", "=", $value->unit_id)
+                ->first();
+            $s->ss_stock +=  ($value->bom_detail_qty * $t->production_qty);
             $s->save();
         }
     }

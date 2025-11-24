@@ -12,6 +12,7 @@ use App\Models\ProductVariant;
 use App\Models\ProductVariants;
 use App\Models\Supplies;
 use App\Models\SuppliesRelation;
+use App\Models\SuppliesStock;
 use App\Models\SuppliesUnit;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
@@ -223,12 +224,18 @@ class ProductController extends Controller
             $value['supplies_id'] = $id;
             (new SuppliesVariant())->insertSuppliesVariant($value);
         }
+        foreach (json_decode($data['supplies_relasi'], true) as $key => $value) {
+            $value['supplies_id'] = $id;
+            (new SuppliesRelation())->insertSuppliesRelation($value);
+        }
+        (new SuppliesStock())->syncStock($id);
     }
 
     function updateSupplies(Request $req)
     {
         $data = $req->all();
         $id = [];
+        $id_r = [];
         (new Supplies())->updateSupplies($data);
         foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
             $value['supplies_id'] = $data["supplies_id"];
@@ -236,7 +243,16 @@ class ProductController extends Controller
             else $t = (new SuppliesVariant())->updateSuppliesVariant($value);
             array_push($id, $t);
         }
+
+        foreach (json_decode($data['supplies_relasi'], true) as $key => $value) {
+            $value['supplies_id'] = $req->supplies_id;
+            if (!isset($value["sr_id"]) || $value["sr_id"] == "") $t =  (new SuppliesRelation())->insertSuppliesRelation($value);
+            else $t = (new SuppliesRelation())->updateSuppliesRelation($value);
+            array_push($id_r, $t);
+        }
+        SuppliesRelation::whereNotIn("sr_id", $id_r)->where('supplies_id', '=', $data["supplies_id"])->update(["status" => 0]);
         SuppliesVariant::where('supplies_id', '=', $data["supplies_id"])->whereNotIn("supplies_variant_id", $id)->update(["status" => 0]);
+        (new SuppliesStock())->syncStock($data["supplies_id"]);
     }
 
     function deleteSupplies(Request $req)

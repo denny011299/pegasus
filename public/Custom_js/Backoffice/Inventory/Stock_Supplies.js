@@ -21,9 +21,7 @@
                 },
             },
             columns: [
-                { data: "supplies_variant_sku" },
                 { data: "supplies_name" },
-                { data: "supplies_variant_name" },
                 { data: "supplies_variant_stock_text" },
             ],
             initComplete: (settings, json) => {
@@ -47,7 +45,16 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].supplies_variant_stock_text = `${e[i].supplies_variant_stock} ${e[i].unit_name || e[i].supplies_unit}`;
+                    e[i].supplies_variant_stock_text = "";
+                    for (let j = 0; j < e[i].stock.length; j++) {
+                        e[i].supplies_variant_stock_text += e[i].stock[j].ss_stock + " " + e[i].stock[j].unit_short_name;
+                        if (j < e[i].stock.length - 1) {
+                            e[i].supplies_variant_stock_text += " , ";
+                        }
+                    }
+                    if(e[i].stock.length == 0){
+                        e[i].supplies_variant_stock_text = "-";
+                    }
                 }
 
                 table.rows.add(e).draw();
