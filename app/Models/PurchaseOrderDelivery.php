@@ -21,7 +21,7 @@ class PurchaseOrderDelivery extends Model
             "pdo_date" => null,
         ], $data);
 
-        $result = PurchaseOrderDelivery::where("status", ">=", 1);
+        $result = PurchaseOrderDelivery::where("status", ">=", 0);
 
         if ($data["pdo_receiver"]) $result->where("pdo_receiver", "like", "%" . $data["pdo_receiver"] . "%");
         if ($data["pdo_id"]) $result->where("pdo_id", "=", $data["pdo_id"]);
@@ -68,15 +68,23 @@ class PurchaseOrderDelivery extends Model
     function deletePoDelivery($data)
     {
         $t = PurchaseOrderDelivery::find($data["pdo_id"]);
-        $t->status = 0; // soft delete
+        $t->status = -1; // soft delete
         $t->save();
-
-        $p = PurchaseOrderDeliveryDetail::where("pdo_id", "=", $data["pdo_id"])->get();;
-        foreach ($p as $key => $value) {
-            $s = SuppliesVariant::find($value->supplies_variant_id);
-            $s->supplies_variant_stock -= $value->pdod_qty;
-            $s->save();
+        if($t->status==2){
+            $p = PurchaseOrderDeliveryDetail::where("pdo_id", "=", $data["pdo_id"])->get();;
+            foreach ($p as $key => $value) {
+                $s = SuppliesVariant::find($value->supplies_variant_id);
+                $s->supplies_variant_stock -= $value->pdod_qty;
+                $s->save();
+            }
         }
+    }
+
+    function statusPoDelivery($data)
+    {
+        $t = PurchaseOrderDelivery::find($data["pdo_id"]);
+        $t->status = $data["status"]; // soft delete
+        $t->save();
     }
 
     function generatePoDeliveryID()

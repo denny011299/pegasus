@@ -242,5 +242,5 @@
         var public = "{{ asset('') }}";    
         var data = @json($data);
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Suppliers/Purchase_Order_Detail.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Suppliers/Purchase_Order_Detail.js')}}?v={{ time() }}"></script>
 @endsection

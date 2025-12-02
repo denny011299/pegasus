@@ -892,6 +892,10 @@
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-end">
+                        <div class="row-acc">
+                            <button class="btn btn-danger btn-decline me-2" type="button">Tolak</button>
+                            <button class="btn btn-success btn-approve me-3" type="button">Setujui</button>
+                        </div>
                         <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-2">Batal</button>
                         <button type="button" class="btn btn-primary btn-save-delivery">Simpan Perubahan</button>
                     </div>
@@ -948,6 +952,10 @@
                         </div>
                     </div>
                     <div class="modal-footer d-flex justify-content-end">
+                         <div class="row-acc-invoice">
+                            <button class="btn btn-danger btn-decline-invoice me-2" type="button">Tolak</button>
+                            <button class="btn btn-success btn-approve-invoice me-3" type="button">Setujui</button>
+                        </div>
                         <button type="button" data-bs-dismiss="modal" class="btn btn-outline-secondary me-2">Batal</button>
                         <button type="button" class="btn btn-primary btn-save-invoice">Tambah Faktur</button>
                     </div>

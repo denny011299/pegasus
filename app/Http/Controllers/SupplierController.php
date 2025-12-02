@@ -82,7 +82,7 @@ class SupplierController extends Controller
     {
         $data = $req->all();
         $id = (new PurchaseOrderDelivery())->insertPoDelivery($data);
-        foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
+         foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
             $value['pdo_id'] = $id;
             (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
         }
@@ -110,10 +110,34 @@ class SupplierController extends Controller
         $data = $req->all();
         return (new PurchaseOrderDelivery())->deletePoDelivery($data);
     }
+    function accPoDelivery(Request $req)
+    {
+        $data = $req->all();
+         $id = [];
+        (new PurchaseOrderDelivery())->updatePoDelivery($data);
+        (new PurchaseOrderDelivery())->statusPoDelivery($data);
+        $status = PurchaseOrderDelivery::find($data["pdo_id"])->status; // approved
+        foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
+            $value['pdo_id'] = $data["pdo_id"];
+            $value['statusPO'] = $status;
+            if (!isset($value["pdod_id"])) $t = (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
+            else {
+                $t = (new PurchaseOrderDeliveryDetail())->updatePoDeliveryDetail($value);
+            }
+            array_push($id, $t);
+        }
+        PurchaseOrderDeliveryDetail::where('pdo_id', '=', $data["pdo_id"])->whereNotIn("pdod_id", $id)->update(["status" => 0]);
+    }
+
+    function declinePoDelivery(Request $req)
+    {
+        $data = $req->all();
+        return (new PurchaseOrderDelivery())->statusPoDelivery($data);
+    }
 
     function getPoInvoice(Request $req)
     {
-        $data = (new PurchaseOrderDetailInvoice())->getPoInvoice();
+        $data = (new PurchaseOrderDetailInvoice())->getPoInvoice($req->all());
         return response()->json($data);
     }
 
@@ -196,5 +220,16 @@ class SupplierController extends Controller
     {
         $data = $req->all();
         return (new Supplier())->deleteSupplier($data);
+    }
+
+    function declineInvoicePO(Request $req)
+    {
+        $data = $req->all();
+        return (new PurchaseOrderDetailInvoice())->changeStatusInvoicePO($data);
+    }
+    function acceptInvoicePO(Request $req)
+    {
+        $data = $req->all();
+        return (new PurchaseOrderDetailInvoice())->changeStatusInvoicePO($data);
     }
 }

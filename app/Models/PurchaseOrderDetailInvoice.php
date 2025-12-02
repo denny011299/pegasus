@@ -27,7 +27,7 @@ class PurchaseOrderDetailInvoice extends Model
             "po_id"  => null,
         ], $data);
 
-        $result = PurchaseOrderDetailInvoice::where('status','>=',1);
+        $result = PurchaseOrderDetailInvoice::where('status','>=',0);
 
         if ($data["poi_id"]) {
             $result->where("poi_id", "=", $data["poi_id"]);
@@ -83,6 +83,15 @@ class PurchaseOrderDetailInvoice extends Model
         $t = PurchaseOrderDetailInvoice::find($data["poi_id"]);
         if ($t) {
             $t->status=0;
+            $t->save(); // hard delete
+        }
+    }
+    // === DELETE ===
+    function changeStatusInvoicePO($data)
+    {
+        $t = PurchaseOrderDetailInvoice::find($data["poi_id"]);
+        if ($t) {
+            $t->status=$data["status"];
             $t->save(); // hard delete
         }
     }

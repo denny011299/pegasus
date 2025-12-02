@@ -136,8 +136,11 @@
                     e[i].date = moment(e[i].pod_date).format('D MMM YYYY');
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Dibuat</span>`;
-                    } else if (e[i].pod_status == 2){
+                    } else if (e[i].status == 2){
                         e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
+                    }
+                    else if (e[i].status == 0){
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
                     
                     e[i].action = `
@@ -165,6 +168,9 @@
          $.ajax({
             url: "/getPoInvoice",
             method: "get",
+            data:{
+                po_id: data.po_id
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
@@ -180,6 +186,9 @@
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
                     } else if (e[i].status == 2){
                         e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
+                    }
+                    else if (e[i].status == 0){
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit_invoice" >
@@ -208,6 +217,7 @@
         $('#add_purchase_delivery .modal-title').html("Tambah Catatan Pengiriman");
         $('#add_purchase_delivery .form-control').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.row-acc').hide();
         tablePurchaseDelivery();
         refreshTableProduct(data.items);
         $('#add_purchase_delivery').modal("show");
@@ -217,7 +227,9 @@
         mode=1;
         $('#add_purchase_invoice .modal-title').html("Tambah Faktur");
         $('#add_purchase_invoice input').val("");
+        $('.row-acc-invoice').hide();
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save-invoice').show();
         $('#add_purchase_invoice').modal("show");
     })
 
@@ -464,6 +476,116 @@
             }
         });
     })
+   
+    $(document).on('click', '.btn-approve', function(){
+        LoadingButton(this);
+        $('.is-invalid').removeClass('is-invalid');
+        var url ="/accPoDelivery";
+        var valid=1;
+
+        $("#add_purchase_delivery .fill").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save-delivery', 'Simpan perubahan');
+            return false;
+        };
+
+        insertDeliveryDetail();
+        console.log(data);
+        
+        param = {
+            po_id: data.po_id,
+            pdo_id: data.pdo_id,
+            pdo_receiver: $('#pdo_receiver').val(),
+            pdo_date: $('#pdo_date').val(),
+            pdo_phone: $('#pdo_phone').val(),
+            pdo_address: $('#pdo_address').val(),
+            pdo_desc: $('#pdo_desc').val(),
+            pdo_detail: JSON.stringify(detail_delivery),
+            pdo_id: $('#add_purchase_delivery').attr("pdo_id"),
+            status:2,
+            _token: token
+        };
+
+        LoadingButton($(this));
+        $.ajax({
+            url:url,
+            data: param,
+            method:"post",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){      
+                ResetLoadingButton(".btn-approve", 'Setujui');      
+                afterInsertDelivery();
+            },
+            error:function(e){
+                ResetLoadingButton(".btn-approve", 'Setujui');
+                console.log(e);
+            }
+        });
+    })
+   
+    $(document).on('click', '.btn-decline', function(){
+        LoadingButton(this);
+        $('.is-invalid').removeClass('is-invalid');
+        var url ="/declinePoDelivery";
+        var valid=1;
+
+        $("#add_purchase_delivery .fill").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-decline', 'Tolak');
+            return false;
+        };
+
+        insertDeliveryDetail();
+        console.log(data);
+        
+        param = {
+            po_id: data.po_id,
+            pdo_id: data.pdo_id,
+            pdo_receiver: $('#pdo_receiver').val(),
+            pdo_date: $('#pdo_date').val(),
+            pdo_phone: $('#pdo_phone').val(),
+            pdo_address: $('#pdo_address').val(),
+            pdo_desc: $('#pdo_desc').val(),
+            pdo_detail: JSON.stringify(detail_delivery),
+            pdo_id: $('#add_purchase_delivery').attr("pdo_id"),
+            status:0,
+            _token: token
+        };
+
+        LoadingButton($(this));
+        $.ajax({
+            url:url,
+            data: param,
+            method:"post",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){      
+                ResetLoadingButton(".btn-decline", 'Tolak');      
+                afterInsertDelivery();
+            },
+            error:function(e){
+                ResetLoadingButton(".btn-decline", 'Tolak');
+                console.log(e);
+            }
+        });
+    })
 
     function afterInsertDelivery() {
         $(".modal").modal("hide");
@@ -488,7 +610,16 @@
 
         tablePurchaseDelivery();
         refreshTableProduct(data.items);
-        
+        if(data.status == 1){
+            $('.row-acc').show();
+        }
+        if(data.status == 0){
+            $('.row-acc').hide();
+            $('.btn-save-delivery').hide();
+        }
+        else{
+            $('.btn-save-delivery').show();
+        }
         $('.btn-save-delivery').html('Simpan perubahan');
         $('#add_purchase_delivery').modal("show");
         $('#add_purchase_delivery').attr("pdo_id", data.pdo_id);
@@ -553,80 +684,81 @@
     }
 
 
-    
-$(document).on("click", ".btn-save-invoice", function () {
-    LoadingButton(this);
-    $(".is-invalid").removeClass("is-invalid");
-    var url = "/insertInvoicePO";
-    var valid = 1;
-    $("#add_purchase_invoice .fill").each(function () {
-        if (
-            $(this).val() == null ||
-            $(this).val() == "null" ||
-            $(this).val() == ""
-        ) {
-            valid = -1;
-            $(this).addClass("is-invalid");
-        }
-    });
-
-    if (valid == -1) {
-        notifikasi(
-            "error",
-            "Gagal Insert",
-            "Silahkan cek kembali inputan anda"
-        );
-        ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
-        return false;
-    }
-
-    param = {
-        po_id: data.po_id,
-        poi_date: $("#poi_date").val(),
-        poi_code: $("#poi_code").val(),
-        poi_due: $("#poi_due").val(),
-        poi_total: convertToAngka($("#poi_total").val()),
-        _token: token,
-    };
-    console.log(param);
-    LoadingButton($(this));
-
-    if (mode == 2) {
-        url = "/updateInvoicePO";
-        param.poi_id = $("#add_purchase_invoice").attr("poi_id");
-    }
-
-    $.ajax({
-        url: url,
-        data: param,
-        method: "post",
-        headers: {
-            "X-CSRF-TOKEN": token,
-        },
-        success: function (e) {
-            $(".modal").modal("hide");
-            refreshInvoice();
-            if (mode == 1){
-                notifikasi(
-                    "success",
-                    "Berhasil Insert",
-                    "Berhasil Data Ditambahkan"
-                );
+        
+    $(document).on("click", ".btn-save-invoice", function () {
+        LoadingButton(this);
+        $(".is-invalid").removeClass("is-invalid");
+        var url = "/insertInvoicePO";
+        var valid = 1;
+        $("#add_purchase_invoice .fill").each(function () {
+            if (
+                $(this).val() == null ||
+                $(this).val() == "null" ||
+                $(this).val() == ""
+            ) {
+                valid = -1;
+                $(this).addClass("is-invalid");
             }
-            else if (mode == 2){
-                notifikasi(
-                    "success",
-                    "Berhasil Update",
-                    "Berhasil Data Diupdate"
-                );
-            }
+        });
+
+        if (valid == -1) {
+            notifikasi(
+                "error",
+                "Gagal Insert",
+                "Silahkan cek kembali inputan anda"
+            );
             ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
-        },
-        error: function (e) {
-            console.log(e);
-        },
+            return false;
+        }
+
+        param = {
+            po_id: data.po_id,
+            poi_date: $("#poi_date").val(),
+            poi_code: $("#poi_code").val(),
+            poi_due: $("#poi_due").val(),
+            poi_total: convertToAngka($("#poi_total").val()),
+            _token: token,
+        };
+        console.log(param);
+        LoadingButton($(this));
+
+        if (mode == 2) {
+            url = "/updateInvoicePO";
+            param.poi_id = $("#add_purchase_invoice").attr("poi_id");
+        }
+
+        $.ajax({
+            url: url,
+            data: param,
+            method: "post",
+            headers: {
+                "X-CSRF-TOKEN": token,
+            },
+            success: function (e) {
+                $(".modal").modal("hide");
+                refreshInvoice();
+                if (mode == 1){
+                    notifikasi(
+                        "success",
+                        "Berhasil Insert",
+                        "Berhasil Data Ditambahkan"
+                    );
+                }
+                else if (mode == 2){
+                    notifikasi(
+                        "success",
+                        "Berhasil Update",
+                        "Berhasil Data Diupdate"
+                    );
+                }
+                ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
+            },
+            error: function (e) {
+                console.log(e);
+            },
+        });
     });
-});
+
     //edit invoice
     $(document).on("click",".btn_edit_invoice",function(){
         mode=2;
@@ -635,10 +767,27 @@ $(document).on("click", ".btn-save-invoice", function () {
         $('#poi_due').val(data.poi_due)
         $('#poi_date').val(data.poi_date)
         $('#poi_code').val(data.poi_code)
+        $('#add_purchase_invoice .modal-title').html("Update Faktur");
+        console.log();
+        
+        if(data.status == 1){
+            $('.row-acc-invoice').show();
+        }
+        else if(data.status == 0|| data.status == 2){
+            $('.row-acc-invoice').hide();
+            $('.btn-save-invoice').hide();
+        }
+        else{
+            $('.btn-save-invoice').show();
+        }
+
+        $('.btn-approve-invoice').attr("poi_id", data.poi_id);
+        $('.btn-decline-invoice').attr("poi_id", data.poi_id);
         $('#add_purchase_invoice').attr("poi_id", data.poi_id);
         $('#add_purchase_invoice').modal("show");
     });
- //delete invoice
+
+    //delete invoice
     $(document).on("click",".btn_delete_invoice",function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         showModalDelete("Apakah yakin ingin menghapus resep ini?","btn-delete-invoice");
@@ -646,12 +795,14 @@ $(document).on("click", ".btn-save-invoice", function () {
 
     });
     
-    $(document).on("click","#btn-delete-invoice",function(){
+    $(document).on("click",".btn-delete-invoice",function(){
+  
         $.ajax({
             url:"/deleteInvoicePO",
             data:{
                 poi_id:$('#btn-delete-invoice').attr('poi_id'),
-                _token:token
+                status:0,
+                _token:token,
             },
             method:"post",
             success:function(e){
@@ -660,6 +811,54 @@ $(document).on("click", ".btn-save-invoice", function () {
                 notifikasi('success', "Berhasil Delete", "Berhasil delete invoice");
             },
             error:function(e){
+                console.log(e);
+            }
+        });
+    });
+    
+    $(document).on("click",".btn-decline-invoice",function(){
+        var btn = $(this);
+        LoadingButton($(this));
+        $.ajax({
+            url:"/declineInvoicePO",
+            data:{
+                poi_id:$('.btn-decline-invoice').attr('poi_id'),
+                status:0,
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                refreshInvoice();
+                ResetLoadingButton(btn, 'Tolak');
+                notifikasi('success', "Berhasil Decline", "Berhasil decline invoice");
+            },
+            error:function(e){
+                ResetLoadingButton(btn, 'Tolak');
+                console.log(e);
+            }
+        });
+    });
+    
+    $(document).on("click",".btn-approve-invoice",function(){
+        var btn = $(this);
+        LoadingButton($(this));
+        $.ajax({
+            url:"/acceptInvoicePO",
+            data:{
+                poi_id:$('.btn-approve-invoice').attr('poi_id'),
+                status:2,
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                refreshInvoice();
+                ResetLoadingButton(btn, 'Setujui');
+                notifikasi('success', "Berhasil Accept", "Berhasil accept invoice");
+            },
+            error:function(e){
+                 ResetLoadingButton(btn, 'Setujui');
                 console.log(e);
             }
         });

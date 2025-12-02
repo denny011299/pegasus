@@ -45,15 +45,17 @@ class PurchaseOrderDeliveryDetail extends Model
         $t->pdod_sku = $data["pdod_sku"];
         $t->pdod_qty = $data["pdod_qty"];
         $t->save();
+        if(isset($data["statusPO"])&&$data["statusPO"]==2){
+            $s = SuppliesVariant::find($data["supplies_variant_id"]);
+            $s = SuppliesStock::where("supplies_id", "=", $s->supplies_id)
+                ->where("unit_id", "=", $data["unit_id"])
+                ->where("status", "=", 1)
+                ->first();
+            $s->ss_stock += $data["pdod_qty"];
+            $s->save();
 
-        $s = SuppliesVariant::find($data["supplies_variant_id"]);
-        $s = SuppliesStock::where("supplies_id", "=", $s->supplies_id)
-            ->where("unit_id", "=", $data["unit_id"])
-            ->where("status", "=", 1)
-            ->first();
-        $s->ss_stock += $data["pdod_qty"];
-        $s->save();
-
+            
+        }
         return $t->pdod_id;
     }
 
@@ -66,19 +68,19 @@ class PurchaseOrderDeliveryDetail extends Model
             ->first();
 
         $t = PurchaseOrderDeliveryDetail::find($data["pdod_id"]);
+        if($data["statusPO"]==2){
+            $st->ss_stock -= $t->pdod_qty;
+            $st->save();
 
-        $st->ss_stock -= $t->pdod_qty;
-        $st->save();
+            $t->supplies_variant_id = $data["supplies_variant_id"];
+            $t->pdod_sku = $data["sku"];
+            $t->pdod_qty = $data["pdod_qty"];
+            $t->save();
 
-
-        $t->supplies_variant_id = $data["supplies_variant_id"];
-        $t->pdod_sku = $data["pdod_sku"];
-        $t->pdod_qty = $data["pdod_qty"];
-        $t->save();
-
-        //ditambah lagi
-        $s->ss_stock += $data["pdod_qty"];
-        $s->save();
+            //ditambah lagi
+            $st->ss_stock += $data["pdod_qty"];
+            $st->save();
+        }
         return $t->pdod_id;
     }
 
