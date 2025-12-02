@@ -845,7 +845,7 @@
                                 <div class="col-12 col-md-4">
                                     <div class="input-block">
                                         <label>Nama Penerima<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="pdo_receiver" placeholder="Input nama penerima">
+                                        <select name="" id="pdo_receiver" class="form-select"></select>
                                     </div>
                                 </div>
                                 <div class="col-12 col-md-4">
@@ -861,13 +861,14 @@
                                     </div>
                                 </div>
 
-                                <div class="col-12 col-md-6">
+                                {{--  <div class="col-12 col-md-6">
+                                   
                                     <div class="input-block">
                                         <label>Alamat<span class="text-danger">*</span></label>
                                         <textarea class="form-control fill" id="pdo_address" rows="3" placeholder="Alamat penerima"></textarea>
                                     </div>
-                                </div>
-                                <div class="col-12 col-md-6">
+                                </div>--}}
+                                <div class="col-12 col-md-12">
                                     <div class="input-block">
                                         <label>Keterangan</label>
                                         <textarea class="form-control" id="pdo_desc" rows="3" placeholder="Keterangan pengiriman"></textarea>
@@ -918,13 +919,6 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row g-3">
-                                <div class="col-12">
-                                    <div class="input-block">
-                                        <label>Nomor Faktur<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="poi_code" placeholder="Masukkan nomor faktur">
-                                    </div>
-                                </div>
-
                                 <div class="col-12 col-md-6">
                                     <div class="input-block">
                                         <label>Tanggal Faktur<span class="text-danger">*</span></label>

@@ -1,7 +1,7 @@
     var mode=1;
     var tablePr, tableDn, tableInv, tablePrModal;
     let detail_delivery = []
-
+    autocompleteStaff("#pdo_receiver",null);
     autocompleteSupplier("#po_supplier",null);
     $(document).ready(function(){
         inisialisasi();
@@ -216,8 +216,11 @@
         mode=1;
         $('#add_purchase_delivery .modal-title').html("Tambah Catatan Pengiriman");
         $('#add_purchase_delivery .form-control').val("");
+        $('#pdo_date').val(moment().format('YYYY-MM-DD'));
         $('.is-invalid').removeClass('is-invalid');
         $('.row-acc').hide();
+        $('.btn-save-delivery').show();
+        $('#pdo_receiver').empty();
         tablePurchaseDelivery();
         refreshTableProduct(data.items);
         $('#add_purchase_delivery').modal("show");
@@ -227,6 +230,7 @@
         mode=1;
         $('#add_purchase_invoice .modal-title').html("Tambah Faktur");
         $('#add_purchase_invoice input').val("");
+        $('#poi_date').val(moment().format('YYYY-MM-DD'));
         $('.row-acc-invoice').hide();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save-invoice').show();
@@ -444,7 +448,8 @@
         
         param = {
             po_id: data.po_id,
-            pdo_receiver: $('#pdo_receiver').val(),
+            pdo_receiver: $('#pdo_receiver option:selected').text().trim(),
+            staff_id: $('#pdo_receiver').val(),
             pdo_date: $('#pdo_date').val(),
             pdo_phone: $('#pdo_phone').val(),
             pdo_address: $('#pdo_address').val(),
@@ -594,6 +599,10 @@
         refresh();
     }
 
+    $(document).on('change', '#pdo_receiver', function(){
+        var data = $(this).select2('data')[0];
+        $('#pdo_phone').val(data.staff_phone || '');
+    });
     $(document).on('click', '.btn_edit_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
         console.log(data);
@@ -601,8 +610,7 @@
         $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
         $('#add_purchase_delivery input').val("");
         $('.is-invalid').removeClass('is-invalid');
-
-        $('#pdo_receiver').val(data.pdo_receiver);
+        $('#pdo_receiver').empty().append(`<option value="${data.staff_id}">${data.pdo_receiver}</option>`);
         $('#pdo_date').val(data.pdo_date);
         $('#pdo_phone').val(data.pdo_phone);
         $('#pdo_address').val(data.pdo_address);

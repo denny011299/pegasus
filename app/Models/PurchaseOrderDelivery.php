@@ -42,6 +42,7 @@ class PurchaseOrderDelivery extends Model
         $t = new PurchaseOrderDelivery();
         $t->pdo_number   = $this->generatePoDeliveryID();
         $t->pdo_receiver = $data["pdo_receiver"];
+        $t->staff_id     = $data["staff_id"];
         $t->po_id = $data["po_id"];
         $t->pdo_date     = $data["pdo_date"];
         $t->pdo_phone    = $data["pdo_phone"];
@@ -56,6 +57,7 @@ class PurchaseOrderDelivery extends Model
     {
         $t = PurchaseOrderDelivery::find($data["pdo_id"]);
         $t->pdo_receiver = $data["pdo_receiver"];
+        $t->staff_id     = $data["staff_id"];
         $t->pdo_date     = $data["pdo_date"];
         $t->pdo_phone    = $data["pdo_phone"];
         $t->pdo_address  = $data["pdo_address"];

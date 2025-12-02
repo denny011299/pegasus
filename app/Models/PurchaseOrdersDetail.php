@@ -81,4 +81,5 @@ class PurchaseOrderDetail extends Model
         $t->status = 0; // soft delete
         $t->save();
     }
+    
 }

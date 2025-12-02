@@ -54,7 +54,7 @@ class PurchaseOrderDetailInvoice extends Model
         $t->po_id      = $data["po_id"];
         $t->poi_date   = $data["poi_date"];
         $t->poi_due    = $data["poi_due"];
-        $t->poi_code   = $data["poi_code"];
+        $t->poi_code   = $this->generateInvoicePurchaseOrderID();
         $t->poi_total  = $data["poi_total"];
         $t->save();
 
@@ -70,7 +70,6 @@ class PurchaseOrderDetailInvoice extends Model
         $t->po_id      = $data["po_id"];
         $t->poi_date   = $data["poi_date"];
         $t->poi_due    = $data["poi_due"];
-        $t->poi_code   = $data["poi_code"];
         $t->poi_total  = $data["poi_total"];
         $t->save();
 
@@ -95,5 +94,11 @@ class PurchaseOrderDetailInvoice extends Model
             $t->save(); // hard delete
         }
     }
-
+    function generateInvoicePurchaseOrderID()
+    {
+        $id = self::max('poi_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "INV" . str_pad($id, 4, "0", STR_PAD_LEFT);
+    }
 }
