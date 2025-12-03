@@ -119,7 +119,7 @@
                                                     <thead class="table-light">
                                                         <tr>
                                                             <th>SKU</th>
-                                                            <th>Supplies</th>
+                                                            <th>Bahan Mentah</th>
                                                             <th>Qty</th>
                                                             <th>Harga Beli (Rp)</th>
                                                             <th>Subtotal</th>

@@ -33,7 +33,6 @@
                                             <th>Dibayar</th>
                                             <th>Selisih</th>
                                             <th>Status Pembayaran</th>
-                                            <th>Kasir</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

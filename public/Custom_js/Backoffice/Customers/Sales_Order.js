@@ -98,7 +98,6 @@
                 { data: "so_paid" },
                 { data: "so_difference" },
                 { data: "status_so" },
-                { data: "so_cashier" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
