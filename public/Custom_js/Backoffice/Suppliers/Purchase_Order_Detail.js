@@ -59,7 +59,6 @@
                 { data: "pdo_number" },
                 { data: "date" },
                 { data: "pdo_receiver" },
-                { data: "pdo_address" },
                 { data: "pdo_phone" },
                 { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
@@ -452,7 +451,6 @@
             staff_id: $('#pdo_receiver').val(),
             pdo_date: $('#pdo_date').val(),
             pdo_phone: $('#pdo_phone').val(),
-            pdo_address: $('#pdo_address').val(),
             pdo_desc: $('#pdo_desc').val(),
             pdo_detail: JSON.stringify(detail_delivery),
             _token: token
@@ -510,7 +508,6 @@
             pdo_receiver: $('#pdo_receiver').val(),
             pdo_date: $('#pdo_date').val(),
             pdo_phone: $('#pdo_phone').val(),
-            pdo_address: $('#pdo_address').val(),
             pdo_desc: $('#pdo_desc').val(),
             pdo_detail: JSON.stringify(detail_delivery),
             pdo_id: $('#add_purchase_delivery').attr("pdo_id"),
@@ -565,7 +562,6 @@
             pdo_receiver: $('#pdo_receiver').val(),
             pdo_date: $('#pdo_date').val(),
             pdo_phone: $('#pdo_phone').val(),
-            pdo_address: $('#pdo_address').val(),
             pdo_desc: $('#pdo_desc').val(),
             pdo_detail: JSON.stringify(detail_delivery),
             pdo_id: $('#add_purchase_delivery').attr("pdo_id"),
@@ -613,20 +609,16 @@
         $('#pdo_receiver').empty().append(`<option value="${data.staff_id}">${data.pdo_receiver}</option>`);
         $('#pdo_date').val(data.pdo_date);
         $('#pdo_phone').val(data.pdo_phone);
-        $('#pdo_address').val(data.pdo_address);
         $('#pdo_desc').val(data.pdo_desc);
 
         tablePurchaseDelivery();
         refreshTableProduct(data.items);
         if(data.status == 1){
+            $('.btn-save-delivery').show();
             $('.row-acc').show();
         }
-        if(data.status == 0){
-            $('.row-acc').hide();
+        else if(data.status == 0 || data.status == 2){
             $('.btn-save-delivery').hide();
-        }
-        else{
-            $('.btn-save-delivery').show();
         }
         $('.btn-save-delivery').html('Simpan perubahan');
         $('#add_purchase_delivery').modal("show");
@@ -779,14 +771,11 @@
         console.log();
         
         if(data.status == 1){
+            $('.btn-save-invoice').show();
             $('.row-acc-invoice').show();
         }
-        else if(data.status == 0|| data.status == 2){
-            $('.row-acc-invoice').hide();
+        else if(data.status == 0 || data.status == 2){
             $('.btn-save-invoice').hide();
-        }
-        else{
-            $('.btn-save-invoice').show();
         }
 
         $('.btn-approve-invoice').attr("poi_id", data.poi_id);
@@ -798,12 +787,12 @@
     //delete invoice
     $(document).on("click",".btn_delete_invoice",function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin menghapus resep ini?","btn-delete-invoice");
+        showModalDelete("Apakah yakin ingin menghapus invoice ini?","btn-delete-invoice");
         $('#btn-delete-invoice').attr("poi_id", data.poi_id);
 
     });
     
-    $(document).on("click",".btn-delete-invoice",function(){
+    $(document).on("click","#btn-delete-invoice",function(){
   
         $.ajax({
             url:"/deleteInvoicePO",

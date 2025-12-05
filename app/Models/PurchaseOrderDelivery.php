@@ -46,7 +46,6 @@ class PurchaseOrderDelivery extends Model
         $t->po_id = $data["po_id"];
         $t->pdo_date     = $data["pdo_date"];
         $t->pdo_phone    = $data["pdo_phone"];
-        $t->pdo_address  = $data["pdo_address"];
         $t->pdo_desc     = $data["pdo_desc"];
         $t->save();
 
@@ -60,7 +59,6 @@ class PurchaseOrderDelivery extends Model
         $t->staff_id     = $data["staff_id"];
         $t->pdo_date     = $data["pdo_date"];
         $t->pdo_phone    = $data["pdo_phone"];
-        $t->pdo_address  = $data["pdo_address"];
         $t->pdo_desc     = $data["pdo_desc"];
         $t->save();
 

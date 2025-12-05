@@ -81,7 +81,7 @@ class PurchaseOrderDetailInvoice extends Model
     {
         $t = PurchaseOrderDetailInvoice::find($data["poi_id"]);
         if ($t) {
-            $t->status=0;
+            $t->status=-1;
             $t->save(); // hard delete
         }
     }

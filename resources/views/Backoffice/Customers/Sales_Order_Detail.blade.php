@@ -40,21 +40,21 @@
                                                 <div class="input-block">
                                                     <label>Nama Pelanggan</label>
                                                     <select id="so_customer" class="form-control fill">
-                                                        <option value="{{ $data['so_customer'] }}">{{ $data['so_customer_name'] }}</option>
+                                                        <option value="{{ $data['so_customer'] }}">{{ $data['customer_name'] }}</option>
                                                     </select>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Tanggal</label>
-                                                    <input type="date" class="form-control fill" id="po_date"
-                                                        value="{{ $data['po_date'] }}">
+                                                    <input type="date" class="form-control fill" id="so_date"
+                                                        value="{{ $data['so_date'] }}">
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Status</label>
-                                                    <select id="po_status" class="form-control fill">
+                                                    <select id="so_status" class="form-control fill">
                                                         <option value="">Pilih Status</option>
                                                         <option value="1">Dibuat</option>
                                                         <option value="2">Diterima</option>
@@ -70,8 +70,8 @@
                                                     <label>Biaya Pengiriman</label>
                                                     <div class="input-group">
                                                         <span class="input-group-text">Rp</span>
-                                                        <input type="text" class="form-control fill" id="po_total"
-                                                            value="{{ $data['po_total'] }}">
+                                                        <input type="text" class="form-control fill" id="so_cost"
+                                                            value="{{ $data['so_cost'] }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -80,8 +80,8 @@
                                                     <label>Dibayar</label>
                                                     <div class="input-group">
                                                         <span class="input-group-text">Rp</span>
-                                                        <input type="text" class="form-control fill" id="po_paid"
-                                                            value="0">
+                                                        <input type="text" class="form-control fill" id="so_paid"
+                                                            value="{{ $data['so_paid'] }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -90,8 +90,8 @@
                                                     <label>Sisa Pembayaran</label>
                                                     <div class="input-group">
                                                         <span class="input-group-text">Rp</span>
-                                                        <input type="text" class="form-control fill" id="po_remain"
-                                                            value="0">
+                                                        <input type="text" class="form-control fill" id="so_difference"
+                                                            value="{{ $data['so_difference'] }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -193,7 +193,6 @@
                                                     <th>No. Catatan Pengiriman</th>
                                                     <th>Tanggal Pengiriman</th>
                                                     <th>Penerima</th>
-                                                    <th>Alamat</th>
                                                     <th>No. Telepon</th>
                                                     <th>Status</th>
                                                     <th class="no-sort text-center">Aksi</th>

@@ -1,7 +1,7 @@
     var mode=1;
     var tablePr, tableDn, tableInv, tablePrModal;
     let detail_delivery = []
-    autocompleteStaff("#pdo_receiver",null);
+    // autocompleteStaff("#sdo_receiver",null);
     autocompleteCustomer("#so_customer",null);
     $(document).ready(function(){
         inisialisasi();
@@ -56,11 +56,10 @@
                 },
             },
             columns: [
-                { data: "pdo_number" },
+                { data: "sdo_number" },
                 { data: "date" },
-                { data: "pdo_receiver" },
-                { data: "pdo_address" },
-                { data: "pdo_phone" },
+                { data: "sdo_receiver" },
+                { data: "sdo_phone" },
                 { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -90,8 +89,8 @@
             columns: [
                 { data: "date" },
                 { data: "date_due_date" },
-                { data: "poi_code" },
-                { data: "poi_total_text" },
+                { data: "soi_code" },
+                { data: "soi_total_text" },
                 { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -106,10 +105,11 @@
     function refresh() {
         tablePr.clear().draw(); 
         // Manipulasi data sebelum masuk ke tabel
+        console.log(data);
 
         data.items.forEach((element, index) => {
             element.qty = `
-                <input type="number" class="form-control text-center qtySummary" data-price="${element.pod_harga}" index="${index}" value="${element.pod_qty}" min="0">
+                <input type="number" class="form-control text-center qtySummary" data-price="${element.sod_harga}" index="${index}" value="${element.sod_qty}" min="0">
             `;
             element.sod_harga_text = formatRupiah(element.sod_harga,"Rp.");
             element.sod_subtotal_text = formatRupiah(element.sod_subtotal,"Rp.");
@@ -133,7 +133,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     
-                    e[i].date = moment(e[i].pod_date).format('D MMM YYYY');
+                    e[i].date = moment(e[i].sod_date).format('D MMM YYYY');
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Dibuat</span>`;
                     } else if (e[i].status == 2){
@@ -144,10 +144,10 @@
                     }
                     
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit_dn" data-id="${e[i].pod_id}" data-bs-target="#edit-sales">
+                        <a class="me-2 btn-action-icon p-2 btn_edit_dn" data-id="${e[i].sod_id}" data-bs-target="#edit-sales">
                             <i class="fe fe-edit"></i>
                         </a>
-                        <a class="p-2 btn-action-icon btn_delete_dn" data-id="${e[i].pod_id}" href="javascript:void(0);">
+                        <a class="p-2 btn-action-icon btn_delete_dn" data-id="${e[i].sod_id}" href="javascript:void(0);">
                             <i class="fe fe-trash-2"></i>
                         </a>
                     `;
@@ -166,10 +166,10 @@
     
     function refreshInvoice() {
          $.ajax({
-            url: "/getPoInvoice",
+            url: "/getSoInvoice",
             method: "get",
             data:{
-                po_id: data.po_id
+                so_id: data.so_id
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -179,9 +179,9 @@
                 tableInv.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
-                    e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
-                    e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
+                    e[i].date = moment(e[i].soi_date).format('D MMM YYYY');
+                    e[i].date_due_date = moment(e[i].soi_due).format('D MMM YYYY');
+                    e[i].soi_total_text = formatRupiah(e[i].soi_total,"Rp ");
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
                     } else if (e[i].status == 2){
@@ -214,35 +214,35 @@
 
     $(document).on('click', '.btnAddDn', function(){
         mode=1;
-        $('#add_purchase_delivery .modal-title').html("Tambah Catatan Pengiriman");
-        $('#add_purchase_delivery .form-control').val("");
-        $('#pdo_date').val(moment().format('YYYY-MM-DD'));
+        $('#add_sales_delivery .modal-title').html("Tambah Catatan Pengiriman");
+        $('#add_sales_delivery .form-control').val("");
+        $('#sdo_date').val(moment().format('YYYY-MM-DD'));
         $('.is-invalid').removeClass('is-invalid');
         $('.row-acc').hide();
         $('.btn-save-delivery').show();
-        $('#pdo_receiver').empty();
-        tablePurchaseDelivery();
+        $('#sdo_receiver').empty();
+        tableSalesDelivery();
         refreshTableProduct(data.items);
-        $('#add_purchase_delivery').modal("show");
+        $('#add_sales_delivery').modal("show");
     })
 
     $(document).on('click', '.btnAddInv', function(){
         mode=1;
-        $('#add_purchase_invoice .modal-title').html("Tambah Faktur");
-        $('#add_purchase_invoice input').val("");
-        $('#poi_date').val(moment().format('YYYY-MM-DD'));
+        $('#add_sales_invoice .modal-title').html("Tambah Faktur");
+        $('#add_sales_invoice input').val("");
+        $('#soi_date').val(moment().format('YYYY-MM-DD'));
         $('.row-acc-invoice').hide();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save-invoice').show();
-        $('#add_purchase_invoice').modal("show");
+        $('#add_sales_invoice').modal("show");
     })
 
-    function tablePurchaseDelivery(){
-        if ($.fn.DataTable.isDataTable('#tablePurchaseDelivery')) {
-            tablePrModal = $('#tablePurchaseDelivery').DataTable();
+    function tableSalesDelivery(){
+        if ($.fn.DataTable.isDataTable('#tableSalesDelivery')) {
+            tablePrModal = $('#tableSalesDelivery').DataTable();
             return;
         }
-        tablePrModal = $('#tablePurchaseDelivery').DataTable({
+        tablePrModal = $('#tableSalesDelivery').DataTable({
             bFilter: true,
             sDom: 'fBtlpi', 
             ordering: true, 
@@ -282,13 +282,13 @@
                 e[i].stock = `
                     
                     <div class="input-group">
-                        <input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].pod_qty || e[i].pdod_qty}">
+                        <input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].sod_qty || e[i].sdod_qty}">
                         <span class="input-group-text">${data.items[i].unit_name}</span>
                     </div>
                 `;
                 e[i].name = e[i].sod_nama || `${e[i].product_name} ${e[i].product_variant_name}`;
                 console.log(e[i])
-                e[i].sku = e[i].sod_sku || e[i].pdod_sku;
+                e[i].sku = e[i].sod_sku || e[i].sdod_sku;
             }
             tablePrModal.rows.add(e).draw();
         }
@@ -356,19 +356,19 @@
         $(".qtySummary").each(function() {
             let qty = $(this).val();
             var search = $('#tableSupplies').DataTable().row($(this).parents('tr')).data()
-            pod_id = search.pod_id;
+            sod_id = search.sod_id;
 
-            let item = data.items.find(i => i.pod_id == pod_id);
+            let item = data.items.find(i => i.sod_id == sod_id);
             if (item) {
                 console.log(item);
                 
-                item.pod_qty = qty;
-                item.pod_subtotal = parseInt(item.pod_harga) * parseInt(qty);
+                item.sod_qty = qty;
+                item.sod_subtotal = parseInt(item.sod_harga) * parseInt(qty);
             }
         });
         console.log(data.items);
         param = {
-            po_detail: JSON.stringify(data.items),
+            so_detail: JSON.stringify(data.items),
             _token:token
         };
 
@@ -394,24 +394,24 @@
 
     function insertDeliveryDetail(){
         detail_delivery = [];
-        $('#tablePurchaseDelivery tbody tr').each(function(index) {
-            var dataDelivery = $('#tablePurchaseDelivery').DataTable().row(this).data(); // pakai this saja
+        $('#tableSalesDelivery tbody tr').each(function(index) {
+            var dataDelivery = $('#tableSalesDelivery').DataTable().row(this).data(); // pakai this saja
             
-            //if (mode == 1) dataDelivery = dataDelivery.supplies_variant;
+            //if (mode == 1) dataDelivery = dataDelivery.product_variant;
             
             let qty = parseInt($(this).find('.qtyDn').val()) || 0;
             console.log(index);
 
             let item = {
                 ...dataDelivery,
-                supplies_variant_id: dataDelivery.supplies_variant_id,
-                pdod_sku: dataDelivery.supplies_variant_sku || dataDelivery.pod_sku,
-                pdod_qty: qty,
+                product_variant_id: dataDelivery.product_variant_id,
+                sdod_sku: dataDelivery.product_variant_sku || dataDelivery.sod_sku,
+                sdod_qty: qty,
                 unit_id: data.items[index].unit_id
             };
             
             if(mode==2){
-                item.pdod_id = dataDelivery.pdod_id;
+                item.sdod_id = dataDelivery.sdod_id;
             }
             detail_delivery.push(item);
         });
@@ -420,10 +420,10 @@
     $(document).on('click', '.btn-save-delivery', function(){
         LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
-        var url ="/insertPoDelivery";
+        var url ="/insertSoDelivery";
         var valid=1;
 
-        $("#add_purchase_delivery .fill").each(function(){
+        $("#add_sales_delivery .fill").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
@@ -437,23 +437,22 @@
         };
 
         insertDeliveryDetail();
-        console.log(data.po_id);
+        console.log(data.so_id);
         
         param = {
-            po_id: data.po_id,
-            pdo_receiver: $('#pdo_receiver option:selected').text().trim(),
-            staff_id: $('#pdo_receiver').val(),
-            pdo_date: $('#pdo_date').val(),
-            pdo_phone: $('#pdo_phone').val(),
-            pdo_address: $('#pdo_address').val(),
-            pdo_desc: $('#pdo_desc').val(),
-            pdo_detail: JSON.stringify(detail_delivery),
+            so_id: data.so_id,
+            sdo_receiver: $('#sdo_receiver').val(),
+            // staff_id: $('#sdo_receiver').val(),
+            sdo_date: $('#sdo_date').val(),
+            sdo_phone: $('#sdo_phone').val(),
+            sdo_desc: $('#sdo_desc').val(),
+            sdo_detail: JSON.stringify(detail_delivery),
             _token: token
         };
 
         if(mode==2){
-            url="/updatePoDelivery";
-            param.pdo_id = $('#add_purchase_delivery').attr("pdo_id");
+            url="/updateSoDelivery";
+            param.sdo_id = $('#add_sales_delivery').attr("sdo_id");
         }
 
         LoadingButton($(this));
@@ -478,10 +477,10 @@
     $(document).on('click', '.btn-approve', function(){
         LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
-        var url ="/accPoDelivery";
+        var url ="/accSoDelivery";
         var valid=1;
 
-        $("#add_purchase_delivery .fill").each(function(){
+        $("#add_sales_delivery .fill").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
@@ -498,15 +497,14 @@
         console.log(data);
         
         param = {
-            po_id: data.po_id,
-            pdo_id: data.pdo_id,
-            pdo_receiver: $('#pdo_receiver').val(),
-            pdo_date: $('#pdo_date').val(),
-            pdo_phone: $('#pdo_phone').val(),
-            pdo_address: $('#pdo_address').val(),
-            pdo_desc: $('#pdo_desc').val(),
-            pdo_detail: JSON.stringify(detail_delivery),
-            pdo_id: $('#add_purchase_delivery').attr("pdo_id"),
+            so_id: data.so_id,
+            sdo_id: data.sdo_id,
+            sdo_receiver: $('#sdo_receiver').val(),
+            sdo_date: $('#sdo_date').val(),
+            sdo_phone: $('#sdo_phone').val(),
+            sdo_desc: $('#sdo_desc').val(),
+            sdo_detail: JSON.stringify(detail_delivery),
+            sdo_id: $('#add_sales_delivery').attr("sdo_id"),
             status:2,
             _token: token
         };
@@ -533,10 +531,10 @@
     $(document).on('click', '.btn-decline', function(){
         LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
-        var url ="/declinePoDelivery";
+        var url ="/declineSoDelivery";
         var valid=1;
 
-        $("#add_purchase_delivery .fill").each(function(){
+        $("#add_sales_delivery .fill").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
@@ -553,15 +551,14 @@
         console.log(data);
         
         param = {
-            po_id: data.po_id,
-            pdo_id: data.pdo_id,
-            pdo_receiver: $('#pdo_receiver').val(),
-            pdo_date: $('#pdo_date').val(),
-            pdo_phone: $('#pdo_phone').val(),
-            pdo_address: $('#pdo_address').val(),
-            pdo_desc: $('#pdo_desc').val(),
-            pdo_detail: JSON.stringify(detail_delivery),
-            pdo_id: $('#add_purchase_delivery').attr("pdo_id"),
+            so_id: data.so_id,
+            sdo_id: data.sdo_id,
+            sdo_receiver: $('#sdo_receiver').val(),
+            sdo_date: $('#sdo_date').val(),
+            sdo_phone: $('#sdo_phone').val(),
+            sdo_desc: $('#sdo_desc').val(),
+            sdo_detail: JSON.stringify(detail_delivery),
+            sdo_id: $('#add_sales_delivery').attr("sdo_id"),
             status:0,
             _token: token
         };
@@ -592,51 +589,48 @@
         refresh();
     }
 
-    $(document).on('change', '#pdo_receiver', function(){
-        var data = $(this).select2('data')[0];
-        $('#pdo_phone').val(data.staff_phone || '');
-    });
+    // $(document).on('change', '#sdo_receiver', function(){
+    //     var data2 = $(this).select2('data')[0];
+    //     console.log(data2);
+    //     $('#sdo_phone').val(data.staff_phone || '');
+    // });
     $(document).on('click', '.btn_edit_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
         console.log(data);
         mode = 2;
-        $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
-        $('#add_purchase_delivery input').val("");
+        $('#add_sales_delivery .modal-title').html("Update Catatan Pengiriman");
+        $('#add_sales_delivery input').val("");
         $('.is-invalid').removeClass('is-invalid');
-        $('#pdo_receiver').empty().append(`<option value="${data.staff_id}">${data.pdo_receiver}</option>`);
-        $('#pdo_date').val(data.pdo_date);
-        $('#pdo_phone').val(data.pdo_phone);
-        $('#pdo_address').val(data.pdo_address);
-        $('#pdo_desc').val(data.pdo_desc);
+        $('#sdo_receiver').val(data.sdo_receiver);
+        $('#sdo_date').val(data.sdo_date);
+        $('#sdo_phone').val(data.sdo_phone);
+        $('#sdo_desc').val(data.sdo_desc);
 
-        tablePurchaseDelivery();
+        tableSalesDelivery();
         refreshTableProduct(data.items);
         if(data.status == 1){
+            $('.btn-save-delivery').show();
             $('.row-acc').show();
         }
-        if(data.status == 0){
-            $('.row-acc').hide();
+        else if(data.status == 0 || data.status == 2){
             $('.btn-save-delivery').hide();
         }
-        else{
-            $('.btn-save-delivery').show();
-        }
         $('.btn-save-delivery').html('Simpan perubahan');
-        $('#add_purchase_delivery').modal("show");
-        $('#add_purchase_delivery').attr("pdo_id", data.pdo_id);
+        $('#add_sales_delivery').modal("show");
+        $('#add_sales_delivery').attr("sdo_id", data.sdo_id);
     })
 
     $(document).on('click', '.btn_delete_dn', function(){
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
         showModalDelete("Apakah yakin ingin menghapus catatan pengiriman ini?","btn-delete-delivery");
-        $('#btn-delete-delivery').attr("pdo_id", data.pdo_id);
+        $('#btn-delete-delivery').attr("sdo_id", data.sdo_id);
     })
 
     $(document).on("click","#btn-delete-delivery",function(){
         $.ajax({
-            url:"/deletePoDelivery",
+            url:"/deleteSoDelivery",
             data:{
-                pdo_id:$('#btn-delete-delivery').attr('pdo_id'),
+                sdo_id:$('#btn-delete-delivery').attr('sdo_id'),
                 _token:token
             },
             method:"post",
@@ -655,11 +649,11 @@
     $(document).on('click', '.btn_edit_inv', function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();
         mode = 2;
-        $('#add_purchase_invoice .modal-title').html("Update Faktur");
-        $('#add_purchase_invoice input').val("");
+        $('#add_sales_invoice .modal-title').html("Update Faktur");
+        $('#add_sales_invoice input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save-invoice').html('Simpan perubahan');
-        $('#add_purchase_invoice').modal("show");
+        $('#add_sales_invoice').modal("show");
     })
 
     function refreshSummary() {
@@ -667,13 +661,13 @@
         data.items.forEach(item => {
             console.log(item);
             
-            total+=(item.pod_harga*item.pod_qty);
+            total+=(item.sod_harga*item.sod_qty);
         });
         $('#value_total').html(formatRupiah(total,"Rp."))
-        var diskon = data.po_discount;
+        var diskon = data.so_discount;
         total -= diskon;
-        var ppn = data.po_ppn;
-        var cost = data.po_cost;
+        var ppn = data.so_ppn;
+        var cost = data.so_cost;
         total +=ppn +cost;
         grand = total;
         console.log(grand);
@@ -689,9 +683,9 @@
     $(document).on("click", ".btn-save-invoice", function () {
         LoadingButton(this);
         $(".is-invalid").removeClass("is-invalid");
-        var url = "/insertInvoicePO";
+        var url = "/insertInvoiceSO";
         var valid = 1;
-        $("#add_purchase_invoice .fill").each(function () {
+        $("#add_sales_invoice .fill").each(function () {
             if (
                 $(this).val() == null ||
                 $(this).val() == "null" ||
@@ -713,19 +707,18 @@
         }
 
         param = {
-            po_id: data.po_id,
-            poi_date: $("#poi_date").val(),
-            poi_code: $("#poi_code").val(),
-            poi_due: $("#poi_due").val(),
-            poi_total: convertToAngka($("#poi_total").val()),
+            so_id: data.so_id,
+            soi_date: $("#soi_date").val(),
+            soi_due: $("#soi_due").val(),
+            soi_total: convertToAngka($("#soi_total").val()),
             _token: token,
         };
         console.log(param);
         LoadingButton($(this));
 
         if (mode == 2) {
-            url = "/updateInvoicePO";
-            param.poi_id = $("#add_purchase_invoice").attr("poi_id");
+            url = "/updateInvoiceSO";
+            param.soi_id = $("#add_sales_invoice").attr("soi_id");
         }
 
         $.ajax({
@@ -755,6 +748,7 @@
                 ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
             },
             error: function (e) {
+                ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
                 console.log(e);
             },
         });
@@ -764,45 +758,39 @@
     $(document).on("click",".btn_edit_invoice",function(){
         mode=2;
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        $('#poi_total').val(formatRupiah(data.poi_total))
-        $('#poi_due').val(data.poi_due)
-        $('#poi_date').val(data.poi_date)
-        $('#poi_code').val(data.poi_code)
-        $('#add_purchase_invoice .modal-title').html("Update Faktur");
+        $('#soi_total').val(formatRupiah(data.soi_total))
+        $('#soi_due').val(data.soi_due)
+        $('#soi_date').val(data.soi_date)
+        $('#add_sales_invoice .modal-title').html("Update Faktur");
         console.log();
         
         if(data.status == 1){
+            $('.btn-save-invoice').show();
             $('.row-acc-invoice').show();
         }
-        else if(data.status == 0|| data.status == 2){
-            $('.row-acc-invoice').hide();
+        else if(data.status == 0 || data.status == 2){
             $('.btn-save-invoice').hide();
         }
-        else{
-            $('.btn-save-invoice').show();
-        }
 
-        $('.btn-approve-invoice').attr("poi_id", data.poi_id);
-        $('.btn-decline-invoice').attr("poi_id", data.poi_id);
-        $('#add_purchase_invoice').attr("poi_id", data.poi_id);
-        $('#add_purchase_invoice').modal("show");
+        $('.btn-approve-invoice').attr("soi_id", data.soi_id);
+        $('.btn-decline-invoice').attr("soi_id", data.soi_id);
+        $('#add_sales_invoice').attr("soi_id", data.soi_id);
+        $('#add_sales_invoice').modal("show");
     });
 
     //delete invoice
     $(document).on("click",".btn_delete_invoice",function(){
         var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin menghapus resep ini?","btn-delete-invoice");
-        $('#btn-delete-invoice').attr("poi_id", data.poi_id);
-
+        showModalDelete("Apakah yakin ingin menghapus invoice ini?","btn-delete-invoice");
+        $('#btn-delete-invoice').attr("soi_id", data.soi_id);
     });
     
-    $(document).on("click",".btn-delete-invoice",function(){
+    $(document).on("click","#btn-delete-invoice",function(){
   
         $.ajax({
-            url:"/deleteInvoicePO",
+            url:"/deleteInvoiceSO",
             data:{
-                poi_id:$('#btn-delete-invoice').attr('poi_id'),
-                status:0,
+                soi_id:$('#btn-delete-invoice').attr('soi_id'),
                 _token:token,
             },
             method:"post",
@@ -821,9 +809,9 @@
         var btn = $(this);
         LoadingButton($(this));
         $.ajax({
-            url:"/declineInvoicePO",
+            url:"/declineInvoiceSO",
             data:{
-                poi_id:$('.btn-decline-invoice').attr('poi_id'),
+                soi_id:$('.btn-decline-invoice').attr('soi_id'),
                 status:0,
                 _token:token
             },
@@ -845,9 +833,9 @@
         var btn = $(this);
         LoadingButton($(this));
         $.ajax({
-            url:"/acceptInvoicePO",
+            url:"/acceptInvoiceSO",
             data:{
-                poi_id:$('.btn-approve-invoice').attr('poi_id'),
+                soi_id:$('.btn-approve-invoice').attr('soi_id'),
                 status:2,
                 _token:token
             },

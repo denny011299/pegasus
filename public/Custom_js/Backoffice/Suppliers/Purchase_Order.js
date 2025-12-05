@@ -3,6 +3,7 @@
     var item = [];
     var grand = 0;
     autocompleteSupplier("#po_supplier","#add_purchase_order");
+    autocompleteSuppliesVariant("#po_sku","#add_purchase_order");
     
     
     $(document).ready(function(){
@@ -59,6 +60,7 @@
     function refreshItem() {
         $('#tablePurchaseModal tbody').html("");
         item.forEach((item,index) => {
+            console.log(item)
             var opsi = "";
             item.supplies_unit.forEach(element => {
                 opsi += `<option value='${element.unit_id}'>${element.unit_short_name}</option>`;
@@ -135,7 +137,7 @@
         table = $('#tablePurchaseOrder').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            ordering: true,
+            ordering: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

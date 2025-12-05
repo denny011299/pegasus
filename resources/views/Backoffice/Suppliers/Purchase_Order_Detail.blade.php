@@ -185,7 +185,6 @@
                                                     <th>No. Catatan Pengiriman</th>
                                                     <th>Tanggal Pengiriman</th>
                                                     <th>Penerima</th>
-                                                    <th>Alamat</th>
                                                     <th>No. Telepon</th>
                                                     <th>Status</th>
                                                     <th class="no-sort text-center">Aksi</th>

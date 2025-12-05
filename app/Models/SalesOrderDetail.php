@@ -43,10 +43,10 @@ class SalesOrderDetail extends Model
         $t = new SalesOrderDetail();
         $t->so_id = $data["so_id"];
         $t->product_variant_id = $data["product_variant_id"];
-        $t->sod_nama = $data["product_name"];
+        $t->sod_nama = $data["pr_name"];
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
-        $t->sod_unit = $data["unit_id"];
+        // $t->sod_unit = $data["unit_id"];
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];
@@ -62,7 +62,7 @@ class SalesOrderDetail extends Model
         $t->sod_nama = $data["product_name"];
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
-        $t->sod_unit = $data["unit_id"];
+        // $t->sod_unit = $data["unit_id"];
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];

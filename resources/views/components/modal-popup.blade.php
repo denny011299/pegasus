@@ -512,7 +512,7 @@
                                 <div class="col-12 row">
                                     <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>SKU<span class="text-danger">*</span></label>
+                                            <label>SKU</label>
                                             <select class="form-select" id="so_sku"></select>
                                         </div>
                                     </div>
@@ -521,7 +521,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center">
+                                    <table class="table table-center table-responsive">
                                         <thead>
                                             <th>Produk</th>
                                             <th>Variasi</th>
@@ -529,6 +529,7 @@
                                             <th class="text-center">Jumlah</th>
                                             <th class="text-end">Harga Satuan</th>
                                             <th class="text-end">Subtotal</th>
+                                            <th class="text-center">Action</th>
                                         </thead>
                                         <tbody id="tableSalesModal">
                                             
@@ -595,34 +596,26 @@
                                     <div class="col-4">
                                         <div class="input-block">
                                             <label>Nama Penerima<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill" id="sod_name" placeholder="Nama Penerima">
+                                            <input type="text" class="form-control fill" id="sdo_receiver" placeholder="Nama Penerima">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="sod_date">
+                                            <input type="date" class="form-control fill" id="sdo_date">
                                         </div>
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Nomor Telepon<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill number-only" id="sod_phone">
+                                            <input type="text" class="form-control fill number-only" id="sdo_phone" placeholder="Nomor Telepon">
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-12 row">
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Alamat<span class="text-danger">*</span></label>
-                                            <textarea class="form-control fill" id="sod_address" cols="30" rows="5"></textarea>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Deskripsi</label>
-                                            <textarea class="form-control " id="sod_desc" cols="30" rows="5"></textarea>
-                                        </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Keterangan</label>
+                                        <textarea class="form-control " id="sdo_desc" cols="30" rows="5" placeholder="Keterangan pengiriman"></textarea>
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -630,8 +623,7 @@
                                         <thead>
                                             <th>Produk</th>
                                             <th>SKU</th>
-                                            <th>Kategori</th>
-                                            <th>Jumlah</th>
+                                            <th>Qty</th>
                                         </thead>
                                         <tbody></tbody>
                                     </table>
@@ -640,10 +632,14 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <div class="row-acc">
+                            <button class="btn btn-danger btn-decline me-2" type="button">Tolak</button>
+                            <button class="btn btn-success btn-approve me-3" type="button">Setujui</button>
+                        </div>
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Catatan Pengiriman</button>
+                            class="btn btn-primary paid-continue-btn btn-save-delivery">Tambah Catatan Pengiriman</button>
                     </div>
                 </form>
             </div>
@@ -663,25 +659,17 @@
                 <form action="#">
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="input-block">
-                                        <label>Nomor Faktur<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="soi_code">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <div class="input-block mb-3">
+                                        <label>Tanggal Faktur<span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control fill" id="soi_date">
                                     </div>
                                 </div>
-                                <div class="col-12 row">
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Tanggal Faktur<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="soi_date">
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Jatuh Tempo<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="soi_due">
-                                        </div>
+                                <div class="col-12 col-md-6">
+                                    <div class="input-block mb-3">
+                                        <label>Jatuh Tempo<span class="text-danger">*</span></label>
+                                        <input type="date" class="form-control fill" id="soi_due">
                                     </div>
                                 </div>
                                 <div class="col-12">
@@ -697,10 +685,14 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <div class="row-acc">
+                            <button class="btn btn-danger btn-decline-invoice me-2" type="button">Tolak</button>
+                            <button class="btn btn-success btn-approve-invoice me-3" type="button">Setujui</button>
+                        </div>
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Faktur</button>
+                            class="btn btn-primary paid-continue-btn btn-save-invoice">Tambah Faktur</button>
                     </div>
                 </form>
             </div>
@@ -775,7 +767,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center" id="tablePurchaseModal">
+                                    <table class="table table-center table-responsive" id="tablePurchaseModal">
                                         <thead>
                                             <th>Produk</th>
                                             <th>Variasi</th>

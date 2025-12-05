@@ -95,6 +95,7 @@ class SupplierController extends Controller
         (new PurchaseOrderDelivery())->updatePoDelivery($data);
         foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
             $value['pdo_id'] = $data["pdo_id"];
+            $value['statusPO'] = $value["status"];
             if (!isset($value["pdod_id"])) $t = (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
             else {
 

@@ -122,7 +122,7 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].so_date).format('D MMM YYYY');
                     e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
-                    e[i].status_so = 'created';
+                    e[i].status_so = `<label class="badge bg-secondary badgeStatus">Created</label>`;
                     e[i].action = `
                         <a href="/salesOrderDetail/${e[i].so_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].so_id}" data-bs-target="#view-sales">
                             <i class="fe fe-eye"></i>
@@ -159,7 +159,7 @@
 
             html += `
                 <tr>
-                    <td style="width: 22%">${p.product_name || p.pr_name}</td>
+                    <td style="width: 12%">${p.product_name || p.pr_name}</td>
                     <td style="width: 15%">${p.product_variant_name}</td>
                     <td style="width: 15%">${p.product_variant_sku}</td>
                     <td style="width: 18%" class="text-center p-2 d-flex">
@@ -172,10 +172,12 @@
                     </td>
                     <td style="width: 15%" class="text-end">${p.product_variant_price}</td>
                     <td style="width: 15%" class="subtotal text-end">${p.so_subtotal || 0}</td>
+                    <td class="text-center text-danger" style="cursor:pointer; width: 10%"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
                 </tr>
             `;
         });
         $('#tableSalesModal').append(html);
+        feather.replace()
         $('.so_qty').trigger('blur');
     }
 
@@ -308,6 +310,12 @@
     // $(document).on("keyup","#filter_category_name",function(){
     //     refreshSalesOrder();
     // });
+
+    $(document).on("click",".deleteRow",function(){
+        var index = $(this).attr("index");
+        products.splice(index,1);
+        refreshTableProduct();
+    });
 
     //edit
     $(document).on("click",".btn_edit",function(){
