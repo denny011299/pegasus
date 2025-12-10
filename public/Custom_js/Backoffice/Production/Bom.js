@@ -125,13 +125,13 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
             return false;
         };
 
         if ($("#tableSupply tbody tr").length == 0) {
             notifikasi('error', "Gagal Insert", 'Minimal input 1 bahan mentah');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
             return false;
         }
         console.log(bahan);
@@ -158,11 +158,11 @@
             },
             success:function(e){
                 bahan = [];
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah");       
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
                 console.log(e);
             }
         });
@@ -227,7 +227,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
             return false;
         };
         var temp = $('#supplies_id').select2("data")[0];
@@ -286,7 +286,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableBom').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus resep ini?","btn-delete-bom");
+        showModalDelete("Apakah yakin ingin menghapus resep ini?","btn-delete-bom");
         $('#btn-delete-bom').attr("bom_id", data.bom_id);
         $('#modalDelete').modal("show");
     });

@@ -74,7 +74,7 @@
                 feather.replace();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi"); 
                 console.log(e);
             }
         });
@@ -120,11 +120,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan Perubahan');      
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi");       
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi"); 
                 console.log(e);
             }
         });

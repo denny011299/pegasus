@@ -11,6 +11,7 @@
         $('#add_cash_category input').val("");
         $('#add_cash_category select').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html("Tambah Kategori Kas");
         $('#add_cash_category').modal("show");
     });
     
@@ -88,7 +89,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan Pembaruan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori Kas" : "Update Kategori Kas");  
             return false;
         };
 
@@ -112,11 +113,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');      
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori Kas" : "Update Kategori Kas");  
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori Kas" : "Update Kategori Kas");  
                 console.log(e);
             }
         });
@@ -141,7 +142,7 @@
         $('#cc_name').val(data.cc_name);
         $('#cc_type').val(data.cc_type);
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html('Update Kategori Kas');
         $('#add_cash_category').modal("show");
         $('#add_cash_category').attr("cc_id", data.cc_id);
     });

@@ -156,7 +156,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan Perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah"); 
             return false;
         };
 
@@ -212,11 +212,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){   
-                ResetLoadingButton(".btn-save", 'Simpan Perubahan');   
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");    
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah"); 
                 console.log(e);
             }
         });
@@ -320,7 +320,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSupplies').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus bahan mentah ini?","btn-delete-supplies");
+        showModalDelete("Apakah yakin ingin menghapus bahan mentah ini?","btn-delete-supplies");
         $('#btn-delete-supplies').attr("supplies_id", data.supplies_id);
     });
 

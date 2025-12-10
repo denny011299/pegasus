@@ -50,13 +50,13 @@
                             <div class="row mb-5">
                                 <div class="col-lg-4">
                                     <div class="input-blocks">
-                                        <label>Nama Penanggung Jawab</label>
+                                        <label>Nama Penanggung Jawab<span class="text-danger">*</span></label>
                                         <select name="" id="penanggung-jawab" class="form-select fill"></select>
                                     </div>
                                 </div>
                                 <div class="col-lg-4">
                                     <div class="input-blocks">
-                                        <label>Tanggal</label>
+                                        <label>Tanggal<span class="text-danger">*</span></label>
                                         <input type="date" class="form-control fill" id="tanggal">
                                     </div>
                                 </div>

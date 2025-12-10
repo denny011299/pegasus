@@ -91,7 +91,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan Perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Satuan" : "Update Satuan"); 
             return false;
         };
 
@@ -115,11 +115,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan Perubahan');      
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Satuan" : "Update Satuan"); 
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Satuan" : "Update Satuan"); 
                 console.log(e);
             }
         });
@@ -152,7 +152,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableUnits').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus satuan ini?","btn-delete-unit");
+        showModalDelete("Apakah yakin ingin menghapus satuan ini?","btn-delete-unit");
         $('#btn-delete-unit').attr("unit_id", data.unit_id);
     });
 

@@ -230,13 +230,13 @@
         if(item.length==0){
             valid=-1;
             notifikasi('error', "Gagal Insert", 'Silahkan masukkan minimal 1 bahan');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');    
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pesanan Pembelian" : "Update Pesanan Pembelian");     
             return false;
         }
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pesanan Pembelian" : "Update Pesanan Pembelian"); 
             return false;
         };
 
@@ -271,11 +271,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Pesanan Pembelian" : "Update Pesanan Pembelian");       
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Pesanan Pembelian" : "Update Pesanan Pembelian"); 
                 console.log(e);
             }
         });
@@ -308,7 +308,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tablePurchaseOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus pesanan pembelian ini?","btn-delete-purchase");
+        showModalDelete("Apakah yakin ingin menghapus pesanan pembelian ini?","btn-delete-purchase");
         $('#btn-delete-purchase').attr("po_id", data.po_id);
     });
 

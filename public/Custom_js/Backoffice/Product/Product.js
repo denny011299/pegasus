@@ -88,7 +88,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin mengahapus produk ini?","btn-delete-product");
+        showModalDelete("Apakah yakin ingin menghapus produk ini?","btn-delete-product");
         $('#btn-delete-product').attr("product_id", data.product_id);
         $('#modalDelete').modal("show");
     });

@@ -196,7 +196,7 @@ function insertData() {
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', 'Simpan perubahan');
+        ResetLoadingButton('.btn-save', `<span class="fe fe-save"></span> Simpan Perubahan`);
         return false;
     };
 

@@ -88,7 +88,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan Pembaruan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori" : "Update Kategori");
             return false;
         };
 
@@ -110,12 +110,12 @@
             headers: {
                 'X-CSRF-TOKEN': token
             },
-            success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');      
+            success:function(e){
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori" : "Update Kategori");   
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori" : "Update Kategori");
                 console.log(e);
             }
         });
@@ -139,7 +139,7 @@
         $('#add_category input').empty().val("");
         $('#category_name').val(data.category_name);
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html('Tambah Kategori');
         $('#add_category').modal("show");
         $('#add_category').attr("category_id", data.category_id);
     });

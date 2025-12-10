@@ -63,10 +63,6 @@
                 @endif
                 @if (Route::is(['customer']))
                     <li>
-                        <a class="btn btn-import" href="javascript:void(0);"><span><i
-                                    class="fe fe-check-square me-2"></i>Import Pelanggan</span></a>
-                    </li>
-                    <li>
                         <a class="btn btn-primary" href="/insertCustomer"><i class="fa fa-plus-circle me-2"
                                 aria-hidden="true"></i>Tambah Pelanggan</a>
                     </li>
@@ -85,10 +81,6 @@
                     </li>
                 @endif
                 @if (Route::is(['supplier']))
-                    <li>
-                        <a class="btn btn-import" href="javascript:void(0);"><span><i
-                                    class="fe fe-check-square me-2"></i>Import Pemasok</span></a>
-                    </li>
                     <li>
                         <a class="btn btn-primary" href="/insertSupplier"><i class="fa fa-plus-circle me-2"
                                 aria-hidden="true"></i>Tambah Pemasok</a>

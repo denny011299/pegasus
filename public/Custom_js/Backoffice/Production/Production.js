@@ -175,12 +175,12 @@
             valid=-1;
             $('#production_qty').addClass('is-invalid');
             notifikasi('error', "Qty Tidak Valid", 'Qty produksi harus lebih dari 0');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
             return false;
         }
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
             return false;
         };
         param = {
@@ -201,7 +201,7 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){ 
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");       
                 if(e.status == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", e.message);
                     return false;
@@ -209,7 +209,7 @@
                 afterInsert();
             },
             error:function(a){
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
                 console.log(a);
             }
         });
@@ -242,7 +242,7 @@
 
                 if (validQty == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", `Mohon cek stock ${bahanKurang.map(d => d).join(", ")}`);
-                    ResetLoadingButton('.btn-save', 'Simpan perubahan');
+                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
                     return false;
                 } else{
                     

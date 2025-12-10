@@ -87,7 +87,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan Pembaruan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Wilayah" : "Update Wilayah"); 
             return false;
         };
 
@@ -111,11 +111,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');      
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Wilayah" : "Update Wilayah");    
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan Pembaruan');
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Wilayah" : "Update Wilayah"); 
                 console.log(e);
             }
         });

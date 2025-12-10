@@ -66,7 +66,7 @@ Route::post('/insertStockOpname', [StockController::class, "insertStockOpname"])
 Route::post('/updateStockOpname', [StockController::class, "updateStockOpname"])->name('updateStockOpname');
 Route::post('/deleteStockOpname', [StockController::class, "deleteStockOpname"])->name('deleteStockOpname');
 
-Route::get('/stockOpnameBahan',[StockController::class,"StockOpnameBahan"])->name('StockOpnameBahan');
+Route::get('/stockOpnameBahan',[StockController::class,"StockOpnameBahan"])->name('stockOpnameBahan');
 Route::get('/getStockOpnameBahan', [StockController::class, "getStockOpnameBahan"])->name('getStockOpnameBahan');
 Route::post('/insertStockOpnameBahan', [StockController::class, "insertStockOpnameBahan"])->name('insertStockOpnameBahan');
 Route::post('/updateStockOpnameBahan', [StockController::class, "updateStockOpnameBahan"])->name('updateStockOpnameBahan');
