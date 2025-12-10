@@ -25,7 +25,7 @@ class PurchaseOrder extends Model
         if ($data["po_supplier"]) $result->where("po_supplier", "like", "%" . $data["po_supplier"] . "%");
         if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);
 
-        $result->orderBy("created_at", "desc");
+        $result->orderBy("po_date", "desc");
         $result = $result->get();
 
         foreach ($result as $key => $value) {

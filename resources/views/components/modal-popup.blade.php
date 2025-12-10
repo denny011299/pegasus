@@ -256,18 +256,24 @@
                                     </div>
                                 </div>
                                 <div class="col-lg-6"></div>
-                                <div class="col-lg-6 col-12">
+                                <div class="col-lg-5 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Produk</label>
                                         <select class="form-select fill" id="product_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-lg-6 col-12">
+                                <div class="col-lg-3 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Jumlah Produksi</label>
+                                        <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
+                                    </div>
+                                </div>
+                                <div class="col-lg-4 col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label">Total Barang Produksi</label>
                                         <div class="input-group">
-                                            <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
-                                            <select class="form-select w-25" id="unit_id" disabled>
+                                            <input type="text" class="form-control fill number-only" id="production_total" placeholder="0" value="0" disabled>
+                                            <select class="form-control w-25" id="unit_id" disabled>
                                             </select>
                                         </div>
                                     </div>
@@ -732,7 +738,7 @@
                                 <div class="col-12 row">
                                     <div class="col-4">
                                         <div class="input-block">
-                                            <label>Diskon<span class="text-danger">*</span></label>
+                                            <label>Diskon</label>
                                             <div class="input-group mb-3">
                                                 <input type="text" class="form-control fill number-only" id="po_discount" 
                                                 placeholder="Input Diskon" value="0">
@@ -742,7 +748,7 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block">
-                                            <label>PPN<span class="text-danger">*</span></label>
+                                            <label>PPN</label>
                                             <div class="input-group mb-3">
                                                 <input type="text" class="form-control fill number-only" id="po_ppn" 
                                                 placeholder="Input PPN" value="0">
@@ -752,7 +758,7 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
-                                            <label>Biaya Pengiriman<span class="text-danger">*</span></label>
+                                            <label>Biaya Pengiriman</label>
                                             <div class="input-group mb-3">
                                                 <span class="input-group-text">Rp </span>
                                                 <input type="text" class="form-control fill number-only nominal_only" id="po_cost" value="0" placeholder="Input Biaya Pengiriman">

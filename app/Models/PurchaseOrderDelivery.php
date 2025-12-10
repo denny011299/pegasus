@@ -46,8 +46,13 @@ class PurchaseOrderDelivery extends Model
         $t->po_id = $data["po_id"];
         $t->pdo_date     = $data["pdo_date"];
         $t->pdo_phone    = $data["pdo_phone"];
+        //$t->pdo_address  = $data["pdo_address"];
         $t->pdo_desc     = $data["pdo_desc"];
         $t->save();
+
+        $p = PurchaseOrder::find($data["po_id"]);
+        $p->status = 2; // update status PO menjadi "Sedang D
+        $p->save();
 
         return $t->pdo_id;
     }
@@ -59,9 +64,14 @@ class PurchaseOrderDelivery extends Model
         $t->staff_id     = $data["staff_id"];
         $t->pdo_date     = $data["pdo_date"];
         $t->pdo_phone    = $data["pdo_phone"];
+        //$t->pdo_address  = $data["pdo_address"];
         $t->pdo_desc     = $data["pdo_desc"];
         $t->save();
 
+        $p = PurchaseOrder::find($data["po_id"]);
+        $p->status = 2; // update status PO menjadi "Sedang D
+        $p->save();
+        
         return $t->pdo_id;
     }
 

@@ -3,6 +3,7 @@
     var table;
     var detail_supply = [];
     $(document).ready(function(){
+        $('#date_production').val(moment().format('YYYY-MM-DD'));
         inisialisasi();
         refreshProduction();
     });
@@ -27,6 +28,16 @@
         $("#production_date").val(todayStr);
     })
 
+    $(document).on('keyup', '#production_qty', function(){
+        var data = $('#product_id').select2("data")[0];
+        console.log(data);
+        var qty = $(this).val();
+        if(qty==""||qty==null||isNaN(qty)){
+            qty=0;
+        }
+        $('#production_total').val(qty*data.bom_qty);
+    });
+
     $(document).on('change', '#product_id', function(){
         var data = $(this).select2("data")[0];
         console.log(data);
@@ -50,6 +61,7 @@
                 </td>
             </tr>       
         `);
+        $('#production_qty').trigger('keyup');
         $.ajax({
             url: "/getBom",
             method: "get",
@@ -73,6 +85,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
+            searching: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -103,7 +116,7 @@
             url: "/getProduction",
             method: "get",
             data:{
-                "date":moment().format('YYYY-MM-DD')
+                "date":$('#date_production').val()
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -118,6 +131,11 @@
                         
                         <button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>
                     `;
+                    if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
+                        e[i].action = `
+                            
+                        `;
+                    }
 
                     if (e[i].status == 1){
                         e[i].production_status = `<span class="badge bg-secondary" style="font-size: 12px">Tertunda</span>`;
@@ -137,6 +155,9 @@
         });
     }
 
+    $(document).on("change","#date_production",function(){
+        refreshProduction();
+    });
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
@@ -150,7 +171,13 @@
                 $(this).addClass('is-invalid');
             }
         });
-
+        if($('#production_qty').val()<=0){
+            valid=-1;
+            $('#production_qty').addClass('is-invalid');
+            notifikasi('error', "Qty Tidak Valid", 'Qty produksi harus lebih dari 0');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            return false;
+        }
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save', 'Simpan perubahan');

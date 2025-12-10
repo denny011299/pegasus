@@ -102,7 +102,7 @@ class ProductionController extends Controller
         foreach ($bahan as $key => $value) {
             $stok = SuppliesStock::where("supplies_id", "=", $value['supplies_id'])
                 ->where("unit_id", "=", $value['unit_id'])->first()->ss_stock;
-            if ($stok - ($value['bom_detail_qty'] * $data['production_qty']) < 0) {
+            if ($stok - ($value['bom_detail_qty'] * $data['production_qty']) <= 0) {
                 $cek = 1;
                 array_push($bahan_kurang, $value['supplies_name']);
             }
@@ -123,10 +123,16 @@ class ProductionController extends Controller
         }
 
         (new Production())->insertProduction($data);
-
         $b = bom::find($data["production_bom_id"]);
+        
         $v = ProductStock::where("product_variant_id", "=", $data["production_product_id"])
             ->where("unit_id", "=", $b["unit_id"])->first();
+        if(!$v){
+            $pv  = ProductVariant::find($data["production_product_id"]);
+            $v = (new ProductStock())->syncStock($pv->product_id);
+            $v = ProductStock::where("product_variant_id", "=", $data["production_product_id"])
+            ->where("unit_id", "=", $b["unit_id"])->first();
+        }
         $v->ps_stock += intval($data['production_qty']) * $b->bom_qty;
         $v->save();
 

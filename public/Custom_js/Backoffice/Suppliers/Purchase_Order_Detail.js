@@ -7,6 +7,7 @@
         inisialisasi();
         refresh();
         refreshSummary();
+        $('#po_status').val(data.status).trigger('change');
     });
     
     function inisialisasi() {
@@ -136,7 +137,7 @@
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Dibuat</span>`;
                     } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Barang Diterima</span>`;
                     }
                     else if (e[i].status == 0){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
@@ -175,6 +176,7 @@
                     e = e.original || [];
                 }
                 console.log(e);
+                var total = 0;
                 tableInv.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
@@ -197,8 +199,14 @@
                             <i class="fe fe-trash"></i>
                         </a>
                     `;
+                    if(e[i].status==2)total += e[i].poi_total;
                 }
-
+                console.log(total);
+                
+                var sisa = convertToAngka($('#po_total').val()) - total;
+                $('#po_paid').val(formatRupiah(total,""));
+                $('#po_remain').val(formatRupiah(sisa,""));
+                
                 tableInv.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
             },
@@ -470,6 +478,7 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
+                 $('#po_status').val(e).trigger('change');     
                 ResetLoadingButton(".btn-save-delivery", 'Simpan perubahan');      
                 afterInsertDelivery();
             },
@@ -505,7 +514,8 @@
         param = {
             po_id: data.po_id,
             pdo_id: data.pdo_id,
-            pdo_receiver: $('#pdo_receiver').val(),
+            pdo_receiver: $('#pdo_receiver option:selected').text().trim(),
+            staff_id: $('#pdo_receiver').val(),
             pdo_date: $('#pdo_date').val(),
             pdo_phone: $('#pdo_phone').val(),
             pdo_desc: $('#pdo_desc').val(),
@@ -559,7 +569,8 @@
         param = {
             po_id: data.po_id,
             pdo_id: data.pdo_id,
-            pdo_receiver: $('#pdo_receiver').val(),
+            pdo_receiver: $('#pdo_receiver option:selected').text().trim(),
+            staff_id: $('#pdo_receiver').val(),
             pdo_date: $('#pdo_date').val(),
             pdo_phone: $('#pdo_phone').val(),
             pdo_desc: $('#pdo_desc').val(),
@@ -578,8 +589,9 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-decline", 'Tolak');      
+                ResetLoadingButton(".btn-decline", 'Tolak'); 
                 afterInsertDelivery();
+               
             },
             error:function(e){
                 ResetLoadingButton(".btn-decline", 'Tolak');
@@ -613,11 +625,20 @@
 
         tablePurchaseDelivery();
         refreshTableProduct(data.items);
+        console.log(data.status);
+        
         if(data.status == 1){
-            $('.btn-save-delivery').show();
-            $('.row-acc').show();
+            $('.btn-decline').show();
+            $('.btn-approve').show();
         }
-        else if(data.status == 0 || data.status == 2){
+        else if(data.status == 2){
+            $('.btn-decline').show();
+            $('.btn-approve').hide();
+            $('.btn-save-delivery').hide();
+        }
+        else if(data.status == 0){
+            $('.btn-decline').hide();
+            $('.btn-approve').show();
             $('.btn-save-delivery').hide();
         }
         $('.btn-save-delivery').html('Simpan perubahan');
@@ -669,9 +690,9 @@
             total+=(item.pod_harga*item.pod_qty);
         });
         $('#value_total').html(formatRupiah(total,"Rp."))
-        var diskon = data.po_discount;
+        var diskon = Math.round(total * (parseInt(data.po_discount)/100));
         total -= diskon;
-        var ppn = data.po_ppn;
+        var ppn = Math.round(total * (parseInt(data.po_ppn)/100));
         var cost = data.po_cost;
         total +=ppn +cost;
         grand = total;
@@ -737,6 +758,8 @@
             success: function (e) {
                 $(".modal").modal("hide");
                 refreshInvoice();
+                ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
+                 $('#po_status').val(e).trigger('change');
                 if (mode == 1){
                     notifikasi(
                         "success",
@@ -751,7 +774,8 @@
                         "Berhasil Data Diupdate"
                     );
                 }
-                ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
+                
+                
             },
             error: function (e) {
                 console.log(e);
@@ -774,7 +798,14 @@
             $('.btn-save-invoice').show();
             $('.row-acc-invoice').show();
         }
-        else if(data.status == 0 || data.status == 2){
+        else if(data.status == 0){
+            $('.btn-decline-invoice').hide();
+            $('.btn-approve-invoice').show();
+            $('.btn-save-invoice').hide();
+        }
+        else if(data.status == 2){
+            $('.btn-decline-invoice').show();
+            $('.btn-approve-invoice').hide();
             $('.btn-save-invoice').hide();
         }
 
@@ -793,12 +824,11 @@
     });
     
     $(document).on("click","#btn-delete-invoice",function(){
-  
         $.ajax({
             url:"/deleteInvoicePO",
             data:{
                 poi_id:$('#btn-delete-invoice').attr('poi_id'),
-                status:0,
+                status:-1,
                 _token:token,
             },
             method:"post",
@@ -852,7 +882,20 @@
                 $('.modal').modal("hide");
                 refreshInvoice();
                 ResetLoadingButton(btn, 'Setujui');
-                notifikasi('success', "Berhasil Accept", "Berhasil accept invoice");
+                console.log(e);
+                
+                if(e==-1){
+                      notifikasi(
+                        "error",
+                        "Gagal Setujui",
+                        "Melebihi Sisa Pembayaran"
+                    );
+                    return false;
+                }
+                else{
+
+                    notifikasi('success', "Berhasil Accept", "Berhasil accept invoice");
+                }
             },
             error:function(e){
                  ResetLoadingButton(btn, 'Setujui');

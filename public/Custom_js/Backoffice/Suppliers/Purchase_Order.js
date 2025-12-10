@@ -23,7 +23,7 @@
         $('#add_purchase_order #po_discount').val(0);
         $('#add_purchase_order #po_ppn').val(0);
         $('#add_purchase_order #po_cost').val(0);
-        $('#add_purchase_order #po_date').val(moment().format('dd/MM/YYYY'));
+        $('#add_purchase_order #po_date').val(moment().format('YYYY-MM-DD'));
         $('#add_purchase_order #po_supplier').empty();
         $('.is-invalid').removeClass('is-invalid');
         $('#add_purchase_order').modal("show");
@@ -120,9 +120,12 @@
             total+=(item.supplies_variant_price*item.qty);
         });
         $('#value_total').html(formatRupiah(total,"Rp."))
-        var diskon = total * (convertToAngka($('#po_discount').val())/100);
+        var diskon = Math.round(total * (parseInt($('#po_discount').val())/100));
         total -= diskon;
-        var ppn = total * (convertToAngka($('#po_ppn').val())/100);
+        var ppn = Math.round(total * (parseInt($('#po_ppn').val())/100));
+        console.log((parseInt($('#po_ppn').val())/100));
+        console.log(ppn);
+        
         var cost = convertToAngka($('#po_cost').val());
         total +=ppn +cost;
         grand = total;
@@ -137,7 +140,7 @@
         table = $('#tablePurchaseOrder').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            ordering: false,
+            order: [[0, 'desc']],
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -152,9 +155,15 @@
                 { data: "date" },
                 { data: "po_number" },
                 { data: "po_supplier_name"},
-                { data: "po_total" },
+                { data: "total" },
                 { data: "status_po" },
                 { data: "action", class: "d-flex align-items-center" },
+            ],
+            columnDefs: [
+                {
+                    targets: 0,
+                    type: "date"
+                }
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -180,11 +189,11 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     e[i].total = `Rp ${formatRupiah(e[i].po_total)}`;
-                    e[i].status_po = `<label class="badge bg-secondary badgeStatus">Created</label>`;
+                    e[i].status_po = `<label class="badge bg-secondary badgeStatus">Dibuat</label>`;
                     
-                    if(e[i].status == 2)e[i].status_po = `<label class="badge bg-primary badgeStatus">Confirmed</label>`;
-                    if(e[i].status == 3)e[i].status_po = `<label class="badge bg-warning badgeStatus">Invoice</label>`;
-                    if(e[i].status == 4)e[i].status_po = `<label class="badge bg-success badgeStatus">Done</label>`;
+                    if(e[i].status == 2)e[i].status_po = `<label class="badge bg-primary badgeStatus">Barang Diterima</label>`;
+                    if(e[i].status == 3)e[i].status_po = `<label class="badge bg-warning badgeStatus">Pembayaran</label>`;
+                    if(e[i].status == 4)e[i].status_po = `<label class="badge bg-success badgeStatus">Selesai</label>`;
 
                     e[i].action = `
                         <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" >
@@ -217,6 +226,13 @@
                 $(this).addClass('is-invalid');
             }
         });
+
+        if(item.length==0){
+            valid=-1;
+            notifikasi('error', "Gagal Insert", 'Silahkan masukkan minimal 1 bahan');
+            ResetLoadingButton('.btn-save', 'Simpan perubahan');    
+            return false;
+        }
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');

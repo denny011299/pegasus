@@ -53,8 +53,6 @@ class PurchaseOrderDeliveryDetail extends Model
                 ->first();
             $s->ss_stock += $data["pdod_qty"];
             $s->save();
-
-            
         }
         return $t->pdod_id;
     }
@@ -66,9 +64,8 @@ class PurchaseOrderDeliveryDetail extends Model
             ->where("unit_id", "=", $data["unit_id"])
             ->where("status", "=", 1)
             ->first();
-
         $t = PurchaseOrderDeliveryDetail::find($data["pdod_id"]);
-        if($data["statusPO"]==2){
+        if(isset($data["statusPO"])&&$data["statusPO"]==2){
             $st->ss_stock -= $t->pdod_qty;
             $st->save();
 
@@ -79,6 +76,19 @@ class PurchaseOrderDeliveryDetail extends Model
 
             //ditambah lagi
             $st->ss_stock += $data["pdod_qty"];
+            $st->save();
+        }
+        else if(isset($data["statusPO"])&&$data["statusPO"]==0){
+            $st->ss_stock -= $t->pdod_qty;
+            $st->save();
+
+            $t->supplies_variant_id = $data["supplies_variant_id"];
+            $t->pdod_sku = $data["sku"];
+            $t->pdod_qty = $data["pdod_qty"];
+            $t->save();
+
+            //ditambah lagi
+            $st->ss_stock -= $data["pdod_qty"];
             $st->save();
         }
         return $t->pdod_id;

@@ -231,40 +231,34 @@
             return false;
         };
         var temp = $('#supplies_id').select2("data")[0];
-        console.log(temp)
-        var data  = {
-            "supplies_id": temp.supplies_id,
-            "supplies_name": temp.supplies_name,
-            "bom_detail_qty": parseInt($('#bom_detail_qty').val()),
-            "unit_name": $('#unit_supplies_id option:selected').text(),
-            "unit_id": $('#unit_supplies_id').val(),
-        };
-        bahan.push(data);
-        addRow(data)
+        var idx = -1;
+
+        bahan.forEach(element => {
+            if (element.supplies_id == temp.supplies_id && element.unit_id == $('#unit_supplies_id').val().unit_id) {
+                element.bom_detail_qty += e.bom_detail_qty;
+            }
+        }); 
+
+        if(idx==-1){
+            var data  = {
+                "supplies_id": temp.supplies_id,
+                "supplies_name": temp.supplies_name,
+                "bom_detail_qty": parseInt($('#bom_detail_qty').val()),
+                "unit_name": $('#unit_supplies_id option:selected').text(),
+                "unit_id": $('#unit_supplies_id').val(),
+            };
+            bahan.push(data);
+        }
+        addRow()
 
         $('#supplies_id ').empty();
         $('#unit_supplies_id').empty();
         $('#bom_detail_qty').val("");
     })
     
-    function addRow(e) {
-        let qty = parseInt($('#bom_detail_qty').val());
-
-        let row = $(`#tableSupply tr[data-id="${e.supplies_id}"]`);
-
-        if (row.length > 0) {
-            // update qty di row lama
-            let currentQty = parseInt(row.find("td:eq(1)").text());
-            row.find("td:eq(1)").text(currentQty + qty);
-
-            // Update data qty di bahan untuk ajax
-            bahan.forEach(element => {
-                if (element.supplies_id == e.supplies_variant_id){
-                    element.bom_detail_qty += e.bom_detail_qty;
-                }
-            }); 
-        }
-        else{
+    function addRow() {
+        $('#tableSupply tr.row-supply').html(" ");
+        bahan.forEach(e => {
             $('#tableSupply tbody').append(`
                 <tr class="row-supply" data-id="${e.supplies_id}">
                     <td>${e.supplies_name}</td>
@@ -276,8 +270,9 @@
                         </a>
                     </td>
                 </tr>    
-            `)
-        }
+            `);
+        });
+         
     }
 
     $(document).on("click",".btn_delete_row",function(){

@@ -31,7 +31,7 @@
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block">
                                                     <label>Nama Supplier</label>
-                                                    <select id="po_supplier" class="form-control fill">
+                                                    <select id="po_supplier" class="form-control fill" disabled >
                                                         <option value="{{ $data['po_supplier'] }}">{{ $data['po_supplier_name'] }}</option>
                                                     </select>
                                                 </div>
@@ -40,7 +40,7 @@
                                                 <div class="input-block mb-3">
                                                     <label>Tanggal</label>
                                                     <input type="date" class="form-control fill" id="po_date"
-                                                        value="{{ $data['po_date'] }}">
+                                                        value="{{ $data['po_date'] }}" disabled>
                                                 </div>
                                             </div>
                                             <div class="col-12 col-md-4">
@@ -49,7 +49,7 @@
                                                     <select id="po_status" class="form-control fill">
                                                         <option value="">Pilih Status</option>
                                                         <option value="1">Dibuat</option>
-                                                        <option value="2">Diterima</option>
+                                                        <option value="2">Barang Diterima</option>
                                                         <option value="3">Pembayaran</option>
                                                         <option value="4">Selesai</option>
                                                         <option value="-1">Cancel</option>
@@ -63,7 +63,7 @@
                                                     <div class="input-group">
                                                         <span class="input-group-text">Rp</span>
                                                         <input type="text" class="form-control fill" id="po_total"
-                                                            value="{{ $data['po_total'] }}">
+                                                            value="{{ number_format($data['po_total'],0,',','.') }}" disabled>
                                                     </div>
                                                 </div>
                                             </div>
@@ -72,7 +72,7 @@
                                                     <label>Dibayar</label>
                                                     <div class="input-group">
                                                         <span class="input-group-text">Rp</span>
-                                                        <input type="text" class="form-control fill" id="po_paid"
+                                                        <input type="text" class="form-control fill" id="po_paid" disabled
                                                             value="0">
                                                     </div>
                                                 </div>
@@ -82,35 +82,13 @@
                                                     <label>Sisa Pembayaran</label>
                                                     <div class="input-group">
                                                         <span class="input-group-text">Rp</span>
-                                                        <input type="text" class="form-control fill" id="po_remain"
+                                                        <input type="text" class="form-control fill" id="po_remain" disabled
                                                             value="0">
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div class="row g-3 mt-2">
-                                            <div class="col-12 col-md-6">
-                                                <div class="card">
-                                                    <div class="card-body">
-                                                        <h6>Pengirim</h6>
-                                                        <p>Nama Pengirim: CV Maju Lancar</p>
-                                                        <p>Alamat: Jl. Maju Jaya 2 no. 12</p>
-                                                        <p>No. Telepon: 081273289917</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-12 col-md-6">
-                                                <div class="card">
-                                                    <div class="card-body">
-                                                        <h6>Penerima</h6>
-                                                        <p>Nama Penerima: Budianto</p>
-                                                        <p>Alamat: Jl. Makin Maju 5 no.18</p>
-                                                        <p>No. Telepon: 081756378192</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
 
                                         <div class="col-12 mt-3">
                                             <div class="table-responsive">

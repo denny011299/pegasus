@@ -21,6 +21,12 @@
             <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
+                    <div class="row text-end ps-2 mb-2 mt-2">
+                        <div class="col-9"></div>
+                        <div class="col-3">
+                            <input type="date" class="form-control fill" id="date_production" >
+                        </div>
+                    </div>
                     <div class=" card-table">
                         <div class="card-body">
                             <div class="table-responsive">

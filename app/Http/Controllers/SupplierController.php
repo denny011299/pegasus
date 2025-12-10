@@ -86,6 +86,7 @@ class SupplierController extends Controller
             $value['pdo_id'] = $id;
             (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
         }
+        return PurchaseOrder::find($data["po_id"])->status;
     }
 
     function updatePoDelivery(Request $req)
@@ -115,6 +116,8 @@ class SupplierController extends Controller
     {
         $data = $req->all();
          $id = [];
+         $bermasalah = [];
+        
         (new PurchaseOrderDelivery())->updatePoDelivery($data);
         (new PurchaseOrderDelivery())->statusPoDelivery($data);
         $status = PurchaseOrderDelivery::find($data["pdo_id"])->status; // approved
@@ -133,7 +136,17 @@ class SupplierController extends Controller
     function declinePoDelivery(Request $req)
     {
         $data = $req->all();
-        return (new PurchaseOrderDelivery())->statusPoDelivery($data);
+        $id = [];
+        (new PurchaseOrderDelivery())->statusPoDelivery($data);
+         foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
+            $value['pdo_id'] = $data["pdo_id"];
+            if (!isset($value["pdod_id"])) $t = (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
+            else {
+                $t = (new PurchaseOrderDeliveryDetail())->updatePoDeliveryDetail($value);
+            }
+            array_push($id, $t);
+        }
+        PurchaseOrderDeliveryDetail::where('pdo_id', '=', $data["pdo_id"])->whereNotIn("pdod_id", $id)->update(["status" => 0]);
     }
 
     function getPoInvoice(Request $req)
@@ -145,7 +158,8 @@ class SupplierController extends Controller
     function insertInvoicePO(Request $req)
     {
         $data = $req->all();
-        return (new PurchaseOrderDetailInvoice())->insertInvoicePO($data);
+        (new PurchaseOrderDetailInvoice())->insertInvoicePO($data);
+        return PurchaseOrder::find($data["po_id"])->status;
     }
 
     function updateInvoicePO(Request $req)
@@ -231,6 +245,14 @@ class SupplierController extends Controller
     function acceptInvoicePO(Request $req)
     {
         $data = $req->all();
-        return (new PurchaseOrderDetailInvoice())->changeStatusInvoicePO($data);
+        $po = PurchaseOrderDetailInvoice::find($data["poi_id"]);
+        $total = PurchaseOrderDetailInvoice::where("po_id","=",$po->po_id)->where("status","=",2)->sum("poi_total");
+        $p = PurchaseOrder::find($po->po_id);
+        if($total+$po->poi_total<=$p->po_total){
+            return (new PurchaseOrderDetailInvoice())->changeStatusInvoicePO($data);
+        }
+        else{
+            return -1;
+        }
     }
 }

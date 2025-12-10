@@ -57,7 +57,7 @@ class PurchaseOrderDetailInvoice extends Model
         $t->poi_code   = $this->generateInvoicePurchaseOrderID();
         $t->poi_total  = $data["poi_total"];
         $t->save();
-
+        $this->cekInvoice($t->po_id);
         return $t->poi_id;
     }
 
@@ -73,6 +73,7 @@ class PurchaseOrderDetailInvoice extends Model
         $t->poi_total  = $data["poi_total"];
         $t->save();
 
+        $this->cekInvoice($t->po_id);
         return $t->poi_id;
     }
 
@@ -84,6 +85,7 @@ class PurchaseOrderDetailInvoice extends Model
             $t->status=-1;
             $t->save(); // hard delete
         }
+        $this->cekInvoice($t->po_id);
     }
     // === DELETE ===
     function changeStatusInvoicePO($data)
@@ -93,7 +95,23 @@ class PurchaseOrderDetailInvoice extends Model
             $t->status=$data["status"];
             $t->save(); // hard delete
         }
+       $this->cekInvoice($t->po_id);
     }
+
+    function cekInvoice($po_id) {
+        
+        $total = PurchaseOrderDetailInvoice::where("po_id","=",$po_id)->where("status","=",2)->sum("poi_total");
+        $po = PurchaseOrder::find($po_id);
+        if($total<$po->po_total){
+            $po->status = 3;
+            $po->save();
+        }
+        else{
+            $po->status = 4;
+            $po->save();
+        }
+    }
+
     function generateInvoicePurchaseOrderID()
     {
         $id = self::max('poi_id');
