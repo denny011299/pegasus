@@ -16,12 +16,26 @@ class Bom extends Model
 
         $data = array_merge([
             "bom_id" => null,
+            "search" => null,
             "product_id" => null,
         ], $data);
 
-        $result = Bom::where('status', '=', 1);
-        if ($data["product_id"]) $result->where('product_id', '=', $data["product_id"]);
-        if ($data["bom_id"]) $result->where('bom_id', '=', $data["bom_id"]);
+        $result = Bom::where('boms.status', '=', 1)
+          ->join('product_variants', 'product_variants.product_variant_id', '=', 'boms.product_id')
+            ->join('products', 'products.product_id', '=', 'product_variants.product_id')
+            ->select('boms.*');
+
+        if ($data["product_id"]) $result->where('boms.product_id', '=', $data["product_id"]);
+        if ($data["bom_id"]) $result->where('boms.bom_id', '=', $data["bom_id"]);
+
+        if ($data['search']) {
+            $s = $data['search'];
+             $result->where(function ($q) use ($s) {
+                $q->whereRaw("CONCAT(products.product_name, ' ', product_variants.product_variant_name) LIKE ?", ["%{$s}%"])
+                ->orWhere("product_variants.product_variant_sku", "LIKE", "%{$s}%");
+            });
+        }
+
         $result->orderBy('created_at', 'asc');
 
         $result = $result->get();
@@ -30,7 +44,8 @@ class Bom extends Model
             $v = ProductVariant::find($value->product_id);
             $value->product_sku = $v->product_variant_sku;
             $u = Product::find($v->product_id);
-            $value->product_name = $u->product_name . " " . $v->product_variant_name;
+            $value->product_name =  $u->product_name . " " . $v->product_variant_name;
+            $value->product_variant_sku = $v->product_variant_sku;
             $value->unit_name = Unit::find($value->unit_id)->unit_short_name;
             $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit, true))->get();
         }

@@ -853,3 +853,145 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
          });
      }
 </script>
+<script>
+let rotationAngle = 0; // rotasi foto
+let camRotation = 0;   // rotasi kamera
+let photoData = "";
+let currentStream = null;
+
+// =========================
+// START CAMERA FUNCTION
+// =========================
+function startCamera() {
+    let video = document.getElementById("video");
+
+    // Stop camera old stream
+    if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+            currentStream = stream;
+            video.srcObject = stream;
+        })
+        .catch(function(err) {
+            alert("Tidak bisa akses kamera: " + err);
+        });
+}
+
+// =========================
+// WHEN OPEN MODAL
+// =========================
+$(document).on('click', '.fotoProduksi', function() {
+
+    rotationAngle = 0;
+    camRotation = 0;
+    photoData = "";
+
+    $("#video").removeClass("rot90 rot180 rot270");
+    $("#preview-box").hide();
+    $("#camera").show();
+
+    startCamera();
+    $('#modalPhoto').modal('show');
+});
+
+// =========================
+// ROTATE CAMERA PREVIEW
+// =========================
+$(document).on("click", "#rotateCameraBtn", function () {
+    camRotation = (camRotation + 90) % 360;
+
+    $("#video")
+        .removeClass("rot90 rot180 rot270")
+        .addClass(
+            camRotation === 90 ? "rot90" :
+            camRotation === 180 ? "rot180" :
+            camRotation === 270 ? "rot270" : ""
+        );
+          adjustModalHeight();
+});
+
+// =========================
+// CAPTURE PHOTO
+// =========================
+$(document).on("click", "#captureBtn", function () {
+    let video = document.getElementById("video");
+    let canvas = document.getElementById("canvas");
+    let ctx = canvas.getContext("2d");
+
+    let vw = video.videoWidth;
+    let vh = video.videoHeight;
+
+    // CANVAS SIZE BERDASARKAN ROTASI KAMERA
+    if (camRotation === 90 || camRotation === 270) {
+        canvas.width = vh;
+        canvas.height = vw;
+    } else {
+        canvas.width = vw;
+        canvas.height = vh;
+    }
+
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(camRotation * Math.PI / 180);
+    ctx.drawImage(video, -vw / 2, -vh / 2);
+    ctx.restore();
+
+    photoData = canvas.toDataURL("image/png");
+    $("#previewImage").attr("src", photoData);
+
+    $("#camera").hide();
+    $("#preview-box").show();
+});
+
+// =========================
+// RETAKE
+// =========================
+$(document).on("click", "#retakeBtn", function () {
+    $("#preview-box").hide();
+    $("#camera").show();
+
+    camRotation = 0;
+    $("#video").removeClass("rot90 rot180 rot270");
+
+    startCamera();
+});
+
+// =========================
+// UPLOAD
+// =========================
+$(document).on("click", "#uploadBtn", function () {
+
+    $.ajax({
+        url: "/uploadPhotoProduksi",
+        type: "POST",
+        data: JSON.stringify({ photo: photoData }),
+        contentType: "application/json",
+        headers: {
+            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+        },
+        success: function (response) {
+            notifikasi("success", "Sukses", "Foto berhasil diupload");
+            $('#modalPhoto').modal('hide');
+
+            if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+        },
+        error: function () {
+            notifikasi("error", "Gagal", "Foto gagal diupload");
+        }
+    });
+
+});
+
+function adjustModalHeight() {
+    let video = document.getElementById("video");
+        if (!video) return;
+
+        let modalDialog = $("#modalPhoto .modal-body");
+    
+        // Tinggi modal mengikuti tinggi video
+        modalDialog.css("height", (video.clientHeight/4)+ "px");
+}
+</script>

@@ -22,7 +22,12 @@
             <div class="row">
                 <div class="col-sm-12">
                     <div class="row text-end ps-2 mb-2 mt-2">
-                        <div class="col-9"></div>
+                        <div class="col-8"></div>
+                        <div class="col-1">
+                            <a class="btn btn-outline-primary LihatfotoProduksi" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti Produksi">
+                                <i class="fe fe-camera"></i>
+                            </a>
+                        </div>
                         <div class="col-3">
                             <input type="date" class="form-control fill" id="date_production" >
                         </div>
@@ -58,5 +63,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Production/Production.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Production/Production.js')}}?v={{ time() }}"></script>
 @endsection

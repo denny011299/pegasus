@@ -170,13 +170,13 @@ class AutocompleteController extends Controller
 
         $p = new Bom();
         $data_city = $p->getBom([
-            "product_id" => $keyword,
+            "search" => $keyword,
         ]);
 
 
         foreach ($data_city as $r) {
             $r->id = $r["bom_id"];
-            $r->text = $r["product_name"];
+            $r->text = $r["product_variant_sku"] . " | " . $r["product_name"];
         };
 
         echo json_encode(array(
@@ -255,7 +255,7 @@ class AutocompleteController extends Controller
         $data_city = $p->getProductVariant([
             "product_id" => $keyword,
         ]);
-
+        
 
         foreach ($data_city as $r) {
             $r->id = $r["product_id"];

@@ -253,3 +253,6 @@ Route::get('/getCashCategory', [ReportController::class, "getCashCategory"])->na
 Route::post('/insertCashCategory', [ReportController::class, "insertCashCategory"])->name('insertCashCategory');
 Route::post('/updateCashCategory', [ReportController::class, "updateCashCategory"])->name('updateCashCategory');
 Route::post('/deleteCashCategory', [ReportController::class, "deleteCashCategory"])->name('deleteCashCategory');
+
+Route::post('/uploadPhotoProduksi', [ProductionController::class, "uploadPhotoProduksi"])->name('uploadPhotoProduksi');
+Route::get('/getFotoProduksi', [ProductionController::class, "getFotoProduksi"])->name('getFotoProduksi');

@@ -2,6 +2,7 @@
     var mode=1;
     var table;
     var detail_supply = [];
+    var list_photo =  [];
     $(document).ready(function(){
         $('#date_production').val(moment().format('YYYY-MM-DD'));
         inisialisasi();
@@ -305,6 +306,57 @@ $(document).on("click", "#btn-delete-production", function () {
                 "Berhasil Batalkan",
                 "Berhasil batalkan produksi"
             );
+        },
+        error: function (e) {
+            console.log(e);
+        },
+    });
+});
+
+$(document).on('click', '.btn-prev', function(){
+    var index = parseInt($('#fotoProduksiImage').attr('index'));
+    if(index > 0){
+        index -= 1;
+        $('#fotoProduksiImage').attr('src', public+list_photo[index].pp_photo);
+        $('#fotoProduksiImage').attr('index', index);
+        $('#btn_download_photo').attr('href', public+list_photo[index].pp_photo);
+    }
+});
+$(document).on('click', '.btn-next', function(){
+    var index = parseInt($('#fotoProduksiImage').attr('index'));
+    if(index < list_photo.length - 1){
+        index += 1;
+        $('#fotoProduksiImage').attr('src', public+list_photo[index].pp_photo);
+        $('#fotoProduksiImage').attr('index', index);
+        $('#btn_download_photo').attr('href', public+list_photo[index].pp_photo);
+    }
+});
+
+$(document).on('click', '.LihatfotoProduksi', function(){
+    list_photo = [];
+       $.ajax({
+        url: "/getFotoProduksi",
+        data: {
+            pp_date: $('#date_production').val(),
+            _token: token,
+        },
+        method: "get",
+        success: function (e) {
+            console.log(e);
+            if(e.length > 0){
+                list_photo = e;
+                $('#fotoProduksiImage').attr('src', public+e[0].pp_photo);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+e[0].pp_photo);
+            } else {
+                $('#fotoProduksiImage').attr('src', '');
+                notifikasi(
+                    "error",
+                    "Foto Tidak Ditemukan",
+                    "Tidak ada foto produksi pada tanggal ini"
+                );
+            }
+            $('#modalViewPhoto').modal('show');
         },
         error: function (e) {
             console.log(e);

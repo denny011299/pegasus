@@ -1,4 +1,52 @@
 <!--- modal Delete -->
+<style>
+    #video.rot90 { transform: rotate(90deg); }
+    #video.rot180 { transform: rotate(180deg); }
+    #video.rot270 { transform: rotate(270deg); }
+
+</style>
+<div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-body p-0">
+            <div class="container-fluid">
+                 <canvas id="canvas"  style="display:none;"></canvas>
+            </div>
+         
+        </div>
+        <div class="modal-footer ps-0 pe-0">
+            
+            <div id="camera">
+                <video id="video" autoplay playsinline></video>
+                <button id="rotateCameraBtn" class="btn btn-secondary">Rotate</button>
+                <button id="captureBtn" class="btn btn-primary">Capture</button>
+            </div>
+            <div id="preview-box" style="display:none;">
+                <img id="previewImage">
+                <button class="btn btn-secondary" id="retakeBtn">Retake</button>
+                <button class="btn btn-primary" id="uploadBtn">Upload</button>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="modal fade" id="modalViewPhoto" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-body">
+            <div class="container-fluid">
+                <img src="" alt="" id="fotoProduksiImage" style="width:100%">
+            </div>
+        </div>
+        <div class="modal-footer ">
+            <a class="btn btn-success me-3" download id="btn_download_photo">Download</a>
+            <button class="btn btn-primary me-3 btn-prev">Prev</button>
+            <button class="btn btn-primary btn-next">Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<!--- modal Delete -->
 <div class="modal fade" id="modalDelete" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
@@ -256,16 +304,16 @@
                                     </div>
                                 </div>
                                 <div class="col-lg-6"></div>
-                                <div class="col-lg-5 col-12">
+                                <div class="col-lg-6 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Produk</label>
                                         <select class="form-select fill" id="product_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-lg-3 col-12">
+                                <div class="col-lg-2 col-12">
                                     <div class="mb-3">
-                                        <label class="form-label">Jumlah Produksi</label>
-                                        <input type="text" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
+                                        <label class="form-label">Qty Produksi</label>
+                                        <input type="number" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
                                     </div>
                                 </div>
                                 <div class="col-lg-4 col-12">

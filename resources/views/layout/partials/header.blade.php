@@ -8,6 +8,16 @@
     .search-expand:focus {
         width: 25rem; /* ukuran membesar saat diklik */
     }
+    #camera, #preview-box {
+        width: 100%;
+        max-width: 600px;
+        margin: auto;
+        text-align: center;
+    }
+    video, img {
+        width: 100%;
+        border-radius: 10px;
+    }
 </style>
 @if (!Route::is(['index-three', 'index-four', 'index-five']))
     @if (!Route::is(['index-two']))
@@ -48,6 +58,11 @@
 
     <!-- Header Menu -->
     <ul class="nav nav-tabs user-menu">
+        <li class="nav-item dropdown-heads">
+            <a class="nav-link fotoProduksi" href="#" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Foto Bukti Produksi">
+                <i class="fe fe-camera"></i>
+            </a>
+        </li>
         <li class="nav-item dropdown-heads">
             <a class="nav-link" href="/stockProduct" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Stok Barang">
                 <i class="fe fe-layers"></i>

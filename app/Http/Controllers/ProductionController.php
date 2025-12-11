@@ -5,13 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Bom;
 use App\Models\BomDetail;
 use App\Models\Production;
+use App\Models\ProductionPhoto;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
+use GuzzleHttp\Psr7\UploadedFile;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile as HttpUploadedFile;
 
 class ProductionController extends Controller
 {
@@ -177,5 +180,43 @@ class ProductionController extends Controller
             }
         }
         return response()->json($bahan);
+    }
+
+    public function uploadPhotoProduksi(Request $req)
+    {
+        // Ambil base64
+        $image = $req->photo;
+
+        // Hilangkan prefix base64
+        $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+        // Decode
+        $imageData = base64_decode($image);
+
+        // Nama file
+        $imageName = 'photo_' . time() . '.png';
+
+        // Path tujuan di public/produksi
+        $path = public_path('produksi/' . $imageName);
+
+        // Simpan file
+        file_put_contents($path, $imageData);
+
+        (new ProductionPhoto())->insertPhoto([
+            "pp_date" => date("Y-m-d"),
+            "pp_photo" => 'produksi/' . $imageName
+        ]);
+
+        return response()->json([
+            'url' => url('photos/' . $imageName)
+        ]);
+    }
+
+    function getFotoProduksi(Request $req)
+    {
+        $photos = (new ProductionPhoto())->getPhotos([
+            "pp_date" => $req->date
+        ]);
+        return $photos;
     }
 }
