@@ -48,9 +48,9 @@ class Staff extends Model
         $t->staff_name = $data["staff_first_name"] . " " . $data["staff_last_name"];
         $t->staff_email = $data["staff_email"];
         $t->staff_phone = $data["staff_phone"];
-        $t->role_id = $data["role_id"];
+        $t->role_id = $data["staff_position"];
         $t->staff_address = $data["staff_address"];
-        $t->staff_notes = $data["staff_notes"];
+        // $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;
     }
@@ -61,9 +61,9 @@ class Staff extends Model
         $t->staff_name = $data["staff_first_name"] . " " . $data["staff_last_name"];
         $t->staff_email = $data["staff_email"];
         $t->staff_phone = $data["staff_phone"];
-        $t->role_id = $data["role_id"];
+        $t->role_id = $data["staff_position"];
         $t->staff_address = $data["staff_address"];
-        $t->staff_notes = $data["staff_notes"];
+        // $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;
     }

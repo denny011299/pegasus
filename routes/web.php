@@ -37,6 +37,7 @@ Route::post('/autocompleteStaff', [AutocompleteController::class, "autocompleteS
 Route::post('/autocompleteStaffSales', [AutocompleteController::class, "autocompleteStaffSales"])->name('autocompleteStaffSales');
 Route::post('/autocompleteSubdistrict', [AutocompleteController::class, "autocompleteSubdistrict"])->name('autocompleteSubdistrict');
 Route::post('/autocompleteCashCategory', [AutocompleteController::class, "autocompleteCashCategory"])->name('autocompleteCashCategory');
+Route::post('/autocompleteRole', [AutocompleteController::class, "autocompleteRole"])->name('autocompleteRole');
 
 Route::get('/category',[ProductController::class,"Category"])->name('category');
 Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');

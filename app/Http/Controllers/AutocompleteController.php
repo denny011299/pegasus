@@ -14,6 +14,7 @@ use App\Models\District;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Provinces;
+use App\Models\Role;
 use App\Models\Staff;
 use App\Models\Store;
 use App\Models\Supplier;
@@ -378,6 +379,26 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["staff_id"];
             $r->text = $r["staff_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteRole(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Role();
+        $data_city = $p->getRole([
+            "role_name" => $keyword
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["role_id"];
+            $r->text = $r["role_name"];
         };
 
         echo json_encode(array(

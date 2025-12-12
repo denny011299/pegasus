@@ -1,11 +1,13 @@
 autocompleteProv('#state_id');
 autocompleteCity('#city_id');
+autocompleteRole('#staff_position');
 
 $(document).ready(function(){
     if(mode==2) {
         console.log(data)
-        $('#staff_first_name').val(data.staff_first_name);
-        $('#staff_last_name').val(data.staff_last_name);
+        let names = data.staff_name.split(" ");
+        $('#staff_first_name').val(names[0]);
+        $('#staff_last_name').val(names[1]);
         $('#staff_email').val(data.staff_email);
         $('#staff_phone').val(data.staff_phone);
         $('#staff_birthdate').val(data.staff_birthdate);
@@ -13,14 +15,14 @@ $(document).ready(function(){
         $('#staff_join_date').val(data.staff_join_date);
         $('#staff_shift').append(`<option value="${data.staff_shift}">${data.staff_shift}</option>`);
         $('#staff_departement').append(`<option value="${data.staff_departement}">${data.staff_departement}</option>`);
-        $('#staff_position').append(`<option value="${data.staff_position}">${data.staff_position}</option>`);
+        $('#staff_position').append(`<option value="${data.role_id}">${data.role_name}</option>`);
         $('#staff_emergency1').val(data.staff_emergency1);
         $('#staff_address').val(data.staff_address);
         $('#country_id').append(`<option value="${data.country_id}">Indonesia</option>`);
         $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`);
         $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`);
         $('#staff_zipcode').val(data.staff_zipcode);
-        $('#preview_image').attr("src", public+data.staff_image);
+        // $('#preview_image').attr("src", public+data.staff_image);
     }
 })
 
