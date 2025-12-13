@@ -4,7 +4,7 @@
     var detail_supply = [];
     var list_photo =  [];
     $(document).ready(function(){
-        $('#date_production').val(moment().format('YYYY-MM-DD'));
+        $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
         inisialisasi();
         refreshProduction();
     });
@@ -159,6 +159,7 @@
     $(document).on("change","#date_production",function(){
         refreshProduction();
     });
+
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
@@ -333,7 +334,8 @@ $(document).on('click', '.btn-next', function(){
 });
 
 $(document).on('click', '.LihatfotoProduksi', function(){
-    list_photo = [];
+       list_photo = [];
+       $('#fotoProduksiImage').attr('src', public+"no_img.png");
        $.ajax({
         url: "/getFotoProduksi",
         data: {
@@ -343,18 +345,16 @@ $(document).on('click', '.LihatfotoProduksi', function(){
         method: "get",
         success: function (e) {
             console.log(e);
+ 
             if(e.length > 0){
                 list_photo = e;
+                $('#modalViewPhoto .modal-footer').show();
                 $('#fotoProduksiImage').attr('src', public+e[0].pp_photo);
                 $('#fotoProduksiImage').attr('index', 0);
                 $('#btn_download_photo').attr('href', public+e[0].pp_photo);
-            } else {
-                $('#fotoProduksiImage').attr('src', '');
-                notifikasi(
-                    "error",
-                    "Foto Tidak Ditemukan",
-                    "Tidak ada foto produksi pada tanggal ini"
-                );
+            }
+            else{
+                $('#modalViewPhoto .modal-footer').hide();
             }
             $('#modalViewPhoto').modal('show');
         },

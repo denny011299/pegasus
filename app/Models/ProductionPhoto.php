@@ -27,7 +27,6 @@ class ProductionPhoto extends Model
         if ($data["pp_date"]) {
             $result->where("pp_date", "=", $data["pp_date"]);
         }
-
         $result->orderBy("created_at", "asc");
 
         return $result->get();

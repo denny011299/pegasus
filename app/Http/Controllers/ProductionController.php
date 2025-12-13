@@ -214,9 +214,7 @@ class ProductionController extends Controller
 
     function getFotoProduksi(Request $req)
     {
-        $photos = (new ProductionPhoto())->getPhotos([
-            "pp_date" => $req->date
-        ]);
+        $photos = (new ProductionPhoto())->getPhotos($req->all());
         return $photos;
     }
 }

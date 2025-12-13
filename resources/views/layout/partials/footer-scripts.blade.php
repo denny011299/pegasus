@@ -900,7 +900,9 @@ function startCamera() {
         currentStream.getTracks().forEach(t => t.stop());
     }
 
-    navigator.mediaDevices.getUserMedia({ video: true })
+    navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { exact: "environment" } }
+    })
         .then(function(stream) {
             currentStream = stream;
             video.srcObject = stream;
