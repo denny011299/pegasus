@@ -40,6 +40,7 @@
         $('#product_id').empty();
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html('Tambah Resep');
         $('#add_bom').modal("show");
         bahan = [];
     });
@@ -125,13 +126,13 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep"); 
             return false;
         };
 
         if ($("#tableSupply tbody tr").length == 0) {
             notifikasi('error', "Gagal Insert", 'Minimal input 1 bahan mentah');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep"); 
             return false;
         }
         console.log(bahan);
@@ -158,11 +159,11 @@
             },
             success:function(e){
                 bahan = [];
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah");       
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep");       
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep"); 
                 console.log(e);
             }
         });
@@ -210,7 +211,7 @@
             if(element.unit_id == data.unit_id) active = "selected";
             $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_short_name}</option>`);
         });
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html('Update Resep');
         $('#add_bom').modal("show");
         $('#add_bom').attr("bom_id", data.bom_id);
     });
@@ -227,7 +228,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep Bahan Mentah" : "Update Resep Bahan Mentah"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep"); 
             return false;
         };
         var temp = $('#supplies_id').select2("data")[0];

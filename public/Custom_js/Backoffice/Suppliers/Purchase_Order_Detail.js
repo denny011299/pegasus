@@ -227,6 +227,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('.row-acc').hide();
         $('.btn-save-delivery').show();
+        $('.btn-save-delivery').html('Tambah Catatan Pengiriman');
         $('#pdo_receiver').empty();
         tablePurchaseDelivery();
         refreshTableProduct(data.items);
@@ -241,6 +242,7 @@
         $('.row-acc-invoice').hide();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save-invoice').show();
+        $('.btn-save-invoice').html('Tambah Faktur');
         $('#add_purchase_invoice').modal("show");
     })
 
@@ -617,6 +619,7 @@
         mode = 2;
         $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
         $('#add_purchase_delivery input').val("");
+        $('.btn-save-delivery').html('Update Catatan Pengiriman');
         $('.is-invalid').removeClass('is-invalid');
         $('#pdo_receiver').empty().append(`<option value="${data.staff_id}">${data.pdo_receiver}</option>`);
         $('#pdo_date').val(data.pdo_date);
@@ -641,7 +644,6 @@
             $('.btn-approve').show();
             $('.btn-save-delivery').hide();
         }
-        $('.btn-save-delivery').html('Simpan perubahan');
         $('#add_purchase_delivery').modal("show");
         $('#add_purchase_delivery').attr("pdo_id", data.pdo_id);
     })
@@ -671,16 +673,6 @@
             }
         });
     });
-
-    $(document).on('click', '.btn_edit_inv', function(){
-        var data = $('#tableInvoice').DataTable().row($(this).parents('tr')).data();
-        mode = 2;
-        $('#add_purchase_invoice .modal-title').html("Update Faktur");
-        $('#add_purchase_invoice input').val("");
-        $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save-invoice').html('Simpan perubahan');
-        $('#add_purchase_invoice').modal("show");
-    })
 
     function refreshSummary() {
         var total = 0;
@@ -728,7 +720,7 @@
                 "Gagal Insert",
                 "Silahkan cek kembali inputan anda"
             );
-            ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
+            ResetLoadingButton('.btn-save-invoice', mode == 1?"Tambah Faktur" : "Update Faktur");
             return false;
         }
 
@@ -758,7 +750,7 @@
             success: function (e) {
                 $(".modal").modal("hide");
                 refreshInvoice();
-                ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
+                ResetLoadingButton('.btn-save-invoice', mode == 1?"Tambah Faktur" : "Update Faktur");
                  $('#po_status').val(e).trigger('change');
                 if (mode == 1){
                     notifikasi(
@@ -792,6 +784,8 @@
         $('#poi_date').val(data.poi_date)
         $('#poi_code').val(data.poi_code)
         $('#add_purchase_invoice .modal-title').html("Update Faktur");
+        $('.btn-save-invoice').html('Update Faktur');
+        $('.is-invalid').removeClass('is-invalid');
         console.log();
         
         if(data.status == 1){

@@ -95,7 +95,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan Perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi");
             return false;
         };
         console.log($('#variant_attribute').val());
@@ -152,7 +152,7 @@
         data.variant_values.split(',').forEach(function(item) {
             $('#variant_attribute').tagsinput('add', item.trim());
         });
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html(mode == 1?"Tambah Variasi" : "Update Variasi");
         $('#add_variant').modal("show");
         $('#add_variant').attr("variant_id", data.variant_id);
     });

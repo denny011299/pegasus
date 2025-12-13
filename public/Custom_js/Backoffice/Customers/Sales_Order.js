@@ -124,9 +124,6 @@
                     e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
                     e[i].status_so = `<label class="badge bg-secondary badgeStatus">Created</label>`;
                     e[i].action = `
-                        <a href="/salesOrderDetail/${e[i].so_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].so_id}" data-bs-target="#view-sales">
-                            <i class="fe fe-eye"></i>
-                        </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].so_id}" data-bs-target="#edit-sales">
                             <i class="fe fe-edit"></i>
                         </a>
@@ -151,10 +148,13 @@
         console.log(products)
         products.forEach((p, index) => {
             let options = "";
+            console.log(p);
             if (p.pr_unit && Array.isArray(p.pr_unit)) {
                 p.pr_unit.forEach(u => {
                     options += `<option value="${u.unit_id}" ${u.unit_id == p.unit_id ? 'selected' : ''}>${u.unit_name}</option>`;
                 });
+            } else {
+                options = `<option value="${p.unit_id}" ${p.unit_id == p.unit_id ? 'selected' : ''}>${p.unit_name}</option>`;
             }
 
             html += `

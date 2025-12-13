@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Stok Opname
+                    Stok Opname Produk
                 @endslot
             @endcomponent
             <!-- /Page Header -->
