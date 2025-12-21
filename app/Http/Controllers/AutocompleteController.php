@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Area;
+use App\Models\Bank;
 use App\Models\Bom;
 use App\Models\CashCategory;
 use App\Models\Category;
@@ -399,6 +400,26 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["role_id"];
             $r->text = $r["role_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteRekening(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new Bank();
+        $data_city = $p->getBank([
+            "bank_kode" => $keyword
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["bank_id"];
+            $r->text = $r["bank_kode"];
         };
 
         echo json_encode(array(

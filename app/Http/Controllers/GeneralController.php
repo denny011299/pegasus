@@ -16,7 +16,10 @@ class GeneralController extends Controller
         }
         
     }
-
+     function login() {
+          return view('Login');
+     }
+     
     // Wilayah
     public function Area(){
         return view('Backoffice.Area.Area');

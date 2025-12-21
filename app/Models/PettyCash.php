@@ -17,6 +17,8 @@ class PettyCash extends Model
             "pc_date"=>null,
             "staff_id"=>null,
             "cc_id"=>null,
+            "filter_tanggal_start"=>null,
+            "filter_tanggal_end"=>null,
         ], $data);
 
         $result = self::where('status', '>=', 1);
@@ -24,8 +26,12 @@ class PettyCash extends Model
         if($data["pc_date"]) $result->where('pc_date','=',$data["pc_date"]);
         if($data["staff_id"]) $result->where('staff_id','=',$data["staff_id"]);
         if($data["cc_id"]) $result->where('cc_id','=',$data["cc_id"]);
+        if($data["filter_tanggal_start"]&& $data["filter_tanggal_end"]){
+            $result->whereBetween('pc_date', [$data["filter_tanggal_start"], $data["filter_tanggal_end"]]);
+        }
         $result->orderBy('status', 'asc')->orderBy('pc_date', 'desc')->orderBy('created_at', 'desc');
         $result = $result->get();
+
 
         foreach ($result as $key => $value) {
             $s = Staff::find($value->staff_id);

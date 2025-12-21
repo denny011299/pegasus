@@ -161,3 +161,96 @@
 </div>
 <!-- /Filter Pencarian -->
 @endif
+
+@if(Route::is(['tt']))
+<!-- Filter Pencarian -->
+<div class="container mt-3 ps-0">
+    <div class="row">
+        {{-- 
+        <div class="col-12 col-md-6">
+
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Rentang Tanggal -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search No Tanda terima</label>
+                        <input type="text" class="form-control" id="filter_po" placeholder="No.PO">
+                    </div>
+                    
+                    <!-- Supplier -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search Supplier</label>
+                        <select class="form-select" id="filter_supplier"></select>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>--}}
+        
+        <div class="col-12 col-md-6">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Supplier -->
+                    <div class="col-md row-supplier">
+                        <label class="form-label mb-1">Tanda Terima Supplier</label>
+                        <select class="form-select" id="select_supplier"></select>
+                    </div>
+                    <div class="col-md row-rekening">
+                        <label class="form-label mb-1">Bank Account</label>
+                        <select class="form-select" id="bank_kode"></select>
+                    </div>
+                     <div class="col-md-auto d-flex align-items-end pt-4">
+                        <button class="btn btn-primary w-100" id="generateTandaTerima">Buat Tanda Terima</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Filter Pencarian -->
+@endif
+
+@if(Route::is(['pettyCash']))
+<!-- Filter Pencarian -->
+<div class="container mt-3 ps-0">
+    <div class="row">
+        {{-- 
+        <div class="col-12 col-md-6">
+
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Rentang Tanggal -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search No Tanda terima</label>
+                        <input type="text" class="form-control" id="filter_po" placeholder="No.PO">
+                    </div>
+                    
+                    <!-- Supplier -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search Supplier</label>
+                        <select class="form-select" id="filter_supplier"></select>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>--}}
+        
+        <div class="col-12 col-md-6">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Supplier -->
+                    <div class="col-md row-supplier">
+                        <label class="form-label mb-1">Dari Tanggal</label>
+                        <input type="date" name="" id="filter_tanggal_start" class="form-control">
+                    </div>
+                    <div class="col-md row-supplier">
+                        <label class="form-label mb-1">Sampai Tanggal</label>
+                        <input type="date" name="" id="filter_tanggal_end" class="form-control">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Filter Pencarian -->
+@endif

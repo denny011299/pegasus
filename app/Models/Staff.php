@@ -16,6 +16,8 @@ class Staff extends Model
         $data = array_merge([
             "staff_name"=>null,
             "staff_id"=>null,
+            "staff_username"=>null,
+            "staff_password"=>null,
             "city_id"=>null,
             "role_id"=>null
         ], $data);
@@ -25,6 +27,10 @@ class Staff extends Model
         if($data["city_id"]) $result->where('city_id','=',$data["city_id"]);
         if($data["staff_id"]) $result->where('staff_id','=',$data["staff_id"]);
         if($data["role_id"]) $result->where('role_id','=',$data["role_id"]);
+        if($data["staff_username"] && isset($data["staff_password"])) {
+            $result->where('staff_username','=',$data["staff_username"]);
+            $result->where('staff_password','=',$data["staff_password"]);
+        }
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
         
@@ -36,7 +42,9 @@ class Staff extends Model
             // $value->state_name = $v->prov_name;
 
             $r = Role::find($value->role_id);
-            $value->role_name = $r->role_name;
+            if($r){
+                $value->role_name = $r->role_name;
+            }
         }
         
         return $result;

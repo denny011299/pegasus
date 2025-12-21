@@ -118,6 +118,10 @@ class SalesOrder extends Model
         $t->status = 0; // soft delete
         $t->save();
     }
+    
+
+    
+
 
     function generateSalesOrderID()
     {

@@ -8,8 +8,13 @@
         refresh();
         refreshSummary();
         $('#po_status').val(data.status).trigger('change');
+
+        
     });
     
+   
+
+        
     function inisialisasi() {
         tablePr = $('#tableSupplies').DataTable({
             bFilter: true,
@@ -184,9 +189,9 @@
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
                     e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
                     if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
+                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Dibuat</span>`;
                     } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
                     }
                     else if (e[i].status == 0){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
@@ -236,7 +241,16 @@
 
     $(document).on('click', '.btnAddInv', function(){
         mode=1;
-        $('#add_purchase_invoice .modal-title').html("Tambah Faktur");
+        var dt = tableDn.rows().data().toArray();
+        var ada=-1;
+        dt.forEach(element => {
+            if(element.status==2) ada=1;
+        });
+        if(ada==-1){
+            notifikasi("error","Gagal Buat Invoice","Barang harus diterima dan diacc oleh pihak gudang terlebih dahulu");
+            return false;
+        }
+        $('#add_purchase_invoice .modal-title   ').html("Tambah Faktur");
         $('#add_purchase_invoice input').val("");
         $('#poi_date').val(moment().format('YYYY-MM-DD'));
         $('.row-acc-invoice').hide();

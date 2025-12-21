@@ -104,6 +104,117 @@
 
 @endif
 
+@if (Route::is(['bank']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_bank" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Bank</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Kode Bank<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="bank_kode"
+                                            placeholder="Input Kode Bank">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Bank</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+@endif
+
+@if (Route::is(['tt']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_acc_tt" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Konfirmasi Terima</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <p class="text-center">Konfirmasi Pembayaran Semua Invoice Harap unggah Bukti Transfer Bank atau Slip Pembayaran yang valid sebagai syarat konfirmasi pelunasan semua invoice terkait.</p>
+                         <div class="profile-picture mt-3">
+                            <div class="upload-profile">
+                                <div class="profile-img">
+                                    <img id="preview_image" class="avatar" style="min-height: 200px;width:100%;border-radius:0px"
+                                        src="{{ asset('no_img.png') }}"
+                                        alt="profile-img">
+                                </div>
+                                <div class="add-profile ms-3">
+                                    <h5>Unggah Foto Bukti Transaksi</h5>
+                                    <span id="file_name">xx.jpg</span>
+                                </div>
+                            </div>
+                            <div class="img-upload">
+                                <label class="btn btn-upload">
+                                    Unggah <input type="file" class="form-control  input-gambar"
+                                    accept="image/png, image/jpeg" id="image">
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Konfirmasi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal modal-lg custom-modal fade" id="view_tt" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Konfirmasi Terima</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                      <div class="container-fluid">
+                            <img src="" alt="" id="preview_bukti">
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+@endif
+
 @if (Route::is(['unit']))
     <!-- modal -->
     <div class="modal modal-lg custom-modal fade" id="add_unit" role="dialog">

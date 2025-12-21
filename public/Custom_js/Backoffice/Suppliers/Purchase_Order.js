@@ -2,7 +2,10 @@
     var table, tablePr;
     var item = [];
     var grand = 0;
+    autocompleteSupplier("#filter_supplier");
     autocompleteSupplier("#po_supplier","#add_purchase_order");
+    autocompleteSupplier("#select_supplier");
+    autocompleteRekening("#bank_kode");
     autocompleteSuppliesVariant("#po_sku","#add_purchase_order");
     
     
@@ -10,7 +13,7 @@
         inisialisasi();
         refreshPurchaseOrder();
     });
-    
+ 
     $(document).on('click','.btnAdd',function(){
         mode=1;
         console.log(moment().format('dd/MM/YYYY'));
@@ -31,6 +34,14 @@
 
     $(document).on('change','#po_supplier', function () {
         autocompleteSuppliesVariant('#po_sku', '#add_purchase_order',$(this).val());
+    });
+
+    $(document).on('keyup','#filter_po', function () {
+        refreshPurchaseOrder();
+    });
+
+    $(document).on('change','#filter_supplier', function () {
+        refreshPurchaseOrder();
     });
 
     $('#po_sku').on('change', function () {
@@ -141,6 +152,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             order: [[0, 'desc']],
+            searching:false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -157,6 +169,7 @@
                 { data: "po_supplier_name"},
                 { data: "total" },
                 { data: "status_po" },
+                { data: "pembayaran_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             columnDefs: [
@@ -166,19 +179,18 @@
                 }
             ],
             initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
         });
     }
-
-
 
     function refreshPurchaseOrder() {
         $.ajax({
             url: "/getPurchaseOrder",
             method: "get",
+            data:{
+                "po_supplier": $('#filter_supplier').val(),
+                "po_number": $('#filter_po').val(),
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
@@ -194,7 +206,12 @@
                     if(e[i].status == 2)e[i].status_po = `<label class="badge bg-primary badgeStatus">Barang Diterima</label>`;
                     if(e[i].status == 3)e[i].status_po = `<label class="badge bg-warning badgeStatus">Pembayaran</label>`;
                     if(e[i].status == 4)e[i].status_po = `<label class="badge bg-success badgeStatus">Selesai</label>`;
-
+                    
+                    e[i].pembayaran_text = `<label class="badge bg-secondary badgeStatus">Belum Lunas</label>`;
+                    
+                    if(e[i].pembayaran == 1)e[i].pembayaran_text = `<label class="badge bg-primary badgeStatus">Lunas</label>`;
+                    var active = "disabled";
+                    if(e[i].kodeTerima!=null) active="";
                     e[i].action = `
                         <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" >
                             <i class="fe fe-eye"></i>
@@ -213,6 +230,15 @@
             }
         });
     }
+
+    $(document).on("click",".btn_view_tt",function(){
+        var kode = $(this).attr('kode');
+        if(kode==null||kode==""||kode=="null") {
+            notifikasi('error', "Gagal View", 'Silahkan generate tanda terima terlebih dahulu!');
+            return false;
+        }
+    
+    });
 
     $(document).on("click",".btn-save",function(){
         LoadingButton(this);
@@ -287,7 +313,7 @@
         else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pesanan Pembelian");
         refreshPurchaseOrder();
     }
-
+    
     // $(document).on("keyup","#filter_category_name",function(){
     //     refreshPurchaseOrder();
     // });
@@ -314,6 +340,7 @@
 
 
     $(document).on("click","#btn-delete-purchase",function(){
+        
         $.ajax({
             url:"/deletePurchaseOrder",
             data:{
@@ -331,4 +358,27 @@
                 console.log(e);
             }
         });
+    });
+
+    $(document).on("click","#generateTandaTerima",function(){
+        $('.invalid').removeClass('invalid');
+        var valid = 1;
+        if($('#select_supplier').val()==null||$('#select_supplier').val()==""){
+            $('.row-supplier .select2-selection--single').addClass('invalid');
+            valid=-1;
+        }
+        if($('#bank_kode').val()==null||$('#bank_kode').val()==""){
+             $('.row-rekening .select2-selection--single').addClass('invalid');
+            valid=-1;
+        }
+        
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            return false;
+        };
+
+
+        var anchor = document.createElement('a');
+        anchor.href = '/generateTandaTerima/'+$('#select_supplier').val()+"/"+$('#bank_kode').val();
+        anchor.click();
     });

@@ -63,7 +63,7 @@ class ReportController extends Controller
     }
 
     function getPettyCash(Request $req){
-        $data = (new PettyCash())->getPettyCash();
+        $data = (new PettyCash())->getPettyCash($req->all());
         return response()->json($data);
     }
 

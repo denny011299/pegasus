@@ -1,7 +1,6 @@
 <!-- Page Header -->
 @if(!Route::is(['companies','subscription','packages','plans-list']))
 <div class="page-header">
-
     <div class="content-page-header">
         <h5>{{ $title }}</h5>
         @if (Route::is(['custom-filed', 'profit-loss-list', 'sales-return-report', 'stock-report']))
@@ -67,6 +66,14 @@
                                 aria-hidden="true"></i>Tambah Pelanggan</a>
                     </li>
                 @endif
+               
+                @if (Route::is(['bank']))
+                    <li>
+                        <a class="btn btn-primary btnAdd" href="#" data-bs-toggle="modal"
+                            data-bs-target="#add_bank"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Bank</a>
+                    </li>
+                @endif
                 @if (Route::is(['role']))
                     <li>
                         <a class="btn btn-primary btnAdd" href="#" data-bs-toggle="modal"
@@ -74,6 +81,7 @@
                             Peran</a>
                     </li>
                 @endif
+            
                 @if (Route::is(['stockOpname']))
                     <li>
                         <a class="btn btn-primary" href="/detailStockOpname/-1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah

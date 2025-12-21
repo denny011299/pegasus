@@ -217,4 +217,6 @@ class ProductionController extends Controller
         $photos = (new ProductionPhoto())->getPhotos($req->all());
         return $photos;
     }
+
+    
 }

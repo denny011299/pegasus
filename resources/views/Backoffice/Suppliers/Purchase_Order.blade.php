@@ -5,6 +5,9 @@
     .badgeStatus{
         font-size:9pt!important;
     }
+    .invalid{
+        border: 1px solid red!important;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -28,6 +31,7 @@
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
+                            
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tablePurchaseOrder">
                                     <thead class="thead-light">
@@ -37,6 +41,7 @@
                                             <th>Nama Pemasok</th>
                                             <th>Total</th>
                                             <th>Status</th>
+                                            <th>Pembayaran</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

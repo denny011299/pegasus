@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\purchase_order_tt;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
 use App\Models\PurchaseOrderDeliveryDetail;
@@ -11,7 +12,9 @@ use App\Models\PurchaseOrderReceipt;
 use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesVariant;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class SupplierController extends Controller
 {
@@ -28,7 +31,7 @@ class SupplierController extends Controller
 
     function getPurchaseOrder(Request $req)
     {
-        $data = (new PurchaseOrder())->getPurchaseOrder();
+        $data = (new PurchaseOrder())->getPurchaseOrder($req->all());
         return response()->json($data);
     }
 
@@ -242,6 +245,11 @@ class SupplierController extends Controller
         $data = $req->all();
         return (new PurchaseOrderDetailInvoice())->changeStatusInvoicePO($data);
     }
+    function pelunasanPurchaseOrder(Request $req)
+    {
+        $data = $req->all();
+        return (new PurchaseOrder())->pelunasanPurchaseOrder($data);
+    }
     function acceptInvoicePO(Request $req)
     {
         $data = $req->all();
@@ -255,4 +263,98 @@ class SupplierController extends Controller
             return -1;
         }
     }
+
+
+    function generateTandaTerima($id,$kode) {
+        $param["supplier"] = Supplier::find($id); 
+        $param["data"] = PurchaseOrder::where('po_supplier','=',$id)->where('status','=',4)->where('pembayaran','=',0)
+        ->whereNull('tt_id')
+        ->get();
+        if(count($param["data"])<=0){
+            return -1;
+        }
+        $ada = -1;
+        foreach ($param["data"] as $key => $value) {
+            if($value["kodeTerima"]!=null) $ada=$value["kodeTerima"];
+        };
+        if($ada==-1)$ttid = (new PurchaseOrder())->generateTandaTerimaID($kode);
+        else $ttid = $ada;
+        date_default_timezone_set('Asia/Jakarta');
+        $tt = (new purchase_order_tt())->insertTt([
+            "tt_date"=> date('Y-m-d'),
+            "staff_name"=> Session::get('user')->staff_name,
+            "tt_kode"=> $ttid,
+            "supplier_id"=> $id,
+            "tt_total"=> 0,
+        ]);
+        $total = 0;
+        foreach ($param["data"] as $key => $value) {
+            $p = PurchaseOrder::find($value->po_id);
+            $p->tt_id = $tt;
+            $p->save();
+            $total += $p->po_total;
+        }
+        
+        $tt = purchase_order_tt::find($tt);
+        $tt->tt_total = $total;
+        $tt->save();
+        $param["tt"] = $tt;
+
+        $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
+        //return $pdf->download('Tanda Terima'.$param["supplier"]["supplier_name"].'.pdf');
+        return $tt->tt_id;
+    }
+
+    function viewTandaTerima($id) {
+        $param["tt"] = (new purchase_order_tt())->getTt(["tt_id"=>$id])[0]??null;
+        $param["data"] = PurchaseOrder::where('tt_id','=',$id)->get();
+        $param["supplier"] = Supplier::find($param["tt"]["supplier_id"]); 
+        $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
+        //$pdf->stream();
+        return $pdf->download(
+            'Tanda-Terima-' . str_replace(' ', '-', $param["supplier"]["supplier_name"]) . '.pdf'
+        );
+    }
+
+    public function tt()
+    {
+        return view('Backoffice.Suppliers.Tt');
+    }
+
+    function getTt(Request $req){
+        $data = (new purchase_order_tt())->getTt($req->all());
+        return response()->json($data);
+    }
+
+    function insertTt(Request $req){
+        $data = $req->all();
+        return (new purchase_order_tt())->insertTt($data);
+    }
+
+    function updateTt(Request $req){
+        $data = $req->all();
+        return (new purchase_order_tt())->updateTt($data);
+    }
+
+    function accTt(Request $req){
+        $data = $req->all();
+        if (isset($req->image) && $req->image != "undefined") $data["tt_image"] = (new HelperController)->insertFile($req->image, "supplier");
+        $p = purchase_order_tt::find($req->tt_id);
+        $p->status=2;
+        $p->tt_image = $data["tt_image"];
+        $p->staffFinance_name = Session::get('user')->staff_name;
+        $p->save();
+        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["pembayaran"=>1]);
+    }
+
+    function declineTt(Request $req){
+        $p = purchase_order_tt::find($req->tt_id);
+        $p->staffFinance_name = Session::get('user')->staff_name;
+        $p->status=0;
+        $p->save();
+
+        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["tt_id"=>null]);
+
+    }
 }
+

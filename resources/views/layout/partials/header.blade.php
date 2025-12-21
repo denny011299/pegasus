@@ -88,7 +88,7 @@
                 </span>
                 <span class="user-content">
                     <span class="user-details" style="color: white">Admin</span>
-                    <span class="user-name" style="color: white">John Smith</span>
+                    <span class="user-name" style="color: white">{{Session::get('user')["staff_name"]}}</span>
                 </span>
             </a>
             <div class="dropdown-menu menu-drop-user">

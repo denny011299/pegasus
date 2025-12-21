@@ -1,49 +1,59 @@
-<?php $page = 'signin-3'; ?>
+<?php $page = 'login'; ?>
 @extends('layout.mainlayout')
 @section('content')
-    <div class="account-content">
-        <div class="login-wrapper login-new">
-            <div class="container">
-                <div class="login-content user-login">
-                    <div class="login-logo">
-                        <img src="{{ URL::asset('assets/indoraya_logo.png') }}" alt="img">
-                        <a href="/login" class="login-logo logo-white">
-                            <img src="{{ URL::asset('assets/indoraya_logo.png') }}" alt="">
-                        </a>
-                    </div>
-                    <form action="index">
-                        <div class="login-userset">
-                            <div class="login-userheading">
-                                <h3>Sign In</h3>
-                                <h4>Access the Indoraya panel using your username and passcode.</h4>
-                            </div>
-                            <div class="form-login">
-                                <label class="form-label">Username</label>
-                                <div class="form-addons">
-                                    <input type="text" class="form-control fill" id="username">
-                                </div>
-                            </div>
-                            <div class="form-login">
-                                <label>Password</label>
-                                <div class="pass-group">
-                                    <input type="password" class="pass-input fill" id="password">
-                                    <span class="fas toggle-password fa-eye-slash"></span>
-                                </div>
-                            </div>
-                            <div class="form-login">
-                                <div class="btn btn-login" id="btn-login">Sign In</div>
-                            </div>
-                        </div>
-                    </form>
+    <div class="login-wrapper">
+        <div class="container">
 
-                </div>
-                <div class="my-4 d-flex justify-content-center align-items-center copyright-text">
-                    <p>Copyright &copy; 2025 In. All rights reserved</p>
+            <img class="img-fluid logo-dark mb-2 logo-color" src="{{asset('assets/pegasus_banner_small.png') }}" alt="Logo">
+            <img class="img-fluid logo-light mb-2" src="{{asset('assets/pegasus_banner_small.png') }}" alt="Logo">
+            <div class="loginbox">
+
+                <div class="login-right">
+                    <div class="login-right-wrap">
+                        <h1>Login</h1>
+                        <p class="account-subtitle">Access to our dashboard</p>
+
+                        <form method="post" action="">
+                            @csrf
+                            <div class="input-block mb-3">
+                                <label class="form-control-label">Username</label>
+                                <input type="email" class="form-control" id="email" name="username">
+                                <div class="text-danger pt-2">
+                                    @error('0')
+                                        {{ $message }}
+                                    @enderror
+                                    @error('email')
+                                        {{ $message }}
+                                    @enderror
+                                </div>
+                            </div>
+                            <div class="input-block mb-3">
+                                <label class="form-control-label">Password</label>
+                                <div class="pass-group">
+                                    <input type="password" class="form-control pass-input" id="password" name="password"
+                                        value="">
+                                    <span class="fa-solid fa-eye-slash toggle-password"></span>
+                                    <div class="text-danger pt-2">
+                                        @error('0')
+                                            {{ $message }}
+                                        @enderror
+                                        @error('password')
+                                            {{ $message }}
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-lg  btn-primary w-100" type="button" id="btn-login">Login</button>
+                          
+                        </form>
+
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 @endsection
+
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";
@@ -51,3 +61,4 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="{{ asset('/Custom_js/Backoffice/Login.js') }}?v={{ time() }}"></script>
 @endsection
+

@@ -21,8 +21,8 @@ class PurchaseOrder extends Model
         ], $data);
 
         $result = PurchaseOrder::where("status", ">=", 1);
-
-        if ($data["po_supplier"]) $result->where("po_supplier", "like", "%" . $data["po_supplier"] . "%");
+        if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
+        if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
         if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);
 
         $result->orderBy("po_date", "desc");
@@ -78,6 +78,13 @@ class PurchaseOrder extends Model
         $t->save();
 
     }
+    function pelunasanPurchaseOrder($data)
+    {
+        $t = PurchaseOrder::find($data["po_id"]);
+        $t->pembayaran = 1; // soft delete
+        $t->save();
+
+    }
 
     function generatePurchaseOrderID()
     {
@@ -85,5 +92,16 @@ class PurchaseOrder extends Model
         if (is_null($id)) $id = 0;
         $id++;
         return "PO" . str_pad($id, 4, "0", STR_PAD_LEFT);
+    }
+
+    function generateTandaTerimaID($kode)
+    {
+        $kode = Bank::find($kode)->bank_kode;
+        $id = purchase_order_tt::where('tt_kode','like','%'.$kode."%")->max('tt_kode');
+        
+        if (is_null($id)) $id = 0;
+        $id = $id ? intval(explode('-', $id)[1]) : 0;
+        $id++;
+        return $kode. "-" . str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

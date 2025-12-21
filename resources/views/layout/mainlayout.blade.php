@@ -18,7 +18,7 @@
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@dreamstechnologies">
-    <meta name="twitter:title" content="Finance & Accounting Admin Website Templates | Kanakku">
+    <meta name="twitter:title" content="Internal Pegasus Management">
     <meta name="twitter:description"
         content="Kanakku is a Sales, Invoices & Accounts Admin template for Accountant or Companies/Offices with various features for all your needs. Try Demo and Buy Now.">
     <meta name="twitter:image" content="https://kanakku.dreamstechnologies.com/assets/img/kanakku.jpg">
@@ -34,8 +34,8 @@
     <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="600">
-    <title>Pegasus Management Inventory</title>
-
+    <title>Internal Pegasus Management</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <!-- Favicon -->
     <link rel="shortcut icon" href="{{ URL::asset('/assets/pegasus_logo.jpg') }}">
     
@@ -159,7 +159,6 @@
         'signature-preview-invoice',
         'mail-pay-invoice',
         'pay-online',
-        'login',
         'register',
         'saas-login',
         'invoice-subscription',

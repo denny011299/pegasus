@@ -527,8 +527,7 @@
                                     class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                             <li><a href="{{ url('area') }}"
                                     class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li>
-                            <li><a href="{{ url('cashCategory') }}"
-                                    class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>
+                           
                         </ul>
                     </li>
                     <li class="submenu">
@@ -588,6 +587,10 @@
                             <a class="{{ Request::is('purchaseOrder') ? 'active' : '' }}" href="/purchaseOrder">
                                 <i class="fe fe-dollar-sign"></i> <span>Pembelian</span></a>
                         </li>
+                        <li>
+                            <a class="{{ Request::is('tt') ? 'active' : '' }}" href="/tt">
+                                <i class="fe fe-file-text"></i> <span>Tanda Terima PO</span></a>
+                        </li>
                     </li>
                     {{-- /Ordering --}}
                  <li class="menu-title"><span>Produksi</span></li>
@@ -603,18 +606,25 @@
                     </li>
                     {{-- Report --}}
                     <li class="menu-title"><span>Akuntansi & Laporan</span></li>
+                     <li>
+                        <a class="{{ Request::is('bank') ? 'active' : '' }}" href="/bank">
+                                <i class="bi bi-bank"></i> <span>Bank Account</span></a>
+                        </li>
                     <li class="submenu">
                         <a href="#"><i class="fe fe-book"></i> <span> Akuntansi</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
+                                 <li><a href="{{ url('cashCategory') }}"
+                                    class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>
+                                    <li><a href="{{ url('pettyCash') }}"
+                                            class="{{ Request::is('pettyCash') ? 'active' : '' }}">
+                                            Kas Kecil</a></li>
                             <li><a href="{{ url('cash') }}"
                                     class="{{ Request::is('cash') ? 'active' : '' }}">
                                     Kas</a></li>
-                            <li><a href="{{ url('pettyCash') }}"
-                                    class="{{ Request::is('pettyCash') ? 'active' : '' }}">
-                                    Kas Kecil</a></li>
                         </ul>
                     </li>
+                    
                     <li class="submenu">
                         <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
                                 class="menu-arrow"></span></a>

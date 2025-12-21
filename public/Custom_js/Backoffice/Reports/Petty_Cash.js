@@ -5,10 +5,14 @@
     autocompleteStaff('#staff_id', '#add_petty_cash')
 
     $(document).ready(function(){
+        $('#filter_tanggal_start').val(moment().format('YYYY-MM-DD'));
+        $('#filter_tanggal_end').val(moment().format('YYYY-MM-DD'));
         inisialisasi();
         refreshPettyCash();
     });
-    
+    $(document).on('change', '#filter_tanggal_start, #filter_tanggal_end', function(){
+        refreshPettyCash();
+    });
     $(document).on('click','.btnAdd',function(){
         mode=1;
         $('#add_petty_cash .modal-title').html("Tambah Kas Kecil");
@@ -36,7 +40,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: false,
-            autoWidth: false,
+            reponsive:false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -49,7 +53,7 @@
             },
             columns: [
                 { data: "date" },
-                { data: "pc_description" },
+                { data: "pc_description",width:"30%" },
                 { data: "staff_name" },
                 { data: "status_text" },
                 { data: "debit" },
@@ -67,6 +71,10 @@
         $.ajax({
             url: "/getPettyCash",
             method: "get",
+            data:{
+                "filter_tanggal_start": $('#filter_tanggal_start').val(),
+                "filter_tanggal_end": $('#filter_tanggal_end').val()
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];

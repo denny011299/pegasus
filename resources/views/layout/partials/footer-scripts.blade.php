@@ -252,7 +252,15 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         "showMethod": "fadeIn",
         "hideMethod": "fadeOut"
     }
-    
+      // Tooltip
+    if ($('[data-bs-toggle="tooltip"]').length > 0) {
+        var tooltipTriggerList = [].slice.call(
+            document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        );
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
       feather.replace();
     function notifikasi(simbol,title,deskripsi) {
         Swal.fire({
@@ -876,6 +884,35 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                  },
              },
              placeholder: "Pilih Posisi",
+             closeOnSelect: true,
+             allowClear: true,
+             width: "100%",
+             dropdownParent: modalParent ? $(modalParent) : "",
+         });
+    }
+    function autocompleteRekening(id, modalParent = null) {
+         //search country dan city
+         $(id).select2({
+             ajax: {
+                 url: "/autocompleteRekening",
+                 dataType: "json",
+                 type: "post",
+                 data: function data(params) {
+                     return {
+                         "keyword": params.term,
+                         '_token': $('meta[name="csrf-token"]').attr('content')
+                     };
+                 },
+                 processResults: function processResults(data) {
+                     console.log(data);
+                     return {
+                         results: $.map(data.data, function(item) {
+                             return item;
+                         }),
+                     };
+                 },
+             },
+             placeholder: "Pilih Bank Account",
              closeOnSelect: true,
              allowClear: true,
              width: "100%",

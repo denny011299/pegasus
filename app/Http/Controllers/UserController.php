@@ -2,13 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bank;
 use App\Models\Role;
 use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class UserController extends Controller
 {
+    function loginUser(Request $req)
+    {
+        $data = $req->all();
+        $data = (new Staff())->getStaff($data);
+       
+        if(count($data)>0){
+            Session::put("user",$data[0]);
+        }
+
+        return $data;
+    }
     // Staff
     public function staff(){
         return view('Backoffice.User.Staff');
@@ -98,4 +111,31 @@ class UserController extends Controller
         return (new Role())->updateRole($data);
     }
 
+
+     // Bank
+    public function bank(){
+        return view('Backoffice.User.Bank');
+    }
+
+    function getBank(Request $req){
+        $data = (new Bank())->getBank();
+        return response()->json($data);
+    }
+
+    function insertBank(Request $req){
+        $data = $req->all();
+        return (new Bank())->insertBank($data);
+    }
+
+    function updateBank(Request $req){
+        $data = $req->all();
+        return (new Bank())->updateBank($data);
+    }
+
+    function deleteBank(Request $req){
+        $data = $req->all();
+        return (new Bank())->deleteBank($data);
+    }
+
 }
+

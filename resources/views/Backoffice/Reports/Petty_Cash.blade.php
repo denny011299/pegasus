@@ -28,7 +28,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Tanggal</th>
-                                            <th>Keterangan</th>
+                                            <th style="max-width:30%">Keterangan</th>
                                             <th>Diajukan Oleh</th>
                                             <th>Status</th>
                                             <th>Debit</th>
