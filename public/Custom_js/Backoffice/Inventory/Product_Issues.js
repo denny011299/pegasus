@@ -302,7 +302,7 @@ $(document).on("click", "#btn-delete-issues", function () {
             notifikasi(
                 "success",
                 "Berhasil Delete",
-                "Berhasil delete inventaris"
+                "Berhasil delete Product issue"
             );
         },
         error: function (e) {

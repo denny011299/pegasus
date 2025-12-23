@@ -93,23 +93,31 @@ $(document).on('click','.btnAddRow',function(){
         relasi = [];
         var data = $('#product_variant').select2('data')[0];
         data.name = JSON.parse(data.variant_attribute);
+        $('#product_variant').empty();
         data.name.forEach((element,idx) => {
            
             addRow(element,idx);
+             var units = $('.unit_alert').last();
+            units.html("");
+            dataRelasi.forEach(item => {
+                units.append(`<option value="${item.id}" >${item.text}</option>`);
+            });
+            relasi.push([]);
         });
-        relasi.push([]);
-        $('#product_variant').empty();
+        
+        
     }
    else{ 
         relasi.push([]);
         addRow();
+         var units = $('.unit_alert').last();
+        units.html("");
+        dataRelasi.forEach(item => {
+            units.append(`<option value="${item.id}" >${item.text}</option>`);
+        });
     }
     modeRelasi=1;
-    var units = $('.unit_alert').last();
-    units.html("");
-    dataRelasi.forEach(item => {
-        units.append(`<option value="${item.id}" >${item.text}</option>`);
-    });
+   
     units.val(units.find('option:first').val());
    if(mode==2) $(".btn-save").trigger("click");
 });
@@ -376,6 +384,7 @@ $(document).on('click', '.btn-back', function(){
 })
 
 $(document).on('click', '.btn-clear', function(){
+    $('.is-invalid').removeClass('is-invalid');
     $('.form-control').val("");
     $('.form-select').empty();
 })
