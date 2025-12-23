@@ -277,7 +277,6 @@
     }
 
     $(document).on("click",".btn_delete_row",function(){
-        alert("hapus");
         let row = $(this).closest("tr");
         let supplyId = row.data("id");
         bahan = bahan.filter(e => e.supplies_id != supplyId);

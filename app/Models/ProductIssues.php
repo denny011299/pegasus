@@ -76,6 +76,7 @@ class ProductIssues extends Model
             $stocks += $data["pi_qty"];
         }
 
+        $s->ps_stock = $stocks;
 
         $pi_date = Carbon::createFromFormat('d-m-Y', $data['pi_date'])->format('Y-m-d');   
         $t = new self();    

@@ -230,7 +230,7 @@
         $('#add_purchase_delivery .form-control').val("");
         $('#pdo_date').val(moment().format('YYYY-MM-DD'));
         $('.is-invalid').removeClass('is-invalid');
-        $('.row-acc').hide();
+        $('.btn-decline,.btn-approve').hide();
         $('.btn-save-delivery').show();
         $('.btn-save-delivery').html('Tambah Catatan Pengiriman');
         $('#pdo_receiver').empty();
@@ -550,8 +550,13 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-approve", 'Setujui');      
-                afterInsertDelivery();
+                ResetLoadingButton(".btn-approve", 'Setujui'); 
+                if(e==1){
+                    afterInsertDelivery(e);
+                }     
+                else{
+                    notifikasi('error', "Gagal Insert", e.message);
+                }
             },
             error:function(e){
                 ResetLoadingButton(".btn-approve", 'Setujui');
@@ -606,7 +611,7 @@
             },
             success:function(e){      
                 ResetLoadingButton(".btn-decline", 'Tolak'); 
-                afterInsertDelivery();
+                afterInsertDelivery(e);
                
             },
             error:function(e){
@@ -616,11 +621,13 @@
         });
     })
 
-    function afterInsertDelivery() {
+    function afterInsertDelivery(e) {
         $(".modal").modal("hide");
         if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Catatan Pengiriman");
         else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Catatan Pengiriman");
         refresh();
+            
+      
     }
 
     $(document).on('change', '#pdo_receiver', function(){
@@ -631,19 +638,6 @@
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
         console.log(data);
         mode = 2;
-        $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
-        $('#add_purchase_delivery input').val("");
-        $('.btn-save-delivery').html('Update Catatan Pengiriman');
-        $('.is-invalid').removeClass('is-invalid');
-        $('#pdo_receiver').empty().append(`<option value="${data.staff_id}">${data.pdo_receiver}</option>`);
-        $('#pdo_date').val(data.pdo_date);
-        $('#pdo_phone').val(data.pdo_phone);
-        $('#pdo_desc').val(data.pdo_desc);
-
-        tablePurchaseDelivery();
-        refreshTableProduct(data.items);
-        console.log(data.status);
-        
         if(data.status == 1){
             $('.btn-decline').show();
             $('.btn-approve').show();
@@ -658,8 +652,23 @@
             $('.btn-approve').show();
             $('.btn-save-delivery').hide();
         }
-        $('#add_purchase_delivery').modal("show");
+
+        $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
+        $('#add_purchase_delivery input').val("");
+        $('.btn-save-delivery').html('Update Catatan Pengiriman');
+        $('.is-invalid').removeClass('is-invalid');
+        $('#pdo_receiver').empty().append(`<option value="${data.staff_id}">${data.pdo_receiver}</option>`);
+        $('#pdo_date').val(data.pdo_date);
+        $('#pdo_phone').val(data.pdo_phone);
+        $('#pdo_desc').val(data.pdo_desc);
+
+        tablePurchaseDelivery();
+        refreshTableProduct(data.items);
+        console.log(data.status);
+        
+        
         $('#add_purchase_delivery').attr("pdo_id", data.pdo_id);
+        $('#add_purchase_delivery').modal("show");
     })
 
     $(document).on('click', '.btn_delete_dn', function(){

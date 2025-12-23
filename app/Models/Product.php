@@ -76,7 +76,6 @@ class Product extends Model
         $t->save();
 
         ProductVariant::where("product_id", "=", $data["product_id"])->update(["status" => 0]);
-        ProductRelation::where("product_id", "=", $data["product_id"])->update(["status" => 0]);
         ProductStock::where("product_id", "=", $data["product_id"])->update(["status" => 0]);
     }
    

@@ -67,7 +67,7 @@
                 { data: "pr_sku", width: "15%" },
                 { data: "date", width: "20%" },
                 { data: "pi_qty", width: "12%" },
-                { data: "pi_notes", width: "20%" },
+                { data: "notes", width: "20%" },
                 { data: "action", class: "d-flex align-items-center" },
             ]
         });
@@ -92,7 +92,7 @@
                 { data: "pr_sku", class: "width: 15%" },
                 { data: "date", class: "width: 15%" },
                 { data: "pi_qty", class: "width: 10%" },
-                { data: "pi_notes", class: "width: 20%" },
+                { data: "notes", class: "width: 20%" },
                 { data: "action", class: "d-flex align-items-center" },
             ]
         });
@@ -109,6 +109,9 @@
                 console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach(item => {
+                    if (item.pi_notes == null) item.notes = "-";
+                    else item.notes = item.pi_notes;
+
                     item.date = moment(item.pi_date).format('D MMM YYYY');
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">

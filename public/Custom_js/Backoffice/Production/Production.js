@@ -103,7 +103,7 @@
                 { data: "product_sku" },
                 { data: "production_qty" },
                 { data: "status_text" },
-                { data: "notes", defaultContent: "-" },
+                { data: "notes", defaultContent: "-",width: "50px"  },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
