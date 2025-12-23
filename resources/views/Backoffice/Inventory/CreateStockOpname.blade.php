@@ -104,9 +104,7 @@
             <!-- /Table -->
 
             <div class="text-end mt-3">
-                <button class="btn bg-primary-subtle btn-save" style="border-radius: 100px">
-                    <span class="fe fe-save"></span> Simpan Perubahan
-                </button>
+                <button class="btn btn-primary btn-save">Tambah Stok Opname</button>
             </div>
         </div>
     </div>

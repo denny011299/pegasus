@@ -164,7 +164,7 @@ $(document).on("click",".btn-save",function(){
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', 'Simpan perubahan');
+        ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk");
         return false;
     };
     
@@ -209,7 +209,7 @@ $(document).on("click",".btn-save",function(){
             'X-CSRF-TOKEN': token
         },
         success:function(e){      
-            ResetLoadingButton(".btn-save", 'Simpan Perubahan');
+            ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
             if(modeRelasi==0){
                 if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
                 else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");
@@ -222,7 +222,7 @@ $(document).on("click",".btn-save",function(){
             }
         },
         error:function(e){
-            ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
             console.log(e);
         }
     });

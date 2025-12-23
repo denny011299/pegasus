@@ -59,15 +59,81 @@ class StockController extends Controller
     // Stock Opname Detail
     public function DetailStockOpname($id)
     {
-        if ($id != -1) {
-            $param["data"] = (new StockOpname())->getStockOpname(["sto_id" => $id])[0];
-            $param["mode"] = 2;
-        } else {
-            $param["data"] = [];
-            $param["mode"] = 1;
+        if ($id == -1) {
+            return view('Backoffice.Inventory.CreateStockOpname', [
+                'data' => [],
+                'mode' => 1
+            ]);
         }
-        return view('Backoffice.Inventory.CreateStockOpname')->with($param);
+
+        $sto = (new StockOpname())->getStockOpname(['sto_id' => $id])->first();
+        $items = [];
+        foreach ($sto->item as $detail) {
+            $units = [];
+
+            foreach ($detail->stock as $s) {
+                $units[] = [
+                    'unit_id'          => $s->unit_id,
+                    'unit_short_name'  => $s->unit_short_name,
+                    'system_qty'       => $s->ps_stock,
+                    'real_qty'         => $this->getRealQty($detail->stod_real, $s->unit_short_name),
+                    'selisih_qty'      => $this->getSelisihQty($detail->stod_selisih, $s->unit_short_name),
+                ];
+            }
+
+            $items[] = [
+                'product_id'           => $detail->product_id,
+                'product_variant_id'   => $detail->product_variant_id,
+                'product_variant_sku'  => $detail->product_variant_sku,
+                'pr_name'              => $detail->pr_name,
+                'product_variant_name' => $detail->product_variant_name,
+                'stod_notes'           => $detail->stod_notes,
+                'units'                => $units,
+                'stod_system'          => $detail->stod_system,
+                'stod_real'            => $detail->stod_real,
+                'stod_selisih'         => $detail->stod_selisih,
+            ];
+        }
+
+        $data = [
+            'sto_id'      => $sto->sto_id,
+            'sto_date'    => $sto->sto_date,
+            'staff_id'    => $sto->staff_id,
+            'staff_name'  => $sto->staff_name,
+            'category_id' => $sto->category_id,
+            'sto_notes'   => $sto->sto_notes,
+            'item'        => $items
+        ];
+
+        return view('Backoffice.Inventory.CreateStockOpname', [
+            'data' => $data,
+            'mode' => 2
+        ]);
     }
+
+    private function getRealQty($string, $unit)
+    {
+        // contoh: "12 jerigen, 0 DOS, 0 pcs"
+        foreach (explode(',', $string) as $part) {
+            [$qty, $u] = explode(' ', trim($part));
+            if ($u === $unit) {
+                return (int) $qty;
+            }
+        }
+        return 0;
+    }
+
+    private function getSelisihQty($string, $unit)
+    {
+        foreach (explode(',', $string) as $part) {
+            [$qty, $u] = explode(' ', trim($part));
+            if ($u === $unit) {
+                return (int) $qty;
+            }
+        }
+        return 0;
+    }
+
 
     function getDetailStockOpname(Request $req)
     {

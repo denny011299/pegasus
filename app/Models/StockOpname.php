@@ -48,7 +48,7 @@ class StockOpname extends Model
         $result->orderBy('sto_date', 'desc');
 
         $result =  $result->get();
-        
+
         foreach ($result as $key => $value) {
            $value->staff_name = Staff::find($value->staff_id)->staff_name;
         //    $value->category_name = Category::find($value->category_id)->category_name;

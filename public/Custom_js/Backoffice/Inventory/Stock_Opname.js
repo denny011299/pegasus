@@ -5,19 +5,11 @@
         refreshStockOpname();
     });
     
-    $(document).on('click','.btnAdd',function(){
-        mode=1;
-        $('#add_category .modal-title').html("Create Category");
-        $('#add_category input').val("");
-        $('.is-invalid').removeClass('is-invalid');
-        $('#add_category').modal("show");
-    });
-    
     function inisialisasi() {
         table = $('#tableStockOpname').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            ordering: true,
+            ordering: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

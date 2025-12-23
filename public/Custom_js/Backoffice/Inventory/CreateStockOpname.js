@@ -1,5 +1,6 @@
 
     var product = [];
+    var productSubmit = [];
      autocompleteCategory("#kategori",null,1);
      
      $(document).ready(function () {
@@ -25,33 +26,40 @@
             $('#tanggal,#penanggung-jawab,#kategori,#catatan').prop("disabled",true);
             product = data.item;
             data.item.forEach((item,indexProduct) => {
+                var selisihArr = [];
                 console.log(item);
                     var rl_stock = "";
                     var system = "";
                     var rl = item.stod_real.split(", ");
-                    item.stock.forEach((element,index) => {
-                        var dt = rl[index].split(" ");
-                        rl_stock += `
-                            <input type="text" class="form-control real-stock" placeholder="" index ="${indexProduct}" aria-label="Username" value="${dt[0]}">
-                            <span class="input-group-text">${element.unit_short_name}</span>
-                        `;
-                        system += element.ps_stock + " "+element.unit_short_name+", ";
-                    });
+                    item.units.forEach((element, index) => {
+                    selisihArr.push(element.selisih_qty + " " + element.unit_short_name);
+                    rl_stock += `
+                        <input type="number"
+                            class="form-control real-stock"
+                            value="${element.real_qty}"
+                            data-unit-id="${element.unit_id}"
+                            data-unit-name="${element.unit_short_name}"
+                            data-system-qty="${element.system_qty}">
+                        <span class="input-group-text">${element.unit_short_name}</span>
+                    `;
+                    system += element.system_qty + " " + element.unit_short_name + ", ";
+                });
+
                     $('#tbStock').append(`
-                        <tr class="row-stock">
+                        <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                             <td>${item.product_variant_sku}</td>
                             <td>${item.pr_name} ${item.product_variant_name}</td>
-                            <td class="text-center pt-2 pr_stock">${item.stod_system}</td>
+                            <td class="text-center pt-2 pr_stock">${system}</td>
                             <td class="text-center" style="width:10%">
                                 <div class="input-group mb-3 rstock">
                                     ${rl_stock}
                                 </div>
-                                <input type="hidden" class="data" value="${system}">
-                                <input type="hidden" class="stod_id"  value="${item.stod_id}">
+                                <input type="hidden" class="data">
+                                <input type="hidden" class="stod_id">
                             </td>
-                            <td class="text-center pt-2 selisih">${item.stod_selisih}</td>
-                            <td class="" >
-                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${item.stod_notes}">
+                            <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
+                            <td class="">
+                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stod_notes:''}">
                                 <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
                             </td>
                         </tr>
@@ -90,15 +98,24 @@
                     console.log(item);
                     var rl_stock = "";
                     var system = "";
+                    var selisihArr = [];
+                    
                     item.stock.forEach((element,index) => {
+                        selisihArr.push("0 " + element.unit_short_name);
                         rl_stock += `
-                            <input type="text" class="form-control real-stock" placeholder="" index ="${indexProduct}" aria-label="Username" value="0">
+                            <input type="number"
+                                class="form-control real-stock"
+                                value="0"
+                                data-unit-id="${element.unit_id}"
+                                data-unit-name="${element.unit_short_name}"
+                                data-system-qty="${element.ps_stock}">
                             <span class="input-group-text">${element.unit_short_name}</span>
                         `;
-                        system += element.ps_stock + " "+element.unit_short_name+", ";
+                        system += element.ps_stock + " " + element.unit_short_name + ", ";
                     });
+
                     $('#tbStock').append(`
-                        <tr class="row-stock">
+                        <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                             <td>${item.product_variant_sku}</td>
                             <td>${item.pr_name} ${item.product_variant_name}</td>
                             <td class="text-center pt-2 pr_stock">${system}</td>
@@ -109,7 +126,7 @@
                                 <input type="hidden" class="data">
                                 <input type="hidden" class="stod_id">
                             </td>
-                            <td class="text-center pt-2 selisih">0</td>
+                            <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
                             <td class="">
                                 <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?st.stpd_note:''}">
                                 <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
@@ -136,29 +153,22 @@
         
     });
 
-    $(document).on("keyup",".real-stock",function(){
-        var index = $(this).attr("index");
-        var rowStock = $(this).closest(".row-stock");
-        var row = $(this).closest(".rstock");
+    $(document).on('keyup change', '.real-stock', function () {
+        let row = $(this).closest('.row-stock');
+        let selisihArr = [];
 
-        var hasil = [];
-        var real = [];
-        if(product[index]){
+        row.find('.real-stock').each(function () {
 
-            product[index].stock.forEach((element,index) => {
-                var selisih = row.find('.real-stock').eq(index).val() - element.ps_stock;
-                real.push(row.find('.real-stock').eq(index).val() + " "+element.unit_short_name);
-                hasil.push(selisih + " "+element.unit_short_name);
-            });
-            
-            console.log(hasil);
-            $('.data').eq(index).val(real.join(', '));
-            $('.selisih').eq(index).html(hasil.join(', '));
-        }
-        else{
-           rowStock.find('.selisih').val(0);
-        }
+            let realQty   = parseInt($(this).val()) || 0;
+            let systemQty = parseInt($(this).data('system-qty')) || 0;
+            let unitName  = $(this).data('unit-name');
+
+            selisihArr.push((realQty - systemQty) + ' ' + unitName);
+        });
+
+        row.find('.selisih').html(selisihArr.join(', '));
     });
+
 
     $(document).on("change","#category_id",function(){
         refreshStockOpname();
@@ -200,22 +210,57 @@ function insertData() {
         return false;
     };
 
-    $('.row-stock').each(function(index){
-        product[index]["stod_system"] = $(this).find('.pr_stock').html();
-        product[index]["stod_real"] = $(this).find('.data').val();
-        product[index]["stod_selisih"] = $(this).find('.selisih').html();
-        product[index]["stod_notes"] = $(this).find('.notes').val();
-        product[index]["stod_id"] = $(this).find('.stod_id').val();
-    })
-    console.log(product);
+    productSubmit = [];
+    $('.row-stock').each(function () {
+
+        let row = $(this);
+        let item = {};
+
+        item.product_id = row.data('product-id');
+        item.product_variant_id = row.data('variant-id');
+        item.stod_notes = row.find('.notes').val() ?? '';
+
+        let units = [];
+        let systemArr  = [];
+        let realArr    = [];
+        let selisihArr = [];
+
+        row.find('.real-stock').each(function () {
+
+            let input = $(this);
+
+            let unitId    = input.data('unit-id');
+            let unitName  = input.data('unit-name');
+            let systemQty = parseInt(input.data('system-qty')) || 0;
+            let realQty   = parseInt(input.val()) || 0;
+
+            units.push({
+                unit_id: unitId,
+                system_qty: systemQty,
+                real_qty: realQty
+            });
+
+            systemArr.push(systemQty + ' ' + unitName);
+            realArr.push(realQty + ' ' + unitName);
+            selisihArr.push((realQty - systemQty) + ' ' + unitName);
+        });
+
+        item.units = units;
+        item.stod_system  = systemArr.join(', ');
+        item.stod_real    = realArr.join(', ');
+        item.stod_selisih = selisihArr.join(', ');
+
+        productSubmit.push(item);
+    });
+    console.log(productSubmit);
     
     param = {
-        sto_date:$('#tanggal').val(),//1 = In , 2 = Out
-        category_id:-1,
-        staff_id:$('#penanggung-jawab').val(),
-        sto_notes:$('#catatan').val(),//1 = Product , 2 = supplies
-        item:JSON.stringify(product),
-         _token:token
+        sto_date: $('#tanggal').val(),
+        staff_id: $('#penanggung-jawab').val(),
+        category_id: -1,
+        sto_notes: $('#catatan').val(),
+        item: JSON.stringify(productSubmit),
+        _token: token
     };
     if(mode==2){
         url = "/updateStockOpname";
