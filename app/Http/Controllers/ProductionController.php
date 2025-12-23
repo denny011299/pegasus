@@ -153,6 +153,18 @@ class ProductionController extends Controller
     {
         $data = $req->all();
         (new Production())->deleteProduction($data);
+       
+    }
+    function tolakDeleteProduction(Request $req)
+    {
+        $data = $req->all();
+        (new Production())->tolakDeleteProduction($data);
+       
+    }
+    function accDeleteProduction(Request $req)
+    {
+        $data = $req->all();
+        (new Production())->cancelProduction($data);
         $p = production::find($data["production_id"]);
 
         $b = bom::find($p->production_bom_id);

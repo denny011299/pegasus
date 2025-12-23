@@ -1,6 +1,11 @@
 <?php $page = 'login'; ?>
 @extends('layout.mainlayout')
 @section('content')
+    <style>
+        body{
+            background-color: #082a58;
+        }
+    </style>
     <div class="login-wrapper">
         <div class="container">
 

@@ -66,9 +66,7 @@ class PurchaseOrderDeliveryDetail extends Model
             ->first();
         $t = PurchaseOrderDeliveryDetail::find($data["pdod_id"]);
         if(isset($data["statusPO"])&&$data["statusPO"]==2){
-            $st->ss_stock -= $t->pdod_qty;
-            $st->save();
-
+            
             $t->supplies_variant_id = $data["supplies_variant_id"];
             $t->pdod_sku = $data["sku"];
             $t->pdod_qty = $data["pdod_qty"];

@@ -102,6 +102,8 @@
                 { data: "product_name" },
                 { data: "product_sku" },
                 { data: "production_qty" },
+                { data: "status_text" },
+                { data: "notes", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -129,9 +131,19 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].production_date).format('D MMM YYYY');
                     e[i].action = `
-                        
                         <button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>
                     `;
+
+                    if(e[i].status != 1){
+                        e[i].action = `
+                        `;
+                    }
+                    if(e[i].status == 2){
+                         e[i].action = `
+                            <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
+                            <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-3"><i class="fa-solid fa-check"></i></button>
+                        `;
+                    }
                     if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
                         e[i].action = `
                             
@@ -139,11 +151,11 @@
                     }
 
                     if (e[i].status == 1){
-                        e[i].production_status = `<span class="badge bg-secondary" style="font-size: 12px">Tertunda</span>`;
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Success</span>`;
                     } else if (e[i].status == 2){
-                        e[i].production_status = `<span class="badge bg-primary" style="font-size: 12px">Diproses</span>`;
+                        e[i].status_text = `<span class="badge bg-primary" style="font-size: 12px">Pending Approval</span>`;
                     } else if (e[i].status == 3){
-                        e[i].production_status = `<span class="badge bg-success" style="font-size: 12px">Selesai</span>`;
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Cancel</span>`;
                     }
                 }
 
@@ -287,25 +299,115 @@ $(document).on("click", ".btn_delete", function () {
         "Apakah yakin ingin batalkan produksi ini?",
         "btn-delete-production"
     );
+    $('#modalDelete .modal-body').append(`<textarea class="form-control mt-2" id="delete_reason" placeholder="Alasan pembatalan produksi..." rows="3"></textarea>`);
     $("#btn-delete-production").html("Batal Produksi");
     $("#btn-delete-production").attr("production_id", data.production_id);
 });
 
 $(document).on("click", "#btn-delete-production", function () {
+    $('.is-invalid').removeClass('is-invalid');
+    console.log($('#delete_reason').val());
+    
+    if($('#delete_reason').val() == ""){
+        $('#delete_reason').addClass('is-invalid'); 
+
+        return false;
+    }
     $.ajax({
         url: "/deleteProduction",
         data: {
             production_id : $("#btn-delete-production").attr("production_id"),
+            delete_reason: $('#delete_reason').val(),
             _token: token,
         },
         method: "post",
         success: function (e) {
+            $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
                 "success",
                 "Berhasil Batalkan",
                 "Berhasil batalkan produksi"
+            );
+        },
+        error: function (e) {
+            console.log(e);
+        },
+    });
+});
+
+//konfirmasi acc
+$(document).on("click", ".btn_acc", function () {
+    var tbId = $(this).closest("table").attr("id");
+    var data = $("#" + tbId)
+        .DataTable()
+        .row($(this).parents("tr"))
+        .data(); //ambil data dari table
+    showModalKonfirmasi(
+        "Apakah yakin ingin Approve pembatalan produksi ini?",
+        "btn-acc-delete-production"
+    );
+    $("#btn-acc-delete-production").html("Konfirmasi Batal Produksi");
+    $("#btn-acc-delete-production").attr("production_id", data.production_id);
+});
+
+$(document).on("click", "#btn-acc-delete-production", function () {
+
+    $.ajax({
+        url: "/accDeleteProduction",
+        data: {
+            production_id : $("#btn-acc-delete-production").attr("production_id"),
+            _token: token,
+        },
+        method: "post",
+        success: function (e) {
+            $('#modalDelete .modal-body').html('');
+            $(".modal").modal("hide");
+            afterInsert();
+            notifikasi(
+                "success",
+                "Berhasil Approve",
+                "Berhasil approve pembatalan produksi"
+            );
+        },
+        error: function (e) {
+            console.log(e);
+        },
+    });
+});
+
+//konfirmasi acc
+$(document).on("click", ".btn_cancel", function () {
+    var tbId = $(this).closest("table").attr("id");
+    var data = $("#" + tbId)
+        .DataTable()
+        .row($(this).parents("tr"))
+        .data(); //ambil data dari table
+    showModalKonfirmasi(
+        "Apakah yakin ingin Tolak pembatalan produksi ini?",
+        "btn-cancel-delete-production"
+    );
+    $("#btn-cancel-delete-production").html("Konfirmasi Total Batal Produksi");
+    $("#btn-cancel-delete-production").attr("production_id", data.production_id);
+});
+
+$(document).on("click", "#btn-cancel-delete-production", function () {
+    $.ajax({
+        url: "/tolakDeleteProduction",
+        data: {
+            production_id : $("#btn-cancel-delete-production").attr("production_id"),
+            _token: token,
+        },
+        method: "post",
+        success: function (e) {
+            $('#modalDelete .modal-body').html('');
+            $(".modal").modal("hide");
+            afterInsert();
+            notifikasi(
+                "success",
+                "Berhasil Tolak",
+                "Berhasil tolak pembatalan produksi"
             );
         },
         error: function (e) {

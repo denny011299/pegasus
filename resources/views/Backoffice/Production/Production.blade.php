@@ -42,6 +42,8 @@
                                             <th>Produk</th>
                                             <th>SKU</th>
                                             <th>Qty</th>
+                                            <th>Status</th>
+                                            <th>Notes Pembatalan</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

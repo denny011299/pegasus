@@ -277,6 +277,13 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         $('#modalDelete').modal("show");
     }
       
+    function showModalKonfirmasi(text, button_id) {
+        //button id ini, id button ketika dikofrimasi delete
+        $("#text-konfirmasi").html(text);
+        $(".btn-konfirmasi").attr("id", button_id);
+        $('#modalKonfirmasi').modal("show");
+    }
+      
     $('.btn-cancel').on("click",function(){
         closeModalDelete();
     })

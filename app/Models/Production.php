@@ -17,9 +17,9 @@ class Production extends Model
             "production_product_id" => null,
             "date" => null,
             "report" => null
-        ], $data);
+        ], $data);  
 
-        if ($data["report"] == null) $result = Production::where('status', '=', 1);
+        if ($data["report"] == null) $result = Production::where('status', '>=', 1);
         else if ($data["report"]) $result = Production::where('status', '>=', 0);
         if ($data["production_product_id"]) $result->where('production_product_id', '=', $data["production_product_id"]);
 
@@ -79,11 +79,22 @@ class Production extends Model
     function deleteProduction($data)
     {
         $t = Production::find($data["production_id"]);
-        $t->status = 0;
+        $t->notes = $data["delete_reason"];
+        $t->status = 2;
+        $t->save();    
+    }
+    function tolakDeleteProduction($data)
+    {
+        $t = Production::find($data["production_id"]);
+        $t->notes = null;
+        $t->status = 1;
+        $t->save();    
+    }
+
+    function cancelProduction($data) {
+        $t = Production::find($data["production_id"]);
+        $t->status = 3;
         $t->save();
-
-        
-
         $b = (new BomDetail())->getBomDetail([
             "bom_id" => $t->production_bom_id
         ]);

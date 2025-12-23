@@ -242,6 +242,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/insertProduction', [ProductionController::class, "insertProduction"])->name('insertProduction');
     Route::post('/updateProduction', [ProductionController::class, "updateProduction"])->name('updateProduction');
     Route::post('/deleteProduction', [ProductionController::class, "deleteProduction"])->name('deleteProduction');
+    Route::post('/accDeleteProduction', [ProductionController::class, "accDeleteProduction"])->name('accDeleteProduction');
+    Route::post('/tolakDeleteProduction', [ProductionController::class, "tolakDeleteProduction"])->name('tolakDeleteProduction');
 
     // Settings
     Route::get('/testing',[GeneralController::class,"testing"])->name('testing');
