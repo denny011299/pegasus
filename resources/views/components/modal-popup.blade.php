@@ -948,7 +948,9 @@
                                 <div class="col-6">
                                     <div class="input-block mb-3">
                                         <label>SKU/Barcode Produk<span class="text-danger">*</span></label>
-                                        <select class="form-select" id="po_sku"></select>
+                                        <select class="form-select" id="po_sku">
+                                            <option value="" selected disabled>Pilih Supplier Terlebih Dahulu</option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-12">

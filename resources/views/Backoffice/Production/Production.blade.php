@@ -1,6 +1,13 @@
 <?php $page = 'production'; ?>
 @extends('layout.mainlayout')
 @section('content')
+    <style>
+        table.dataTable td:nth-child(5) {
+            max-width: 250px;       /* Batasi lebar maksimal */
+            word-wrap: break-word;  /* Paksa teks turun */
+            white-space: normal;    /* Pastikan teks tidak satu baris terus */
+        }
+    </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">

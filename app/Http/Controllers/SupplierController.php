@@ -84,6 +84,7 @@ class SupplierController extends Controller
     function insertPoDelivery(Request $req)
     {
         $data = $req->all();
+ 
         $id = (new PurchaseOrderDelivery())->insertPoDelivery($data);
          foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
             $value['pdo_id'] = $id;
@@ -120,7 +121,20 @@ class SupplierController extends Controller
         $data = $req->all();
          $id = [];
          $bermasalah = [];
-        
+        foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
+            $p = PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->where('status','=',2)->get();
+            $total =  PurchaseOrderDeliveryDetail::whereIn('pdo_id', $p->pluck('pdo_id'))->where('supplies_variant_id','=',$value['supplies_variant_id'])->sum('pdod_qty');
+            if($total+$value['pdod_qty']>$value["pdod_qty"] ){
+                array_push($bermasalah, $value['name']);
+            }
+        }
+        if(count($bermasalah)>0){
+            return [
+                "status"=>-1,
+                "message"=>"Jumlah penerimaan melebihi jumlah pemesanan untuk barang : ".implode(", ",$bermasalah)
+            ];
+        }
+
         (new PurchaseOrderDelivery())->updatePoDelivery($data);
         (new PurchaseOrderDelivery())->statusPoDelivery($data);
         $status = PurchaseOrderDelivery::find($data["pdo_id"])->status; // approved
@@ -134,6 +148,7 @@ class SupplierController extends Controller
             array_push($id, $t);
         }
         PurchaseOrderDeliveryDetail::where('pdo_id', '=', $data["pdo_id"])->whereNotIn("pdod_id", $id)->update(["status" => 0]);
+        return 1;
     }
 
     function declinePoDelivery(Request $req)

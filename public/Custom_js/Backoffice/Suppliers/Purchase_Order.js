@@ -6,7 +6,7 @@
     autocompleteSupplier("#po_supplier","#add_purchase_order");
     autocompleteSupplier("#select_supplier");
     autocompleteRekening("#bank_kode");
-    autocompleteSuppliesVariant("#po_sku","#add_purchase_order");
+ 
     
     
     $(document).ready(function(){
