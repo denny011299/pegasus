@@ -45,7 +45,7 @@ class Production extends Model
             $u = ProductVariant::find($value->production_product_id);
             $value->product_sku = $u->product_variant_sku;
             $v = Product::find($u->product_id);
-            $value->product_name = $v->product_name;
+            $value->product_name = $v->product_name." ".$u->product_variant_name;
             $x = Unit::find($v->unit_id);
             $value->unit_name = $x->unit_name;
         }
