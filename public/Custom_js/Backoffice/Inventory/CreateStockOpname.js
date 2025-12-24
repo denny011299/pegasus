@@ -27,12 +27,13 @@
             product = data.item;
             data.item.forEach((item,indexProduct) => {
                 var selisihArr = [];
+                var systemArr = [];
                 console.log(item);
-                    var rl_stock = "";
-                    var system = "";
-                    var rl = item.stod_real.split(", ");
-                    item.units.forEach((element, index) => {
+                var rl_stock = "";
+                var rl = item.stod_real.split(", ");
+                item.units.forEach((element, index) => {
                     selisihArr.push(element.selisih_qty + " " + element.unit_short_name);
+                    systemArr.push(element.system_qty + " " + element.unit_short_name);
                     rl_stock += `
                         <input type="number"
                             class="form-control real-stock"
@@ -42,29 +43,27 @@
                             data-system-qty="${element.system_qty}">
                         <span class="input-group-text">${element.unit_short_name}</span>
                     `;
-                    system += element.system_qty + " " + element.unit_short_name + ", ";
                 });
 
-                    $('#tbStock').append(`
-                        <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
-                            <td>${item.product_variant_sku}</td>
-                            <td>${item.pr_name} ${item.product_variant_name}</td>
-                            <td class="text-center pt-2 pr_stock">${system}</td>
-                            <td class="text-center" style="width:10%">
-                                <div class="input-group mb-3 rstock">
-                                    ${rl_stock}
-                                </div>
-                                <input type="hidden" class="data">
-                                <input type="hidden" class="stod_id">
-                            </td>
-                            <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
-                            <td class="">
-                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stod_notes:''}">
-                                <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
-                            </td>
-                        </tr>
-                    `);
-          
+                $('#tbStock').append(`
+                    <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
+                        <td>${item.product_variant_sku}</td>
+                        <td>${item.pr_name} ${item.product_variant_name}</td>
+                        <td class="text-center pt-2 pr_stock">${systemArr.join(', ')}</td>
+                        <td class="text-center" style="width:10%">
+                            <div class="input-group mb-3 rstock">
+                                ${rl_stock}
+                            </div>
+                            <input type="hidden" class="data">
+                            <input type="hidden" class="stod_id">
+                        </td>
+                        <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
+                        <td class="">
+                            <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stod_notes:''}">
+                            <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
+                        </td>
+                    </tr>
+                `);
             });
             $('#tbStock input').prop("disabled",true);
             $('.btn-save').hide();
@@ -194,6 +193,7 @@ function getData(id) {
 function insertData() {
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
+    $('.invalid').removeClass('invalid');
     var url ="/insertStockOpname";
     var valid=1;
 
@@ -204,9 +204,15 @@ function insertData() {
         }
     });
 
+    if ($('#penanggung-jawab').val() == null || $('#penanggung-jawab').val() == "") {
+        $('.row-staff .select2-selection--single').addClass('invalid');
+        valid = -1;
+    }
+
+
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', `<span class="fe fe-save"></span> Simpan Perubahan`);
+        ResetLoadingButton('.btn-save', mode == 1?"Tambah Stok Opname" : "Update Stok Opname");
         return false;
     };
 
@@ -285,27 +291,31 @@ function insertData() {
     });
 }
 
-$(document).on("change", "#kategori", async function () {
+$(document).on('click', '.btnBack', function(){
+    window.open('/stockOpname', '_self');
+})
 
-    var param = {
-    };
-    if ($("#kategori").val() != -1) {
-        param.category_id = $("#kategori").val();
-    }
-    $.ajax({
-        url: "/getProductVariant",
-        type: "GET",
-        dataType: "json",
-        data: param,
-         headers: {
-            'X-CSRF-TOKEN': token
-        },
-        success: function (data) {
-            data.forEach((element) => {
-                element.real_stock = 0;
-            });
-            StockOpname = data;
-            refreshStockOpname();
-        },
-    });
-});
+// $(document).on("change", "#kategori", async function () {
+
+//     var param = {
+//     };
+//     if ($("#kategori").val() != -1) {
+//         param.category_id = $("#kategori").val();
+//     }
+//     $.ajax({
+//         url: "/getProductVariant",
+//         type: "GET",
+//         dataType: "json",
+//         data: param,
+//          headers: {
+//             'X-CSRF-TOKEN': token
+//         },
+//         success: function (data) {
+//             data.forEach((element) => {
+//                 element.real_stock = 0;
+//             });
+//             StockOpname = data;
+//             refreshStockOpname();
+//         },
+//     });
+// });

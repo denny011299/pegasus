@@ -45,7 +45,7 @@ class StockOpname extends Model
             $result->where('sto_id','=', $data['sto_id']);
         }
 
-        $result->orderBy('sto_date', 'desc');
+        $result->orderBy('created_at', 'desc');
 
         $result =  $result->get();
 

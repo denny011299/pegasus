@@ -13,6 +13,10 @@
         .table {
          min-width: 1200px; /* paksa tabel jadi lebih lebar dari layar */
         }
+
+        .invalid{
+            border: 1px solid red!important;
+        }
     </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -49,7 +53,7 @@
                         <div class="accordion-body">
                             <div class="row mb-5">
                                 <div class="col-lg-4">
-                                    <div class="input-blocks">
+                                    <div class="input-blocks row-staff">
                                         <label>Nama Penanggung Jawab<span class="text-danger">*</span></label>
                                         <select name="" id="penanggung-jawab" class="form-select fill"></select>
                                     </div>

@@ -75,9 +75,9 @@ class StockController extends Controller
                 $units[] = [
                     'unit_id'          => $s->unit_id,
                     'unit_short_name'  => $s->unit_short_name,
-                    'system_qty'       => $s->ps_stock,
-                    'real_qty'         => $this->getRealQty($detail->stod_real, $s->unit_short_name),
-                    'selisih_qty'      => $this->getSelisihQty($detail->stod_selisih, $s->unit_short_name),
+                    'system_qty'       => $this->getQty($detail->stod_system, $s->unit_short_name),
+                    'real_qty'         => $this->getQty($detail->stod_real, $s->unit_short_name),
+                    'selisih_qty'      => $this->getQty($detail->stod_selisih, $s->unit_short_name),
                 ];
             }
 
@@ -111,7 +111,7 @@ class StockController extends Controller
         ]);
     }
 
-    private function getRealQty($string, $unit)
+    private function getQty($string, $unit)
     {
         // contoh: "12 jerigen, 0 DOS, 0 pcs"
         foreach (explode(',', $string) as $part) {
@@ -122,18 +122,6 @@ class StockController extends Controller
         }
         return 0;
     }
-
-    private function getSelisihQty($string, $unit)
-    {
-        foreach (explode(',', $string) as $part) {
-            [$qty, $u] = explode(' ', trim($part));
-            if ($u === $unit) {
-                return (int) $qty;
-            }
-        }
-        return 0;
-    }
-
 
     function getDetailStockOpname(Request $req)
     {

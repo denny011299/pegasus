@@ -88,6 +88,13 @@
                             Stok Opname</a>
                     </li>
                 @endif
+
+                @if (Route::is(['detailStockOpname']))
+                    <li>
+                        <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
+                    </li>
+                @endif
+
                 @if (Route::is(['supplier']))
                     <li>
                         <a class="btn btn-primary" href="/insertSupplier"><i class="fa fa-plus-circle me-2"
