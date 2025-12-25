@@ -187,7 +187,8 @@
             </div>
         </div>--}}
         
-        <div class="col-12 col-md-6">
+        {{-- New --}}
+        {{-- <div class="col-12 col-md-6">
             <div class="card p-3">
                 <div class="row g-2 align-items-center">
                     <!-- Supplier -->
@@ -204,7 +205,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
     </div>
 </div>
 <!-- /Filter Pencarian -->

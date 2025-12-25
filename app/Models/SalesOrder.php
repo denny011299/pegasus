@@ -31,7 +31,7 @@ class SalesOrder extends Model
         foreach ($result as $key => $value) {
             $value->customer_name = Customer::find($value->so_customer)->customer_name ?? "-";
             $value->items = (new SalesOrderDetail())->getSalesOrderDetail(["so_id"=>$value->so_id]);
-            $value->staff_name = Staff::find($value->sales_id)->staff_name ?? "-";
+            $value->staff_name = Staff::find($value->so_cashier)->staff_name ?? "-";
         }
         return $result;
     }
@@ -58,7 +58,7 @@ class SalesOrder extends Model
         $t->so_discount  = $data["so_discount"];
         $t->so_cost  = $data["so_cost"];
         // $t->so_payment  = $data["so_payment"];
-        $t->so_cashier  = 1;
+        $t->so_cashier  = $data["sales_id"];
         $t->save();
 
         return $t->so_id;
@@ -107,7 +107,7 @@ class SalesOrder extends Model
         $t->so_discount  = $data["so_discount"];
         $t->so_cost  = $data["so_cost"];
         // $t->so_payment  = $data["so_payment"];
-        $t->so_cashier  = 1;
+        $t->so_cashier  = $data["sales_id"];
         $t->save();
 
         return $t->so_id;

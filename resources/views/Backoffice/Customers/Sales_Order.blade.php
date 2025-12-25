@@ -30,9 +30,6 @@
                                             <th>Nama Customer</th>
                                             <th>Tanggal</th>
                                             <th>Jumlah Total</th>
-                                            <th>Dibayar</th>
-                                            <th>Selisih</th>
-                                            <th>Status Pembayaran</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

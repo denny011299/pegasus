@@ -1,5 +1,6 @@
 autocompleteProv('#state_id');
 autocompleteCity('#city_id');
+autocompleteRekening("#bank_kode");
 
 $(document).ready(function(){
     if(mode==2) {

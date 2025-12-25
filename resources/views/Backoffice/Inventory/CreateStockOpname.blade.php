@@ -52,13 +52,13 @@
                         data-bs-parent="#accordionExample1">
                         <div class="accordion-body">
                             <div class="row mb-5">
-                                <div class="col-lg-4">
+                                <div class="col-md-4 col-sm-12">
                                     <div class="input-blocks row-staff">
                                         <label>Nama Penanggung Jawab<span class="text-danger">*</span></label>
                                         <select name="" id="penanggung-jawab" class="form-select fill"></select>
                                     </div>
                                 </div>
-                                <div class="col-lg-4">
+                                <div class="col-md-4 col-sm-12">
                                     <div class="input-blocks">
                                         <label>Tanggal<span class="text-danger">*</span></label>
                                         <input type="date" class="form-control fill" id="tanggal">
@@ -91,9 +91,9 @@
                                         <tr>
                                             <td>SKU</td>
                                             <td style="width:5%">Nama</td>
-                                            <td class="text-center">Stok Komp.</td>
+                                            {{-- <td class="text-center">Stok Komp.</td> --}}
                                             <td class="text-center" style="width:35%">Stok Real</td>
-                                            <td class="text-center">Selisih</td>
+                                            {{-- <td class="text-center">Selisih</td> --}}
                                             <td style="width:25%">Catatan</td>
                                         </tr>
                                     </thead>

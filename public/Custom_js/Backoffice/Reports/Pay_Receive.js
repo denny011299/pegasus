@@ -10,6 +10,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             ordering: true,
+            searching: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -58,6 +59,8 @@
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
                     } else if (e[i].status == 2){
                         e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
+                    } else {
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Tertolak</span>`;
                     }
                     e[i].action = `
                         <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_edit_invoice" >

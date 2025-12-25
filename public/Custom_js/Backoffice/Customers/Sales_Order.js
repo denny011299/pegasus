@@ -95,9 +95,6 @@
                 { data: "customer_name" },
                 { data: "date" },
                 { data: "total" },
-                { data: "so_paid" },
-                { data: "so_difference" },
-                { data: "status_so" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -122,7 +119,6 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].so_date).format('D MMM YYYY');
                     e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
-                    e[i].status_so = `<label class="badge bg-secondary badgeStatus">Created</label>`;
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].so_id}" data-bs-target="#edit-sales">
                             <i class="fe fe-edit"></i>
@@ -326,7 +322,7 @@
         $('#add_sales_order .modal-title').html("Update Pesanan Penjualan");
         $('#add_sales_order input').empty().val("");
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
-        $('#sales_id').append(`<option value="${data.sales_id}">${data.staff_name}</option>`);
+        $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date)
         $('#so_discount').val(data.so_discount)
         $('#so_ppn').val(data.so_ppn)

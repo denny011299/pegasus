@@ -126,10 +126,10 @@
                                                     <tr>
                                                         <td>Nama Variasi<span class="text-danger">*</span></td>
                                                         <td>SKU<span class="text-danger">*</span></td>
-                                                        <td>Harga<span class="text-danger">*</span></td>
+                                                        {{-- <td>Harga<span class="text-danger">*</span></td> --}}
                                                         <td>Barcode</td>
                                                         <td>Stock Alert<span class="text-danger">*</span></td>
-                                                        <td class="text-center" style="width:15%">Aksi</td>
+                                                        <td class="text-center">Aksi</td>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="tbVariant">

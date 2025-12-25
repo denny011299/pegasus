@@ -610,6 +610,10 @@
                         <a class="{{ Request::is('bank') ? 'active' : '' }}" href="/bank">
                                 <i class="bi bi-bank"></i> <span>Bank Account</span></a>
                         </li>
+                <li>
+                        <a class="{{ Request::is('payReceive') ? 'active' : '' }}" href="/payReceive">
+                                <i class="bi bi-cash-coin"></i> <span>Hutang</span></a>
+                </li>
                     <li class="submenu">
                         <a href="#"><i class="fe fe-book"></i> <span> Akuntansi</span> <span
                                 class="menu-arrow"></span></a>
@@ -644,9 +648,6 @@
                             <li><a href="{{ url('inwardOutward') }}"
                                     class="{{ Request::is('inwardOutward') ? 'active' : '' }}">
                                     Barang Masuk Keluar</a></li>
-                            <li><a href="{{ url('payReceive') }}"
-                                    class="{{ Request::is('payReceive') ? 'active' : '' }}">
-                                    Hutang</a></li>
                            
                         </ul>
                     </li>

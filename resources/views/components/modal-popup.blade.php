@@ -632,34 +632,22 @@
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
                                 <div class="col-12 row">
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="so_date">
                                         </div>
                                     </div>
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label>Metode Pembayaran<span class="text-danger">*</span></label>
-                                            <select id="so_payment" class="form-select fill">
-                                                <option value="" selected disabled>Pilih Metode</option>
-                                                <option value="1" checked>Tunai</option>
-                                                <option value="2">Transfer Bank</option>
-                                                <option value="3">Cek</option>
-                                                <option value="4">Kredit</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Nama Pelanggan<span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <div class="input-block mb-3">
-                                            <label>Nama Sales<span class="text-danger">*</span></label>
-                                            <select id="sales_id" class="form-control fill"></select>
+                                            <label>Nama Sales</label>
+                                            <select id="sales_id" class="form-control"></select>
                                         </div>
                                     </div>
                                 </div>

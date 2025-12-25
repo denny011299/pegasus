@@ -26,7 +26,7 @@ $(document).ready(function() {
             
             addRow(element.product_variant_name);
             $('.row-variant').last().find('.variant_sku').val(element.product_variant_sku);
-            $('.row-variant').last().find('.variant_price').val(formatRupiah(element.product_variant_price));
+            // $('.row-variant').last().find('.variant_price').val(formatRupiah(element.product_variant_price));
             $('.row-variant').last().find('.variant_barcode').val(element.product_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
             $('.row-variant').last().find('.variant_alert').val(element.product_variant_alert);
@@ -127,7 +127,6 @@ function addRow(names="",idx=0) {
         <tr class="row-variant">
             <td><input type="text" class="form-control fill variant_name" name="" id="" placeholder="Masukan Nama" value="${names}"></td>
             <td><input type="text" class="form-control fill variant_sku" name="" id="" placeholder="Masukan Sku"></td>
-            <td><input type="text" class="form-control fill variant_price nominal_only" name="" id="" placeholder="Masukan Harga*"></td>
             <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukan Barcode"><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
             <td>
                 <div class="input-group">
@@ -190,7 +189,7 @@ $(document).on("click",".btn-save",function(){
         var variant = {
             variant_name: $(this).find('.variant_name').val(),
             variant_sku: $(this).find('.variant_sku').val(),
-            variant_price: convertToAngka($(this).find('.variant_price').val()),
+            // variant_price: convertToAngka($(this).find('.variant_price').val()),
             variant_barcode: $(this).find('.variant_barcode').val(),
             variant_alert: $(this).find('.variant_alert').val(),
             product_variant_id: $(this).find('.variant_id').val(),

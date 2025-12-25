@@ -45,11 +45,32 @@
                     `;
                 });
 
+                // Untuk superadmin
+                // $('#tbStock').append(`
+                //     <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
+                //         <td>${item.product_variant_sku}</td>
+                //         <td>${item.pr_name} ${item.product_variant_name}</td>
+                //         <td class="text-center pt-2 pr_stock">${systemArr.join(', ')}</td>
+                //         <td class="text-center" style="width:10%">
+                //             <div class="input-group mb-3 rstock">
+                //                 ${rl_stock}
+                //             </div>
+                //             <input type="hidden" class="data">
+                //             <input type="hidden" class="stod_id">
+                //         </td>
+                //         <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
+                //         <td class="">
+                //             <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stod_notes:''}">
+                //             <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
+                //         </td>
+                //     </tr>
+                // `);
+
+                // Untuk Non Admin
                 $('#tbStock').append(`
                     <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                         <td>${item.product_variant_sku}</td>
                         <td>${item.pr_name} ${item.product_variant_name}</td>
-                        <td class="text-center pt-2 pr_stock">${systemArr.join(', ')}</td>
                         <td class="text-center" style="width:10%">
                             <div class="input-group mb-3 rstock">
                                 ${rl_stock}
@@ -57,7 +78,6 @@
                             <input type="hidden" class="data">
                             <input type="hidden" class="stod_id">
                         </td>
-                        <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
                         <td class="">
                             <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stod_notes:''}">
                             <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
@@ -113,11 +133,32 @@
                         system += element.ps_stock + " " + element.unit_short_name + ", ";
                     });
 
+                    // Untuk superadmin
+                    // $('#tbStock').append(`
+                    //     <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
+                    //         <td>${item.product_variant_sku}</td>
+                    //         <td>${item.pr_name} ${item.product_variant_name}</td>
+                    //         <td class="text-center pt-2 pr_stock">${systemArr.join(', ')}</td>
+                    //         <td class="text-center" style="width:10%">
+                    //             <div class="input-group mb-3 rstock">
+                    //                 ${rl_stock}
+                    //             </div>
+                    //             <input type="hidden" class="data">
+                    //             <input type="hidden" class="stod_id">
+                    //         </td>
+                    //         <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
+                    //         <td class="">
+                    //             <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stod_notes:''}">
+                    //             <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
+                    //         </td>
+                    //     </tr>
+                    // `);
+
+                    // Untuk Non Admin
                     $('#tbStock').append(`
                         <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                             <td>${item.product_variant_sku}</td>
                             <td>${item.pr_name} ${item.product_variant_name}</td>
-                            <td class="text-center pt-2 pr_stock">${system}</td>
                             <td class="text-center" style="width:10%">
                                 <div class="input-group mb-3 rstock">
                                     ${rl_stock}
@@ -125,9 +166,8 @@
                                 <input type="hidden" class="data">
                                 <input type="hidden" class="stod_id">
                             </td>
-                            <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
                             <td class="">
-                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?st.stpd_note:''}">
+                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stod_notes:''}">
                                 <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
                             </td>
                         </tr>
@@ -147,26 +187,26 @@
         });
     }
 
-    $(document).on("click",".real-stock",function(){
-        $(this).focus().select();
+    // $(document).on("click",".real-stock",function(){
+    //     $(this).focus().select();
         
-    });
+    // });
 
-    $(document).on('keyup change', '.real-stock', function () {
-        let row = $(this).closest('.row-stock');
-        let selisihArr = [];
+    // $(document).on('keyup change', '.real-stock', function () {
+    //     let row = $(this).closest('.row-stock');
+    //     let selisihArr = [];
 
-        row.find('.real-stock').each(function () {
+    //     row.find('.real-stock').each(function () {
 
-            let realQty   = parseInt($(this).val()) || 0;
-            let systemQty = parseInt($(this).data('system-qty')) || 0;
-            let unitName  = $(this).data('unit-name');
+    //         let realQty   = parseInt($(this).val()) || 0;
+    //         let systemQty = parseInt($(this).data('system-qty')) || 0;
+    //         let unitName  = $(this).data('unit-name');
 
-            selisihArr.push((realQty - systemQty) + ' ' + unitName);
-        });
+    //         selisihArr.push((realQty - systemQty) + ' ' + unitName);
+    //     });
 
-        row.find('.selisih').html(selisihArr.join(', '));
-    });
+    //     row.find('.selisih').html(selisihArr.join(', '));
+    // });
 
 
     $(document).on("change","#category_id",function(){
