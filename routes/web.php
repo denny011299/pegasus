@@ -287,4 +287,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/deleteTt', [SupplierController::class, "deleteTt"])->name('deleteTt');
     Route::post('/accTt', [SupplierController::class, "accTt"])->name('accTt');
     Route::post('/declineTt', [SupplierController::class, "declineTt"])->name('declineTt');
+
+    // Log
+    Route::get('/getLog', [GeneralController::class, "getLog"])->name('getLog');
 });

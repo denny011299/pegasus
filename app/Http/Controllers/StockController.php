@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LogStock;
 use App\Models\ManageStock;
 use App\Models\ProductIssues;
 use App\Models\ProductIssuesDetail;
@@ -15,6 +16,8 @@ use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use Illuminate\Http\Request;
+
+use function Symfony\Component\Clock\now;
 
 class StockController extends Controller
 {
@@ -274,10 +277,23 @@ class StockController extends Controller
     function insertProductIssue(Request $req)
     {
         $data = $req->all();
-        $id = (new ProductIssues())->insertProductIssues($data);
+        $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['product'], true) as $key => $value) {
-            $value['pi_id'] = $id;
+            $value['pi_id'] = $t->pi_id;
             (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+
+            // Catat Log
+            $logNotes = "";
+            if ($t->tipe_return == 1) $logNotes = 'Produk bermasalah retur gudang';
+            elseif ($t->tipe_return == 2) $logNotes = 'Produk bermasalah retur pelanggan';
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $t->pi_code,
+                'log_item_id' => $value['product_variant_id'],
+                'log_notes'  => $logNotes,
+                'log_jumlah' => $value['pid_qty'],
+                'unit_id'    => $value['unit_id'],
+            ]);
         }
     }
 

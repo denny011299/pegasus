@@ -77,11 +77,49 @@
         let table = $('#tableStock').DataTable();
         let data = table.row(this).data();
 
-        
+        getLog(data.product_variant_id);
     })
 
-    function getLog(){
-        $.ajax([
-            
-        ]);
+    function getLog(id){
+        $.ajax({
+            url: '/getLog',
+            method: 'get',
+            data: {
+                notes: 'Produk',
+                id: id
+            },
+            success: function(e){
+                viewHistory(e);
+            },
+            error: function(e){
+                console.error("Gagal load:", err);
+            }
+        });
+    }
+
+    function viewHistory(data){
+        if (data.length > 0){
+            $('.empty-log').remove();
+            data.forEach(e => {
+                $('#tableLog tbody').append(`
+                    <tr data-id="${e.log_id}">
+                        <td>${moment(e.log_date).format('D MMM YYYY, HH:mm')}</td>
+                        <td>${e.log_kode}</td>
+                        <td>${e.log_notes}</td>
+                        <td>${e.log_jumlah} ${e.unit_name}</td>
+                    </tr>
+                `)
+            })
+        } else {
+            $('#tableLog tbody').append(`
+                <tr class="empty-log">
+                    <td colspan="4" class="text-center text-muted py-4">
+                        Produk ini belum ada riwayat perubahan stok
+                    </td>
+                </tr>
+            `);
+        }
+
+        $('#add_stock_product .modal-title').html("Lihat Histori Produk");
+        $("#add_stock_product").modal("show");
     }

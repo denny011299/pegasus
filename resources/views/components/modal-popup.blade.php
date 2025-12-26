@@ -404,26 +404,26 @@
                                         <tbody></tbody>
                                     </table>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-4 add">
                                     <div class="input-block mb-3">
                                         <label>Nama Produk<span class="text-danger">*</span></label>
                                         <select class="form-select fill_product" id="product_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-3">
+                                <div class="col-3 add">
                                     <div class="input-block mb-3">
                                         <label>Qty<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill_product number-only" id="pid_qty" placeholder="Qty Produk">
                                     </div>
                                 </div>
                                 
-                                <div class="col-4">
+                                <div class="col-4 add">
                                     <div class="input-block mb-3">
                                         <label>Nama Satuan<span class="text-danger">*</span></label>
                                         <select class="form-select fill_product" id="unit_product_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-1 pt-4">
+                                <div class="col-1 pt-4 add">
                                     <a class="btn btn-primary btn-add-product">+</a>
                                 </div>
                             </div>
@@ -1740,7 +1740,6 @@
                                             <th>No. Transaksi</th>
                                             <th>Catatan</th>
                                             <th>Jumlah</th>
-                                            <th class="no-sort text-center">Aksi</th>
                                         </thead>
                                         <tbody></tbody>
                                     </table>

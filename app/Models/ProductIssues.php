@@ -94,7 +94,7 @@ class ProductIssues extends Model
         // $m->save();
         // $s->save();
 
-        return $t->pi_id;  
+        return $t;  
     } 
 
     function updateProductIssues($data)
@@ -143,7 +143,7 @@ class ProductIssues extends Model
         // $s->save();
         // $m->save();
 
-        return $t->pi_id;  
+        return $t;  
     }
 
     function deleteProductIssues($data)

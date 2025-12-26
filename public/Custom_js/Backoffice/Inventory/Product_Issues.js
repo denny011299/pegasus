@@ -1,5 +1,5 @@
     var tableReturn, tableDamage;
-    var mode = 1; //1 = auto scan, 2 = manual input
+    var mode = 1; //1 = insert, 2 = edit, 3 = view
     var type = 1; //1 = all, 2 = In, 3 = Out
     var product = [];
 
@@ -43,9 +43,14 @@
         $('#product_id').empty();
         $('#tableProduct tr.row-product').remove();
         $('#add-product-issues select2').empty();
-        $('#tipe_return').val(1);
+        $('#tipe_return').val(1).trigger('change');
         // $('#add-product-issues select').val(1);
+
         $('.is-invalid').removeClass('is-invalid');
+        $("#pi_date, #pi_type, #pi_notes, #tipe_return").prop("disabled", false);
+        $('.add, .btn-save, .btn_delete_row').show();
+        $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
+        $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
         $("#pi_type,#tipe_return,#product_id,#unit_id").prop("disabled", false);
 
         let today = new Date();
@@ -139,6 +144,9 @@
                 e.forEach(item => {
                     item.date = moment(item.pi_date).format('D MMM YYYY');
                     item.action = `
+                        <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                            <i class="fe fe-eye"></i>
+                        </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
                             <i class="fe fe-edit"></i>
                         </a>
@@ -281,7 +289,7 @@ $(document).on("click", ".btn-save", function () {
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
             return false;
         };
         var temp = $('#product_id').select2("data")[0];
@@ -356,7 +364,49 @@ $(document).on("click", ".btn_edit", function () {
     $("#pi_type").empty().append(
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
+    $('#tableProduct tr.row-product').remove();
+    product = [];
+    
+    data.product.forEach(e => {
+        var data  = {
+            "product_variant_id": e.product_variant_id,
+            "product_name": e.pr_name,
+            "pid_qty": e.pid_qty,
+            "unit_name": e.unit_name,
+            "unit_id": e.unit_id,
+        };
+        product.push(data);
+        addRow(data)
+    });
+    
     $("#pi_type,#tipe_return").prop("disabled", true);
+    $("#pi_date, #pi_notes").prop("disabled", false);
+    $('.add, .btn-save, .btn_delete_row').show();
+    $('.is-invalid').removeClass('is-invalid');
+    $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
+    $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
+    $('#add-product-issues .modal-title').html("Update Produk Bermasalah");
+    $("#add-product-issues").modal("show");
+    $("#add-product-issues").attr("pi_id", data.pi_id);
+    $("#add-product-issues").attr("pi_code", data.pi_code);
+});
+
+$(document).on("click", ".btn_view", function () {
+    var tbId = $(this).closest("table").attr("id");
+    var data = $("#" + tbId)
+        .DataTable()
+        .row($(this).parents("tr"))
+        .data(); //ambil data dari table
+    console.log(data);
+
+    mode = 3;
+    $("add-product-issues input").empty().val("");
+    $("#pi_date").val(moment(data.pi_date).format("DD-MM-YYYY"));
+    $("#pi_notes").val(data.pi_notes);
+    $('#tipe_return').val(data.tipe_return).trigger('change');
+    $("#pi_type").empty().append(
+        `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
+    );
     $('#tableProduct tr.row-product').remove();
     product = [];
 
@@ -372,9 +422,11 @@ $(document).on("click", ".btn_edit", function () {
         addRow(data)
     });
 
+    $("#pi_date, #pi_type, #pi_notes, #tipe_return").prop("disabled", true);
+    $('.add, .btn-save, .btn_delete_row').hide();
     $('.is-invalid').removeClass('is-invalid');
-    $('.btn-save').html('Simpan perubahan');
-    $('#add-product-issues .modal-title').html("Update Produk Bermasalah");
+    $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
+    $('#add-product-issues .modal-title').html("Detail Produk Bermasalah");
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
     $("#add-product-issues").attr("pi_code", data.pi_code);
