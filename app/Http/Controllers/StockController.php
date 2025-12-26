@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ManageStock;
 use App\Models\ProductIssues;
+use App\Models\ProductIssuesDetail;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Stock;
@@ -273,13 +274,27 @@ class StockController extends Controller
     function insertProductIssue(Request $req)
     {
         $data = $req->all();
-        return (new ProductIssues())->insertProductIssues($data);
+        $id = (new ProductIssues())->insertProductIssues($data);
+        foreach (json_decode($data['product'], true) as $key => $value) {
+            $value['pi_id'] = $id;
+            (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+        }
     }
 
     function updateProductIssue(Request $req)
     {
         $data = $req->all();
-        return (new ProductIssues())->updateProductIssues($data);
+        $id = [];
+        (new ProductIssues())->updateProductIssues($data);
+        foreach (json_decode($data['product'], true) as $key => $value) {
+            $value['pi_id'] = $data["pi_id"];
+            if (!isset($value["pid_id"])) $t = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+            else {
+                $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
+            }
+            array_push($id, $t);
+        }
+        ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
 
     function deleteProductIssue(Request $req)

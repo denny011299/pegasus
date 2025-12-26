@@ -57,10 +57,8 @@
                                         <table class="table table-center table-hover" id="tableReturn">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Produk</th>
-                                                    <th>SKU</th>
                                                     <th>Tanggal Pengembalian</th>
-                                                    <th>Jumlah</th>
+                                                    <th>Kode</th>
                                                     <th>Catatan</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>
@@ -76,10 +74,8 @@
                                         <table class="table table-center table-hover" id="tableDamage">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Produk</th>
-                                                    <th>SKU</th>
-                                                    <th>Tanggal</th>
-                                                    <th>Jumlah</th>
+                                                    <th>Tanggal Pengembalian</th>
+                                                    <th>Kode</th>
                                                     <th>Catatan</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>

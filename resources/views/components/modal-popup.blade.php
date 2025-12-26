@@ -331,83 +331,113 @@
     <!-- Add coupons -->
     <div class="modal fade" id="add-product-issues">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content ">
-                <div class="page-wrapper-new p-0">
-                    <div class="content">
-                        <div class="modal-header border-0 custom-modal-header">
-                            <div class="page-title">
-                                <h4 class="moda-title">Tambah Produk Bermasalah</h4>
+            <div class="modal-content p-3">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Produk Bermasalah</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                {{-- <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Produk</label>
+                                        <select class="form-select  select2 fill select2Input" id="product_id">
+                                        </select>
+                                    </div>
+                                </div> --}}
+                                <div class="col-lg-6">
+                                    <div class="input-block mb-3">
+                                        <label>Tanggal<span class="text-danger">*</span></label>
+
+                                        <div class="input-groupicon calender-input">
+                                            <input type="text" class="datetimepicker form-control fill"
+                                                id="pi_date" placeholder="Pilih Tanggal">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="input-block mb-3">
+                                        <label class="form-label">Jenis Retur<span class="text-danger">*</span></label>
+                                        <select class="select" id="tipe_return">
+                                            <option value="1" selected>Retur ke Supplier / Rusak Gudang</option>
+                                            <option value="2">Pengembalian Pelanggan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="input-block mb-3">
+                                        <label class="form-label">Tipe<span class="text-danger">*</span></label>
+                                        <select class="select" id="pi_type">
+                                            
+                                        </select>
+                                    </div>
+                                </div>
+                            {{-- <div class="col-lg-6">
+                                    <div class="input-block mb-3">
+                                        <label class="form-label">Jumlah</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control number-only fill" id="pi_qty">
+                                            <select class="form-select w-25 fill" id="unit_id">
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div> --}}
+                                <div class="col-lg-6">
+                                    <div class="input-block mb-3">
+                                        <label class="form-label">Catatan<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="pi_notes" placeholder="Tambahkan Catatan">
+                                    </div>
+                                </div>
+                                <div class="col-12 py-3 mb-3">
+                                    <table class="table table-center" id="tableProduct" style="min-height: 15vh">
+                                        <thead>
+                                            <th>Nama Produk</th>
+                                            <th>Qty</th>
+                                            <th>Satuan</th>
+                                            <th class="no-sort text-center">Aksi</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-block mb-3">
+                                        <label>Nama Produk<span class="text-danger">*</span></label>
+                                        <select class="form-select fill_product" id="product_id"></select>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="input-block mb-3">
+                                        <label>Qty<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill_product number-only" id="pid_qty" placeholder="Qty Produk">
+                                    </div>
+                                </div>
+                                
+                                <div class="col-4">
+                                    <div class="input-block mb-3">
+                                        <label>Nama Satuan<span class="text-danger">*</span></label>
+                                        <select class="form-select fill_product" id="unit_product_id"></select>
+                                    </div>
+                                </div>
+                                <div class="col-1 pt-4">
+                                    <a class="btn btn-primary btn-add-product">+</a>
+                                </div>
                             </div>
-                            <button type="button" class="close ms-auto" data-bs-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body custom-modal-body">
-                            <form action="coupons">
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Produk</label>
-                                            <select class="form-select  select2 fill select2Input" id="product_id">
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="input-blocks mb-3">
-                                            <label>Tanggal</label>
-
-                                            <div class="input-groupicon calender-input">
-                                                <input type="text" class="datetimepicker form-control fill"
-                                                    id="pi_date" placeholder="Pilih Tanggal">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Jenis Retur</label>
-                                            <select class="select" id="tipe_return">
-                                                <option value="1" selected>Retur ke Supplier / Rusak Gudang</option>
-                                                <option value="2">Pengembalian Pelanggan</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Tipe</label>
-                                            <select class="select" id="pi_type">
-                                                
-                                            </select>
-                                        </div>
-                                    </div>
-                                   <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Jumlah</label>
-                                            <div class="input-group">
-                                                <input type="text" class="form-control number-only fill" id="pi_qty">
-                                                <select class="form-select w-25 fill" id="unit_id">
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Catatan</label>
-                                            <input type="text" class="form-control" id="pi_notes">
-                                        </div>
-                                    </div>
-                                </div>
 
 
-                                <div class="modal-footer">
-                                     <button type="button" data-bs-dismiss="modal"
-                                        class="btn btn-back cancel-btn me-2">Batal</button>
-                                    <button type="button" class="btn btn-primary paid-continue-btn btn-save">Tambah Produk
-                                        </button>
-                                </div>
-                            </form>
+                            <div class="modal-footer p-0">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-back cancel-btn me-2">Batal</button>
+                                <button type="button" class="btn btn-primary paid-continue-btn btn-save">Tambah Produk
+                                    </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -1685,4 +1715,48 @@
         </div>
     </div>
 
+@endif
+
+@if (Route::is(['stockProduct']))
+    <!-- Add coupons -->
+    <div class="modal fade" id="add_stock_product">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content p-3">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Riwayat Stok Produk</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12 py-3 mb-3">
+                                    <table class="table table-center" id="tableLog" style="min-height: 15vh">
+                                        <thead>
+                                            <th>Tanggal</th>
+                                            <th>No. Transaksi</th>
+                                            <th>Catatan</th>
+                                            <th>Jumlah</th>
+                                            <th class="no-sort text-center">Aksi</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+
+                            <div class="modal-footer p-0">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-back cancel-btn me-2">Kembali</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- /Add Coupons -->
 @endif

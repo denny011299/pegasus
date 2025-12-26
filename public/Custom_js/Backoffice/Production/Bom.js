@@ -215,7 +215,6 @@
         $('#add_bom').modal("show");
         $('#add_bom').attr("bom_id", data.bom_id);
     });
-
     $(document).on('click', '.btn-add-supply', function(){
         $('.is-invalid').removeClass('is-invalid');
         var valid=1;
@@ -235,10 +234,11 @@
         var idx = -1;
 
         bahan.forEach(element => {
-            if (element.supplies_id == temp.supplies_id && element.unit_id == $('#unit_supplies_id').val().unit_id) {
-                element.bom_detail_qty += e.bom_detail_qty;
+            if (element.supplies_id == temp.supplies_id && element.unit_id == $('#unit_supplies_id').val()) {
+                element.bom_detail_qty += parseInt($('#bom_detail_qty').val());
+                idx = 1;
             }
-        }); 
+        });
 
         if(idx==-1){
             var data  = {

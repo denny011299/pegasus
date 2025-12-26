@@ -44,12 +44,14 @@ class ProductIssues extends Model
        
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $pvr = ProductVariant::find($value->product_variant_id);
-            $sup = Product::find($pvr->product_id);
-            $value->pr_name = $sup->product_name." ".$pvr->product_variant_name;
-            $value->pr_sku = $pvr->product_variant_sku;
-            $u = Unit::find($value->unit_id);
-            $value->unit_name = $u->unit_name;
+            // $pvr = ProductVariant::find($value->product_variant_id);
+            // $sup = Product::find($pvr->product_id);
+            // $value->product_variant_name = $pvr->product_variant_name;
+            // $value->pr_sku = $pvr->product_variant_sku;
+            // $u = Unit::find($value->unit_id);
+            // $value->unit_name = $u->unit_name;
+
+            $value->product = (new ProductIssuesDetail())->getProductIssuesDetail(["pi_id" => $value->pi_id]);
         }
  
         return $result;
@@ -57,92 +59,91 @@ class ProductIssues extends Model
 
     function insertProductIssues($data)
     {   
-        $m = ProductVariant::find($data["product_variant_id"]);
-        $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
-        // return $m;  
+        // $m = ProductVariant::find($data["product_variant_id"]);
+        // $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
+        // // return $m;  
 
-        // Return to Supplier
-        $stocks = $s->ps_stock ?? 0;
-        if ($data["tipe_return"] == 1) {
-            if ($stocks - $data["pi_qty"] > 0) {
-                $stocks -= $data["pi_qty"];
-            } else {
-                return -1;
-            }
-        }
+        // // Return to Supplier
+        // $stocks = $s->ps_stock ?? 0;
+        // if ($data["tipe_return"] == 1) {
+        //     if ($stocks - $data["pi_qty"] > 0) {
+        //         $stocks -= $data["pi_qty"];
+        //     } else {
+        //         return -1;
+        //     }
+        // }
         
-        // Return from customer
-        elseif ($data["tipe_return"] == 2) {
-            $stocks += $data["pi_qty"];
-        }
+        // // Return from customer
+        // elseif ($data["tipe_return"] == 2) {
+        //     $stocks += $data["pi_qty"];
+        // }
 
-        $s->ps_stock = $stocks;
+        // $s->ps_stock = $stocks;
 
         $pi_date = Carbon::createFromFormat('d-m-Y', $data['pi_date'])->format('Y-m-d');   
-        $t = new self();    
-        $t->pi_type = $data["pi_type"];     
-        $t->pi_qty = $data["pi_qty"];    
-        $t->pi_date = $pi_date;    
-        $t->product_variant_id = $data["product_variant_id"];    
+        $t = new self();
+        $t->pi_code   = $this->generateProductIssueID();
+        $t->pi_type = $data["pi_type"];      
+        $t->pi_date = $pi_date; 
         $t->pi_notes = $data["pi_notes"];    
-        $t->tipe_return = $data["tipe_return"];      
-        $t->product_variant_id = $data["product_variant_id"];
-        $t->unit_id = $data["unit_id"];
+        $t->tipe_return = $data["tipe_return"];     
+        // $t->pi_qty = $data["pi_qty"];   
+        // $t->product_variant_id = $data["product_variant_id"];
+        // $t->unit_id = $data["unit_id"]; 
         $t->save(); 
-        $m->save();
-        $s->save();
+        // $m->save();
+        // $s->save();
 
-        return $m;  
+        return $t->pi_id;  
     } 
 
     function updateProductIssues($data)
     {
-        $m = ProductVariant::find($data["product_variant_id"]);
-        $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
+        $t =  self::find($data["pi_id"]);
+        $pi_date = Carbon::createFromFormat('d-m-Y', $data['pi_date'])->format('Y-m-d');
+        // $m = ProductVariant::find($data["product_variant_id"]);
+        // $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
   
-        $pi_date = Carbon::createFromFormat('d-m-Y', $data['pi_date'])->format('Y-m-d');   
-        $t =  self::find($data["pi_id"]);    
-        // return $m;  
-        if($m->pi_qty != $data["pi_qty"]){
-            // kembalikan stock ke kondisi sebelum update
-            if($data["tipe_return"]  == 1){
-                $s->ps_stock += $t->pi_qty;
-            }elseif($data["tipe_return"] == 2){
+        // // return $m;  
+        // if($m->pi_qty != $data["pi_qty"]){
+        //     // kembalikan stock ke kondisi sebelum update
+        //     if($data["tipe_return"]  == 1){
+        //         $s->ps_stock += $t->pi_qty;
+        //     }elseif($data["tipe_return"] == 2){
                 
-                $s->ps_stock -= $t->pi_qty;
-            }
-            $s->save();
+        //         $s->ps_stock -= $t->pi_qty;
+        //     }
+        //     $s->save();
 
         
-              // Return to Supplier
-            if ($data["tipe_return"] == 1) {
-                if ($s->ps_stock - $data["pi_qty"] > 0) {
-                    $s->ps_stock -= $data["pi_qty"];
-                } else {
-                    return -1;
-                }
-            }
-            // Return from customer
-            elseif ($data["tipe_return"] == 2) {
-                $s->ps_stock += $data["pi_qty"];
-            }
+        //       // Return to Supplier
+        //     if ($data["tipe_return"] == 1) {
+        //         if ($s->ps_stock - $data["pi_qty"] > 0) {
+        //             $s->ps_stock -= $data["pi_qty"];
+        //         } else {
+        //             return -1;
+        //         }
+        //     }
+        //     // Return from customer
+        //     elseif ($data["tipe_return"] == 2) {
+        //         $s->ps_stock += $data["pi_qty"];
+        //     }
 
-        }
+        // }
       
-
+        $t->pi_code   = $data['pi_code'];
         $t->pi_type = $data["pi_type"];     
-        $t->pi_qty = $data["pi_qty"];   
         $t->pi_date = $pi_date;    
-        $t->product_variant_id = $data["product_variant_id"];    
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];      
-        $t->product_variant_id = $data["product_variant_id"];
-        $t->unit_id = $data["unit_id"];
+        // $t->pi_qty = $data["pi_qty"];   
+        // $t->product_variant_id = $data["product_variant_id"];
+        // $t->unit_id = $data["unit_id"];
         $t->save(); 
-        $s->save();
-        $m->save();
+        // $s->save();
+        // $m->save();
 
-        return $m;  
+        return $t->pi_id;  
     }
 
     function deleteProductIssues($data)
@@ -151,15 +152,22 @@ class ProductIssues extends Model
         $t->status = 0;
         $t->save();
 
-        $m = ProductVariant::find($t->product_variant_id);
-        $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
-        if($t->tipe_return == 1){
-            $s->ps_stock += $t->pi_qty;
-        }else if($t->tipe_return == 2){
-            $s->ps_stock -= $t->pi_qty;
-        }
-        $s->save();
-        return $m;
+        // $m = ProductVariant::find($t->product_variant_id);
+        // $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
+        // if($t->tipe_return == 1){
+        //     $s->ps_stock += $t->pi_qty;
+        // }else if($t->tipe_return == 2){
+        //     $s->ps_stock -= $t->pi_qty;
+        // }
+        // $s->save();
+    }
+
+    function generateProductIssueID()
+    {
+        $id = self::max('pi_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "PI" . str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }
 

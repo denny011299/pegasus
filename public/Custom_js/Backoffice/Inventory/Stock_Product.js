@@ -72,3 +72,16 @@
             }
         });
     }
+
+    $(document).on('click', '#tableStock tbody tr', function(){
+        let table = $('#tableStock').DataTable();
+        let data = table.row(this).data();
+
+        
+    })
+
+    function getLog(){
+        $.ajax([
+            
+        ]);
+    }

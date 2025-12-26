@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_issues', function (Blueprint $table) {
-            $table->integerIncrements('pi_id');
-            $table->string('pi_code', 50);
-            $table->integer('pi_type')->comment('1 = return, 2 = damaged');
-            $table->integer('tipe_return');
-            $table->date('pi_date');
-            $table->text('pi_notes');
+        Schema::create('product_issues_details', function (Blueprint $table) {
+            $table->integerIncrements('pid_id');
+            $table->integer('pi_id');
+            $table->integer('product_variant_id');
+            $table->integer('pid_qty')->default(0);
+            $table->integer('unit_id');
             $table->integer('status')->default(1);
             $table->timestamps();
         });
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_issues');
+        Schema::dropIfExists('product_issues_details');
     }
 };
