@@ -1734,15 +1734,62 @@
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
                                 <div class="col-12 py-3 mb-3">
-                                    <table class="table table-center" id="tableLog" style="min-height: 15vh">
-                                        <thead>
-                                            <th>Tanggal</th>
-                                            <th>No. Transaksi</th>
-                                            <th>Catatan</th>
-                                            <th>Jumlah</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="table-scroll">
+                                        <table class="table table-center" id="tableLog" style="min-height: 15vh">
+                                            <thead>
+                                                <th>Tanggal</th>
+                                                <th>No. Transaksi</th>
+                                                <th>Catatan</th>
+                                                <th>Jumlah</th>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="modal-footer p-0">
+                                <button type="button" data-bs-dismiss="modal"
+                                    class="btn btn-back cancel-btn me-2">Kembali</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- /Add Coupons -->
+@endif
+
+@if (Route::is(['stockSupplies']))
+    <!-- Add coupons -->
+    <div class="modal fade" id="add_stock_supplies">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content p-3">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Riwayat Stok Bahan Mentah</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12 py-3 mb-3">
+                                    <div class="table-scroll">
+                                        <table class="table table-center" id="tableLog" style="min-height: 15vh">
+                                            <thead>
+                                                <th>Tanggal</th>
+                                                <th>No. Transaksi</th>
+                                                <th>Catatan</th>
+                                                <th>Jumlah</th>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
 

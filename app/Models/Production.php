@@ -56,18 +56,20 @@ class Production extends Model
     {
         $t = new Production();
         $t->production_date = $data["production_date"];
+        $t->production_code = $this->generateProductionID();
         $t->production_bom_id = $data["production_bom_id"];
         $t->production_product_id = $data["production_product_id"];
         $t->production_qty = $data["production_qty"];
         $t->production_created_by = 0;
         $t->save();
-        return $t->production_id;
+        return $t;
     }
 
     function updateProduction($data)
     {
         $t = Production::find($data["production_id"]);
         $t->production_date = $data["production_date"];
+        $t->production_code = $data["production_code"];
         $t->production_bom_id = $data["production_bom_id"];
         $t->production_product_id = $data["production_product_id"];
         $t->production_qty = $data["production_qty"];
@@ -106,5 +108,13 @@ class Production extends Model
             $s->ss_stock +=  ($value->bom_detail_qty * $t->production_qty);
             $s->save();
         }
+    }
+
+    function generateProductionID()
+    {
+        $id = self::max('production_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "PR" . str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

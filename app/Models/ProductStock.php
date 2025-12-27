@@ -92,7 +92,6 @@ class ProductStock extends Model
                 $r = ProductRelation::where('pr_unit_id_2', '=', $data["unit_id"])
                     ->where('product_variant_id', '=', $data["product_variant_id"])->first();
                 if ($t->ps_stock >= $r->pr_unit_value_2) {
-
                     $tambah = floor($t->ps_stock / $r->pr_unit_value_2);
                     $t->ps_stock %= $r->pr_unit_value_2;
 

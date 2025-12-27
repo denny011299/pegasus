@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bom;
 use App\Models\BomDetail;
+use App\Models\LogStock;
 use App\Models\Production;
 use App\Models\ProductionPhoto;
 use App\Models\ProductStock;
@@ -118,15 +119,24 @@ class ProductionController extends Controller
             ]);
         }
 
+        $p = (new Production())->insertProduction($data);
+        $b = bom::find($data["production_bom_id"]);
+
         foreach ($bahan as $key => $value) {
             $stok = SuppliesStock::where("supplies_id", "=", $value['supplies_id'])
                 ->where("unit_id", "=", $value['unit_id'])->first();
             $stok->ss_stock -=  ($value['bom_detail_qty'] * $data['production_qty']);
             $stok->save();
-        }
 
-        (new Production())->insertProduction($data);
-        $b = bom::find($data["production_bom_id"]);
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $p->production_code,
+                'log_item_id' => $value['supplies_id'],
+                'log_notes'  => "Pengurangan bahan mentah untuk produksi",
+                'log_jumlah' => ($value['bom_detail_qty'] * $data['production_qty']),
+                'unit_id'    => $value['unit_id'],
+            ]);
+        }
         
         $v = ProductStock::where("product_variant_id", "=", $data["production_product_id"])
             ->where("unit_id", "=", $b["unit_id"])->first();
@@ -140,6 +150,15 @@ class ProductionController extends Controller
         $v->save();
 
         (new ProductStock())->cekStockBerlebih($v);
+
+        (new LogStock())->insertLog([
+            'log_date' => now(),
+            'log_kode'    => $p->production_code,
+            'log_item_id' => $data["production_product_id"],
+            'log_notes'  => "Produksi produk",
+            'log_jumlah' => intval($data['production_qty']) * $b->bom_qty,
+            'unit_id'    => $b['unit_id'],
+        ]);
 
         return response()->json([
             "status" => 1,

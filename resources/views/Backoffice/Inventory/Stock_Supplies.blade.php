@@ -1,5 +1,33 @@
 <?php $page = 'stok'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        .table-scroll {
+            max-height: 45vh;
+            overflow-y: auto;
+            overflow-x: hidden; 
+        }
+
+        #tableLog {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #tableLog thead th {
+            position: sticky;
+            top: 0;
+            background-color: #e7f1ff;
+            z-index: 10;
+            border-bottom: 2px solid #dee2e6;
+            padding: 12px 8px;
+        }
+
+        #tableLog tbody td {
+            padding: 10px 8px;
+            vertical-align: middle;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

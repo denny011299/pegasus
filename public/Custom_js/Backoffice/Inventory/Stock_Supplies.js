@@ -65,3 +65,56 @@
             }
         });
     }
+
+    $(document).on('click', '#tableStock tbody tr', function(){
+        let table = $('#tableStock').DataTable();
+        let data = table.row(this).data();
+
+        getLog(data.supplies_id);
+    })
+
+    function getLog(id){
+        $.ajax({
+            url: '/getLog',
+            method: 'get',
+            data: {
+                notes: 'Bahan',
+                id: id
+            },
+            success: function(e){
+                viewHistory(e);
+            },
+            error: function(e){
+                console.error("Gagal load:", err);
+            }
+        });
+    }
+
+    function viewHistory(data){
+        $('#tableLog tr.row-log').remove();
+        $('#tableLog tr.empty-log').remove();
+        if (data.length > 0){
+            $('.empty-log').remove();
+            data.forEach(e => {
+                $('#tableLog tbody').append(`
+                    <tr class="row-log" data-id="${e.log_id}">
+                        <td>${moment(e.log_date).format('D MMM YYYY, HH:mm')}</td>
+                        <td>${e.log_kode}</td>
+                        <td>${e.log_notes}</td>
+                        <td>${e.log_jumlah} ${e.unit_name}</td>
+                    </tr>
+                `)
+            })
+        } else {
+            $('#tableLog tbody').append(`
+                <tr class="empty-log">
+                    <td colspan="4" class="text-center text-muted py-4">
+                        Bahan ini belum ada riwayat perubahan stok
+                    </td>
+                </tr>
+            `);
+        }
+
+        $('#add_stock_supplies .modal-title').html("Lihat Histori Bahan Mentah");
+        $("#add_stock_supplies").modal("show");
+    }

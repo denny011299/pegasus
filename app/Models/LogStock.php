@@ -21,7 +21,7 @@ class LogStock extends Model
 
         $result = LogStock::where('log_notes','like','%'.$data["log_notes"].'%');
         if($data["log_item_id"])$result->where('log_item_id','=',$data["log_item_id"]);
-        $result->orderBy('created_at', 'asc');
+        $result->orderBy('created_at', 'desc');
        
         $result = $result->get();
         foreach ($result as $key => $value) {

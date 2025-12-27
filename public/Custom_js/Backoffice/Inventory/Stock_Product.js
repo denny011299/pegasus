@@ -98,11 +98,13 @@
     }
 
     function viewHistory(data){
+        $('#tableLog tr.row-log').remove();
+        $('#tableLog tr.empty-log').remove();
         if (data.length > 0){
             $('.empty-log').remove();
             data.forEach(e => {
                 $('#tableLog tbody').append(`
-                    <tr data-id="${e.log_id}">
+                    <tr class="row-log" data-id="${e.log_id}">
                         <td>${moment(e.log_date).format('D MMM YYYY, HH:mm')}</td>
                         <td>${e.log_kode}</td>
                         <td>${e.log_notes}</td>
