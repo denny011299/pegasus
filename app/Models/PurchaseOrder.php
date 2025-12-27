@@ -22,9 +22,9 @@ class PurchaseOrder extends Model
         ], $data);
 
         if ($data["hutang"] == 0) {
-            $result = PurchaseOrder::where("status", "<", 2);   
+            $result = PurchaseOrder::where("status", "<", 2)->where("pembayaran", "=", 0);   
         } else {
-            $result = PurchaseOrder::where("status", ">=", 1)->where("pembayaran", "=", 0);
+            $result = PurchaseOrder::where("status", ">=", 1);
         }
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");

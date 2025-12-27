@@ -169,6 +169,10 @@
                     <div class="info-label">No. Rekening Bank</div>
                     <div class="info-value">: {{$supplier["supplier_account_number"]}} - {{$supplier["supplier_account_name"]}}</div>
                 </div>
+                <div class="info-row">
+                    <div class="info-label">Jatuh Tempo</div>
+                    <div class="info-value">: {{ date('d F Y', strtotime($tt["tt_due"]??null)) }}</div>
+                </div>
             </div>
             
             <div class="billing-section">

@@ -19,6 +19,8 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#supplies_unit').val(null);
         $('#supplies_variant').empty();
+        $('#unit_id').html("-");
+        $('#alert').val(0);
         $('#tbVariant').html("")
         addRow();
         $('#add_supplies').modal("show");
@@ -163,6 +165,7 @@
         param = {
             supplies_name:$('#supplies_name').val(),
             supplies_desc:$('#supplies_desc').val(),
+            supplies_alert:$('#alert').val(),
             supplies_default_unit:$('#unit_id').val(),
             supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
             supplies_unit:JSON.stringify($('#supplies_unit').val()),
@@ -277,6 +280,7 @@
         $('#supplies_unit').empty();
         $('#supplies_unit').append(`<option value="${data.supplies_unit}" selected>${data.unit_name}</option>`);
         $('#supplies_unit').val(data.supplies_unit).trigger('change');
+        $('#alert').val(data.supplies_alert);
         $('#tbVariant').html("");
 
         data.sup_variant.forEach(element => {
@@ -346,6 +350,10 @@
     });
 
     
+$(document).on("change","#unit_id",function(){
+    $('#satuan_alert').text($('#unit_id option:selected').text().trim());
+});
+
 $(document).on("change","#supplies_unit",function(){
     dataRelasi = $(this).select2("data");
     // Pengecekan apakah sudah selected atau belum

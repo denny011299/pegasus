@@ -127,6 +127,7 @@ Route::middleware(checkLogin::class)->group(function () {
 
     Route::get('/purchaseOrder',[SupplierController::class,"PurchaseOrder"])->name('purchaseOrder');
     Route::post('/accPO',[SupplierController::class,"accPO"])->name('accPO');
+    Route::post('/tolakPO',[SupplierController::class,"tolakPO"])->name('tolakPO');
     Route::get('/searchSupplies',[SupplierController::class,"searchSupplies"])->name('searchSupplies');
     Route::get('/purchaseOrderDetail/{id}',[SupplierController::class,"PurchaseOrderDetail"])->name('purchaseOrderDetail');
     Route::get('/purchaseOrderDetailHutang/{id}',[SupplierController::class,"PurchaseOrderDetailHutang"])->name('purchaseOrderDetailHutang');
@@ -272,6 +273,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/uploadPhotoProduksi', [ProductionController::class, "uploadPhotoProduksi"])->name('uploadPhotoProduksi');
     Route::get('/getFotoProduksi', [ProductionController::class, "getFotoProduksi"])->name('getFotoProduksi');
     Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, "generateTandaTerima"])->name('generateTandaTerima');
+    Route::get('/generateTandaTerimaInvoice', [SupplierController::class, "generateTandaTerimaInvoice"])->name('generateTandaTerimaInvoice');
     Route::get('/viewTandaTerima/{id}', [SupplierController::class, "viewTandaTerima"])->name('generateTandaTerima');
 
 

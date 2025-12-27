@@ -1,6 +1,11 @@
 <?php $page = 'payReceive'; ?>
 @extends('layout.mainlayout')
 @section('content')
+    <style>
+        .page-header {
+            margin-bottom: 0;
+        }
+    </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -30,6 +35,8 @@
                                         <table class="table table-center table-hover" id="tablePayables">
                                             <thead class="thead-light">
                                                 <tr>
+                                                    <th class="text-center">#</th>
+                                                    <th>Bank</th>
                                                     <th>Tgl. Pemesanan</th>
                                                     <th>Tgl. Jatuh Tempo</th>
                                                     <th>No. PO</th>

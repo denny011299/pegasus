@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bank;
 use App\Models\purchase_order_tt;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
@@ -11,6 +12,7 @@ use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\PurchaseOrderReceipt;
 use App\Models\Supplier;
 use App\Models\Supplies;
+use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -325,6 +327,86 @@ class SupplierController extends Controller
         return $tt->tt_id;
     }
 
+    function generateTandaTerimaInvoice(Request $req) {
+        $notValid = [];
+        $valid = [];
+        $param["supplier"] ="";
+        foreach ($req->poi_id as $key => $value) {
+            $p = PurchaseOrderDetailInvoice::find($value);
+            $po = PurchaseOrder::find($p->po_id);
+            $s = Supplier::find($po->po_supplier);
+            $param["supplier"] = $s;
+            if($p->pembayaran!=0||$po->tt_id !=null){
+                array_push($notValid, $p->poi_code);
+            }
+            else{
+                array_push($valid, $p);
+            }
+        }
+        if(count($notValid)>0){
+            return [
+                "status"=>-1,
+                "message"=>"Data berikut sudah terdaftar atau tanda terima belum diterima : ".implode(", ",$notValid)
+            ];
+        }
+
+        $param["data"] = $valid;    
+        if(count($param["data"])<=0){
+            return -1;
+        }
+
+        $b = Bank::find($param["supplier"]->bank_id);
+        $ttid = (new PurchaseOrder())->generateTandaTerimaID($b->bank_id);
+
+        date_default_timezone_set('Asia/Jakarta');
+        $tt = (new purchase_order_tt())->insertTt([
+            "tt_date"=> date('Y-m-d'),
+            "staff_name"=> Session::get('user')->staff_name,
+            "tt_kode"=> $ttid,
+            "supplier_id"=> $param["supplier"]->supplier_id,
+            "tt_total"=> 0,
+        ]);
+
+        $total = 0;
+        $dueDates = [];
+
+        foreach ($param["data"] as $value) {
+            $pi = PurchaseOrderDetailInvoice::find($value->poi_id);
+
+            if ($pi && $pi->poi_due) {
+                // pakai tanggal saja
+                $dueDates[] = strtotime(date('Y-m-d', strtotime($pi->poi_due)));
+            }
+
+            $p = PurchaseOrder::find($pi->po_id);
+            $p->tt_id = $tt;
+            $p->pembayaran = 3;
+            $p->save();
+
+            $total += $p->po_total;
+        }
+
+        // rata-rata due date (tanggal saja)
+        if ($dueDates) {
+            $avg = floor(array_sum($dueDates) / count($dueDates));
+            $param["due_date"] = date('Y-m-d', $avg);
+        } else {
+            $param["due_date"] = null;
+        }
+        $tt = purchase_order_tt::find($tt);
+        $tt->tt_total = $total;
+        $tt->tt_due = $param["due_date"];
+        $tt->save();
+        $param["tt"] = $tt;
+
+        $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
+        //return $pdf->download('Tanda Terima'.$param["supplier"]["supplier_name"].'.pdf');
+        return [
+            "status"=>1,
+            "tt_id"=>$tt->tt_id
+        ];
+    }
+
     function viewTandaTerima($id) {
         $param["tt"] = (new purchase_order_tt())->getTt(["tt_id"=>$id])[0]??null;
         $param["data"] = PurchaseOrder::where('tt_id','=',$id)->get();
@@ -373,7 +455,7 @@ class SupplierController extends Controller
         $p->status=0;
         $p->save();
 
-        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["tt_id"=>null]);
+        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["tt_id"=>null,"pembayaran"=>0]);
 
     }
 
@@ -394,6 +476,32 @@ class SupplierController extends Controller
         $p = PurchaseOrder::find($data["po_id"]);
         $p->status = 2; // Lunas
         $p->save();
+    }
+
+    function tolakPO(Request $req) {
+        $data = $req->all();
+        $p = PurchaseOrder::find($data["po_id"]);
+
+        //liat sebelumnya status apa
+        if($p->status==2){
+            $b = PurchaseOrderDetail::where('po_id','=',$data["po_id"])->get();;
+            foreach ($b as $key => $value) {
+                $s = SuppliesVariant::find($value->supplies_variant_id);
+                $s = SuppliesStock::where("supplies_id", "=", $s->supplies_id)
+                    ->where("unit_id", "=", $value->unit_id)
+                    ->where("status", "=", 1)
+                    ->first();
+                $s->ss_stock -= $value->pod_qty;
+                $s->save();
+            }
+        }
+
+        $p->status = -1; // Tolak
+        $p->save(); 
+
+        purchase_order_tt::where('tt_id','=',$p->tt_id)->update(["status"=>0]);
+        PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->update(["status"=>0]);
+        PurchaseOrderDetailInvoice::where('po_id','=',$data["po_id"])->update(["status"=>0]);
     }
 }
 

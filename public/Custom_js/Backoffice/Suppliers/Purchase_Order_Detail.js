@@ -11,6 +11,19 @@
         //refresh();
         refreshSummary();
         $('#po_status').val(data.status).trigger('change');
+   
+        
+        if(data.status==1){
+            $('.save-tolak,.save-terima').show();
+        }
+        else if(data.status==2){
+            $('.save-tolak').show();
+            $('.save-terima').hide();
+        }
+       /*
+         if(data.pembayaran==1){
+            $('.save-tolak,.save-terima').hide();
+        }*/
     });
     
    
@@ -991,15 +1004,48 @@ $(document).on("click", "#btn-acc-po", function () {
         success: function (e) {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
-            afterInsert();
+            $('#po_status').val(2).trigger('change');
             notifikasi(
                 "success",
                 "Berhasil Approve",
                 "Berhasil approve pembatalan produksi"
             );
+            window.open('/purchaseOrder', '_self');
         },
         error: function (e) {
             console.log(e);
         },
     });
 });
+
+
+
+    $(document).on('click', '.save-tolak', function(){
+        showModalDelete("Apakah yakin ingin menolak po ini?","btn-tolak-po");
+    })
+
+    $(document).on("click","#btn-tolak-po",function(){
+        $.ajax({
+            url:"/tolakPO",
+            data:{
+                po_id:data.po_id,
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                 $('#modalDelete .modal-body').html('');
+                $(".modal").modal("hide");
+                $('#po_status').val(-1).trigger('change');
+                notifikasi(
+                    "success",
+                    "Berhasil Tolak",
+                    "Berhasil tolak PO"
+                );
+                window.open('/purchaseOrder', '_self');
+                
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    });

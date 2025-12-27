@@ -135,8 +135,8 @@
 
                                         <div class="row pt-3">
                                             <div class="col-12 text-end">
-                                                <button class="btn btn-danger save-tolak">Tolak</button>
-                                                <button class="btn btn-success save-terima">Terima</button>
+                                                <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
+                                                <button class="btn btn-success save-terima" style="display: none">Terima</button>
                                                 <button class="btn btn-primary save-qty">Simpan Perubahan</button>
                                             </div>
                                         </div>

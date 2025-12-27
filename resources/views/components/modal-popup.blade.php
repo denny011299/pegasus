@@ -532,17 +532,26 @@
                                             placeholder="Input Nama Bahan Mentah">
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Satuan<span class="text-danger">*</span></label>
                                         <select id="supplies_unit" class="form-select fill"></select>
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-4">
                                     <div class="input-block mb-3">
                                         <label>Default Unit<span class="text-danger">*</span></label>
                                         <select class="form-select fill select2" id="unit_id">
                                         </select>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-block mb-3">
+                                        <label>Stock Alert</label>
+                                        <div class="input-group mb-3">
+                                            <input type="number" class="form-control number-only" id="alert" value="0" min="0" step="1" aria-describedby="basic-addon3">
+                                            <span class="input-group-text" id="satuan_alert">-</span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12">

@@ -255,3 +255,55 @@
 </div>
 <!-- /Filter Pencarian -->
 @endif
+
+@if(Route::is(['payReceive']))
+<!-- Filter Pencarian -->
+<div class="container mt-3 ps-0">
+    <div class="row">
+        {{-- 
+        <div class="col-12 col-md-6">
+
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Rentang Tanggal -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search No Tanda terima</label>
+                        <input type="text" class="form-control" id="filter_po" placeholder="No.PO">
+                    </div>
+                    
+                    <!-- Supplier -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search Supplier</label>
+                        <select class="form-select" id="filter_supplier"></select>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>--}}
+        
+        <div class="col-12 col-md-12 mb-4">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Supplier -->
+                    <div class="col-md-3 row-supplier">
+                        <label class="form-label mb-1">Filter Bank</label>
+                         <div class="input-block mb-3">
+                            <label>Bank Account <span class="text-danger">*</span></label>
+                            <select class="form-select fill" id="bank_kode"></select>
+                        </div>
+                    </div>
+                    <div class="col-0 col-md-6"></div>
+                    <div class="col-md-3 text-end">
+                        <label class="form-label mb-1">Tanda Terima</label>
+                         <div class="input-block mb-3">
+                            <label id="jumlah_terpilih" style="cursor:pointer">0 Selected</label> <i  class="fe fe-refresh-ccw ms-2"  style="cursor:pointer"></i><br>
+                            <button class="btn btn-primary btn-create">Buat Tanda Terima</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Filter Pencarian -->
+@endif

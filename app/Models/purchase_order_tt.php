@@ -23,7 +23,8 @@ class purchase_order_tt extends Model
             $result->where('tt_kode', 'like', '%' . $data["tt_kode"] . '%');
         }
 
-        $result->orderBy('created_at', 'asc');
+        $result->orderBy('tt_date', 'desc');
+        $result->orderBy('tt_kode', 'desc');
 
         $result = $result->get();
         foreach ($result as $key => $value) {
