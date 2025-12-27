@@ -18,9 +18,14 @@ class PurchaseOrder extends Model
             "po_supplier"   => null,
             "po_id"   => null,
             "po_customer" => null,
+            "hutang" => 0,
         ], $data);
 
-        $result = PurchaseOrder::where("status", ">=", 1);
+        if ($data["hutang"] == 0) {
+            $result = PurchaseOrder::where("status", "<", 2);   
+        } else {
+            $result = PurchaseOrder::where("status", ">=", 1)->where("pembayaran", "=", 0);
+        }
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
         if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);

@@ -126,8 +126,10 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/declineInvoiceSO', [CustomerController::class, "declineInvoiceSO"])->name('declineInvoiceSO');
 
     Route::get('/purchaseOrder',[SupplierController::class,"PurchaseOrder"])->name('purchaseOrder');
+    Route::post('/accPO',[SupplierController::class,"accPO"])->name('accPO');
     Route::get('/searchSupplies',[SupplierController::class,"searchSupplies"])->name('searchSupplies');
     Route::get('/purchaseOrderDetail/{id}',[SupplierController::class,"PurchaseOrderDetail"])->name('purchaseOrderDetail');
+    Route::get('/purchaseOrderDetailHutang/{id}',[SupplierController::class,"PurchaseOrderDetailHutang"])->name('purchaseOrderDetailHutang');
     Route::get('/getPurchaseOrder', [SupplierController::class, "getPurchaseOrder"])->name('getPurchaseOrder');
     Route::post('/insertPurchaseOrder', [SupplierController::class, "insertPurchaseOrder"])->name('insertPurchaseOrder');
     Route::post('/deletePurchaseOrder', [SupplierController::class, "deletePurchaseOrder"])->name('deletePurchaseOrder');

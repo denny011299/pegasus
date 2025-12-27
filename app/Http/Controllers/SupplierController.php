@@ -28,6 +28,11 @@ class SupplierController extends Controller
         $param["data"] = (new PurchaseOrder())->getPurchaseOrder(["po_id" => $id])[0];
         return view('Backoffice.Suppliers.Purchase_Order_Detail')->with($param);
     }
+    function PurchaseOrderDetailHutang($id)
+    {
+        $param["data"] = (new PurchaseOrder())->getPurchaseOrder(["po_id" => $id, "hutang" => 1])[0];
+        return view('Backoffice.Suppliers.Purchase_Order_Detail')->with($param);
+    }
 
     function getPurchaseOrder(Request $req)
     {
@@ -370,6 +375,25 @@ class SupplierController extends Controller
 
         PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["tt_id"=>null]);
 
+    }
+
+    function accPO(Request $req) {
+        $data = $req->data;
+        $pod_id = (new PurchaseOrderDelivery())->insertPoDelivery(["po_id"=>$data["po_id"],"pdo_receiver"=>"Auto Generated","status"=>2]);
+        foreach ($data['items'] as $key => $value) {
+            $value['pdo_id'] = $pod_id;
+            $value["pdod_sku"] = $value["pod_sku"];
+            $value["pdod_qty"] = $value["pod_qty"];
+            $value["statusPO"] = 2;
+            $value["status"] = 2;
+            (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
+        }
+        $s = Supplier::find($data["po_supplier"]);
+        $due  = date('Y-m-d', strtotime('+'.$s->supplier_top.' days'));
+        (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>2,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
+        $p = PurchaseOrder::find($data["po_id"]);
+        $p->status = 2; // Lunas
+        $p->save();
     }
 }
 

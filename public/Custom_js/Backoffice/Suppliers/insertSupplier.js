@@ -20,6 +20,7 @@ $(document).ready(function(){
         $('#supplier_account_number').val(data.supplier_account_number);
         $('#supplier_ifsc').val(data.supplier_ifsc);
         $('#supplier_top').val(data.supplier_top);
+        $('#bank_kode').append(`<option value="${data.bank_id}">${data.bank_name}</option>`);
         $('#preview_image').attr("src",public+data.supplier_image); 
     }
 })
@@ -61,6 +62,7 @@ $(document).on("click", ".btn-save", function () {
         supplier_account_number: $("#supplier_account_number").val(),
         supplier_ifsc: null,
         supplier_top: $("#supplier_top").val(),
+        bank_id: $("#bank_kode").val(),
         supplier_payment: 0,
         _token:token
     };

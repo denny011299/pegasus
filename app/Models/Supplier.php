@@ -35,6 +35,9 @@ class Supplier extends Model
 
             $v = Provinces::find($value->state_id);
             $value->state_name = $v->prov_name;
+
+            $b = Bank::find($value->bank_id);
+            $value->bank_name = $b->bank_kode??"-";
         }
         return $result;
     }
@@ -55,6 +58,7 @@ class Supplier extends Model
         $t->supplier_account_name = $data["supplier_account_name"];
         $t->supplier_account_number = $data["supplier_account_number"];
         $t->supplier_top = $data["supplier_top"];
+        $t->bank_id = $data["bank_id"];
         $t->supplier_payment = $data["supplier_payment"];
         if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
         $t->save();
@@ -76,6 +80,7 @@ class Supplier extends Model
         $t->supplier_account_name = $data["supplier_account_name"];
         $t->supplier_account_number = $data["supplier_account_number"];
         $t->supplier_top = $data["supplier_top"];
+        $t->bank_id = $data["bank_id"];
         $t->supplier_payment = $data["supplier_payment"];
         if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
         $t->save();

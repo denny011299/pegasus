@@ -1,15 +1,16 @@
     var mode=1;
     var tablePr, tableDn, tableInv, tablePrModal;
-    let detail_delivery = []
+    let detail_delivery = [];
+
+
     autocompleteStaff("#pdo_receiver",null);
     autocompleteSupplier("#po_supplier",null);
+
     $(document).ready(function(){
         inisialisasi();
-        refresh();
+        //refresh();
         refreshSummary();
         $('#po_status').val(data.status).trigger('change');
-
-        
     });
     
    
@@ -921,6 +922,84 @@
         });
     });
     
+    
+    $(document).on("click",".btn-approve-invoice",function(){
+        var btn = $(this);
+        LoadingButton($(this));
+        $.ajax({
+            url:"/acceptInvoicePO",
+            data:{
+                poi_id:$('.btn-approve-invoice').attr('poi_id'),
+                status:2,
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                refreshInvoice();
+                ResetLoadingButton(btn, 'Setujui');
+                console.log(e);
+                
+                if(e==-1){
+                      notifikasi(
+                        "error",
+                        "Gagal Setujui",
+                        "Melebihi Sisa Pembayaran"
+                    );
+                    return false;
+                }
+                else{
+
+                    notifikasi('success', "Berhasil Accept", "Berhasil accept invoice");
+                }
+            },
+            error:function(e){
+                 ResetLoadingButton(btn, 'Setujui');
+                console.log(e);
+            }
+        });
+    });
+    
     $(document).on("click","#btnAddTerima",function(){
         $('#modalTerima').modal("show");
     });
+
+
+    //konfirmasi acc
+$(document).on("click", ".save-terima", function () {
+    var tbId = $(this).closest("table").attr("id");
+    var data = $("#" + tbId)
+        .DataTable()
+        .row($(this).parents("tr"))
+        .data(); //ambil data dari table
+    showModalKonfirmasi(
+        "Apakah yakin ingin Approve pembelian ini?",
+        "btn-acc-po"
+    );
+    $("#btn-acc-po").html("Konfirmasi");
+});
+
+$(document).on("click", "#btn-acc-po", function () {
+
+    $.ajax({
+        url: "/accPO",
+        data: {
+            data:data,
+            _token: token,
+        },
+        method: "post",
+        success: function (e) {
+            $('#modalDelete .modal-body').html('');
+            $(".modal").modal("hide");
+            afterInsert();
+            notifikasi(
+                "success",
+                "Berhasil Approve",
+                "Berhasil approve pembatalan produksi"
+            );
+        },
+        error: function (e) {
+            console.log(e);
+        },
+    });
+});

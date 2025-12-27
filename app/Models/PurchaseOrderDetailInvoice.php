@@ -43,6 +43,7 @@ class PurchaseOrderDetailInvoice extends Model
             $po = PurchaseOrder::find($value->po_id);
             $value->supplier_name = Supplier::find($po->po_supplier)->supplier_name;
             $value->po_code = $po->po_number;
+            $value->pembayaran = $po->pembayaran;
         }
         return $result;
     }
@@ -52,12 +53,14 @@ class PurchaseOrderDetailInvoice extends Model
     {
         $t = new PurchaseOrderDetailInvoice();
         $t->po_id      = $data["po_id"];
-        $t->poi_date   = $data["poi_date"];
+        $t->poi_date   = $data["poi_date"]??date("Y-m-d");
         $t->poi_due    = $data["poi_due"];
         $t->poi_code   = $this->generateInvoicePurchaseOrderID();
         $t->poi_total  = $data["poi_total"];
+        $t->status  = $data["status"]??1;
+        $t->bank_id  = $data["bank_id"]??null;
         $t->save();
-        $this->cekInvoice($t->po_id);
+        //$this->cekInvoice($t->po_id);
         return $t->poi_id;
     }
 

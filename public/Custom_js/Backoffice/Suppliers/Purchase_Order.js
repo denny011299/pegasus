@@ -172,7 +172,6 @@
                 { data: "po_supplier_name"},
                 { data: "total" },
                 { data: "status_po" },
-                { data: "pembayaran_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             columnDefs: [
@@ -204,11 +203,10 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     e[i].total = `Rp ${formatRupiah(e[i].po_total)}`;
-                    e[i].status_po = `<label class="badge bg-secondary badgeStatus">Dibuat</label>`;
+                    e[i].status_po = `<label class="badge bg-secondary badgeStatus">Menunggu Approval</label>`;
                     
-                    if(e[i].status == 2)e[i].status_po = `<label class="badge bg-primary badgeStatus">Barang Diterima</label>`;
-                    if(e[i].status == 3)e[i].status_po = `<label class="badge bg-warning badgeStatus">Pembayaran</label>`;
-                    if(e[i].status == 4)e[i].status_po = `<label class="badge bg-success badgeStatus">Selesai</label>`;
+                    if(e[i].status == 2)e[i].status_po = `<label class="badge bg-primary badgeStatus">Approval</label>`;
+                    if(e[i].status == -1)e[i].status_po = `<label class="badge bg-danger badgeStatus">Ditolak</label>`;
                     
                     e[i].pembayaran_text = `<label class="badge bg-secondary badgeStatus">Belum Lunas</label>`;
                     

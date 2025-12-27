@@ -43,20 +43,19 @@
                                                         value="{{ $data['po_date'] }}" disabled>
                                                 </div>
                                             </div>
+
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Status</label>
-                                                    <select id="po_status" class="form-control fill">
+                                                    <select id="po_status" class="form-control fill" disabled>
                                                         <option value="">Pilih Status</option>
-                                                        <option value="1">Dibuat</option>
-                                                        <option value="2">Barang Diterima</option>
-                                                        <option value="3">Pembayaran</option>
-                                                        <option value="4">Selesai</option>
-                                                        <option value="-1">Cancel</option>
+                                                        <option value="1">Menunggu Approval</option>
+                                                        <option value="2">Approval</option>
+                                                        <option value="-1">Ditolak</option>
                                                     </select>
                                                 </div>
                                             </div>
-
+                                        {{--
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Total</label>
@@ -86,7 +85,7 @@
                                                             value="0">
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </div> --}}
                                         </div>
 
 
@@ -136,13 +135,15 @@
 
                                         <div class="row pt-3">
                                             <div class="col-12 text-end">
+                                                <button class="btn btn-danger save-tolak">Tolak</button>
+                                                <button class="btn btn-success save-terima">Terima</button>
                                                 <button class="btn btn-primary save-qty">Simpan Perubahan</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
+{{-- 
                             <div class="accordion-item">
                                 <h2 class="accordion-header">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
@@ -204,7 +205,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </div>--}}
                         </div>
                     </div>
                 </div>

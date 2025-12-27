@@ -41,7 +41,6 @@
                                             <th>Nama Pemasok</th>
                                             <th>Total</th>
                                             <th>Status</th>
-                                            <th>Pembayaran</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

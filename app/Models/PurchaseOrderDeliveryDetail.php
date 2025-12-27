@@ -44,6 +44,7 @@ class PurchaseOrderDeliveryDetail extends Model
         $t->supplies_variant_id = $data["supplies_variant_id"];
         $t->pdod_sku = $data["pdod_sku"];
         $t->pdod_qty = $data["pdod_qty"];
+        $t->status = $data["status"]??1;
         $t->save();
         if(isset($data["statusPO"])&&$data["statusPO"]==2){
             $s = SuppliesVariant::find($data["supplies_variant_id"]);

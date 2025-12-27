@@ -41,17 +41,18 @@ class PurchaseOrderDelivery extends Model
     {
         $t = new PurchaseOrderDelivery();
         $t->pdo_number   = $this->generatePoDeliveryID();
-        $t->pdo_receiver = $data["pdo_receiver"];
-        $t->staff_id     = $data["staff_id"];
+        $t->pdo_receiver = $data["pdo_receiver"]??"-";
+        $t->staff_id     = $data["staff_id"]??null;
         $t->po_id = $data["po_id"];
-        $t->pdo_date     = $data["pdo_date"];
-        $t->pdo_phone    = $data["pdo_phone"];
+        $t->pdo_date     = $data["pdo_date"]??date("Y-m-d");
+        $t->pdo_phone    = $data["pdo_phone"]??"-";
         //$t->pdo_address  = $data["pdo_address"];
-        $t->pdo_desc     = $data["pdo_desc"];
+        $t->pdo_desc     = $data["pdo_desc"]??"-";
+        $t->status     = $data["status"]??1;
         $t->save();
 
         $p = PurchaseOrder::find($data["po_id"]);
-        $p->status = 2; // update status PO menjadi "Sedang D
+        //$p->status = 2; // update status PO menjadi "Sedang D
         $p->save();
 
         return $t->pdo_id;

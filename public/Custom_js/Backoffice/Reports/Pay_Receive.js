@@ -55,15 +55,17 @@
                     e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
                     e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp.");
-                    if (e[i].status == 1){
+                    console.log(e[i].pembayaran);
+                    
+                    if (e[i].pembayaran == 0){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
-                    } else if (e[i].status == 2){
+                    } else if (e[i].pembayaran == 1){
                         e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
                     } else {
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Tertolak</span>`;
                     }
                     e[i].action = `
-                        <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_edit_invoice" >
+                        <a href="/PurchaseOrderDetailHutang/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_edit_invoice" >
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
