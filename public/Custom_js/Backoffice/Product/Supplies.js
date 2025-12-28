@@ -23,6 +23,7 @@
         $('#alert').val(0);
         $('#tbVariant').html("")
         addRow();
+        $('.btn-save').html(mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
         $('#add_supplies').modal("show");
         $('#supplies_unit').trigger('change');
     });
@@ -316,7 +317,7 @@
         $('#unit_id').val(data.supplies_default_unit).trigger('change');
         console.log(data);
         
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html(mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
         $('#add_supplies').modal("show");
         $('#add_supplies').attr("supplies_id", data.supplies_id);
     });

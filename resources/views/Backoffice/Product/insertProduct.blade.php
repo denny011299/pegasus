@@ -143,7 +143,7 @@
                                 </div>
                                 <div class="add-customer-btns text-end">
                                     <a class="btn btn-outline-secondary btn-clear">Clear</a>
-                                    <a class="btn btn-primary btn-save">Simpan Perubahan</a>
+                                    <a class="btn btn-primary btn-save">Tambah Produk</a>
                                 </div>
                             </form>
                         </div>

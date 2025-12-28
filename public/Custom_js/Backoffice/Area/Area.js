@@ -10,6 +10,7 @@
         $('#add_area .modal-title').html("Tambah Wilayah");
         $('#add_area input').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html(mode == 1?"Tambah Wilayah" : "Update Wilayah");
         $('#add_area').modal("show");
     });
     
@@ -140,7 +141,7 @@
         $('#area_code').val(data.area_code);
         $('#area_name').val(data.area_name);
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html(mode == 1?"Tambah Wilayah" : "Update Wilayah");
         $('#add_area').modal("show");
         $('#add_area').attr("area_id", data.area_id);
     });

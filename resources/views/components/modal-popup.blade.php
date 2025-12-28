@@ -780,7 +780,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Pesanan Penjualan</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Penjualan</button>
                     </div>
                 </form>
             </div>
@@ -1026,7 +1026,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Purchase Order</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Pembelian</button>
                     </div>
                 </form>
             </div>

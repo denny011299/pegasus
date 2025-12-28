@@ -9,6 +9,7 @@ autocompleteUnit("#product_unit");
 
 
 $(document).ready(function() {
+    $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
     if (mode == 1) {
         canAdd=true;
         $('#tbVariant').html("")

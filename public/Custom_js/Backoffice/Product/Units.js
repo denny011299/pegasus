@@ -10,6 +10,7 @@
         $('#add_unit .modal-title').html("Tambah Satuan");
         $('#add_unit input').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html(mode == 1?"Tambah Satuan" : "Update Satuan");
         $('#add_unit').modal("show");
     });
     
@@ -144,7 +145,7 @@
         $('#unit_name').val(data.unit_name);
         $('#unit_short_name').val(data.unit_short_name);
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html(mode == 1?"Tambah Satuan" : "Update Satuan");
         $('#add_unit').modal("show");
         $('#add_unit').attr("unit_id", data.unit_id);
     });

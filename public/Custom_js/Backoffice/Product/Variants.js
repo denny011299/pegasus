@@ -11,6 +11,7 @@
         $('#add_variant input').val("");
         $('.is-invalid').removeClass('is-invalid');
         $('#variant_attribute').tagsinput('removeAll');
+        $('.btn-save').html(mode == 1?"Tambah Variasi" : "Update Variasi");
         $('#add_variant').modal("show");
     });
     

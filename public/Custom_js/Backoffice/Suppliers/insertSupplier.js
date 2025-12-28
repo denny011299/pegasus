@@ -3,6 +3,7 @@ autocompleteCity('#city_id');
 autocompleteRekening("#bank_kode");
 
 $(document).ready(function(){
+    $('.btn-save').html(mode == 1?"Tambah Pemasok" : "Update Pemasok");
     if(mode==2) {
         console.log(data)
         $('#supplier_name').val(data.supplier_name);
@@ -41,7 +42,7 @@ $(document).on("click", ".btn-save", function () {
     });
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', 'Simpan perubahan');
+        ResetLoadingButton('.btn-save', mode == 1?"Tambah Pemasok" : "Update Pemasok");
         return false;
     };
 
@@ -91,14 +92,14 @@ $(document).on("click", ".btn-save", function () {
         },
         success: function (response) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            ResetLoadingButton(".btn-save", mode == 1?"Tambah Pemasok" : "Update Pemasok");
             if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pemasok");
             else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pemasok");
             afterInsert();
         },
         error: function (xhr) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            ResetLoadingButton(".btn-save", mode == 1?"Tambah Pemasok" : "Update Pemasok");
             console.log(xhr);
         },
     });

@@ -8,7 +8,7 @@
 
     $(document).ready(function(){
         inisialisasi();
-        //refresh();
+        refresh();
         refreshSummary();
         $('#po_status').val(data.status).trigger('change');
    
@@ -125,7 +125,7 @@
     function refresh() {
         tablePr.clear().draw(); 
         // Manipulasi data sebelum masuk ke tabel
-
+        console.log(data);
         data.items.forEach((element, index) => {
             element.qty = `
                 <input type="number" class="form-control text-center qtySummary" data-price="${element.pod_harga}" index="${index}" value="${element.pod_qty}" min="0">

@@ -61,7 +61,7 @@ class SalesOrder extends Model
         $t->so_cashier  = $data["sales_id"];
         $t->save();
 
-        return $t->so_id;
+        return $t;
     }
 
     function updateSalesOrder($data){

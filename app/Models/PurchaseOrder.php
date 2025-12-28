@@ -22,7 +22,7 @@ class PurchaseOrder extends Model
         ], $data);
 
         if ($data["hutang"] == 0) {
-            $result = PurchaseOrder::where("status", "<", 2)->where("pembayaran", "=", 0);   
+            $result = PurchaseOrder::where("status", "<", 2)->where("status", ">=", 1)->where("pembayaran", "=", 0);   
         } else {
             $result = PurchaseOrder::where("status", ">=", 1);
         }

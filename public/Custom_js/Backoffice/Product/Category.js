@@ -10,6 +10,7 @@
         $('#add_category .modal-title').html("Tambah Kategori");
         $('#add_category input').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html(mode == 1?"Tambah Kategori" : "Update Kategori");
         $('#add_category').modal("show");
     });
     
@@ -139,7 +140,7 @@
         $('#add_category input').empty().val("");
         $('#category_name').val(data.category_name);
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Tambah Kategori');
+        $('.btn-save').html(mode == 1?"Tambah Kategori" : "Update Kategori");
         $('#add_category').modal("show");
         $('#add_category').attr("category_id", data.category_id);
     });

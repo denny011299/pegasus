@@ -26,6 +26,7 @@
         $('#so_ppn').val(0).trigger('blur');
         $('.form-select').not("#so_payment").empty();
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html(mode == 1?"Tambah Penjualan" : "Update Penjualan");
         $('#add_sales_order').modal("show");
         updateTotal();
         
@@ -241,13 +242,13 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
             return false;
         };
 
         if ($('#tableSalesModal').html() == ""){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 produk dipilih');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
             return false;
         }
 
@@ -280,16 +281,16 @@
             },
             success:function(e){    
                 if (e!=1){
-                    ResetLoadingButton(".btn-save", 'Simpan perubahan');   
+                    ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");   
                     notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
                 }
                 else{
-                    ResetLoadingButton(".btn-save", 'Simpan perubahan');      
+                    ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");      
                     afterInsert();
                 }
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');
+                ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");
                 console.log(e);
             }
         });
@@ -351,7 +352,7 @@
         updateTotal()
 
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html('Simpan perubahan');
+        $('.btn-save').html(mode == 1?"Tambah Penjualan" : "Update Penjualan");
         $('#add_sales_order').modal("show");
         $('#add_sales_order').attr("so_id", data.so_id);
         $('#add_sales_order').attr("so_number", data.so_number);

@@ -112,7 +112,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Kas" : "Update Kas");
             return false;
         };
 
@@ -142,11 +142,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
+                ResetLoadingButton(".btn-save", mode == 1?"Tambah Kas" : "Update Kas");      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');
+                ResetLoadingButton(".btn-save", mode == 1?"Tambah Kas" : "Update Kas");
                 console.log(e);
             }
         });

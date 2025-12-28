@@ -6,6 +6,7 @@ use App\Models\SalesOrder;
 use App\Models\SalesOrderDelivery;
 use App\Models\SalesOrderDetailInvoice;
 use App\Models\Customer;
+use App\Models\LogStock;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
@@ -31,6 +32,7 @@ class CustomerController extends Controller
     function insertSalesOrder(Request $req){
         $data = $req->all();
         $p = [];
+        $valid = 1;
         foreach (json_decode($data['products'],true) as $key => $value) {
             $ps = ProductVariant::find($value["product_variant_id"]);
             $s = ProductStock::where("product_id", "=", $ps->product_id)
@@ -46,13 +48,23 @@ class CustomerController extends Controller
             return implode(", ",$p);
         }
 
-        $so_id = (new SalesOrder())->insertSalesOrder($data);
-        if ($so_id == -1){
+        $so = (new SalesOrder())->insertSalesOrder($data);
+        if ($so->so_id == -1){
             return -1;
         }
         foreach (json_decode($data['products'],true) as $key => $value) {
-            $value['so_id'] = $so_id;
+            $value['so_id'] = $so->so_id;
             (new SalesOrderDetail())->insertSalesOrderDetail($value);
+
+            // Catat Log
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $so->so_number,
+                'log_item_id' => $value['product_variant_id'],
+                'log_notes'  => "Penjualan produk",
+                'log_jumlah' => $value["so_qty"],
+                'unit_id'    => $value['unit_id'],
+            ]);
         }
         return 1;
     }
@@ -60,17 +72,27 @@ class CustomerController extends Controller
     function updateSalesOrder(Request $req){
         $data = $req->all();
         $list_id_detail = [];
-        $so_id = (new SalesOrder())->updateSalesOrder($data);
-        if ($so_id == -1){
+        $so = (new SalesOrder())->updateSalesOrder($data);
+        if ($so->so_id == -1){
             return -1;
         }
         foreach (json_decode($req->products,true) as $key => $value) {
-            $value['so_id'] = $so_id;
+            $value['so_id'] = $so->so_id;
             if(!isset($value["sod_id"])) $id = (new SalesOrderDetail())->insertSalesOrderDetail($value);
             else $id = (new SalesOrderDetail())->updateSalesOrderDetail($value);
             array_push($list_id_detail, $id);
+
+            // Catat Log
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $so->so_number,
+                'log_item_id' => $value['product_variant_id'],
+                'log_notes'  => "Penyesuaian penjualan produk " . $so->so_number,
+                'log_jumlah' => $value["so_qty"],
+                'unit_id'    => $value['unit_id'],
+            ]);
         }
-        SalesOrderDetail::where('so_id','=',$so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
+        SalesOrderDetail::where('so_id','=',$so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
     }
 
     function deleteSalesOrder(Request $req){

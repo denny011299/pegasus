@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Bank;
+use App\Models\LogStock;
 use App\Models\purchase_order_tt;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
@@ -462,6 +463,8 @@ class SupplierController extends Controller
     function accPO(Request $req) {
         $data = $req->data;
         $pod_id = (new PurchaseOrderDelivery())->insertPoDelivery(["po_id"=>$data["po_id"],"pdo_receiver"=>"Auto Generated","status"=>2]);
+        $po = PurchaseOrder::find($data['po_id']);
+
         foreach ($data['items'] as $key => $value) {
             $value['pdo_id'] = $pod_id;
             $value["pdod_sku"] = $value["pod_sku"];
@@ -469,13 +472,23 @@ class SupplierController extends Controller
             $value["statusPO"] = 2;
             $value["status"] = 2;
             (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
+
+            // Catat Log
+            $sv = SuppliesVariant::find($value['supplies_variant_id']);
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $po->po_number,
+                'log_item_id' => $sv->supplies_id,
+                'log_notes'  => "Pembelian bahan mentah",
+                'log_jumlah' => $value["pdod_qty"],
+                'unit_id'    => $value['unit_id'],
+            ]);
         }
         $s = Supplier::find($data["po_supplier"]);
         $due  = date('Y-m-d', strtotime('+'.$s->supplier_top.' days'));
         (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>2,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
-        $p = PurchaseOrder::find($data["po_id"]);
-        $p->status = 2; // Lunas
-        $p->save();
+        $po->status = 2; // Lunas
+        $po->save();
     }
 
     function tolakPO(Request $req) {

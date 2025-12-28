@@ -141,7 +141,7 @@
                                 </div>
                                 <div class="add-supplier-btns text-end">
                                     <a href="{{ url('supplier') }}" class="btn btn-outline-secondary btn-cancel">Batal</a>
-                                    <button class="btn btn-primary btn-save">Simpan Perubahan</button>
+                                    <button class="btn btn-primary btn-save">Tambah Pemasok</button>
                                 </div>
                             </form>
                         </div>

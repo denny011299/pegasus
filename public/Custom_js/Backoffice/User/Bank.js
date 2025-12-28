@@ -10,6 +10,7 @@
         $('#add_bank .modal-title').html("Tambah Bank");
         $('#add_bank input').val("");
         $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html(mode == 1?"Tambah Bank" : "Update Bank");
         $('#add_bank').modal("show");
     });
     
@@ -141,6 +142,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Tambah Bank');
         $('#add_bank').modal("show");
+        $('.btn-save').html(mode == 1?"Tambah Bank" : "Update Bank");
         $('#add_bank').attr("bank_id", data.bank_id);
     });
 
