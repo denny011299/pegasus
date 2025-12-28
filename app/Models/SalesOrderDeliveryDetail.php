@@ -45,17 +45,15 @@ class SalesOrderDeliveryDetail extends Model
         $t->sdod_sku = $data["sdod_sku"];
         $t->sdod_qty = $data["sdod_qty"];
         $t->save();
-        if(isset($data["statusSO"])&&$data["statusSO"]==2){
-            $s = ProductVariant::find($data["product_variant_id"]);
-            $s = ProductStock::where("product_id", "=", $s->product_id)
-                ->where("unit_id", "=", $data["unit_id"])
-                ->where("status", "=", 1)
-                ->first();
-            $s->ps_stock += $data["sdod_qty"];
-            $s->save();
+        $s = ProductVariant::find($data["product_variant_id"]);
+        $s = ProductStock::where("product_id", "=", $s->product_id)
+            ->where("unit_id", "=", $data["unit_id"])
+            ->where("status", "=", 1)
+            ->first();
+            dd($s);
+        $s->ps_stock -= $data["sdod_qty"];
+        $s->save();
 
-            
-        }
         return $t->sdod_id;
     }
 
@@ -68,7 +66,7 @@ class SalesOrderDeliveryDetail extends Model
             ->first();
 
         $t = SalesOrderDeliveryDetail::find($data["sdod_id"]);
-        if($data["statusSO"]==2){
+       
             $st->ps_stock -= $t->sdod_qty;
             $st->save();
 
@@ -80,7 +78,7 @@ class SalesOrderDeliveryDetail extends Model
             //ditambah lagi
             $st->ps_stock += $data["sdod_qty"];
             $st->save();
-        }
+        
         return $t->sdod_id;
     }
 

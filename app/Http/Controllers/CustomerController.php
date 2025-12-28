@@ -6,6 +6,7 @@ use App\Models\SalesOrder;
 use App\Models\SalesOrderDelivery;
 use App\Models\SalesOrderDetailInvoice;
 use App\Models\Customer;
+use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
@@ -29,6 +30,22 @@ class CustomerController extends Controller
 
     function insertSalesOrder(Request $req){
         $data = $req->all();
+        $p = [];
+        foreach (json_decode($data['products'],true) as $key => $value) {
+            $ps = ProductVariant::find($value["product_variant_id"]);
+            $s = ProductStock::where("product_id", "=", $ps->product_id)
+                ->where("unit_id", "=", $value["unit_id"])
+                ->where("status", "=", 1)
+                ->first();
+            if($s->ps_stock < $value["so_qty"]){
+                array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
+                $valid=-1;
+            }
+        }
+        if($valid==-1){
+            return implode(", ",$p);
+        }
+
         $so_id = (new SalesOrder())->insertSalesOrder($data);
         if ($so_id == -1){
             return -1;
@@ -37,6 +54,7 @@ class CustomerController extends Controller
             $value['so_id'] = $so_id;
             (new SalesOrderDetail())->insertSalesOrderDetail($value);
         }
+        return 1;
     }
 
     function updateSalesOrder(Request $req){

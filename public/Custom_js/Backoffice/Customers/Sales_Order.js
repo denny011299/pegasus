@@ -279,10 +279,9 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){    
-                if (e == -1){
+                if (e!=1){
                     ResetLoadingButton(".btn-save", 'Simpan perubahan');   
-                    if (mode == 1) notifikasi("error", "Gagal Insert", "Stock Product tidak mencukupi!");
-                    else if (mode == 2) notifikasi("error", "Gagal Update", "Stock Product tidak mencukupi!");
+                    notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
                 }
                 else{
                     ResetLoadingButton(".btn-save", 'Simpan perubahan');      

@@ -23,7 +23,8 @@ class ProductVariant extends Model
         ], $data);
 
         $result = self::where("product_variants.status", "=", 1);
-
+        $result->join("products as pr", 'pr.product_id','product_variants.product_id');
+        $result->where("pr.status", "=", 1);
 
         // Filter berdasarkan product_id
         if ($data["product_id"]) {

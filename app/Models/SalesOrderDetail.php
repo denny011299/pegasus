@@ -52,6 +52,14 @@ class SalesOrderDetail extends Model
         $t->sod_subtotal = $data["so_subtotal"];
         $t->save();
 
+        $s = ProductVariant::find($data["product_variant_id"]);
+         $s = ProductStock::where("product_id", "=", $s->product_id)
+            ->where("unit_id", "=", $data["unit_id"])
+            ->where("status", "=", 1)
+            ->first();
+        $s->ps_stock -= $data["so_qty"];
+        $s->save();
+
         return $t->sod_id;
     }
 
