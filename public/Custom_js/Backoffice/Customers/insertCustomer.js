@@ -5,6 +5,7 @@ autocompleteDistrict('#district_id');
 autocompleteStaffSales('#sales_id');
 
 $(document).ready(function(){
+    $('.btn-save').html(mode == 1?"Tambah Pelanggan" : "Update Pelanggan");
     if(mode==2) {
         console.log(data)
         $('#area_id').append(`<option value="${data.area_id}">${data.area_name}</option>`);

@@ -26,7 +26,7 @@ class SalesOrder extends Model
             $result->where("so_customer", "like", "%".$data["so_customer"]."%");
         }
 
-        $result->orderBy("created_at", "asc");
+        $result->orderBy("created_at", "desc");
         $result= $result->get();
         foreach ($result as $key => $value) {
             $value->customer_name = Customer::find($value->so_customer)->customer_name ?? "-";
