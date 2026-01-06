@@ -184,7 +184,6 @@ class SupplierController extends Controller
     function getPoInvoice(Request $req)
     {
         $data = (new PurchaseOrderDetailInvoice())->getPoInvoice($req->all());
-        dd($data);
         return response()->json($data);
     }
 
