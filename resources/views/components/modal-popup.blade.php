@@ -989,12 +989,12 @@
                                     <div class="table-responsive">
                                         <table class="table table-center" id="tablePurchaseModal">
                                             <thead>
-                                                <th style="width: 15%">Produk</th>
-                                                <th style="width: 20%">Variasi</th>
+                                                <th style="width: 14%">Produk</th>
+                                                <th style="width: 18%">Variasi</th>
                                                 <th style="width:11%">SKU</th>
-                                                <th style="width: 22%">Qty</th>
-                                                <th style="width:11%" class="text-end">Harga Beli</th>
-                                                <th style="width:11%" class="text-end">Subtotal</th>
+                                                <th style="width: 21%">Qty</th>
+                                                <th style="width:13%" class="text-end">Harga Beli</th>
+                                                <th style="width:13%" class="text-end">Subtotal</th>
                                                 <th class="text-center">Action</th>
                                             </thead>
                                             <tbody></tbody>

@@ -343,7 +343,7 @@ class SupplierController extends Controller
             $po = PurchaseOrder::find($p->po_id);
             $s = Supplier::find($po->po_supplier);
             $param["supplier"] = $s;
-            if($p->pembayaran!=0||$po->tt_id !=null){
+            if($po->pembayaran!=1||$po->tt_id !=null){
                 array_push($notValid, $p->poi_code);
             }
             else{

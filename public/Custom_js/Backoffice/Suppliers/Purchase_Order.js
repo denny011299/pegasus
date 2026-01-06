@@ -82,10 +82,10 @@
             
             $('#tablePurchaseModal tbody').append(`
                 <tr>
-                    <td style="width:15%">${item.supplies_name}</td>
-                    <td style="width:20%">${item.supplies_variant_name}</td>
+                    <td style="width:14%">${item.supplies_name}</td>
+                    <td style="width:18%">${item.supplies_variant_name}</td>
                     <td style="width:11%">${item.supplies_variant_sku}</td>
-                    <td style="width:22%; padding:auto 0">
+                    <td style="width:21%; padding:auto 0">
                         <div class="row m-0 p-0">
                             <div class="col-5 p-0">
                                 <input type="number" class="form-control qtyPesanan" index="${index}" value="${item.qty}">
@@ -98,8 +98,8 @@
                             </div>
                         </div>
                     </td>
-                    <td style="width:11%" class="text-end">Rp ${formatRupiah(item.supplies_variant_price+"")}</td>
-                    <td style="width:11%" class="text-end">Rp ${formatRupiah((item.supplies_variant_price*item.qty)+"")}</td>
+                    <td style="width:13%" class="text-end">Rp ${formatRupiah(item.supplies_variant_price+"")}</td>
+                    <td style="width:13%" class="text-end">Rp ${formatRupiah((item.supplies_variant_price*item.qty)+"")}</td>
                     <td class="text-center text-danger" style="cursor:pointer"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
                 </tr>    
             `);
