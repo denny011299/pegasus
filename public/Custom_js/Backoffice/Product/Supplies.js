@@ -45,7 +45,7 @@
         
         $('#tbVariant').append(`
             <tr class="row-variant">
-                <td style="width:15%;">
+                <td style="width:15%;" class="td-supplier">
                     <select class="form-select supplier_id select2" name="" id="" style="width:100%;">
                     </select>
                 </td>
@@ -147,6 +147,7 @@
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
         var url ="/insertSupplies";
         var valid=1;
 
@@ -156,6 +157,14 @@
                 $(this).addClass('is-invalid');
             }
         });
+         if($('#supplies_unit').val()==null||$('#supplies_unit').val()=="null"||$('#supplies_unit').val()==""){
+            valid=-1;
+            $('#row-satuan .select2-selection--single').addClass('is-invalids');
+        }
+         if($('#supplies_unit').val()==null||$('#supplies_unit').val()=="null"||$('#supplies_unit').val()==""){
+            valid=-1;
+            $('#row-satuan .select2-selection--single').addClass('is-invalids');
+        }
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');

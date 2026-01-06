@@ -12,18 +12,18 @@
         refreshSummary();
         $('#po_status').val(data.status).trigger('change');
    
-        
+        $('.save-terima,.save-tolak,.save-qty').hide();
         if(data.status==1){
-            $('.save-tolak,.save-terima').show();
+            $('.save-tolak,.save-terima,.save-qty').show();
         }
         else if(data.status==2){
             $('.save-tolak').show();
-            $('.save-terima').hide();
+            $('.save-terima,.save-qty').hide();
         }
-       /*
-         if(data.pembayaran==1){
-            $('.save-tolak,.save-terima').hide();
-        }*/
+       
+        if(data.pembayaran==1){
+            $('.save-tolak,.save-terima,.save-qty').hide();
+        }
     });
     
    
@@ -412,6 +412,7 @@
         });
         console.log(data.items);
         param = {
+            po_id: data.po_id,
             po_detail: JSON.stringify(data.items),
             _token:token
         };

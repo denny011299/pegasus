@@ -230,6 +230,7 @@
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
         var url ="/insertSalesOrder";
         var valid=1;
 
@@ -239,6 +240,10 @@
                 $(this).addClass('is-invalid');
             }
         });
+        if($('so_customer').val()==null||$('#so_customer').val()=="null"||$('#so_customer').val()==""){
+            valid=-1;
+            $('#row-pelanggan .select2-selection--single').addClass('is-invalids');
+        }
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');

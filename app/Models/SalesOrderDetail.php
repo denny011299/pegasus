@@ -46,14 +46,14 @@ class SalesOrderDetail extends Model
         $t->sod_nama = $data["pr_name"];
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
-        // $t->sod_unit = $data["unit_id"];
+        $t->unit_id = $data["unit_id"];
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];
         $t->save();
 
         $s = ProductVariant::find($data["product_variant_id"]);
-         $s = ProductStock::where("product_id", "=", $s->product_id)
+         $s = ProductStock::where("product_variant_id", "=", $s->product_variant_id)
             ->where("unit_id", "=", $data["unit_id"])
             ->where("status", "=", 1)
             ->first();
@@ -64,13 +64,24 @@ class SalesOrderDetail extends Model
     }
 
     function updateSalesOrderDetail($data){
+
         $t = SalesOrderDetail::find($data["sod_id"]);
+        $s = ProductVariant::find($data["product_variant_id"]);
+         $s = ProductStock::where("product_variant_id", "=", $s->product_variant_id)
+            ->where("unit_id", "=", $data["unit_id"])
+            ->where("status", "=", 1)
+            ->first();
+        $s->ps_stock += $t["sod_qty"];
+        $s->ps_stock -= $data["so_qty"];
+        $s->save();
+
+
         $t->so_id = $data["so_id"];
         $t->product_variant_id = $data["product_variant_id"];
         $t->sod_nama = $data["product_name"];
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
-        // $t->sod_unit = $data["unit_id"];
+        $t->unit_id = $data["unit_id"];
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];
@@ -85,7 +96,8 @@ class SalesOrderDetail extends Model
         $t->save();
         
         $m = ProductVariant::find($t->product_variant_id);
-        $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->sod_unit)->first();
+        $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
+
         $s->ps_stock += $t->sod_qty;
         $s->save();
         return $m;

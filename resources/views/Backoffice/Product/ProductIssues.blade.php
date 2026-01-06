@@ -1,6 +1,14 @@
 <?php $page = 'expired-products'; ?>
 @extends('layout.mainlayout')
 @section('content')
+<style>
+     .is-invalid{
+            border-color: #dc3545!important;
+        }
+        .is-invalids {
+            border-color: #dc3545!important;
+        }
+</style>
     <div class="page-wrapper">
         <div class="content">
             @component('components.breadcrumb')

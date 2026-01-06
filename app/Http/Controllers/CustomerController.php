@@ -35,7 +35,7 @@ class CustomerController extends Controller
         $valid = 1;
         foreach (json_decode($data['products'],true) as $key => $value) {
             $ps = ProductVariant::find($value["product_variant_id"]);
-            $s = ProductStock::where("product_id", "=", $ps->product_id)
+            $s = ProductStock::where("product_variant_id", "=", $ps->product_variant_id)
                 ->where("unit_id", "=", $value["unit_id"])
                 ->where("status", "=", 1)
                 ->first();
@@ -71,6 +71,27 @@ class CustomerController extends Controller
 
     function updateSalesOrder(Request $req){
         $data = $req->all();
+
+        $p = [];
+        $valid = 1;
+        foreach (json_decode($data['products'],true) as $key => $value) {
+            $sod = SalesOrderDetail::find($value["sod_id"]);
+            $ps = ProductVariant::find($value["product_variant_id"]);
+            $s = ProductStock::where("product_variant_id", "=", $ps->product_variant_id)
+                ->where("unit_id", "=", $value["unit_id"])
+                ->where("status", "=", 1)
+                ->first();
+            if(($s->ps_stock+$sod->sod_qty) < $value["so_qty"]){
+                array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
+                $valid=-1;
+            }
+        }
+        
+        if($valid==-1){
+            return implode(", ",$p);
+        }
+
+        
         $list_id_detail = [];
         $so = (new SalesOrder())->updateSalesOrder($data);
         if ($so->so_id == -1){
@@ -93,6 +114,7 @@ class CustomerController extends Controller
             ]);
         }
         SalesOrderDetail::where('so_id','=',$so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
+        return 1;
     }
 
     function deleteSalesOrder(Request $req){

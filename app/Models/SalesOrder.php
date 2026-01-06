@@ -110,7 +110,7 @@ class SalesOrder extends Model
         $t->so_cashier  = $data["sales_id"];
         $t->save();
 
-        return $t->so_id;
+        return $t;
     }
 
     function deleteSalesOrder($data){
@@ -118,10 +118,6 @@ class SalesOrder extends Model
         $t->status = 0; // soft delete
         $t->save();
     }
-    
-
-    
-
 
     function generateSalesOrderID()
     {

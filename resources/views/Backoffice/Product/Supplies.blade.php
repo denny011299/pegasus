@@ -11,6 +11,12 @@
             white-space: normal !important;
             word-wrap: break-word;
         }
+        .is-invalid{
+            border-color: #dc3545!important;
+        }
+        .is-invalids {
+            border-color: #dc3545!important;
+        }
     </style>
 @endsection
 @section('content')

@@ -18,6 +18,9 @@
         width: 100%;
         border-radius: 10px;
     }
+    .is-invalids {
+        border-color: #dc3545!important;
+    }
 </style>
 @if (!Route::is(['index-three', 'index-four', 'index-five']))
     @if (!Route::is(['index-two']))

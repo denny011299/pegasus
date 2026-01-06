@@ -286,17 +286,35 @@
                 <div class="row g-2 align-items-center">
                     <!-- Supplier -->
                     <div class="col-md-3 row-supplier">
-                        <label class="form-label mb-1">Filter Bank</label>
+                        <label class="form-label mb-1">Filter</label>
                          <div class="input-block mb-3">
-                            <label>Bank Account <span class="text-danger">*</span></label>
+                            <label>Bank Account</label>
                             <select class="form-select fill" id="bank_kode"></select>
                         </div>
                     </div>
-                    <div class="col-0 col-md-6"></div>
+                    <div class="col-md-3">
+                        <label class="form-label mb-1">  </label>
+                         <div class="input-block mb-3">
+                            <label>Status</label>
+                            <select class="form-select fill" id="status">
+                                <option value="1" selected>Belum Terbayar</option>
+                                <option value="3">Menunggu Approval</option>
+                                <option value="2">Terbayar</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label mb-1">  </label>
+                         <div class="input-block mb-3">
+                            <label>Supplier</label>
+                            <select class="form-select fill" id="supplier">
+                            </select>
+                        </div>
+                    </div>
                     <div class="col-md-3 text-end">
                         <label class="form-label mb-1">Tanda Terima</label>
                          <div class="input-block mb-3">
-                            <label id="jumlah_terpilih" style="cursor:pointer">0 Selected</label> <i  class="fe fe-refresh-ccw ms-2"  style="cursor:pointer"></i><br>
+                            <label id="jumlah_terpilih" class="jumlah_terpilih" style="cursor:pointer">0 Selected</label> <i  class="fe fe-refresh-ccw ms-2 jumlah_terpilih"  style="cursor:pointer"></i><br>
                             <button class="btn btn-primary btn-create">Buat Tanda Terima</button>
                         </div>
                     </div>

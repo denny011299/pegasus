@@ -35,7 +35,7 @@
                                         <table class="table table-center table-hover" id="tablePayables">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th class="text-center">#</th>
+                                                    <th class="text-center"><input type="checkbox" class="form-check-input" name="" id="selectAll"></th>
                                                     <th>Bank</th>
                                                     <th>Tgl. Pemesanan</th>
                                                     <th>Tgl. Jatuh Tempo</th>

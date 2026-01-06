@@ -279,6 +279,7 @@ $(document).on("click", ".btn-save", function () {
 
     $(document).on('click', '.btn-add-product', function(){
         $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
         var valid=1;
         $("#add-product-issues .fill_product").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
@@ -286,7 +287,10 @@ $(document).on("click", ".btn-save", function () {
                 $(this).addClass('is-invalid');
             }
         });
-
+        if($('#product_id').val()==null||$('#product_id').val()=="null"||$('#product_id').val()==""){
+            valid=-1;
+            $('#row-product .select2-selection--single').addClass('is-invalids');
+        }
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 

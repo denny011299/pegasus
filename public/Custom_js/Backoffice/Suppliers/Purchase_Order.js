@@ -253,7 +253,11 @@
                 $(this).addClass('is-invalid');
             }
         });
-
+        if($('#po_supplier').val()==null||$('#po_supplier').val()=="null"||$('#po_supplier').val()==""){
+            valid=-1;
+            $('#row-pemasok .select2-selection--single').addClass('is-invalids');
+        }
+        
         if(item.length==0){
             valid=-1;
             notifikasi('error', "Gagal Insert", 'Silahkan masukkan minimal 1 bahan');

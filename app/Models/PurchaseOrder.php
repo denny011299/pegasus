@@ -86,7 +86,7 @@ class PurchaseOrder extends Model
     function pelunasanPurchaseOrder($data)
     {
         $t = PurchaseOrder::find($data["po_id"]);
-        $t->pembayaran = 1; // soft delete
+    //    / $t->pembayaran = 1; // soft delete
         $t->save();
 
     }

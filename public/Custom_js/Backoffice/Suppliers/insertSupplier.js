@@ -29,6 +29,7 @@ $(document).ready(function(){
 $(document).on("click", ".btn-save", function () {
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
+    $('.is-invalids').removeClass('is-invalids');
     var url = "/insertSupplier";
 
 
@@ -40,6 +41,21 @@ $(document).on("click", ".btn-save", function () {
             $(this).addClass('is-invalid');
         }
     });
+
+    if($('#bank_kode').val()==null||$('#bank_kode').val()=="null"||$('#bank_kode').val()==""){
+        valid=-1;
+        $('#row-bank_kode .select2-selection--single').addClass('is-invalids');
+    }
+    if($('#state_id').val()==null||$('#state_id').val()=="null"||$('#state_id').val()==""){
+        valid=-1;
+        $('#row-province .select2-selection--single').addClass('is-invalids');
+    }
+
+    if($('#city_id').val()==null||$('#city_id').val()=="null"||$('#city_id').val()==""){
+        valid=-1;
+        $('#row-city .select2-selection--single').addClass('is-invalids');
+    }
+
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
         ResetLoadingButton('.btn-save', mode == 1?"Tambah Pemasok" : "Update Pemasok");

@@ -1,6 +1,14 @@
 <?php $page = 'tambah-pemasok'; ?>
 @extends('layout.mainlayout')
 @section('content')
+    <style>
+         .is-invalid{
+            border-color: #dc3545!important;
+        }
+        .is-invalids {
+            border-color: #dc3545!important;
+        }
+    </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -81,16 +89,16 @@
                                             </div>
                                             <div class="row">
                                                 <div class="col-lg-4 col-md-12">
-                                                    <div class="input-block mb-3">
+                                                    <div class="input-block mb-3" id="row-province">
                                                         <label>Provinsi <span class="text-danger">*</span></label>
-                                                        <select class="form-select fill" id="state_id"></select>
+                                                        <select class="form-select " id="state_id"></select>
                                                     </div>
                                                    
                                                 </div>
                                                 <div class="col-lg-4 col-md-12">
-                                                    <div class="input-block mb-3">
+                                                    <div class="input-block mb-3" id="row-city">
                                                         <label>Kota <span class="text-danger">*</span></label>
-                                                        <select class="form-select fill" id="city_id"></select>
+                                                        <select class="form-select " id="city_id"></select>
                                                     </div>
                                                    
                                                 </div>
@@ -123,7 +131,7 @@
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
+                                            <div class="input-block mb-3" id="row-bank_kode">
                                                 <label>Bank Account <span class="text-danger">*</span></label>
                                                 <select class="form-select fill" id="bank_kode"></select>
                                             </div>

@@ -3,7 +3,12 @@
     #video.rot90 { transform: rotate(90deg); }
     #video.rot180 { transform: rotate(180deg); }
     #video.rot270 { transform: rotate(270deg); }
-
+ .is-invalid{
+            border-color: #dc3545!important;
+        }
+        .is-invalids {
+            border-color: #dc3545!important;
+        }
 </style>
 <div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document">
@@ -405,7 +410,7 @@
                                     </table>
                                 </div>
                                 <div class="col-4 add">
-                                    <div class="input-block mb-3">
+                                    <div class="input-block mb-3" id="row-product">
                                         <label>Nama Produk<span class="text-danger">*</span></label>
                                         <select class="form-select fill_product" id="product_id"></select>
                                     </div>
@@ -533,7 +538,7 @@
                                     </div>
                                 </div>
                                 <div class="col-4">
-                                    <div class="input-block mb-3">
+                                    <div class="input-block mb-3" id="row-satuan">
                                         <label>Satuan<span class="text-danger">*</span></label>
                                         <select id="supplies_unit" class="form-select fill"></select>
                                     </div>
@@ -678,7 +683,7 @@
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="input-block mb-3">
+                                        <div class="input-block mb-3 " id="row-pelanggan">
                                             <label>Nama Pelanggan<span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
@@ -693,9 +698,9 @@
                                 <div class="col-12 row">
                                     <div class="col-4">
                                         <div class="input-block">
-                                            <label>Diskon<span class="text-danger">*</span></label>
+                                            <label>Diskon</label>
                                             <div class="input-group mb-3">
-                                                <input type="text" class="form-control fill number-only" id="so_discount" 
+                                                <input type="text" class="form-control  number-only" id="so_discount" 
                                                 placeholder="Input Diskon" value="0">
                                                 <span class="input-group-text">%</span>
                                             </div>
@@ -703,9 +708,9 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block">
-                                            <label>PPN<span class="text-danger">*</span></label>
+                                            <label>PPN</label>
                                             <div class="input-group mb-3">
-                                                <input type="text" class="form-control fill number-only" id="so_ppn" 
+                                                <input type="text" class="form-control  number-only" id="so_ppn" 
                                                 placeholder="Input PPN" value="0">
                                                 <span class="input-group-text">%</span>
                                             </div>
@@ -713,10 +718,10 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
-                                            <label>Biaya Pengiriman<span class="text-danger">*</span></label>
+                                            <label>Biaya Pengiriman</label>
                                             <div class="input-group mb-3">
                                                 <span class="input-group-text">Rp </span>
-                                                <input type="text" class="form-control fill number-only nominal_only" id="so_cost" value="0" placeholder="Input Biaya Pengiriman">
+                                                <input type="text" class="form-control  number-only nominal_only" id="so_cost" value="0" placeholder="Input Biaya Pengiriman">
                                             </div>
                                         </div>
                                     </div>
@@ -929,7 +934,7 @@
                             <div class="row">
                                 <div class="col-12 row">
                                     <div class="col-6">
-                                        <div class="input-block">
+                                        <div class="input-block" id="row-pemasok">
                                             <label>Nama Pemasok<span class="text-danger">*</span></label>
                                             <select id="po_supplier" class="form-control fill"></select>
                                         </div>

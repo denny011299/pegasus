@@ -26,11 +26,14 @@ class PurchaseOrderDetailInvoice extends Model
             "poi_id" => null,
             "po_id"  => null,
             "bank_id"  => null,
+            "status"  => null,
+            "po_supplier"  => null,
         ], $data);
 
         $result = PurchaseOrderDetailInvoice::where('purchase_order_detail_invoices.status','>=',0);
         $result->join('purchase_orders','purchase_orders.po_id','=','purchase_order_detail_invoices.po_id');
         $result->where('purchase_orders.status','>',1);
+        
         if ($data["poi_id"]) {
             $result->where("purchase_order_detail_invoices.poi_id", "=", $data["poi_id"]);
         }
@@ -38,12 +41,23 @@ class PurchaseOrderDetailInvoice extends Model
         if ($data["po_id"]) {
             $result->where("purchase_order_detail_invoices.po_id", "=", $data["po_id"]);
         }
+        
         if ($data["bank_id"]) {
             $result->where("purchase_order_detail_invoices.bank_id", "=", $data["bank_id"]);
         }
+        
+        if ($data["status"]) {
+            $result->where("purchase_orders.pembayaran", "=", $data["status"]);
+        }
+        
+        if ($data["po_supplier"]) {
+            $result->where("purchase_orders.po_supplier", "=", $data["po_supplier"]);
+        }
+
         $result->select('purchase_order_detail_invoices.*');
         $result->orderBy("created_at", "asc");
         $result = $result->get();
+        
         foreach ($result as $key => $value) {
             $po = PurchaseOrder::find($value->po_id);
             $value->supplier_name = Supplier::find($po->po_supplier)->supplier_name;

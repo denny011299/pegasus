@@ -3,6 +3,7 @@
     var tandaTerima=[];
 
     autocompleteRekening("#bank_kode");
+    autocompleteSupplier("#supplier");
     $(document).ready(function(){
         inisialisasi();
         refreshPayReceive();
@@ -54,6 +55,8 @@
             method: "get",
             data: {
                 bank_id: $('#bank_kode').val(),
+                status: $('#status').val(),
+                po_supplier: $('#supplier').val(),
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -69,9 +72,9 @@
                     e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp.");
                     console.log(e[i].pembayaran);
                     
-                    if (e[i].pembayaran == 0){
+                    if (e[i].pembayaran == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
-                    } else if (e[i].pembayaran == 1){
+                    } else if (e[i].pembayaran == 2){
                         e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
                     } else {
                         e[i].status_text = `<span class="badge bg-primary" style="font-size: 12px">Menunggu Approval</span>`;
@@ -91,7 +94,8 @@
             }
         });
     }
-    $(document).on("change", "#bank_kode", function () {
+    $(document).on("change", "#bank_kode,#status,#supplier", function () {
+        $('.jumlah_terpilih').trigger("click");
         refreshPayReceive();
     });
 
@@ -111,11 +115,42 @@
         console.log(tandaTerima);
         $('#jumlah_terpilih').text(tandaTerima.length + " Selected");
     });
-    $(document).on("click", "#jumlah_terpilih", function () {
+
+    $(document).on("click", ".jumlah_terpilih", function () {
         tandaTerima=[];
         $('.chk').prop('checked', false);
         $('#jumlah_terpilih').text("0 Selected");
     });
+
+   $(document).on("change", "#selectAll", function () {
+        // Gunakan instance tablePayables yang sudah didefinisikan di awal
+        var rows = tablePayables.rows({ 'search': 'applied' }).nodes();
+        var allData = tablePayables.rows({ 'search': 'applied' }).data();
+        
+        tandaTerima = []; // Reset array agar tidak double saat select all
+
+        if ($(this).is(":checked")) {
+            // 1. Centang semua checkbox secara visual (termasuk di page lain)
+            $('input.chk', rows).prop('checked', true);
+
+            // 2. Masukkan semua poi_id ke dalam array tandaTerima
+            allData.each(function (data) {
+                tandaTerima.push(data.poi_id.toString());
+            });
+        } 
+        else {
+            // 1. Uncheck semua secara visual
+            $('input.chk', rows).prop('checked', false);
+            
+            // 2. Kosongkan array
+            tandaTerima = [];
+        }
+
+        // Update label jumlah terpilih
+        $('#jumlah_terpilih').text(tandaTerima.length + " Selected");
+        console.log("Current IDs:", tandaTerima);
+    });
+
     $(document).on("click", ".btn-create", function () {
        $('.invalid').removeClass('invalid');
 
@@ -144,6 +179,7 @@
 
                 tandaTerima=[];
                 $('.chk').prop('checked', false);
+                $('#selectAll').prop('checked', false);
                 $('#jumlah_terpilih').text("0 Selected");
             },
             error:function(e){

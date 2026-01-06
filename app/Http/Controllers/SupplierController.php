@@ -69,9 +69,15 @@ class SupplierController extends Controller
 
     function updatePurchaseOrderDetail(Request $req)
     {
+        $total = 0;
         foreach (json_decode($req->po_detail, true) as $key => $value) {
+            $total += $value["pod_subtotal"];
             (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
         }
+        $p = PurchaseOrder::find($req->po_id);
+        $p->po_total = $total;
+        $p->save();
+
     }
 
     function searchSupplies(Request $req)
@@ -447,7 +453,7 @@ class SupplierController extends Controller
         $p->tt_image = $data["tt_image"];
         $p->staffFinance_name = Session::get('user')->staff_name;
         $p->save();
-        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["pembayaran"=>1]);
+        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["pembayaran"=>2]);
     }
 
     function declineTt(Request $req){
@@ -456,7 +462,7 @@ class SupplierController extends Controller
         $p->status=0;
         $p->save();
 
-        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["tt_id"=>null,"pembayaran"=>0]);
+        PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["tt_id"=>null,"pembayaran"=>1]);
 
     }
 
