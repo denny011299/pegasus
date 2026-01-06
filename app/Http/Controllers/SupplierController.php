@@ -184,7 +184,6 @@ class SupplierController extends Controller
     function getPoInvoice(Request $req)
     {
         $data = (new PurchaseOrderDetailInvoice())->getPoInvoice($req->all());
-        dd($data);
         return response()->json($data);
     }
 
@@ -493,7 +492,7 @@ class SupplierController extends Controller
         }
         $s = Supplier::find($data["po_supplier"]);
         $due  = date('Y-m-d', strtotime('+'.$s->supplier_top.' days'));
-        (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>2,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
+        (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>1,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
         $po->status = 2; // Lunas
         $po->save();
     }
