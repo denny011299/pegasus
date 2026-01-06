@@ -237,6 +237,9 @@
     $(document).on('click', '.btnBack', function(){
         window.open('/purchaseOrder', '_self');
     })
+    $(document).on('click', '.btnBackHutang', function(){
+        window.open('/payReceive', '_self');
+    })
 
     $(document).on('click', '.btnAddDn', function(){
         mode=1;

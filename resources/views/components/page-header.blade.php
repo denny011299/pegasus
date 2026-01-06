@@ -62,7 +62,7 @@
                 @endif
                 @if (Route::is(['purchaseOrderDetailHutang']))
                     <li>
-                        <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
+                        <a class="btn btn-primary btnBackHutang"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
                     </li>
                 @endif
                 @if (Route::is(['customer']))
