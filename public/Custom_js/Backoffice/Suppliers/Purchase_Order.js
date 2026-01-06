@@ -192,6 +192,7 @@
             data:{
                 "po_supplier": $('#filter_supplier').val(),
                 "po_number": $('#filter_po').val(),
+                "hutang": 0,
             },
             success: function (e) {
                 if (!Array.isArray(e)) {

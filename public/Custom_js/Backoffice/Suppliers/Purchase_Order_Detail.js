@@ -21,7 +21,7 @@
             $('.save-terima,.save-qty').hide();
         }
        
-        if(data.pembayaran==1){
+        if(data.pembayaran==3){
             $('.save-tolak,.save-terima,.save-qty').hide();
         }
     });
