@@ -986,18 +986,20 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center table-responsive" id="tablePurchaseModal">
-                                        <thead>
-                                            <th>Produk</th>
-                                            <th>Variasi</th>
-                                            <th>SKU</th>
-                                            <th>Qty</th>
-                                            <th class="text-end">Harga Beli</th>
-                                            <th class="text-end">Subtotal</th>
-                                            <th class="text-center">Action</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-center" id="tablePurchaseModal">
+                                            <thead>
+                                                <th style="width: 15%">Produk</th>
+                                                <th style="width: 20%">Variasi</th>
+                                                <th style="width:11%">SKU</th>
+                                                <th style="width: 22%">Qty</th>
+                                                <th style="width:11%" class="text-end">Harga Beli</th>
+                                                <th style="width:11%" class="text-end">Subtotal</th>
+                                                <th class="text-center">Action</th>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                                 <div class="col-12 row pt-3">
                                     <div class="col-6"></div>

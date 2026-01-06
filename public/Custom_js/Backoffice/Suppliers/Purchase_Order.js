@@ -82,24 +82,24 @@
             
             $('#tablePurchaseModal tbody').append(`
                 <tr>
-                    <td>${item.supplies_name}</td>
-                    <td>${item.supplies_variant_name}</td>
-                    <td>${item.supplies_variant_sku}</td>
-                    <td style="width:30%">
-                        <div class="row m-0">
-                            <div class="col-6 p-0">
+                    <td style="width:15%">${item.supplies_name}</td>
+                    <td style="width:20%">${item.supplies_variant_name}</td>
+                    <td style="width:11%">${item.supplies_variant_sku}</td>
+                    <td style="width:22%; padding:auto 0">
+                        <div class="row m-0 p-0">
+                            <div class="col-5 p-0">
                                 <input type="number" class="form-control qtyPesanan" index="${index}" value="${item.qty}">
                             </div>
                             
-                            <div class="col-6 p-0">
+                            <div class="col-7 p-0">
                                <select class="form-select  units_id " >
                                     ${opsi}
                                 </select>
                             </div>
                         </div>
                     </td>
-                    <td class="text-end">${formatRupiah(item.supplies_variant_price+"")}</td>
-                    <td class="text-end">${formatRupiah((item.supplies_variant_price*item.qty)+"")}</td>
+                    <td style="width:11%" class="text-end">Rp ${formatRupiah(item.supplies_variant_price+"")}</td>
+                    <td style="width:11%" class="text-end">Rp ${formatRupiah((item.supplies_variant_price*item.qty)+"")}</td>
                     <td class="text-center text-danger" style="cursor:pointer"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
                 </tr>    
             `);

@@ -8,6 +8,14 @@
     .invalid{
         border: 1px solid red!important;
     }
+    #tablePurchaseModal {
+        table-layout: fixed;
+        width: 100%;
+    }
+    #tablePurchaseModal td  {
+        white-space: normal;
+        word-break: break-word;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
