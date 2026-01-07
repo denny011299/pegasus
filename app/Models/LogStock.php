@@ -21,7 +21,7 @@ class LogStock extends Model
 
         $result = LogStock::where('log_notes','like','%'.$data["log_notes"].'%');
         if($data["log_item_id"])$result->where('log_item_id','=',$data["log_item_id"]);
-        $result->orderBy('created_at', 'desc');
+        $result->orderBy('created_at', 'desc')->orderBy('log_id', 'desc');
        
         $result = $result->get();
         foreach ($result as $key => $value) {
@@ -36,31 +36,12 @@ class LogStock extends Model
         $t = new LogStock();
         $t->log_date = $data["log_date"];
         $t->log_kode = $data["log_kode"];
+        $t->log_category = $data["log_category"];
         $t->log_item_id = $data["log_item_id"];
         $t->log_notes = $data["log_notes"];
         $t->log_jumlah = $data["log_jumlah"];
         $t->unit_id = $data["unit_id"];
         $t->save();
         return $t->log_id;
-    }
-
-    function updateLog($data)
-    {
-        $t = LogStock::find($data["log_id"]);
-        $t->log_date = $data["log_date"];
-        $t->log_kode = $data["log_kode"];
-        $t->log_item_id = $data["log_item_id"];
-        $t->log_notes = $data["log_notes"];
-        $t->log_jumlah = $data["log_jumlah"];
-        $t->unit_id = $data["unit_id"];
-        $t->save();
-        return $t->log_id;
-    }
-
-    function deleteLog($data)
-    {
-        $t = LogStock::find($data["log_id"]);
-        $t->status = 0;
-        $t->save();
     }
 }

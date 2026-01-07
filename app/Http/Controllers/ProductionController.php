@@ -128,9 +128,11 @@ class ProductionController extends Controller
             $stok->ss_stock -=  ($value['bom_detail_qty'] * $data['production_qty']);
             $stok->save();
 
+            // Catat log
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $p->production_code,
+                'log_category' => 2,
                 'log_item_id' => $value['supplies_id'],
                 'log_notes'  => "Pengurangan bahan mentah untuk produksi",
                 'log_jumlah' => ($value['bom_detail_qty'] * $data['production_qty']),
@@ -151,9 +153,11 @@ class ProductionController extends Controller
 
         (new ProductStock())->cekStockBerlebih($v);
 
+        // Catat log
         (new LogStock())->insertLog([
             'log_date' => now(),
             'log_kode'    => $p->production_code,
+            'log_category' => 1,
             'log_item_id' => $data["production_product_id"],
             'log_notes'  => "Produksi produk",
             'log_jumlah' => intval($data['production_qty']) * $b->bom_qty,
@@ -183,14 +187,41 @@ class ProductionController extends Controller
     function accDeleteProduction(Request $req)
     {
         $data = $req->all();
-        (new Production())->cancelProduction($data);
+
         $p = production::find($data["production_id"]);
+        $b = bom::find($p["production_bom_id"]);
+        $cek = -1;
+        $stok = ProductStock::where("product_variant_id", "=", $p['production_product_id'])
+                ->where("unit_id", "=", $b['unit_id'])->first()->ps_stock;
+        if ($stok - (intval($p['production_qty']) * $b->bom_qty) < 0) {
+            $cek = 1;
+        }
+
+        if ($cek == 1) {
+            return response()->json([
+                "status" => -1,
+                "message" => "Stok produk tidak mencukupi"
+            ]);
+        }
+
+        (new Production())->cancelProduction($data);
 
         $b = bom::find($p->production_bom_id);
         $v = ProductStock::where("product_variant_id", "=", $b["product_id"])
             ->where("unit_id", "=", $b["unit_id"])->first();
         $v->ps_stock -= intval($p['production_qty']) * $b->bom_qty;
         $v->save();
+
+        // Catat log
+        (new LogStock())->insertLog([
+            'log_date' => now(),
+            'log_kode'    => $p->production_code,
+            'log_category' => 2,
+            'log_item_id' => $p["production_product_id"],
+            'log_notes'  => "Pembatalan produksi produk",
+            'log_jumlah' => intval($p['production_qty']) * $b->bom_qty,
+            'unit_id'    => $b['unit_id'],
+        ]);
     }
 
     function getPemakaian(Request $req)

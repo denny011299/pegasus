@@ -373,6 +373,7 @@ $(document).on("click", ".btn_edit", function () {
     
     data.product.forEach(e => {
         var data  = {
+            "pid_id": e.pid_id,
             "product_variant_id": e.product_variant_id,
             "product_name": e.pr_name,
             "pid_qty": e.pid_qty,

@@ -919,8 +919,8 @@
 
 @if (Route::is(['purchaseOrder']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_purchase_order" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal modal-xl custom-modal fade" id="add_purchase_order" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title text-start mb-0">
@@ -989,10 +989,10 @@
                                     <div class="table-responsive">
                                         <table class="table table-center" id="tablePurchaseModal">
                                             <thead>
-                                                <th style="width: 14%">Produk</th>
-                                                <th style="width: 18%">Variasi</th>
-                                                <th style="width:11%">SKU</th>
-                                                <th style="width: 21%">Qty</th>
+                                                <th style="width: 15%">Produk</th>
+                                                <th style="width: 20%">Variasi</th>
+                                                <th style="width:10%">SKU</th>
+                                                <th style="width: 20%">Qty</th>
                                                 <th style="width:13%" class="text-end">Harga Beli</th>
                                                 <th style="width:13%" class="text-end">Subtotal</th>
                                                 <th class="text-center">Action</th>
@@ -1736,7 +1736,7 @@
 @if (Route::is(['stockProduct']))
     <!-- Add coupons -->
     <div class="modal fade" id="add_stock_product">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content p-3">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
@@ -1756,7 +1756,8 @@
                                                 <th>Tanggal</th>
                                                 <th>No. Transaksi</th>
                                                 <th>Catatan</th>
-                                                <th>Jumlah</th>
+                                                <th class="text-center">Masuk</th>
+                                                <th class="text-center">Keluar</th>
                                             </thead>
                                             <tbody></tbody>
                                         </table>
@@ -1781,7 +1782,7 @@
 @if (Route::is(['stockSupplies']))
     <!-- Add coupons -->
     <div class="modal fade" id="add_stock_supplies">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content p-3">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
@@ -1801,7 +1802,8 @@
                                                 <th>Tanggal</th>
                                                 <th>No. Transaksi</th>
                                                 <th>Catatan</th>
-                                                <th>Jumlah</th>
+                                                <th class="text-center">Masuk</th>
+                                                <th class="text-center">Keluar</th>
                                             </thead>
                                             <tbody></tbody>
                                         </table>

@@ -290,6 +290,7 @@
 
 //delete
 $(document).on("click", ".btn_delete", function () {
+    $('#modalDelete .modal-body #delete_reason').remove();
     var tbId = $(this).closest("table").attr("id");
     var data = $("#" + tbId)
         .DataTable()
@@ -364,6 +365,10 @@ $(document).on("click", "#btn-acc-delete-production", function () {
         success: function (e) {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
+            if(e.status == -1){
+                notifikasi('error', "Stok Tidak Mencukupi", e.message);
+                return false;
+            }
             afterInsert();
             notifikasi(
                 "success",

@@ -240,7 +240,7 @@
                 $(this).addClass('is-invalid');
             }
         });
-        if($('so_customer').val()==null||$('#so_customer').val()=="null"||$('#so_customer').val()==""){
+        if($('#so_customer').val()==null||$('#so_customer').val()=="null"||$('#so_customer').val()==""){
             valid=-1;
             $('#row-pelanggan .select2-selection--single').addClass('is-invalids');
         }

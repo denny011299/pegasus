@@ -60,6 +60,7 @@ class CustomerController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $so->so_number,
+                'log_category' => 2,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => "Penjualan produk",
                 'log_jumlah' => $value["so_qty"],
@@ -99,16 +100,32 @@ class CustomerController extends Controller
         }
         foreach (json_decode($req->products,true) as $key => $value) {
             $value['so_id'] = $so->so_id;
+
             if(!isset($value["sod_id"])) $id = (new SalesOrderDetail())->insertSalesOrderDetail($value);
-            else $id = (new SalesOrderDetail())->updateSalesOrderDetail($value);
+            
+            else {
+                $sod = SalesOrderDetail::find($value['sod_id']);
+                // Catat Log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $so->so_number,
+                    'log_category' => 1,
+                    'log_item_id' => $sod['product_variant_id'],
+                    'log_notes'  => "Perubahan penjualan produk",
+                    'log_jumlah' => $sod["sod_qty"],
+                    'unit_id'    => $sod['unit_id'],
+                ]);
+                $id = (new SalesOrderDetail())->updateSalesOrderDetail($value);
+            }
             array_push($list_id_detail, $id);
 
             // Catat Log
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $so->so_number,
+                'log_category' => 2,
                 'log_item_id' => $value['product_variant_id'],
-                'log_notes'  => "Penyesuaian penjualan produk " . $so->so_number,
+                'log_notes'  => "Perubahan penjualan produk",
                 'log_jumlah' => $value["so_qty"],
                 'unit_id'    => $value['unit_id'],
             ]);
@@ -120,9 +137,21 @@ class CustomerController extends Controller
     function deleteSalesOrder(Request $req){
         $data = $req->all();
         (new SalesOrder())->deleteSalesOrder($data);
+        $so = SalesOrder::find($data['so_id']);
         $v = SalesOrderDetail::where('so_id','=',$data["so_id"])->get();
         foreach ($v as $key => $value) {
             (new SalesOrderDetail())->deleteSalesOrderDetail($value);
+
+            // Catat Log
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $so->so_number,
+                'log_category' => 1,
+                'log_item_id' => $value['product_variant_id'],
+                'log_notes'  => "Pembatalan penjualan produk",
+                'log_jumlah' => $value["sod_qty"],
+                'unit_id'    => $value['unit_id'],
+            ]);
         }
     }
 

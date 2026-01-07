@@ -82,10 +82,10 @@
             
             $('#tablePurchaseModal tbody').append(`
                 <tr>
-                    <td style="width:14%">${item.supplies_name}</td>
-                    <td style="width:18%">${item.supplies_variant_name}</td>
-                    <td style="width:11%">${item.supplies_variant_sku}</td>
-                    <td style="width:21%; padding:auto 0">
+                    <td style="width:15%">${item.supplies_name}</td>
+                    <td style="width:20%">${item.supplies_variant_name}</td>
+                    <td style="width:10%">${item.supplies_variant_sku}</td>
+                    <td style="width:20%; padding:auto 0">
                         <div class="row m-0 p-0">
                             <div class="col-5 p-0">
                                 <input type="number" class="form-control qtyPesanan" index="${index}" value="${item.qty}">

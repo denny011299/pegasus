@@ -284,11 +284,18 @@ class StockController extends Controller
 
             // Catat Log
             $logNotes = "";
-            if ($t->tipe_return == 1) $logNotes = 'Produk bermasalah retur gudang';
-            elseif ($t->tipe_return == 2) $logNotes = 'Produk bermasalah retur pelanggan';
+            $logCategory = 0;
+            if ($t->tipe_return == 1){
+                $logNotes = 'Produk bermasalah retur gudang';
+                $logCategory = 2;
+            } elseif ($t->tipe_return == 2){
+                $logNotes = 'Produk bermasalah retur pelanggan';
+                $logCategory = 1;
+            }
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $t->pi_code,
+                'log_category' => $logCategory,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => $logNotes,
                 'log_jumlah' => $value['pid_qty'],
@@ -301,14 +308,77 @@ class StockController extends Controller
     {
         $data = $req->all();
         $id = [];
-        (new ProductIssues())->updateProductIssues($data);
+        $pi = (new ProductIssues())->updateProductIssues($data);
         foreach (json_decode($data['product'], true) as $key => $value) {
             $value['pi_id'] = $data["pi_id"];
-            if (!isset($value["pid_id"])) $t = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+            if (!isset($value["pid_id"])) {
+                $t = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+                
+                // Catat Log
+                $logNotes = "";
+                $logCategory = 0;
+                if ($pi->tipe_return == 1){
+                    $logNotes = 'Produk bermasalah retur gudang';
+                    $logCategory = 2;
+                } elseif ($pi->tipe_return == 2){
+                    $logNotes = 'Produk bermasalah retur pelanggan';
+                    $logCategory = 1;
+                }
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $pi->pi_code,
+                    'log_category' => $logCategory,
+                    'log_item_id' => $value['product_variant_id'],
+                    'log_notes'  => $logNotes,
+                    'log_jumlah' => $value['pid_qty'],
+                    'unit_id'    => $value['unit_id'],
+                ]);
+            }
             else {
+                $pid = ProductIssuesDetail::find($value['pid_id']);
+                // Catat Log
+                $logNotes = "";
+                $logCategory = 0;
+                if ($pi->tipe_return == 1){
+                    $logNotes = 'Perubahan data produk bermasalah retur gudang';
+                    $logCategory = 1;
+                } elseif ($pi->tipe_return == 2){
+                    $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                    $logCategory = 2;
+                }
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $pi->pi_code,
+                    'log_category' => $logCategory,
+                    'log_item_id' => $pid['product_variant_id'],
+                    'log_notes'  => $logNotes,
+                    'log_jumlah' => $pid['pid_qty'],
+                    'unit_id'    => $pid['unit_id'],
+                ]);
+                
                 $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
             }
             array_push($id, $t);
+
+            // Catat Log
+            $logNotes = "";
+            $logCategory = 0;
+            if ($pi->tipe_return == 1){
+                $logNotes = 'Perubahan data produk bermasalah retur gudang';
+                $logCategory = 2;
+            } elseif ($pi->tipe_return == 2){
+                $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                $logCategory = 1;
+            }
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $pi->pi_code,
+                'log_category' => $logCategory,
+                'log_item_id' => $value['product_variant_id'],
+                'log_notes'  => $logNotes,
+                'log_jumlah' => $value['pid_qty'],
+                'unit_id'    => $value['unit_id'],
+            ]);
         }
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
@@ -316,7 +386,32 @@ class StockController extends Controller
     function deleteProductIssue(Request $req)
     {
         $data = $req->all();
-        return (new ProductIssues())->deleteProductIssues($data);
+        (new ProductIssues())->deleteProductIssues($data);
+        $pi = ProductIssues::find($data['pi_id']);
+        $v = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->get();
+        foreach ($v as $key => $value) {
+            (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
+
+            // Catat Log
+            $logNotes = "";
+            $logCategory = 0;
+            if ($pi->tipe_return == 1){
+                $logNotes = 'Penghapusan data produk bermasalah retur gudang';
+                $logCategory = 1;
+            } elseif ($pi->tipe_return == 2){
+                $logNotes = 'Penghapusan data produk bermasalah retur pelanggan';
+                $logCategory = 2;
+            }
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $pi->pi_code,
+                'log_category' => $logCategory,
+                'log_item_id' => $value['product_variant_id'],
+                'log_notes'  => $logNotes,
+                'log_jumlah' => $value['pid_qty'],
+                'unit_id'    => $value['unit_id'],
+            ]);
+        }
     }
 
     // Manage Stock
