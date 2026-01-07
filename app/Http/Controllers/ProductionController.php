@@ -134,7 +134,7 @@ class ProductionController extends Controller
                 'log_kode'    => $p->production_code,
                 'log_category' => 2,
                 'log_item_id' => $value['supplies_id'],
-                'log_notes'  => "Pengurangan bahan mentah untuk produksi",
+                'log_notes'  => "Pengurangan bahan mentah untuk production",
                 'log_jumlah' => ($value['bom_detail_qty'] * $data['production_qty']),
                 'unit_id'    => $value['unit_id'],
             ]);

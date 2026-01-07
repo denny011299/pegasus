@@ -18,13 +18,13 @@ class Staff extends Model
             "staff_id"=>null,
             "staff_username"=>null,
             "staff_password"=>null,
-            "city_id"=>null,
+            // "city_id"=>null,
             "role_id"=>null
         ], $data);
 
         $result = self::where('status', '=', 1);
         if($data["staff_name"]) $result->where('staff_name','like','%'.$data["staff_name"].'%');
-        if($data["city_id"]) $result->where('city_id','=',$data["city_id"]);
+        // if($data["city_id"]) $result->where('city_id','=',$data["city_id"]);
         if($data["staff_id"]) $result->where('staff_id','=',$data["staff_id"]);
         if($data["role_id"]) $result->where('role_id','=',$data["role_id"]);
         if($data["staff_username"] && isset($data["staff_password"])) {
@@ -58,6 +58,8 @@ class Staff extends Model
         $t->staff_phone = $data["staff_phone"];
         $t->role_id = $data["staff_position"];
         $t->staff_address = $data["staff_address"];
+        $t->staff_username = $data["staff_username"];
+        $t->staff_password = $data["staff_password"];
         // $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;
@@ -71,6 +73,8 @@ class Staff extends Model
         $t->staff_phone = $data["staff_phone"];
         $t->role_id = $data["staff_position"];
         $t->staff_address = $data["staff_address"];
+        $t->staff_username = $data["staff_username"];
+        $t->staff_password = $data["staff_password"];
         // $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;

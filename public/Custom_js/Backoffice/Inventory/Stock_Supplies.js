@@ -1,5 +1,7 @@
     var mode=1;
     var table;
+    var dates = null;
+    var activeId = 0;
     $(document).ready(function(){
         inisialisasi();
         refreshStock();
@@ -69,6 +71,7 @@
     $(document).on('click', '#tableStock tbody tr', function(){
         let table = $('#tableStock').DataTable();
         let data = table.row(this).data();
+        activeId = data.supplies_id;
 
         getLog(data.supplies_id);
     })
@@ -78,14 +81,15 @@
             url: '/getLog',
             method: 'get',
             data: {
-                notes: 'Bahan',
-                id: id
+                log_notes: 'Bahan',
+                log_item_id: id,
+                date: dates
             },
             success: function(e){
                 viewHistory(e);
             },
             error: function(e){
-                console.error("Gagal load:", err);
+                console.error("Gagal load:", e);
             }
         });
     }
@@ -119,3 +123,27 @@
         $('#add_stock_supplies .modal-title').html("Lihat Histori Bahan Mentah");
         $("#add_stock_supplies").modal("show");
     }
+
+    $(document).on('change', '#start_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        getLog(activeId);
+    })
+    $(document).on('change', '#end_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        getLog(activeId);
+    })
+
+    $(document).on('click', '.btn-clear', function(){
+        dates = null;
+        $('#start_date').val("");
+        $('#end_date').val("");
+        getLog(activeId);
+    })

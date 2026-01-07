@@ -29,6 +29,7 @@
         $('#add_purchase_order #po_date').val(moment().format('YYYY-MM-DD'));
         $('#add_purchase_order #po_supplier').empty();
         $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
         $('#add_purchase_order').modal("show");
     });
 
@@ -245,6 +246,7 @@
     $(document).on("click",".btn-save",function(){
         LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
         var url ="/insertPurchaseOrder";
         var valid=1;
 
@@ -259,19 +261,18 @@
             $('#row-pemasok .select2-selection--single').addClass('is-invalids');
         }
         
-        if(item.length==0){
-            valid=-1;
-            notifikasi('error', "Gagal Insert", 'Silahkan masukkan minimal 1 bahan');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian");     
-            return false;
-        }
-
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian"); 
             return false;
         };
 
+        if(item.length==0){
+            valid=-1;
+            notifikasi('error', "Gagal Insert", 'Silahkan masukkan minimal 1 bahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian");     
+            return false;
+        };
         
         $('.units_id').each(function(index){
             item[index].unit_id_select = $(this).val();

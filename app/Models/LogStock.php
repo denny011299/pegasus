@@ -17,10 +17,24 @@ class LogStock extends Model
         $data = array_merge([
             "log_notes"=>null,
             "log_item_id"=>null,
+            "date"=>null
         ], $data);
 
         $result = LogStock::where('log_notes','like','%'.$data["log_notes"].'%');
         if($data["log_item_id"])$result->where('log_item_id','=',$data["log_item_id"]);
+
+        if ($data["date"]) {
+            if (is_array($data["date"]) && count($data["date"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["date"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["date"][1])->endOfDay();
+
+                $result->whereBetween('log_date', [$startDate, $endDate]);
+            } else {
+                $date = \Carbon\Carbon::parse($data["date"])->toDateString();
+                $result->whereDate('log_date', $date);
+            }
+        }
+
         $result->orderBy('created_at', 'desc')->orderBy('log_id', 'desc');
        
         $result = $result->get();

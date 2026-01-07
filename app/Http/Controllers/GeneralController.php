@@ -47,10 +47,7 @@ class GeneralController extends Controller
     }
 
     function getLog(Request $req){
-        $data = (new LogStock())->getLog([
-            'log_notes' => $req->notes,
-            'log_item_id' => $req->id
-        ]);
+        $data = (new LogStock())->getLog($req->all());
         return response()->json($data);
     }
 }

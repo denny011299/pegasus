@@ -1749,6 +1749,30 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
+                                <div class="col-lg-3 col-md-6 col-sm-12">
+                                    <div class="input-block mb-3">
+                                        <label>Dari</label>
+                                        <div>
+                                            <input type="date" class="form-control" id="start_date">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 col-sm-12">
+                                    <div class="input-block mb-3">
+                                        <label>Sampai</label>
+                                        <div>
+                                            <input type="date" class="form-control" id="end_date">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 col-sm-0"></div>
+                                <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
+                                    <a class="btn btn-outline-secondary btn-clear">
+                                        Clear
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="row">
                                 <div class="col-12 py-3 mb-3">
                                     <div class="table-scroll">
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
@@ -1794,6 +1818,30 @@
                 <form action="#">
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-lg-3 col-md-6 col-sm-12">
+                                    <div class="input-block mb-3">
+                                        <label>Dari</label>
+                                        <div>
+                                            <input type="date" class="form-control" id="start_date">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 col-sm-12">
+                                    <div class="input-block mb-3">
+                                        <label>Sampai</label>
+                                        <div>
+                                            <input type="date" class="form-control" id="end_date">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 col-sm-0"></div>
+                                <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
+                                    <a class="btn btn-outline-secondary btn-clear">
+                                        Clear
+                                    </a>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-12 py-3 mb-3">
                                     <div class="table-scroll">
