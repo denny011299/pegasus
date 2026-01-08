@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Hash;
 
 class Staff extends Model
 {
@@ -28,8 +29,10 @@ class Staff extends Model
         if($data["staff_id"]) $result->where('staff_id','=',$data["staff_id"]);
         if($data["role_id"]) $result->where('role_id','=',$data["role_id"]);
         if($data["staff_username"] && isset($data["staff_password"])) {
-            $result->where('staff_username','=',$data["staff_username"]);
-            $result->where('staff_password','=',$data["staff_password"]);
+            $staff = Staff::where('staff_username', $data["staff_username"])->first();
+            if ($data["staff_password"] && Hash::check($data["staff_password"], $staff->staff_password)) {
+                $result->where('staff_username','=',$data["staff_username"]);
+            }
         }
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
@@ -59,7 +62,7 @@ class Staff extends Model
         $t->role_id = $data["staff_position"];
         $t->staff_address = $data["staff_address"];
         $t->staff_username = $data["staff_username"];
-        $t->staff_password = $data["staff_password"];
+        $t->staff_password = Hash::make($data["staff_password"]);
         // $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;
@@ -74,7 +77,14 @@ class Staff extends Model
         $t->role_id = $data["staff_position"];
         $t->staff_address = $data["staff_address"];
         $t->staff_username = $data["staff_username"];
-        $t->staff_password = $data["staff_password"];
+        
+        // cek password
+        if (!empty($data["staff_password"])) {
+            if (!Hash::check($data["staff_password"], $t->staff_password)) {
+                return -1;
+            }
+        }
+        
         // $t->staff_notes = $data["staff_notes"];
         $t->save();
         return $t->pu_id;

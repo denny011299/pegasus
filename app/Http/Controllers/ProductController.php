@@ -296,4 +296,13 @@ class ProductController extends Controller
 
         return response()->json(["success" => true]);
     }
+
+    function getSuppliesVariant(Request $req)
+    {
+        $data = (new SuppliesVariant())->getSuppliesVariant([
+            "search_product" => $req->search_product,
+            // "category_id" => $req->category_id
+        ]);
+        return response()->json($data);
+    }
 }

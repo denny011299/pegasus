@@ -5,14 +5,6 @@
         refreshStockOpname();
     });
     
-    $(document).on('click','.btnAdd',function(){
-        mode=1;
-        $('#add_category .modal-title').html("Create Category");
-        $('#add_category input').val("");
-        $('.is-invalid').removeClass('is-invalid');
-        $('#add_category').modal("show");
-    });
-    
     function inisialisasi() {
         table = $('#tableStockOpname').DataTable({
             bFilter: true,
@@ -29,9 +21,9 @@
                 },
             },
             columns: [
-                { data: "sto_date"},
+                { data: "stob_date"},
                 { data: "staff_name" },
-                { data: "sto_id_text" },
+                { data: "stob_id_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -53,10 +45,10 @@
                 console.log(e);
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].sto_date = moment(e[i].sto_date).format('D MMM YYYY');
-                    e[i].sto_id_text = "SPN"+(e[i].sto_id+"").padStart(3,"0");
+                    e[i].stob_date = moment(e[i].stob_date).format('D MMM YYYY');
+                    e[i].stob_id_text = "SPN"+(e[i].stob_id+"").padStart(3,"0");
                     e[i].action = `
-                        <a href="/detailStockOpname/${e[i].sto_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
+                        <a href="/detailStockOpnameBahan/${e[i].stob_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
@@ -70,34 +62,3 @@
             }
         });
     }
-
-    
-function loadCategory() {
-    $.ajax({
-        url: "/admin/getCategory",
-        method: "GET",
-        success: function (data) {
-            data = JSON.parse(data);
-            if (data) {
-                $("#kategori").empty();
-                $("#kategori").append(
-                    $("<option>", {
-                        value: -1,
-                        text: "Semua Kategori",
-                    })
-                );
-                data.forEach((element) => {
-                    $("#kategori").append(
-                        $("<option>", {
-                            value: element.category_id,
-                            text: element.category_name,
-                        })
-                    );
-                });
-            }
-        },
-        error: function (e) {
-            console.log(e);
-        },
-    });
-}

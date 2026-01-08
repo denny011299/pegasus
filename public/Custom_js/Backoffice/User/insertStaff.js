@@ -110,6 +110,13 @@ $(document).on("click", ".btn-save", function () {
         success: function (response) {
             // Re-enable button
             ResetLoadingButton(".btn-save", mode == 1?"Tambah Staff" : "Update Staff");
+
+            if (response == -1) {
+                if (mode==2) notifikasi('error', "Gagal Update", "Mohon cek kembali password");
+                $('#staff_password').addClass('is-invalid');
+                $('#staff_confirm').addClass('is-invalid');
+            }
+            
             if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Staff");
             else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Staff");
             afterInsert();

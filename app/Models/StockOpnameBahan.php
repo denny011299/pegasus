@@ -7,41 +7,41 @@ use Illuminate\Database\Eloquent\Model;
 class StockOpnameBahan extends Model
 {
     protected $table = "stock_opname_bahans";
-    protected $primaryKey = "sto_id";
+    protected $primaryKey = "stob_id";
     public $timestamps = true;
     public $incrementing = true;
 
-    public static function getStockOpname($data = [])
+    function getStockOpnameBahan($data = [])
     {
         $data = array_merge([
-            'sto_date' => null,
+            'stob_date' => null,
             'staff_id' => null,
             'category_id' => null,
-            'sto_id' => null,
+            'stob_id' => null,
         ], $data);
 
         $result = self::where('status', 1);
 
-        if ($data['sto_date']) {
-            $result->whereDate('sto_date', $data['sto_date']);
+        if ($data['stob_date']) {
+            $result->whereDate('stob_date', $data['stob_date']);
         }
 
         if ($data['staff_id']) {
             $result->where('staff_id', $data['staff_id']);
         }
         
-        if ($data['sto_id']) {
-            $result->where('sto_id','=', $data['sto_id']);
+        if ($data['stob_id']) {
+            $result->where('stob_id','=', $data['stob_id']);
         }
 
-        $result->orderBy('sto_date', 'desc');
+        $result->orderBy('stob_date', 'desc');
 
         $result =  $result->get();
         
         foreach ($result as $key => $value) {
            $value->staff_name = Staff::find($value->staff_id)->staff_name;
         //    $value->category_name = Category::find($value->category_id)->category_name;
-           $value->item = (new StockOpnameDetailBahan())->getDetail(["sto_id"=>$value->sto_id]);
+           $value->item = (new StockOpnameDetailBahan())->getDetail(["stob_id"=>$value->stob_id]);
         }
         return $result;
     }
@@ -49,44 +49,51 @@ class StockOpnameBahan extends Model
     /**
      * Insert new stock opname
      */
-    public static function insertStockOpname($data)
+    function insertStockOpnameBahan($data)
     {
         $t = new self();
-        $t->sto_date = $data['sto_date'];
+        $t->stob_date = $data['stob_date'];
+        $t->stob_code   = $this->generateStockOpnameBahanID();
         $t->staff_id = $data['staff_id'];
-        $t->category_id = $data['category_id'];
-        $t->sto_notes = $data['sto_notes'] ?? null;
+        $t->stob_notes = $data['stob_notes'] ?? null;
         $t->save();
 
-        return $t->sto_id;
+        return $t->stob_id;
     }
 
     /**
      * Update stock opname
      */
-    public static function updateStockOpname($data)
+    function updateStockOpnameBahan($data)
     {
-        $t = self::find($data['sto_id']);
+        $t = self::find($data['stob_id']);
         if (!$t) return null;
 
-        $t->sto_date = $data['sto_date'];
+        $t->stob_date = $data['stob_date'];
         $t->staff_id = $data['staff_id'];
-        $t->category_id = $data['category_id'];
-        $t->sto_notes = $data['sto_notes'] ?? null;
+        $t->stob_notes = $data['stob_notes'] ?? null;
         $t->save();
 
-        return $t->sto_id;
+        return $t->stob_id;
     }
 
     /**
      * Soft delete stock opname (set status = 0)
      */
-    public static function deleteStockOpname($data)
+    function deleteStockOpnameBahan($data)
     {
-        $t = self::find($data['sto_id']);
+        $t = self::find($data['stob_id']);
         if ($t) {
             $t->status = 0;
             $t->save();
         }
+    }
+
+    function generateStockOpnameBahanID()
+    {
+        $id = self::max('stob_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "SB" . str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

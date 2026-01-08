@@ -87,6 +87,12 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/insertStockAlert', [StockController::class, "insertStockAlert"])->name('insertStockAlert');
     Route::post('/updateStockAlert', [StockController::class, "updateStockAlert"])->name('updateStockAlert');
     Route::post('/deleteStockAlert', [StockController::class, "deleteStockAlert"])->name('deleteStockAlert');
+    
+    Route::get('/stockAlertSupplies',[StockController::class,"StockAlertSupplies"])->name('stockAlertSupplies');
+    Route::get('/getStockAlertSupplies', [StockController::class, "getStockAlertSupplies"])->name('getStockAlertSupplies');
+    Route::post('/insertStockAlertSupplies', [StockController::class, "insertStockAlertSupplies"])->name('insertStockAlertSupplies');
+    Route::post('/updateStockAlertSupplies', [StockController::class, "updateStockAlertSupplies"])->name('updateStockAlertSupplies');
+    Route::post('/deleteStockAlertSupplies', [StockController::class, "deleteStockAlertSupplies"])->name('deleteStockAlertSupplies');
 
     Route::get('/productIssue',[StockController::class,"ProductIssue"])->name('productIssue');
     Route::get('/getProductIssue', [StockController::class, "getProductIssue"])->name('getProductIssue');
@@ -99,6 +105,12 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/insertDetailStockOpname', [StockController::class, "insertDetailStockOpname"])->name('insertDetailStockOpname');
     Route::post('/updateDetailStockOpname', [StockController::class, "updateDetailStockOpname"])->name('updateDetailStockOpname');
     Route::post('/deleteDetailStockOpname', [StockController::class, "deleteDetailStockOpname"])->name('deleteDetailStockOpname');
+    
+    Route::get('/detailStockOpnameBahan/{id}', [StockController::class, "DetailStockOpnameBahan"])->name('detailStockOpnameBahan');
+    Route::get('/getDetailStockOpnameBahan', [StockController::class, "getDetailStockOpnameBahan"])->name('getDetailStockOpnameBahan');
+    Route::post('/insertDetailStockOpnameBahan', [StockController::class, "insertDetailStockOpnameBahan"])->name('insertDetailStockOpnameBahan');
+    Route::post('/updateDetailStockOpnameBahan', [StockController::class, "updateDetailStockOpnameBahan"])->name('updateDetailStockOpnameBahan');
+    Route::post('/deleteDetailStockOpnameBahan', [StockController::class, "deleteDetailStockOpnameBahan"])->name('deleteDetailStockOpnameBahan');
 
     Route::get('/inwardOutward',[ReportController::class,"InwardOutward"])->name('inwardOutward');
     Route::get('/getInwardOutward',[ReportController::class,"getInwardOutward"])->name('getInwardOutward');
@@ -170,6 +182,7 @@ Route::middleware(checkLogin::class)->group(function () {
 
     Route::get('/supplies',[ProductController::class,"Supplies"])->name('supplies');
     Route::get('/getSupplies',[ProductController::class,"getSupplies"])->name('getSupplies');
+    Route::get('/getSuppliesVariant',[ProductController::class,"getSuppliesVariant"])->name('getSuppliesVariant');
     Route::post('/insertSupplies', [ProductController::class, "insertSupplies"])->name('insertSupplies');
     Route::post('/updateSupplies', [ProductController::class, "updateSupplies"])->name('updateSupplies');
     Route::post('/deleteSupplies', [ProductController::class, "deleteSupplies"])->name('deleteSupplies');

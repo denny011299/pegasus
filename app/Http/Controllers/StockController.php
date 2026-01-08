@@ -10,8 +10,11 @@ use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Stock;
 use App\Models\StockAlert;
+use App\Models\StockAlertSupplies;
 use App\Models\StockOpname;
+use App\Models\StockOpnameBahan;
 use App\Models\StockOpnameDetail;
+use App\Models\StockOpnameDetailBahan;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
@@ -159,72 +162,72 @@ class StockController extends Controller
 
     function getStockOpnameBahan(Request $req)
     {
-        $data = (new StockOpname())->getStockOpname();
+        $data = (new StockOpnameBahan())->getStockOpnameBahan();
         return response()->json($data);
     }
 
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $id =  (new StockOpname())->insertStockOpname($data);
+        $id =  (new StockOpnameBahan())->insertStockOpnameBahan($data);
         foreach (json_decode($req->item, true) as $key => $value) {
-            $value["sto_id"] = $id;
-            (new StockOpnameDetail())->insertDetail($value);
+            $value["stob_id"] = $id;
+            (new StockOpnameDetailBahan())->insertDetail($value);
         }
     }
 
     function updateStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $id = (new StockOpname())->updateStockOpname($data);
+        $id = (new StockOpnameBahan())->updateStockOpnameBahan($data);
         foreach (json_decode($req->item, true) as $key => $value) {
-            $value["sto_id"] = $id;
-            if (isset($value["stod_id"])) (new StockOpnameDetail())->updateDetail($value);
-            else (new StockOpnameDetail())->insertDetail($value);
+            $value["stob_id"] = $id;
+            if (isset($value["stod_id"])) (new StockOpnameDetailBahan())->updateDetail($value);
+            else (new StockOpnameDetailBahan())->insertDetail($value);
         }
     }
 
     function deleteStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        return (new StockOpname())->deleteStockOpname($data);
+        return (new StockOpnameBahan())->deleteStockOpnameBahan($data);
     }
 
     // Stock Opname Detail
     public function DetailStockOpnameBahan($id)
     {
         if ($id != -1) {
-            $param["data"] = (new StockOpname())->getStockOpname(["sto_id" => $id])[0];
+            $param["data"] = (new StockOpnameBahan())->getStockOpnameBahan(["stob_id" => $id])[0];
             $param["mode"] = 2;
         } else {
             $param["data"] = [];
             $param["mode"] = 1;
         }
-        return view('Backoffice.Inventory.CreateStockOpname')->with($param);
+        return view('Backoffice.Inventory.CreateStockOpnameSupplies')->with($param);
     }
 
     function getDetailStockOpnameBahan(Request $req)
     {
-        $data = (new StockOpnameDetail())->getDetailStockOpname();
+        $data = (new StockOpnameDetailBahan())->getDetailStockOpname();
         return response()->json($data);
     }
 
     function insertDetailStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        return (new StockOpnameDetail())->insertDetailStockOpname($data);
+        return (new StockOpnameDetailBahan())->insertDetailStockOpname($data);
     }
 
     function updateDetailStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        return (new StockOpnameDetail())->updateDetailStockOpname($data);
+        return (new StockOpnameDetailBahan())->updateDetailStockOpname($data);
     }
 
     function deleteDetailStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        return (new StockOpnameDetail())->deleteDetailStockOpname($data);
+        return (new StockOpnameDetailBahan())->deleteDetailStockOpname($data);
     }
 
     // Stock Alert
@@ -255,6 +258,36 @@ class StockController extends Controller
     {
         $data = $req->all();
         return (new StockAlert())->deleteStockAlert($data);
+    }
+
+    // Stock Alert Supplies
+    public function StockAlertSupplies()
+    {
+        return view('Backoffice.Inventory.Stock_Alert_Supplies');
+    }
+
+    function getStockAlertSupplies(Request $req)
+    {
+        $data = (new StockAlertSupplies())->getStockAlertSupplies(["mode" => $req->mode]);
+        return response()->json($data);
+    }
+
+    function insertStockAlertSupplies(Request $req)
+    {
+        $data = $req->all();
+        return (new StockAlertSupplies())->insertStockAlertSupplies($data);
+    }
+
+    function updateStockAlertSupplies(Request $req)
+    {
+        $data = $req->all();
+        return (new StockAlertSupplies())->updateStockAlertSupplies($data);
+    }
+
+    function deleteStockAlertSupplies(Request $req)
+    {
+        $data = $req->all();
+        return (new StockAlertSupplies())->deleteStockAlertSupplies($data);
     }
 
 

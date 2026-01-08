@@ -93,8 +93,19 @@
                             Stok Opname</a>
                     </li>
                 @endif
+                @if (Route::is(['stockOpnameBahan']))
+                    <li>
+                        <a class="btn btn-primary" href="/detailStockOpnameBahan/-1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Stok Opname</a>
+                    </li>
+                @endif
 
                 @if (Route::is(['detailStockOpname']))
+                    <li>
+                        <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
+                    </li>
+                @endif
+                @if (Route::is(['detailStockOpnameBahan']))
                     <li>
                         <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
                     </li>

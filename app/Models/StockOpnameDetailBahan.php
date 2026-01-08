@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class StockOpnameDetailBahan extends Model
 {
     protected $table = "stock_opname_detail_bahans";
-    protected $primaryKey = "stod_id";
+    protected $primaryKey = "stobd_id";
     public $timestamps = true;
     public $incrementing = true;
     /**
@@ -16,16 +16,16 @@ class StockOpnameDetailBahan extends Model
     public static function getDetail($data = [])
     {
         $data = array_merge([
-            'sto_id' => null,
-            'product_id' => null,
-            'product_variant_id' => null,
+            'stob_id' => null,
+            'supplies_id' => null,
+            'supplies_variant_id' => null,
         ], $data);
 
         $result = self::where('status', 1);
 
-        if ($data['sto_id']) $result->where('sto_id', $data['sto_id']);
-        if ($data['product_id']) $result->where('product_id', $data['product_id']);
-        if ($data['product_variant_id']) $result->where('product_variant_id', $data['product_variant_id']);
+        if ($data['stob_id']) $result->where('stob_id', $data['stob_id']);
+        if ($data['supplies_id']) $result->where('supplies_id', $data['supplies_id']);
+        if ($data['supplies_variant_id']) $result->where('supplies_variant_id', $data['supplies_variant_id']);
 
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
@@ -34,12 +34,12 @@ class StockOpnameDetailBahan extends Model
             if(isset($pv[0]->supplies_variant_id)) $pv = $pv[0];
 
             $temp = $pv;
-            $temp->stod_system = $value->stod_system;
-            $temp->stod_real =  $value->stod_real;
-            $temp->stod_selisih =  $value->stod_selisih;
-            $temp->stod_notes =  $value->stod_notes;
-            $temp->stod_id  =  $value->stod_id ;
-            $temp->sto_id  =  $value->sto_id ;
+            $temp->stobd_system = $value->stobd_system;
+            $temp->stobd_real =  $value->stobd_real;
+            $temp->stobd_selisih =  $value->stobd_selisih;
+            $temp->stobd_notes =  $value->stobd_notes;
+            $temp->stobd_id  =  $value->stobd_id ;
+            $temp->stob_id  =  $value->stob_id ;
             $result[$key] = $temp;
         }
         return $result;
@@ -50,22 +50,48 @@ class StockOpnameDetailBahan extends Model
      */
     public static function insertDetail($data)
     {
-        $m = SuppliesVariant::find($data["supplies_variant_id"]);
-        $m->supplies_variant_stock = $data["so_qty"];
+        $stob = StockOpnameBahan::find($data['stob_id']);
+        foreach ($data['units'] as $u) {
+            $s = SuppliesStock::where('supplies_id', $data['supplies_id'])
+                ->where('unit_id', $u['unit_id'])
+                ->first();
 
-        $m->save();
+            // Catat log
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $stob->stob_code,
+                'log_category' => 2,
+                'log_item_id' => $data['supplies_id'],
+                'log_notes'  => "Stock Opname Bahan Mentah",
+                'log_jumlah' => $s->ss_stock,
+                'unit_id'    => $u['unit_id'],
+            ]);
+            $s->ss_stock = $u['real_qty'];
+            $s->save();
+
+            // Catat log
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $stob->stob_code,
+                'log_category' => 1,
+                'log_item_id' => $data['supplies_id'],
+                'log_notes'  => "Stock Opname Bahan Mentah",
+                'log_jumlah' => $s->ss_stock,
+                'unit_id'    => $u['unit_id'],
+            ]);
+        }
         
         $t = new self();
-        $t->sto_id = $data['sto_id'];
+        $t->stob_id = $data['stob_id'];
         $t->supplies_id = $data['supplies_id'];
         $t->supplies_variant_id = $data['supplies_variant_id'];
-        $t->stod_system = $data['stod_system'] ?? null;
-        $t->stod_real = $data['stod_real'] ?? null;
-        $t->stod_selisih = $data['stod_selisih'] ?? null;
-        $t->stod_notes = $data['stod_notes'] ?? null;
+        $t->stobd_system = $data['stobd_system'] ?? null;
+        $t->stobd_real = $data['stobd_real'] ?? null;
+        $t->stobd_selisih = $data['stobd_selisih'] ?? null;
+        $t->stobd_notes = $data['stobd_notes'] ?? null;
         $t->save();
 
-        return $t->stod_id;
+        return $t->stobd_id;
     }
 
     /**
@@ -73,19 +99,19 @@ class StockOpnameDetailBahan extends Model
      */
     public static function updateDetail($data)
     {
-        $t = self::find($data['stod_id']);
+        $t = self::find($data['stobd_id']);
         if (!$t) return null;
 
-        $t->sto_id = $data['sto_id'];
+        $t->stob_id = $data['stob_id'];
         $t->supplies_id = $data['supplies_id'];
         $t->supplies_variant_id = $data['supplies_variant_id'];
-        $t->stod_system = $data['stod_system'] ?? null;
-        $t->stod_real = $data['stod_real'] ?? null;
-        $t->stod_selisih = $data['stod_selisih'] ?? null;
-        $t->stod_notes = $data['stod_notes'] ?? null;
+        $t->stobd_system = $data['stobd_system'] ?? null;
+        $t->stobd_real = $data['stobd_real'] ?? null;
+        $t->stobd_selisih = $data['stobd_selisih'] ?? null;
+        $t->stobd_notes = $data['stobd_notes'] ?? null;
         $t->save();
 
-        return $t->stod_id;
+        return $t->stobd_id;
     }
 
     /**
@@ -93,7 +119,7 @@ class StockOpnameDetailBahan extends Model
      */
     public static function deleteDetail($data)
     {
-        $t = self::find($data['stod_id']);
+        $t = self::find($data['stobd_id']);
         if ($t) {
             $t->status = 0;
             $t->save();

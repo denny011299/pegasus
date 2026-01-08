@@ -568,7 +568,9 @@
                             <li><a href="{{ url('productIssue') }}"
                                     class="{{ Request::is('productIssue') ? 'active' : '' }}">Produk Bermasalah</a></li>
                             <li><a href="{{ url('stockAlert') }}"
-                                class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok</a></li>
+                                class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok Produk</a></li>
+                            <li><a href="{{ url('stockAlertSupplies') }}"
+                                class="{{ Request::is('stockAlertSupplies') ? 'active' : '' }}">Peringatan Stok Bahan Mentah</a></li>
                             <li><a href="{{ url('stockOpname') }}"
                                     class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname Produk</a></li>
                             <li><a href="{{ url('stockOpnameBahan') }}"
