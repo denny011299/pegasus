@@ -90,7 +90,7 @@
                     <span class="animate-circle"></span>
                 </span>
                 <span class="user-content">
-                    <span class="user-details" style="color: white">Admin</span>
+                    <span class="user-details" style="color: white">{{Session::get('user')["role_name"]}}</span>
                     <span class="user-name" style="color: white">{{Session::get('user')["staff_name"]}}</span>
                 </span>
             </a>

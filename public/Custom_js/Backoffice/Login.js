@@ -20,7 +20,7 @@ $(document).on("click", "#btn-login", function () {
             "Gagal Insert",
             "Silahkan cek kembali inputan anda"
         );
-        ResetLoadingButton("#btn-login", "Save changes");
+        ResetLoadingButton("#btn-login", "Login");
         return false;
     }
     // Perform login action
@@ -37,12 +37,12 @@ $(document).on("click", "#btn-login", function () {
                 var sendTo = "/admin/";
                 window.location.href = sendTo;
             } else {
-                notifikasi("error", "Login Gagal", "");
+                notifikasi("error", "Login Gagal", "Silahkan cek kembali username dan password");
             }
-            ResetLoadingButton("#btn-login", "Sign In");
+            ResetLoadingButton("#btn-login", "Login");
         },
         error: function (xhr, status, error) {
-            ResetLoadingButton("#btn-login", "Sign In");
+            ResetLoadingButton("#btn-login", "Login");
             notifikasi("error", "Login Gagal", "");
         },
     });

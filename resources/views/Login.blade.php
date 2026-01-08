@@ -22,7 +22,7 @@
                             @csrf
                             <div class="input-block mb-3">
                                 <label class="form-control-label">Username</label>
-                                <input type="email" class="form-control" id="email" name="username">
+                                <input type="text" class="form-control fill" id="username" name="username">
                                 <div class="text-danger pt-2">
                                     @error('0')
                                         {{ $message }}
@@ -35,7 +35,7 @@
                             <div class="input-block mb-3">
                                 <label class="form-control-label">Password</label>
                                 <div class="pass-group">
-                                    <input type="password" class="form-control pass-input" id="password" name="password"
+                                    <input type="password" class="form-control pass-input fill" id="password" name="password"
                                         value="">
                                     <span class="fa-solid fa-eye-slash toggle-password"></span>
                                     <div class="text-danger pt-2">
@@ -48,7 +48,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button class="btn btn-lg  btn-primary w-100" type="button" id="btn-login">Login</button>
+                            <button class="btn btn-lg  btn-primary w-100" type="submit" id="btn-login">Login</button>
                           
                         </form>
 
