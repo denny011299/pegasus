@@ -56,9 +56,7 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY'); 
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view" href="/staffDetail/${e[i].staff_id}" data-bs-target="#view-supplier">
-                            <i class="fe fe-eye"></i>
-                        </a>
+                        
                         <a class="me-2 btn-action-icon p-2 btn_edit" href="/updateStaff/${e[i].staff_id}" data-bs-target="#edit-supplier">
                             <i class="fe fe-edit"></i>
                         </a>
