@@ -28,9 +28,9 @@
             },
             columns: [
                 { data: "staff_name" },
-                { data: "staff_phone" },
-                { data: "staff_email" },
-                { data: "role_name" },
+                { data: "staff_phone_text" },
+                { data: "staff_email_text" },
+                { data: "role_name_text" },
                 { data: "created" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -53,8 +53,12 @@
 
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
+                console.log(e);
                 for (let i = 0; i < e.length; i++) {
-                    e[i].created = moment(e[i].created_at).format('D MMM YYYY'); 
+                    e[i].staff_phone_text = e[i].staff_phone ?? "-";
+                    e[i].staff_email_text = e[i].staff_email ?? "-";
+                    e[i].role_name_text  = e[i].role_name  ?? "-";
+                    e[i].created = moment(e[i].created_at).format('D MMM YYYY') ?? "-"; 
                     e[i].action = `
                         
                         <a class="me-2 btn-action-icon p-2 btn_edit" href="/updateStaff/${e[i].staff_id}" data-bs-target="#edit-supplier">
