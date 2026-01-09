@@ -23,7 +23,7 @@
             columns: [
                 { data: "sto_date"},
                 { data: "staff_name" },
-                { data: "sto_id_text" },
+                { data: "sto_code" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

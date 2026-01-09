@@ -18,22 +18,21 @@ class StockOpnameDetailBahan extends Model
         $data = array_merge([
             'stob_id' => null,
             'supplies_id' => null,
-            'supplies_variant_id' => null,
         ], $data);
 
         $result = self::where('status', 1);
 
         if ($data['stob_id']) $result->where('stob_id', $data['stob_id']);
         if ($data['supplies_id']) $result->where('supplies_id', $data['supplies_id']);
-        if ($data['supplies_variant_id']) $result->where('supplies_variant_id', $data['supplies_variant_id']);
 
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $pv = (new SuppliesVariant())->getSuppliesVariant(["supplies_variant_id"=>$value->supplies_variant_id]);
-            if(isset($pv[0]->supplies_variant_id)) $pv = $pv[0];
+            $pv = (new Supplies())->getSupplies(["supplies_id"=>$value->supplies_id]);
+            if(isset($pv[0]->supplies_id)) $pv = $pv[0];
 
             $temp = $pv;
+            $temp->sp_units = [];
             $temp->stobd_system = $value->stobd_system;
             $temp->stobd_real =  $value->stobd_real;
             $temp->stobd_selisih =  $value->stobd_selisih;
@@ -51,7 +50,7 @@ class StockOpnameDetailBahan extends Model
     public static function insertDetail($data)
     {
         $stob = StockOpnameBahan::find($data['stob_id']);
-        foreach ($data['units'] as $u) {
+        foreach ($data['sp_units'] as $u) {
             $s = SuppliesStock::where('supplies_id', $data['supplies_id'])
                 ->where('unit_id', $u['unit_id'])
                 ->first();
@@ -84,7 +83,6 @@ class StockOpnameDetailBahan extends Model
         $t = new self();
         $t->stob_id = $data['stob_id'];
         $t->supplies_id = $data['supplies_id'];
-        $t->supplies_variant_id = $data['supplies_variant_id'];
         $t->stobd_system = $data['stobd_system'] ?? null;
         $t->stobd_real = $data['stobd_real'] ?? null;
         $t->stobd_selisih = $data['stobd_selisih'] ?? null;
@@ -104,7 +102,6 @@ class StockOpnameDetailBahan extends Model
 
         $t->stob_id = $data['stob_id'];
         $t->supplies_id = $data['supplies_id'];
-        $t->supplies_variant_id = $data['supplies_variant_id'];
         $t->stobd_system = $data['stobd_system'] ?? null;
         $t->stobd_real = $data['stobd_real'] ?? null;
         $t->stobd_selisih = $data['stobd_selisih'] ?? null;

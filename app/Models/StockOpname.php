@@ -22,7 +22,7 @@ class StockOpname extends Model
     /**
      * Get list of stock opname
      */
-    public static function getStockOpname($data = [])
+    function getStockOpname($data = [])
     {
         $data = array_merge([
             'sto_date' => null,
@@ -60,10 +60,11 @@ class StockOpname extends Model
     /**
      * Insert new stock opname
      */
-    public static function insertStockOpname($data)
+    function insertStockOpname($data)
     {
         $t = new self();
         $t->sto_date = $data['sto_date'];
+        $t->sto_code   = $this->generateStockOpnameID();
         $t->staff_id = $data['staff_id'];
         $t->category_id = $data['category_id'];
         $t->sto_notes = $data['sto_notes'] ?? null;
@@ -75,7 +76,7 @@ class StockOpname extends Model
     /**
      * Update stock opname
      */
-    public static function updateStockOpname($data)
+    function updateStockOpname($data)
     {
         $t = self::find($data['sto_id']);
         if (!$t) return null;
@@ -92,12 +93,20 @@ class StockOpname extends Model
     /**
      * Soft delete stock opname (set status = 0)
      */
-    public static function deleteStockOpname($data)
+    function deleteStockOpname($data)
     {
         $t = self::find($data['sto_id']);
         if ($t) {
             $t->status = 0;
             $t->save();
         }
+    }
+
+    function generateStockOpnameID()
+    {
+        $id = self::max('sto_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "SP" . str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

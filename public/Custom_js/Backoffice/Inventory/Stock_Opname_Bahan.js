@@ -9,7 +9,7 @@
         table = $('#tableStockOpname').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            ordering: true,
+            order: [[2, 'desc']],
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -23,7 +23,7 @@
             columns: [
                 { data: "stob_date"},
                 { data: "staff_name" },
-                { data: "stob_id_text" },
+                { data: "stob_code" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

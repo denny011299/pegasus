@@ -51,11 +51,35 @@ class StockOpnameDetail extends Model
     public static function insertDetail($data)
     {
         foreach ($data['units'] as $u) {
+            $sto = StockOpname::find($data['sto_id']);
             $s = ProductStock::where('product_variant_id', $data['product_variant_id'])
                 ->where('unit_id', $u['unit_id'])
                 ->first();
+            
+            // Catat log
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $sto->sto_code,
+                'log_category' => 2,
+                'log_item_id' => $data['product_variant_id'],
+                'log_notes'  => "Stock Opname Produk",
+                'log_jumlah' => $s->ps_stock,
+                'unit_id'    => $u['unit_id'],
+            ]);
+
             $s->ps_stock = $u['real_qty'];
             $s->save();
+
+            // Catat log
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $sto->sto_code,
+                'log_category' => 1,
+                'log_item_id' => $data['product_variant_id'],
+                'log_notes'  => "Stock Opname Produk",
+                'log_jumlah' => $s->ps_stock,
+                'unit_id'    => $u['unit_id'],
+            ]);
         }
         
         $t = new self();

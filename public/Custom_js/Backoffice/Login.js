@@ -1,5 +1,6 @@
 $(document).on("click", "#btn-login", function () {
     LoadingButton("#btn-login");
+    $('.is-invalid').removeClass('is-invalid');
     var username = $("#username").val();
     var password = $("#password").val();
     var valid = 0;
@@ -38,6 +39,9 @@ $(document).on("click", "#btn-login", function () {
                 window.location.href = sendTo;
             } else {
                 notifikasi("error", "Login Gagal", "Silahkan cek kembali username dan password");
+                $(".fill").each(function () {
+                    $(this).addClass("is-invalid");
+                });
             }
             ResetLoadingButton("#btn-login", "Login");
         },

@@ -11,10 +11,8 @@
             loadStaff();
         if(mode==1){
             refreshStockOpname();
-            var yesterday = moment().format('DD-MM-YYYY');
+            var yesterday = moment().format('YYYY-MM-DD');
             // Autofill ke input
-            console.log(yesterday);
-            
             $('#tanggal').val(yesterday);
         }
         else{
@@ -26,14 +24,32 @@
             $('#tanggal,#penanggung-jawab,#kategori,#catatan').prop("disabled",true);
             supplies = data.item;
             data.item.forEach((item,indexProduct) => {
-                var selisihArr = [];
-                var systemArr = [];
+                // var selisihArr = [];
+                // var systemArr = [];
+                let systemArr  = item.stobd_system ? item.stobd_system.split(', ') : [];
+                let realArr    = item.stobd_real ? item.stobd_real.split(', ') : [];
+                let selisihArr = item.stobd_selisih ? item.stobd_selisih.split(', ') : [];
                 console.log(item);
                 var rl_stock = "";
                 var rl = item.stobd_real.split(", ");
-                item.supplies_unit.forEach((element, index) => {
-                    selisihArr.push(element.stobd_selisih + " " + element.unit_short_name);
-                    systemArr.push(element.system_qty + " " + element.unit_short_name);
+                
+                item.sp_units = [];
+                item.units.forEach((unit, idx) => {
+                    let systemQty  = parseInt(systemArr[idx])  || 0;
+                    let realQty    = parseInt(realArr[idx])    || 0;
+                    let selisihQty = parseInt(selisihArr[idx]) || 0;
+                    item.sp_units.push({
+                        unit_id: unit.unit_id,
+                        unit_short_name: unit.unit_short_name,
+                        system_qty: systemQty,
+                        real_qty: realQty,
+                        selisih_qty: selisihQty
+                    });
+                });
+
+                item.sp_units.forEach((element, index) => {
+                    // selisihArr.push(element.stobd_selisih + " " + element.unit_short_name);
+                    // systemArr.push(element.system_qty + " " + element.unit_short_name);
                     rl_stock += `
                         <input type="number"
                             class="form-control real-stock"
@@ -47,9 +63,8 @@
 
                 // Untuk superadmin
                 // $('#tbStock').append(`
-                //     <tr class="row-stock" data-supplies-id="${item.supplies_id}" data-variant-id="${item.supplies_variant_id}">
-                //         <td>${item.supplies_variant_sku}</td>
-                //         <td>${item.pr_name} ${item.supplies_variant_name}</td>
+                //     <tr class="row-stock" data-supplies-id="${item.supplies_id}">
+                //         <td>${item.supplies_name}</td>
                 //         <td class="text-center pt-2 pr_stock">${systemArr.join(', ')}</td>
                 //         <td class="text-center" style="width:10%">
                 //             <div class="input-group mb-3 rstock">
@@ -68,9 +83,8 @@
 
                 // Untuk Non Admin
                 $('#tbStock').append(`
-                    <tr class="row-stock" data-supplies-id="${item.supplies_id}" data-variant-id="${item.supplies_variant_id}">
-                        <td>${item.supplies_variant_sku}</td>
-                        <td>${item.pr_name} ${item.supplies_variant_name}</td>
+                    <tr class="row-stock" data-supplies-id="${item.supplies_id}">
+                        <td>${item.supplies_name}</td>
                         <td class="text-center" style="width:10%">
                             <div class="input-group mb-3 rstock">
                                 ${rl_stock}
@@ -104,7 +118,7 @@
                 _token:'{{ csrf_token() }}'
             },
             success:function(e){
-                 supplies = e;
+                
                 console.log(e);
                 
                 $('#tbStock').html("");
@@ -135,9 +149,8 @@
 
                     // Untuk superadmin
                     // $('#tbStock').append(`
-                    //     <tr class="row-stock" data-supplies-id="${item.supplies_id}" data-variant-id="${item.supplies_variant_id}">
-                    //         <td>${item.supplies_variant_sku}</td>
-                    //         <td>${item.pr_name} ${item.supplies_variant_name}</td>
+                    //     <tr class="row-stock" data-supplies-id="${item.supplies_id}">
+                    //         <td>${item.pr_name}</td>
                     //         <td class="text-center pt-2 pr_stock">${systemArr.join(', ')}</td>
                     //         <td class="text-center" style="width:10%">
                     //             <div class="input-group mb-3 rstock">
@@ -156,9 +169,8 @@
 
                     // Untuk Non Admin
                     $('#tbStock').append(`
-                        <tr class="row-stock" data-supplies-id="${item.supplies_id}" data-variant-id="${item.supplies_variant_id}">
-                            <td>${item.supplies_variant_sku}</td>
-                            <td>${item.supplies_name} ${item.supplies_variant_name}</td>
+                        <tr class="row-stock" data-supplies-id="${item.supplies_id}">
+                            <td>${item.supplies_name}</td>
                             <td class="text-center" style="width:10%">
                                 <div class="input-group mb-3 rstock">
                                     ${rl_stock}
@@ -175,11 +187,12 @@
                     $('.real-stock').trigger("keyup");
                 });
                 if(e.length==0){
-                    $('#tbStock').html(`<tr><td colspan="6" class="text-center">Tidak ada produk pada kategori ini</td></tr>`);
+                    $('#tbStock').html(`<tr><td colspan="3" class="text-center">Tidak ada produk pada kategori ini</td></tr>`);
                 }
                 if(mode==2){
                     $(".real-stock, .notes").attr("disabled","disabled");
                 }
+                supplies = e;
             },
             error:function(e){
                 console.log(e);
@@ -263,10 +276,9 @@ function insertData() {
         let item = {};
 
         item.supplies_id = row.data('supplies-id');
-        item.supplies_variant_id = row.data('variant-id');
         item.stobd_notes = row.find('.notes').val() ?? '';
 
-        let units = [];
+        let sp_units = [];
         let systemArr  = [];
         let realArr    = [];
         let selisihArr = [];
@@ -280,7 +292,7 @@ function insertData() {
             let systemQty = parseInt(input.data('system-qty')) || 0;
             let realQty   = parseInt(input.val()) || 0;
 
-            units.push({
+            sp_units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
                 real_qty: realQty
@@ -291,7 +303,7 @@ function insertData() {
             selisihArr.push((realQty - systemQty) + ' ' + unitName);
         });
 
-        item.units = units;
+        item.sp_units = sp_units;
         item.stobd_system  = systemArr.join(', ');
         item.stobd_real    = realArr.join(', ');
         item.stobd_selisih = selisihArr.join(', ');

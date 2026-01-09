@@ -89,7 +89,6 @@
                                 <table class="table mt-3" id="tb-stock-table" style="min-width: 800px;">
                                     <thead>
                                         <tr>
-                                            <td>SKU</td>
                                             <td style="width:5%">Nama</td>
                                             {{-- <td class="text-center">Stok Komp.</td> --}}
                                             <td class="text-center" style="width:35%">Stok Real</td>

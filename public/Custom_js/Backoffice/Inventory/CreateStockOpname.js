@@ -11,7 +11,7 @@
             loadStaff();
         if(mode==1){
             refreshStockOpname();
-            var yesterday = moment().format('DD-MM-YYYY');
+            var yesterday = moment().format('YYYY-MM-DD');
             // Autofill ke input
             console.log(yesterday);
             

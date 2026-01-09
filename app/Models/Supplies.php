@@ -36,6 +36,7 @@ class Supplies extends Model
             $value->supplies_relasi = (new SuppliesRelation())->getSuppliesRelation([
                 "supplies_id" => $value->supplies_id
             ]);
+            // dd($value->units);
             $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
             $value->stock = (new SuppliesStock())->getProductStock([
                 "supplies_id" => $value->supplies_id
