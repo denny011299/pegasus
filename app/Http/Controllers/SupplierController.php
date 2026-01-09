@@ -484,6 +484,7 @@ class SupplierController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $po->po_number,
+                'log_type'    => 2,
                 'log_category' => 1,
                 'log_item_id' => $sv->supplies_id,
                 'log_notes'  => "Pembelian bahan mentah",
@@ -518,6 +519,7 @@ class SupplierController extends Controller
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $p->po_number,
+                    'log_type'    => 2,
                     'log_category' => 2,
                     'log_item_id' => $s->supplies_id,
                     'log_notes'  => "Pembatalan pembelian bahan mentah",

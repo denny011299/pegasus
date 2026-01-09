@@ -112,9 +112,10 @@ class Production extends Model
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $t->production_code,
+                'log_type'    => 2,
                 'log_category' => 1,
                 'log_item_id' => $value->supplies_id,
-                'log_notes'  => "Pengembalian stok bahan mentah akibat pembatalan production",
+                'log_notes'  => "Pengembalian stok bahan akibat pembatalan produksi",
                 'log_jumlah' => ($value->bom_detail_qty * $t->production_qty),
                 'unit_id'    => $value->unit_id,
             ]);

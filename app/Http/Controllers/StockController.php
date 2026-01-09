@@ -328,6 +328,7 @@ class StockController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $t->pi_code,
+                'log_type'    => 1,
                 'log_category' => $logCategory,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => $logNotes,
@@ -360,6 +361,7 @@ class StockController extends Controller
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $pi->pi_code,
+                    'log_type'    => 1,
                     'log_category' => $logCategory,
                     'log_item_id' => $value['product_variant_id'],
                     'log_notes'  => $logNotes,
@@ -382,6 +384,7 @@ class StockController extends Controller
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $pi->pi_code,
+                    'log_type'    => 1,
                     'log_category' => $logCategory,
                     'log_item_id' => $pid['product_variant_id'],
                     'log_notes'  => $logNotes,
@@ -406,6 +409,7 @@ class StockController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $pi->pi_code,
+                'log_type'    => 1,
                 'log_category' => $logCategory,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => $logNotes,
@@ -438,6 +442,7 @@ class StockController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $pi->pi_code,
+                'log_type'    => 1,
                 'log_category' => $logCategory,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => $logNotes,

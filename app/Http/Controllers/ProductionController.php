@@ -132,9 +132,10 @@ class ProductionController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $p->production_code,
+                'log_type'    => 2,
                 'log_category' => 2,
                 'log_item_id' => $value['supplies_id'],
-                'log_notes'  => "Pengurangan bahan mentah untuk production",
+                'log_notes'  => "Pengurangan bahan untuk produksi",
                 'log_jumlah' => ($value['bom_detail_qty'] * $data['production_qty']),
                 'unit_id'    => $value['unit_id'],
             ]);
@@ -157,6 +158,7 @@ class ProductionController extends Controller
         (new LogStock())->insertLog([
             'log_date' => now(),
             'log_kode'    => $p->production_code,
+            'log_type'    => 1,
             'log_category' => 1,
             'log_item_id' => $data["production_product_id"],
             'log_notes'  => "Produksi produk",
@@ -216,6 +218,7 @@ class ProductionController extends Controller
         (new LogStock())->insertLog([
             'log_date' => now(),
             'log_kode'    => $p->production_code,
+            'log_type'    => 1,
             'log_category' => 2,
             'log_item_id' => $p["production_product_id"],
             'log_notes'  => "Pembatalan produksi produk",

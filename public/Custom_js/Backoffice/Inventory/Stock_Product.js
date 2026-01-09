@@ -88,7 +88,7 @@
             url: '/getLog',
             method: 'get',
             data: {
-                log_notes: 'Produk',
+                log_type: 1,
                 log_item_id: id,
                 date: dates
             },

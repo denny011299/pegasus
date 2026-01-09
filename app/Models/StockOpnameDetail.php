@@ -60,6 +60,7 @@ class StockOpnameDetail extends Model
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $sto->sto_code,
+                'log_type'    => 1,
                 'log_category' => 2,
                 'log_item_id' => $data['product_variant_id'],
                 'log_notes'  => "Stock Opname Produk",
@@ -74,6 +75,7 @@ class StockOpnameDetail extends Model
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $sto->sto_code,
+                'log_type'    => 1,
                 'log_category' => 1,
                 'log_item_id' => $data['product_variant_id'],
                 'log_notes'  => "Stock Opname Produk",

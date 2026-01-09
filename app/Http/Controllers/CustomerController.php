@@ -60,6 +60,7 @@ class CustomerController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $so->so_number,
+                'log_type'    => 1,
                 'log_category' => 2,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => "Penjualan produk",
@@ -109,6 +110,7 @@ class CustomerController extends Controller
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $so->so_number,
+                    'log_type'    => 1,
                     'log_category' => 1,
                     'log_item_id' => $sod['product_variant_id'],
                     'log_notes'  => "Perubahan penjualan produk",
@@ -123,6 +125,7 @@ class CustomerController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $so->so_number,
+                'log_type'    => 1,
                 'log_category' => 2,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => "Perubahan penjualan produk",
@@ -146,6 +149,7 @@ class CustomerController extends Controller
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $so->so_number,
+                'log_type'    => 1,
                 'log_category' => 1,
                 'log_item_id' => $value['product_variant_id'],
                 'log_notes'  => "Pembatalan penjualan produk",

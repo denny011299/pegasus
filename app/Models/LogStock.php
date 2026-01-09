@@ -16,11 +16,14 @@ class LogStock extends Model
 
         $data = array_merge([
             "log_notes"=>null,
+            "log_type"=>null,
             "log_item_id"=>null,
             "date"=>null
         ], $data);
 
-        $result = LogStock::where('log_notes','like','%'.$data["log_notes"].'%');
+        $result = LogStock::where('status', '=', 1);
+        if($data['log_notes'])$result->where('log_notes','like','%'.$data["log_notes"].'%');
+        if($data["log_type"])$result->where('log_type','=',$data["log_type"]);
         if($data["log_item_id"])$result->where('log_item_id','=',$data["log_item_id"]);
 
         if ($data["date"]) {
@@ -50,6 +53,7 @@ class LogStock extends Model
         $t = new LogStock();
         $t->log_date = $data["log_date"];
         $t->log_kode = $data["log_kode"];
+        $t->log_type = $data["log_type"];
         $t->log_category = $data["log_category"];
         $t->log_item_id = $data["log_item_id"];
         $t->log_notes = $data["log_notes"];
