@@ -396,26 +396,28 @@ class StockController extends Controller
             }
             array_push($id, $t);
 
-            // Catat Log
-            $logNotes = "";
-            $logCategory = 0;
-            if ($pi->tipe_return == 1){
-                $logNotes = 'Perubahan data produk bermasalah retur gudang';
-                $logCategory = 2;
-            } elseif ($pi->tipe_return == 2){
-                $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
-                $logCategory = 1;
+            if (!isset($value["pid_id"])){
+                // Catat Log
+                $logNotes = "";
+                $logCategory = 0;
+                if ($pi->tipe_return == 1){
+                    $logNotes = 'Perubahan data produk bermasalah retur gudang';
+                    $logCategory = 2;
+                } elseif ($pi->tipe_return == 2){
+                    $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                    $logCategory = 1;
+                }
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $pi->pi_code,
+                    'log_type'    => 1,
+                    'log_category' => $logCategory,
+                    'log_item_id' => $value['product_variant_id'],
+                    'log_notes'  => $logNotes,
+                    'log_jumlah' => $value['pid_qty'],
+                    'unit_id'    => $value['unit_id'],
+                ]);
             }
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $pi->pi_code,
-                'log_type'    => 1,
-                'log_category' => $logCategory,
-                'log_item_id' => $value['product_variant_id'],
-                'log_notes'  => $logNotes,
-                'log_jumlah' => $value['pid_qty'],
-                'unit_id'    => $value['unit_id'],
-            ]);
         }
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
