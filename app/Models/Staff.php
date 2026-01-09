@@ -32,6 +32,8 @@ class Staff extends Model
             $staff = Staff::where('staff_username', $data["staff_username"])->first();
             if ($data["staff_password"] && Hash::check($data["staff_password"], $staff->staff_password)) {
                 $result->where('staff_username','=',$data["staff_username"]);
+            } else{
+                return -1;
             }
         }
         $result->orderBy('created_at', 'asc');

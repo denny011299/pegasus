@@ -33,7 +33,7 @@ $(document).on("click", "#btn-login", function () {
             _token: token,
         },
         success: async function (response) {
-            if (response.length > 0) {
+            if (response.length > 0 && response != -1) {
                 var sendTo = "/admin/";
                 window.location.href = sendTo;
             } else {

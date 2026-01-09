@@ -14,7 +14,8 @@ class UserController extends Controller
     function loginUser(Request $req)
     {
         $data = (new Staff())->getStaff($req->all());
-        if(count($data)>0){
+        if ($data === -1) return -1;
+        else if(count($data)>0){
             Session::put("user",$data[0]);
         }
 
