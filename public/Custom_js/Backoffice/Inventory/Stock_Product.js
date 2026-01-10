@@ -27,7 +27,7 @@
                 { data: "pr_name" },
                 { data: "product_variant_name" },
                 { data: "product_category" },
-                { data: "product_variant_stock_text" },
+                { data: "product_variant_stock_text", class: "fw-bold" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

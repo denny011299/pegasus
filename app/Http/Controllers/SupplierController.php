@@ -481,13 +481,14 @@ class SupplierController extends Controller
 
             // Catat Log
             $sv = SuppliesVariant::find($value['supplies_variant_id']);
+            $sup = Supplier::find($sv->supplier_id);
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $po->po_number,
                 'log_type'    => 2,
                 'log_category' => 1,
                 'log_item_id' => $sv->supplies_id,
-                'log_notes'  => "Pembelian bahan mentah",
+                'log_notes'  => "Pembelian bahan mentah " . $sup->supplier_name,
                 'log_jumlah' => $value["pdod_qty"],
                 'unit_id'    => $value['unit_id'],
             ]);
@@ -497,6 +498,7 @@ class SupplierController extends Controller
         (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>1,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
         $po->status = 2; // Lunas
         $po->save();
+        return $due;
     }
 
     function tolakPO(Request $req) {
@@ -507,22 +509,23 @@ class SupplierController extends Controller
         if($p->status==2){
             $b = PurchaseOrderDetail::where('po_id','=',$data["po_id"])->get();;
             foreach ($b as $key => $value) {
-                $s = SuppliesVariant::find($value->supplies_variant_id);
-                $s = SuppliesStock::where("supplies_id", "=", $s->supplies_id)
+                $sv = SuppliesVariant::find($value->supplies_variant_id);
+                $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
                     ->where("unit_id", "=", $value->unit_id)
                     ->where("status", "=", 1)
                     ->first();
                 $s->ss_stock -= $value->pod_qty;
                 $s->save();
 
+                $sup = Supplier::find($sv->supplier_id);
                 // Catat Log
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $p->po_number,
                     'log_type'    => 2,
                     'log_category' => 2,
-                    'log_item_id' => $s->supplies_id,
-                    'log_notes'  => "Pembatalan pembelian bahan mentah",
+                    'log_item_id' => $sv->supplies_id,
+                    'log_notes'  => "Pembatalan pembelian bahan mentah " . $sup->supplier_name,
                     'log_jumlah' => $value->pod_qty,
                     'unit_id'    => $value->unit_id,
                 ]);

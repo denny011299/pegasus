@@ -15,6 +15,7 @@ use App\Models\StockOpname;
 use App\Models\StockOpnameBahan;
 use App\Models\StockOpnameDetail;
 use App\Models\StockOpnameDetailBahan;
+use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
@@ -311,26 +312,35 @@ class StockController extends Controller
     {
         $data = $req->all();
         $t = (new ProductIssues())->insertProductIssues($data);
-        foreach (json_decode($data['product'], true) as $key => $value) {
+        foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;
             (new ProductIssuesDetail())->insertProductIssuesDetail($value);
 
             // Catat Log
             $logNotes = "";
             $logCategory = 0;
+            $logType = 0;
+            $itemId = 0;
             if ($t->tipe_return == 1){
-                $logNotes = 'Produk bermasalah retur gudang';
+                $sup = SuppliesVariant::find($value['supplies_variant_id']);
+                $spr = Supplier::find($sup->supplier_id);
+                $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name;
                 $logCategory = 2;
+                $logType = 2;
+
+                $itemId = $sup->supplies_id;
             } elseif ($t->tipe_return == 2){
                 $logNotes = 'Produk bermasalah retur pelanggan';
                 $logCategory = 1;
+                $logType = 1;
+                $itemId = $value['product_variant_id'];
             }
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $t->pi_code,
-                'log_type'    => 1,
+                'log_type'    => $logType,
                 'log_category' => $logCategory,
-                'log_item_id' => $value['product_variant_id'],
+                'log_item_id' => $itemId,
                 'log_notes'  => $logNotes,
                 'log_jumlah' => $value['pid_qty'],
                 'unit_id'    => $value['unit_id'],
@@ -351,19 +361,29 @@ class StockController extends Controller
                 // Catat Log
                 $logNotes = "";
                 $logCategory = 0;
+                $logType = 0;
+                $itemId = 0;
                 if ($pi->tipe_return == 1){
-                    $logNotes = 'Produk bermasalah retur gudang';
+                    $sup = SuppliesVariant::find($value['supplies_variant_id']);
+                    $spr = Supplier::find($sup->supplier_id);
+                    
+                    $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name;
                     $logCategory = 2;
+                    $logType = 2;
+
+                    $itemId = $sup->supplies_id;
                 } elseif ($pi->tipe_return == 2){
                     $logNotes = 'Produk bermasalah retur pelanggan';
                     $logCategory = 1;
+                    $logType = 1;
+                    $itemId = $value['product_variant_id'];
                 }
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $pi->pi_code,
-                    'log_type'    => 1,
+                    'log_type'    => $logType,
                     'log_category' => $logCategory,
-                    'log_item_id' => $value['product_variant_id'],
+                    'log_item_id' => $itemId,
                     'log_notes'  => $logNotes,
                     'log_jumlah' => $value['pid_qty'],
                     'unit_id'    => $value['unit_id'],
@@ -374,19 +394,29 @@ class StockController extends Controller
                 // Catat Log
                 $logNotes = "";
                 $logCategory = 0;
+                $logType = 0;
+                $itemId = 0;
                 if ($pi->tipe_return == 1){
-                    $logNotes = 'Perubahan data produk bermasalah retur gudang';
+                    $sup = SuppliesVariant::find($pid['supplies_variant_id']);
+                    $spr = Supplier::find($sup->supplier_id);
+                    
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
                     $logCategory = 1;
+                    $logType = 2;
+
+                    $itemId = $sup->supplies_id;
                 } elseif ($pi->tipe_return == 2){
                     $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
                     $logCategory = 2;
+                    $logType = 1;
+                    $itemId = $pid['product_variant_id'];
                 }
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $pi->pi_code,
-                    'log_type'    => 1,
+                    'log_type'    => $logType,
                     'log_category' => $logCategory,
-                    'log_item_id' => $pid['product_variant_id'],
+                    'log_item_id' => $itemId,
                     'log_notes'  => $logNotes,
                     'log_jumlah' => $pid['pid_qty'],
                     'unit_id'    => $pid['unit_id'],
@@ -400,19 +430,29 @@ class StockController extends Controller
                 // Catat Log
                 $logNotes = "";
                 $logCategory = 0;
+                $logType = 0;
+                $itemId = 0;
                 if ($pi->tipe_return == 1){
-                    $logNotes = 'Perubahan data produk bermasalah retur gudang';
+                    $sup = SuppliesVariant::find($value['supplies_variant_id']);
+                    $spr = Supplier::find($sup->supplier_id);
+                    
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
                     $logCategory = 2;
+                    $logType = 2;
+
+                    $itemId = $sup->supplies_id;
                 } elseif ($pi->tipe_return == 2){
                     $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
                     $logCategory = 1;
+                    $logType = 1;
+                    $itemId = $value['product_variant_id'];
                 }
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $pi->pi_code,
-                    'log_type'    => 1,
+                    'log_type'    => $logType,
                     'log_category' => $logCategory,
-                    'log_item_id' => $value['product_variant_id'],
+                    'log_item_id' => $itemId,
                     'log_notes'  => $logNotes,
                     'log_jumlah' => $value['pid_qty'],
                     'unit_id'    => $value['unit_id'],
@@ -434,19 +474,29 @@ class StockController extends Controller
             // Catat Log
             $logNotes = "";
             $logCategory = 0;
+            $logType = 0;
+            $itemId = 0;
             if ($pi->tipe_return == 1){
-                $logNotes = 'Penghapusan data produk bermasalah retur gudang';
+                $sup = SuppliesVariant::find($value['supplies_variant_id']);
+                $spr = Supplier::find($sup->supplier_id);
+                
+                $logNotes = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name;
                 $logCategory = 1;
+                $logType = 2;
+
+                $itemId = $sup->supplies_id;
             } elseif ($pi->tipe_return == 2){
                 $logNotes = 'Penghapusan data produk bermasalah retur pelanggan';
                 $logCategory = 2;
+                $logType = 1;
+                $itemId = $value['product_variant_id'];
             }
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $pi->pi_code,
-                'log_type'    => 1,
+                'log_type'    => $logType,
                 'log_category' => $logCategory,
-                'log_item_id' => $value['product_variant_id'],
+                'log_item_id' => $itemId,
                 'log_notes'  => $logNotes,
                 'log_jumlah' => $value['pid_qty'],
                 'unit_id'    => $value['unit_id'],

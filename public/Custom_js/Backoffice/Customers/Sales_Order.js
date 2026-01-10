@@ -327,7 +327,7 @@
         $('#add_sales_order .modal-title').html("Update Pesanan Penjualan");
         $('#add_sales_order input').empty().val("");
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
-        $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
+        if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date)
         $('#so_discount').val(data.so_discount)
         $('#so_ppn').val(data.so_ppn)

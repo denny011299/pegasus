@@ -691,6 +691,35 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             dropdownParent: modalParent ? $(modalParent) : "",
         });
     }
+    function autocompleteSuppliesVariantOnly(id, modalParent = null,supplier_id=null) {
+        //search country dan city
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteSuppliesVariantOnly",
+                dataType: "json",
+                type: "post",
+                data: function data(params) {
+                    return {
+                        "keyword": params.term,
+                        "supplier_id": supplier_id,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: "Pilih Bahan Mentah",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
 
     function autocompleteProductVariant(id, modalParent = null) {
         //search country dan city

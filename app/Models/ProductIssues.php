@@ -51,7 +51,7 @@ class ProductIssues extends Model
             // $u = Unit::find($value->unit_id);
             // $value->unit_name = $u->unit_name;
 
-            $value->product = (new ProductIssuesDetail())->getProductIssuesDetail(["pi_id" => $value->pi_id]);
+            $value->items = (new ProductIssuesDetail())->getProductIssuesDetail(["pi_id" => $value->pi_id, "tipe_return" => $value->tipe_return]);
         }
  
         return $result;

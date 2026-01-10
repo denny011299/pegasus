@@ -58,7 +58,7 @@ class SalesOrder extends Model
         $t->so_discount  = $data["so_discount"];
         $t->so_cost  = $data["so_cost"];
         // $t->so_payment  = $data["so_payment"];
-        $t->so_cashier  = $data["sales_id"];
+        $t->so_cashier  = $data['sales_id'];
         $t->save();
 
         return $t;
@@ -107,7 +107,7 @@ class SalesOrder extends Model
         $t->so_discount  = $data["so_discount"];
         $t->so_cost  = $data["so_cost"];
         // $t->so_payment  = $data["so_payment"];
-        $t->so_cashier  = $data["sales_id"];
+        $t->so_cashier  = $data['sales_id'];
         $t->save();
 
         return $t;

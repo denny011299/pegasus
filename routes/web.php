@@ -37,6 +37,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompleteProduct', [AutocompleteController::class, "autocompleteProduct"])->name('autocompleteProduct');
     Route::post('/autocompleteSupplies', [AutocompleteController::class, "autocompleteSupplies"])->name('autocompleteSupplies');
     Route::post('/autocompleteSuppliesVariant', [AutocompleteController::class, "autocompleteSuppliesVariant"])->name('autocompleteSuppliesVariant');
+    Route::post('/autocompleteSuppliesVariantOnly', [AutocompleteController::class, "autocompleteSuppliesVariantOnly"])->name('autocompleteSuppliesVariantOnly');
     Route::post('/autocompleteProductVariant', [AutocompleteController::class, "autocompleteProductVariant"])->name('autocompleteProductVariant');
     Route::post('/autocompleteProductVariants', [AutocompleteController::class, "autocompleteProductVariants"])->name('autocompleteProductVariant');
     Route::post('/autocompleteCustomer', [AutocompleteController::class, "autocompleteCustomer"])->name('autocompleteCustomer');

@@ -1,17 +1,14 @@
     var tableReturn, tableDamage;
     var mode = 1; //1 = insert, 2 = edit, 3 = view
     var type = 1; //1 = all, 2 = In, 3 = Out
-    var product = [];
-
-    autocompleteProductVariantOnly("#product_id", "#add-product-issues");
+    var items = [];
 
 
     $(document).ready(function(){
         inisialisasi();
         refreshProductIssues();
-        afterInsert();
     });
-      $(document).on("click", ".nav-jenis", function () {
+    $(document).on("click", ".nav-jenis", function () {
         type = $(this).attr("tipe");
         afterInsert();
     });
@@ -33,25 +30,26 @@
 
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        product = [];
+        items = [];
         $('#add-product-issues .modal-title').html("Tambah Produk Bermasalah");
         $('#add-product-issues input').val("");
         $('#pi_type').html(`
-            <option value="1" selected>Dikembalikan</option>
-            <option value="2">Rusak</option>    
+            <option value="1">Dikembalikan</option>
+            <option value="2" selected>Rusak</option>    
         `);
-        $('#product_id').empty();
+        $('#supplies_id').empty();
         $('#tableProduct tr.row-product').remove();
+        $('#tableProduct tr.row-supplies').remove();
         $('#add-product-issues select2').empty();
         $('#tipe_return').val(1).trigger('change');
         // $('#add-product-issues select').val(1);
 
         $('.is-invalid').removeClass('is-invalid');
         $("#pi_date, #pi_type, #pi_notes, #tipe_return").prop("disabled", false);
-        $('.add, .btn-save, .btn_delete_row').show();
+        $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').show();
         $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
         $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
-        $("#pi_type,#tipe_return,#product_id,#unit_id").prop("disabled", false);
+        $("#pi_type,#tipe_return,#product_id,#supplies_id,#unit_id").prop("disabled", false);
 
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -61,16 +59,6 @@
         $("#pi_date").val(todayStr);
 
         $('#add-product-issues').modal("show");
-    });
-
-    $(document).on('change','#product_id',function(){
-        var data = $(this).select2("data")[0];
-        console.log(data);
-        $('#unit_product_id').empty();
-        
-        data.pr_unit.forEach(element => {
-            $('#unit_product_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
-        });
     });
 
     function inisialisasi() {
@@ -174,19 +162,110 @@
        refreshProductIssues();
     }
 
+    $(document).on('change','#product_id',function(){
+        var data = $(this).select2("data")[0];
+        console.log(data);
+        $('#unit_product_id').empty();
+        
+        data.pr_unit.forEach(element => {
+            $('#unit_product_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
+        });
+    });
+    $(document).on('change','#supplies_id',function(){
+        var data = $(this).select2("data")[0];
+        console.log(data);
+        $('#unit_supplies_id').empty();
+        
+        data.supplies_unit.forEach(element => {
+            $('#unit_supplies_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
+        });
+    });
+
+    $(document).on('change', '#tipe_return', function(){
+        items = [];
+        if ($(this).val() == 1) {
+            $(".input_table").html(`
+                <div class="col-12 col-lg-4 add">
+                    <div class="input-block mb-3" id="row-supplies">
+                        <label>Nama Bahan Mentah<span class="text-danger">*</span></label>
+                        <select class="form-select fill_supplies" id="supplies_id"></select>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3 add">
+                    <div class="input-block mb-3">
+                        <label>Qty<span class="text-danger">*</span></label>
+                        <input type="text"
+                            class="form-control fill_supplies number-only"
+                            id="pid_qty"
+                            placeholder="Qty Bahan">
+                    </div>
+                </div>
+                <div class="col-6 col-lg-4 add">
+                    <div class="input-block mb-3">
+                        <label>Nama Satuan<span class="text-danger">*</span></label>
+                        <select class="form-select fill_supplies" id="unit_supplies_id"></select>
+                    </div>
+                </div>
+                <div class="col-12 col-md-12 col-lg-1 add">
+                    <button type="button" class="btn btn-primary w-100 btn-add-supplies mb-3">
+                        +
+                    </button>
+                </div>    
+            `);
+            autocompleteSuppliesVariantOnly("#supplies_id", "#add-product-issues");
+            $('#pi_type').val(2);
+            $('#tableProduct tr.row-supplies').remove();
+            $('#tableProduct tr.row-product').remove();
+            $('#tableProduct #header_name').html("Nama Bahan Mentah");
+        }
+        else if ($(this).val() == 2) {
+            $(".input_table").html(`
+                <div class="col-12 col-lg-4 add">
+                    <div class="input-block mb-3" id="row-product">
+                        <label>Nama Produk<span class="text-danger">*</span></label>
+                        <select class="form-select fill_product" id="product_id"></select>
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3 add">
+                    <div class="input-block mb-3">
+                        <label>Qty<span class="text-danger">*</span></label>
+                        <input type="text"
+                            class="form-control fill_product number-only"
+                            id="pid_qty"
+                            placeholder="Qty Produk">
+                    </div>
+                </div>
+                <div class="col-6 col-lg-4 add">
+                    <div class="input-block mb-3">
+                        <label>Nama Satuan<span class="text-danger">*</span></label>
+                        <select class="form-select fill_product" id="unit_product_id"></select>
+                    </div>
+                </div>
+                <div class="col-12 col-md-12 col-lg-1 add">
+                    <button type="button" class="btn btn-primary w-100 btn-add-product mb-3">
+                        +
+                    </button>
+                </div>    
+            `);
+            autocompleteProductVariantOnly("#product_id", "#add-product-issues");
+            $('#pi_type').val(1);
+            $('#tableProduct tr.row-supplies').remove();
+            $('#tableProduct tr.row-product').remove();
+            $('#tableProduct #header_name').html("Nama Produk");
+        }
+        loadPiType();
+    })
+
     
 function loadPiType() {
     $("#pi_type").empty();
-    $("#pi_type").append(`<option value="1" selected>Dikembalikan</option>`);
     if ($("#tipe_return").val() == 1) {
-        $("#pi_type").append(`<option value="2">Rusak</option>`);
+        $("#pi_type").append(`<option value="2" selected>Rusak</option>`);
+    }
+    if ($("#tipe_return").val() == 2) {
+        $("#pi_type").append(`<option value="1" selected>Dikembalikan</option>`);
     }
 }
-
-$(document).on("change", "#tipe_return", function () {
-    loadPiType();
-});
-
 
 
 $(document).on("click", ".btn-save", function () {
@@ -226,7 +305,7 @@ $(document).on("click", ".btn-save", function () {
         pi_type: $("#pi_type").val(),
         pi_notes: $("#pi_notes").val(),
         tipe_return: $("#tipe_return").val(),
-        product: JSON.stringify(product),
+        items: JSON.stringify(items),
         _token: token,
     };
     console.log(param);
@@ -299,7 +378,7 @@ $(document).on("click", ".btn-save", function () {
         var temp = $('#product_id').select2("data")[0];
         var idx = -1;
         console.log(temp);
-        product.forEach(element => {
+        items.forEach(element => {
             if (element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_product_id').val()) {
                 element.pid_qty += parseInt($('#pid_qty').val());
                 idx = 1;
@@ -314,39 +393,112 @@ $(document).on("click", ".btn-save", function () {
                 "unit_name": $('#unit_product_id option:selected').text(),
                 "unit_id": $('#unit_product_id').val(),
             };
-            product.push(data);
+            items.push(data);
         }
-        addRow()
+        addRow(1)
 
         $('#product_id ').empty();
         $('#unit_product_id').empty();
         $('#pid_qty').val("");
     })
-    
-    function addRow() {
-        $('#tableProduct tr.row-product').html(" ");
-        product.forEach(e => {
-            $('#tableProduct tbody').append(`
-                <tr class="row-product" data-id="${e.product_variant_id}">
-                    <td>${e.product_name}</td>
-                    <td>${e.pid_qty}</td>
-                    <td>${e.unit_name}</td>
-                    <td class="text-center d-flex align-items-center">
-                        <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                        </a>
-                    </td>
-                </tr>    
-            `);
+    $(document).on('click', '.btn-add-supplies', function(){
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        var valid=1;
+        $("#add-product-issues .fill_supplies").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
         });
+        if($('#supplies_id').val()==null||$('#supplies_id').val()=="null"||$('#supplies_id').val()==""){
+            valid=-1;
+            $('#row-supplies .select2-selection--single').addClass('is-invalids');
+        }
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
+            return false;
+        };
+        var temp = $('#supplies_id').select2("data")[0];
+        var idx = -1;
+        console.log(temp);
+        items.forEach(element => {
+            if (element.supplies_variant_id == temp.supplies_variant_id && element.unit_id == $('#unit_supplies_id').val()) {
+                element.pid_qty += parseInt($('#pid_qty').val());
+                idx = 1;
+            }
+        }); 
+
+        if(idx==-1){
+            var data  = {
+                "supplies_variant_id": temp.supplies_variant_id,
+                "supplies_name": `${temp.supplies_name} ${temp.supplies_variant_name}`,
+                "pid_qty": parseInt($('#pid_qty').val()),
+                "unit_name": $('#unit_supplies_id option:selected').text(),
+                "unit_id": $('#unit_supplies_id').val(),
+            };
+            items.push(data);
+        }
+        addRow(2)
+
+        $('#supplies_id ').empty();
+        $('#unit_supplies_id').empty();
+        $('#pid_qty').val("");
+    })
+    
+    // 1 = produk, 2 = bahan mentah
+    function addRow(define) {
+        if (define == 1){
+            console.log("masuk");
+            $('#tableProduct tr.row-product').html(" ");
+            items.forEach(e => {
+                $('#tableProduct tbody').append(`
+                    <tr class="row-product" data-id="${e.product_variant_id}">
+                        <td>${e.product_name}</td>
+                        <td>${e.pid_qty}</td>
+                        <td>${e.unit_name}</td>
+                        <td class="text-center d-flex align-items-center">
+                            <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
+                                    <i class="fe fe-trash-2"></i>
+                            </a>
+                        </td>
+                    </tr>    
+                `);
+            });
+        }
+        if (define == 2){
+            $('#tableProduct tr.row-supplies').html(" ");
+            items.forEach(e => {
+                $('#tableProduct tbody').append(`
+                    <tr class="row-supplies" data-id="${e.supplies_variant_id}">
+                        <td>${e.supplies_name}</td>
+                        <td>${e.pid_qty}</td>
+                        <td>${e.unit_name}</td>
+                        <td class="text-center d-flex align-items-center">
+                            <a class="p-2 btn-action-icon btn_delete_row_sp mx-auto"  href="javascript:void(0);">
+                                    <i class="fe fe-trash-2"></i>
+                            </a>
+                        </td>
+                    </tr>    
+                `);
+            });
+        }
          
     }
 
-    $(document).on("click",".btn_delete_row",function(){
+    $(document).on("click",".btn_delete_row_pr",function(){
         let row = $(this).closest("tr");
         let productId = row.data("id");
-        product = product.filter(e => e.product_variant_id != productId);
-        console.log(product)
+        items = items.filter(e => e.product_variant_id != productId);
+        console.log(items)
+        row.remove();
+    });
+    $(document).on("click",".btn_delete_row_sp",function(){
+        let row = $(this).closest("tr");
+        let suppliesId = row.data("id");
+        items = items.filter(e => e.supplies_variant_id != suppliesId);
+        console.log(items)
         row.remove();
     });
 
@@ -364,29 +516,44 @@ $(document).on("click", ".btn_edit", function () {
     $("add-product-issues input").empty().val("");
     $("#pi_date").val(moment(data.pi_date).format("DD-MM-YYYY"));
     $("#pi_notes").val(data.pi_notes);
+    $("#pi_type").empty();
     $('#tipe_return').val(data.tipe_return).trigger('change');
-    $("#pi_type").empty().append(
-        `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
-    );
     $('#tableProduct tr.row-product').remove();
-    product = [];
+    $('#tableProduct tr.row-supplies').remove();
+    items = [];
     
-    data.product.forEach(e => {
-        var data  = {
-            "pid_id": e.pid_id,
-            "product_variant_id": e.product_variant_id,
-            "product_name": e.pr_name,
-            "pid_qty": e.pid_qty,
-            "unit_name": e.unit_name,
-            "unit_id": e.unit_id,
-        };
-        product.push(data);
-        addRow(data)
-    });
+    if (data.tipe_return == 1) {
+        data.items.forEach(e => {
+            var data  = {
+                "pid_id": e.pid_id,
+                "supplies_variant_id": e.item_id,
+                "supplies_name": e.sup_name,
+                "pid_qty": e.pid_qty,
+                "unit_name": e.unit_name,
+                "unit_id": e.unit_id,
+            };
+            items.push(data);
+            addRow(1)
+        });
+    }
+    else if (data.tipe_return == 2) {
+        data.items.forEach(e => {
+            var data  = {
+                "pid_id": e.pid_id,
+                "product_variant_id": e.item_id,
+                "product_name": e.pr_name,
+                "pid_qty": e.pid_qty,
+                "unit_name": e.unit_name,
+                "unit_id": e.unit_id,
+            };
+            items.push(data);
+            addRow(1)
+        });
+    }
     
     $("#pi_type,#tipe_return").prop("disabled", true);
     $("#pi_date, #pi_notes").prop("disabled", false);
-    $('.add, .btn-save, .btn_delete_row').show();
+    $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').show();
     $('.is-invalid').removeClass('is-invalid');
     $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
@@ -413,22 +580,37 @@ $(document).on("click", ".btn_view", function () {
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
     $('#tableProduct tr.row-product').remove();
-    product = [];
+    items = [];
 
-    data.product.forEach(e => {
-        var data  = {
-            "product_variant_id": e.product_variant_id,
-            "product_name": e.pr_name,
-            "pid_qty": e.pid_qty,
-            "unit_name": e.unit_name,
-            "unit_id": e.unit_id,
-        };
-        product.push(data);
-        addRow(data)
-    });
+    if (data.tipe_return == 1) {
+        data.items.forEach(e => {
+            var data  = {
+                "supplies_variant_id": e.item_id,
+                "supplies_name": e.sup_name,
+                "pid_qty": e.pid_qty,
+                "unit_name": e.unit_name,
+                "unit_id": e.unit_id,
+            };
+            items.push(data);
+            addRow(2)
+        });
+    }
+    else if (data.tipe_return == 2) {
+        data.items.forEach(e => {
+            var data  = {
+                "product_variant_id": e.item_id,
+                "product_name": e.pr_name,
+                "pid_qty": e.pid_qty,
+                "unit_name": e.unit_name,
+                "unit_id": e.unit_id,
+            };
+            items.push(data);
+            addRow(1)
+        });
+    }
 
     $("#pi_date, #pi_type, #pi_notes, #tipe_return").prop("disabled", true);
-    $('.add, .btn-save, .btn_delete_row').hide();
+    $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').hide();
     $('.is-invalid').removeClass('is-invalid');
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
     $('#add-product-issues .modal-title').html("Detail Produk Bermasalah");

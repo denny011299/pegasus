@@ -24,7 +24,7 @@
             },
             columns: [
                 { data: "supplies_name" },
-                { data: "supplies_variant_stock_text" },
+                { data: "supplies_variant_stock_text", class: "fw-bold" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

@@ -401,7 +401,7 @@
                                 <div class="col-12 py-3 mb-3">
                                     <table class="table table-center" id="tableProduct" style="min-height: 15vh">
                                         <thead>
-                                            <th>Nama Produk</th>
+                                            <th id="header_name">Nama Produk</th>
                                             <th>Qty</th>
                                             <th>Satuan</th>
                                             <th class="no-sort text-center">Aksi</th>
@@ -409,27 +409,10 @@
                                         <tbody></tbody>
                                     </table>
                                 </div>
-                                <div class="col-4 add">
-                                    <div class="input-block mb-3" id="row-product">
-                                        <label>Nama Produk<span class="text-danger">*</span></label>
-                                        <select class="form-select fill_product" id="product_id"></select>
+                            <div class="col-12 px-2 mb-3">
+                                    <div class="row input_table g-3 align-items-end">
+
                                     </div>
-                                </div>
-                                <div class="col-3 add">
-                                    <div class="input-block mb-3">
-                                        <label>Qty<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill_product number-only" id="pid_qty" placeholder="Qty Produk">
-                                    </div>
-                                </div>
-                                
-                                <div class="col-4 add">
-                                    <div class="input-block mb-3">
-                                        <label>Nama Satuan<span class="text-danger">*</span></label>
-                                        <select class="form-select fill_product" id="unit_product_id"></select>
-                                    </div>
-                                </div>
-                                <div class="col-1 pt-4 add">
-                                    <a class="btn btn-primary btn-add-product">+</a>
                                 </div>
                             </div>
 
