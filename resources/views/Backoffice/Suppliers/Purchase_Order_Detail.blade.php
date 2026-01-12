@@ -28,7 +28,7 @@
                                     <div class="accordion-body">
                                         
                                         <div class="row g-3">
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-12 col-md-3">
                                                 <div class="input-block">
                                                     <label>Nama Supplier</label>
                                                     <select id="po_supplier" class="form-control fill" disabled >
@@ -36,15 +36,20 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-12 col-md-3">
                                                 <div class="input-block mb-3">
-                                                    <label id="date_label">Tanggal</label>
-                                                    <input type="date" class="form-control fill" id="po_date"
-                                                        value="{{ $data['po_date'] }}" disabled>
+                                                    <label>Tanggal PO</label>
+                                                    <input type="text" class="form-control fill" id="po_date" disabled>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-3">
+                                                <div class="input-block mb-3">
+                                                    <label>Jatuh Tempo</label>
+                                                    <input type="text" class="form-control fill" id="poi_due" disabled>
                                                 </div>
                                             </div>
 
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-12 col-md-3">
                                                 <div class="input-block mb-3">
                                                     <label>Status</label>
                                                     <select id="po_status" class="form-control fill" disabled>

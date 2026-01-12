@@ -11,24 +11,20 @@
         refresh();
         refreshSummary();
         $('#po_status').val(data.pembayaran).trigger('change');
+        $('#poi_due').val(data.poi_due ? moment(data.poi_due).format('D MMMM YYYY') : '-');
+        $('#po_date').val(data.po_date ? moment(data.po_date).format('D MMMM YYYY') : '-');
    
         $('.save-terima,.save-tolak,.save-qty').hide();
         if(data.status==1){
             $('.save-tolak,.save-terima,.save-qty').show();
-            $('#date_label').html("Tanggal");
-            $('#po_date').val(data.po_date);
         }
         else if(data.status==2){
             $('.save-tolak').show();
             $('.save-terima,.save-qty').hide();
-            $('#date_label').html("Jatuh Tempo");
-            $('#po_date').val(data.poi_due);
         }
        
         if(data.pembayaran==3){
             $('.save-tolak,.save-terima,.save-qty').hide();
-            $('#date_label').html("Jatuh Tempo");
-            $('#po_date').val(data.poi_due);
         }
     });
     
