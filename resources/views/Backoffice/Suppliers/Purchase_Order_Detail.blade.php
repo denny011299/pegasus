@@ -38,7 +38,7 @@
                                             </div>
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block mb-3">
-                                                    <label>Tanggal</label>
+                                                    <label id="date_label">Tanggal</label>
                                                     <input type="date" class="form-control fill" id="po_date"
                                                         value="{{ $data['po_date'] }}" disabled>
                                                 </div>
@@ -49,7 +49,8 @@
                                                     <label>Status</label>
                                                     <select id="po_status" class="form-control fill" disabled>
                                                         <option value="">Pilih Status</option>
-                                                        <option value="1">Menunggu Approval</option>
+                                                        <option value="1">Belum Terbayar</option>
+                                                        <option value="3">Menunggu Approval</option>
                                                         <option value="2">Approval</option>
                                                         <option value="-1">Ditolak</option>
                                                     </select>

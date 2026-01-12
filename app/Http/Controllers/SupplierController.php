@@ -336,13 +336,21 @@ class SupplierController extends Controller
 
     function generateTandaTerimaInvoice(Request $req) {
         $notValid = [];
+        $notValidBank = [];
         $valid = [];
+        $bank_id = 0;
         $param["supplier"] ="";
         foreach ($req->poi_id as $key => $value) {
             $p = PurchaseOrderDetailInvoice::find($value);
             $po = PurchaseOrder::find($p->po_id);
             $s = Supplier::find($po->po_supplier);
             $param["supplier"] = $s;
+            if ($key == 0) $bank_id = $s->bank_id;
+            else {
+                if ($bank_id != $s->bank_id){
+                    array_push($notValidBank, $p->poi_code);
+                }
+            }
             if($po->pembayaran!=1||$po->tt_id !=null){
                 array_push($notValid, $p->poi_code);
             }
@@ -354,6 +362,12 @@ class SupplierController extends Controller
             return [
                 "status"=>-1,
                 "message"=>"Data berikut sudah terdaftar atau tanda terima belum diterima : ".implode(", ",$notValid)
+            ];
+        }
+        if(count($notValidBank)>0){
+            return [
+                "status"=>-1,
+                "message"=>"Data berikut memiliki bank yang berbeda : ".implode(", ",$notValidBank)
             ];
         }
 
@@ -498,6 +512,7 @@ class SupplierController extends Controller
         (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>1,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
         $po->status = 2; // Lunas
         $po->save();
+        dd($due);
         return $due;
     }
 
