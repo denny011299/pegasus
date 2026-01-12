@@ -512,7 +512,6 @@ class SupplierController extends Controller
         (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>1,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
         $po->status = 2; // Lunas
         $po->save();
-        dd($due);
         return $due;
     }
 
