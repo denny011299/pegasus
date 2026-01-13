@@ -88,7 +88,6 @@ class ProductIssuesDetail extends Model
         $t->item_id = $itemId;
         $t->unit_id = $data["unit_id"];
         $t->save();
-        dd($t);
         return $t->pid_id;  
     } 
 
