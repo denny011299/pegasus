@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LogStock;
 use App\Models\ManageStock;
+use App\Models\Product;
 use App\Models\ProductIssues;
 use App\Models\ProductIssuesDetail;
 use App\Models\ProductStock;
@@ -398,6 +399,63 @@ class StockController extends Controller
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $data["pi_id"];
             if (!isset($value["pid_id"])) {
+                // Kembalikan stock jika ada
+                if ($pi->tipe_return == 1){
+                    $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
+                    if (count($getPi) > 0) {
+                        foreach ($getPi as $key => $val) {
+                            $svr = SuppliesVariant::find($value['supplies_variant_id']);
+                            $ss = SuppliesStock::where('supplies_id', $svr->supplies_id)->where('unit_id', $val->unit_id)->first();
+                            $ss->ss_stock += $val['pid_qty'];
+                            $ss->save();
+                            // Catat Log
+                            $logNotes = "";
+                            $spr = Supplier::find($svr->supplier_id);
+                            $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                            (new LogStock())->insertLog([
+                                'log_date' => now(),
+                                'log_kode'    => $pi->pi_code,
+                                'log_type'    => 2,
+                                'log_category' => 1,
+                                'log_item_id' => $svr->supplies_id,
+                                'log_notes'  => $logNotes,
+                                'log_jumlah' => $val['pid_qty'],
+                                'unit_id'    => $val['unit_id'],
+                            ]);
+                        }
+                    }
+                } else if ($pi->tipe_return == 2){
+                    $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
+                    if (count($getPi) > 0) {
+                        foreach ($getPi as $key => $val) {
+                            $pvr = ProductVariant::find($value['product_variant_id']);
+                            $ps = ProductStock::where('product_id', $pvr->product_id)->where('unit_id', $val->unit_id)->first();
+                            $val['tipe_return'] = $data['tipe_return'];
+                            $c = (new ProductIssuesDetail())->stockCheck($val);
+
+                            if ($c == -1) return -1;
+
+                            $ps->ps_stock -= $val->pid_qty;
+                            $ps->save();
+
+                            // Catat Log
+                            $logNotes = "";
+                            $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                            (new LogStock())->insertLog([
+                                'log_date' => now(),
+                                'log_kode'    => $pi->pi_code,
+                                'log_type'    => 1,
+                                'log_category' => 2,
+                                'log_item_id' => $val['product_variant_id'],
+                                'log_notes'  => $logNotes,
+                                'log_jumlah' => $val['pid_qty'],
+                                'unit_id'    => $val['unit_id'],
+                            ]);
+                        }
+                    }
+                }
+                
+                // Pengurangan stock
                 $t = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
                 
                 // Catat Log
@@ -409,13 +467,13 @@ class StockController extends Controller
                     $sup = SuppliesVariant::find($value['supplies_variant_id']);
                     $spr = Supplier::find($sup->supplier_id);
                     
-                    $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name;
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
                     $logCategory = 2;
                     $logType = 2;
 
                     $itemId = $sup->supplies_id;
                 } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Produk bermasalah retur pelanggan';
+                    $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
                     $logCategory = 1;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -465,40 +523,42 @@ class StockController extends Controller
                 ]);
                 
                 $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
+
+                if (!isset($value["pid_id"])){
+                    // Catat Log
+                    $logNotes = "";
+                    $logCategory = 0;
+                    $logType = 0;
+                    $itemId = 0;
+                    if ($pi->tipe_return == 1){
+                        $sup = SuppliesVariant::find($value['supplies_variant_id']);
+                        $spr = Supplier::find($sup->supplier_id);
+                        
+                        $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                        $logCategory = 2;
+                        $logType = 2;
+
+                        $itemId = $sup->supplies_id;
+                    } elseif ($pi->tipe_return == 2){
+                        $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                        $logCategory = 1;
+                        $logType = 1;
+                        $itemId = $value['product_variant_id'];
+                    }
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode'    => $pi->pi_code,
+                        'log_type'    => $logType,
+                        'log_category' => $logCategory,
+                        'log_item_id' => $itemId,
+                        'log_notes'  => $logNotes,
+                        'log_jumlah' => $value['pid_qty'],
+                        'unit_id'    => $value['unit_id'],
+                    ]);
+                }
             }
             array_push($id, $t);
-            if (!isset($value["pid_id"])){
-                // Catat Log
-                $logNotes = "";
-                $logCategory = 0;
-                $logType = 0;
-                $itemId = 0;
-                if ($pi->tipe_return == 1){
-                    $sup = SuppliesVariant::find($value['supplies_variant_id']);
-                    $spr = Supplier::find($sup->supplier_id);
-                    
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
-                    $logCategory = 2;
-                    $logType = 2;
-
-                    $itemId = $sup->supplies_id;
-                } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
-                    $logCategory = 1;
-                    $logType = 1;
-                    $itemId = $value['product_variant_id'];
-                }
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $pi->pi_code,
-                    'log_type'    => $logType,
-                    'log_category' => $logCategory,
-                    'log_item_id' => $itemId,
-                    'log_notes'  => $logNotes,
-                    'log_jumlah' => $value['pid_qty'],
-                    'unit_id'    => $value['unit_id'],
-                ]);
-            }
+            
         }
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }

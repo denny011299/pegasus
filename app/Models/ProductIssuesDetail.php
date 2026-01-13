@@ -129,7 +129,7 @@ class ProductIssuesDetail extends Model
             $m->save();
             $s->save();
         }
-        
+
         $t->pi_id = $data["pi_id"];
         $t->pid_qty = $data["pid_qty"];
         $t->item_id = $itemId;
@@ -167,11 +167,20 @@ class ProductIssuesDetail extends Model
 
         // Return to Supplier
         if ($data['tipe_return'] == 1){
-            $itemId = $data['supplies_variant_id'];
+            $itemId = $data['supplies_variant_id'] ?? $data['item_id'];
             $m = SuppliesVariant::find($itemId);
             $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
             
             $stocks = $s->ss_stock ?? 0;
+            if ($stocks - $data["pid_qty"] < 0) {
+                return -1;
+            }
+        } else if ($data['tipe_return'] == 2) {
+            $itemId = $data['product_variant_id'] ?? $data['item_id'];
+            $m = ProductVariant::find($itemId);
+            $s = ProductStock::where('product_id','=',$m->product_id)->where('unit_id','=',$data["unit_id"])->first();
+            
+            $stocks = $s->ps_stock ?? 0;
             if ($stocks - $data["pid_qty"] < 0) {
                 return -1;
             }
