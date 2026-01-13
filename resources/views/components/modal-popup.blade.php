@@ -374,12 +374,20 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-lg-6">
+                                <div class="col-lg-3">
                                     <div class="input-block mb-3">
                                         <label class="form-label">Tipe<span class="text-danger">*</span></label>
                                         <select class="select" id="pi_type">
                                             
                                         </select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="input-block mb-3">
+                                        <label class="form-label">Bukti Foto<span class="text-danger">*</span></label><br>
+                                        <button class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
+                                        <button class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                        <input type="hidden" name="" id="bukti">
                                     </div>
                                 </div>
                             {{-- <div class="col-lg-6">
@@ -392,7 +400,7 @@
                                         </div>
                                     </div>
                                 </div> --}}
-                                <div class="col-lg-6">
+                                <div class="col-lg-5">
                                     <div class="input-block mb-3">
                                         <label class="form-label">Catatan<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="pi_notes" placeholder="Tambahkan Catatan">

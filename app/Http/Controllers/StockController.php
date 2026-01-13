@@ -311,6 +311,24 @@ class StockController extends Controller
     function insertProductIssue(Request $req)
     {
         $data = $req->all();
+        // Ambil base64
+        $image = $req->photo;
+
+        // Hilangkan prefix base64
+        $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+        // Decode
+        $imageData = base64_decode($image);
+
+        // Nama file
+        $imageName = 'photo_' . time() . '.png';
+
+        // Path tujuan di public/produksi
+        $path = public_path('issue/' . $imageName);
+        // Simpan file
+        file_put_contents($path, $imageData);
+        $data["pi_img"] = $imageName;
+
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;

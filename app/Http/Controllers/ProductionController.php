@@ -263,7 +263,7 @@ class ProductionController extends Controller
 
         // Path tujuan di public/produksi
         $path = public_path('produksi/' . $imageName);
-
+        
         // Simpan file
         file_put_contents($path, $imageData);
 

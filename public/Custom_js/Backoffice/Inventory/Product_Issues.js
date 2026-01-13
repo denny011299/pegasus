@@ -50,6 +50,9 @@
         $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
         $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
         $("#pi_type,#tipe_return,#product_id,#supplies_id,#unit_id").prop("disabled", false);
+        
+        $('#btn-foto-bukti').show();
+        $('#btn-lihat-bukti').hide();
 
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -268,93 +271,94 @@ function loadPiType() {
 }
 
 
-$(document).on("click", ".btn-save", function () {
-    //LoadingButton(this);
-    $(".is-invalid").removeClass("is-invalid");
-    var url = "/insertProductIssues";
-    var valid = 1;
-    $(".fill").each(function () {
-        if (
-            $(this).val() == null ||
-            $(this).val() == "null" ||
-            $(this).val() == ""
-        ) {
-            valid = -1;
-            $(this).addClass("is-invalid");
-        }
-    });
-
-    if (valid == -1) {
-        notifikasi(
-            "error",
-            "Gagal Insert",
-            "Silahkan cek kembali inputan anda"
-        );
-        // ResetLoadingButton('.btn-save', 'Save changes');
-        return false;
-    }
-
-    if ($("#tableProduct tbody tr").length == 0) {
-        notifikasi('error', "Gagal Insert", 'Minimal input 1 produk');
-        ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
-        return false;
-    }
-
-    param = {
-        pi_date: $("#pi_date").val(),
-        pi_type: $("#pi_type").val(),
-        pi_notes: $("#pi_notes").val(),
-        tipe_return: $("#tipe_return").val(),
-        items: JSON.stringify(items),
-        _token: token,
-    };
-    console.log(param);
-    //LoadingButton($(this));
-
-    if (mode == 2) {
-        url = "/updateProductIssues";
-        param.pi_id = $("#add-product-issues").attr("pi_id");
-        param.pi_code = $("#add-product-issues").attr("pi_code");
-    }
-
-    $.ajax({
-        url: url,
-        data: param,
-        method: "post",
-        headers: {
-            "X-CSRF-TOKEN": token,
-        },
-        success: function (e) {
-            console.log(e);
-            if (e == -1)
-                notifikasi(
-                    "error",
-                    "Gagal Insert",
-                    "Stock Product tidak mencukupi!"
-                );
-            else {
-                $(".modal").modal("hide");
-                if (mode == 1)
-                    notifikasi(
-                        "success",
-                        "Berhasil Insert",
-                        "Berhasil Data Ditambahkan"
-                    );
-                else if (mode == 2)
-                    notifikasi(
-                        "success",
-                        "Berhasil Update",
-                        "Berhasil Data Diupdate"
-                    );
+    $(document).on("click", ".btn-save", function () {
+        //LoadingButton(this);
+        $(".is-invalid").removeClass("is-invalid");
+        var url = "/insertProductIssues";
+        var valid = 1;
+        $(".fill").each(function () {
+            if (
+                $(this).val() == null ||
+                $(this).val() == "null" ||
+                $(this).val() == ""
+            ) {
+                valid = -1;
+                $(this).addClass("is-invalid");
             }
+        });
 
-            afterInsert();
-        },
-        error: function (e) {
-            console.log(e);
-        },
+        if (valid == -1) {
+            notifikasi(
+                "error",
+                "Gagal Insert",
+                "Silahkan cek kembali inputan anda"
+            );
+            // ResetLoadingButton('.btn-save', 'Save changes');
+            return false;
+        }
+
+        if ($("#tableProduct tbody tr").length == 0) {
+            notifikasi('error', "Gagal Insert", 'Minimal input 1 produk');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
+            return false;
+        }
+
+        param = {
+            pi_date: $("#pi_date").val(),
+            pi_type: $("#pi_type").val(),
+            pi_notes: $("#pi_notes").val(),
+            tipe_return: $("#tipe_return").val(),
+            photo:$('#bukti').val(),
+            items: JSON.stringify(items),
+            _token: token,
+        };
+        console.log(param);
+        //LoadingButton($(this));
+
+        if (mode == 2) {
+            url = "/updateProductIssues";
+            param.pi_id = $("#add-product-issues").attr("pi_id");
+            param.pi_code = $("#add-product-issues").attr("pi_code");
+        }
+
+        $.ajax({
+            url: url,
+            data: param,
+            method: "post",
+            headers: {
+                "X-CSRF-TOKEN": token,
+            },
+            success: function (e) {
+                console.log(e);
+                if (e == -1)
+                    notifikasi(
+                        "error",
+                        "Gagal Insert",
+                        "Stock Product tidak mencukupi!"
+                    );
+                else {
+                    $(".modal").modal("hide");
+                    if (mode == 1)
+                        notifikasi(
+                            "success",
+                            "Berhasil Insert",
+                            "Berhasil Data Ditambahkan"
+                        );
+                    else if (mode == 2)
+                        notifikasi(
+                            "success",
+                            "Berhasil Update",
+                            "Berhasil Data Diupdate"
+                        );
+                }
+
+                afterInsert();
+            },
+            error: function (e) {
+                console.log(e);
+            },
+        });
     });
-});
 
     $(document).on('click', '.btn-add-product', function(){
         $('.is-invalid').removeClass('is-invalid');
@@ -557,6 +561,8 @@ $(document).on("click", ".btn_edit", function () {
     $('.is-invalid').removeClass('is-invalid');
     $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
+    $('#btn-foto-bukti').show();
+    $('#btn-lihat-bukti').show();
     $('#add-product-issues .modal-title').html("Update Produk Bermasalah");
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
@@ -613,12 +619,28 @@ $(document).on("click", ".btn_view", function () {
     $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').hide();
     $('.is-invalid').removeClass('is-invalid');
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
+    $('#btn-foto-bukti').hide();
+    $('#btn-lihat-bukti').show();
+   
+    $('#fotoProduksiImage').attr('src', public+"issue/"+data.pi_img);
+    $('#fotoProduksiImage').attr('index', 0);
+    $('#btn_download_photo').attr('href', public+"issue/"+data.pi_img);
+
     $('#add-product-issues .modal-title').html("Detail Produk Bermasalah");
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
     $("#add-product-issues").attr("pi_code", data.pi_code);
 });
 
+$(document).on("click", "#btn-lihat-bukti", function () {
+    $("#add-product-issues").modal("hide");
+    $('.btn-prev,.btn-next').hide();
+     $('#modalViewPhoto').modal("show");
+});
+$(document).on("hidden.bs.modal", "#modalViewPhoto", function () {
+    $("#add-product-issues").modal("show");
+     $('#modalViewPhoto').modal("hide");
+});
 
 
 //delete
@@ -656,4 +678,21 @@ $(document).on("click", "#btn-delete-issues", function () {
             console.log(e);
         },
     });
+});
+
+
+$(document).on('click', '#btn-foto-bukti', function() {
+
+    rotationAngle = 0;
+    camRotation = 0;
+    photoData = "";
+    modeCamera=2;
+    inputFile ="#bukti";
+    $("#video").removeClass("rot90 rot180 rot270");
+    $("#preview-box").hide();
+    $("#camera").show();
+
+    startCamera();
+    $("#add-product-issues").modal("hide");
+    $('#modalPhoto').modal('show');
 });

@@ -961,7 +961,8 @@ let rotationAngle = 0; // rotasi foto
 let camRotation = 0;   // rotasi kamera
 let photoData = "";
 let currentStream = null;
-
+var modeCamera = 1;//1= upload, 2 = savefile
+var inputFile = null;
 // =========================
 // START CAMERA FUNCTION
 // =========================
@@ -974,22 +975,26 @@ function startCamera() {
     }
 
     navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { exact: "environment" } }
-    })
-        .then(function(stream) {
-            currentStream = stream;
-            video.srcObject = stream;
-        })
-        .catch(function(err) {
-            alert("Tidak bisa akses kamera: " + err);
+    video: { facingMode: { ideal: "environment" } }
+    }).catch(() => {
+        return navigator.mediaDevices.getUserMedia({
+            video: true
         });
+    })
+    .then(stream => {
+        currentStream = stream;
+        video.srcObject = stream;
+    })
+    .catch(function(err) {
+        alert("Tidak bisa akses kamera: " + err);
+    });
 }
 
 // =========================
 // WHEN OPEN MODAL
 // =========================
 $(document).on('click', '.fotoProduksi', function() {
-
+    modeCamera=1;
     rotationAngle = 0;
     camRotation = 0;
     photoData = "";
@@ -1001,6 +1006,7 @@ $(document).on('click', '.fotoProduksi', function() {
     startCamera();
     $('#modalPhoto').modal('show');
 });
+
 
 // =========================
 // ROTATE CAMERA PREVIEW
@@ -1068,25 +1074,31 @@ $(document).on("click", "#retakeBtn", function () {
 // UPLOAD
 // =========================
 $(document).on("click", "#uploadBtn", function () {
+    if(modeCamera==1){
+        $.ajax({
+            url: "/uploadPhotoProduksi",
+            type: "POST",
+            data: JSON.stringify({ photo: photoData }),
+            contentType: "application/json",
+            headers: {
+                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
+            },
+            success: function (response) {
+                notifikasi("success", "Sukses", "Foto berhasil diupload");
+                $('#modalPhoto').modal('hide');
 
-    $.ajax({
-        url: "/uploadPhotoProduksi",
-        type: "POST",
-        data: JSON.stringify({ photo: photoData }),
-        contentType: "application/json",
-        headers: {
-            "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content")
-        },
-        success: function (response) {
-            notifikasi("success", "Sukses", "Foto berhasil diupload");
-            $('#modalPhoto').modal('hide');
-
-            if (currentStream) currentStream.getTracks().forEach(t => t.stop());
-        },
-        error: function () {
-            notifikasi("error", "Gagal", "Foto gagal diupload");
-        }
-    });
+                if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+            },
+            error: function () {
+                notifikasi("error", "Gagal", "Foto gagal diupload");
+            }
+        });
+    }
+    else{
+        $(inputFile).val(photoData);
+        $("#add-product-issues").modal("show");
+        $('#modalPhoto').modal('hide');
+    }
 
 });
 
