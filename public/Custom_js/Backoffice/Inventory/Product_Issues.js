@@ -334,7 +334,7 @@ function loadPiType() {
                     notifikasi(
                         "error",
                         "Gagal Insert",
-                        "Stock Product tidak mencukupi!"
+                        "Stock tidak mencukupi!"
                     );
                 else {
                     $(".modal").modal("hide");
@@ -472,6 +472,7 @@ function loadPiType() {
             });
         }
         if (define == 2){
+            console.log(items);
             $('#tableProduct tr.row-supplies').html(" ");
             items.forEach(e => {
                 $('#tableProduct tbody').append(`
@@ -537,7 +538,7 @@ $(document).on("click", ".btn_edit", function () {
                 "unit_id": e.unit_id,
             };
             items.push(data);
-            addRow(1)
+            addRow(2)
         });
     }
     else if (data.tipe_return == 2) {

@@ -332,7 +332,10 @@ class StockController extends Controller
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;
-            (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+            $d = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+            if ($d == -1){
+                return -1;
+            }
 
             // Catat Log
             $logNotes = "";
