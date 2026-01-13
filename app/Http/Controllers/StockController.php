@@ -376,18 +376,22 @@ class StockController extends Controller
     function updateProductIssue(Request $req)
     {
         $data = $req->all();
+        $image = $req->photo;
 
-        if (isset($req->photo) && $req->photo != null){
-            $image = $req->photo;
-            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
-            $imageData = base64_decode($image);
-            $imageName = 'photo_' . time() . '.png';
-            $path = public_path('issue/' . $imageName);
+        // Hilangkan prefix base64
+        $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
 
-            // Simpan file
-            file_put_contents($path, $imageData);
-            $data["pi_img"] = $imageName;
-        }
+        // Decode
+        $imageData = base64_decode($image);
+
+        // Nama file
+        $imageName = 'photo_' . time() . '.png';
+
+        // Path tujuan di public/produksi
+        $path = public_path('issue/' . $imageName);
+        // Simpan file
+        file_put_contents($path, $imageData);
+        $data["pi_img"] = $imageName;
         
         $id = [];
         $pi = (new ProductIssues())->updateProductIssues($data);

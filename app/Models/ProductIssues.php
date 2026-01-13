@@ -131,7 +131,7 @@ class ProductIssues extends Model
         //     }
 
         // }
-      
+        if(isset($data["pi_img"]))$t->pi_img = $data["pi_img"];    
         $t->pi_code   = $data['pi_code'];
         $t->pi_type = $data["pi_type"];     
         $t->pi_date = $pi_date;    
