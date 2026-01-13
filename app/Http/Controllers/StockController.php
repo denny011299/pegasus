@@ -439,7 +439,7 @@ class StockController extends Controller
                 $logType = 0;
                 $itemId = 0;
                 if ($pi->tipe_return == 1){
-                    $sup = SuppliesVariant::find($pid['supplies_variant_id']);
+                    $sup = SuppliesVariant::find($pid['item_id']);
                     $spr = Supplier::find($sup->supplier_id);
                     
                     $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
@@ -451,7 +451,7 @@ class StockController extends Controller
                     $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
                     $logCategory = 2;
                     $logType = 1;
-                    $itemId = $pid['product_variant_id'];
+                    $itemId = $pid['item_id'];
                 }
                 (new LogStock())->insertLog([
                     'log_date' => now(),
@@ -467,7 +467,6 @@ class StockController extends Controller
                 $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
             }
             array_push($id, $t);
-
             if (!isset($value["pid_id"])){
                 // Catat Log
                 $logNotes = "";

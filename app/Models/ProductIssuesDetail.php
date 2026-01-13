@@ -94,42 +94,47 @@ class ProductIssuesDetail extends Model
     function updateProductIssuesDetail($data)
     {
         $pi = ProductIssues::find($data['pi_id']);
-        $m = ProductVariant::find($data["product_variant_id"]);
-        $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
-  
-        $t =  self::find($data["pid_id"]);    
-        // return $m;
-        if($m->pid_qty != $data["pid_qty"]){
-            // kembalikan stock ke kondisi sebelum update
-            if($pi->tipe_return  == 1){
-                $s->ps_stock += $t->pid_qty;
-            }elseif($pi->tipe_return == 2){
-                
-                $s->ps_stock -= $t->pid_qty;
-            }
-            $s->save();
+        $t =  self::find($data["pid_id"]);
+        $itemId = 0;
 
-            // Return to Supplier
-            if ($pi->tipe_return == 1) {
-                if ($s->ps_stock - $data["pid_qty"] > 0) {
-                    $s->ps_stock -= $data["pid_qty"];
+        // Return to Supplier
+        if ($pi->tipe_return == 1){
+            $itemId = $data['supplies_variant_id'];
+            $m = SuppliesVariant::find($itemId);
+            $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
+            
+            if($m->pid_qty != $data["pid_qty"]){
+                $s->ss_stock += $t->pid_qty;
+                if ($s->ss_stock - $data["pid_qty"] > 0) {
+                    $s->ss_stock -= $data["pid_qty"];
                 } else {
                     return -1;
                 }
             }
-            // Return from customer
-            elseif ($pi->tipe_return == 2) {
+            // $s->ss_stock = $stocks;
+            $m->save();
+            $s->save();
+        }
+
+        // Return from customer 
+        else{
+            $itemId = $data["product_variant_id"];
+            $m = ProductVariant::find($itemId);
+            $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
+            
+            if($m->pid_qty != $data["pid_qty"]){
+                $s->ps_stock -= $t->pid_qty;
                 $s->ps_stock += $data["pid_qty"];
             }
-
+            $m->save();
+            $s->save();
         }
-      
+        
+        $t->pi_id = $data["pi_id"];
         $t->pid_qty = $data["pid_qty"];
-        $t->item_id = $data["product_variant_id"];
+        $t->item_id = $itemId;
         $t->unit_id = $data["unit_id"];
         $t->save();
-        $s->save();
-        $m->save();
 
         return $t->pid_id;  
     }

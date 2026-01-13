@@ -453,8 +453,8 @@ function loadPiType() {
     
     // 1 = produk, 2 = bahan mentah
     function addRow(define) {
+        console.log(items);
         if (define == 1){
-            console.log("masuk");
             $('#tableProduct tr.row-product').html(" ");
             items.forEach(e => {
                 $('#tableProduct tbody').append(`
@@ -472,7 +472,6 @@ function loadPiType() {
             });
         }
         if (define == 2){
-            console.log(items);
             $('#tableProduct tr.row-supplies').html(" ");
             items.forEach(e => {
                 $('#tableProduct tbody').append(`
@@ -564,6 +563,7 @@ $(document).on("click", ".btn_edit", function () {
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
     $('#btn-foto-bukti').show();
     $('#btn-lihat-bukti').show();
+    imageValue(data.pi_img);
     $('#add-product-issues .modal-title').html("Update Produk Bermasalah");
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
@@ -633,10 +633,15 @@ $(document).on("click", ".btn_view", function () {
     $("#add-product-issues").attr("pi_code", data.pi_code);
 });
 
+function imageValue(image){
+    $('#fotoProduksiImage').attr('src', public+"issue/"+image);
+    $('#fotoProduksiImage').attr('index', 0);
+}
+
 $(document).on("click", "#btn-lihat-bukti", function () {
     $("#add-product-issues").modal("hide");
     $('.btn-prev,.btn-next').hide();
-     $('#modalViewPhoto').modal("show");
+    $('#modalViewPhoto').modal("show");
 });
 $(document).on("hidden.bs.modal", "#modalViewPhoto", function () {
     $("#add-product-issues").modal("show");

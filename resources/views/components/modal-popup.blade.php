@@ -385,8 +385,8 @@
                                 <div class="col-lg-4">
                                     <div class="input-block mb-3">
                                         <label class="form-label">Bukti Foto<span class="text-danger">*</span></label><br>
-                                        <button class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
-                                        <button class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                        <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
+                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
                                         <input type="hidden" name="" id="bukti">
                                     </div>
                                 </div>
