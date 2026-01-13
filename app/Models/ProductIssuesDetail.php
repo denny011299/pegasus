@@ -56,7 +56,7 @@ class ProductIssuesDetail extends Model
             $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
             
             $stocks = $s->ss_stock ?? 0;
-            if ($stocks - $data["pid_qty"] > 0) {
+            if ($stocks - $data["pid_qty"] >= 0) {
                 $stocks -= $data["pid_qty"];
             } else {
                 return -1;
