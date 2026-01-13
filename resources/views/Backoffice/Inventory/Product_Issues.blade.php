@@ -17,6 +17,10 @@
         white-space: normal !important;
         word-wrap: break-word;
     }
+    #add-product-issues .select2-container {
+        width: 100% !important;
+    }
+    
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">

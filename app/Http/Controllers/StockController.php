@@ -371,7 +371,7 @@ class StockController extends Controller
         $data = $req->all();
         $id = [];
         $pi = (new ProductIssues())->updateProductIssues($data);
-        foreach (json_decode($data['product'], true) as $key => $value) {
+        foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $data["pi_id"];
             if (!isset($value["pid_id"])) {
                 $t = (new ProductIssuesDetail())->insertProductIssuesDetail($value);

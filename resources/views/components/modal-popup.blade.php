@@ -417,12 +417,12 @@
                                         <tbody></tbody>
                                     </table>
                                 </div>
-                            <div class="col-12 px-2 mb-3">
-                                    <div class="row input_table g-3 align-items-end">
+                                <div class="col-12 px-2 mb-3">
+                                        <div class="row input_table g-3 align-items-end">
 
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
 
                             <div class="modal-footer p-0">
