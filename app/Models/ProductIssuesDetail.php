@@ -156,4 +156,21 @@ class ProductIssuesDetail extends Model
             return $m;
         }
     }
+
+    function stockCheck($data){
+        $itemId = 0;
+
+        // Return to Supplier
+        if ($data['tipe_return'] == 1){
+            $itemId = $data['supplies_variant_id'];
+            $m = SuppliesVariant::find($itemId);
+            $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
+            
+            $stocks = $s->ss_stock ?? 0;
+            if ($stocks - $data["pid_qty"] < 0) {
+                return -1;
+            }
+        }
+        return 1;
+    }
 }

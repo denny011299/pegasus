@@ -329,13 +329,17 @@ class StockController extends Controller
         file_put_contents($path, $imageData);
         $data["pi_img"] = $imageName;
 
+        foreach (json_decode($data['items'], true) as $key => $value) {
+            $value['tipe_return'] = $data['tipe_return'];
+            $c = (new ProductIssuesDetail())->stockCheck($value);
+
+            if ($c == -1) return -1;
+        }
+
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;
-            $d = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
-            if ($d == -1){
-                return -1;
-            }
+            (new ProductIssuesDetail())->insertProductIssuesDetail($value);
 
             // Catat Log
             $logNotes = "";
