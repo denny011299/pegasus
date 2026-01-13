@@ -477,7 +477,7 @@ function loadPiType() {
             items.forEach(e => {
                 $('#tableProduct tbody').append(`
                     <tr class="row-supplies" data-id="${e.supplies_variant_id}">
-                        <td>${e.supplies_name}</td>
+                        <td>${e.supplies_name || e.sup_name}</td>
                         <td>${e.pid_qty}</td>
                         <td>${e.unit_name}</td>
                         <td class="text-center d-flex align-items-center">
