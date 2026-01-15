@@ -77,15 +77,17 @@ class CustomerController extends Controller
         $p = [];
         $valid = 1;
         foreach (json_decode($data['products'],true) as $key => $value) {
-            $sod = SalesOrderDetail::find($value["sod_id"]);
-            $ps = ProductVariant::find($value["product_variant_id"]);
-            $s = ProductStock::where("product_variant_id", "=", $ps->product_variant_id)
-                ->where("unit_id", "=", $value["unit_id"])
-                ->where("status", "=", 1)
-                ->first();
-            if(($s->ps_stock+$sod->sod_qty) < $value["so_qty"]){
-                array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
-                $valid=-1;
+            if(isset($value["sod_id"])) {
+                $sod = SalesOrderDetail::find($value["sod_id"]);
+                $ps = ProductVariant::find($value["product_variant_id"]);
+                $s = ProductStock::where("product_variant_id", "=", $ps->product_variant_id)
+                    ->where("unit_id", "=", $value["unit_id"])
+                    ->where("status", "=", 1)
+                    ->first();
+                if(($s->ps_stock+$sod->sod_qty) < $value["so_qty"]){
+                    array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
+                    $valid=-1;
+                }
             }
         }
         
@@ -102,8 +104,47 @@ class CustomerController extends Controller
         foreach (json_decode($req->products,true) as $key => $value) {
             $value['so_id'] = $so->so_id;
 
-            if(!isset($value["sod_id"])) $id = (new SalesOrderDetail())->insertSalesOrderDetail($value);
-            
+            if(!isset($value["sod_id"])) {
+                $getSo = SalesOrderDetail::where('so_id', $so->so_id)->where('status', '>=', 1)->get();
+
+                if (count($getSo)){
+                    foreach ($getSo as $key => $val) {
+                        $pvr = ProductVariant::find($value["product_variant_id"]);
+                        $s = ProductStock::where("product_variant_id", "=", $pvr->product_variant_id)
+                            ->where("unit_id", "=", $value["unit_id"])
+                            ->where("status", "=", 1)
+                            ->first();
+                        $s->ps_stock += $val["sod_qty"];
+                        $s->save();
+
+                        // Catat Log
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode'    => $so->so_number,
+                            'log_type'    => 1,
+                            'log_category' => 1,
+                            'log_item_id' => $val['product_variant_id'],
+                            'log_notes'  => "Perubahan penjualan produk",
+                            'log_jumlah' => $val["sod_qty"],
+                            'unit_id'    => $val['unit_id'],
+                        ]);
+                    }
+                }
+
+                $id = (new SalesOrderDetail())->insertSalesOrderDetail($value);
+
+                // Catat Log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $so->so_number,
+                    'log_type'    => 1,
+                    'log_category' => 2,
+                    'log_item_id' => $value['product_variant_id'],
+                    'log_notes'  => "Perubahan penjualan produk",
+                    'log_jumlah' => $value["so_qty"],
+                    'unit_id'    => $value['unit_id'],
+                ]);
+            }
             else {
                 $sod = SalesOrderDetail::find($value['sod_id']);
                 // Catat Log
@@ -118,20 +159,20 @@ class CustomerController extends Controller
                     'unit_id'    => $sod['unit_id'],
                 ]);
                 $id = (new SalesOrderDetail())->updateSalesOrderDetail($value);
+
+                // Catat Log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $so->so_number,
+                    'log_type'    => 1,
+                    'log_category' => 2,
+                    'log_item_id' => $value['product_variant_id'],
+                    'log_notes'  => "Perubahan penjualan produk",
+                    'log_jumlah' => $value["so_qty"],
+                    'unit_id'    => $value['unit_id'],
+                ]);
             }
             array_push($list_id_detail, $id);
-
-            // Catat Log
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $so->so_number,
-                'log_type'    => 1,
-                'log_category' => 2,
-                'log_item_id' => $value['product_variant_id'],
-                'log_notes'  => "Perubahan penjualan produk",
-                'log_jumlah' => $value["so_qty"],
-                'unit_id'    => $value['unit_id'],
-            ]);
         }
         SalesOrderDetail::where('so_id','=',$so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
         return 1;

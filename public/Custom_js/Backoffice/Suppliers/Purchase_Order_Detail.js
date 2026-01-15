@@ -37,6 +37,7 @@
             sDom: 'fBtlpi',
             ordering: true,
             searching: false,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -48,11 +49,11 @@
                 },
             },
             columns: [
-                { data: "pod_sku" },
-                { data: "pod_nama" },
-                { data: "qty",class:"text-center"   },
-                { data: "pod_harga_text",class:"text-end"  },
-                { data: "pod_subtotal_text",class:"text-end subtotal" },
+                { data: "pod_sku", width: "15%" },
+                { data: "pod_nama", width: "25%" },
+                { data: "qty", class:"text-center", width: "20%" },
+                { data: "pod_harga_text", class:"text-end" },
+                { data: "pod_subtotal_text", class:"text-end subtotal" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -1042,8 +1043,15 @@ $(document).on("click", "#btn-acc-po", function () {
             },
             method:"post",
             success:function(e){
-                 $('#modalDelete .modal-body').html('');
+                $('#modalDelete .modal-body').html('');
                 $(".modal").modal("hide");
+                if (e == -1){
+                    notifikasi(
+                        "error",
+                        "Gagal Tolak",
+                        "Stok tidak mencukupi!"
+                    );
+                }
                 $('#po_status').val(-1).trigger('change');
                 notifikasi(
                     "success",

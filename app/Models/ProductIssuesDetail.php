@@ -177,9 +177,7 @@ class ProductIssuesDetail extends Model
             }
         } else if ($data['tipe_return'] == 2) {
             $itemId = $data['product_variant_id'] ?? $data['item_id'];
-            $m = ProductVariant::find($itemId);
-            $s = ProductStock::where('product_id','=',$m->product_id)->where('unit_id','=',$data["unit_id"])->first();
-            
+            $s = ProductStock::where('product_variant_id','=',$itemId)->where('unit_id','=',$data["unit_id"])->first();
             $stocks = $s->ps_stock ?? 0;
             if ($stocks - $data["pid_qty"] < 0) {
                 return -1;

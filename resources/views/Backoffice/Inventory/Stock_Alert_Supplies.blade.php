@@ -44,7 +44,6 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
-                                                    <th>SKU</th>
                                                     <th>Stok</th>
                                                     <th>Qty Peringatan</th>
                                                     <th>Pemesanan Min.</th>
@@ -62,7 +61,6 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
-                                                    <th>SKU</th>
                                                     <th>Stok</th>
                                                     <th>Qty Peringatan</th>
                                                     <th>Pemesanan Min.</th>

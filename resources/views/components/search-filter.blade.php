@@ -325,3 +325,50 @@
 </div>
 <!-- /Filter Pencarian -->
 @endif
+
+@if(Route::is(['purchaseOrder']))
+<!-- Filter Pencarian -->
+<div class="container mt-3 ps-0">
+    <div class="row">
+        <div class="col-12 col-md-12 mb-4">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <div class="input-block">
+                            <label>Dari</label>
+                            <div>
+                                <input type="date" class="form-control" id="start_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-block">
+                            <label>Sampai</label>
+                            <div>
+                                <input type="date" class="form-control" id="end_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-block">
+                            <label>Status</label>
+                            <select class="form-select fill" id="status">
+                                <option value="4" selected>Menunggu Approval</option>
+                                <option value="1">Belum Terbayar</option>
+                                <option value="3">Menunggu Tanda Terima</option>
+                                <option value="2">Terbayar</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-12 pt-4 text-end">
+                        <a class="btn btn-outline-secondary btn-clear">
+                            Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Filter Pencarian -->
+@endif

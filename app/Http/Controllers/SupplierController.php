@@ -528,6 +528,8 @@ class SupplierController extends Controller
                     ->where("unit_id", "=", $value->unit_id)
                     ->where("status", "=", 1)
                     ->first();
+
+                if (($s->ss_stock - $value->pod_qty) < 0) return -1;
                 $s->ss_stock -= $value->pod_qty;
                 $s->save();
 

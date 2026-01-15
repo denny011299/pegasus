@@ -19,19 +19,40 @@ class PurchaseOrder extends Model
             "po_id"   => null,
             "po_customer" => null,
             "hutang" => 0,
+            "dates" => null,
+            "pembayaran" => 0,
         ], $data);
 
-        if ($data["hutang"] == 0) {
-            $result = PurchaseOrder::where("status", "<", 2)->where("status", ">=", 1)->where("pembayaran", "=", 1);   
-        } else {
-            $result = PurchaseOrder::where("status", ">=", 1);
-        }
+        $result = PurchaseOrder::where("status", ">=", 1);
 
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
         if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);
+        if ($data["pembayaran"] && $data["pembayaran"] >= 0){
+            if ($data["pembayaran"] == 4){
+                $result->where('status', 1)->where('pembayaran', 1);
+            }
+            else if ($data["pembayaran"] == 1){
+                $result->where('status', 2)->where('pembayaran', 1);
+            }
+            else{
+                $result->where("pembayaran", "=", $data["pembayaran"]);
+            }
+        }
 
-        $result->orderBy("po_date", "desc");
+        if ($data["dates"]) {
+            if (is_array($data["dates"]) && count($data["dates"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
+
+                $result->whereBetween('po_date', [$startDate, $endDate]);
+            } else {
+                $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
+                $result->whereDate('po_date', $date);
+            }
+        }
+
+        $result->orderBy('status', 'asc')->orderByRaw('FIELD(pembayaran, 1, 3, 2)')->orderBy("po_date", "desc");
         $result = $result->get();
 
         foreach ($result as $key => $value) {

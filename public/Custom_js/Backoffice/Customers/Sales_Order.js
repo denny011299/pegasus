@@ -164,7 +164,7 @@
                             data-price="${p.product_variant_price}"
                             data-index="${index}" style="width: 2.5rem" value="${p.so_qty || 1}">
                         <span class="pt-2 ps-2">
-                            <select class="form-select fill" id="unit_id" style="width: 6.5rem">${options}</select>
+                            <select class="form-select fill" id="unit_id" style="width: 6.5rem" data-index="${index}">${options}</select>
                         </span>
                     </td>
                     <td style="width: 15%" class="text-end">${p.product_variant_price}</td>
@@ -194,6 +194,13 @@
         updateTotal();
         console.log(products);
     });
+
+    $(document).on('change', '#unit_id', function(){
+        const index = $(this).data('index');
+        console.log(index);
+        let unit = parseInt($(this).val());
+        products[index].unit_id = unit;
+    })
 
     function updateTotal() {
         let total = 0;
@@ -344,7 +351,8 @@
                 "product_variant_price" : e.sod_harga,
                 "so_subtotal" : e.sod_subtotal,
                 "unit_name" : e.unit_name,
-                "unit_id" : e.unit_id
+                "unit_id" : e.unit_id,
+                "pr_unit" : e.pr_unit
             };
             products.push(temp);
         });

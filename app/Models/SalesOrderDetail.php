@@ -35,6 +35,9 @@ class SalesOrderDetail extends Model
             $u = Unit::find($p->unit_id);
             $value->unit_id = $u->unit_id;
             $value->unit_name = $u->unit_name;
+
+            $value->units = json_decode($p->product_unit);
+            $value->pr_unit = Unit::whereIn('unit_id', $value->units)->get();
         }
         return $result;
     }

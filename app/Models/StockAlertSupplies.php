@@ -18,9 +18,8 @@ class StockAlertSupplies extends Model
             "mode"=>1,//1=low stock, 2= out of stock
         ], $data);
 
-        $result = SuppliesVariant::where('supplies_variants.status', '=', 1);
-        $result->join('supplies as s', 's.supplies_id', '=', 'supplies_variants.supplies_id');
-        $result->where('s.status', '=', 1);
+        $result = Supplies::where('supplies.status', '=', 1);
+        $result->where('supplies.status', '=', 1);
         /*
         if($data["mode"]==1){
             $result->whereColumn('product_variants.product_variant_stock','<=','p.product_min_stock');
@@ -39,7 +38,7 @@ class StockAlertSupplies extends Model
             ]);
             $u = Unit::find($value->supplies_default_unit);
             $value->default_unit = $u->unit_name;
-            $value->relation = (new SuppliesRelation())->getSuppliesRelation(["supplies_variant_id"=>$value->supplies_variant_id]);
+            $value->relation = (new SuppliesRelation())->getSuppliesRelation(["supplies_id"=>$value->supplies_id]);
         }
         
         return $result;

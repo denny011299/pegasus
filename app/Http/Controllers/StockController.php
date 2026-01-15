@@ -446,7 +446,7 @@ class StockController extends Controller
                                 'log_kode'    => $pi->pi_code,
                                 'log_type'    => 1,
                                 'log_category' => 2,
-                                'log_item_id' => $val['product_variant_id'],
+                                'log_item_id' => $value['product_variant_id'],
                                 'log_notes'  => $logNotes,
                                 'log_jumlah' => $val['pid_qty'],
                                 'unit_id'    => $val['unit_id'],

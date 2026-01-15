@@ -1765,7 +1765,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-12 py-3 mb-3">
-                                    <div class="table-scroll">
+                                    <div class="table-scroll overflow-x-auto">
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
                                             <thead>
                                                 <th>Tanggal</th>
@@ -1835,7 +1835,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-12 py-3 mb-3">
-                                    <div class="table-scroll">
+                                    <div class="table-scroll overflow-x-auto">
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
                                             <thead>
                                                 <th>Tanggal</th>

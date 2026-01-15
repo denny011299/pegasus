@@ -22,8 +22,7 @@
                 },
             },
             columns: [
-                { data: "supplies_name_text" },
-                { data: "supplies_variant_sku" },
+                { data: "supplies_name" },
                 { data: "supplies_variant_stock_text" },
                 { data: "supplies_alert_text" },
                 { data: "minim_order" },
@@ -51,8 +50,7 @@
             },
             autoWidth: false,
             columns: [
-                { data: "supplies_name_text" },
-                { data: "supplies_variant_sku" },
+                { data: "supplies_name" },
                 { data: "supplies_variant_stock_text" },
                 { data: "supplies_alert_text" },
                 { data: "minim_order" },
@@ -80,7 +78,6 @@
                 console.log("data");
                 e.forEach((item,index) => {
                     var def = -1;
-                    item.supplies_name_text = item.supplies_name + " " +item.supplies_variant_name;
                     item.supplies_alert_text = item.supplies_alert+" " +item.default_unit;
                     
                     var habis = 1;

@@ -32,6 +32,7 @@ class PurchaseOrderDetail extends Model
         $result = $result->get();
 
         foreach ($result as $key => $value) {
+            $value->po_number = PurchaseOrder::find($value->po_id)->first();
             // relasi ke SuppliesVariant
             $value->supplies_variant = SuppliesVariant::find($value->supplies_variant_id);
             $u = Unit::find($value->unit_id);

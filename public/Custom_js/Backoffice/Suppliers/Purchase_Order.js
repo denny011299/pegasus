@@ -2,6 +2,7 @@
     var table, tablePr;
     var item = [];
     var grand = 0;
+    var dates = null;
     autocompleteSupplier("#filter_supplier");
     autocompleteSupplier("#po_supplier","#add_purchase_order");
     autocompleteSupplier("#select_supplier");
@@ -155,7 +156,7 @@
         table = $('#tablePurchaseOrder').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            order: [[0, 'desc']],
+            ordering: false,
             searching:false,
             language: {
                 search: ' ',
@@ -191,9 +192,11 @@
             url: "/getPurchaseOrder",
             method: "get",
             data:{
-                "po_supplier": $('#filter_supplier').val(),
-                "po_number": $('#filter_po').val(),
-                "hutang": 0,
+                po_supplier: $('#filter_supplier').val(),
+                po_number: $('#filter_po').val(),
+                hutang: 0,
+                dates: dates,
+                pembayaran: $('#status').val(),
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -205,10 +208,17 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     e[i].total = `Rp ${formatRupiah(e[i].po_total)}`;
+
                     e[i].status_po = `<label class="badge bg-secondary badgeStatus">Menunggu Approval</label>`;
-                    
-                    if(e[i].status == 2)e[i].status_po = `<label class="badge bg-primary badgeStatus">Approval</label>`;
-                    if(e[i].status == -1)e[i].status_po = `<label class="badge bg-danger badgeStatus">Ditolak</label>`;
+                    if(e[i].status == 2){
+                        if (e[i].pembayaran == 1){
+                            e[i].status_po = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
+                        } else if (e[i].pembayaran == 2){
+                            e[i].status_po = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
+                        } else {
+                            e[i].status_po = `<span class="badge bg-primary" style="font-size: 12px">Menunggu Tanda Terima</span>`;
+                        }
+                    }
                     
                     e[i].pembayaran_text = `<label class="badge bg-secondary badgeStatus">Belum Lunas</label>`;
                     
@@ -242,6 +252,35 @@
         }
     
     });
+
+    $(document).on('change', '#status', function(){
+        refreshPurchaseOrder();
+    })
+
+    $(document).on('change', '#start_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshPurchaseOrder();
+    })
+    $(document).on('change', '#end_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshPurchaseOrder();
+    })
+
+    $(document).on('click', '.btn-clear', function(){
+        dates = null;
+        $('#start_date').val("");
+        $('#end_date').val("");
+        $('#status').val(4);
+        refreshPurchaseOrder();
+    })
 
     $(document).on("click",".btn-save",function(){
         LoadingButton(this);
