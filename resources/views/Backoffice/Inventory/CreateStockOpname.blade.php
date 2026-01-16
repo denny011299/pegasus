@@ -64,6 +64,12 @@
                                         <input type="date" class="form-control fill" id="tanggal">
                                     </div>
                                 </div>
+                                <div class="col-md-4 col-sm-12">
+                                    <div class="input-blocks">
+                                        <label>Status<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="status" disabled>
+                                    </div>
+                                </div>
                                 <div class="col-lg-12 mt-2">
                                     <div class="input-blocks">
                                         <label>Catatan</label>
@@ -108,6 +114,8 @@
             <!-- /Table -->
 
             <div class="text-end mt-3">
+                <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
+                <button class="btn btn-success save-terima" style="display: none">Terima</button>
                 <button class="btn btn-primary btn-save">Tambah Stok Opname</button>
             </div>
         </div>

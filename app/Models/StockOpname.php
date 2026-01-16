@@ -31,7 +31,7 @@ class StockOpname extends Model
             'sto_id' => null,
         ], $data);
 
-        $result = self::where('status', 1);
+        $result = self::where('status', '>=', 1);
 
         if ($data['sto_date']) {
             $result->whereDate('sto_date', $data['sto_date']);
@@ -45,7 +45,7 @@ class StockOpname extends Model
             $result->where('sto_id','=', $data['sto_id']);
         }
 
-        $result->orderBy('created_at', 'desc');
+        $result->orderBy('status', 'asc')->orderBy('sto_date', 'desc');
 
         $result =  $result->get();
 

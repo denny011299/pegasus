@@ -9,7 +9,7 @@
         table = $('#tableStockOpname').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            order: [[2, 'desc']],
+            ordering: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -24,6 +24,7 @@
                 { data: "stob_date"},
                 { data: "staff_name" },
                 { data: "stob_code" },
+                { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -46,7 +47,16 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].stob_date = moment(e[i].stob_date).format('D MMM YYYY');
-                    e[i].stob_id_text = "SPN"+(e[i].stob_id+"").padStart(3,"0");
+                    
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu</span>`;
+                    } else if (e[i].status == 2){
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Disetujui</span>`;
+                    }
+                    else if (e[i].status == 3){
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
+                    }
+
                     e[i].action = `
                         <a href="/detailStockOpnameBahan/${e[i].stob_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
                             <i class="fe fe-eye"></i>

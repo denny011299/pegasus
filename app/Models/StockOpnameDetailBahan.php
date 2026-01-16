@@ -48,40 +48,7 @@ class StockOpnameDetailBahan extends Model
      * Insert detail
      */
     public static function insertDetail($data)
-    {
-        $stob = StockOpnameBahan::find($data['stob_id']);
-        foreach ($data['sp_units'] as $u) {
-            $s = SuppliesStock::where('supplies_id', $data['supplies_id'])
-                ->where('unit_id', $u['unit_id'])
-                ->first();
-
-            // Catat log
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $stob->stob_code,
-                'log_type'    => 2,
-                'log_category' => 2,
-                'log_item_id' => $data['supplies_id'],
-                'log_notes'  => "Stock Opname Bahan Mentah",
-                'log_jumlah' => $s->ss_stock,
-                'unit_id'    => $u['unit_id'],
-            ]);
-            $s->ss_stock = $u['real_qty'];
-            $s->save();
-
-            // Catat log
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $stob->stob_code,
-                'log_type'    => 2,
-                'log_category' => 1,
-                'log_item_id' => $data['supplies_id'],
-                'log_notes'  => "Stock Opname Bahan Mentah",
-                'log_jumlah' => $s->ss_stock,
-                'unit_id'    => $u['unit_id'],
-            ]);
-        }
-        
+    {   
         $t = new self();
         $t->stob_id = $data['stob_id'];
         $t->supplies_id = $data['supplies_id'];

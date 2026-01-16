@@ -48,16 +48,16 @@ class StockController extends Controller
         }
     }
 
-    function updateStockOpname(Request $req)
-    {
-        $data = $req->all();
-        $id = (new StockOpname())->updateStockOpname($data);
-        foreach (json_decode($req->item, true) as $key => $value) {
-            $value["sto_id"] = $id;
-            if (isset($value["stod_id"])) (new StockOpnameDetail())->updateDetail($value);
-            else (new StockOpnameDetail())->insertDetail($value);
-        }
-    }
+    // function updateStockOpname(Request $req)
+    // {
+    //     $data = $req->all();
+    //     $id = (new StockOpname())->updateStockOpname($data);
+    //     foreach (json_decode($req->item, true) as $key => $value) {
+    //         $value["sto_id"] = $id;
+    //         if (isset($value["stod_id"])) (new StockOpnameDetail())->updateDetail($value);
+    //         else (new StockOpnameDetail())->insertDetail($value);
+    //     }
+    // }
 
     function deleteStockOpname(Request $req)
     {
@@ -111,6 +111,7 @@ class StockController extends Controller
             'staff_name'  => $sto->staff_name,
             'category_id' => $sto->category_id,
             'sto_notes'   => $sto->sto_notes,
+            'status'      => $sto->status,
             'item'        => $items
         ];
 
@@ -154,6 +155,56 @@ class StockController extends Controller
     {
         $data = $req->all();
         return (new StockOpnameDetail())->deleteDetailStockOpname($data);
+    }
+
+    function accStockOpname(Request $req) {
+        $data = $req->all();
+        $stod = json_decode($data['item'], true);
+        $sto = StockOpname::find($data['sto_id']);
+        foreach ($stod as $key => $value) {
+            foreach ($value['units'] as $u) {
+                $s = ProductStock::where('product_variant_id', $value['product_variant_id'])
+                    ->where('unit_id', $u['unit_id'])
+                    ->first();
+                
+                // Catat log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $sto->sto_code,
+                    'log_type'    => 1,
+                    'log_category' => 2,
+                    'log_item_id' => $value['product_variant_id'],
+                    'log_notes'  => "Stock Opname Produk",
+                    'log_jumlah' => $s->ps_stock,
+                    'unit_id'    => $u['unit_id'],
+                ]);
+    
+                $s->ps_stock = $u['real_qty'];
+                $s->save();
+    
+                // Catat log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $sto->sto_code,
+                    'log_type'    => 1,
+                    'log_category' => 1,
+                    'log_item_id' => $value['product_variant_id'],
+                    'log_notes'  => "Stock Opname Produk",
+                    'log_jumlah' => $s->ps_stock,
+                    'unit_id'    => $u['unit_id'],
+                ]);
+            }
+        }
+        $sto->status = 2;
+        $sto->save();
+    }
+
+    function tolakStockOpname(Request $req) {
+        $data = $req->all();
+        $sto = StockOpname::find($data["sto_id"]);
+
+        $sto->status = 3; // Tolak
+        $sto->save();
     }
 
     // Stock Opname
@@ -230,6 +281,55 @@ class StockController extends Controller
     {
         $data = $req->all();
         return (new StockOpnameDetailBahan())->deleteDetailStockOpname($data);
+    }
+
+    function accStockOpnameBahan(Request $req) {
+        $data = $req->all();
+        $stod = json_decode($data['item'], true);
+        $stob = StockOpnameBahan::find($data['stob_id']);
+        foreach ($stod as $key => $value) {
+            foreach ($value['sp_units'] as $u) {
+                $s = SuppliesStock::where('supplies_id', $value['supplies_id'])
+                    ->where('unit_id', $u['unit_id'])
+                    ->first();
+
+                // Catat log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $stob->stob_code,
+                    'log_type'    => 2,
+                    'log_category' => 2,
+                    'log_item_id' => $value['supplies_id'],
+                    'log_notes'  => "Stock Opname Bahan Mentah",
+                    'log_jumlah' => $s->ss_stock,
+                    'unit_id'    => $u['unit_id'],
+                ]);
+                $s->ss_stock = $u['real_qty'];
+                $s->save();
+
+                // Catat log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $stob->stob_code,
+                    'log_type'    => 2,
+                    'log_category' => 1,
+                    'log_item_id' => $value['supplies_id'],
+                    'log_notes'  => "Stock Opname Bahan Mentah",
+                    'log_jumlah' => $s->ss_stock,
+                    'unit_id'    => $u['unit_id'],
+                ]);
+            }
+        }
+        $stob->status = 2;
+        $stob->save();
+    }
+
+    function tolakStockOpnameBahan(Request $req) {
+        $data = $req->all();
+        $stob = StockOpnameBahan::find($data["stob_id"]);
+
+        $stob->status = 3; // Tolak
+        $stob->save();
     }
 
     // Stock Alert

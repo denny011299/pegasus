@@ -14,6 +14,7 @@
             var yesterday = moment().format('YYYY-MM-DD');
             // Autofill ke input
             $('#tanggal').val(yesterday);
+            $('#status').val('-');
         }
         else{
             console.log(data);
@@ -101,6 +102,18 @@
             });
             $('#tbStock input').prop("disabled",true);
             $('.btn-save').hide();
+            
+            // Button terima tolak
+            if (data.status == 1){
+                $('.save-tolak,.save-terima').show();
+                $('#status').val('Menunggu Approval');
+            } else if (data.status == 2) {
+                $('.save-tolak,.save-terima').hide();
+                $('#status').val('Disetujui');
+            } else if (data.status == 3) {
+                $('.save-tolak,.save-terima').hide();
+                $('#status').val('Ditolak');
+            }
         }
         
     })
@@ -347,27 +360,113 @@ $(document).on('click', '.btnBack', function(){
     window.open('/stockOpnameBahan', '_self');
 })
 
-// $(document).on("change", "#kategori", async function () {
+//konfirmasi acc
+$(document).on("click", ".save-terima", function () {
+    var tbId = $(this).closest("table").attr("id");
+    var data = $("#" + tbId)
+        .DataTable()
+        .row($(this).parents("tr"))
+        .data(); //ambil data dari table
+    showModalKonfirmasi(
+        "Apakah yakin ingin Approve stock opname ini?",
+        "btn-acc-stob"
+    );
+    $("#btn-acc-stob").html("Konfirmasi");
+});
 
-//     var param = {
-//     };
-//     if ($("#kategori").val() != -1) {
-//         param.category_id = $("#kategori").val();
-//     }
-//     $.ajax({
-//         url: "/getProductVariant",
-//         type: "GET",
-//         dataType: "json",
-//         data: param,
-//          headers: {
-//             'X-CSRF-TOKEN': token
-//         },
-//         success: function (data) {
-//             data.forEach((element) => {
-//                 element.real_stock = 0;
-//             });
-//             StockOpname = data;
-//             refreshStockOpname();
-//         },
-//     });
-// });
+$(document).on("click", "#btn-acc-stob", function () {
+    suppliesSubmit = [];
+    $('.row-stock').each(function () {
+
+        let row = $(this);
+        let item = {};
+
+        item.supplies_id = row.data('supplies-id');
+        item.stobd_notes = row.find('.notes').val() ?? '';
+
+        let sp_units = [];
+        let systemArr  = [];
+        let realArr    = [];
+        let selisihArr = [];
+
+        row.find('.real-stock').each(function () {
+
+            let input = $(this);
+
+            let unitId    = input.data('unit-id');
+            let unitName  = input.data('unit-name');
+            let systemQty = parseInt(input.data('system-qty')) || 0;
+            let realQty   = parseInt(input.val()) || 0;
+
+            sp_units.push({
+                unit_id: unitId,
+                system_qty: systemQty,
+                real_qty: realQty
+            });
+
+            systemArr.push(systemQty + ' ' + unitName);
+            realArr.push(realQty + ' ' + unitName);
+            selisihArr.push((realQty - systemQty) + ' ' + unitName);
+        });
+
+        item.sp_units = sp_units;
+        item.stobd_system  = systemArr.join(', ');
+        item.stobd_real    = realArr.join(', ');
+        item.stobd_selisih = selisihArr.join(', ');
+
+        suppliesSubmit.push(item);
+    });
+
+    $.ajax({
+        url: "/accStockOpnameBahan",
+        data: {
+            stob_id: data.stob_id,
+            item: JSON.stringify(suppliesSubmit),
+            _token: token,
+        },
+        method: "post",
+        success: function (e) {
+            $('#modalDelete .modal-body').html('');
+            $(".modal").modal("hide");
+            notifikasi(
+                "success",
+                "Berhasil Approve",
+                "Berhasil approve stock opname"
+            );
+            window.open('/stockOpnameBahan', '_self');
+        },
+        error: function (e) {
+            console.log(e);
+        },
+    });
+});
+
+
+    $(document).on('click', '.save-tolak', function(){
+        showModalDelete("Apakah yakin ingin menolak stock opname ini?","btn-tolak-stob");
+    })
+
+    $(document).on("click","#btn-tolak-stob",function(){
+        $.ajax({
+            url:"/tolakStockOpnameBahan",
+            data:{
+                stob_id:data.stob_id,
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('#modalDelete .modal-body').html('');
+                $(".modal").modal("hide");
+                notifikasi(
+                    "success",
+                    "Berhasil Tolak",
+                    "Berhasil tolak Stock Opname"
+                );
+                window.open('/stockOpnameBahan', '_self');
+                
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    });

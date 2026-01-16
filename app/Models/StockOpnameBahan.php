@@ -20,7 +20,7 @@ class StockOpnameBahan extends Model
             'stob_id' => null,
         ], $data);
 
-        $result = self::where('status', 1);
+        $result = self::where('status', '>=', 1);
 
         if ($data['stob_date']) {
             $result->whereDate('stob_date', $data['stob_date']);
@@ -34,7 +34,7 @@ class StockOpnameBahan extends Model
             $result->where('stob_id','=', $data['stob_id']);
         }
 
-        $result->orderBy('stob_date', 'desc');
+        $result->orderBy('status', 'asc')->orderBy('stob_date', 'desc');
 
         $result =  $result->get();
         

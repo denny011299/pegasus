@@ -1018,7 +1018,7 @@ $(document).on("click", "#btn-acc-po", function () {
             notifikasi(
                 "success",
                 "Berhasil Approve",
-                "Berhasil approve pembatalan produksi"
+                "Berhasil approve pembelian"
             );
             window.open('/purchaseOrder', '_self');
         },

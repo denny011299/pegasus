@@ -24,6 +24,7 @@
                 { data: "sto_date"},
                 { data: "staff_name" },
                 { data: "sto_code" },
+                { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -46,7 +47,16 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].sto_date = moment(e[i].sto_date).format('D MMM YYYY');
-                    e[i].sto_id_text = "SPN"+(e[i].sto_id+"").padStart(3,"0");
+
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu</span>`;
+                    } else if (e[i].status == 2){
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Disetujui</span>`;
+                    }
+                    else if (e[i].status == 3){
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
+                    }
+
                     e[i].action = `
                         <a href="/detailStockOpname/${e[i].sto_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
                             <i class="fe fe-eye"></i>
