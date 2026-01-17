@@ -17,14 +17,17 @@
         $('.save-terima,.save-tolak,.save-qty').hide();
         if(data.status==1){
             $('.save-tolak,.save-terima,.save-qty').show();
+            $('.qtySummary').prop('disabled', false);
         }
         else if(data.status==2){
             $('.save-tolak').show();
             $('.save-terima,.save-qty').hide();
+            $('.qtySummary').prop('disabled', true);
         }
-       
+        
         if(data.pembayaran==3){
             $('.save-tolak,.save-terima,.save-qty').hide();
+            $('.qtySummary').prop('disabled', true);
         }
     });
     

@@ -48,6 +48,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompleteCashCategory', [AutocompleteController::class, "autocompleteCashCategory"])->name('autocompleteCashCategory');
     Route::post('/autocompleteRole', [AutocompleteController::class, "autocompleteRole"])->name('autocompleteRole');
     Route::post('/autocompleteRekening', [AutocompleteController::class, "autocompleteRekening"])->name('autocompleteRekening');
+    Route::post('/autocompletePO', [AutocompleteController::class, "autocompletePO"])->name('autocompletePO');
+    Route::post('/autocompleteSO', [AutocompleteController::class, "autocompleteSO"])->name('autocompleteSO');
 
     Route::get('/category',[ProductController::class,"Category"])->name('category');
     Route::get('/getCategory', [ProductController::class, "getCategory"])->name('getCategory');

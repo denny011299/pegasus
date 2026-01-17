@@ -15,7 +15,9 @@ use App\Models\District;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Provinces;
+use App\Models\PurchaseOrder;
 use App\Models\Role;
+use App\Models\SalesOrder;
 use App\Models\Staff;
 use App\Models\Store;
 use App\Models\Supplier;
@@ -440,6 +442,46 @@ class AutocompleteController extends Controller
         foreach ($data_city as $r) {
             $r->id = $r["bank_id"];
             $r->text = $r["bank_kode"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompletePO(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new PurchaseOrder();
+        $data_city = $p->getPurchaseOrder([
+            "po_id" => $keyword
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["po_number"];
+            $r->text = $r["po_number"] . ' - ' . $r['po_supplier_name'];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
+    }
+
+    public function autocompleteSO(Request $req)
+    {
+        $keyword = isset($req->keyword) ? $req->keyword : null;
+
+        $p = new SalesOrder();
+        $data_city = $p->getSalesOrder([
+            "so_id" => $keyword
+        ]);
+
+
+        foreach ($data_city as $r) {
+            $r->id = $r["so_number"];
+            $r->text = $r["so_number"] . ' - ' . $r['customer_name'];
         };
 
         echo json_encode(array(

@@ -20,7 +20,7 @@ class PurchaseOrder extends Model
             "po_customer" => null,
             "hutang" => 0,
             "dates" => null,
-            "pembayaran" => 0,
+            "pembayaran" => null,
         ], $data);
 
         $result = PurchaseOrder::where("status", ">=", 1);
@@ -52,7 +52,11 @@ class PurchaseOrder extends Model
             }
         }
 
-        $result->orderBy('status', 'asc')->orderByRaw('FIELD(pembayaran, 1, 3, 2)')->orderBy("po_date", "desc");
+        if ($data['pembayaran']){
+            $result->orderBy('status', 'asc')->orderByRaw('FIELD(pembayaran, 1, 3, 2)')->orderBy("po_date", "desc");
+        } else {
+            $result->orderBy('created_at', 'desc');
+        }
         $result = $result->get();
 
         foreach ($result as $key => $value) {

@@ -25,7 +25,7 @@ class CustomerController extends Controller
     }
     
     function getSalesOrder(Request $req){
-        $data = (new SalesOrder())->getSalesOrder();
+        $data = (new SalesOrder())->getSalesOrder($req->all());
         return response()->json($data);
     }
 

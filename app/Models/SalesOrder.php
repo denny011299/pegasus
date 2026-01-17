@@ -22,6 +22,8 @@ class SalesOrder extends Model
 
         if ($data["so_id"]) $result->where("so_id", "=", $data["so_id"]);
 
+        if ($data["so_number"]) $result->where("so_number", "like", "%".$data["so_number"]."%");
+        
         if ($data["so_customer"]) {
             $result->where("so_customer", "like", "%".$data["so_customer"]."%");
         }

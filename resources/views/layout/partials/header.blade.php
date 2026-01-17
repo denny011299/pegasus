@@ -67,8 +67,14 @@
             </a>
         </li>
         <li class="nav-item dropdown-heads">
-            <a class="nav-link" href="/stockProduct" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Stok Barang">
+            <a class="nav-link position-relative" href="/stockProduct" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Stok Barang">
                 <i class="fe fe-layers"></i>
+                @if(isset($hasStockAlert))
+                    <span class="position-absolute top-0 start-100 translate-middle
+                                bg-danger rounded-circle mt-1"
+                        style="width: 8px; height: 8px;">
+                    </span>
+                @endif
             </a>
         </li>
         <li class="nav-item dropdown-heads ">

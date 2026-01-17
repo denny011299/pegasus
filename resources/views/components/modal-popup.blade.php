@@ -384,7 +384,15 @@
                                 </div>
                                 <div class="col-lg-4">
                                     <div class="input-block mb-3">
-                                        <label class="form-label">Bukti Foto<span class="text-danger">*</span></label><br>
+                                        <label class="form-label d-flex">
+                                            Bukti Foto<span class="text-danger">*</span> 
+                                            <span id="check_foto" style="display: none" class="ms-2">
+                                                <div class="d-flex g-3">
+                                                    <i class="fa fa-check-circle text-success mt-1"></i>
+                                                    <p class="text-muted ms-1">1 gambar terunggah</p>
+                                                </div>
+                                            </span>
+                                        </label>
                                         <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
                                         <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
                                         <input type="hidden" name="" id="bukti">
@@ -404,6 +412,12 @@
                                     <div class="input-block mb-3">
                                         <label class="form-label">Catatan<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="pi_notes" placeholder="Tambahkan Catatan">
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="input-block mb-3">
+                                        <label class="form-label" id="labelRef">Ref. PO<span class="text-danger">*</span></label>
+                                        <select class="form-select fill" id="ref_num"></select>
                                     </div>
                                 </div>
                                 <div class="col-12 py-3 mb-3">

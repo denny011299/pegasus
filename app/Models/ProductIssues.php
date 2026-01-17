@@ -83,8 +83,9 @@ class ProductIssues extends Model
         $pi_date = Carbon::createFromFormat('d-m-Y', $data['pi_date'])->format('Y-m-d');   
         $t = new self();
         $t->pi_code   = $this->generateProductIssueID();
-        $t->pi_type = $data["pi_type"];      
-        $t->pi_date = $pi_date; 
+        $t->pi_type = $data["pi_type"];
+        $t->ref_num = $data["ref_num"];
+        $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];     
         $t->pi_img = $data["pi_img"]; 
@@ -133,9 +134,10 @@ class ProductIssues extends Model
         // }
         if(isset($data["pi_img"]))$t->pi_img = $data["pi_img"];    
         $t->pi_code   = $data['pi_code'];
-        $t->pi_type = $data["pi_type"];     
-        $t->pi_date = $pi_date;    
-        $t->pi_notes = $data["pi_notes"];    
+        $t->pi_type = $data["pi_type"];
+        $t->ref_num = $data["ref_num"];
+        $t->pi_date = $pi_date;
+        $t->pi_notes = $data["pi_notes"];
         $t->tipe_return = $data["tipe_return"];
         if (isset($data['pi_img'])) $t->pi_img = $data["pi_img"];
         // $t->pi_qty = $data["pi_qty"];   
