@@ -55,6 +55,9 @@
                     //     <i class="fe fe-eye"></i>
                     // </a>
                     e[i].action = `
+                        <a class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].supplier_id}" data-bs-target="#view-supplier">
+                            <i class="fe fe-eye"></i>
+                        </a>
                         <a class="me-2 btn-action-icon p-2 btn_edit" href="/updateSupplier/${e[i].supplier_id}" data-bs-target="#edit-supplier">
                             <i class="fe fe-edit"></i>
                         </a>
@@ -76,6 +79,67 @@
     // $(document).on("keyup","#filter_supplier_name",function(){
     //     refreshSupplier();
     // });
+
+    // View
+    $(document).on('click', '.btn_view', function(){
+        let data = $('#tableSupplier').DataTable().row($(this).parents('tr')).data();
+        console.log(data);
+        $('#supplier_name').html(data.supplier_name);
+        $('#supplier_phone').html(data.supplier_phone);
+        $('#supplier_address').html(data.supplier_address);
+        $('#supplier_notes').html(data.supplier_notes || "-" );
+        getPo(data.supplier_id);
+    })
+
+    function getPo(id) {
+        $.ajax({
+            url: '/getPurchaseOrder',
+            method: 'get',
+            data: {
+                po_supplier: id,
+            },
+            success: function(e){
+                console.log(e);
+                viewHistory(e);
+            },
+            error: function(e){
+                console.error("Gagal load:", e);
+            }
+        });
+    }
+
+    function viewHistory(data){
+        $('#tablePo tr.row-po').remove();
+        $('#tablePo tr.empty-data').remove();
+        let hutang = 0;
+        if (data.length > 0){
+            $('.empty-data').remove();
+            data.forEach(e => {
+                $('#tablePo tbody').append(`
+                    <tr class="row-po" data-id="${e.po_id}">
+                        <td>${moment(e.po_date).format('D MMM YYYY')}</td>
+                        <td>${e.poi_due ? moment(e.poi_due).format('D MMM YYYY') : "-"}</td>
+                        <td>${e.po_number}</td>
+                        <td class="fw-bold">Rp ${formatRupiah(e.po_total)}</td>
+                    </tr>
+                `)
+                hutang += e.po_total;
+            })
+        } else {
+            $('#tablePo tbody').append(`
+                <tr class="empty-data">
+                    <td colspan="4" class="text-center text-muted py-4">
+                        Tidak ditemukan adanya pembelian di supplier ini
+                    </td>
+                </tr>
+            `);
+        }
+
+        $('#view_supplier .modal-title').html("Lihat Detail Supplier");
+        $('#supplier_payment').html(`Rp ${formatRupiah(hutang)}`);
+        $('#supplier_payment_bawah').html(`Rp ${formatRupiah(hutang)}`);
+        $("#view_supplier").modal("show");
+    }
 
     //delete
     $(document).on("click",".btn_delete",function(){

@@ -223,7 +223,7 @@ class StockController extends Controller
         }
 
         $pdf = Pdf::loadView('Backoffice.PDF.Opname', $param);
-        return $pdf->download('Tanda Terima_'.$param["stockOpname"]["sto_code"].'.pdf');
+        return $pdf->download('Stock Opname_'.$param["stockOpname"]["sto_code"].'.pdf');
     }
 
     // Stock Opname
@@ -365,7 +365,7 @@ class StockController extends Controller
         }
 
         $pdf = Pdf::loadView('Backoffice.PDF.OpnameBahan', $param);
-        return $pdf->download('Tanda Terima_'.$param["stockOpname"]["stob_code"].'.pdf');
+        return $pdf->download('Stock Opname_'.$param["stockOpname"]["stob_code"].'.pdf');
     }
 
     // Stock Alert
