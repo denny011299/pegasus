@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Stock Opname Produk</title>
+    <title>Stock Opname Bahan Mentah</title>
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
@@ -82,8 +82,8 @@
                 <td colspan="4" class="header-title">Stock Opname</td>
             </tr>
             <tr class="header-info">
-                <td><strong>ID. STO</strong><br>{{ $stockOpname['sto_code'] }}</td>
-                <td><strong>DATE</strong><br>{{ $stockOpname['sto_date'] }}</td>
+                <td><strong>ID. STO</strong><br>{{ $stockOpname['stob_code'] }}</td>
+                <td><strong>DATE</strong><br>{{ $stockOpname['stob_date'] }}</td>
                 <td><strong>Penanggung Jawab</strong><br>{{ $staff_name['staff_name'] }}</td>
                 <td><strong>Status</strong><br>{{ $status }}</td>
             </tr>
@@ -93,9 +93,7 @@
         <table class="items-table">
             <thead>
                 <tr>
-                    <th>SKU</th>
-                    <th>Produk</th>
-                    <th>Varian</th>
+                    <th>Bahan Mentah</th>
                     <th>Stock Sistem</th>
                     {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                     @endif --}}
@@ -110,20 +108,18 @@
             <tbody>
                 @foreach ($detail as $item)
                     <tr>
-                        <td>{{ empty($item['product_variant_sku']) ? '-' : $item['product_variant_sku'] }}</td>
-                        <td>{{ $item['pr_name'] ?? '-' }}</td>
-                        <td>{{ empty($item['product_variant_name']) ? '-' : $item['product_variant_name'] }}</td>
-                        <td>{{ $item['stod_system'] }}</td>
+                        <td>{{ $item['supplies_name'] ?? '-' }}</td>
+                        <td>{{ $item['stobd_system'] }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
-                        <td>{{ $item['stod_real'] }}</td>
+                        <td>{{ $item['stobd_real'] }}</td>
 
-                        <td>{{ $item['stod_selisih'] }}</td>
+                        <td>{{ $item['stobd_selisih'] }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
-                        <td>{{ empty($item['stod_notes']) ? '-' : $item['stod_notes'] }}</td>
+                        <td>{{ empty($item['stobd_notes']) ? '-' : $item['stobd_notes'] }}</td>
                     </tr>
                 @endforeach
             </tbody>
@@ -132,7 +128,7 @@
         <!-- FOOTER -->
         <div class="thank-you">CATATAN</div>
         <p>
-            {{ empty($stockOpname['sto_notes']) ? '-' : $stockOpname['sto_notes'] }}
+            {{ empty($stockOpname['stob_notes']) ? '-' : $stockOpname['stob_notes'] }}
         </p>
         <div class="thank-you">PERINGATAN!</div>
         <p>

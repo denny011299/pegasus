@@ -9,6 +9,7 @@ use App\Models\ProductIssues;
 use App\Models\ProductIssuesDetail;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
+use App\Models\Staff;
 use App\Models\Stock;
 use App\Models\StockAlert;
 use App\Models\StockAlertSupplies;
@@ -20,6 +21,7 @@ use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 use function Symfony\Component\Clock\now;
@@ -207,6 +209,23 @@ class StockController extends Controller
         $sto->save();
     }
 
+    function generateStockOpname($id) {
+        $param['stockOpname'] = StockOpname::find($id);
+        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id'])->first();
+        $param["detail"] = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
+
+        if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
+        else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
+        else if ($param['stockOpname']['status'] == 3) $param['status'] = "Ditolak";
+
+        if(count($param["detail"])<=0){
+            return -1;
+        }
+
+        $pdf = Pdf::loadView('Backoffice.PDF.Opname', $param);
+        return $pdf->download('Tanda Terima_'.$param["stockOpname"]["sto_code"].'.pdf');
+    }
+
     // Stock Opname
     public function StockOpnameBahan()
     {
@@ -330,6 +349,23 @@ class StockController extends Controller
 
         $stob->status = 3; // Tolak
         $stob->save();
+    }
+
+    function generateStockOpnameBahan($id) {
+        $param['stockOpname'] = StockOpnameBahan::find($id);
+        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id'])->first();
+        $param["detail"] = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
+
+        if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
+        else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
+        else if ($param['stockOpname']['status'] == 3) $param['status'] = "Ditolak";
+
+        if(count($param["detail"])<=0){
+            return -1;
+        }
+
+        $pdf = Pdf::loadView('Backoffice.PDF.OpnameBahan', $param);
+        return $pdf->download('Tanda Terima_'.$param["stockOpname"]["stob_code"].'.pdf');
     }
 
     // Stock Alert

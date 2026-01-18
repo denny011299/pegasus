@@ -58,7 +58,12 @@
                     }
 
                     e[i].action = `
-                        <a href="/detailStockOpnameBahan/${e[i].stob_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stop_id}" data-bs-target="#view-opname">
+                        <a href="/generateStockOpnameBahan/${e[i].stob_id}" class="me-2 btn-action-icon p-2 btn_download" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Download Stock Opname">
+                            <i class="fe fe-file-text"></i>
+                        </a>
+                        <a href="/detailStockOpnameBahan/${e[i].stob_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].stob_id}"
+                            data-bs-target="#view-opname" title="Detail Stock Opname">
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
