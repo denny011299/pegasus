@@ -742,7 +742,7 @@
                                         
                                     </div>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-12 overflow-x-auto">
                                     <table class="table table-center table-responsive">
                                         <thead>
                                             <th>Produk</th>

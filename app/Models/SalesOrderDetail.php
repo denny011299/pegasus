@@ -18,22 +18,20 @@ class SalesOrderDetail extends Model
         ], $data);
 
         $result = SalesOrderDetail::where("status", "=", 1);
-
         if ($data["so_id"]) {
             $result->where("so_id", "=" ,$data["so_id"]);
         }
-
+            
         if ($data["product_variant_id"]) {
             $result->where("product_variant_id", "=" ,$data["product_variant_id"]);
         }
-
+        
         $result->orderBy("created_at", "asc");
         $result= $result->get();
         foreach ($result as $key => $value) {
             $pv = ProductVariant::find($value->product_variant_id);
             $p = Product::find($pv->product_id);
-            $u = Unit::find($p->unit_id);
-            $value->unit_id = $u->unit_id;
+            $u = Unit::find($value->unit_id);
             $value->unit_name = $u->unit_name;
 
             $value->units = json_decode($p->product_unit);

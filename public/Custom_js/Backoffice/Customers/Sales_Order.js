@@ -332,7 +332,14 @@
         products = [];
         mode=2;
         $('#add_sales_order .modal-title').html("Update Pesanan Penjualan");
+        // reset
         $('#add_sales_order input').empty().val("");
+        $('#so_customer, #sales_id').empty();
+        $('#so_discount').val(0).trigger('blur');
+        $('#so_cost').val(0).trigger('blur');
+        $('#so_ppn').val(0).trigger('blur');
+        $('.form-select').not("#so_payment").empty();
+        
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
         if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date)
