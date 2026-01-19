@@ -113,13 +113,13 @@
                         <td>{{ empty($item['product_variant_sku']) ? '-' : $item['product_variant_sku'] }}</td>
                         <td>{{ $item['pr_name'] ?? '-' }}</td>
                         <td>{{ empty($item['product_variant_name']) ? '-' : $item['product_variant_name'] }}</td>
-                        <td>{{ $item['stod_system'] }}</td>
+                        <td>{{ $item['stod_system'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
-                        <td>{{ $item['stod_real'] }}</td>
+                        <td>{{ $item['stod_real'] ?? '-' }}</td>
 
-                        <td>{{ $item['stod_selisih'] }}</td>
+                        <td>{{ $item['stod_selisih'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         

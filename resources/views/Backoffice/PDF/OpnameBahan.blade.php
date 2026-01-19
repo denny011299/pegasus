@@ -109,13 +109,13 @@
                 @foreach ($detail as $item)
                     <tr>
                         <td>{{ $item['supplies_name'] ?? '-' }}</td>
-                        <td>{{ $item['stobd_system'] }}</td>
+                        <td>{{ $item['stobd_system'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
-                        <td>{{ $item['stobd_real'] }}</td>
+                        <td>{{ $item['stobd_real'] ?? '-' }}</td>
 
-                        <td>{{ $item['stobd_selisih'] }}</td>
+                        <td>{{ $item['stobd_selisih'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
