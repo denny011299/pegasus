@@ -1893,7 +1893,7 @@
                 <form action="#">
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
+                            <div class="row mb-3">
                                 <div class="col-lg-4 col-md-6 mb-2">
                                     <p class="text-muted">Nama Supplier</p>
                                     <p class="text-black" id="supplier_name"></p>
@@ -1916,7 +1916,31 @@
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-12 py-3 mb-3">
+                                <div class="col-12 pe-0 pt-3 row">
+                                    <div class="col-lg-4 col-md-12">
+                                        <div class="input-block mb-3">
+                                            <label>Dari</label>
+                                            <div>
+                                                <input type="date" class="form-control" id="start_date">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4 col-md-12">
+                                        <div class="input-block mb-3">
+                                            <label>Sampai</label>
+                                            <div>
+                                                <input type="date" class="form-control" id="end_date">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-1 col-sm-0"></div>
+                                    <div class="col-lg-3 col-md-12 pt-4 pe-0 text-end">
+                                        <a class="btn btn-outline-secondary btn-clear">
+                                            Clear
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-12 pb-3 mb-3">
                                     <div class="table-scroll overflow-x-auto">
                                         <table class="table table-center" id="tablePo" style="min-height: 15vh">
                                             <thead>
@@ -1937,7 +1961,7 @@
                                     <p class="text-black fw-bold" id="supplier_payment_bawah"></p>
                                 </div>
                                 <button type="button" data-bs-dismiss="modal"
-                                    class="btn btn-back cancel-btn me-2">Kembali</button>
+                                    class="btn btn-back cancel-btn">Kembali</button>
                             </div>
                         </div>
                     </div>

@@ -72,7 +72,7 @@ class SupplierController extends Controller
         $total = 0;
         foreach (json_decode($req->po_detail, true) as $key => $value) {
             $total += $value["pod_subtotal"];
-            (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
+            // (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
         }
         $p = PurchaseOrder::find($req->po_id);
         $p->po_total = $total;
@@ -509,7 +509,7 @@ class SupplierController extends Controller
         }
         $s = Supplier::find($data["po_supplier"]);
         $due  = date('Y-m-d', strtotime('+'.$s->supplier_top.' days'));
-        (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$data["po_total"],"status"=>1,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
+        (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$po->po_total,"status"=>1,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
         $po->status = 2; // Lunas
         $po->save();
         return $due;

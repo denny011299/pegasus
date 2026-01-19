@@ -21,6 +21,7 @@ class PurchaseOrder extends Model
             "hutang" => 0,
             "dates" => null,
             "pembayaran" => null,
+            "status" => null,
         ], $data);
 
         $result = PurchaseOrder::where("status", ">=", 1);
@@ -28,6 +29,7 @@ class PurchaseOrder extends Model
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
         if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);
+        if ($data["status"]) $result->where("status", "=", $data["status"]);
         if ($data["pembayaran"] && $data["pembayaran"] >= 0){
             if ($data["pembayaran"] == 4){
                 $result->where('status', 1)->where('pembayaran', 1);

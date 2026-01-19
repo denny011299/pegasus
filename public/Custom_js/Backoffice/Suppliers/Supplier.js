@@ -1,5 +1,7 @@
     var mode=1;
     var table;
+    var activeId = 0;
+    var dates = null;
     $(document).ready(function(){
         inisialisasi();
         refreshSupplier();
@@ -26,7 +28,7 @@
                 { data: "supplier_code" },
                 { data: "supplier_phone" },
                 { data: "city_name" },
-                { data: "supplier_payment" },
+                { data: "pay" },
                 { data: "created" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -51,6 +53,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].pay = `Rp ${formatRupiah(e[i].payment)}`;
                     // <a class="me-2 btn-action-icon p-2 btn_view" href="/supplierDetail/${e[i].supplier_id}" data-bs-target="#view-supplier">
                     //     <i class="fe fe-eye"></i>
                     // </a>
@@ -88,6 +91,7 @@
         $('#supplier_phone').html(data.supplier_phone);
         $('#supplier_address').html(data.supplier_address);
         $('#supplier_notes').html(data.supplier_notes || "-" );
+        activeId = data.supplier_id;
         getPo(data.supplier_id);
     })
 
@@ -97,6 +101,9 @@
             method: 'get',
             data: {
                 po_supplier: id,
+                pembayaran: 1,
+                dates: dates,
+                status: 2
             },
             success: function(e){
                 console.log(e);
@@ -168,3 +175,27 @@
             }
         });
     });
+
+    $(document).on('change', '#start_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        getPo(activeId);
+    })
+    $(document).on('change', '#end_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        getPo(activeId);
+    })
+
+    $(document).on('click', '.btn-clear', function(){
+        dates = null;
+        $('#start_date').val("");
+        $('#end_date').val("");
+        getPo(activeId);
+    })

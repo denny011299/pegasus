@@ -38,6 +38,15 @@ class Supplier extends Model
 
             $b = Bank::find($value->bank_id);
             $value->bank_name = $b->bank_kode??"-";
+
+            $total = 0;
+            $value->po = PurchaseOrder::where('po_supplier', $value->supplier_id)
+                ->where('pembayaran', 1)
+                ->where('status', 2)->get();
+            foreach ($value->po as $key => $p) {
+                $total += $p->po_total;
+            }
+            $value->payment = $total;
         }
         return $result;
     }

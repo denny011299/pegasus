@@ -57,7 +57,7 @@
                                             <th>Kode Pemasok</th>
                                             <th>Telepon</th>
                                             <th>Kota</th>
-                                            <th>Total Pembayaran</th>
+                                            <th>Total Hutang</th>
                                             <th>Dibuat Pada</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
