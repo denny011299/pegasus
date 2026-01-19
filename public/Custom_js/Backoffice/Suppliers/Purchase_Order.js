@@ -229,10 +229,14 @@
                         <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" >
                             <i class="fe fe-eye"></i>
                         </a>
-                        <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
                     `;
+                    if (e[i].status == 1){
+                        e[i].action += `
+                            <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                            </a>
+                        `;
+                    }
                 }
 
                 table.rows.add(e).draw();

@@ -63,7 +63,9 @@ class PurchaseOrder extends Model
 
         foreach ($result as $key => $value) {
             $value->po_supplier_name = Supplier::find($value->po_supplier)->supplier_name;
-            $value->poi_due = PurchaseOrderDetailInvoice::find($value->po_id)->poi_due ?? "";
+            $inv = PurchaseOrderDetailInvoice::find($value->po_id);
+            $value->poi_due = $inv->poi_due ?? "";
+            $value->poi_code = $inv->poi_code ?? "";
             // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
             // contoh:
             // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";

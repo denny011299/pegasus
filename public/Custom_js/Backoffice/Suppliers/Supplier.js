@@ -126,7 +126,7 @@
                     <tr class="row-po" data-id="${e.po_id}">
                         <td>${moment(e.po_date).format('D MMM YYYY')}</td>
                         <td>${e.poi_due ? moment(e.poi_due).format('D MMM YYYY') : "-"}</td>
-                        <td>${e.po_number}</td>
+                        <td>${e.poi_code}</td>
                         <td class="fw-bold">Rp ${formatRupiah(e.po_total)}</td>
                     </tr>
                 `)
