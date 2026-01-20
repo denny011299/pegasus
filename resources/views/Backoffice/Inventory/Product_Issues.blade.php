@@ -63,7 +63,6 @@
                                                 <tr>
                                                     <th>Tanggal Pengembalian</th>
                                                     <th>Kode</th>
-                                                    <th>Ref. SO</th>
                                                     <th>Catatan</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>
@@ -81,7 +80,7 @@
                                                 <tr>
                                                     <th>Tanggal Pengembalian</th>
                                                     <th>Kode</th>
-                                                    <th>Ref. PO</th>
+                                                    <th>Referensi</th>
                                                     <th>Catatan</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>

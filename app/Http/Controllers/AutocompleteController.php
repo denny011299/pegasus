@@ -455,33 +455,14 @@ class AutocompleteController extends Controller
 
         $p = new PurchaseOrder();
         $data_city = $p->getPurchaseOrder([
-            "po_id" => $keyword
+            "po_id" => $keyword,
+            "pembayaran" => 1
         ]);
 
 
         foreach ($data_city as $r) {
-            $r->id = $r["po_number"];
-            $r->text = $r["po_number"] . ' - ' . $r['po_supplier_name'];
-        };
-
-        echo json_encode(array(
-            "data" => $data_city
-        ));
-    }
-
-    public function autocompleteSO(Request $req)
-    {
-        $keyword = isset($req->keyword) ? $req->keyword : null;
-
-        $p = new SalesOrder();
-        $data_city = $p->getSalesOrder([
-            "so_id" => $keyword
-        ]);
-
-
-        foreach ($data_city as $r) {
-            $r->id = $r["so_number"];
-            $r->text = $r["so_number"] . ' - ' . $r['customer_name'];
+            $r->id = $r["poi_id"];
+            $r->text = $r['po_supplier_name'] . ' - ' . $r['poi_code'];
         };
 
         echo json_encode(array(

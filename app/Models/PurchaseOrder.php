@@ -24,7 +24,7 @@ class PurchaseOrder extends Model
             "status" => null,
         ], $data);
 
-        $result = PurchaseOrder::where("status", ">=", 1);
+        $result = PurchaseOrder::where("status", ">=", -1);
 
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
@@ -36,6 +36,9 @@ class PurchaseOrder extends Model
             }
             else if ($data["pembayaran"] == 1){
                 $result->where('status', 2)->where('pembayaran', 1);
+            }
+            else if ($data["pembayaran"] == 5){
+                $result->where('status', -1);
             }
             else{
                 $result->where("pembayaran", "=", $data["pembayaran"]);
@@ -63,9 +66,10 @@ class PurchaseOrder extends Model
 
         foreach ($result as $key => $value) {
             $value->po_supplier_name = Supplier::find($value->po_supplier)->supplier_name;
-            $inv = PurchaseOrderDetailInvoice::find($value->po_id);
+            $inv = PurchaseOrderDetailInvoice::where('po_id', $value->po_id)->first();
             $value->poi_due = $inv->poi_due ?? "";
             $value->poi_code = $inv->poi_code ?? "";
+            $value->poi_id = $inv->poi_id ?? "";
             // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
             // contoh:
             // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";

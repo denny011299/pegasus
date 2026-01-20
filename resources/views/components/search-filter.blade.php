@@ -298,7 +298,7 @@
                             <label>Status</label>
                             <select class="form-select fill" id="status">
                                 <option value="1" selected>Belum Terbayar</option>
-                                <option value="3">Menunggu Approval</option>
+                                <option value="3">Menunggu Tanda Terima</option>
                                 <option value="2">Terbayar</option>
                             </select>
                         </div>
@@ -357,6 +357,7 @@
                                 <option value="1">Belum Terbayar</option>
                                 <option value="3">Menunggu Tanda Terima</option>
                                 <option value="2">Terbayar</option>
+                                <option value="5">Ditolak</option>
                             </select>
                         </div>
                     </div>

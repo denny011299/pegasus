@@ -45,11 +45,11 @@
         // $('#add-product-issues select').val(1);
 
         $('.is-invalid').removeClass('is-invalid');
-        $("#pi_date, #pi_type, #pi_notes, #tipe_return").prop("disabled", false);
+        $("#pi_date, #pi_type, #pi_notes, #tipe_return, #ref_num").prop("disabled", false);
         $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').show();
         $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
         $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
-        $("#pi_type,#tipe_return,#product_id,#supplies_id,#unit_id").prop("disabled", false);
+        $("#product_id,#supplies_id,#unit_id").prop("disabled", false);
         
         $('#btn-foto-bukti').show();
         $('#btn-lihat-bukti').hide();
@@ -83,7 +83,6 @@
             columns: [
                 { data: "date", width: "15%" },
                 { data: "pi_code", class: "width: 15%" },
-                { data: "ref_num_text", width: "10%" },
                 { data: "pi_notes", width: "20%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -136,7 +135,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach(item => {
                     item.date = moment(item.pi_date).format('D MMM YYYY');
-                    item.ref_num_text = item.ref_num || "-";
+                    item.ref_num_text = item.poi_code || "-";
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
                             <i class="fe fe-eye"></i>
@@ -187,68 +186,6 @@
         });
     });
 
-    $(document).on('change', '#ref_num', function(){
-        var tipe = $('#tipe_return').val();
-
-        if (tipe == 1){
-            $.ajax({
-                url: '/getPurchaseOrder',
-                method: "get",
-                data: {
-                    po_number: $(this).val()
-                },
-                success: function (e) {
-                    items = [];
-                    e.forEach(po => {
-                        po.items.forEach(element => {
-                            var data  = {
-                                "supplies_variant_id": element.supplies_variant_id,
-                                "supplies_name": `${element.pod_variant}`,
-                                "pid_qty": element.pod_qty,
-                                "unit_name": element.unit_name,
-                                "unit_id": element.unit_id,
-                            };
-                            items.push(data);
-                        });
-                    });
-                    addRow(2);
-                },
-                error: function (e) {
-                    console.log(e);
-                },
-            })
-        }
-        else if (tipe == 2){
-            $.ajax({
-                url: '/getSalesOrder',
-                method: "get",
-                data: {
-                    so_number: $(this).val()
-                },
-                success: function (e) {
-                    console.log(e);
-                    items = [];
-                    e.forEach(so => {
-                        so.items.forEach(element => {
-                            var data  = {
-                                "product_variant_id": element.product_variant_id,
-                                "product_name": `${element.sod_nama} ${element.sod_variant}`,
-                                "pid_qty": element.sod_qty,
-                                "unit_name": element.unit_name,
-                                "unit_id": element.unit_id,
-                            };
-                            items.push(data);
-                        });
-                    });
-                    addRow(1);
-                },
-                error: function (e) {
-                    console.log(e);
-                },
-            })
-        }
-    })
-
     $(document).on('change', '#tipe_return', function(){
         items = [];
         $('#ref_num').empty();
@@ -287,7 +224,9 @@
             $('#tableProduct tr.row-supplies').remove();
             $('#tableProduct tr.row-product').remove();
             $('#tableProduct #header_name').html("Nama Bahan Mentah");
-            $('#labelRef').html(`Ref. PO<span class="text-danger">*</span>`);
+            // Untuk show ref Invoice PO
+            $('.ref').show();
+            $("#ref_num").addClass("fill");
         }
         else if ($(this).val() == 2) {
             $(".input_table").html(`
@@ -319,12 +258,13 @@
                 </div>    
             `);
             autocompleteProductVariantOnly("#product_id", "#add-product-issues");
-            autocompleteSO("#ref_num", "#add-product-issues");
             $('#pi_type').val(1);
             $('#tableProduct tr.row-supplies').remove();
             $('#tableProduct tr.row-product').remove();
             $('#tableProduct #header_name').html("Nama Produk");
-            $('#labelRef').html(`Ref. SO<span class="text-danger">*</span>`);
+            // Untuk hide ref Invoice PO
+            $('.ref').hide();
+            $("#ref_num").removeClass("fill");
         }
         loadPiType();
     })
@@ -401,7 +341,14 @@ function loadPiType() {
             },
             success: function (e) {
                 console.log(e);
-                if (e == -1)
+                if (typeof e === "object") {
+                    notifikasi(
+                        "error",
+                        "Gagal Insert",
+                        e.message
+                    );
+                }
+                else if (e == -1)
                     notifikasi(
                         "error",
                         "Gagal Insert",
@@ -593,6 +540,7 @@ $(document).on("click", ".btn_edit", function () {
     $("#pi_notes").val(data.pi_notes);
     $("#pi_type").empty();
     $('#tipe_return').val(data.tipe_return).trigger('change');
+    $('#ref_num').append(`<option value="${data.ref_num}">${data.supplier_name} - ${data.poi_code}</option>`);
     $('#tableProduct tr.row-product').remove();
     $('#tableProduct tr.row-supplies').remove();
     items = [];
@@ -626,7 +574,7 @@ $(document).on("click", ".btn_edit", function () {
         });
     }
     
-    $("#pi_type,#tipe_return").prop("disabled", true);
+    $("#pi_type,#tipe_return, #ref_num").prop("disabled", true);
     $("#pi_date, #pi_notes").prop("disabled", false);
     $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').show();
     $('.is-invalid').removeClass('is-invalid');

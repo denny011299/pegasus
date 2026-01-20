@@ -218,6 +218,8 @@
                         } else {
                             e[i].status_po = `<span class="badge bg-primary" style="font-size: 12px">Menunggu Tanda Terima</span>`;
                         }
+                    } else if (e[i].status == -1){
+                        e[i].status_po = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
                     
                     e[i].pembayaran_text = `<label class="badge bg-secondary badgeStatus">Belum Lunas</label>`;
@@ -258,6 +260,7 @@
     });
 
     $(document).on('change', '#status', function(){
+        console.log($(this).val());
         refreshPurchaseOrder();
     })
 

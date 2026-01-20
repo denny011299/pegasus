@@ -72,7 +72,7 @@ class SupplierController extends Controller
         $total = 0;
         foreach (json_decode($req->po_detail, true) as $key => $value) {
             $total += $value["pod_subtotal"];
-            // (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
+            (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
         }
         $p = PurchaseOrder::find($req->po_id);
         $p->po_total = $total;

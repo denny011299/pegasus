@@ -415,8 +415,8 @@
                                     </div>
                                 </div>
                                 <div class="col-lg-6">
-                                    <div class="input-block mb-3">
-                                        <label class="form-label" id="labelRef">Ref. PO<span class="text-danger">*</span></label>
+                                    <div class="input-block mb-3 ref">
+                                        <label class="form-label">Ref. PO<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="ref_num"></select>
                                     </div>
                                 </div>

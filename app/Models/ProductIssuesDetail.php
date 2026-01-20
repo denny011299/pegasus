@@ -54,7 +54,25 @@ class ProductIssuesDetail extends Model
             $itemId = $data['supplies_variant_id'];
             $m = SuppliesVariant::find($itemId);
             $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
+            $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
+            $po = PurchaseOrder::find($inv->po_id);
+            $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
+
+            // pengurangan qty invoice
+            $total = 0;
+            foreach ($pod as $key => $value) {
+                if ($data['supplies_variant_id'] == $value['supplies_variant_id'] && $data['unit_id'] == $value['unit_id']){
+                    $value['pod_qty'] -= $data['pid_qty'];
+                    $value['pod_subtotal'] = $value['pod_harga'] * $value['pod_qty'];
+                    $value->save();
+                }
+                $total += $value['pod_subtotal'];
+            }
+
+            $inv->poi_total = $total;
+            $inv->save();
             
+            // pengurangan qty stok
             $stocks = $s->ss_stock ?? 0;
             if ($stocks - $data["pid_qty"] >= 0) {
                 $stocks -= $data["pid_qty"];
@@ -103,9 +121,30 @@ class ProductIssuesDetail extends Model
             $m = SuppliesVariant::find($itemId);
             $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
             
+            $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
+            $po = PurchaseOrder::find($inv->po_id);
+            $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
+
+            // pengurangan qty invoice
+            $total = 0;
+            foreach ($pod as $key => $value) {
+                if ($data['supplies_variant_id'] == $value['supplies_variant_id'] && $data['unit_id'] == $value['unit_id']){
+                    if (($value['pod_qty'] - $data['pid_qty']) >= 0) {
+                        $value['pod_qty'] -= $data['pid_qty'];
+                        $value['pod_subtotal'] = $value['pod_harga'] * $value['pod_qty'];
+                        $value->save();
+                    }
+                    else return -1;
+                }
+                $total += $value['pod_subtotal'];
+            }
+
+            $inv->poi_total = $total;
+            $inv->save();
+            
             if($m->pid_qty != $data["pid_qty"]){
-                $s->ss_stock += $t->pid_qty;
-                if ($s->ss_stock - $data["pid_qty"] > 0) {
+                if ($s->ss_stock + $t->pid_qty - $data["pid_qty"] >= 0) {
+                    $s->ss_stock += $t->pid_qty;
                     $s->ss_stock -= $data["pid_qty"];
                 } else {
                     return -1;
@@ -152,6 +191,23 @@ class ProductIssuesDetail extends Model
             $s = SuppliesStock::where('supplies_id',$m->supplies_id)->where('unit_id',$t->unit_id)->first();
             $s->ss_stock += $t->pid_qty;
             $s->save();
+
+            $inv = PurchaseOrderDetailInvoice::find($t['ref_num']);
+            $po = PurchaseOrder::find($inv->po_id);
+            $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
+            // pengurangan qty invoice
+            $total = 0;
+            foreach ($pod as $key => $value) {
+                if ($t['supplies_variant_id'] == $value['supplies_variant_id'] && $t['unit_id'] == $value['unit_id']){
+                    $value['pod_qty'] += $t->pid_qty;
+                    $value['pod_subtotal'] = $value['pod_harga'] * $value['pod_qty'];
+                    $value->save();
+                }
+                $total += $value['pod_subtotal'];
+            }
+            $inv->poi_total = $total;
+            $inv->save();
+
             return $m;
         }else if($pi->tipe_return == 2){
             $m = ProductVariant::find($t->product_variant_id);
