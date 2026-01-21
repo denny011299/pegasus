@@ -1,6 +1,7 @@
     var mode=1;
     var table;
     var products = [];
+    var list_photo;
     autocompleteCustomer('#so_customer', "#add_sales_order");
     autocompleteStaffSales('#sales_id', "#add_sales_order");
     autocompleteProductVariant('#so_sku', "#add_sales_order");
@@ -29,7 +30,8 @@
         $('.btn-save').html(mode == 1?"Tambah Penjualan" : "Update Penjualan");
         $('#add_sales_order').modal("show");
         updateTotal();
-        
+        $('#btn_bukti_foto').show();
+        $('#btn-lihat-bukti').hide();
         let today = new Date();
         let yyyy = today.getFullYear();
         let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -247,6 +249,7 @@
                 $(this).addClass('is-invalid');
             }
         });
+
         if($('#so_customer').val()==null||$('#so_customer').val()=="null"||$('#so_customer').val()==""){
             valid=-1;
             $('#row-pelanggan .select2-selection--single').addClass('is-invalids');
@@ -264,15 +267,23 @@
             return false;
         }
 
+        if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+            notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
+            return false;
+        }
+
         param = {
             so_customer: $('#so_customer').val(),
             sales_id: $('#sales_id').val(),
             so_date: $('#so_date').val(),
+            so_invoice_no: $('#so_invoice_no').val(),
             so_total: convertToAngka($('#value_grand').html()),
             so_ppn: convertToAngka($('#so_ppn').val()),
             so_cost: convertToAngka($('#so_cost').val()),
             so_discount: convertToAngka($('#so_discount').val()),
             products: JSON.stringify(products),
+            
             _token:token
         };
         console.log(products)
@@ -281,6 +292,9 @@
             url="/updateSalesOrder";
             param.so_id = $('#add_sales_order').attr("so_id");
             param.so_number = $('#add_sales_order').attr("so_number");
+        }
+        else{
+            param.so_img = $('#bukti').val();
         }
 
         LoadingButton($(this));
@@ -340,13 +354,27 @@
         $('#so_ppn').val(0).trigger('blur');
         $('.form-select').not("#so_payment").empty();
         
+        $('#btn_bukti_foto').hide();
+        $('#btn-lihat-bukti').show();
+        
+        var img = JSON.parse(data.so_img);
+        list_photo = img;
+        console.log(list_photo);
+        
+        $('#modalViewPhoto .modal-footer').show();
+        $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
+
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
         if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date)
         $('#so_discount').val(data.so_discount)
         $('#so_ppn').val(data.so_ppn)
         $('#so_cost').val(data.so_cost)
+        $('#so_invoice_no').val(data.so_invoice_no)
         $('#so_payment').val(data.so_payment)
+        $('#bukti').val(data.so_img)
         data.items.forEach(e => {
             var temp = {
                 "sod_id" : e.sod_id,
@@ -405,3 +433,60 @@
             }
         });
     });
+
+    
+$(document).on('click', '#btn_bukti_foto', function() {
+    rotationAngle = 0;
+    camRotation = 0;
+    photoData = "";
+    modeCamera=3;
+    inputFile ="#bukti";
+    $("#video").removeClass("rot90 rot180 rot270");
+    $("#preview-box").hide();
+    $("#camera").show();
+
+    startCamera();
+    $("#add_sales_order").modal("hide");
+    $('#modalPhoto').modal('show');
+    console.log($('#bukti').val());
+});
+
+$(document).on('click', '#uploadBtn', function(){
+    if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
+        $('#check_foto').show();
+    } else {
+        $('#check_foto').hide();
+    }
+})
+
+$(document).on("click", "#btn-lihat-bukti", function () {
+    $("#add_sales_order").modal("hide");
+    $('#modalViewPhoto').modal("show");
+});
+
+$(document).on("hidden.bs.modal", "#modalViewPhoto", function () {
+    $("#add_sales_order").modal("show");
+     $('#modalViewPhoto').modal("hide");
+});
+
+$(document).on('click', '.btn-prev', function(){
+    var index = parseInt($('#fotoProduksiImage').attr('index'));
+    console.log("index : "+index);
+    
+    if(index > 0){
+        index -= 1;
+        $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[index]);
+        $('#fotoProduksiImage').attr('index', index);
+        $('#btn_download_photo').attr('href', public+"issue/"+list_photo[index]);
+    }
+});
+$(document).on('click', '.btn-next', function(){
+    var index = parseInt($('#fotoProduksiImage').attr('index'));
+    console.log("index : "+index);
+    if(index < list_photo.length - 1){
+        index += 1;
+        $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[index]);
+        $('#fotoProduksiImage').attr('index', index);
+        $('#btn_download_photo').attr('href', public+"issue/"+list_photo[index]);
+    }
+});

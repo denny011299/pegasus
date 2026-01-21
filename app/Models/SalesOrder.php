@@ -59,6 +59,8 @@ class SalesOrder extends Model
         $t->so_ppn  = $data["so_ppn"];
         $t->so_discount  = $data["so_discount"];
         $t->so_cost  = $data["so_cost"];
+        $t->so_img  = $data["so_img"];
+        $t->so_invoice_no  = $data["so_invoice_no"];
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = $data['sales_id'];
         $t->save();
@@ -108,6 +110,7 @@ class SalesOrder extends Model
         $t->so_ppn  = $data["so_ppn"];
         $t->so_discount  = $data["so_discount"];
         $t->so_cost  = $data["so_cost"];
+        $t->so_invoice_no  = $data["so_invoice_no"];
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = $data['sales_id'];
         $t->save();

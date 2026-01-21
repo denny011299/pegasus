@@ -89,6 +89,7 @@ class PurchaseOrder extends Model
         $t->po_ppn      = $data["po_ppn"] ?? 0;
         $t->po_discount = $data["po_discount"] ?? 0;
         $t->po_cost     = $data["po_cost"] ?? 0;
+        $t->po_img      = $data["po_img"] ?? null;
         $t->status      = 1;
         $t->save();
 
@@ -106,6 +107,7 @@ class PurchaseOrder extends Model
         $t->po_discount = $data["po_discount"] ?? 0;
         $t->po_cost     = $data["po_cost"] ?? 0;
         $t->status      = $data["status"] ?? $t->status;
+        $t->po_img      = $data["po_img"] ?? null;
         $t->save();
 
         return $t->po_id;

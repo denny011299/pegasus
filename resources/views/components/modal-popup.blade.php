@@ -394,7 +394,7 @@
                                             </span>
                                         </label>
                                         <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                        
                                         <input type="hidden" name="" id="bukti">
                                     </div>
                                 </div>
@@ -730,6 +730,20 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label>No. Invoice</label>
+                                            <input id="so_invoice_no" class="form-control fill">
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label>Bukti Foto</label><br>
+                                            <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                            <input type="hidden" name="" id="bukti">
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col-12 row">
                                     <div class="col-6">
@@ -979,6 +993,14 @@
                                                 <span class="input-group-text">Rp </span>
                                                 <input type="text" class="form-control fill number-only nominal_only" id="po_cost" value="0" placeholder="Input Biaya Pengiriman">
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label>Foto Bukti</label><br>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                            <input type="hidden" name="" id="bukti">
                                         </div>
                                     </div>
                                 </div>
