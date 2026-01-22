@@ -32,7 +32,7 @@ class PurchaseOrderDetailInvoice extends Model
 
         $result = PurchaseOrderDetailInvoice::where('purchase_order_detail_invoices.status','>=',0);
         $result->join('purchase_orders','purchase_orders.po_id','=','purchase_order_detail_invoices.po_id');
-        $result->where('purchase_orders.status','>',1);
+        $result->where('purchase_orders.status','>=',-1);
         
         if ($data["poi_id"]) {
             $result->where("purchase_order_detail_invoices.poi_id", "=", $data["poi_id"]);
@@ -47,7 +47,11 @@ class PurchaseOrderDetailInvoice extends Model
         }
         
         if ($data["status"]) {
-            $result->where("purchase_orders.pembayaran", "=", $data["status"]);
+            if ($data["status"] == 5){
+                $result->where('purchase_orders.status', -1);
+            } else{
+                $result->where("purchase_orders.pembayaran", "=", $data["status"])->where("purchase_orders.status", '>', 0);
+            }
         }
         
         if ($data["po_supplier"]) {

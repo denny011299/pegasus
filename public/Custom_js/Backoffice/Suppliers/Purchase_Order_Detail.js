@@ -10,8 +10,10 @@
         inisialisasi();
         refresh();
         refreshSummary();
-        $('#po_status').val(data.pembayaran).trigger('change');
-        $('#poi_due').val(data.poi_due ? moment(data.poi_due).format('D MMMM YYYY') : '-');
+        console.log(data);
+        if (data.status == -1) $('#po_status').val(data.status).trigger('change');
+        else $('#po_status').val(data.pembayaran).trigger('change');
+        $('#poi_due').val(data.poi_due != "-" ? moment(data.poi_due).format('D MMMM YYYY') : '-');
         $('#po_date').val(data.po_date ? moment(data.po_date).format('D MMMM YYYY') : '-');
    
         $('.save-terima,.save-tolak,.save-qty').hide();

@@ -42,7 +42,12 @@
                                                     <input type="text" class="form-control fill" value="{{ $data['po_number'] }}" id="po_number" disabled>
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-md-4"></div>
+                                            <div class="col-12 col-md-4">
+                                                <div class="input-block">
+                                                    <label>Nomor Invoice</label>
+                                                    <input type="text" class="form-control fill" value="{{ $data['poi_code'] }}" id="po_number" disabled>
+                                                </div>
+                                            </div>
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Tanggal PO</label>
@@ -62,8 +67,8 @@
                                                     <select id="po_status" class="form-control fill" disabled>
                                                         <option value="">Pilih Status</option>
                                                         <option value="1">Belum Terbayar</option>
-                                                        <option value="3">Menunggu Approval</option>
-                                                        <option value="2">Approval</option>
+                                                        <option value="3">Menunggu Tanda Terima</option>
+                                                        <option value="2">Terbayar</option>
                                                         <option value="-1">Ditolak</option>
                                                     </select>
                                                 </div>

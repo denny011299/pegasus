@@ -91,6 +91,8 @@
         $('#supplier_phone').html(data.supplier_phone);
         $('#supplier_address').html(data.supplier_address);
         $('#supplier_notes').html(data.supplier_notes || "-" );
+        $('#supplier_payment').html(`Rp ${formatRupiah(data.payment)}`);
+        $('#status').val(1).trigger('change');
         activeId = data.supplier_id;
         getPo(data.supplier_id);
     })
@@ -101,9 +103,8 @@
             method: 'get',
             data: {
                 po_supplier: id,
-                pembayaran: 1,
                 dates: dates,
-                status: 2
+                pembayaran: $('#status').val()
             },
             success: function(e){
                 console.log(e);
@@ -126,7 +127,7 @@
                     <tr class="row-po" data-id="${e.po_id}">
                         <td>${moment(e.po_date).format('D MMM YYYY')}</td>
                         <td>${e.poi_due ? moment(e.poi_due).format('D MMM YYYY') : "-"}</td>
-                        <td>${e.poi_code}</td>
+                        <td>${e.poi_code || "-"}</td>
                         <td class="fw-bold">Rp ${formatRupiah(e.po_total)}</td>
                     </tr>
                 `)
@@ -136,14 +137,13 @@
             $('#tablePo tbody').append(`
                 <tr class="empty-data">
                     <td colspan="4" class="text-center text-muted py-4">
-                        Tidak ditemukan adanya pembelian di supplier ini
+                        Invoice tidak ditemukan
                     </td>
                 </tr>
             `);
         }
 
         $('#view_supplier .modal-title').html("Lihat Detail Supplier");
-        $('#supplier_payment').html(`Rp ${formatRupiah(hutang)}`);
         $('#supplier_payment_bawah').html(`Rp ${formatRupiah(hutang)}`);
         $("#view_supplier").modal("show");
     }
@@ -175,6 +175,10 @@
             }
         });
     });
+
+    $(document).on('change', '#status', function(){
+        getPo(activeId);
+    })
 
     $(document).on('change', '#start_date', function(){
         dates = [];

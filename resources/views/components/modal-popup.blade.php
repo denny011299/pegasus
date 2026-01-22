@@ -1917,7 +1917,7 @@
                             </div>
                             <div class="row">
                                 <div class="col-12 pe-0 pt-3 row">
-                                    <div class="col-lg-4 col-md-12">
+                                    <div class="col-lg-3 col-md-12">
                                         <div class="input-block mb-3">
                                             <label>Dari</label>
                                             <div>
@@ -1925,7 +1925,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-lg-4 col-md-12">
+                                    <div class="col-lg-3 col-md-12">
                                         <div class="input-block mb-3">
                                             <label>Sampai</label>
                                             <div>
@@ -1933,8 +1933,19 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-lg-1 col-sm-0"></div>
-                                    <div class="col-lg-3 col-md-12 pt-4 pe-0 text-end">
+                                    <div class="col-lg-4 col-md-12">
+                                        <div class="input-block mb-3">
+                                            <label>Status</label>
+                                            <select class="form-select fill" id="status">
+                                                <option value="4">Menunggu Approval</option>
+                                                <option value="1" selected>Belum Terbayar</option>
+                                                <option value="3">Menunggu Tanda Terima</option>
+                                                <option value="2">Terbayar</option>
+                                                <option value="5">Ditolak</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-2 col-md-12 pt-4 pe-0 text-end">
                                         <a class="btn btn-outline-secondary btn-clear">
                                             Clear
                                         </a>
@@ -1957,7 +1968,7 @@
 
                             <div class="modal-footer p-0 justify-content-between">
                                 <div class="">
-                                    <p class="text-black">Total Hutang</p>
+                                    <p class="text-black">Total</p>
                                     <p class="text-black fw-bold" id="supplier_payment_bawah"></p>
                                 </div>
                                 <button type="button" data-bs-dismiss="modal"

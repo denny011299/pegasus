@@ -67,6 +67,12 @@ class SupplierController extends Controller
         return response()->json($data);
     }
 
+    function getPurchaseOrderDetail(Request $req)
+    {
+        $data = (new PurchaseOrderDetail())->getPurchaseOrderDetail($req->all());
+        return response()->json($data);
+    }
+
     function updatePurchaseOrderDetail(Request $req)
     {
         $total = 0;

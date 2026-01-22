@@ -2,7 +2,7 @@
     var mode = 1; //1 = insert, 2 = edit, 3 = view
     var type = 1; //1 = all, 2 = In, 3 = Out
     var items = [];
-
+    var ids = [];
 
     $(document).ready(function(){
         inisialisasi();
@@ -31,6 +31,7 @@
     $(document).on('click','.btnAdd',function(){
         mode=1;
         items = [];
+        ids = [];
         $('#add-product-issues .modal-title').html("Tambah Produk Bermasalah");
         $('#add-product-issues input').val("");
         $('#pi_type').html(`
@@ -188,6 +189,7 @@
 
     $(document).on('change', '#tipe_return', function(){
         items = [];
+        ids = [];
         $('#ref_num').empty();
         if ($(this).val() == 1) {
             $(".input_table").html(`
@@ -455,12 +457,14 @@ function loadPiType() {
         if(idx==-1){
             var data  = {
                 "supplies_variant_id": temp.supplies_variant_id,
+                "supplies_id": temp.supplies_id,
                 "supplies_name": `${temp.supplies_name} ${temp.supplies_variant_name}`,
                 "pid_qty": parseInt($('#pid_qty').val()),
                 "unit_name": $('#unit_supplies_id option:selected').text(),
                 "unit_id": $('#unit_supplies_id').val(),
             };
             items.push(data);
+            // getInvoice(temp.supplies_variant_id);
         }
         addRow(2)
 
@@ -504,6 +508,7 @@ function loadPiType() {
                         </td>
                     </tr>    
                 `);
+                getInvoice(e.supplies_variant_id);
             });
         }
          
@@ -520,9 +525,37 @@ function loadPiType() {
         let row = $(this).closest("tr");
         let suppliesId = row.data("id");
         items = items.filter(e => e.supplies_variant_id != suppliesId);
-        console.log(items)
+        ids.forEach(element => {
+            
+        });
+        ids = ids.filter(e => e.supplies_variant_id != suppliesId);
         row.remove();
     });
+
+    function getInvoice(id) {
+        $.ajax({
+            url: '/getPurchaseOrderDetail',
+            method: 'get',
+            data: {
+                supplies_variant_id : id
+            },
+            success: function (e) {
+                e.forEach(element => {
+                    var detail = {
+                        "supplies_variant_id" : id,
+                        "po_id" : element.po_id
+                    }
+                    ids.push(detail);
+                });
+            }
+        })
+        let poIds = [];
+        ids.forEach(element => {
+            poIds.push(element.po_id);
+        });
+        console.log(poIds);
+        autocompletePO('#ref_num', '#add-product-issues', poIds);
+    }
 
 
 //edit
@@ -544,12 +577,15 @@ $(document).on("click", ".btn_edit", function () {
     $('#tableProduct tr.row-product').remove();
     $('#tableProduct tr.row-supplies').remove();
     items = [];
+    ids = [];
     
     if (data.tipe_return == 1) {
         data.items.forEach(e => {
+            console.log(e);
             var data  = {
                 "pid_id": e.pid_id,
                 "supplies_variant_id": e.item_id,
+                "supplies_id": e.supplies_id,
                 "supplies_name": e.sup_name,
                 "pid_qty": e.pid_qty,
                 "unit_name": e.unit_name,
@@ -612,6 +648,7 @@ $(document).on("click", ".btn_view", function () {
         data.items.forEach(e => {
             var data  = {
                 "supplies_variant_id": e.item_id,
+                "supplies_id": e.supplies_id,
                 "supplies_name": e.sup_name,
                 "pid_qty": e.pid_qty,
                 "unit_name": e.unit_name,

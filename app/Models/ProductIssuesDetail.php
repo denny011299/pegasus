@@ -28,6 +28,7 @@ class ProductIssuesDetail extends Model
             if ($data["tipe_return"] == 1){
                 $svr = SuppliesVariant::find($value->item_id);
                 $sup = Supplies::find($svr->supplies_id);
+                $value->supplies_id = $svr->supplies_id;
                 $value->sup_name = $sup->supplies_name." ".$svr->supplies_variant_name;
                 $value->sup_sku = $svr->supplies_variant_sku;
             }
