@@ -475,13 +475,13 @@
                                     </div>
                                 </div>
                                 <div class="col-lg-6"></div>
-                                <div class="col-lg-6 col-12">
+                                {{-- <div class="col-lg-6 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Produk</label>
                                         <select class="form-select fill" id="product_id"></select>
                                     </div>
-                                </div>
-                                <div class="col-lg-2 col-12">
+                                </div> --}}
+                                {{-- <div class="col-lg-2 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Qty Produksi</label>
                                         <input type="number" class="form-control fill number-only" id="production_qty" placeholder="Jumlah Produksi" value="1">
@@ -496,16 +496,48 @@
                                             </select>
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
                                 <div class="col-12 py-3 mb-3">
-                                    <table class="table table-center" id="tableSupply" style="min-height: 15vh">
+                                    <table class="table table-center" id="tableProduct" style="min-height: 15vh">
                                         <thead>
-                                            <th>Nama Bahan Mentah</th>
-                                            <th class="text-center">Jumlah</th>
+                                            <th>Nama Produk</th>
+                                            <th class="text-center">Qty</th>
                                             <th>Satuan</th>
+                                            <th class="text-center">Total</th>
+                                            <th class="no-sort text-center">Aksi</th>
                                         </thead>
                                         <tbody></tbody>
                                     </table>
+                                </div>
+                                <div class="col-12 px-2 mb-3">
+                                    <div class="row input_table g-3 align-items-end">
+                                        <div class="col-12 col-lg-4 add">
+                                            <div class="input-block mb-3" id="row-product">
+                                                <label>Nama Produk<span class="text-danger">*</span></label>
+                                                <select class="form-select fill_product" id="product_id"></select>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-lg-3 add">
+                                            <div class="input-block mb-3">
+                                                <label>Qty<span class="text-danger">*</span></label>
+                                                <input type="text"
+                                                    class="form-control fill_product number-only"
+                                                    id="production_qty"
+                                                    placeholder="Qty Produk">
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-lg-4 add">
+                                            <div class="input-block mb-3">
+                                                <label>Nama Satuan<span class="text-danger">*</span></label>
+                                                <select class="form-select fill_product" id="unit_id"></select>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-12 col-lg-1 add">
+                                            <button type="button" class="btn btn-primary w-100 btn-add-product mb-3">
+                                                +
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

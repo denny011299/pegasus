@@ -43,6 +43,7 @@ class Bom extends Model
         foreach ($result as $key => $value) {
             $v = ProductVariant::find($value->product_id);
             $value->product_sku = $v->product_variant_sku;
+            $value->product_variant_id = $v->product_variant_id;
             $u = Product::find($v->product_id);
             $value->product_name =  $u->product_name . " " . $v->product_variant_name;
             $value->product_variant_sku = $v->product_variant_sku;

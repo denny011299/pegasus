@@ -43,6 +43,7 @@ class Production extends Model
         $result = $result->get();
         foreach ($result as $key => $value) {
             $u = ProductVariant::find($value->production_product_id);
+            $value->product_variant_id = $u->product_variant_id;
             $value->product_sku = $u->product_variant_sku;
             $v = Product::find($u->product_id);
             $value->product_name = $v->product_name." ".$u->product_variant_name;

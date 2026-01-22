@@ -1,7 +1,7 @@
     autocompleteBom('#product_id', '#addProduction')
     var mode=1;
     var table;
-    var detail_supply = [];
+    var items = [];
     var list_photo =  [];
     $(document).ready(function(){
         $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
@@ -14,8 +14,8 @@
         $('#addProduction .modal-title').html("Tambah Produksi");
         $('#addProduction input').val("");
         $('#product_id').empty();
-        $('#production_qty').val(1);
-        $('#tableSupply tr.row-supply').remove();
+        $('#production_qty').val("");
+        $('#tableProduct tr.row-product').remove();
         $('.is-invalid').removeClass('is-invalid');
         $('#unit_id').html("");
         $('#unit_id').append("<option selected>Pilih Satuan</option>");
@@ -44,41 +44,13 @@
         console.log(data);
         
         $('#unit_id').html("");
-         data.pr_unit.forEach(element => {
-              $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
-         });
-         $('#unit_id').val(data.unit_id).trigger("change");
+        data.pr_unit.forEach(element => {
+            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
+        });
+        $('#unit_id').val(data.unit_id).trigger("change");
         $('#pi_unit option').first().prop('selected', true);
         
-        detail_supply = [];
-        $('#tableSupply tbody').html(`
-            <tr class="text-center pt-4">
-                <td class="pt-4" colspan="3">
-                
-                    <div class="text-center h-100">
-                        <div class="spinner-border" role="status">
-                        </div>
-                    </div>
-                </td>
-            </tr>       
-        `);
         $('#production_qty').trigger('keyup');
-        $.ajax({
-            url: "/getBom",
-            method: "get",
-            data: {
-                bom_id: data.bom_id
-            },
-            success: function (e) {
-                console.log(e[0])
-                detail_supply.push(e[0].details);
-                
-                addRow(e[0]);
-            },
-            error: function (err) {
-                console.error("Gagal load produksi:", err);
-            }
-        });
     })
 
     function inisialisasi() {
@@ -203,7 +175,7 @@
             production_product_id:dt.product_id,
             production_qty:$('#production_qty').val(),
             unit_id:$('#unit_id').val(),
-            detail:JSON.stringify(detail_supply),
+            detail:JSON.stringify(items),
             _token:token
         };
         LoadingButton($(this));
@@ -239,9 +211,9 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){
-                console.log(detail_supply[0])
+                console.log(items[0])
                 for (let i = 0; i < e.length; i++) {
-                    detail_supply[0].forEach(element => {
+                    items[0].forEach(element => {
                         if (e[i].supplies_id == element.supplies_id){
                             var need = element.bom_detail_qty * qtyInput;
                             console.log(need)
@@ -274,18 +246,81 @@
     }
 
     function addRow(e) {
-        $('#tableSupply tbody').html("");
-      
-        e.details.forEach(element => {
-            $('#tableSupply tbody').append(`
-                <tr class="row-supply" data-id="${element.supplies_id}">
-                    <td>${element.supplies_name}</td>
-                    <td class="text-center">${element.bom_detail_qty}</td>
+        $('#tableProduct tbody').html("");
+        e.forEach(element => {
+            console.log(element);
+            $('#tableProduct tbody').append(`
+                <tr class="row-product" data-id="${element.product_variant_id}">
+                    <td>${element.product_name}</td>
+                    <td class="text-center">${element.production_qty}</td>
                     <td>${element.unit_name}</td>
+                    <td class="text-center">${element.total}</td>
+                    <td class="text-center d-flex align-items-center">
+                        <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                        </a>
+                    </td>
                 </tr>    
             `)
-        });
+        })
     }
+
+    $(document).on('click', '.btn-add-product', function(){
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        var valid=1;
+        $("#addProduction .fill_product").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+        if($('#product_id').val()==null||$('#product_id').val()=="null"||$('#product_id').val()==""){
+            valid=-1;
+            $('#row-product .select2-selection--single').addClass('is-invalids');
+        }
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+            return false;
+        };
+        var temp = $('#product_id').select2("data")[0];
+        var idx = -1;
+        console.log(temp);
+        items.forEach(element => {
+            console.log(element);
+            if (element.product_variant_id == temp.product_variant_id && element.unit_id == temp.unit_id) {
+                element.production_qty += parseInt($('#production_qty').val());
+                element.total += (parseInt($('#production_qty').val()) * temp.bom_qty);
+                idx = 1;
+            }
+        });
+
+        if(idx==-1){
+            var data  = {
+                "product_variant_id": temp.product_variant_id,
+                "product_name": temp.product_name,
+                "production_qty": parseInt($('#production_qty').val()),
+                "unit_name": $('#unit_id option:selected').text(),
+                "unit_id": parseInt($('#unit_id').val()),
+                "total": (parseInt($('#production_qty').val()) * temp.bom_qty)
+            };
+            items.push(data);
+        }
+        addRow(items);
+
+        $('#product_id').empty();
+        $('#unit_id').empty();
+        $('#production_qty').val("");
+    })
+
+    $(document).on("click",".btn_delete_row_pr",function(){
+        let row = $(this).closest("tr");
+        let productId = row.data("id");
+        items = items.filter(e => e.product_variant_id != productId);
+        console.log(items)
+        row.remove();
+    });
     
 
 //delete
