@@ -45,7 +45,30 @@ class SupplierController extends Controller
 
     function InsertPurchaseOrder(Request $req)
     {
-        $data = (new PurchaseOrder())->InsertPurchaseOrder($req->all());
+        $data = $req->all();
+        $img = [];
+
+        foreach (json_decode($data["po_img"]) as $key => $value) {
+            $image = $value;
+
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+            // Decode
+            $imageData = base64_decode($image);
+
+            // Nama file
+            $imageName = 'photo_' . uniqid() . '.png';
+
+            // Path tujuan di public/produksi
+            $path = public_path('issue/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            array_push($img, $imageName);
+        }
+
+        $data["po_img"] = json_encode($img);
+        $data = (new PurchaseOrder())->InsertPurchaseOrder($data);
         foreach (json_decode($req->po_detail, true) as $key => $value) {
             $value["po_id"] = $data;
             $value["pod_nama"] = $value["supplies_name"];

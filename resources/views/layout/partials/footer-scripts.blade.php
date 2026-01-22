@@ -1153,6 +1153,20 @@ $(document).on("click", "#uploadBtn", function () {
             }
         });
     }
+    else if(modeCamera==3){
+        var ipt = JSON.parse($(inputFile).val()||"[]");
+        ipt.push(photoData);
+        $(inputFile).val(JSON.stringify(ipt));
+        $("#add_sales_order").modal("show");
+        $('#modalPhoto').modal('hide');
+    }
+    else if(modeCamera==4){
+        var ipt = JSON.parse($(inputFile).val()||"[]");
+        ipt.push(photoData);
+        $(inputFile).val(JSON.stringify(ipt));
+        $("#add_purchase_order").modal("show");
+        $('#modalPhoto').modal('hide');
+    }
     else{
         $(inputFile).val(photoData);
         $("#add-product-issues").modal("show");

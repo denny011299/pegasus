@@ -12,6 +12,7 @@ use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 
 class CustomerController extends Controller
 {
@@ -47,7 +48,26 @@ class CustomerController extends Controller
         if($valid==-1){
             return implode(", ",$p);
         }
+        $img = [];
+        foreach (json_decode($data["so_img"]) as $key => $value) {
+            $image = $value;
 
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+            // Decode
+            $imageData = base64_decode($image);
+
+            // Nama file
+            $imageName = 'photo_' . uniqid() . '.png';
+
+            // Path tujuan di public/produksi
+            $path = public_path('issue/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            array_push($img, $imageName);
+        }
+        $data["so_img"] = json_encode($img);
         $so = (new SalesOrder())->insertSalesOrder($data);
         if ($so->so_id == -1){
             return -1;

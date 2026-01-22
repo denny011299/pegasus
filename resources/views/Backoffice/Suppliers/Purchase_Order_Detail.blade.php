@@ -152,9 +152,12 @@
                                         </div>
 
                                         <div class="row pt-3">
-                                            <div class="col-12 text-end">
+                                            <div class="col-6">
+                                            </div>
+                                            <div class="col-6 text-end">
                                                 <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
                                                 <button class="btn btn-success save-terima" style="display: none">Terima</button>
+                                                <button type="button" class="btn btn-info text-light    " id="btn-lihat-bukti">Lihat Bukti Foto</button>
                                                 <button class="btn btn-primary save-qty">Simpan Perubahan</button>
                                             </div>
                                         </div>
@@ -237,6 +240,8 @@
     <script>
         var public = "{{ asset('') }}";    
         var data = @json($data);
+        console.log(data);
+        
     </script>
     <script src="{{asset('Custom_js/Backoffice/Suppliers/Purchase_Order_Detail.js')}}?v={{ time() }}"></script>
 @endsection

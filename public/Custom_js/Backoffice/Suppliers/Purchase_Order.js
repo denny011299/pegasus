@@ -29,6 +29,8 @@
         $('#add_purchase_order #po_cost').val(0);
         $('#add_purchase_order #po_date').val(moment().format('YYYY-MM-DD'));
         $('#add_purchase_order #po_supplier').empty();
+        $('#btn_bukti_foto').show();
+        $('#btn-lihat-bukti').hide();
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('#add_purchase_order').modal("show");
@@ -333,6 +335,7 @@
             po_cost : $('#po_cost').val(),
             po_total : grand,
             po_detail : JSON.stringify(item),
+            po_img : $('#bukti').val(),
              _token:token
         };
 
@@ -435,3 +438,30 @@
         anchor.href = '/generateTandaTerima/'+$('#select_supplier').val()+"/"+$('#bank_kode').val();
         anchor.click();
     });
+
+
+    
+    
+$(document).on('click', '#btn-foto-bukti', function() {
+    rotationAngle = 0;
+    camRotation = 0;
+    photoData = "";
+    modeCamera=4;
+    inputFile ="#bukti";
+    $("#video").removeClass("rot90 rot180 rot270");
+    $("#preview-box").hide();
+    $("#camera").show();
+
+    startCamera();
+    $("#add_purchase_order").modal("hide");
+    $('#modalPhoto').modal('show');
+    console.log($('#bukti').val());
+});
+
+$(document).on('click', '#uploadBtn', function(){
+    if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
+        $('#check_foto').show();
+    } else {
+        $('#check_foto').hide();
+    }
+})

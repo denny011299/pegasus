@@ -1,7 +1,7 @@
     var mode=1;
     var tablePr, tableDn, tableInv, tablePrModal;
     let detail_delivery = [];
-
+    var list_photo=[];
 
     autocompleteStaff("#pdo_receiver",null);
     autocompleteSupplier("#po_supplier",null);
@@ -10,6 +10,10 @@
         inisialisasi();
         refresh();
         refreshSummary();
+        list_photo = JSON.parse(data.po_img || '[]');
+         $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"issue/"+list_photo[0]);
         console.log(data);
         if (data.status == -1) $('#po_status').val(data.status).trigger('change');
         else $('#po_status').val(data.pembayaran).trigger('change');
@@ -1070,4 +1074,38 @@ $(document).on("click", "#btn-acc-po", function () {
                 console.log(e);
             }
         });
+    });
+
+        
+    $(document).on("click", "#btn-lihat-bukti", function () {
+        $("#add_purchase_order").modal("hide");
+        $('#modalViewPhoto').modal("show");
+    });
+
+    $(document).on("hidden.bs.modal", "#modalViewPhoto", function () {
+        $("#add_purchase_order").modal("show");
+        $('#modalViewPhoto').modal("hide");
+    });
+
+    $(document).on('click', '.btn-prev', function(){
+        var index = parseInt($('#fotoProduksiImage').attr('index'));
+        console.log("index : "+index);
+        
+        if(index > 0){
+            index -= 1;
+            $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[index]);
+            $('#fotoProduksiImage').attr('index', index);
+            $('#btn_download_photo').attr('href', public+"issue/"+list_photo[index]);
+        }
+    });
+
+    $(document).on('click', '.btn-next', function(){
+        var index = parseInt($('#fotoProduksiImage').attr('index'));
+        console.log("index : "+index);
+        if(index < list_photo.length - 1){
+            index += 1;
+            $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[index]);
+            $('#fotoProduksiImage').attr('index', index);
+            $('#btn_download_photo').attr('href', public+"issue/"+list_photo[index]);
+        }
     });
