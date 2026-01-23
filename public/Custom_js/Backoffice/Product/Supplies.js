@@ -288,10 +288,12 @@
         $('#supplies_desc').val(data.supplies_desc);
         $('#supplies_supplier').empty();
         $('#supplies_unit').empty();
-        $('#supplies_unit').append(`<option value="${data.supplies_unit}" selected>${data.unit_name}</option>`);
-        $('#supplies_unit').val(data.supplies_unit).trigger('change');
+        $('#unit_id').empty();
+        $('#unit_id').append(`<option value="${data.supplies_unit}" selected>${data.unit_values}</option>`);
+        $('#unit_id').val(data.supplies_unit).trigger('change');
         $('#alert').val(data.supplies_alert);
         $('#tbVariant').html("");
+        $('#tbRelasi').html("");
 
         data.sup_variant.forEach(element => {
             addRow(element.supplies_variant_name);
@@ -419,7 +421,7 @@ function addRowRelasi(element1,element2) {
             </td>
         </tr>    
     `);      
-    feather.replace();
+    // feather.replace();
 }
 
 

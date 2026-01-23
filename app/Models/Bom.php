@@ -49,6 +49,7 @@ class Bom extends Model
             $value->product_variant_sku = $v->product_variant_sku;
             $value->unit_name = Unit::find($value->unit_id)->unit_short_name;
             $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit, true))->get();
+            $value->items = (new BomDetail())->getBomDetail(['bom_id' => $value->bom_id]);
         }
 
         return $result;

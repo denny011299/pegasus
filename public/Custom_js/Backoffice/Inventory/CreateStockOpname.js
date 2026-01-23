@@ -70,9 +70,9 @@
                 // Untuk Non Admin
                 $('#tbStock').append(`
                     <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
-                        <td>${item.product_variant_sku}</td>
-                        <td>${item.pr_name} ${item.product_variant_name}</td>
-                        <td class="text-center" style="width:10%">
+                        <td style="width:10%">${item.product_variant_sku}</td>
+                        <td style="width:12%">${item.pr_name} ${item.product_variant_name}</td>
+                        <td class="text-center" style="width:45%">
                             <div class="input-group mb-3 rstock">
                                 ${rl_stock}
                             </div>
@@ -170,9 +170,9 @@
                     // Untuk Non Admin
                     $('#tbStock').append(`
                         <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
-                            <td>${item.product_variant_sku}</td>
-                            <td>${item.pr_name} ${item.product_variant_name}</td>
-                            <td class="text-center" style="width:10%">
+                            <td style="width:10%">${item.product_variant_sku}</td>
+                            <td style="width:12%">${item.pr_name} ${item.product_variant_name}</td>
+                            <td class="text-center" style="width:45%">
                                 <div class="input-group mb-3 rstock">
                                     ${rl_stock}
                                 </div>

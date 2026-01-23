@@ -11,6 +11,7 @@
 
     $(document).on('click', '.btnAdd', function(){
         mode=1;
+        items = [];
         $('#addProduction .modal-title').html("Tambah Produksi");
         $('#addProduction input').val("");
         $('#product_id').empty();
@@ -71,9 +72,7 @@
             },
             columns: [
                 { data: "date" },
-                { data: "product_name" },
-                { data: "product_sku" },
-                { data: "production_qty" },
+                { data: "production_code" },
                 { data: "status_text" },
                 { data: "notes", defaultContent: "-",width: "50px"  },
                 { data: "action", class: "d-flex align-items-center" },
@@ -157,13 +156,6 @@
                 $(this).addClass('is-invalid');
             }
         });
-        if($('#production_qty').val()<=0){
-            valid=-1;
-            $('#production_qty').addClass('is-invalid');
-            notifikasi('error', "Qty Tidak Valid", 'Qty produksi harus lebih dari 0');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-            return false;
-        }
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
@@ -171,10 +163,6 @@
         };
         param = {
             production_date:$('#production_date').val(),
-            production_bom_id:$('#product_id').val(),
-            production_product_id:dt.product_id,
-            production_qty:$('#production_qty').val(),
-            unit_id:$('#unit_id').val(),
             detail:JSON.stringify(items),
             _token:token
         };
@@ -240,6 +228,7 @@
     });
 
     function afterInsert() {
+        items = [];
         $(".modal").modal("hide");
         if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produksi");
         refreshProduction();
@@ -252,7 +241,7 @@
             $('#tableProduct tbody').append(`
                 <tr class="row-product" data-id="${element.product_variant_id}">
                     <td>${element.product_name}</td>
-                    <td class="text-center">${element.production_qty}</td>
+                    <td class="text-center">${element.pd_qty}</td>
                     <td>${element.unit_name}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
@@ -278,6 +267,13 @@
             valid=-1;
             $('#row-product .select2-selection--single').addClass('is-invalids');
         }
+        if($('#production_qty').val()<=0){
+            valid=-1;
+            $('#production_qty').addClass('is-invalid');
+            notifikasi('error', "Qty Tidak Valid", 'Qty produksi harus lebih dari 0');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+            return false;
+        }
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
@@ -289,7 +285,7 @@
         items.forEach(element => {
             console.log(element);
             if (element.product_variant_id == temp.product_variant_id && element.unit_id == temp.unit_id) {
-                element.production_qty += parseInt($('#production_qty').val());
+                element.pd_qty += parseInt($('#production_qty').val());
                 idx = 1;
             }
         });
@@ -298,9 +294,10 @@
             var data  = {
                 "product_variant_id": temp.product_variant_id,
                 "product_name": temp.product_name,
-                "production_qty": parseInt($('#production_qty').val()),
+                "pd_qty": parseInt($('#production_qty').val()),
                 "unit_name": $('#unit_id option:selected').text(),
-                "unit_id": parseInt($('#unit_id').val())
+                "unit_id": parseInt($('#unit_id').val()),
+                "bom_id": temp.bom_id
             };
             items.push(data);
         }

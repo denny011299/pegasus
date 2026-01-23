@@ -26,9 +26,15 @@
         console.log(data);
         $('#unit_id').empty();
         
-        data.pr_unit.forEach(element => {
-            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_short_name}</option>`);
+        // Ambil satuan terkecil
+        data.relasi.forEach((element, index) => {
+            if (index == data.relasi.length - 1){
+                $('#unit_id').append(`<option value="${element.pr_unit_id_2}" selected>${element.pr_unit_name_2}</option>`);
+                $('#unit_id').prop('disabled', true);
+            }
         });
+        $('#bom_qty').val(1);
+        $('#bom_qty').prop('disabled', true);
     });
     
     $(document).on('click','.btnAdd',function(){
@@ -38,6 +44,7 @@
         $('#supplies_id').empty();
         $('#unit_id').empty();
         $('#product_id').empty();
+        $('#bom_qty, #unit_id').prop('disabled', false);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Tambah Resep');
@@ -158,9 +165,17 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){
-                bahan = [];
+                if (typeof e === "object") {
+                    notifikasi(
+                        "error",
+                        "Gagal Insert",
+                        e.message
+                    );
+                } else {
+                    bahan = [];
+                    afterInsert();
+                }
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep");       
-                afterInsert();
             },
             error:function(e){
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep"); 
@@ -187,6 +202,8 @@
         $('#supplies_id').empty();
         $('#unit_id').empty();
         $('#product_id').empty();
+        $('#bom_qty').val(1);
+        $('#bom_qty, #unit_id').prop('disabled', true);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
 

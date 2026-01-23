@@ -7,6 +7,9 @@
             word-wrap: break-word;  /* Paksa teks turun */
             white-space: normal;    /* Pastikan teks tidak satu baris terus */
         }
+        #addProduction .select2-container {
+            width: 100% !important;
+        }
     </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -46,9 +49,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Tanggal</th>
-                                            <th>Produk</th>
-                                            <th>SKU</th>
-                                            <th>Qty</th>
+                                            <th>Kode Produksi</th>
                                             <th>Status</th>
                                             <th>Notes Pembatalan</th>
                                             <th class="no-sort">Aksi</th>

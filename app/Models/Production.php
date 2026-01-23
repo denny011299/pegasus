@@ -14,15 +14,15 @@ class Production extends Model
     function getProduction($data = [])
     {
         $data = array_merge([
-            "production_product_id" => null,
             "date" => null,
-            "report" => null
+            "report" => null,
+            "production_id" => null
         ], $data);  
 
         if ($data["report"] == null) $result = Production::where('status', '>=', 1);
         else if ($data["report"]) $result = Production::where('status', '>=', 0);
-        if ($data["production_product_id"]) $result->where('production_product_id', '=', $data["production_product_id"]);
-
+        if ($data["production_id"]) $result->where('production_id', '=', $data["production_id"]);
+        
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
                 // Jika date adalah array [start_date, end_date]]
@@ -38,17 +38,11 @@ class Production extends Model
             }
         }
 
-        $result->orderBy('created_at', 'asc');
+        $result->orderBy('status', 'asc')->orderBy('created_at', 'desc');
 
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $u = ProductVariant::find($value->production_product_id);
-            $value->product_variant_id = $u->product_variant_id;
-            $value->product_sku = $u->product_variant_sku;
-            $v = Product::find($u->product_id);
-            $value->product_name = $v->product_name." ".$u->product_variant_name;
-            $x = Unit::find($v->unit_id);
-            $value->unit_name = $x->unit_name;
+            $value->items = ProductionDetails::where('production_id', $value->production_id)->get();
         }
         return $result;
     }
@@ -58,9 +52,6 @@ class Production extends Model
         $t = new Production();
         $t->production_date = $data["production_date"];
         $t->production_code = $this->generateProductionID();
-        $t->production_bom_id = $data["production_bom_id"];
-        $t->production_product_id = $data["production_product_id"];
-        $t->production_qty = $data["production_qty"];
         $t->production_created_by = 0;
         $t->save();
         return $t;
@@ -71,9 +62,6 @@ class Production extends Model
         $t = Production::find($data["production_id"]);
         $t->production_date = $data["production_date"];
         $t->production_code = $data["production_code"];
-        $t->production_bom_id = $data["production_bom_id"];
-        $t->production_product_id = $data["production_product_id"];
-        $t->production_qty = $data["production_qty"];
         $t->production_created_by = 0;
         $t->save();
         return $t->production_id;
@@ -95,32 +83,9 @@ class Production extends Model
     }
 
     function cancelProduction($data) {
-        $t = Production::find($data["production_id"]);
+        $t = Production::find($data['production_id']);
         $t->status = 3;
         $t->save();
-        $b = (new BomDetail())->getBomDetail([
-            "bom_id" => $t->production_bom_id
-        ]);
-
-        foreach ($b as $key => $value) {
-            $s = SuppliesStock::where("supplies_id", "=", $value->supplies_id)
-                ->where("unit_id", "=", $value->unit_id)
-                ->first();
-            $s->ss_stock +=  ($value->bom_detail_qty * $t->production_qty);
-            $s->save();
-
-            // Catat log
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $t->production_code,
-                'log_type'    => 2,
-                'log_category' => 1,
-                'log_item_id' => $value->supplies_id,
-                'log_notes'  => "Pengembalian stok bahan akibat pembatalan produksi",
-                'log_jumlah' => ($value->bom_detail_qty * $t->production_qty),
-                'unit_id'    => $value->unit_id,
-            ]);
-        }
     }
 
     function generateProductionID()

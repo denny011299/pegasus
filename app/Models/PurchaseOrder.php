@@ -35,7 +35,6 @@ class PurchaseOrder extends Model
             // ambil po_id setiap data
             $result->whereIn('po_id', $data['ids']);
         }
-        dd($data);
         if ($data["status"]) $result->where("status", "=", $data["status"]);
         if ($data["pembayaran"] && $data["pembayaran"] >= 0){
             if ($data["pembayaran"] == 4){
