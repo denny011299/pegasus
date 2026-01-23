@@ -955,7 +955,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
              dropdownParent: modalParent ? $(modalParent) : "",
          });
     }
-    function autocompletePO(id, modalParent = null, ids = null) {
+    function autocompletePO(id, modalParent = null, ids = null, suppliesIds = null) {
          //search country dan city
          $(id).select2({
              ajax: {
@@ -966,6 +966,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                      return {
                          "keyword": params.term,
                          "ids": ids,
+                         "suppliesIds": suppliesIds,
                          '_token': $('meta[name="csrf-token"]').attr('content')
                      };
                  },

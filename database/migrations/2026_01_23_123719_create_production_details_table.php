@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_issues_details', function (Blueprint $table) {
-            $table->integerIncrements('pid_id');
-            $table->integer('pi_id');
-            $table->integer('item_id');
-            $table->integer('pid_qty')->default(0);
+        Schema::create('production_details', function (Blueprint $table) {
+            $table->integerIncrements('pd_id');
+            $table->integer('product_variant_id');
+            $table->integer('pd_qty');
             $table->integer('unit_id');
-            $table->integer('status')->default(1);
+            $table->integer('bom_id');
             $table->timestamps();
         });
     }
@@ -27,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_issues_details');
+        Schema::dropIfExists('production_details');
     }
 };

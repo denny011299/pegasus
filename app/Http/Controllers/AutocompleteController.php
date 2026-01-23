@@ -456,6 +456,8 @@ class AutocompleteController extends Controller
         $p = new PurchaseOrder();
         $data_city = $p->getPurchaseOrder([
             "po_id" => $keyword,
+            "ids" => $req->ids,
+            "suppliesIds" => $req->suppliesIds,
             "pembayaran" => 1
         ]);
 

@@ -254,7 +254,6 @@
                     <td>${element.product_name}</td>
                     <td class="text-center">${element.production_qty}</td>
                     <td>${element.unit_name}</td>
-                    <td class="text-center">${element.total}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -291,7 +290,6 @@
             console.log(element);
             if (element.product_variant_id == temp.product_variant_id && element.unit_id == temp.unit_id) {
                 element.production_qty += parseInt($('#production_qty').val());
-                element.total += (parseInt($('#production_qty').val()) * temp.bom_qty);
                 idx = 1;
             }
         });
@@ -302,8 +300,7 @@
                 "product_name": temp.product_name,
                 "production_qty": parseInt($('#production_qty').val()),
                 "unit_name": $('#unit_id option:selected').text(),
-                "unit_id": parseInt($('#unit_id').val()),
-                "total": (parseInt($('#production_qty').val()) * temp.bom_qty)
+                "unit_id": parseInt($('#unit_id').val())
             };
             items.push(data);
         }
@@ -311,6 +308,7 @@
 
         $('#product_id').empty();
         $('#unit_id').empty();
+        $('#unit_id').append("<option selected>Pilih Satuan</option>");
         $('#production_qty').val("");
     })
 

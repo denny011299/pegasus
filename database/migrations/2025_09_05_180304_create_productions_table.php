@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('productions', function (Blueprint $table) {
             $table->integerIncrements('production_id');
             $table->date('production_date');
-            $table->integer('production_product_id');
-            $table->integer('production_qty');
+            $table->string('production_code', 10);
             $table->integer('production_created_by');
             $table->integer('status')->default(1)->comment('1 = active, 0 = inactive');
             $table->timestamps();

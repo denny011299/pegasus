@@ -2,7 +2,8 @@
     var mode = 1; //1 = insert, 2 = edit, 3 = view
     var type = 1; //1 = all, 2 = In, 3 = Out
     var items = [];
-    var ids = [];
+    var ids = []; // Untuk get data dari invoice (by po_id)
+    var suppliesIds = []; // untuk get data dari PO detail (by supplies_variant_id)
 
     $(document).ready(function(){
         inisialisasi();
@@ -32,6 +33,7 @@
         mode=1;
         items = [];
         ids = [];
+        suppliesIds = [];
         $('#add-product-issues .modal-title').html("Tambah Produk Bermasalah");
         $('#add-product-issues input').val("");
         $('#pi_type').html(`
@@ -166,6 +168,7 @@
 
     function afterInsert() {
        refreshProductIssues();
+       ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
     }
 
     $(document).on('change','#product_id',function(){
@@ -190,6 +193,7 @@
     $(document).on('change', '#tipe_return', function(){
         items = [];
         ids = [];
+        suppliesIds = [];
         $('#ref_num').empty();
         if ($(this).val() == 1) {
             $(".input_table").html(`
@@ -305,7 +309,7 @@ function loadPiType() {
                 "Gagal Insert",
                 "Silahkan cek kembali inputan anda"
             );
-            // ResetLoadingButton('.btn-save', 'Save changes');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
             return false;
         }
 
@@ -326,7 +330,7 @@ function loadPiType() {
             _token: token,
         };
         console.log(param);
-        //LoadingButton($(this));
+        LoadingButton($(this));
 
         if (mode == 2) {
             url = "/updateProductIssues";
@@ -446,7 +450,6 @@ function loadPiType() {
         };
         var temp = $('#supplies_id').select2("data")[0];
         var idx = -1;
-        console.log(temp);
         items.forEach(element => {
             if (element.supplies_variant_id == temp.supplies_variant_id && element.unit_id == $('#unit_supplies_id').val()) {
                 element.pid_qty += parseInt($('#pid_qty').val());
@@ -464,7 +467,6 @@ function loadPiType() {
                 "unit_id": $('#unit_supplies_id').val(),
             };
             items.push(data);
-            // getInvoice(temp.supplies_variant_id);
         }
         addRow(2)
 
@@ -475,7 +477,6 @@ function loadPiType() {
     
     // 1 = produk, 2 = bahan mentah
     function addRow(define) {
-        console.log(items);
         if (define == 1){
             $('#tableProduct tr.row-product').html(" ");
             items.forEach(e => {
@@ -494,6 +495,7 @@ function loadPiType() {
             });
         }
         if (define == 2){
+            suppliesIds = [];
             $('#tableProduct tr.row-supplies').html(" ");
             items.forEach(e => {
                 $('#tableProduct tbody').append(`
@@ -525,36 +527,46 @@ function loadPiType() {
         let row = $(this).closest("tr");
         let suppliesId = row.data("id");
         items = items.filter(e => e.supplies_variant_id != suppliesId);
-        ids.forEach(element => {
-            
-        });
+        suppliesIds = suppliesIds.filter(e => e != suppliesId);
         ids = ids.filter(e => e.supplies_variant_id != suppliesId);
         row.remove();
+        getInvoice();
     });
 
-    function getInvoice(id) {
-        $.ajax({
-            url: '/getPurchaseOrderDetail',
-            method: 'get',
-            data: {
-                supplies_variant_id : id
-            },
-            success: function (e) {
-                e.forEach(element => {
-                    var detail = {
-                        "supplies_variant_id" : id,
-                        "po_id" : element.po_id
-                    }
-                    ids.push(detail);
-                });
-            }
-        })
-        let poIds = [];
-        ids.forEach(element => {
-            poIds.push(element.po_id);
-        });
-        console.log(poIds);
-        autocompletePO('#ref_num', '#add-product-issues', poIds);
+    function getInvoice(id = null) {
+        if (id != null){
+            suppliesIds.push(id);
+            console.log(suppliesIds);
+            $.ajax({
+                url: '/getPurchaseOrderDetail',
+                method: 'get',
+                data: {
+                    suppliesIds : suppliesIds
+                },
+                success: function (e) {
+                    e.forEach(element => {
+                        console.log(element);
+                        var detail = {
+                            "supplies_variant_id" : element.supplies_variant_id,
+                            "po_id" : element.po_id
+                        }
+                        ids.push(detail);
+                    }); 
+
+                    let poIds = [];
+                    ids.forEach(element => {
+                        poIds.push(element.po_id);
+                    });
+                    autocompletePO('#ref_num', '#add-product-issues', poIds, suppliesIds);
+                }
+            })
+        } else {
+            let poIds = [];
+            ids.forEach(element => {
+                poIds.push(element.po_id);
+            });
+            autocompletePO('#ref_num', '#add-product-issues', poIds, suppliesIds);
+        }
     }
 
 

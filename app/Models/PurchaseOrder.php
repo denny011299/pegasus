@@ -23,6 +23,7 @@ class PurchaseOrder extends Model
             "pembayaran" => null,
             "status" => null,
             "ids" => null,
+            "suppliesIds" => null
         ], $data);
 
         $result = PurchaseOrder::where("status", ">=", -1);
@@ -30,15 +31,11 @@ class PurchaseOrder extends Model
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
         if ($data["po_id"]) $result->where("po_id", "=", $data["po_id"]);
-        dd($data);
         if ($data['ids'] && is_array($data['ids'])) {
             // ambil po_id setiap data
-            $poIds = array_column($data['ids'], 'po_id');
-
-            if (!empty($poIds)) {
-                $result->whereIn('po_id', $poIds);
-            }
+            $result->whereIn('po_id', $data['ids']);
         }
+        dd($data);
         if ($data["status"]) $result->where("status", "=", $data["status"]);
         if ($data["pembayaran"] && $data["pembayaran"] >= 0){
             if ($data["pembayaran"] == 4){
@@ -83,7 +80,7 @@ class PurchaseOrder extends Model
             // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
             // contoh:
             // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";
-            $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id" => $value->po_id]);
+            $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id" => $value->po_id, "suppliesIds" => $data['suppliesIds'] ?? null]);
         }
 
         return $result;

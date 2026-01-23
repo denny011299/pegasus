@@ -503,7 +503,6 @@
                                             <th>Nama Produk</th>
                                             <th class="text-center">Qty</th>
                                             <th>Satuan</th>
-                                            <th class="text-center">Total</th>
                                             <th class="no-sort text-center">Aksi</th>
                                         </thead>
                                         <tbody></tbody>

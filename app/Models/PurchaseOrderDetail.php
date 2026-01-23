@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+use function PHPUnit\Framework\isArray;
+
 class PurchaseOrderDetail extends Model
 {
     protected $table = "purchase_orders_details";
@@ -16,6 +18,7 @@ class PurchaseOrderDetail extends Model
         $data = array_merge([
             "po_id"              => null,
             "supplies_variant_id" => null,
+            "suppliesIds" => null,
         ], $data);
 
         $result = PurchaseOrderDetail::where("status", "=", 1);
@@ -26,6 +29,21 @@ class PurchaseOrderDetail extends Model
 
         if ($data["supplies_variant_id"]) {
             $result->where("supplies_variant_id", "=", $data["supplies_variant_id"]);
+        }
+
+        if ($data["suppliesIds"] && is_array($data["suppliesIds"])) {
+            // Ambil po_id yang valid
+            $poIds = PurchaseOrderDetail::where('status', 1)
+                ->whereIn('supplies_variant_id', $data['suppliesIds'])
+                ->groupBy('po_id')
+                ->havingRaw(
+                    'COUNT(DISTINCT supplies_variant_id) = ?',
+                    [count($data['suppliesIds'])]
+                )
+                ->pluck('po_id');
+            
+            // Ambil data
+            $result->whereIn('po_id', $poIds);
         }
 
         $result->orderBy("created_at", "asc");
