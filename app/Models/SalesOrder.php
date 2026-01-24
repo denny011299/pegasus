@@ -60,7 +60,7 @@ class SalesOrder extends Model
         $t->so_discount  = $data["so_discount"];
         $t->so_cost  = $data["so_cost"];
         $t->so_img  = $data["so_img"];
-        $t->so_invoice_no  = $data["so_invoice_no"];
+        $t->so_invoice_no  = $this->generateInvoiceSalesOrderID();
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = $data['sales_id'];
         $t->save();
@@ -130,5 +130,13 @@ class SalesOrder extends Model
         if (is_null($id)) $id = 0;
         $id++;
         return "SO".str_pad($id, 4, "0", STR_PAD_LEFT);
+    }
+
+    function generateInvoiceSalesOrderID()
+    {
+        $id = self::max('so_id');
+        if (is_null($id)) $id = 0;
+        $id++;
+        return "INV" . str_pad($id, 4, "0", STR_PAD_LEFT);
     }
 }

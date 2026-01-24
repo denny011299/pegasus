@@ -45,7 +45,8 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Tanggal</th>
-                                            <th>PO No.</th>
+                                            <th>No. PO</th>
+                                            <th>No. Invoice</th>
                                             <th>Nama Pemasok</th>
                                             <th>Total</th>
                                             <th>Status</th>

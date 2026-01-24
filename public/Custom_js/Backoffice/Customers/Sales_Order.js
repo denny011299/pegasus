@@ -32,6 +32,7 @@
         updateTotal();
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
+        $('#check_foto').hide();
         let today = new Date();
         let yyyy = today.getFullYear();
         let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -97,6 +98,7 @@
             columns: [
                 { data: "customer_name" },
                 { data: "date" },
+                { data: "so_invoice_no", default: "-" },
                 { data: "total" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -158,20 +160,20 @@
 
             html += `
                 <tr>
-                    <td style="width: 12%">${p.product_name || p.pr_name}</td>
-                    <td style="width: 15%">${p.product_variant_name}</td>
-                    <td style="width: 15%">${p.product_variant_sku}</td>
-                    <td style="width: 18%" class="text-center p-2 d-flex">
-                        <input type="text" class="form-control fill number-only so_qty"
+                    <td style="width: 18%">${p.product_name || p.pr_name}</td>
+                    <td style="width: 18%">${p.product_variant_name}</td>
+                    <td style="width: 12%">${p.product_variant_sku}</td>
+                    <td style="width: 15%" class="text-center p-2 d-flex">
+                        <input type="text" class="form-control fill number-only so_qty text-center px-1"
                             data-price="${p.product_variant_price}"
-                            data-index="${index}" style="width: 2.5rem" value="${p.so_qty || 1}">
-                        <span class="pt-2 ps-2">
-                            <select class="form-select fill" id="unit_id" style="width: 6.5rem" data-index="${index}">${options}</select>
+                            data-index="${index}" style="width: 4rem" value="${p.so_qty || 1}">
+                        <span>
+                            <select class="form-select fill" id="unit_id" style="width: 8rem" data-index="${index}">${options}</select>
                         </span>
                     </td>
-                    <td style="width: 15%" class="text-end">${p.product_variant_price}</td>
-                    <td style="width: 15%" class="subtotal text-end">${p.so_subtotal || 0}</td>
-                    <td class="text-center text-danger" style="cursor:pointer; width: 10%"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
+                    <td style="width: 12%" class="text-end">${p.product_variant_price}</td>
+                    <td style="width: 12%" class="subtotal text-end">${p.so_subtotal || 0}</td>
+                    <td class="text-center text-danger" style="cursor:pointer; width: 13%"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
                 </tr>
             `;
         });
@@ -199,7 +201,6 @@
 
     $(document).on('change', '#unit_id', function(){
         const index = $(this).data('index');
-        console.log(index);
         let unit = parseInt($(this).val());
         products[index].unit_id = unit;
     })
@@ -286,7 +287,6 @@
             
             _token:token
         };
-        console.log(products)
 
         if(mode==2){
             url="/updateSalesOrder";
@@ -365,6 +365,8 @@
         $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
         $('#fotoProduksiImage').attr('index', 0);
         $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
+        $('#check_foto').show();
+        $('#jumlahFoto').html(list_photo.length);
 
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
         if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
@@ -448,12 +450,13 @@ $(document).on('click', '#btn_bukti_foto', function() {
     startCamera();
     $("#add_sales_order").modal("hide");
     $('#modalPhoto').modal('show');
-    console.log($('#bukti').val());
 });
 
 $(document).on('click', '#uploadBtn', function(){
     if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
         $('#check_foto').show();
+        console.log(list_photo)
+        // $('#jumlahFoto').html($('#bukti').length);
     } else {
         $('#check_foto').hide();
     }

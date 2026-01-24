@@ -31,6 +31,7 @@
         $('#add_purchase_order #po_supplier').empty();
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
+        $('#check_foto').hide();
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('#add_purchase_order').modal("show");
@@ -173,6 +174,7 @@
             columns: [
                 { data: "date" },
                 { data: "po_number" },
+                { data: "poi_code" },
                 { data: "po_supplier_name"},
                 { data: "total" },
                 { data: "status_po" },

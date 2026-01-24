@@ -697,8 +697,8 @@
 
 @if (Route::is(['salesOrder']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_sales_order" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal modal-xl custom-modal fade" id="add_sales_order" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
@@ -761,15 +761,22 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    {{-- <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>No. Invoice</label>
-                                            <input id="so_invoice_no" class="form-control fill">
+                                            <input id="so_invoice_no" class="form-control" value="{{ $data['so_invoice_no'] || '-' }}" disabled>
                                         </div>
-                                    </div>
-                                    <div class="col-4">
+                                    </div> --}}
+                                    <div class="col-6">
                                         <div class="input-block mb-3">
-                                            <label>Bukti Foto</label><br>
+                                            <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
+                                                <span id="check_foto" style="display: none" class="ms-2">
+                                                    <div class="d-flex g-3">
+                                                        <i class="fa fa-check-circle text-success mt-1"></i>
+                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
+                                                    </div>
+                                                </span>
+                                            </label>
                                             <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
                                             <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
                                             <input type="hidden" name="" id="bukti">
@@ -1028,7 +1035,14 @@
                                     </div>
                                     <div class="col-4">
                                         <div class="input-block mb-3">
-                                            <label>Foto Bukti</label><br>
+                                            <label class="form-label d-flex">Foto Bukti<span class="text-danger">*</span>
+                                                <span id="check_foto" style="display: none" class="ms-2">
+                                                    <div class="d-flex g-3">
+                                                        <i class="fa fa-check-circle text-success mt-1"></i>
+                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
+                                                    </div>
+                                                </span>
+                                            </label>
                                             <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
                                             <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
                                             <input type="hidden" name="" id="bukti">

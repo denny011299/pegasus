@@ -20,7 +20,7 @@
         table = $('#tableTTPurchaseOrder').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
-            order: [[0, 'desc']],
+            ordering: false,
             searching:false,
             language: {
                 search: ' ',

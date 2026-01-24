@@ -17,14 +17,13 @@ class purchase_order_tt extends Model
             "tt_kode" => null
         ], $data);
 
-        $result = self::where('status', '>', 0);
+        $result = self::where('status', '>=', 0);
 
         if ($data["tt_kode"]) {
             $result->where('tt_kode', 'like', '%' . $data["tt_kode"] . '%');
         }
 
-        $result->orderBy('tt_date', 'desc');
-        $result->orderBy('tt_kode', 'desc');
+        $result->orderByRaw('FIELD(status, 1, 2, 0)')->orderBy('tt_date', 'desc')->orderBy('tt_kode', 'desc');
 
         $result = $result->get();
         foreach ($result as $key => $value) {
