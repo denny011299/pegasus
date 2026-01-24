@@ -7,6 +7,8 @@ use App\Models\SalesOrderDelivery;
 use App\Models\SalesOrderDetailInvoice;
 use App\Models\Customer;
 use App\Models\LogStock;
+use App\Models\Product;
+use App\Models\ProductRelation;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
@@ -41,8 +43,60 @@ class CustomerController extends Controller
                 ->where("status", "=", 1)
                 ->first();
             if($s->ps_stock < $value["so_qty"]){
-                array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
-                $valid=-1;
+                // Konversi Satuan
+                $ss = ProductStock::where('product_variant_id','=',$value['product_variant_id'])->where('status', 1)->orderBy('ps_id')->get();
+                if (count($ss) > 1){
+                    $qtyTarget = 1;
+                    for ($i=0; $i < count($ss)-1; $i++) { 
+                        $ss1 = $ss[$i];
+                        $ss2 = $ss[$i + 1];
+                        $sr = ProductRelation::where('product_variant_id','=',$value['product_variant_id'])->where('pr_unit_id_2', $ss2['unit_id'])->first();
+                        
+                        // Pengecekan apakah permintaan lebih besar daripada stock yang ada
+                        if ($ss1->ss_stock<=0 || $value["so_qty"] > ($sr['pr_unit_value_2'] * $ss1->ss_stock)) {
+                            if ($i == count($ss)-2) {
+                                array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
+                                $valid=-1;
+                            }
+                            continue;
+                        }
+                        // Untuk konversi seberapa banyak agar memenuhi permintaan
+                        $qtyTarget = (int) ceil($value["so_qty"] / $sr['pr_unit_value_2']);
+                        if ($qtyTarget <= 0) {
+                            continue;
+                        }
+                        $ss1->ss_stock -= $qtyTarget;
+                        $ss1->save();
+                        // Catat Log
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode'    => "-",
+                            'log_type'    => 1,
+                            'log_category' => 2,
+                            'log_item_id' => $value['product_variant_id'],
+                            'log_notes'  => "Konversi unit dari penjualan",
+                            'log_jumlah' => $qtyTarget,
+                            'unit_id'    => $ss1['unit_id'],
+                        ]);
+                        $ss2->ss_stock += $sr['pr_unit_value_2'] * $qtyTarget;
+                        $ss2->save();
+                        // Catat Log
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode'    => "-",
+                            'log_type'    => 1,
+                            'log_category' => 1,
+                            'log_item_id' => $value['product_variant_id'],
+                            'log_notes'  => "Konversi unit dari penjualan",
+                            'log_jumlah' => $sr['pr_unit_value_2'] * $qtyTarget,
+                            'unit_id'    => $ss2['unit_id'],
+                        ]);
+                    }
+                    
+                } else {
+                    array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
+                    $valid=-1;
+                }
             }
         }
         if($valid==-1){

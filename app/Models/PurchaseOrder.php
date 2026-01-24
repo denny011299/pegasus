@@ -23,7 +23,6 @@ class PurchaseOrder extends Model
             "pembayaran" => null,
             "status" => null,
             "ids" => null,
-            "suppliesIds" => null
         ], $data);
 
         $result = PurchaseOrder::where("status", ">=", -1);
@@ -79,7 +78,7 @@ class PurchaseOrder extends Model
             // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
             // contoh:
             // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";
-            $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id" => $value->po_id, "suppliesIds" => $data['suppliesIds'] ?? null]);
+            $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id" => $value->po_id]);
         }
 
         return $result;

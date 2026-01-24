@@ -1,5 +1,5 @@
     autocompleteBom('#product_id', '#addProduction')
-    var mode=1;
+    var mode=1; // 1 = insert; 2 = edit; 3 = view
     var table;
     var items = [];
     var list_photo =  [];
@@ -20,6 +20,10 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#unit_id').html("");
         $('#unit_id').append("<option selected>Pilih Satuan</option>");
+        $('.add, .btn-save, .btn_delete_row_pr').show();
+        $('#production_date').prop('disabled', false);
+        $('.btn-save').show();
+        $('.btn-cancel').html("Batal");
         $('#addProduction').modal("show");
         
         let today = new Date();
@@ -102,17 +106,20 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].production_date).format('D MMM YYYY');
                     e[i].action = `
+                        <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
                         <button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>
                     `;
 
                     if(e[i].status != 1){
                         e[i].action = `
+                        <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                         `;
                     }
                     if(e[i].status == 2){
                          e[i].action = `
+                            <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
                             <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
-                            <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-3"><i class="fa-solid fa-check"></i></button>
+                            <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
                         `;
                     }
                     if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
@@ -316,6 +323,44 @@
         console.log(items)
         row.remove();
     });
+
+    $(document).on('click', '.btn_view', function(){
+        var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        console.log(data);
+        mode=3;
+        items = [];
+        $('#addProduction .modal-title').html("Update Produksi");
+        $('#addProduction input').val("");
+        $('#product_id').empty();
+        $('#production_qty').val("");
+        $('#tableProduct tr.row-product').remove();
+        $('.is-invalid').removeClass('is-invalid');
+        $('#unit_id').html("");
+
+        $('#production_date').val(data.production_date);
+
+        data.items.forEach(e => {
+            var temp  = {
+                "pd_id": e.pd_id,
+                "product_variant_id": e.product_variant_id,
+                "product_name": e.product_name,
+                "pd_qty": e.pd_qty,
+                "unit_name": e.unit_name,
+                "unit_id": e.unit_id,
+                "bom_id": e.bom_id
+            };
+            items.push(temp);
+        })
+        console.log(items);
+        addRow(items);
+        
+        $('.is-invalid').removeClass('is-invalid');
+        $('.add, .btn-save, .btn_delete_row_pr').hide();
+        $('.btn-cancel').html("Kembali");
+        $('#production_date').prop('disabled', true);
+        $('#addProduction').attr("production_id", data.production_id);
+        $('#addProduction').modal("show");
+    })
     
 
 //delete

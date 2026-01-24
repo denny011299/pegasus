@@ -32,18 +32,7 @@ class PurchaseOrderDetail extends Model
         }
 
         if ($data["suppliesIds"] && is_array($data["suppliesIds"])) {
-            // Ambil po_id yang valid
-            $poIds = PurchaseOrderDetail::where('status', 1)
-                ->whereIn('supplies_variant_id', $data['suppliesIds'])
-                ->groupBy('po_id')
-                ->havingRaw(
-                    'COUNT(DISTINCT supplies_variant_id) = ?',
-                    [count($data['suppliesIds'])]
-                )
-                ->pluck('po_id');
-            
-            // Ambil data
-            $result->whereIn('po_id', $poIds);
+            $result->whereIn('supplies_variant_id', $data['suppliesIds']);
         }
 
         $result->orderBy("created_at", "asc");

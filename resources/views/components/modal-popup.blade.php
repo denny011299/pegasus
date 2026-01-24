@@ -389,7 +389,7 @@
                                             <span id="check_foto" style="display: none" class="ms-2">
                                                 <div class="d-flex g-3">
                                                     <i class="fa fa-check-circle text-success mt-1"></i>
-                                                    <p class="text-muted ms-1">1 gambar terunggah</p>
+                                                    <p class="text-muted ms-1">gambar terunggah</p>
                                                 </div>
                                             </span>
                                         </label>
@@ -542,7 +542,7 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <a class="btn btn-secondary-outline btn-cancel me-2" data-bs-dismiss="modal">Batal</a>
+                        <a class="btn btn-outline-secondary btn-cancel me-2" data-bs-dismiss="modal">Batal</a>
                         <a class="btn btn-primary btn-save">Tambah Produksi</a>
                     </div>
                 </form>

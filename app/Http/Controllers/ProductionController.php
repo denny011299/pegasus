@@ -47,7 +47,7 @@ class ProductionController extends Controller
         $data = $req->all();
         
         // Pengecekan unique resep
-        $bom = Bom::where('product_id', $data['product_id'])->get();
+        $bom = Bom::where('product_id', $data['product_id'])->where('status', 1)->get();
         if (count($bom) > 0){
             return [
                 "status"=>-1,
@@ -135,18 +135,74 @@ class ProductionController extends Controller
                 $stok = SuppliesStock::where("supplies_id", "=", $bd['supplies_id'])
                     ->where("unit_id", "=", $bd['unit_id'])->first()->ss_stock;
                 if ($stok - ($bd['bom_detail_qty'] * $value['pd_qty'] * $qty) <= 0) {
-                    $cek = 1;
-                    $s = Supplies::find($bd['supplies_id']);
-                    if (!in_array($s['supplies_name'], $bahan_kurang, true)){
-                        array_push($bahan_kurang, $s['supplies_name']);
+                    // Konversi Satuan
+                    $ss = SuppliesStock::where('supplies_id','=',$bd['supplies_id'])->where('status', 1)->orderBy('ss_id')->get();
+                    if (count($ss) > 1){
+                        $qtyTarget = 1;
+                        for ($i=0; $i < count($ss)-1; $i++) { 
+                            $ss1 = $ss[$i];
+                            $ss2 = $ss[$i + 1];
+                            $sr = SuppliesRelation::where('supplies_id','=',$bd['supplies_id'])->where('su_id_2', $ss2['unit_id'])->first();
+                            
+                            // Pengecekan apakah permintaan lebih besar daripada stock yang ada
+                            $permintaan = $bd['bom_detail_qty'] * $value['pd_qty'] * $qty;
+                            if ($ss1->ss_stock<=0 || $permintaan > ($sr['sr_value_2'] * $ss1->ss_stock)) {
+                                if ($i == count($ss)-2) {
+                                    $cek = 1;
+                                    $s = Supplies::find($bd['supplies_id']);
+                                    if (!in_array($s['supplies_name'], $bahan_kurang, true)){
+                                        array_push($bahan_kurang, $s['supplies_name']);
+                                    }
+                                }
+                                continue;
+                            }
+
+                            // Untuk konversi seberapa banyak agar memenuhi permintaan
+                            $qtyTarget = (int) ceil($permintaan / $sr['sr_value_2']);
+                            if ($qtyTarget <= 0) {
+                                continue;
+                            }
+
+                            $ss1->ss_stock -= $qtyTarget;
+                            $ss1->save();
+                            // Catat Log
+                            (new LogStock())->insertLog([
+                                'log_date' => now(),
+                                'log_kode'    => "-",
+                                'log_type'    => 2,
+                                'log_category' => 2,
+                                'log_item_id' => $bd['supplies_id'],
+                                'log_notes'  => "Konversi unit dari produksi",
+                                'log_jumlah' => $qtyTarget,
+                                'unit_id'    => $ss1['unit_id'],
+                            ]);
+
+                            $ss2->ss_stock += $sr['sr_value_2'] * $qtyTarget;
+                            $ss2->save();
+                            // Catat Log
+                            (new LogStock())->insertLog([
+                                'log_date' => now(),
+                                'log_kode'    => "-",
+                                'log_type'    => 2,
+                                'log_category' => 1,
+                                'log_item_id' => $bd['supplies_id'],
+                                'log_notes'  => "Konversi unit dari produksi",
+                                'log_jumlah' => $sr['sr_value_2'] * $qtyTarget,
+                                'unit_id'    => $ss2['unit_id'],
+                            ]);
+                        }
+                        
+                    } else {
+                        $cek = 1;
+                        $s = Supplies::find($bd['supplies_id']);
+                        if (!in_array($s['supplies_name'], $bahan_kurang, true)){
+                            array_push($bahan_kurang, $s['supplies_name']);
+                        }
                     }
+
                 }
             }
-            // foreach ($bom as $key => $b) {
-            //     // Cek relasi produk (untuk dikali produksi bahan mentah)
-            // }
         }
-
         if ($cek == 1) {
             return response()->json([
                 "status" => -1,

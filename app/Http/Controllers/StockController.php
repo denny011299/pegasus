@@ -470,12 +470,7 @@ class StockController extends Controller
         $data["pi_img"] = $imageName;
 
         $bermasalah = [];
-        foreach (json_decode($data['items'], true) as $key => $value) {
-            $value['tipe_return'] = $data['tipe_return'];
-            $c = (new ProductIssuesDetail())->stockCheck($value);
-            
-            if ($c == -1) return -1;
-            
+        foreach (json_decode($data['items'], true) as $key => $value) { 
             // Pengecekan invoice
             if (isset($data['ref_num'])){
                 $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
@@ -490,7 +485,6 @@ class StockController extends Controller
                         $detail['unit_id'] == $value['unit_id']
                     ) {
                         $ada = 1;
-                        break;
                     }
                 }
                 if ($ada == -1) {
@@ -504,7 +498,15 @@ class StockController extends Controller
                 "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
             ];
         }
-        
+
+        foreach (json_decode($data['items'], true) as $key => $value) {
+            $value['tipe_return'] = $data['tipe_return'];
+            // Pengecekan stock
+            $c = (new ProductIssuesDetail())->stockCheck($value);
+            if ($c == -1) return -1;
+        }
+
+        // insert
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;

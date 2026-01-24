@@ -42,7 +42,7 @@ class Production extends Model
 
         $result = $result->get();
         foreach ($result as $key => $value) {
-            $value->items = ProductionDetails::where('production_id', $value->production_id)->get();
+            $value->items = (new ProductionDetails())->getProductionDetail(["production_id" => $value->production_id]);
         }
         return $result;
     }

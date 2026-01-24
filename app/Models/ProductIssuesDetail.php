@@ -230,7 +230,58 @@ class ProductIssuesDetail extends Model
             
             $stocks = $s->ss_stock ?? 0;
             if ($stocks - $data["pid_qty"] < 0) {
-                return -1;
+                $ss = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('status', 1)->orderBy('ss_id')->get();
+                if (count($ss) > 1){
+                    for ($i=0; $i < count($ss)-1; $i++) { 
+                        $ss1 = $ss[$i];
+                        $ss2 = $ss[$i + 1];
+                        $sr = SuppliesRelation::where('supplies_id','=',$m->supplies_id)->where('su_id_2', $ss2['unit_id'])->first();
+
+                        if ($ss1->ss_stock <=0 || $data['pid_qty'] > ($sr['sr_value_2'] * $ss1->ss_stock)) {
+                            if ($i == count($ss)-2) {
+                                return -1;
+                            }
+                            continue;
+                        }
+
+                        // Untuk konversi seberapa banyak agar memenuhi permintaan
+                        $qtyTarget = (int) ceil($data['pid_qty'] / $sr['sr_value_2']);
+                        if ($qtyTarget <= 0) {
+                            continue;
+                        }
+
+                        $ss1->ss_stock -= $qtyTarget;
+                        $ss1->save();
+                        // Catat Log
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode'    => "-",
+                            'log_type'    => 2,
+                            'log_category' => 2,
+                            'log_item_id' => $m->supplies_id,
+                            'log_notes'  => "Konversi unit dari produk bermasalah",
+                            'log_jumlah' => $qtyTarget,
+                            'unit_id'    => $ss1['unit_id'],
+                        ]);
+
+                        $ss2->ss_stock += $sr['sr_value_2'] * $qtyTarget;
+                        $ss2->save();
+                        // Catat Log
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode'    => "-",
+                            'log_type'    => 2,
+                            'log_category' => 1,
+                            'log_item_id' => $m->supplies_id,
+                            'log_notes'  => "Konversi unit dari produk bermasalah",
+                            'log_jumlah' => $sr['sr_value_2'] * $qtyTarget,
+                            'unit_id'    => $ss2['unit_id'],
+                        ]);
+                    }
+                    return 1;
+                } else {
+                    return -1;
+                }
             }
         } else if ($data['tipe_return'] == 2) {
             $itemId = $data['product_variant_id'] ?? $data['item_id'];

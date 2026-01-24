@@ -56,6 +56,7 @@
         
         $('#btn-foto-bukti').show();
         $('#btn-lihat-bukti').hide();
+        $('#check_foto').hide();
 
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -380,6 +381,7 @@ function loadPiType() {
             },
             error: function (e) {
                 console.log(e);
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
             },
         });
     });
@@ -405,7 +407,6 @@ function loadPiType() {
         };
         var temp = $('#product_id').select2("data")[0];
         var idx = -1;
-        console.log(temp);
         items.forEach(element => {
             if (element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_product_id').val()) {
                 element.pid_qty += parseInt($('#pid_qty').val());
@@ -520,7 +521,6 @@ function loadPiType() {
         let row = $(this).closest("tr");
         let productId = row.data("id");
         items = items.filter(e => e.product_variant_id != productId);
-        console.log(items)
         row.remove();
     });
     $(document).on("click",".btn_delete_row_sp",function(){
@@ -536,7 +536,6 @@ function loadPiType() {
     function getInvoice(id = null) {
         if (id != null){
             suppliesIds.push(id);
-            console.log(suppliesIds);
             $.ajax({
                 url: '/getPurchaseOrderDetail',
                 method: 'get',
@@ -557,7 +556,7 @@ function loadPiType() {
                     ids.forEach(element => {
                         poIds.push(element.po_id);
                     });
-                    autocompletePO('#ref_num', '#add-product-issues', poIds, suppliesIds);
+                    autocompletePO('#ref_num', '#add-product-issues', poIds);
                 }
             })
         } else {
@@ -565,7 +564,7 @@ function loadPiType() {
             ids.forEach(element => {
                 poIds.push(element.po_id);
             });
-            autocompletePO('#ref_num', '#add-product-issues', poIds, suppliesIds);
+            autocompletePO('#ref_num', '#add-product-issues', poIds);
         }
     }
 

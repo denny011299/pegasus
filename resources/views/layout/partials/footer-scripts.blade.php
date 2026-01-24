@@ -966,7 +966,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                      return {
                          "keyword": params.term,
                          "ids": ids,
-                         "suppliesIds": suppliesIds,
                          '_token': $('meta[name="csrf-token"]').attr('content')
                      };
                  },
