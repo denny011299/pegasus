@@ -479,11 +479,7 @@ class StockController extends Controller
                 
                 $ada = -1;
                 foreach ($pod as $key => $detail) {
-                    if (
-                        $detail['supplies_variant_id'] == $value['supplies_variant_id'] 
-                        && 
-                        $detail['unit_id'] == $value['unit_id']
-                    ) {
+                    if ($detail['supplies_variant_id'] == $value['supplies_variant_id']) {
                         $ada = 1;
                     }
                 }

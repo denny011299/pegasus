@@ -43,59 +43,128 @@ class CustomerController extends Controller
                 ->where("status", "=", 1)
                 ->first();
             if($s->ps_stock < $value["so_qty"]){
-                // Konversi Satuan
-                $ss = ProductStock::where('product_variant_id','=',$value['product_variant_id'])->where('status', 1)->orderBy('ps_id')->get();
-                if (count($ss) > 1){
-                    $qtyTarget = 1;
-                    for ($i=0; $i < count($ss)-1; $i++) { 
-                        $ss1 = $ss[$i];
-                        $ss2 = $ss[$i + 1];
-                        $sr = ProductRelation::where('product_variant_id','=',$value['product_variant_id'])->where('pr_unit_id_2', $ss2['unit_id'])->first();
-                        
-                        // Pengecekan apakah permintaan lebih besar daripada stock yang ada
-                        if ($ss1->ss_stock<=0 || $value["so_qty"] > ($sr['pr_unit_value_2'] * $ss1->ss_stock)) {
-                            if ($i == count($ss)-2) {
-                                array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
-                                $valid=-1;
-                            }
-                            continue;
-                        }
-                        // Untuk konversi seberapa banyak agar memenuhi permintaan
-                        $qtyTarget = (int) ceil($value["so_qty"] / $sr['pr_unit_value_2']);
-                        if ($qtyTarget <= 0) {
-                            continue;
-                        }
-                        $ss1->ss_stock -= $qtyTarget;
-                        $ss1->save();
-                        // Catat Log
-                        (new LogStock())->insertLog([
-                            'log_date' => now(),
-                            'log_kode'    => "-",
-                            'log_type'    => 1,
-                            'log_category' => 2,
-                            'log_item_id' => $value['product_variant_id'],
-                            'log_notes'  => "Konversi unit dari penjualan",
-                            'log_jumlah' => $qtyTarget,
-                            'unit_id'    => $ss1['unit_id'],
-                        ]);
-                        $ss2->ss_stock += $sr['pr_unit_value_2'] * $qtyTarget;
-                        $ss2->save();
-                        // Catat Log
-                        (new LogStock())->insertLog([
-                            'log_date' => now(),
-                            'log_kode'    => "-",
-                            'log_type'    => 1,
-                            'log_category' => 1,
-                            'log_item_id' => $value['product_variant_id'],
-                            'log_notes'  => "Konversi unit dari penjualan",
-                            'log_jumlah' => $sr['pr_unit_value_2'] * $qtyTarget,
-                            'unit_id'    => $ss2['unit_id'],
-                        ]);
-                    }
-                    
-                } else {
+                $butuhTersedia = $value["so_qty"]; // Jumlah yang dibutuhkan untuk penjualan
+
+                // Ambil stok produk, urutkan DESC (Unit terkecil ke terbesar)
+                $ss = ProductStock::where('product_variant_id', $value['product_variant_id'])
+                    ->where('status', 1)
+                    ->orderBy('ps_id', 'desc') 
+                    ->get();
+
+                if (count($ss) <= 0) {
                     array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
-                    $valid=-1;
+                    $valid = -1;
+                } else {
+                    $virtualStock = [];
+                    $logSummary = []; 
+
+                    foreach ($ss as $stok) {
+                        $virtualStock[$stok->ps_id] = [
+                            'model' => $stok,
+                            'current' => (float)$stok->ps_stock,
+                            'unit_id' => $stok->unit_id,
+                            'ps_id' => $stok->ps_id
+                        ];
+                    }
+
+                    // FUNGSI REKURSIF: Menyiapkan stok produk dengan membongkar satuan di atasnya
+                    $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $value) {
+                        if (!isset($units[$targetKey + 1])) return false; 
+
+                        $stokSekarang = $units[$targetKey];
+                        $stokAtas = $units[$targetKey + 1];
+
+                        // Jika level atas kosong, bongkar level yang lebih atas lagi
+                        if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
+                            $bisaBongkarAtas = $siapkanStok($targetKey + 1, $units);
+                            if (!$bisaBongkarAtas) return false;
+                        }
+
+                        // Cek relasi antar unit produk
+                        $sr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
+                            ->where('pr_unit_id_2', $stokSekarang->unit_id)
+                            ->where('status', 1)
+                            ->first();
+
+                        if ($sr && $virtualStock[$stokAtas->ps_id]['current'] > 0) {
+                            // Eksekusi bongkar virtual per 1 unit
+                            $virtualStock[$stokAtas->ps_id]['current'] -= 1;
+                            $hasilBongkar = (float)$sr['pr_unit_value_2'];
+                            $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
+
+                            // Grouping Log: Unit besar (ps_id kecil) diletakkan di atas
+                            $baseOrder = $stokAtas->ps_id * 10; 
+
+                            $keyBongkar = $stokAtas->unit_id . '_cat2';
+                            $logSummary[$keyBongkar] = [
+                                'unit_id' => $stokAtas->unit_id,
+                                'jumlah' => ($logSummary[$keyBongkar]['jumlah'] ?? 0) + 1,
+                                'cat' => 2,
+                                'note' => "Konversi unit dari penjualan (Bongkar)",
+                                'sort_order' => $baseOrder
+                            ];
+
+                            $keyHasil = $stokSekarang->unit_id . '_cat1';
+                            $logSummary[$keyHasil] = [
+                                'unit_id' => $stokSekarang->unit_id,
+                                'jumlah' => ($logSummary[$keyHasil]['jumlah'] ?? 0) + $hasilBongkar,
+                                'cat' => 1,
+                                'note' => "Konversi unit dari penjualan (Hasil)",
+                                'sort_order' => $baseOrder + 1
+                            ];
+                            
+                            return true;
+                        }
+                        return false;
+                    };
+
+                    // Proses Penyiapan Stok Penjualan
+                    $keyPalingBawah = 0;
+                    $idPalingBawah = $ss[$keyPalingBawah]->ps_id;
+                    $safety = 0; 
+
+                    while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
+                        $safety++;
+                        if ($safety > 500) break; 
+                        
+                        $berhasil = $siapkanStok($keyPalingBawah, $ss);
+                        if (!$berhasil) break; 
+                    }
+
+                    // --- FINAL EKSEKUSI ---
+                    if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
+                        // 1. Update stok fisik produk ke Database
+                        foreach ($virtualStock as $v) {
+                            $v['model']->ps_stock = $v['current'];
+                            $v['model']->save();
+                        }
+                        
+                        // 2. Urutkan Log (Unit Besar -> Unit Kecil)
+                        usort($logSummary, function($a, $b) {
+                            return $a['sort_order'] <=> $b['sort_order'];
+                        });
+
+                        foreach ($logSummary as $l) {
+                            (new LogStock())->insertLog([
+                                'log_date' => now(), 
+                                'log_kode' => "-", 
+                                'log_type' => 1, // log_type penjualan
+                                'log_category' => $l['cat'], 
+                                'log_item_id' => $value['product_variant_id'],
+                                'log_notes' => $l['note'], 
+                                'log_jumlah' => $l['jumlah'], 
+                                'unit_id' => $l['unit_id'],
+                            ]);
+                        }
+                        
+                        // Stok sudah tersedia di level unit penjualan. 
+                        // Silakan panggil fungsi pengurangan stok penjualan milikmu di sini.
+
+                    } else {
+                        // Jika stok total tetap tidak cukup
+                        array_push($p, $value["pr_name"]." ".$value["product_variant_name"]);
+                        $valid = -1;
+                    }
                 }
             }
         }
