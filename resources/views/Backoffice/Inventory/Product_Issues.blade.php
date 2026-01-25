@@ -20,6 +20,10 @@
     #add-product-issues .select2-container {
         width: 100% !important;
     }
+    body.modal-open {
+        overflow-y: scroll !important;
+        padding-right: 0 !important;
+    }
     
 </style>
     <!-- Page Wrapper -->

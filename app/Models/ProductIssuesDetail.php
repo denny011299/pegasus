@@ -144,8 +144,7 @@ class ProductIssuesDetail extends Model
             $inv->save();
             
             if($m->pid_qty != $data["pid_qty"]){
-                if ($s->ss_stock + $t->pid_qty - $data["pid_qty"] >= 0) {
-                    $s->ss_stock += $t->pid_qty;
+                if ($s->ss_stock - $data["pid_qty"] >= 0) {
                     $s->ss_stock -= $data["pid_qty"];
                 } else {
                     return -1;
@@ -188,12 +187,12 @@ class ProductIssuesDetail extends Model
         $pi = ProductIssues::find($t->pi_id);
         
         if($pi->tipe_return == 1){
-            $m = SuppliesVariant::find($t->supplies_variant_id);
+            $m = SuppliesVariant::find($t->item_id);
             $s = SuppliesStock::where('supplies_id',$m->supplies_id)->where('unit_id',$t->unit_id)->first();
             $s->ss_stock += $t->pid_qty;
             $s->save();
 
-            $inv = PurchaseOrderDetailInvoice::find($t['ref_num']);
+            $inv = PurchaseOrderDetailInvoice::find($pi['ref_num']);
             $po = PurchaseOrder::find($inv->po_id);
             $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
             // pengurangan qty invoice
@@ -211,7 +210,7 @@ class ProductIssuesDetail extends Model
 
             return $m;
         }else if($pi->tipe_return == 2){
-            $m = ProductVariant::find($t->product_variant_id);
+            $m = ProductVariant::find($t->item_id);
             $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
             $s->ps_stock -= $t->pid_qty;
             $s->save();
@@ -348,7 +347,131 @@ class ProductIssuesDetail extends Model
             $s = ProductStock::where('product_variant_id','=',$itemId)->where('unit_id','=',$data["unit_id"])->first();
             $stocks = $s->ps_stock ?? 0;
             if ($stocks - $data["pid_qty"] < 0) {
-                return -1;
+                $butuhTersedia = $data["pid_qty"];
+
+                // 1. Ambil semua stok untuk produk ini, urutkan dari unit terkecil ke terbesar
+                $ss = ProductStock::where('product_variant_id', $itemId)
+                    ->where('status', 1)
+                    ->orderBy('ps_id', 'desc') 
+                    ->get();
+
+                if (count($ss) <= 0) {
+                    return -1;
+                }
+
+                // 2. Buat Virtual Sandbox agar tidak langsung memotong DB jika akhirnya tidak cukup
+                $virtualStock = [];
+                $logSummary = []; 
+                $keyTarget = null;
+
+                foreach ($ss as $key => $stok) {
+                    $virtualStock[$stok->ps_id] = [
+                        'model' => $stok,
+                        'current' => (float)$stok->ps_stock,
+                        'unit_id' => $stok->unit_id,
+                        'ps_id' => $stok->ps_id
+                    ];
+                    
+                    // Tandai index mana yang merupakan unit_id yang diminta user
+                    if ($stok->unit_id == $data["unit_id"]) {
+                        $keyTarget = $key;
+                    }
+                }
+
+                // Jika unit_id yang diminta user tidak terdaftar di stok produk ini
+                if ($keyTarget === null) {
+                    return -1;
+                }
+
+                // 3. FUNGSI REKURSIF: Bongkar satuan besar ke bawahnya
+                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $itemId) {
+                    if (!isset($units[$targetKey + 1])) return false; 
+
+                    $stokSekarang = $units[$targetKey];
+                    $stokAtas = $units[$targetKey + 1];
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
+                        $bisaBongkarAtas = $siapkanStok($targetKey + 1, $units);
+                        if (!$bisaBongkarAtas) return false;
+                    }
+
+                    $sr = ProductRelation::where('product_variant_id', $itemId)
+                        ->where('pr_unit_id_2', $stokSekarang->unit_id)
+                        ->where('status', 1)
+                        ->first();
+
+                    if ($sr && $virtualStock[$stokAtas->ps_id]['current'] > 0) {
+                        $virtualStock[$stokAtas->ps_id]['current'] -= 1;
+                        $hasilBongkar = (float)$sr['pr_unit_value_2'];
+                        $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
+
+                        $baseOrder = $stokAtas->ps_id * 10; 
+
+                        $logSummary[$stokAtas->unit_id . '_cat2'] = [
+                            'unit_id' => $stokAtas->unit_id,
+                            'jumlah' => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
+                            'cat' => 2,
+                            'note' => "Konversi unit dari produk bermasalah (Bongkar)",
+                            'sort_order' => $baseOrder
+                        ];
+
+                        $logSummary[$stokSekarang->unit_id . '_cat1'] = [
+                            'unit_id' => $stokSekarang->unit_id,
+                            'jumlah' => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
+                            'cat' => 1,
+                            'note' => "Konversi unit dari produk bermasalah (Hasil)",
+                            'sort_order' => $baseOrder + 1
+                        ];
+                        
+                        return true;
+                    }
+                    return false;
+                };
+
+                // 4. Eksekusi Penyiapan Stok
+                $idTargetStok = $ss[$keyTarget]->ps_id;
+                $safety = 0; 
+                while ($virtualStock[$idTargetStok]['current'] < $butuhTersedia) {
+                    $safety++;
+                    if ($safety > 500) break; 
+                    
+                    $berhasil = $siapkanStok($keyTarget, $ss);
+                    if (!$berhasil) break; 
+                }
+
+                // 5. FINAL CHECK & SAVE
+                if ($virtualStock[$idTargetStok]['current'] >= $butuhTersedia) {
+                    // Update DB
+                    foreach ($virtualStock as $v) {
+                        $v['model']->ps_stock = $v['current'];
+                        $v['model']->save();
+                    }
+                    
+                    // Insert Log Konversi
+                    usort($logSummary, function($a, $b) {
+                        return $a['sort_order'] <=> $b['sort_order'];
+                    });
+
+                    foreach ($logSummary as $l) {
+                        (new LogStock())->insertLog([
+                            'log_date' => now(), 
+                            'log_kode' => "-", 
+                            'log_type' => 1, // Type 2 biasanya untuk penyesuaian/produk bermasalah
+                            'log_category' => $l['cat'], 
+                            'log_item_id' => $itemId,
+                            'log_notes' => $l['note'], 
+                            'log_jumlah' => $l['jumlah'], 
+                            'unit_id' => $l['unit_id'],
+                        ]);
+                    }
+
+                    // Sekarang stok sudah siap di unit yang diminta. 
+                    // Kamu tinggal panggil fungsi pengurangan stok utama kamu di sini.
+                    return 1; 
+
+                } else {
+                    return -1; // Stok tetap tidak cukup meskipun sudah coba konversi
+                }
             }
         }
         return 1;

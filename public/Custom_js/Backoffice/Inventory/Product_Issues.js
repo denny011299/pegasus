@@ -320,6 +320,12 @@ function loadPiType() {
             return false;
         }
 
+        if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+            notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk");
+            return false;
+        }
+
         param = {
             pi_date: $("#pi_date").val(),
             pi_type: $("#pi_type").val(),
@@ -740,12 +746,20 @@ $(document).on("click", "#btn-delete-issues", function () {
         method: "post",
         success: function (e) {
             $(".modal").modal("hide");
-            afterInsert();
+            if (e == -1)
             notifikasi(
-                "success",
-                "Berhasil Delete",
-                "Berhasil delete masalah produk"
+                "error",
+                "Gagal Insert",
+                "Stock tidak mencukupi!"
             );
+            else {
+                afterInsert();
+                notifikasi(
+                    "success",
+                    "Berhasil Delete",
+                    "Berhasil delete masalah produk"
+                );
+            }
         },
         error: function (e) {
             console.log(e);

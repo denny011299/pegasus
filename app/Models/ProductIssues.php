@@ -91,7 +91,7 @@ class ProductIssues extends Model
         $t = new self();
         $t->pi_code   = $this->generateProductIssueID();
         $t->pi_type = $data["pi_type"];
-        if ($data["ref_num"]) $t->ref_num = $data["ref_num"];
+        $t->ref_num = $data["ref_num"] ?? 0;
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];     
@@ -138,11 +138,10 @@ class ProductIssues extends Model
         //         $s->ps_stock += $data["pi_qty"];
         //     }
 
-        // }
-        if(isset($data["pi_img"]))$t->pi_img = $data["pi_img"];    
+        // } 
         $t->pi_code   = $data['pi_code'];
         $t->pi_type = $data["pi_type"];
-        if ($data["ref_num"]) $t->ref_num = $data["ref_num"];
+        $t->ref_num = $data["ref_num"];
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];
         $t->tipe_return = $data["tipe_return"];

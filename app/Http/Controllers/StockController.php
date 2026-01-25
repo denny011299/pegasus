@@ -469,37 +469,39 @@ class StockController extends Controller
         file_put_contents($path, $imageData);
         $data["pi_img"] = $imageName;
 
-        $bermasalah = [];
-        foreach (json_decode($data['items'], true) as $key => $value) { 
-            // Pengecekan invoice
-            if (isset($data['ref_num'])){
-                $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
-                $po = PurchaseOrder::find($inv->po_id);
-                $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
-                
-                $ada = -1;
-                foreach ($pod as $key => $detail) {
-                    if ($detail['supplies_variant_id'] == $value['supplies_variant_id']) {
-                        $ada = 1;
+        if ($data['tipe_return'] == 1){
+            $bermasalah = [];
+            foreach (json_decode($data['items'], true) as $key => $value) { 
+                // Pengecekan invoice
+                if (isset($data['ref_num'])){
+                    $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
+                    $po = PurchaseOrder::find($inv->po_id);
+                    $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
+                    
+                    $ada = -1;
+                    foreach ($pod as $key => $detail) {
+                        if ($detail['supplies_variant_id'] == $value['supplies_variant_id']) {
+                            $ada = 1;
+                        }
+                    }
+                    if ($ada == -1) {
+                        array_push($bermasalah, $value['supplies_name']);
                     }
                 }
-                if ($ada == -1) {
-                    array_push($bermasalah, $value['supplies_name']);
-                }
             }
-        }
-        if (count($bermasalah) > 0) {
-            return [
-                "status"=>-1,
-                "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
-            ];
-        }
-
-        foreach (json_decode($data['items'], true) as $key => $value) {
-            $value['tipe_return'] = $data['tipe_return'];
-            // Pengecekan stock
-            $c = (new ProductIssuesDetail())->stockCheck($value);
-            if ($c == -1) return -1;
+            if (count($bermasalah) > 0) {
+                return [
+                    "status"=>-1,
+                    "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
+                ];
+            }
+    
+            foreach (json_decode($data['items'], true) as $key => $value) {
+                $value['tipe_return'] = $data['tipe_return'];
+                // Pengecekan stock
+                $c = (new ProductIssuesDetail())->stockCheck($value);
+                if ($c == -1) return -1;
+            }
         }
 
         // insert
@@ -565,7 +567,7 @@ class StockController extends Controller
         $pi = (new ProductIssues())->updateProductIssues($data);
 
         // Pengecekan invoice
-        if (isset($pi->ref_num)){
+        if (isset($pi->ref_num) && $pi->ref_num > 0){
             $bermasalah = [];
             foreach (json_decode($data['items'], true) as $key => $value) {
                 $inv = PurchaseOrderDetailInvoice::find($pi->ref_num);
@@ -574,11 +576,7 @@ class StockController extends Controller
                 
                 $ada = -1;
                 foreach ($pod as $key => $detail) {
-                    if (
-                        $detail['supplies_variant_id'] == $value['supplies_variant_id'] 
-                        && 
-                        $detail['unit_id'] == $value['unit_id']
-                    ) {
+                    if ($detail['supplies_variant_id'] == $value['supplies_variant_id']) {
                         $ada = 1;
                         break;
                     }
@@ -634,6 +632,7 @@ class StockController extends Controller
                 }
             }
         }
+        
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $data["pi_id"];
             if (isset($pi->ref_num)) $value['ref_num'] = $pi->ref_num;
@@ -643,11 +642,9 @@ class StockController extends Controller
                     $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
                     if (count($getPi) > 0) {
                         foreach ($getPi as $key => $val) {
-                            $pvr = ProductVariant::find($value['product_variant_id']);
-                            $ps = ProductStock::where('product_id', $pvr->product_id)->where('unit_id', $val->unit_id)->first();
+                            $ps = ProductStock::where('product_variant_id', $value['product_variant_id'])->where('unit_id', $val->unit_id)->first();
                             $val['tipe_return'] = $data['tipe_return'];
                             $c = (new ProductIssuesDetail())->stockCheck($val);
-
                             if ($c == -1) return -1;
 
                             $ps->ps_stock -= $val->pid_qty;
@@ -706,7 +703,6 @@ class StockController extends Controller
             }
             else {
                 
-                
                 $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
 
                 // Catat Log
@@ -750,9 +746,17 @@ class StockController extends Controller
     function deleteProductIssue(Request $req)
     {
         $data = $req->all();
-        (new ProductIssues())->deleteProductIssues($data);
+
         $pi = ProductIssues::find($data['pi_id']);
-        $v = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->get();
+        $v = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->where('status', '>=', 1)->get();
+        if ($pi->tipe_return == 2){
+            foreach ($v as $key => $value) {
+                $value['tipe_return'] = $pi['tipe_return'];
+                $c = (new ProductIssuesDetail())->stockCheck($value);
+                if ($c == -1) return -1;
+            }
+        }
+        (new ProductIssues())->deleteProductIssues($data);
         foreach ($v as $key => $value) {
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
@@ -762,7 +766,7 @@ class StockController extends Controller
             $logType = 0;
             $itemId = 0;
             if ($pi->tipe_return == 1){
-                $sup = SuppliesVariant::find($value['supplies_variant_id']);
+                $sup = SuppliesVariant::find($value['item_id']);
                 $spr = Supplier::find($sup->supplier_id);
                 
                 $logNotes = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name;
@@ -774,7 +778,7 @@ class StockController extends Controller
                 $logNotes = 'Penghapusan data produk bermasalah retur pelanggan';
                 $logCategory = 2;
                 $logType = 1;
-                $itemId = $value['product_variant_id'];
+                $itemId = $value['item_id'];
             }
             (new LogStock())->insertLog([
                 'log_date' => now(),
