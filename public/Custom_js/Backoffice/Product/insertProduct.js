@@ -55,6 +55,7 @@ $(document).ready(function() {
                 
                 relasi[index].push({
                     ...rl,
+                    pr_id: rl.pr_id,
                     unit_id_1: rl.pr_unit_id_1, 
                     unit_value_1: rl.pr_unit_value_1,
                     unit_id_2: rl.pr_unit_id_2,
@@ -253,7 +254,17 @@ $(document).on("click","#btnAddRowRelasi",function(){
     }
     console.log(r1+" - "+r2);
     
-    addRowRelasi({pr_unit_id_1: r1, pr_unit_name_1: $('#relasi1 option:selected').text().trim()},{pr_unit_id_2: r2, pr_unit_name_2: $('#relasi2 option:selected').text().trim()});
+    addRowRelasi(
+        {
+            pr_unit_id_1: r1, 
+            pr_unit_name_1: $('#relasi1 option:selected').text().trim()
+
+        },
+        {
+            pr_unit_id_2: r2, 
+            pr_unit_name_2: $('#relasi2 option:selected').text().trim()
+        }
+    );
 });
 
 $(document).on("change","#product_unit",function(){
@@ -319,7 +330,7 @@ $('#unit_id').on('click', function() {
 });
 
 function addRowRelasi(element1,element2) {
-    console.log(element2);
+    console.log(element1);
     
     $('#tbRelasi').append(`
         <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${dataRelasi[dataRelasi.length-1].pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : element2.pr_unit_id_2}">
@@ -330,7 +341,7 @@ function addRowRelasi(element1,element2) {
                     <span class="input-group-text unit_text_1">
                         ${element1.pr_unit_name_1 ? element1.pr_unit_name_1 : element1.text}
                     </span>
-                    <input type="hidden" class="form-control pr_id" value="${element1.pr_id??''}">
+                    <input type="hidden" class="form-control pr_id" value="${element1.pr_id || ''}">
                 </div>
             </td>
             <td>
@@ -405,24 +416,27 @@ $(document).on('click', '#btnSaveRelasi', function(){
     }
     console.log(relasi[index]);
 
-    if($('.row-relasi').length>relasi[index].length) syncRelasi(index);
-    relasi[index].forEach((element,idx) => {
-        element.index = index;
-        element.unit_value_2 = $('.unit2').eq(idx).val();
-        element.pr_unit_id_1 = $('.row-relasi').eq(idx).attr('left');
-        element.pr_unit_id_2 = $('.row-relasi').eq(idx).attr('right');
-        element.pr_unit_name_1 = $('.row-relasi').eq(idx).find('.unit_text_1').text().trim();
-        element.pr_unit_name_2 = $('.row-relasi').eq(idx).find('.unit_text_2').text().trim();
-    });
-    console.log(relasi[index]);
+    relasi[index] = $('.row-relasi').map(function(idx, el) {
+        var row = $(el);
+        return {
+            index: index,
+            unit_value_2: row.find('.unit2').val(),
+            pr_unit_id_1: row.attr('left'),
+            pr_unit_id_2: row.attr('right'),
+            pr_unit_name_1: row.find('.unit_text_1').text().trim(),
+            pr_unit_name_2: row.find('.unit_text_2').text().trim(),
+            pr_id: row.find('.pr_id').val()
+        };
+    }).get(); // .get() mengubah hasil map jQuery menjadi array murni
 
-   
-    if(mode==1){
+    console.log("Data Relasi Terbaru:", relasi[index]);
+
+    if(mode == 1){
         $('#modalRelasi').modal('hide');
         notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
     }
     else{
-         modeRelasi=1;
+        modeRelasi = 1;
         $(".btn-save").trigger("click");
     }
 });

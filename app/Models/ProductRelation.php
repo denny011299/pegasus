@@ -35,7 +35,7 @@ class ProductRelation extends Model
         $t = new self();
         $t->product_variant_id = $data["product_variant_id"];
         $t->pr_unit_id_1 = $data["pr_unit_id_1"];
-        $t->pr_unit_value_1 = $data["unit_value_1"];
+        $t->pr_unit_value_1 = $data["unit_value_1"] ?? 1;
         $t->pr_unit_id_2 = $data["pr_unit_id_2"];
         $t->pr_unit_value_2 = $data["unit_value_2"];
         $t->save();
@@ -45,10 +45,10 @@ class ProductRelation extends Model
     function updateProductRelation($data)
     {
         $t = self::find($data["pr_id"]);
-        $t->product_variant_id = $data["product_variant_id"];
-        $t->pr_unit_id_1 = $data["unit_id_1"];
-        $t->pr_unit_value_1 = $data["unit_value_1"];
-        $t->pr_unit_id_2 = $data["unit_id_2"];
+        $t->product_variant_id = $data['product_variant_id'];
+        $t->pr_unit_id_1 = $data["pr_unit_id_1"];
+        $t->pr_unit_value_1 = $data["unit_value_1"] ?? 1;
+        $t->pr_unit_id_2 = $data["pr_unit_id_2"];
         $t->pr_unit_value_2 = $data["unit_value_2"];
         $t->save();
         return $t->pr_id;

@@ -179,14 +179,13 @@ class ProductController extends Controller
         foreach (json_decode($data['product_relasi'], true) as $keyRelasi => $value) {
             foreach ($value as $key => $perVariant) {
                 $perVariant['product_variant_id'] = $variant[$keyRelasi]['product_variant_id'];
-
-                if (!isset($perVariant["pr_id"])) $t = (new ProductRelation())->insertProductRelation($perVariant);
+                if (!isset($perVariant["pr_id"]) || $perVariant['pr_id'] == "") $t = (new ProductRelation())->insertProductRelation($perVariant);
                 else $t = (new ProductRelation())->updateProductRelation($perVariant);
                 array_push($id, $t);
+                ProductRelation::where('product_variant_id', '=', $perVariant['product_variant_id'])->whereNotIn("pr_id", $id)->update(["status" => 0]);
             }
         }
         (new ProductStock())->syncStock($data["product_id"]);
-        ProductRelation::whereNotIn("pr_id", $id)->update(["status" => 0]);
     }
 
     function deleteProduct(Request $req)
