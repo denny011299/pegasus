@@ -455,15 +455,11 @@ $(document).on('click', '.btn_edit_relasi', function(){
     console.log(relasi);
     
     $('#tbRelasi').html("");
-    relasi[index].forEach((item,idx) => {
-            console.log(item);
-            
-            if(index == item.index){
-                console.log("masuk");
-                
-                addRowRelasi(item,item);  
-            }
-    });
+    if(relasi[index]) {
+        relasi[index].forEach((item, idx) => {
+            addRowRelasi(item, item); 
+        });
+    }
     
     $('#modalRelasi').modal('show');
 })
