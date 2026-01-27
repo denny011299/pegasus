@@ -297,7 +297,8 @@
                          <div class="input-block mb-3">
                             <label>Status</label>
                             <select class="form-select fill" id="status">
-                                <option value="1" selected>Belum Terbayar</option>
+                                <option value="" selected>Semua</option>
+                                <option value="1">Belum Terbayar</option>
                                 <option value="3">Menunggu Tanda Terima</option>
                                 <option value="2">Terbayar</option>
                                 <option value="5">Ditolak</option>
@@ -354,7 +355,8 @@
                         <div class="input-block">
                             <label>Status</label>
                             <select class="form-select fill" id="status">
-                                <option value="4" selected>Menunggu Approval</option>
+                                <option value="">Semua</option>
+                                <option value="4">Menunggu Approval</option>
                                 <option value="1">Belum Terbayar</option>
                                 <option value="3">Menunggu Tanda Terima</option>
                                 <option value="2">Terbayar</option>

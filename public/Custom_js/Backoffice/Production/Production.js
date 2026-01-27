@@ -291,7 +291,7 @@
         console.log(temp);
         items.forEach(element => {
             console.log(element);
-            if (element.product_variant_id == temp.product_variant_id && element.unit_id == temp.unit_id) {
+            if (element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val()) {
                 element.pd_qty += parseInt($('#production_qty').val());
                 idx = 1;
             }
@@ -329,7 +329,7 @@
         console.log(data);
         mode=3;
         items = [];
-        $('#addProduction .modal-title').html("Update Produksi");
+        $('#addProduction .modal-title').html("Detail Produksi");
         $('#addProduction input').val("");
         $('#product_id').empty();
         $('#production_qty').val("");

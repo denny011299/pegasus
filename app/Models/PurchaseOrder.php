@@ -25,7 +25,7 @@ class PurchaseOrder extends Model
             "ids" => null,
         ], $data);
 
-        $result = PurchaseOrder::where("status", ">=", -1);
+        $result = PurchaseOrder::where("status", ">=", -1)->where("status", '!=', 0);
 
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
@@ -65,7 +65,7 @@ class PurchaseOrder extends Model
         if ($data['pembayaran']){
             $result->orderBy('status', 'asc')->orderByRaw('FIELD(pembayaran, 1, 3, 2)')->orderBy("po_date", "desc");
         } else {
-            $result->orderBy('created_at', 'desc');
+            $result->orderByRaw('FIELD(status, 1, 2, 3, -1)')->orderByRaw('FIELD(pembayaran, 1, 3, 2)')->orderBy("po_date", "desc");
         }
         $result = $result->get();
 
