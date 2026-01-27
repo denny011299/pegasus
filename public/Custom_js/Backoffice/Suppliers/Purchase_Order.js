@@ -29,6 +29,11 @@
         $('#add_purchase_order #po_cost').val(0);
         $('#add_purchase_order #po_date').val(moment().format('YYYY-MM-DD'));
         $('#add_purchase_order #po_supplier').empty();
+        if ($('#po_sku').hasClass('select2-hidden-accessible')) {
+            $('#po_sku').select2('destroy');
+        }
+        $('#add_purchase_order #po_sku').empty();
+        $('#add_purchase_order #po_sku').append(`<option value="" selected disabled>Pilih Supplier Terlebih Dahulu</option>`);
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();

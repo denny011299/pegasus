@@ -177,13 +177,16 @@ class ProductController extends Controller
         ProductVariant::where('product_id', '=', $data["product_id"])->whereNotIn("product_variant_id", $id)->update(["status" => 0]);
         $id = [];
         foreach (json_decode($data['product_relasi'], true) as $keyRelasi => $value) {
+            $pvr_id = 0;
             foreach ($value as $key => $perVariant) {
                 $perVariant['product_variant_id'] = $variant[$keyRelasi]['product_variant_id'];
-                if (!isset($perVariant["pr_id"]) || $perVariant['pr_id'] == "") $t = (new ProductRelation())->insertProductRelation($perVariant);
+                $pvr_id = $variant[$keyRelasi]['product_variant_id'];
+                $perVariant['pr_id'] = intval($perVariant['pr_id']);
+                if (!isset($perVariant["pr_id"]) || $perVariant['pr_id'] == "" || $perVariant['pr_id'] == null) $t = (new ProductRelation())->insertProductRelation($perVariant);
                 else $t = (new ProductRelation())->updateProductRelation($perVariant);
                 array_push($id, $t);
-                ProductRelation::where('product_variant_id', '=', $perVariant['product_variant_id'])->whereNotIn("pr_id", $id)->update(["status" => 0]);
             }
+            ProductRelation::where('product_variant_id', '=', $pvr_id)->whereNotIn("pr_id", $id)->update(["status" => 0]);
         }
         (new ProductStock())->syncStock($data["product_id"]);
     }

@@ -292,6 +292,7 @@
             url="/updateSalesOrder";
             param.so_id = $('#add_sales_order').attr("so_id");
             param.so_number = $('#add_sales_order').attr("so_number");
+            param.so_invoice_no = $('#add_sales_order').attr("so_invoice_no");
         }
         else{
             param.so_img = $('#bukti').val();
@@ -406,6 +407,7 @@
         $('#add_sales_order').modal("show");
         $('#add_sales_order').attr("so_id", data.so_id);
         $('#add_sales_order').attr("so_number", data.so_number);
+        $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
     });
 
     //delete

@@ -53,30 +53,12 @@ class SalesOrderDetail extends Model
         $t->sod_subtotal = $data["so_subtotal"];
         $t->save();
 
-        $s = ProductVariant::find($data["product_variant_id"]);
-         $s = ProductStock::where("product_variant_id", "=", $s->product_variant_id)
-            ->where("unit_id", "=", $data["unit_id"])
-            ->where("status", "=", 1)
-            ->first();
-        $s->ps_stock -= $data["so_qty"];
-        $s->save();
-
         return $t->sod_id;
     }
 
     function updateSalesOrderDetail($data){
 
         $t = SalesOrderDetail::find($data["sod_id"]);
-        $s = ProductVariant::find($data["product_variant_id"]);
-         $s = ProductStock::where("product_variant_id", "=", $s->product_variant_id)
-            ->where("unit_id", "=", $data["unit_id"])
-            ->where("status", "=", 1)
-            ->first();
-        $s->ps_stock += $t["sod_qty"];
-        $s->ps_stock -= $data["so_qty"];
-        $s->save();
-
-
         $t->so_id = $data["so_id"];
         $t->product_variant_id = $data["product_variant_id"];
         $t->sod_nama = $data["product_name"];
