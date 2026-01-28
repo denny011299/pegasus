@@ -182,8 +182,13 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){ 
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");       
-                if(e.status == -1){
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+                console.log(e.length);      
+                if (e.status == 0){
+                    notifikasi('error', e.header, e.message);
+                    return false;
+                }
+                else if(e.status == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", e.message);
                     return false;
                 }

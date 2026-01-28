@@ -121,9 +121,10 @@ class ProductionController extends Controller
         foreach ($item as $key => $value) {
             $qty = 1; // Reset pengali konversi produk untuk setiap item produksi
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
-            if (count($bom) == 0) {
+            if (!isset($bom)) {
                 return response()->json([
-                    "status" => -1,
+                    "status" => 0,
+                    "header" => "Gagal Insert",
                     "message" => "Mohon cek kembali resep bahan mentah"
                 ]);
             }
@@ -134,9 +135,10 @@ class ProductionController extends Controller
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
                     ->get();
-                if (count($pr) == 0) {
+                if (!isset($pr) || count($pr) <= 1) {
                     return response()->json([
-                        "status" => -1,
+                        "status" => 0,
+                        "header" => "Gagal Insert",
                         "message" => "Mohon masukkan relasi produk terlebih dahulu"
                     ]);
                 }
@@ -201,9 +203,10 @@ class ProductionController extends Controller
                         ->where('su_id_2', $stokSekarang->unit_id)
                         ->where('status', 1)
                         ->first();
-                    if (count($sr) == 0) {
+                    if (!isset($sr) || count($sr) <= 1) {
                         return response()->json([
-                            "status" => -1,
+                            "status" => 0,
+                            "header" => "Gagal Insert",
                             "message" => "Mohon masukkan relasi bahan mentah terlebih dahulu"
                         ]);
                     }
@@ -343,7 +346,6 @@ class ProductionController extends Controller
             // Jika wadah unit (misal: Kilogram) belum ada, buatkan dulu
             if(!$v){
                 $pv = ProductVariant::find($value["product_variant_id"]);
-                dd($pv);
                 (new ProductStock())->syncStock($pv->product_id);
                 
                 // Cari ulang setelah sync
