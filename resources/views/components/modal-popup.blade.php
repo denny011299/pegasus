@@ -394,7 +394,7 @@
                                             </span>
                                         </label>
                                         <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
-                                        
+                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
                                         <input type="hidden" name="" id="bukti">
                                     </div>
                                 </div>

@@ -315,6 +315,11 @@
             valid=-1;
             $('#row-pemasok .select2-selection--single').addClass('is-invalids');
         }
+        if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+            notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
+            return false;
+        }
         
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');

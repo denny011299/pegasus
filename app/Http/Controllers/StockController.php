@@ -480,7 +480,7 @@ class StockController extends Controller
                     
                     $ada = -1;
                     foreach ($pod as $key => $detail) {
-                        if ($detail['supplies_variant_id'] == $value['supplies_variant_id']) {
+                        if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
                             $ada = 1;
                         }
                     }
@@ -566,6 +566,20 @@ class StockController extends Controller
         $id = [];
         $pi = (new ProductIssues())->updateProductIssues($data);
 
+        // Cek stock
+        $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
+        if (count($getPi) > 0) {
+            foreach ($getPi as $key => $val) {
+                foreach (json_decode($data['items'], true) as $key => $value) {
+                    if ($value['supplies_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']){
+                        $val['tipe_return'] = $data['tipe_return'];
+                        $val['pid_qty'] = $value['pid_qty'];
+                        $c = (new ProductIssuesDetail())->stockCheck($val);
+                        if ($c == -1) return -1;
+                    }
+                }
+            }
+        }
         // Pengecekan invoice
         if (isset($pi->ref_num) && $pi->ref_num > 0){
             $bermasalah = [];
@@ -576,7 +590,7 @@ class StockController extends Controller
                 
                 $ada = -1;
                 foreach ($pod as $key => $detail) {
-                    if ($detail['supplies_variant_id'] == $value['supplies_variant_id']) {
+                    if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
                         $ada = 1;
                         break;
                     }
@@ -608,6 +622,8 @@ class StockController extends Controller
                     }
                     $inv->poi_total = $total;
                     $inv->save();
+                    $po->po_total = $total;
+                    $po->save();
 
                     // Kembalikan stock
                     $svr = SuppliesVariant::find($val->item_id);
@@ -643,9 +659,6 @@ class StockController extends Controller
                     if (count($getPi) > 0) {
                         foreach ($getPi as $key => $val) {
                             $ps = ProductStock::where('product_variant_id', $value['product_variant_id'])->where('unit_id', $val->unit_id)->first();
-                            $val['tipe_return'] = $data['tipe_return'];
-                            $c = (new ProductIssuesDetail())->stockCheck($val);
-                            if ($c == -1) return -1;
 
                             $ps->ps_stock -= $val->pid_qty;
                             $ps->save();
@@ -758,6 +771,8 @@ class StockController extends Controller
         }
         (new ProductIssues())->deleteProductIssues($data);
         foreach ($v as $key => $value) {
+            $value['tipe_return'] = $pi->tipe_return;
+            if (isset($pi->ref_num)) $value['ref_num'] = $pi->ref_num;
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
             // Catat Log

@@ -591,6 +591,7 @@ $(document).on("click", ".btn_edit", function () {
     $("#pi_type").empty();
     $('#tipe_return').val(data.tipe_return).trigger('change');
     $('#ref_num').append(`<option value="${data.ref_num}">${data.supplier_name} - ${data.poi_code}</option>`);
+    $('#bukti').val(data.pi_img);
     $('#tableProduct tr.row-product').remove();
     $('#tableProduct tr.row-supplies').remove();
     items = [];
@@ -635,6 +636,7 @@ $(document).on("click", ".btn_edit", function () {
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
     $('#btn-foto-bukti').show();
     $('#btn-lihat-bukti').show();
+    $('#check_foto').show();
     imageValue(data.pi_img);
     $('#add-product-issues .modal-title').html("Update Produk Bermasalah");
     $("#add-product-issues").modal("show");
@@ -658,6 +660,7 @@ $(document).on("click", ".btn_view", function () {
     $("#pi_type").empty().append(
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
+    $('#ref_num').empty().append(`<option value="${data.ref_num}">${data.supplier_name} - ${data.poi_code}</option>`);
     $('#tableProduct tr.row-product').remove();
     items = [];
 
@@ -689,12 +692,14 @@ $(document).on("click", ".btn_view", function () {
         });
     }
 
-    $("#pi_date, #pi_type, #pi_notes, #tipe_return").prop("disabled", true);
+    $("#pi_date, #pi_type, #pi_notes, #tipe_return, #ref_num").prop("disabled", true);
     $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').hide();
     $('.is-invalid').removeClass('is-invalid');
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
+    $('#check_foto').show();
     $('#btn-foto-bukti').hide();
     $('#btn-lihat-bukti').show();
+    imageValue(data.pi_img);
    
     $('#fotoProduksiImage').attr('src', public+"issue/"+data.pi_img);
     $('#fotoProduksiImage').attr('index', 0);

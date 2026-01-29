@@ -135,7 +135,7 @@ class ProductionController extends Controller
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
                     ->get();
-                if (!isset($pr) || count($pr) <= 1) {
+                if (!isset($pr) || count($pr) <= 0) {
                     return response()->json([
                         "status" => 0,
                         "header" => "Gagal Insert",
@@ -203,7 +203,7 @@ class ProductionController extends Controller
                         ->where('su_id_2', $stokSekarang->unit_id)
                         ->where('status', 1)
                         ->first();
-                    if (!isset($sr) || count($sr) <= 1) {
+                    if (!isset($sr) || count($sr) <= 0) {
                         return response()->json([
                             "status" => 0,
                             "header" => "Gagal Insert",
