@@ -1,8 +1,10 @@
     autocompleteBom('#product_id', '#addProduction')
     var mode=1; // 1 = insert; 2 = edit; 3 = view
+    var modeBahan = 1;
     var table;
     var items = [];
     var list_photo =  [];
+    var list_bahan=[];
     $(document).ready(function(){
         $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
         inisialisasi();
@@ -11,7 +13,9 @@
 
     $(document).on('click', '.btnAdd', function(){
         mode=1;
+        modeBahan = 1;
         items = [];
+        list_bahan = [];
         $('#addProduction .modal-title').html("Tambah Produksi");
         $('#addProduction input').val("");
         $('#product_id').empty();
@@ -36,7 +40,7 @@
 
     $(document).on('keyup', '#production_qty', function(){
         var data = $('#product_id').select2("data")[0];
-        console.log(data);
+
         var qty = $(this).val();
         if(qty==""||qty==null||isNaN(qty)){
             qty=0;
@@ -46,7 +50,6 @@
 
     $(document).on('change', '#product_id', function(){
         var data = $(this).select2("data")[0];
-        console.log(data);
         
         $('#unit_id').html("");
         data.pr_unit.forEach(element => {
@@ -171,6 +174,7 @@
         param = {
             production_date:$('#production_date').val(),
             detail:JSON.stringify(items),
+            list_bahan: JSON.stringify(list_bahan),
             _token:token
         };
         LoadingButton($(this));
@@ -248,10 +252,10 @@
 
     function addRow(e) {
         $('#tableProduct tbody').html("");
-        e.forEach(element => {
+        e.forEach((element, index) => {
             console.log(element);
             $('#tableProduct tbody').append(`
-                <tr class="row-product" data-id="${element.product_variant_id}">
+                <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
                     <td>${element.product_name}</td>
                     <td class="text-center">${element.pd_qty}</td>
                     <td>${element.unit_name}</td>
@@ -259,9 +263,14 @@
                         <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
                         </a>
+                        <a class="p-2 btn-action-icon btn_list_row mx-auto" index=${index}  href="javascript:void(0);">
+                                <i class="fa fa-list-alt"></i>
+                        </a>
                     </td>
                 </tr>    
             `)
+            modeBahan = 1;
+            if (mode != 3) getBom(element.bom_id, index);
         })
     }
 
@@ -325,6 +334,12 @@
         let row = $(this).closest("tr");
         let productId = row.data("id");
         items = items.filter(e => e.product_variant_id != productId);
+
+        let index = row.find('.btn_list_row').attr('index');
+        if (index !== undefined) {
+            list_bahan.splice(index, 1);
+        }
+        
         console.log(items)
         row.remove();
     });
@@ -333,7 +348,9 @@
         var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         console.log(data);
         mode=3;
+        modeBahan = 1;
         items = [];
+        list_bahan = [];
         $('#addProduction .modal-title').html("Detail Produksi");
         $('#addProduction input').val("");
         $('#product_id').empty();
@@ -355,8 +372,11 @@
                 "bom_id": e.bom_id
             };
             items.push(temp);
+
+            list_bahan.push(e.list_bahan);
         })
         console.log(items);
+        console.log(list_bahan);
         addRow(items);
         
         $('.is-invalid').removeClass('is-invalid');
@@ -366,6 +386,111 @@
         $('#addProduction').attr("production_id", data.production_id);
         $('#addProduction').modal("show");
     })
+
+    $(document).on('click', '.btn_list_row', function(){
+        $('#addProduction').modal('hide');
+        $('#modalBahan').modal('show');
+        let row = $(this).closest("tr").data("bom");
+        let index = $(this).attr('index');
+        $('.btn-save-bahan').attr('index',index);
+        modeBahan = 2;
+        getBom(row, index);
+        if (mode == 3) $('.btn-save-bahan').hide();
+        else $('.btn-save-bahan').show();
+    })
+
+    $(document).on('click', '.btn-close-bahan', function(){
+        $('#addProduction').modal('show');
+        $('#modalBahan').modal('hide');
+    })
+
+    function getBom(id, index = null) {
+        // kalau index sudah ada, maka akan balik
+        if (modeBahan == 1 && list_bahan[index] !== undefined) {
+            return; 
+        }
+
+        $.ajax({
+            url: "/getBom",
+            method: "get",
+            data: { bom_id: id },
+            success: function(e) {
+                console.log(e);
+                if (modeBahan == 1) {
+                    var temp = [];
+                    e[0].details.forEach(detail => {
+                        temp.push(detail.supplies_id);
+                    });
+                    list_bahan[index] = temp;
+                } 
+                else if (modeBahan == 2) {
+                    $('#tableSupplies tbody').html("");
+
+                    let current_list = list_bahan[index];
+                    // 1. Pastikan current_list jadi array murni (handle JSON string dari DB)
+                    if (typeof current_list === 'string') {
+                        try {
+                            current_list = JSON.parse(current_list);
+                        } catch (e) {
+                            current_list = [];
+                        }
+                    }
+
+                    e[0].details.forEach(b => {
+                        let isChecked = false;
+                        if (Array.isArray(current_list)) {
+                            // Gunakan parseInt untuk memastikan perbandingan angka benar
+                            isChecked = current_list.some(id => parseInt(id) == parseInt(b.supplies_id));
+                        }
+                        let isDisabled = (mode == 3) ? 'disabled' : '';
+                        
+                        $('#tableSupplies tbody').append(`
+                            <tr class="row-bahan">
+                                <td class="text-center">
+                                    <input type="checkbox" ${isChecked ? 'checked' : ''} ${isDisabled}
+                                    class="form-check-input chk" supplies_id="${b.supplies_id}" />
+                                </td>
+                                <td>${b.supplies_name}</td>
+                            </tr>
+                        `);
+                    });
+                }
+                console.log(list_bahan);
+            }
+        });
+    }
+
+    
+
+    $(document).on('click', '.btn-save-bahan', function(){
+        var index = parseInt($(this).attr('index'));
+
+        // Ambil semua id dari checkbox yang HANYA ada di tabel modal saat ini
+        var temp = $('#tableSupplies tbody .chk:checked').map(function() {
+            return parseInt($(this).attr('supplies_id'));
+        }).get();
+
+        var valid = 1;
+        LoadingButton('.btn-save-bahan');
+
+        if (temp.length === 0) {
+            valid = -1;
+        } else {
+            list_bahan[index] = temp;
+        }
+        
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Mohon input minimal 1 bahan');
+            ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan"); 
+            return false;
+        }
+
+        $('#modalBahan').modal('hide');
+        $('#addProduction').modal('show');
+        modeBahan = 1;
+        notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Detail Bahan');
+        ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan");
+    });
     
 
 //delete

@@ -113,6 +113,7 @@ class ProductionController extends Controller
     {
         $data = $req->all();
         $item = json_decode($req->detail, true);
+        $bahan = json_decode($req->list_bahan, true);
         $cek = -1;
         $bahan_kurang = [];
         $qty = 1;
@@ -152,23 +153,28 @@ class ProductionController extends Controller
             // Masukkan ke dalam array agregat berdasarkan supplies_id
             foreach ($bom['items'] as $bd) {
                 $id = $bd['supplies_id'];
-                // Rumus: Kebutuhan BoM * Qty Produksi * Pengali Konversi Satuan
-                $kebutuhanBaris = $bd['bom_detail_qty'] * $value['pd_qty'] * $qty;
+                foreach ($bahan[$key] as $a => $bhn) {
+                    // Pengecekan apakah bahan ini masuk ke produksi ga
+                    if ($id == $bhn) {
+                        // Rumus: Kebutuhan BoM * Qty Produksi * Pengali Konversi Satuan
+                        $kebutuhanBaris = $bd['bom_detail_qty'] * $value['pd_qty'] * $qty;
 
-                if (!isset($aggregatedRequirements[$id])) {
-                    $aggregatedRequirements[$id] = [
-                        'total_butuh' => 0,
-                        'details' => $bd // Simpan satu contoh detail untuk referensi
-                    ];
+                        if (!isset($aggregatedRequirements[$id])) {
+                            $aggregatedRequirements[$id] = [
+                                'total_butuh' => 0,
+                                'details' => $bd // Simpan satu contoh detail untuk referensi
+                            ];
+                        }
+                        $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
+                    }
                 }
-                $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
             }
         }
 
         // 2. PROCESSING: Eksekusi Konversi Stok (Bongkar Satuan Besar) berdasarkan total agregat
-        foreach ($aggregatedRequirements as $suppliesId => $req) {
-            $butuhTersedia = $req['total_butuh'];
-            $bd = $req['details'];
+        foreach ($aggregatedRequirements as $suppliesId => $butuh) {
+            $butuhTersedia = $butuh['total_butuh'];
+            $bd = $butuh['details'];
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
@@ -203,7 +209,8 @@ class ProductionController extends Controller
                         ->where('su_id_2', $stokSekarang->unit_id)
                         ->where('status', 1)
                         ->first();
-                    if (!isset($sr) || count($sr) <= 0) {
+                        
+                    if (!isset($sr)) {
                         return response()->json([
                             "status" => 0,
                             "header" => "Gagal Insert",
@@ -291,6 +298,7 @@ class ProductionController extends Controller
         $p = (new Production())->insertProduction($data);
         foreach ($item as $key => $value) {
             $value['production_id'] = $p->production_id;
+            $value['list_bahan'] = json_encode($bahan[$key]);
             (new ProductionDetails())->insertProductionDetail($value);
         }
         // --- TAHAP 2: EKSEKUSI REAL (PENGURANGAN & PENAMBAHAN) ---
@@ -318,23 +326,27 @@ class ProductionController extends Controller
 
             // 3. PENGURANGAN BAHAN (SUPPLIES)
             foreach ($bom['items'] as $bd) {
-                $stokSupplies = SuppliesStock::where("supplies_id", $bd['supplies_id'])
-                    ->where("unit_id", $bd['unit_id'])->first();
-                
-                $jumlahKurang = (int)($bd['bom_detail_qty'] * $value['pd_qty'] * $qty_konversi_produk);
-                
-                $stokSupplies->ss_stock -= $jumlahKurang;
-                $stokSupplies->save();
-
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode' => $p->production_code,
-                    'log_type' => 2, 'log_category' => 2,
-                    'log_item_id' => $bd['supplies_id'],
-                    'log_notes' => "Pengurangan bahan untuk produksi",
-                    'log_jumlah' => $jumlahKurang,
-                    'unit_id' => $bd['unit_id'],
-                ]);
+                foreach ($bahan[$key] as $a => $bhn) {
+                    if ($bd['supplies_id'] == $bhn){
+                        $stokSupplies = SuppliesStock::where("supplies_id", $bd['supplies_id'])
+                            ->where("unit_id", $bd['unit_id'])->first();
+                        
+                        $jumlahKurang = (int)($bd['bom_detail_qty'] * $value['pd_qty'] * $qty_konversi_produk);
+                        
+                        $stokSupplies->ss_stock -= $jumlahKurang;
+                        $stokSupplies->save();
+        
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode' => $p->production_code,
+                            'log_type' => 2, 'log_category' => 2,
+                            'log_item_id' => $bd['supplies_id'],
+                            'log_notes' => "Pengurangan bahan untuk produksi",
+                            'log_jumlah' => $jumlahKurang,
+                            'unit_id' => $bd['unit_id'],
+                        ]);
+                    }
+                }
             }
 
             // 4. PENAMBAHAN PRODUK (PRODUCT STOCK) - BAGIAN KRUSIAL

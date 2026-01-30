@@ -45,6 +45,7 @@ class ProductionDetails extends Model
         $t->pd_qty = $data["pd_qty"];
         $t->bom_id = $data["bom_id"];
         $t->unit_id = $data["unit_id"];
+        $t->list_bahan = $data["list_bahan"];
         $t->save();
         return $t;
     }
@@ -57,6 +58,7 @@ class ProductionDetails extends Model
         $t->pd_qty = $data["pd_qty"];
         $t->bom_id = $data["bom_id"];
         $t->unit_id = $data["unit_id"];
+        $t->list_bahan = $data["list_bahan"];
         $t->save();
         return $t->pd_id;
     }
@@ -82,30 +84,35 @@ class ProductionDetails extends Model
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
                     ->get();
-                foreach ($pr as $key => $p) {
+                foreach ($pr as $p) {
                     if ($p['pr_unit_id_2'] != $detail['unit_id']) {
                         $qty *= $p['pr_unit_value_2'];
                     }
                 }
             }
-            foreach ($b['items'] as $key => $value) {
-                $s = SuppliesStock::where("supplies_id", "=", $value->supplies_id)
-                    ->where("unit_id", "=", $value->unit_id)
-                    ->first();
-                $s->ss_stock +=  ($value->bom_detail_qty * $detail->pd_qty * $qty);
-                $s->save();
-    
-                // Catat log
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $t->production_code,
-                    'log_type'    => 2,
-                    'log_category' => 1,
-                    'log_item_id' => $value->supplies_id,
-                    'log_notes'  => "Pengembalian stok bahan akibat pembatalan produksi",
-                    'log_jumlah' => ($value->bom_detail_qty * $detail->pd_qty * $qty),
-                    'unit_id'    => $value->unit_id,
-                ]);
+            $bahan = json_decode($detail->list_bahan, true) ?? [];
+            foreach ($b['items'] as $value) {
+                foreach ($bahan as $bhn) {
+                    if ($value->supplies_id == $bhn){
+                        $s = SuppliesStock::where("supplies_id", "=", $value->supplies_id)
+                            ->where("unit_id", "=", $value->unit_id)
+                            ->first();
+                        $s->ss_stock +=  ($value->bom_detail_qty * $detail->pd_qty * $qty);
+                        $s->save();
+            
+                        // Catat log
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode'    => $t->production_code,
+                            'log_type'    => 2,
+                            'log_category' => 1,
+                            'log_item_id' => $value->supplies_id,
+                            'log_notes'  => "Pengembalian stok bahan akibat pembatalan produksi",
+                            'log_jumlah' => ($value->bom_detail_qty * $detail->pd_qty * $qty),
+                            'unit_id'    => $value->unit_id,
+                        ]);
+                    }
+                }
             }
         }
     }

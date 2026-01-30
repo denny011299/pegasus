@@ -227,93 +227,93 @@ class ProductIssuesDetail extends Model
         $itemId = 0;
         // Return to Supplier (Tipe 1)
         if ($data['tipe_return'] == 1) {
-    $itemId = $data['supplies_variant_id'] ?? $data['item_id'];
-    $m = SuppliesVariant::find($itemId);
-    $s = SuppliesStock::where('supplies_id', '=', $m->supplies_id)->where('unit_id', '=', $data["unit_id"])->first();
+            $itemId = $data['supplies_variant_id'] ?? $data['item_id'];
+            $m = SuppliesVariant::find($itemId);
+            $s = SuppliesStock::where('supplies_id', '=', $m->supplies_id)->where('unit_id', '=', $data["unit_id"])->first();
 
-    $pid = isset($data['pid_id']) ? ProductIssuesDetail::find($data['pid_id']) : null;
-    $qtyLama = $pid ? (int)$pid->pid_qty : 0;
-    $qtyBaru = (int)$data['pid_qty'];
-    $stokFisikDB = (int)($s->ss_stock ?? 0);
+            $pid = isset($data['pid_id']) ? ProductIssuesDetail::find($data['pid_id']) : null;
+            $qtyLama = $pid ? (int)$pid->pid_qty : 0;
+            $qtyBaru = (int)$data['pid_qty'];
+            $stokFisikDB = (int)($s->ss_stock ?? 0);
 
-    // KUNCI: Hitung balance akhir seandainya transaksi ini selesai
-    // Stok Sekarang + Stok Balik - Stok Keluar Baru
-    $balanceAkhir = $stokFisikDB + $qtyLama - $qtyBaru;
-    
-    // Jika balance akhir < 0, artinya wadah unit ini HARUS ditambah lewat konversi
-    if ($balanceAkhir < 0) {
-        
-        // Berapa Liter sih yang harus kita tambahkan ke DB agar balance tidak minus?
-        // Kita paksa target fisik di DB menjadi selisih bersihnya + 1 (cadangan aman)
-        $targetFisikMinimal = ($qtyBaru - $qtyLama) + 1;
-
-        $ss = SuppliesStock::where('supplies_id', $m->supplies_id)->where('status', 1)->orderBy('ss_id', 'desc')->get();
-        if (count($ss) <= 0) return -1;
-
-        $virtualStock = []; $logSummary = []; $keyTarget = null;
-        foreach ($ss as $idx => $stok) {
-            $virtualStock[$stok->ss_id] = [
-                'model' => $stok, 
-                'current' => (float)$stok->ss_stock, 
-                'unit_id' => $stok->unit_id, 
-                'ss_id' => $stok->ss_id
-            ];
-            if ($stok->unit_id == $data["unit_id"]) { $keyTarget = $idx; }
-        }
-
-        $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $m) {
-            if (!isset($units[$targetKey + 1])) return false;
-            $stokSekarang = $units[$targetKey]; 
-            $stokAtas = $units[$targetKey + 1];
+            // KUNCI: Hitung balance akhir seandainya transaksi ini selesai
+            // Stok Sekarang + Stok Balik - Stok Keluar Baru
+            $balanceAkhir = $stokFisikDB + $qtyLama - $qtyBaru;
             
-            if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) { 
-                if (!$siapkanStok($targetKey + 1, $units)) return false; 
-            }
-            
-            $sr = SuppliesRelation::where('supplies_id', $m->supplies_id)->where('su_id_2', $stokSekarang->unit_id)->where('status', 1)->first();
-            
-            if ($sr && $virtualStock[$stokAtas->ss_id]['current'] > 0) {
-                $virtualStock[$stokAtas->ss_id]['current'] -= 1;
-                $hasilBongkar = (float)$sr['sr_value_2'];
-                $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
+            // Jika balance akhir < 0, artinya wadah unit ini HARUS ditambah lewat konversi
+            if ($balanceAkhir < 0) {
                 
-                $kb = $stokAtas->unit_id . '_cat2';
-                $logSummary[$kb] = ['unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$kb]['jumlah'] ?? 0) + 1, 'cat' => 2, 'note' => "Konversi unit (Bongkar)", 'sort' => $stokAtas->ss_id * 10];
-                $kh = $stokSekarang->unit_id . '_cat1';
-                $logSummary[$kh] = ['unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$kh]['jumlah'] ?? 0) + $hasilBongkar, 'cat' => 1, 'note' => "Konversi unit (Hasil)", 'sort' => ($stokAtas->ss_id * 10) + 1];
-                return true;
-            }
-            return false;
-        };
+                // Berapa Liter sih yang harus kita tambahkan ke DB agar balance tidak minus?
+                // Kita paksa target fisik di DB menjadi selisih bersihnya + 1 (cadangan aman)
+                $targetFisikMinimal = ($qtyBaru - $qtyLama) + 1;
 
-        $idTarget = $ss[$keyTarget]->ss_id;
-        $safety = 0;
-        
-        // Loop ini akan membongkar Pcs menjadi Liter sampai modal fisik kamu di DB mencukupi
-        while ($virtualStock[$idTarget]['current'] < $targetFisikMinimal) {
-            $safety++; if ($safety > 500) break;
-            if (!$siapkanStok($keyTarget, $ss)) break;
-        }
+                $ss = SuppliesStock::where('supplies_id', $m->supplies_id)->where('status', 1)->orderBy('ss_id', 'desc')->get();
+                if (count($ss) <= 0) return -1;
 
-        if ($virtualStock[$idTarget]['current'] >= $targetFisikMinimal) {
-            foreach ($virtualStock as $v) { 
-                $v['model']->ss_stock = $v['current']; 
-                $v['model']->save(); 
+                $virtualStock = []; $logSummary = []; $keyTarget = null;
+                foreach ($ss as $idx => $stok) {
+                    $virtualStock[$stok->ss_id] = [
+                        'model' => $stok, 
+                        'current' => (float)$stok->ss_stock, 
+                        'unit_id' => $stok->unit_id, 
+                        'ss_id' => $stok->ss_id
+                    ];
+                    if ($stok->unit_id == $data["unit_id"]) { $keyTarget = $idx; }
+                }
+
+                $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $m) {
+                    if (!isset($units[$targetKey + 1])) return false;
+                    $stokSekarang = $units[$targetKey]; 
+                    $stokAtas = $units[$targetKey + 1];
+                    
+                    if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) { 
+                        if (!$siapkanStok($targetKey + 1, $units)) return false; 
+                    }
+                    
+                    $sr = SuppliesRelation::where('supplies_id', $m->supplies_id)->where('su_id_2', $stokSekarang->unit_id)->where('status', 1)->first();
+                    
+                    if ($sr && $virtualStock[$stokAtas->ss_id]['current'] > 0) {
+                        $virtualStock[$stokAtas->ss_id]['current'] -= 1;
+                        $hasilBongkar = (float)$sr['sr_value_2'];
+                        $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
+                        
+                        $kb = $stokAtas->unit_id . '_cat2';
+                        $logSummary[$kb] = ['unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$kb]['jumlah'] ?? 0) + 1, 'cat' => 2, 'note' => "Konversi unit (Bongkar)", 'sort' => $stokAtas->ss_id * 10];
+                        $kh = $stokSekarang->unit_id . '_cat1';
+                        $logSummary[$kh] = ['unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$kh]['jumlah'] ?? 0) + $hasilBongkar, 'cat' => 1, 'note' => "Konversi unit (Hasil)", 'sort' => ($stokAtas->ss_id * 10) + 1];
+                        return true;
+                    }
+                    return false;
+                };
+
+                $idTarget = $ss[$keyTarget]->ss_id;
+                $safety = 0;
+                
+                // Loop ini akan membongkar Pcs menjadi Liter sampai modal fisik kamu di DB mencukupi
+                while ($virtualStock[$idTarget]['current'] < $targetFisikMinimal) {
+                    $safety++; if ($safety > 500) break;
+                    if (!$siapkanStok($keyTarget, $ss)) break;
+                }
+
+                if ($virtualStock[$idTarget]['current'] >= $targetFisikMinimal) {
+                    foreach ($virtualStock as $v) { 
+                        $v['model']->ss_stock = $v['current']; 
+                        $v['model']->save(); 
+                    }
+                    usort($logSummary, function ($a, $b) { return $a['sort'] <=> $b['sort']; });
+                    foreach ($logSummary as $l) { 
+                        (new LogStock())->insertLog([
+                            'log_date' => now(), 'log_kode' => "-", 'log_type' => 2, 'log_category' => $l['cat'], 
+                            'log_item_id' => $m->supplies_id, 'log_notes' => $l['note'], 
+                            'log_jumlah' => $l['jumlah'], 'unit_id' => $l['unit_id']
+                        ]); 
+                    }
+                } else {
+                    return -1; // Stok total (termasuk satuan besar) benar-benar habis
+                }
             }
-            usort($logSummary, function ($a, $b) { return $a['sort'] <=> $b['sort']; });
-            foreach ($logSummary as $l) { 
-                (new LogStock())->insertLog([
-                    'log_date' => now(), 'log_kode' => "-", 'log_type' => 2, 'log_category' => $l['cat'], 
-                    'log_item_id' => $m->supplies_id, 'log_notes' => $l['note'], 
-                    'log_jumlah' => $l['jumlah'], 'unit_id' => $l['unit_id']
-                ]); 
-            }
-        } else {
-            return -1; // Stok total (termasuk satuan besar) benar-benar habis
+            return 1;
         }
-    }
-    return 1;
-}
 
         // Retur pelanggan
         else if ($data['tipe_return'] == 2) {
