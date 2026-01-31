@@ -571,11 +571,21 @@ class StockController extends Controller
         if (count($getPi) > 0) {
             foreach ($getPi as $key => $val) {
                 foreach (json_decode($data['items'], true) as $key => $value) {
-                    if ($value['supplies_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']){
-                        $val['tipe_return'] = $data['tipe_return'];
-                        $val['pid_qty'] = $value['pid_qty'];
-                        $c = (new ProductIssuesDetail())->stockCheck($val);
-                        if ($c == -1) return -1;
+                    if ($data['tipe_return'] == 1) {
+                        if ($value['supplies_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']){
+                            $val['tipe_return'] = $data['tipe_return'];
+                            $val['pid_qty'] = $value['pid_qty'];
+                            $c = (new ProductIssuesDetail())->stockCheck($val);
+                            if ($c == -1) return -1;
+                        }
+                    }
+                    if ($data['tipe_return'] == 2) {
+                        if ($value['product_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']){
+                            $val['tipe_return'] = $data['tipe_return'];
+                            $val['pid_qty'] = $value['pid_qty'];
+                            $c = (new ProductIssuesDetail())->stockCheck($val);
+                            if ($c == -1) return -1;
+                        }
                     }
                 }
             }

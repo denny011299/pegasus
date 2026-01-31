@@ -63,9 +63,15 @@ class PurchaseOrder extends Model
         }
 
         if ($data['pembayaran']){
-            $result->orderBy('status', 'asc')->orderByRaw('FIELD(pembayaran, 1, 3, 2)')->orderBy("po_date", "desc");
+            $result->orderBy('status', 'asc')
+                ->orderByRaw('FIELD(pembayaran, 1, 3, 2)')
+                ->orderBy("po_date", "desc")
+                ->orderBy("created_at", "desc");
         } else {
-            $result->orderByRaw('FIELD(status, 1, 2, 3, -1)')->orderByRaw('FIELD(pembayaran, 1, 3, 2)')->orderBy("po_date", "desc");
+            $result->orderByRaw('FIELD(status, 1, 2, 3, -1)')
+                ->orderByRaw('FIELD(pembayaran, 1, 3, 2)')
+                ->orderBy("po_date", "desc")
+                ->orderBy("created_at", "desc");
         }
         $result = $result->get();
 
