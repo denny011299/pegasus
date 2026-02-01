@@ -127,7 +127,7 @@
                     }
                     if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
                         e[i].action = `
-                            
+                            <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                         `;
                     }
 
