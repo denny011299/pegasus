@@ -25,14 +25,18 @@
         var data = $(this).select2("data")[0];
         console.log(data);
         $('#unit_id').empty();
-        
-        // Ambil satuan terkecil
-        data.relasi.forEach((element, index) => {
-            if (index == data.relasi.length - 1){
-                $('#unit_id').append(`<option value="${element.pr_unit_id_2}" selected>${element.pr_unit_name_2}</option>`);
-                $('#unit_id').prop('disabled', true);
-            }
-        });
+        if (data.relasi.length == 0) {
+            $('#unit_id').append(`<option value="${data.unit_id}" selected>${data.product_unit}</option>`);
+            $('#unit_id').prop('disabled', true);
+        } else {
+            // Ambil satuan terkecil
+            data.relasi.forEach((element, index) => {
+                if (index == data.relasi.length - 1){
+                    $('#unit_id').append(`<option value="${element.pr_unit_id_2}" selected>${element.pr_unit_name_2}</option>`);
+                    $('#unit_id').prop('disabled', true);
+                }
+            });
+        }
         $('#bom_qty').val(1);
         $('#bom_qty').prop('disabled', true);
     });
@@ -44,7 +48,7 @@
         $('#supplies_id').empty();
         $('#unit_id').empty();
         $('#product_id').empty();
-        $('#bom_qty, #unit_id').prop('disabled', false);
+        $('#bom_qty, #unit_id, #product_id').prop('disabled', false);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Tambah Resep');
@@ -203,7 +207,7 @@
         $('#unit_id').empty();
         $('#product_id').empty();
         $('#bom_qty').val(1);
-        $('#bom_qty, #unit_id').prop('disabled', true);
+        $('#bom_qty, #unit_id, #product_id').prop('disabled', true);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
 

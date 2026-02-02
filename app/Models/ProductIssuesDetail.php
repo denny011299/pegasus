@@ -30,12 +30,14 @@ class ProductIssuesDetail extends Model
                 $sup = Supplies::find($svr->supplies_id);
                 $value->supplies_id = $svr->supplies_id;
                 $value->sup_name = $sup->supplies_name." ".$svr->supplies_variant_name;
+                $value->sup_variant_name = $svr->supplies_variant_name;
                 $value->sup_sku = $svr->supplies_variant_sku;
             }
             else if ($data["tipe_return"] == 2){
                 $pvr = ProductVariant::find($value->item_id);
                 $sup = Product::find($pvr->product_id);
                 $value->pr_name = $sup->product_name." ".$pvr->product_variant_name;
+                $value->pr_variant_name = $pvr->product_variant_name;
                 $value->pr_sku = $pvr->product_variant_sku;
             }
             $u = Unit::find($value->unit_id);

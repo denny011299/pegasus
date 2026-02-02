@@ -243,7 +243,7 @@ class AutocompleteController extends Controller
 
         foreach ($data_city as $r) {
             $r->id = $r["supplies_id"];
-            $r->text = $r["supplies_name"] . " " . $r["supplies_variant_name"];
+            $r->text = $r["supplies_variant_name"];
         };
 
         echo json_encode(array(
@@ -263,7 +263,7 @@ class AutocompleteController extends Controller
 
         foreach ($data_city as $r) {
             $r->id = $r["supplies_variant_id"];
-            $r->text = $r["supplies_name"] . " " . $r["supplies_variant_name"];
+            $r->text = $r["supplies_variant_name"];
         };
 
         echo json_encode(array(

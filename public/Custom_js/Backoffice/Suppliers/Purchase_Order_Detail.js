@@ -59,7 +59,7 @@
             },
             columns: [
                 { data: "pod_sku", width: "15%" },
-                { data: "pod_nama", width: "25%" },
+                { data: "pod_variant", width: "25%" },
                 { data: "qty", class:"text-center", width: "20%" },
                 { data: "pod_harga_text", class:"text-end" },
                 { data: "pod_subtotal_text", class:"text-end subtotal" },

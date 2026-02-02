@@ -468,7 +468,7 @@ function loadPiType() {
             var data  = {
                 "supplies_variant_id": temp.supplies_variant_id,
                 "supplies_id": temp.supplies_id,
-                "supplies_name": `${temp.supplies_name} ${temp.supplies_variant_name}`,
+                "supplies_name": temp.supplies_variant_name,
                 "pid_qty": parseInt($('#pid_qty').val()),
                 "unit_name": $('#unit_supplies_id option:selected').text(),
                 "unit_id": $('#unit_supplies_id').val(),
@@ -604,7 +604,7 @@ $(document).on("click", ".btn_edit", function () {
                 "pid_id": e.pid_id,
                 "supplies_variant_id": e.item_id,
                 "supplies_id": e.supplies_id,
-                "supplies_name": e.sup_name,
+                "supplies_name": e.sup_variant_name,
                 "pid_qty": e.pid_qty,
                 "unit_name": e.unit_name,
                 "unit_id": e.unit_id,
@@ -669,7 +669,7 @@ $(document).on("click", ".btn_view", function () {
             var data  = {
                 "supplies_variant_id": e.item_id,
                 "supplies_id": e.supplies_id,
-                "supplies_name": e.sup_name,
+                "supplies_name": e.sup_variant_name,
                 "pid_qty": e.pid_qty,
                 "unit_name": e.unit_name,
                 "unit_id": e.unit_id,
