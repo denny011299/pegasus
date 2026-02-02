@@ -61,6 +61,18 @@ class CustomerController extends Controller
             $unitTarget = $req['unit_id_jual'];
             $val = $req['details'];
 
+            $cekRelasi = ProductRelation::where('product_variant_id', $variantId)
+                    ->where('status', 1)
+                    ->exists();
+
+            if (!$cekRelasi) {
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal Insert",
+                    "message" => "Mohon masukkan relasi produk: " . $val["product_variant_name"]
+                ]);
+            }
+
             // Ambil semua level stok produk ini
             $ss = ProductStock::where('product_variant_id', $variantId)
                 ->where('status', 1)

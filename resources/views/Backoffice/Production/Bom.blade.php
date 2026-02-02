@@ -1,5 +1,12 @@
 <?php $page = 'bom'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        #add_bom .select2-container {
+            width: 100% !important;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

@@ -779,7 +779,14 @@ class StockController extends Controller
                 if ($c == -1) return -1;
             }
         }
-        (new ProductIssues())->deleteProductIssues($data);
+        $del = (new ProductIssues())->deleteProductIssues($data);
+        if ($del == -1){
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal Delete",
+                "message" => "Invoice tersebut sudah terbayar"
+            ]);
+        }
         foreach ($v as $key => $value) {
             $value['tipe_return'] = $pi->tipe_return;
             if (isset($pi->ref_num)) $value['ref_num'] = $pi->ref_num;

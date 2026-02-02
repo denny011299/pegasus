@@ -306,10 +306,17 @@
             headers: {
                 'X-CSRF-TOKEN': token
             },
-            success:function(e){    
+            success:function(e){
+                console.log(e);
                 if (e!=1){
-                    ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");   
-                    notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
+                    if (typeof e === "object"){
+                        notifikasi('error', e.header, e.message);
+                        ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");   
+                        return false;
+                    } else {
+                        ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");   
+                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
+                    }
                 }
                 else{
                     ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");      

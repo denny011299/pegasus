@@ -159,6 +159,11 @@ class ProductIssues extends Model
     function deleteProductIssues($data)
     {
         $t = self::find($data["pi_id"]);
+        $inv = PurchaseOrderDetailInvoice::find($t->ref_num);
+        $po = PurchaseOrder::find($inv->po_id);
+        if ($po->tt_id != null) {
+            return -1;
+        }
         $t->status = 0;
         $t->save();
 

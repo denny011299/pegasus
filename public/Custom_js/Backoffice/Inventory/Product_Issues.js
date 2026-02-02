@@ -751,7 +751,14 @@ $(document).on("click", "#btn-delete-issues", function () {
         method: "post",
         success: function (e) {
             $(".modal").modal("hide");
-            if (e == -1)
+            if (typeof e === "object") {
+                notifikasi(
+                    "error",
+                    e.header,
+                    e.message
+                );
+            }
+            else if (e == -1)
             notifikasi(
                 "error",
                 "Gagal Insert",
