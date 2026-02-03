@@ -2007,6 +2007,7 @@
                                         <div class="input-block mb-3">
                                             <label>Status</label>
                                             <select class="form-select fill" id="status">
+                                                <option value="">Semua</option>
                                                 <option value="4">Menunggu Approval</option>
                                                 <option value="1" selected>Belum Terbayar</option>
                                                 <option value="3">Menunggu Tanda Terima</option>
