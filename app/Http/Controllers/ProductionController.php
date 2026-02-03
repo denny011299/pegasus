@@ -153,27 +153,52 @@ class ProductionController extends Controller
             // Masukkan ke dalam array agregat berdasarkan supplies_id
             foreach ($bom['items'] as $bd) {
                 $id = $bd['supplies_id'];
-                foreach ($bahan[$key] as $a => $bhn) {
-                    // Pengecekan apakah bahan ini masuk ke produksi ga
-                    if ($id == $bhn) {
-                        // Rumus: Kebutuhan BoM * Qty Produksi * Pengali Konversi Satuan
-                        $kebutuhanBaris = $bd['bom_detail_qty'] * $value['pd_qty'] * $qty;
+                $namaBahan = Supplies::find($id)->supplies_name;
+                $isKemasanBesar = preg_match('/dos|pack/i', $namaBahan);
 
-                        if (!isset($aggregatedRequirements[$id])) {
-                            $aggregatedRequirements[$id] = [
-                                'total_butuh' => 0,
-                                'details' => $bd // Simpan satu contoh detail untuk referensi
-                            ];
-                        }
-                        $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
+                if ($isKemasanBesar) {
+                    // RUMUS DOS/PACK (PEMBULATAN KE BAWAH):
+                    // Menggunakan floor() agar sisa produksi yang tidak genap 1 dos tidak dihitung
+                    // Contoh: 38 / 12 = 3.16 -> floor jadi 3
+                    $relasiKonversi = ProductRelation::where('product_variant_id', $value['product_variant_id'])
+                        ->where('pr_unit_id_2', $bom['unit_id']) // Unit dasar resep
+                        ->where('status', 1)
+                        ->first();
+
+                    // Ambil nilai pembagi (misal 12)
+                    $nilaiIsiDos = ($relasiKonversi) ? $relasiKonversi->pr_unit_value_2 : 1;
+
+                    if ($bom['unit_id'] != $value['unit_id']) {
+                        // Jika user input dalam satuan besar (misal Lusin), 
+                        // gunakan $qty yang sudah dihitung di atas (total pcs)
+                        $totalPcs = $value['pd_qty'] * $qty;
+                    } else {
+                        // Jika user input dalam satuan kecil (Pcs)
+                        $totalPcs = $value['pd_qty'];
                     }
+
+                    // Sekarang baru di-floor berdasarkan isi dos
+                    $jumlahDos = floor($totalPcs / $nilaiIsiDos);
+                    $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
+                } else {
+                    // RUMUS STANDAR (Label, Isi, dll):
+                    $kebutuhanBaris = $bd['bom_detail_qty'] * $value['pd_qty'] * $qty;
                 }
+
+                if (!isset($aggregatedRequirements[$id])) {
+                    $aggregatedRequirements[$id] = [
+                        'total_butuh' => 0,
+                        'details' => $bd // Simpan satu contoh detail untuk referensi
+                    ];
+                }
+                $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
             }
         }
 
         // 2. PROCESSING: Eksekusi Konversi Stok (Bongkar Satuan Besar) berdasarkan total agregat
         foreach ($aggregatedRequirements as $suppliesId => $butuh) {
             $butuhTersedia = $butuh['total_butuh'];
+            if ($butuhTersedia <= 0) continue; // Jangan proses jika butuhnya 0
             $bd = $butuh['details'];
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
@@ -258,8 +283,9 @@ class ProductionController extends Controller
 
                 // --- FINAL EKSEKUSI PENYIAPAN ---
                 if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
+                    // 1. UPDATE STOK VIRTUAL (Hasil Bongkar/Konversi)
                     foreach ($virtualStock as $v) {
-                        $v['model']->ss_stock = (int)$v['current']; // Simpan sebagai INT sesuai DB
+                        $v['model']->ss_stock = (int)$v['current']; 
                         $v['model']->save();
                     }
                     
@@ -273,13 +299,14 @@ class ProductionController extends Controller
                             'log_kode' => "-", 
                             'log_type' => 2,
                             'log_category' => $l['cat'], 
-                            'log_item_id' => $bd['supplies_id'],
+                            'log_item_id' => $suppliesId,
                             'log_notes' => $l['note'], 
                             'log_jumlah' => $l['jumlah'], 
                             'unit_id' => $l['unit_id'],
                         ]);
                     }
-                } else {
+                }
+                else {
                     $cek = 1;
                     $s = Supplies::find($suppliesId);
                     if (!in_array($s['supplies_name'], $bahan_kurang, true)) {
@@ -301,92 +328,84 @@ class ProductionController extends Controller
             $value['list_bahan'] = json_encode($bahan[$key]);
             (new ProductionDetails())->insertProductionDetail($value);
         }
+
         // --- TAHAP 2: EKSEKUSI REAL (PENGURANGAN & PENAMBAHAN) ---
         foreach ($item as $key => $value) {
-            // 1. Reset total konversi setiap baris item
             $qty_konversi_produk = 1; 
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
-
-            // 2. Ambil ID Unit Produksi dari input user secara tegas
             $unitIdInputUser = $value['unit_id']; 
 
+            // 1. Logika pengali konversi produk (sama seperti sebelumnya)
             if ($bom['unit_id'] != $unitIdInputUser){
                 $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
-                    ->where('status', 1)
-                    ->orderBy('pr_id', 'desc')
-                    ->get();
-                
+                    ->where('status', 1)->orderBy('pr_id', 'desc')->get();
                 foreach ($pr as $r) {
-                    // Pastikan pengali hanya dihitung jika unit tersebut bukan unit target user
                     if ($r['pr_unit_id_2'] != $unitIdInputUser) {
                         $qty_konversi_produk *= $r['pr_unit_value_2'];
                     }
                 }
             }
 
-            // 3. PENGURANGAN BAHAN (SUPPLIES)
+            // 2. PENGURANGAN BAHAN (SUPPLIES)
             foreach ($bom['items'] as $bd) {
-                foreach ($bahan[$key] as $a => $bhn) {
-                    if ($bd['supplies_id'] == $bhn){
-                        $stokSupplies = SuppliesStock::where("supplies_id", $bd['supplies_id'])
+                $idBahan = $bd['supplies_id'];
+                $bahanDipilih = $bahan[$key] ?? [];
+
+                // Cek apakah bahan ini memang dipilih user untuk baris ini
+                if (in_array($idBahan, $bahanDipilih)) {
+                    
+                    // AMBIL DATA DARI AGREGASI (Hasil floor sudah ada di sini)
+                    // Kita tidak pakai rumus standar lagi agar Dos/Pack terhitung benar
+                    $kebutuhanFinal = $aggregatedRequirements[$idBahan]['total_butuh'] ?? 0;
+
+                    if ($kebutuhanFinal > 0) {
+                        // Cari stok di gudang
+                        $stokSupplies = SuppliesStock::where("supplies_id", $idBahan)
                             ->where("unit_id", $bd['unit_id'])->first();
-                        
-                        $jumlahKurang = (int)($bd['bom_detail_qty'] * $value['pd_qty'] * $qty_konversi_produk);
-                        
-                        $stokSupplies->ss_stock -= $jumlahKurang;
-                        $stokSupplies->save();
-        
-                        (new LogStock())->insertLog([
-                            'log_date' => now(),
-                            'log_kode' => $p->production_code,
-                            'log_type' => 2, 'log_category' => 2,
-                            'log_item_id' => $bd['supplies_id'],
-                            'log_notes' => "Pengurangan bahan untuk produksi",
-                            'log_jumlah' => $jumlahKurang,
-                            'unit_id' => $bd['unit_id'],
-                        ]);
+
+                        if ($stokSupplies) {
+                            // EKSEKUSI PENGURANGAN: Menggunakan hasil Agregasi (Hasil 1.0)
+                            $stokSupplies->ss_stock -= $kebutuhanFinal;
+                            $stokSupplies->save();
+
+                            // LOG STOCK BAHAN
+                            (new LogStock())->insertLog([
+                                'log_date' => now(),
+                                'log_kode' => $p->production_code,
+                                'log_type' => 2, 'log_category' => 2,
+                                'log_item_id' => $idBahan,
+                                'log_notes' => "Pengurangan bahan untuk produksi",
+                                'log_jumlah' => $kebutuhanFinal,
+                                'unit_id' => $bd['unit_id'],
+                            ]);
+                        }
                     }
                 }
             }
 
-            // 4. PENAMBAHAN PRODUK (PRODUCT STOCK) - BAGIAN KRUSIAL
-            // Kita pastikan mencari berdasarkan variant DAN unit_id yang diketik user
+            // 3. PENAMBAHAN PRODUK JADI (Sama seperti sebelumnya)
             $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                ->where("unit_id", $unitIdInputUser) // Pakai variabel tegas
-                ->first();
+                ->where("unit_id", $unitIdInputUser)->first();
             
-            // Jika wadah unit (misal: Kilogram) belum ada, buatkan dulu
             if(!$v){
                 $pv = ProductVariant::find($value["product_variant_id"]);
                 (new ProductStock())->syncStock($pv->product_id);
-                
-                // Cari ulang setelah sync
                 $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id", $unitIdInputUser)
-                    ->first();
+                    ->where("unit_id", $unitIdInputUser)->first();
             }
 
-            // HITUNG TAMBAH: Cukup Qty Produksi * Hasil Per BOM
             $jumlahTambah = (int)($value['pd_qty'] * $bom->bom_qty);
-            
-            // VALIDASI TERAKHIR: Cek apakah $v benar-benar mengarah ke unit yang benar
             if ($v && $v->unit_id == $unitIdInputUser) {
                 $v->ps_stock += $jumlahTambah;
                 $v->save();
-            } else {
-                // Jika tetap nyasar ke Liter, kita paksa bikin baru atau lempar error
-                // Ini adalah "Safety Net" agar tidak terjadi salah alamat stok
-                throw new \Exception("Gagal menemukan wadah stok untuk Unit ID: " . $unitIdInputUser);
             }
 
             (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode' => $p->production_code,
+                'log_date' => now(), 'log_kode' => $p->production_code,
                 'log_type' => 1, 'log_category' => 1,
                 'log_item_id' => $value["product_variant_id"],
-                'log_notes' => "Produksi produk",
-                'log_jumlah' => $jumlahTambah,
-                'unit_id' => $unitIdInputUser,
+                'log_notes' => "Hasil Produksi Produk",
+                'log_jumlah' => $jumlahTambah, 'unit_id' => $unitIdInputUser,
             ]);
         }
         

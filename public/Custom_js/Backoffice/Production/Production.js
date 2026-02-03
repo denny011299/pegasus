@@ -263,9 +263,6 @@
                         <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
                         </a>
-                        <a class="p-2 btn-action-icon btn_list_row mx-auto" index=${index}  href="javascript:void(0);">
-                                <i class="fa fa-list-alt"></i>
-                        </a>
                     </td>
                 </tr>    
             `)
