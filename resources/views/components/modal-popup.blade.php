@@ -724,14 +724,31 @@
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
+                                     <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
+                                                <span id="check_foto" style="display: none" class="ms-2">
+                                                    <div class="d-flex g-3">
+                                                        <i class="fa fa-check-circle text-success mt-1"></i>
+                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
+                                                    </div>
+                                                </span>
+                                            </label>
+                                            <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                            <input type="hidden" name="" id="bukti">
+                                        </div>
+                                    </div>
+                                    {{-- 
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Nama Sales</label>
                                             <select id="sales_id" class="form-control"></select>
                                         </div>
-                                    </div>
+                                    </div>--}}
                                 </div>
                                 <div class="col-12 row">
+                                    {{--
                                     <div class="col-4">
                                         <div class="input-block">
                                             <label>Diskon</label>
@@ -766,22 +783,8 @@
                                             <label>No. Invoice</label>
                                             <input id="so_invoice_no" class="form-control" value="{{ $data['so_invoice_no'] || '-' }}" disabled>
                                         </div>
-                                    </div> --}}
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
-                                                <span id="check_foto" style="display: none" class="ms-2">
-                                                    <div class="d-flex g-3">
-                                                        <i class="fa fa-check-circle text-success mt-1"></i>
-                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
-                                                    </div>
-                                                </span>
-                                            </label>
-                                            <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
-                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
-                                            <input type="hidden" name="" id="bukti">
-                                        </div>
-                                    </div>
+                                    </div> --}} 
+                                   
                                 </div>
                                 <div class="col-12 row">
                                     <div class="col-6">

@@ -280,9 +280,6 @@
             so_date: $('#so_date').val(),
             so_invoice_no: $('#so_invoice_no').val(),
             so_total: convertToAngka($('#value_grand').html()),
-            so_ppn: convertToAngka($('#so_ppn').val()),
-            so_cost: convertToAngka($('#so_cost').val()),
-            so_discount: convertToAngka($('#so_discount').val()),
             products: JSON.stringify(products),
             
             _token:token
