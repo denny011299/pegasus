@@ -9,7 +9,7 @@
             <div class="page-header">
                 @component('components.page-header')
                     @slot('title')
-                        Detail Pelanggan
+                        Detail Armada
                     @endslot
                 @endcomponent
             </div>
@@ -95,7 +95,7 @@
                                 <table class="table table-stripped table-hover datatable">
                                     <thead class="thead-light">
                                        <thead>
-                                            <th>Nama Pelanggan</th>
+                                            <th>Nama Armada</th>
                                             <th>Referensi</th>
                                             <th>Tanggal</th>
                                             <th>Total</th>

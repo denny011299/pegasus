@@ -253,7 +253,7 @@
 
         if($('#so_customer').val()==null||$('#so_customer').val()=="null"||$('#so_customer').val()==""){
             valid=-1;
-            $('#row-pelanggan .select2-selection--single').addClass('is-invalids');
+            $('#row-Armada .select2-selection--single').addClass('is-invalids');
         }
 
         if(valid==-1){

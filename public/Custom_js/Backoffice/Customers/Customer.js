@@ -19,7 +19,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Pelanggan",
+                searchPlaceholder: "Cari Armada",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -85,7 +85,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableCustomer').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin menghapus pelanggan ini?","btn-delete-customer");
+        showModalDelete("Apakah yakin ingin menghapus Armada ini?","btn-delete-customer");
         $('#btn-delete-customer').attr("customer_id", data.customer_id);
     });
 
@@ -101,7 +101,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshCustomer();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete pelanggan");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete Armada");
                 
             },
             error:function(e){

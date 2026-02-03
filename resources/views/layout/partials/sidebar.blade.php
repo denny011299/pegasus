@@ -554,7 +554,7 @@
                     <li class="submenu">
                         <li>
                             <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
-                                    class="fe fe-users"></i> <span>Pelanggan</span></a>
+                                    class="fe fe-users"></i> <span>Armada</span></a>
                         </li>
                         <li>
                             <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i

@@ -370,7 +370,7 @@
                                         <label class="form-label">Jenis Retur<span class="text-danger">*</span></label>
                                         <select class="select" id="tipe_return">
                                             <option value="1" selected>Retur ke Supplier / Rusak Gudang</option>
-                                            <option value="2">Pengembalian Pelanggan</option>
+                                            <option value="2">Pengembalian Armada</option>
                                         </select>
                                     </div>
                                 </div>
@@ -719,8 +719,8 @@
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="input-block mb-3 " id="row-pelanggan">
-                                            <label>Nama Pelanggan<span class="text-danger">*</span></label>
+                                        <div class="input-block mb-3 " id="row-Armada">
+                                            <label>Nama Armada<span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>

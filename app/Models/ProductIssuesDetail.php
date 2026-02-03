@@ -317,7 +317,7 @@ class ProductIssuesDetail extends Model
             return 1;
         }
 
-        // Retur pelanggan
+        // Retur Armada
         else if ($data['tipe_return'] == 2) {
             $itemId = $data['product_variant_id'] ?? $data['item_id'];
             $s = ProductStock::where('product_variant_id', '=', $itemId)->where('unit_id', '=', $data["unit_id"])->first();

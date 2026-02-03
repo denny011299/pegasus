@@ -27,7 +27,7 @@
                                 <table class="table table-center table-hover" id="tableSalesOrder">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Nama Customer</th>
+                                            <th>Nama Armada</th>
                                             <th>Tanggal</th>
                                             <th>No. Invoice</th>
                                             <th>Jumlah Total</th>

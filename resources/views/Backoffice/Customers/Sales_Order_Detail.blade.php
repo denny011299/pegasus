@@ -38,7 +38,7 @@
                                         <div class="row g-3">
                                             <div class="col-12 col-md-4">
                                                 <div class="input-block">
-                                                    <label>Nama Pelanggan</label>
+                                                    <label>Nama Armada</label>
                                                     <select id="so_customer" class="form-control fill">
                                                         <option value="{{ $data['so_customer'] }}">{{ $data['customer_name'] }}</option>
                                                     </select>
@@ -111,7 +111,7 @@
                                             <div class="col-12 col-md-6">
                                                 <div class="card">
                                                     <div class="card-body">
-                                                        <h6>Detail Pelanggan</h6>
+                                                        <h6>Detail Armada</h6>
                                                         <p>Nama Penerima: Budianto</p>
                                                         <p>Alamat: Jl. Makin Maju 5 no.18</p>
                                                         <p>No. Telepon: 081756378192</p>

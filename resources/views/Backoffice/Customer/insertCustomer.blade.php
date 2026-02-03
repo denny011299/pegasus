@@ -10,7 +10,7 @@
                     <div class="page-header">
                         <div class="content-page-header">
                             <div class="d-flex justify-content-between w-100">
-                                <h5>Tambah Pelanggan</h5>
+                                <h5>Tambah Armada</h5>
                                 <button class="btn btn-back">Kembali</button>
                             </div>
                         </div>
@@ -31,7 +31,7 @@
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Nama <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill" id="customer_name" placeholder="Masukkan Nama Customer">
+                                                <input type="text" class="form-control fill" id="customer_name" placeholder="Masukkan Nama Armada">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
@@ -94,7 +94,7 @@
                                 </div>
                                 <div class="add-customer-btns text-end">
                                     <a class="btn btn-outline-secondary btn-clear">Clear</a>
-                                    <a class="btn btn-primary btn-save">Tambah Pelanggan</a>
+                                    <a class="btn btn-primary btn-save">Tambah Armada</a>
                                 </div>
                             </form>
                         </div>
