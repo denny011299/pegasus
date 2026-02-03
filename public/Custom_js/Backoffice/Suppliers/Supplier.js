@@ -93,7 +93,10 @@
         $('#supplier_address').html(data.supplier_address);
         $('#supplier_notes').html(data.supplier_notes || "-" );
         $('#supplier_payment').html(`Rp ${formatRupiah(data.payment)}`);
-        $('#status').val(1).trigger('change');
+        $('#status').val("").trigger('change');
+        $('#tablePo tr.row-po').remove();
+        $('#supplier_payment_bawah').html("Rp 0");
+        $('#tablePo tr.empty-data').remove();
         activeId = data.supplier_id;
         getPo(data.supplier_id);
     })
@@ -127,7 +130,7 @@
                 $('#tablePo tbody').append(`
                     <tr class="row-po" data-id="${e.po_id}">
                         <td>${moment(e.po_date).format('D MMM YYYY')}</td>
-                        <td>${e.poi_due ? moment(e.poi_due).format('D MMM YYYY') : "-"}</td>
+                        <td>${e.poi_due != "-" ? moment(e.poi_due).format('D MMM YYYY') : "-"}</td>
                         <td>${e.poi_code || "-"}</td>
                         <td class="fw-bold">Rp ${formatRupiah(e.po_total)}</td>
                     </tr>

@@ -28,6 +28,7 @@ class PurchaseOrderDetailInvoice extends Model
             "bank_id"  => null,
             "status"  => null,
             "po_supplier"  => null,
+            "dates" => null,
         ], $data);
 
         $result = PurchaseOrderDetailInvoice::where('purchase_order_detail_invoices.status','>=',0);
@@ -56,6 +57,19 @@ class PurchaseOrderDetailInvoice extends Model
         
         if ($data["po_supplier"]) {
             $result->where("purchase_orders.po_supplier", "=", $data["po_supplier"]);
+        }
+
+        if ($data["dates"]) {
+            if (is_array($data["dates"]) && count($data["dates"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
+
+                $result->whereDate('purchase_order_detail_invoices.poi_due', '>=', $startDate->toDateString())
+                        ->whereDate('purchase_order_detail_invoices.poi_due', '<=', $endDate->toDateString());
+            } else {
+                $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
+                $result->whereDate('purchase_order_detail_invoices.poi_due', $date);
+            }
         }
 
         $result->select('purchase_order_detail_invoices.*');

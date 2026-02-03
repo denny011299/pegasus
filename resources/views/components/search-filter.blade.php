@@ -281,18 +281,26 @@
             </div>
         </div>--}}
         
-        <div class="col-12 col-md-12 mb-4">
+        <div class="col-8 col-md-8 mb-4 pe-0">
             <div class="card p-3">
                 <div class="row g-2 align-items-center">
                     <!-- Supplier -->
-                    <div class="col-md-3 row-supplier">
+                    <div class="col-lg-4 col-md-6 col-sm-12 row-supplier">
                         <label class="form-label mb-1">Filter</label>
                          <div class="input-block mb-3">
                             <label>Bank Account</label>
                             <select class="form-select fill" id="bank_kode"></select>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-4 col-md-6">
+                        <label class="form-label mb-1">  </label>
+                         <div class="input-block mb-3">
+                            <label>Supplier</label>
+                            <select class="form-select fill" id="supplier">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label mb-1">  </label>
                          <div class="input-block mb-3">
                             <label>Status</label>
@@ -305,15 +313,34 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label mb-1">  </label>
-                         <div class="input-block mb-3">
-                            <label>Supplier</label>
-                            <select class="form-select fill" id="supplier">
-                            </select>
+                    <div class="col-md-4">
+                        <div class="input-block">
+                            <label>Dari</label>
+                            <div>
+                                <input type="date" class="form-control" id="start_date">
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-3 text-end">
+                    <div class="col-md-4">
+                        <div class="input-block">
+                            <label>Sampai</label>
+                            <div>
+                                <input type="date" class="form-control" id="end_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-12 col-sm-12 pt-4 text-end">
+                        <a class="btn btn-outline-secondary btn-clear">
+                            Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-4 col-md- mb-4 pe-0">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 text-end">
                         <label class="form-label mb-1">Tanda Terima</label>
                          <div class="input-block mb-3">
                             <label id="jumlah_terpilih" class="jumlah_terpilih" style="cursor:pointer">0 Selected</label> <i  class="fe fe-refresh-ccw ms-2 jumlah_terpilih"  style="cursor:pointer"></i><br>

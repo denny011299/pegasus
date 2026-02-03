@@ -295,7 +295,7 @@
         dates = null;
         $('#start_date').val("");
         $('#end_date').val("");
-        $('#status').val(4);
+        $('#status').val("");
         refreshPurchaseOrder();
     })
 

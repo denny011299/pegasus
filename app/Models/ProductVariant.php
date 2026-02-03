@@ -106,7 +106,6 @@ class ProductVariant extends Model
                 "product_id"      => $data["product_id"],
                 "variant_name"    => $data["variant_name"],
                 "variant_sku"     => $data["variant_sku"],
-                "variant_price"   => $data["variant_price"],
                 "variant_alert"   => $data["variant_alert"],
                 "variant_barcode" => $data["variant_barcode"] ?? "",
                 "unit_id" => $data["unit_id"] ?? 0,

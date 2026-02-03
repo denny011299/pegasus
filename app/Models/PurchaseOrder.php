@@ -55,7 +55,8 @@ class PurchaseOrder extends Model
                 $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
                 $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
 
-                $result->whereBetween('po_date', [$startDate, $endDate]);
+                $result->whereDate('po_date', '>=', $startDate->toDateString())
+                        ->whereDate('po_date', '<=', $endDate->toDateString());
             } else {
                 $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
                 $result->whereDate('po_date', $date);

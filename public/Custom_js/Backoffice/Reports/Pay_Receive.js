@@ -1,6 +1,7 @@
     var mode=1;
     var tablePayables, tableReceiveables;
     var tandaTerima=[];
+    var dates = null;
 
     autocompleteRekening("#bank_kode");
     autocompleteSupplier("#supplier");
@@ -34,7 +35,6 @@
                 { data: "bank_kode" },
                 { data: "date" },
                 { data: "date_due_date" },
-                { data: "po_code" },
                 { data: "poi_code" },
                 { data: "supplier_name" },
                 { data: "poi_total_text" },
@@ -58,11 +58,13 @@
                 bank_id: $('#bank_kode').val(),
                 status: $('#status').val(),
                 po_supplier: $('#supplier').val(),
+                dates: dates,
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
                 }
+                let total = 0;
                 console.log(e);
                 tablePayables.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
@@ -71,6 +73,7 @@
                     e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
                     e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
+                    total += e[i].poi_total;
                     
                     if (e[i].pembayaran == 1 && e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
@@ -90,6 +93,9 @@
 
                 tablePayables.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
+
+                $('#totalHutang').html(`Rp ${formatRupiah(total)}`);
+                $('#totalInvoice').html(e.length);
             },
             error: function (err) {
                 console.error("Gagal load:", err);
@@ -189,6 +195,32 @@
             }
         });
     });
+
+    $(document).on('change', '#start_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshPayReceive();
+    })
+    $(document).on('change', '#end_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshPayReceive();
+    })
+    $(document).on('click', '.btn-clear', function(){
+        dates = null;
+        $('#start_date').val("");
+        $('#end_date').val("");
+        $('#status').val("");
+        $('#bank_kode').empty();
+        $('#supplier').empty();
+        refreshPayReceive();
+    })
     /*
     $(document).on('click', '.row-payables', function(){
         alert("test")
