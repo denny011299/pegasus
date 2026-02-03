@@ -554,7 +554,7 @@
                     <li class="submenu">
                         <li>
                             <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
-                                    class="fe fe-users"></i> <span>Pelanggan</span></a>
+                                    class="fe fe-users"></i> <span>Armada</span></a>
                         </li>
                         <li>
                             <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i
@@ -583,7 +583,7 @@
                     <li class="submenu">
                         <li>
                             <a class="{{ Request::is('salesOrder') ? 'active' : '' }}" href="/salesOrder"><i
-                                    class="fe fe-shopping-cart"></i> <span>Penjualan</span></a>
+                                    class="fe fe-truck"></i> <span>Pengiriman</span></a>
                         </li>
                         <li>
                             <a class="{{ Request::is('purchaseOrder') ? 'active' : '' }}" href="/purchaseOrder">

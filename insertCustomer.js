@@ -77,8 +77,8 @@ $(document).on("click", ".btn-save", function () {
         success: function (response) {
             // Re-enable button
             ResetLoadingButton(".btn-save", 'Simpan Perubahan');
-            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pelanggan");
-            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pelanggan");
+            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Armada");
+            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Armada");
             afterInsert();
         },
         error: function (xhr) {

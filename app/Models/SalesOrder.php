@@ -56,13 +56,13 @@ class SalesOrder extends Model
         // $t->sales_id  = $data["sales_id"];
         $t->so_date  = $data["so_date"];
         $t->so_total  = $data["so_total"];
-        $t->so_ppn  = $data["so_ppn"];
-        $t->so_discount  = $data["so_discount"];
-        $t->so_cost  = $data["so_cost"];
+        $t->so_ppn  = 0;
+        $t->so_discount  = 0;
+        $t->so_cost  = 0;
         $t->so_img  = $data["so_img"];
         $t->so_invoice_no  = $this->generateInvoiceSalesOrderID();
         // $t->so_payment  = $data["so_payment"];
-        $t->so_cashier  = $data['sales_id'];
+        $t->so_cashier  = null;
         $t->save();
 
         return $t;
@@ -107,12 +107,12 @@ class SalesOrder extends Model
         // $t->sales_id  = $data["sales_id"];
         $t->so_date  = $data["so_date"];
         $t->so_total  = $data["so_total"];
-        $t->so_ppn  = $data["so_ppn"];
-        $t->so_discount  = $data["so_discount"];
-        $t->so_cost  = $data["so_cost"];
+        $t->so_ppn  = 0;
+        $t->so_discount  = 0;
+        $t->so_cost  = 0;
         $t->so_invoice_no  = $data["so_invoice_no"];
         // $t->so_payment  = $data["so_payment"];
-        $t->so_cashier  = $data['sales_id'];
+        $t->so_cashier  = null;
         $t->save();
 
         return $t;

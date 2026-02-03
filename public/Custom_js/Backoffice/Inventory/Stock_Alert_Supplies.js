@@ -10,6 +10,7 @@
         tableLow = $('#tableStockAlertLow').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: true,
             language: {
                 search: ' ',
@@ -37,6 +38,7 @@
         tableOut = $('#tableStockAlertOut').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: true,
             language: {
                 search: ' ',

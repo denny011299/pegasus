@@ -109,7 +109,7 @@
                                             <div class="input-block mb-3">
                                                 <label>Departemen <span class="text-danger">*</span></label>
                                                 <select class="form-select fill" id="staff_departement">
-                                                    <option value="Customer Service">Layanan Pelanggan</option>
+                                                    <option value="Customer Service">Layanan Armada</option>
                                                 </select>
                                             </div>
                                         </div> --}}

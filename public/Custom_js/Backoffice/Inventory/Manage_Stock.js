@@ -48,6 +48,7 @@ function inisialisasi(){
     tableAll = $('#tableProductAll').DataTable({
         bFilter: true,
         sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
         ordering: true,
         autoWidth: false,
         searching: false,
@@ -78,6 +79,7 @@ function inisialisasi(){
     tableIn = $('#tableProductIn').DataTable({
         bFilter: true,
         sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
         ordering: true,
         autoWidth: false,
         searching: false,
@@ -107,6 +109,7 @@ function inisialisasi(){
     tableOut = $('#tableProductOut').DataTable({
         bFilter: true,
         sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
         ordering: true,
         autoWidth: false,
         searching: false,

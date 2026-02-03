@@ -13,6 +13,7 @@
         tablePr = $('#tableSupplies').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: true,
             searching: false,
             language: {
@@ -42,6 +43,7 @@
         tableDn = $('#tableDelivery').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: true,
             searching: false,
             autoWidth: false,
@@ -73,6 +75,7 @@
         tableInv = $('#tableInvoice').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: true,
             searching: false,
             autoWidth: false,
@@ -244,7 +247,8 @@
         }
         tablePrModal = $('#tableSalesDelivery').DataTable({
             bFilter: true,
-            sDom: 'fBtlpi', 
+            sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100], 
             ordering: true, 
             autoWidth: false, 
             searching: false, 

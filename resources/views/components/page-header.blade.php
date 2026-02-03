@@ -41,7 +41,7 @@
                 @if (Route::is(['salesOrder']))
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Pesanan Penjualan</a>
+                            Pengiriman</a>
                     </li>
                 @endif
                 @if (Route::is(['salesOrderDetail']))
@@ -68,7 +68,7 @@
                 @if (Route::is(['customer']))
                     <li>
                         <a class="btn btn-primary" href="/insertCustomer"><i class="fa fa-plus-circle me-2"
-                                aria-hidden="true"></i>Tambah Pelanggan</a>
+                                aria-hidden="true"></i>Tambah Armada</a>
                     </li>
                 @endif
                

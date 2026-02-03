@@ -34,7 +34,7 @@
                                         <div class="row">
                                             <div class="col-4">
                                                 <div class="input-block">
-                                                    <label>Nama Pelanggan</label>
+                                                    <label>Nama Armada</label>
                                                     <select id="so_name" class="form-control fill"></select>
                                                 </div>
                                             </div>
@@ -94,7 +94,7 @@
                                             <div class="col-6">
                                                 <div class="card p-0">
                                                     <div class="card-body">
-                                                        <h6>Detail Pelanggan</h6>
+                                                        <h6>Detail Armada</h6>
                                                         <p>Nama: </p>
                                                         <p>Alamat: </p>
                                                         <p>No. Telepon: </p>

@@ -370,7 +370,7 @@
                                         <label class="form-label">Jenis Retur<span class="text-danger">*</span></label>
                                         <select class="select" id="tipe_return">
                                             <option value="1" selected>Retur ke Supplier / Rusak Gudang</option>
-                                            <option value="2">Pengembalian Pelanggan</option>
+                                            <option value="2">Pengembalian Armada</option>
                                         </select>
                                     </div>
                                 </div>
@@ -702,7 +702,7 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Pesanan Penjualan</h4>
+                        <h4 class="mb-0 modal-title">Tambah Pengiriman</h4>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
@@ -719,19 +719,36 @@
                                         </div>
                                     </div>
                                     <div class="col-4">
-                                        <div class="input-block mb-3 " id="row-pelanggan">
-                                            <label>Nama Pelanggan<span class="text-danger">*</span></label>
+                                        <div class="input-block mb-3 " id="row-Armada">
+                                            <label>Nama Armada<span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
+                                     <div class="col-4">
+                                        <div class="input-block mb-3">
+                                            <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
+                                                <span id="check_foto" style="display: none" class="ms-2">
+                                                    <div class="d-flex g-3">
+                                                        <i class="fa fa-check-circle text-success mt-1"></i>
+                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
+                                                    </div>
+                                                </span>
+                                            </label>
+                                            <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                            <input type="hidden" name="" id="bukti">
+                                        </div>
+                                    </div>
+                                    {{-- 
                                     <div class="col-4">
                                         <div class="input-block mb-3">
                                             <label>Nama Sales</label>
                                             <select id="sales_id" class="form-control"></select>
                                         </div>
-                                    </div>
+                                    </div>--}}
                                 </div>
                                 <div class="col-12 row">
+                                    {{--
                                     <div class="col-4">
                                         <div class="input-block">
                                             <label>Diskon</label>
@@ -766,22 +783,8 @@
                                             <label>No. Invoice</label>
                                             <input id="so_invoice_no" class="form-control" value="{{ $data['so_invoice_no'] || '-' }}" disabled>
                                         </div>
-                                    </div> --}}
-                                    <div class="col-6">
-                                        <div class="input-block mb-3">
-                                            <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
-                                                <span id="check_foto" style="display: none" class="ms-2">
-                                                    <div class="d-flex g-3">
-                                                        <i class="fa fa-check-circle text-success mt-1"></i>
-                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
-                                                    </div>
-                                                </span>
-                                            </label>
-                                            <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
-                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
-                                            <input type="hidden" name="" id="bukti">
-                                        </div>
-                                    </div>
+                                    </div> --}} 
+                                   
                                 </div>
                                 <div class="col-12 row">
                                     <div class="col-6">
@@ -842,7 +845,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Penjualan</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Pengiriman</button>
                     </div>
                 </form>
             </div>
@@ -2004,6 +2007,7 @@
                                         <div class="input-block mb-3">
                                             <label>Status</label>
                                             <select class="form-select fill" id="status">
+                                                <option value="">Semua</option>
                                                 <option value="4">Menunggu Approval</option>
                                                 <option value="1" selected>Belum Terbayar</option>
                                                 <option value="3">Menunggu Tanda Terima</option>

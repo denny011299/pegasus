@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Pesanan Penjualan
+                    Pengiriman
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -27,7 +27,7 @@
                                 <table class="table table-center table-hover" id="tableSalesOrder">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Nama Customer</th>
+                                            <th>Nama Armada</th>
                                             <th>Tanggal</th>
                                             <th>No. Invoice</th>
                                             <th>Jumlah Total</th>

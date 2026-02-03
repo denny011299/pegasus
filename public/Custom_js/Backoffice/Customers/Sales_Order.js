@@ -19,7 +19,7 @@
         products = [];
         $('#tableSalesModal').html("");
         refreshTableProduct();
-        $('#add_sales_order .modal-title').html("Tambah Pesanan Penjualan");
+        $('#add_sales_order .modal-title').html("Tambah Pengiriman");
         $('#add_sales_order input').val("");
         $('#so_customer, #sales_id').empty();
         $('#so_discount').val(0).trigger('blur');
@@ -27,7 +27,7 @@
         $('#so_ppn').val(0).trigger('blur');
         $('.form-select').not("#so_payment").empty();
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html(mode == 1?"Tambah Penjualan" : "Update Penjualan");
+        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
         $('#add_sales_order').modal("show");
         updateTotal();
         $('#btn_bukti_foto').show();
@@ -84,7 +84,9 @@
         table = $('#tableSalesOrder').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: false,
+            
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -253,7 +255,7 @@
 
         if($('#so_customer').val()==null||$('#so_customer').val()=="null"||$('#so_customer').val()==""){
             valid=-1;
-            $('#row-pelanggan .select2-selection--single').addClass('is-invalids');
+            $('#row-Armada .select2-selection--single').addClass('is-invalids');
         }
 
         if(valid==-1){
@@ -280,9 +282,6 @@
             so_date: $('#so_date').val(),
             so_invoice_no: $('#so_invoice_no').val(),
             so_total: convertToAngka($('#value_grand').html()),
-            so_ppn: convertToAngka($('#so_ppn').val()),
-            so_cost: convertToAngka($('#so_cost').val()),
-            so_discount: convertToAngka($('#so_discount').val()),
             products: JSON.stringify(products),
             
             _token:token
@@ -332,8 +331,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pesanan Penjualan");
-        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pesanan Penjualan");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pengiriman");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pengiriman");
         refreshSalesOrder();
     }
 

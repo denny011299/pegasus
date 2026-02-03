@@ -525,7 +525,7 @@ class StockController extends Controller
 
                 $itemId = $sup->supplies_id;
             } elseif ($t->tipe_return == 2){
-                $logNotes = 'Produk bermasalah retur pelanggan';
+                $logNotes = 'Produk bermasalah retur Armada';
                 $logCategory = 1;
                 $logType = 1;
                 $itemId = $value['product_variant_id'];
@@ -675,7 +675,7 @@ class StockController extends Controller
 
                             // Catat Log
                             $logNotes = "";
-                            $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                            $logNotes = 'Perubahan data produk bermasalah retur Armada';
                             (new LogStock())->insertLog([
                                 'log_date' => now(),
                                 'log_kode'    => $pi->pi_code,
@@ -708,7 +708,7 @@ class StockController extends Controller
 
                     $itemId = $sup->supplies_id;
                 } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
                     $logCategory = 1;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -743,7 +743,7 @@ class StockController extends Controller
                     $itemId = $sup->supplies_id;
 
                 } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur pelanggan';
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
                     $logCategory = 1;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -807,7 +807,7 @@ class StockController extends Controller
 
                 $itemId = $sup->supplies_id;
             } elseif ($pi->tipe_return == 2){
-                $logNotes = 'Penghapusan data produk bermasalah retur pelanggan';
+                $logNotes = 'Penghapusan data produk bermasalah retur Armada';
                 $logCategory = 2;
                 $logType = 1;
                 $itemId = $value['item_id'];

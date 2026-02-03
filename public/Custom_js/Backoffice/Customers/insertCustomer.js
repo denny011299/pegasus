@@ -5,7 +5,7 @@ autocompleteDistrict('#district_id');
 autocompleteStaffSales('#sales_id');
 
 $(document).ready(function(){
-    $('.btn-save').html(mode == 1?"Tambah Pelanggan" : "Update Pelanggan");
+    $('.btn-save').html(mode == 1?"Tambah Armada" : "Update Armada");
     if(mode==2) {
         console.log(data)
         $('#area_id').append(`<option value="${data.area_id}">${data.area_name}</option>`);
@@ -38,7 +38,7 @@ $(document).on("click", ".btn-save", function () {
     });
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', mode == 1?"Tambah Pelanggan" : "Update Pelanggan");
+        ResetLoadingButton('.btn-save', mode == 1?"Tambah Armada" : "Update Armada");
         return false;
     };
 
@@ -77,14 +77,14 @@ $(document).on("click", ".btn-save", function () {
         },
         success: function (response) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", mode == 1?"Tambah Pelanggan" : "Update Pelanggan");
-            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pelanggan");
-            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pelanggan");
+            ResetLoadingButton(".btn-save", mode == 1?"Tambah Armada" : "Update Armada");
+            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Armada");
+            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Armada");
             afterInsert();
         },
         error: function (xhr) {
             // Re-enable button
-            ResetLoadingButton(".btn-save", mode == 1?"Tambah Pelanggan" : "Update Pelanggan");
+            ResetLoadingButton(".btn-save", mode == 1?"Tambah Armada" : "Update Armada");
             console.log(xhr);
         },
     });
