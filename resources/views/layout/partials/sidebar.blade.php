@@ -583,7 +583,7 @@
                     <li class="submenu">
                         <li>
                             <a class="{{ Request::is('salesOrder') ? 'active' : '' }}" href="/salesOrder"><i
-                                    class="fe fe-shopping-cart"></i> <span>Penjualan</span></a>
+                                    class="fe fe-truck"></i> <span>Pengiriman</span></a>
                         </li>
                         <li>
                             <a class="{{ Request::is('purchaseOrder') ? 'active' : '' }}" href="/purchaseOrder">

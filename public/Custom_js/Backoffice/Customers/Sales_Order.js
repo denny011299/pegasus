@@ -19,7 +19,7 @@
         products = [];
         $('#tableSalesModal').html("");
         refreshTableProduct();
-        $('#add_sales_order .modal-title').html("Tambah Pesanan Penjualan");
+        $('#add_sales_order .modal-title').html("Tambah Pengiriman");
         $('#add_sales_order input').val("");
         $('#so_customer, #sales_id').empty();
         $('#so_discount').val(0).trigger('blur');
@@ -27,7 +27,7 @@
         $('#so_ppn').val(0).trigger('blur');
         $('.form-select').not("#so_payment").empty();
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html(mode == 1?"Tambah Penjualan" : "Update Penjualan");
+        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
         $('#add_sales_order').modal("show");
         updateTotal();
         $('#btn_bukti_foto').show();
@@ -329,8 +329,8 @@
 
     function afterInsert() {
         $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pesanan Penjualan");
-        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pesanan Penjualan");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Pengiriman");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pengiriman");
         refreshSalesOrder();
     }
 

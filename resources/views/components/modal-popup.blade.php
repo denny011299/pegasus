@@ -702,7 +702,7 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Pesanan Penjualan</h4>
+                        <h4 class="mb-0 modal-title">Tambah Pengiriman</h4>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
@@ -845,7 +845,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Penjualan</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Pengiriman</button>
                     </div>
                 </form>
             </div>

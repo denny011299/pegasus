@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Pesanan Penjualan
+                    Pengiriman
                 @endslot
             @endcomponent
             <!-- /Page Header -->
