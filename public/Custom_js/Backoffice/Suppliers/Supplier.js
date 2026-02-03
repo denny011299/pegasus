@@ -93,12 +93,15 @@
         $('#supplier_address').html(data.supplier_address);
         $('#supplier_notes').html(data.supplier_notes || "-" );
         $('#supplier_payment').html(`Rp ${formatRupiah(data.payment)}`);
-        $('#status').val("").trigger('change');
         $('#tablePo tr.row-po').remove();
-        $('#supplier_payment_bawah').html("Rp 0");
         $('#tablePo tr.empty-data').remove();
+        $('#supplier_payment_bawah').html("Rp 0");
+        $('#status').val("");
         activeId = data.supplier_id;
-        getPo(data.supplier_id);
+        // Menghindari bug tampilan
+        if (data.supplier_id != 0){
+            getPo(data.supplier_id);
+        }
     })
 
     function getPo(id) {

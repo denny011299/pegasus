@@ -226,8 +226,14 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){   
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");    
-                afterInsert();
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
+                if (e == null){
+                    afterInsert();
+                }
+                else {
+                    notifikasi('error', "Gagal Insert", e.message);
+                    $('#supplies_name').addClass('is-invalid');
+                }
             },
             error:function(e){
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah"); 

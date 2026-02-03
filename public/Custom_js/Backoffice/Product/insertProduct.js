@@ -219,15 +219,21 @@ $(document).on("click",".btn-save",function(){
         },
         success:function(e){      
             ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
-            if(modeRelasi==0){
-                if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
-                else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");
-                afterInsert();
+            if (e == null){
+                if(modeRelasi==0){
+                    if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
+                    else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");
+                    afterInsert();
+                }
+                else{
+                    $('#modalRelasi').modal('hide');
+                    notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
+                    modeRelasi=0;
+                }
             }
-            else{
-                $('#modalRelasi').modal('hide');
-                notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
-                modeRelasi=0;
+            else {
+                $('#product_name').addClass('is-invalid');
+                notifikasi('error', "Gagal Insert", e.message);
             }
         },
         error:function(e){

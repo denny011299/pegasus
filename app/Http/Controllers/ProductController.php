@@ -144,6 +144,17 @@ class ProductController extends Controller
     function insertProduct(Request $req)
     {
         $data = $req->all();
+
+        // Pengecekan Unique
+        $productName = trim(strtolower($data['product_name']));
+        $exists = Product::whereRaw('LOWER(product_name) = ?', [$productName])
+            ->exists();
+        if ($exists) {
+            return response()->json([
+                'message' => 'Nama produk sudah digunakan'
+            ]);
+        }
+
         $id = (new Product())->insertProduct($data);
         $variant = json_decode($data['product_variant'], true);
         $relasi = json_decode($data['product_relasi'], true);
@@ -221,6 +232,17 @@ class ProductController extends Controller
     function insertSupplies(Request $req)
     {
         $data = $req->all();
+
+        // Pengecekan Unique
+        $suppliesName = trim(strtolower($data['supplies_name']));
+        $exists = Supplies::whereRaw('LOWER(supplies_name) = ?', [$suppliesName])
+            ->exists();
+        if ($exists) {
+            return response()->json([
+                'message' => 'Nama bahan sudah digunakan'
+            ]);
+        }
+        
         $id = (new Supplies())->insertSupplies($data);
         foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
             $value['supplies_id'] = $id;
