@@ -20,6 +20,7 @@
         table = $('#tableTTPurchaseOrder').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: false,
             searching:false,
             language: {

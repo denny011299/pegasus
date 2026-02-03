@@ -9,6 +9,7 @@
         table = $('#tableStockOpname').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: false,
             language: {
                 search: ' ',

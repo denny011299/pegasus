@@ -72,6 +72,7 @@
         tableReturn = $('#tableReturn').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
             language: {
@@ -100,6 +101,7 @@
         tableDamage = $('#tableDamage').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
             language: {

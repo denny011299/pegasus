@@ -14,6 +14,7 @@
         table = $('#tableCustomer').DataTable({
             bFilter: true,
             sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
             ordering: true,
             autoWidth: false,
             language: {
