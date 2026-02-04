@@ -90,7 +90,7 @@
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Pesanan Penjualan",
+                searchPlaceholder: "Cari Pengiriman",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -260,19 +260,19 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
             return false;
         };
 
         if ($('#tableSalesModal').html() == ""){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 produk dipilih');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
             return false;
         }
 
         if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
             return false;
         }
 
@@ -310,20 +310,20 @@
                 if (e!=1){
                     if (typeof e === "object"){
                         notifikasi('error', e.header, e.message);
-                        ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");   
+                        ResetLoadingButton(".btn-save", mode == 1?"Tambah Pengiriman" : "Update Pengiriman");   
                         return false;
                     } else {
-                        ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");   
+                        ResetLoadingButton(".btn-save", mode == 1?"Tambah Pengiriman" : "Update Pengiriman");   
                         notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
                     }
                 }
                 else{
-                    ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");      
+                    ResetLoadingButton(".btn-save", mode == 1?"Tambah Pengiriman" : "Update Pengiriman");      
                     afterInsert();
                 }
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", mode == 1?"Tambah Penjualan" : "Update Penjualan");
+                ResetLoadingButton(".btn-save", mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
                 console.log(e);
             }
         });
@@ -352,7 +352,7 @@
         console.log(data);
         products = [];
         mode=2;
-        $('#add_sales_order .modal-title').html("Update Pesanan Penjualan");
+        $('#add_sales_order .modal-title').html("Update Pengiriman");
         // reset
         $('#add_sales_order input').empty().val("");
         $('#so_customer, #sales_id').empty();
@@ -409,7 +409,7 @@
         updateTotal()
 
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html(mode == 1?"Tambah Penjualan" : "Update Penjualan");
+        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
         $('#add_sales_order').modal("show");
         $('#add_sales_order').attr("so_id", data.so_id);
         $('#add_sales_order').attr("so_number", data.so_number);
