@@ -90,26 +90,50 @@ class ProductionDetails extends Model
                     }
                 }
             }
-            $bahan = json_decode($detail->list_bahan, true) ?? [];
             foreach ($b['items'] as $value) {
-                foreach ($bahan as $bhn) {
-                    if ($value->supplies_id == $bhn){
-                        $s = SuppliesStock::where("supplies_id", "=", $value->supplies_id)
-                            ->where("unit_id", "=", $value->unit_id)
-                            ->first();
-                        $s->ss_stock +=  ($value->bom_detail_qty * $detail->pd_qty * $qty);
+                $infoBahan = Supplies::find($value->supplies_id);
+                $namaBahan = $infoBahan->supplies_name;
+
+                // 2. LOGIKA DOS / PACK (Case Insensitive)
+                if (preg_match('/dos|pack/i', $namaBahan)) {
+                    // Cari isi per Dos (Pcs ke Dos)
+                    $relasiKonversi = ProductRelation::where('product_variant_id', $detail['product_variant_id'])
+                                    ->where('pr_unit_id_2', $b['unit_id'])
+                                    ->where('status', 1)
+                                    ->first();
+
+                    $nilaiIsiDos = ($relasiKonversi) ? (float)$relasiKonversi->pr_unit_value_2 : 1;
+                    
+                    // Total Pcs yang dibatalkan
+                    $totalPcsBatal = $detail->pd_qty * $qty;
+
+                    // Hitung jumlah yang balik (Gunakan FLOOR agar sinkron dengan saat potong)
+                    $jumlahKembali = floor($totalPcsBatal / $nilaiIsiDos) * $value->bom_detail_qty;
+                } else {
+                    // 3. LOGIKA STANDAR (Label, Plastik, dll)
+                    $jumlahKembali = $value->bom_detail_qty * $detail->pd_qty * $qty;
+                }
+
+                // 4. EKSEKUSI PENGEMBALIAN STOK
+                if ($jumlahKembali > 0) {
+                    $s = SuppliesStock::where("supplies_id", $value->supplies_id)
+                        ->where("unit_id", $value->unit_id)
+                        ->first();
+
+                    if ($s) {
+                        $s->ss_stock += $jumlahKembali; // Tambahkan kembali ke stok
                         $s->save();
-            
-                        // Catat log
+
+                        // Log Stock
                         (new LogStock())->insertLog([
-                            'log_date' => now(),
+                            'log_date'    => now(),
                             'log_kode'    => $t->production_code,
                             'log_type'    => 2,
                             'log_category' => 1,
                             'log_item_id' => $value->supplies_id,
-                            'log_notes'  => "Pengembalian stok bahan akibat pembatalan produksi",
-                            'log_jumlah' => ($value->bom_detail_qty * $detail->pd_qty * $qty),
-                            'unit_id'    => $value->unit_id,
+                            'log_notes'   => "Pengembalian stok bahan akibat pembatalan produksi",
+                            'log_jumlah'  => $jumlahKembali,
+                            'unit_id'     => $value->unit_id,
                         ]);
                     }
                 }
