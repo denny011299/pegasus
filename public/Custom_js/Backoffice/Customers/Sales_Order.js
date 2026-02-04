@@ -419,7 +419,7 @@
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin menghapus pesanan penjualan ini?","btn-delete-sales");
+        showModalDelete("Apakah yakin ingin menghapus pengiriman ini?","btn-delete-sales");
         $('#btn-delete-sales').attr("so_id", data.so_id);
     });
 
@@ -435,7 +435,7 @@
             success:function(e){
                 $('.modal').modal("hide");
                 refreshSalesOrder();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete pesanan penjualan");
+                notifikasi('success', "Berhasil Delete", "Berhasil delete pengiriman");
                 
             },
             error:function(e){
