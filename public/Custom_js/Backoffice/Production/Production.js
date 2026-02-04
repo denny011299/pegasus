@@ -503,9 +503,6 @@ $(document).on("click", ".btn_delete", function () {
         "Apakah yakin ingin batalkan produksi ini?",
         "btn-delete-production"
     );
-    if ($('#modalDelete .modal-body').html("")){
-        $('#modalDelete .modal-body').append(`<p id="text-delete" style="font-size:10pt">Apakah yakin ingin batalkan produksi ini?</p>`);
-    }
     $('#modalDelete .modal-body').append(`<textarea class="form-control mt-2" id="delete_reason" placeholder="Alasan pembatalan produksi..." rows="3"></textarea>`);
     $("#btn-delete-production").html("Batal Produksi");
     $("#btn-delete-production").attr("production_id", data.production_id);
@@ -529,7 +526,7 @@ $(document).on("click", "#btn-delete-production", function () {
         },
         method: "post",
         success: function (e) {
-            $('#modalDelete .modal-body').html('');
+            $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
@@ -569,7 +566,7 @@ $(document).on("click", "#btn-acc-delete-production", function () {
         },
         method: "post",
         success: function (e) {
-            $('#modalDelete .modal-body').html('');
+            $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
             $(".modal").modal("hide");
             if(e.status == -1){
                 notifikasi('error', "Stok Tidak Mencukupi", e.message);
@@ -612,7 +609,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         },
         method: "post",
         success: function (e) {
-            $('#modalDelete .modal-body').html('');
+            $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
