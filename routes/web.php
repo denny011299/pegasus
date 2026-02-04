@@ -125,6 +125,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::get('/getInwardOutward',[ReportController::class,"getInwardOutward"])->name('getInwardOutward');
 
     Route::get('/payReceive',[ReportController::class,"PayReceive"])->name('payReceive');
+    Route::get('/checkHutang', [ReportController::class, "checkHutang"])->name('checkHutang');
+    Route::get('/generateHutang', [ReportController::class, "generateHutang"])->name('generateHutang');
 
     Route::get('/salesOrder',[CustomerController::class,"SalesOrder"])->name('salesOrder');
     Route::get('/getSalesOrder', [CustomerController::class, "getSalesOrder"])->name('getSalesOrder');

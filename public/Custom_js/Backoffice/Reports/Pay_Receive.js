@@ -196,6 +196,31 @@
         });
     });
 
+    $(document).on('click', '.btn-print', function(){
+        let params = {
+            bank_id: $('#bank_kode').val(),
+            status: $('#status').val(),
+            po_supplier: $('#supplier').val(),
+            dates: dates
+        };
+
+        $.ajax({
+            url: "/checkHutang",
+            data: params,
+            method: "get",
+            success: function(e) {
+                if (e.status === -1) {
+                    notifikasi('error', 'Gagal Print Hutang', e.message);
+                    return;
+                }
+                window.open('/generateHutang?' + $.param(params), '_self');
+            },
+            error: function(e){
+                console.error(e);
+            }
+        })
+    })
+
     $(document).on('change', '#start_date', function(){
         dates = [];
         var start = $('#start_date').val();

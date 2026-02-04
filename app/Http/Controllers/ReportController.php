@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bank;
 use App\Models\Cash;
 use App\Models\CashCategory;
 use App\Models\InwardOutward;
 use App\Models\PettyCash;
+use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\ReportLoss;
 use App\Models\ReportProfit;
+use App\Models\Role;
+use App\Models\Supplier;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
@@ -30,6 +35,56 @@ class ReportController extends Controller
     // Report Payables Receiveables
     public function PayReceive(){
         return view('Backoffice.Reports.Pay_Receive');
+    }
+
+    public function checkHutang(Request $req)
+    {
+        $data = $req->all();
+        $detail = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
+
+        if (count($detail) <= 0) {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Minimal ada 1 data hutang'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 1
+        ]);
+    }
+
+    function generateHutang(Request $req) {
+        $data = $req->all();
+        $param["detail"] = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
+
+        $total = 0;
+        foreach ($param['detail'] as $key => $value) {
+            $total += $value->poi_total;
+
+            if ($value['pembayaran'] == 1 && $value['status'] == 1) $value['status_hutang'] = "Belum Terbayar";
+            else if ($value['pembayaran'] == 2) $value['status_hutang'] = "Terbayar";
+            else if ($value['pembayaran'] == 3) $value['status_hutang'] = "Menunggu Tanda Terima";
+            else $value['status_hutang'] = "Ditolak";
+        }
+        $param['total'] = $total;
+
+        $param['dates'] = $data['dates'] ?? "-";
+
+        $bank_kode = $data['bank_id'] ? Bank::find($data['bank_id'])->bank_kode : "-";
+        $param['bank_kode'] = $bank_kode;
+
+        $supplier = $data['po_supplier'] ? Supplier::find($data['po_supplier'])->supplier_name : "-";
+        $param['supplier_name'] = $supplier;
+
+        $user = session('user');
+        $param['user_name'] = $user->staff_name;
+
+        $role = Role::find($user->role_id)->role_name ?? "-";
+        $param['role_name'] = $role;
+
+        $pdf = Pdf::loadView('Backoffice.PDF.Hutang', $param);
+        return $pdf->download('Hutang_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     // Report Inward Outward Goods

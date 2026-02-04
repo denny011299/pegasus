@@ -292,7 +292,7 @@
                             <select class="form-select fill" id="bank_kode"></select>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-4 col-md-6" style="padding-top: 0.8vh">
                         <label class="form-label mb-1">  </label>
                          <div class="input-block mb-3">
                             <label>Supplier</label>
@@ -340,7 +340,11 @@
         <div class="col-4 col-md- mb-4 pe-0">
             <div class="card p-3">
                 <div class="row g-2 align-items-center">
-                    <div class="col-12 text-end">
+                    <div class="col-4">
+                        <label class="form-label my-1">Print Hutang</label>
+                        <button class="btn btn-outline-info btn-print">Print <i class="fa fa-file"></i></button>
+                    </div>
+                    <div class="col-8 text-end">
                         <label class="form-label mb-1">Tanda Terima</label>
                          <div class="input-block mb-3">
                             <label id="jumlah_terpilih" class="jumlah_terpilih" style="cursor:pointer">0 Selected</label> <i  class="fe fe-refresh-ccw ms-2 jumlah_terpilih"  style="cursor:pointer"></i><br>

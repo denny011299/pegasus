@@ -130,17 +130,17 @@
     <table class="report-header">
         <tr>
             <td width="65%" valign="top">
-                <div class="company-name">LITMATH INDONESIA</div>
+                <div class="company-name">PEGASUS HIKARI INDONESIA</div>
                 <div class="report-title">Laporan Hutang</div>
                 <div class="report-meta">
-                    Periode: 01 Jan 2026 – 04 Feb 2026<br>
+                    Periode: {{ $dates != "-" ? date('d F Y', strtotime($dates[0])).' - '.date('d F Y', strtotime($dates[1])) : "-"}}<br>
                     Dicetak: {{ date('d M Y H:i') }}
                 </div>
             </td>
             <td width="35%" valign="middle">
                 <div class="total-wrapper">
                     <div class="label">Total Hutang</div>
-                    <div class="amount">Rp 335.000</div>
+                    <div class="amount">Rp {{ number_format($total,0,",",".") }}</div>
                 </div>
             </td>
         </tr>
@@ -151,15 +151,15 @@
         <tr>
             <td width="33%">
                 <div class="filter-label">Bank Account</div>
-                <div class="filter-value">Semua Bank</div>
+                <div class="filter-value">{{ $bank_kode != "-" ? $bank_kode : "Semua Bank" }}</div>
             </td>
             <td width="33%">
                 <div class="filter-label">Supplier</div>
-                <div class="filter-value">Pilih Supplier</div>
+                <div class="filter-value">{{ $supplier_name != "-" ? $supplier_name : "Semua Supplier" }}</div>
             </td>
             <td width="33%">
                 <div class="filter-label">Periode</div>
-                <div class="filter-value">01/01/2026 - 04/02/2026</div>
+                <div class="filter-value">{{ $dates != "-" ? date('d F Y', strtotime($dates[0])).' - '.date('d F Y', strtotime($dates[1])) : "-"}}</div>
             </td>
         </tr>
     </table>
@@ -178,29 +178,19 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>CH</td>
-                <td>02 Feb 2026</td>
-                <td style="color: #ef4444;">04 Mar 2026</td>
-                <td style="color: #4f46e5; font-weight: bold;">INV0002</td>
-                <td>PT. Global Kimia Sejahtera</td>
-                <td style="text-align: right; font-weight: bold;">Rp 200.000</td>
-                <td style="text-align: center;">
-                    <span class="status-badge">Belum Terbayar</span>
-                </td>
-            </tr>
-
-            <tr>
-                <td>F</td>
-                <td>02 Feb 2026</td>
-                <td>04 Mar 2026</td>
-                <td style="color: #4f46e5; font-weight: bold;">INV0001</td>
-                <td>PT Rotama</td>
-                <td style="text-align: right; font-weight: bold;">Rp 100.000</td>
-                <td style="text-align: center;">
-                    <span class="status-badge">Belum Terbayar</span>
-                </td>
-            </tr>
+            @foreach ($detail as $d)
+                <tr>
+                    <td>{{ $d['bank_kode'] }}</td>
+                    <td>{{ date('d F Y', strtotime($d["poi_date"]))??null }}</td>
+                    <td style="color: #ef4444;">{{ date('d F Y', strtotime($d["poi_due"]))??null }}</td>
+                    <td style="color: #4f46e5; font-weight: bold;">{{ $d['poi_code'] }}</td>
+                    <td>{{ $d['supplier_name'] }}</td>
+                    <td style="text-align: right; font-weight: bold;">Rp {{ number_format($d['poi_total'],0,",",".") }}</td>
+                    <td style="text-align: center;">
+                        <span class="status-badge">{{ $d['status_hutang'] }}</span>
+                    </td>
+                </tr>
+            @endforeach
         </tbody>
     </table>
 
