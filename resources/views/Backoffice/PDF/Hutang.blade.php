@@ -54,7 +54,7 @@
 
         .total-wrapper .label {
             font-size: 9pt;
-            color: #6366f1;
+            color: #082a58;
             text-transform: uppercase;
             font-weight: bold;
             margin-bottom: 4px;
@@ -63,7 +63,7 @@
         .total-wrapper .amount {
             font-size: 18pt;
             font-weight: bold;
-            color: #4338ca;
+            color: #082a58;
         }
 
         /* ================= FILTER INFO ================= */
@@ -183,7 +183,7 @@
                     <td>{{ $d['bank_kode'] }}</td>
                     <td>{{ date('d F Y', strtotime($d["poi_date"]))??null }}</td>
                     <td style="color: #ef4444;">{{ date('d F Y', strtotime($d["poi_due"]))??null }}</td>
-                    <td style="color: #4f46e5; font-weight: bold;">{{ $d['poi_code'] }}</td>
+                    <td style="color: #082a58; font-weight: bold;">{{ $d['poi_code'] }}</td>
                     <td>{{ $d['supplier_name'] }}</td>
                     <td style="text-align: right; font-weight: bold;">Rp {{ number_format($d['poi_total'],0,",",".") }}</td>
                     <td style="text-align: center;">
@@ -193,21 +193,5 @@
             @endforeach
         </tbody>
     </table>
-
-    <!-- SIGNATURE -->
-    <table style="width: 100%; margin-top: 50px;">
-        <tr>
-            <td width="70%"></td>
-            <td style="text-align: center;">
-                <p style="font-size: 10pt; color: #64748b; margin-bottom: 60px;">
-                    Manager Keuangan,
-                </p>
-                <p style="font-weight: bold; text-decoration: underline;">
-                    ( Admin Super )
-                </p>
-            </td>
-        </tr>
-    </table>
-
 </body>
 </html>
