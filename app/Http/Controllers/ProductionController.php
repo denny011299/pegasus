@@ -328,7 +328,6 @@ class ProductionController extends Controller
             $value['list_bahan'] = json_encode($bahan[$key]);
             (new ProductionDetails())->insertProductionDetail($value);
         }
-
         // --- TAHAP 2: EKSEKUSI REAL (PENGURANGAN & PENAMBAHAN) ---
         foreach ($item as $key => $value) {
             $qty_konversi_produk = 1; 
@@ -347,7 +346,6 @@ class ProductionController extends Controller
             }
 
             // 2. PENGURANGAN BAHAN (SUPPLIES)
-            dd($aggregatedRequirements);
             foreach ($aggregatedRequirements as $suppliesId => $butuh) {
                 
                 $butuhTersedia = (float)$butuh['total_butuh'];
@@ -386,20 +384,71 @@ class ProductionController extends Controller
                 $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
                     ->where("unit_id", $unitIdInputUser)->first();
             }
-
             $jumlahTambah = (int)($value['pd_qty'] * $bom->bom_qty);
             if ($v && $v->unit_id == $unitIdInputUser) {
-                $v->ps_stock += $jumlahTambah;
-                $v->save();
-            }
+                // cek ada relasi endak
+                    // cek dulu ada endak yang belakangnya relasi itu
+                    $r = ProductRelation::where('pr_unit_id_2', '=', $v->unit_id)
+                        ->where('product_variant_id', '=', $value["product_variant_id"])->where('status','=',1)->first();
+                   
+                    // cek jumlahnya melibih penglipatnya endak
+                    if ($r&&$jumlahTambah >= $r->pr_unit_value_2) {
+                        //kalau isa cari berapa tambah dan sisanya
+                        $tambah = floor($jumlahTambah / $r->pr_unit_value_2);
+                        $sisa = $jumlahTambah%$r->pr_unit_value_2;
+                        //sekarang kita tambah yang awal dulu
+                        $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
+                        ->where("unit_id",$r->pr_unit_id_1)->first();
+                        $ps_depan->ps_stock += $tambah;
+                        $ps_depan->save();
 
-            (new LogStock())->insertLog([
-                'log_date' => now(), 'log_kode' => $p->production_code,
-                'log_type' => 1, 'log_category' => 1,
-                'log_item_id' => $value["product_variant_id"],
-                'log_notes' => "Hasil Produksi Produk",
-                'log_jumlah' => $jumlahTambah, 'unit_id' => $unitIdInputUser,
-            ]);
+                        //sekarang kita tambah yang belakang 
+                        $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
+                        ->where("unit_id",$r->pr_unit_id_2)->first();
+                        $ps_belakang->ps_stock += $sisa;
+                        $ps_belakang->save();
+                        (new LogStock())->insertLog([
+                            'log_date' => now(), 'log_kode' => $p->production_code,
+                            'log_type' => 1, 'log_category' => 1,
+                            'log_item_id' => $value["product_variant_id"],
+                            'log_notes' => "Hasil Produksi Produk",
+                            'log_jumlah' => $tambah, 'unit_id' => $r->pr_unit_id_1,
+                        ]);
+                        
+                        if($sisa>0){
+                            (new LogStock())->insertLog([
+                                'log_date' => now(), 'log_kode' => $p->production_code,
+                                'log_type' => 1, 'log_category' => 1,
+                                'log_item_id' => $value["product_variant_id"],
+                                'log_notes' => "Hasil Produksi Produk",
+                                'log_jumlah' => $sisa, 'unit_id' => $r->pr_unit_id_2,
+                            ]);
+                        }
+
+                        //cek lagi ada endak atasnya kalau ada tapi ya jumlah e gak iso ya gak akan motong cuman taku kalau bertingkat
+                        $cek = $r = ProductRelation::where('pr_unit_id_2', '=', $r->pr_unit_id_1)
+                            ->where('product_variant_id', '=', $value["product_variant_id"]);
+                        if ($cek->count() <= 0) {
+                            $ada = -1;
+                        }
+                    } else  {
+                          //sekarang kita tambah yang belakang 
+                        $v->ps_stock += $jumlahTambah;
+                        $v->save();
+
+                        (new LogStock())->insertLog([
+                            'log_date' => now(), 'log_kode' => $p->production_code,
+                            'log_type' => 1, 'log_category' => 1,
+                            'log_item_id' => $value["product_variant_id"],
+                            'log_notes' => "Hasil Produksi Produk",
+                            'log_jumlah' => $jumlahTambah, 'unit_id' => $unitIdInputUser,
+                        ]);
+
+
+                    }
+            }
+            
+            
         }
         
 
