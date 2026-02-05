@@ -219,7 +219,7 @@ $(document).on("click",".btn-save",function(){
         },
         success:function(e){      
             ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
-            if (e == null){
+            if (e == 1){
                 if(modeRelasi==0){
                     if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
                     else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");

@@ -149,7 +149,7 @@ class ProductController extends Controller
         $productName = trim(strtolower($data['product_name']));
         $exists = Product::whereRaw('LOWER(product_name) = ?', [$productName])
             ->exists();
-        if ($exists) {
+        if ($exists == true) {
             return response()->json([
                 'message' => 'Nama produk sudah digunakan'
             ]);
@@ -170,6 +170,7 @@ class ProductController extends Controller
             }
         }
         (new ProductStock())->syncStock($id);
+        return 1;
     }
 
     function updateProduct(Request $req)
@@ -237,7 +238,7 @@ class ProductController extends Controller
         $suppliesName = trim(strtolower($data['supplies_name']));
         $exists = Supplies::whereRaw('LOWER(supplies_name) = ?', [$suppliesName])
             ->exists();
-        if ($exists) {
+        if ($exists == true) {
             return response()->json([
                 'message' => 'Nama bahan sudah digunakan'
             ]);
@@ -253,6 +254,7 @@ class ProductController extends Controller
             (new SuppliesRelation())->insertSuppliesRelation($value);
         }
         (new SuppliesStock())->syncStock($id);
+        return 1;
     }
 
     function updateSupplies(Request $req)

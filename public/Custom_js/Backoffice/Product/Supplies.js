@@ -227,7 +227,7 @@
             },
             success:function(e){   
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
-                if (e == null){
+                if (e == 1){
                     afterInsert();
                 }
                 else {
