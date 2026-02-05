@@ -489,9 +489,40 @@ class ProductionController extends Controller
             $b = Bom::find($value['bom_id']);
             $cek = -1;
             $stok = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
-                    ->where("unit_id", "=", $value['unit_id'])->first()->ps_stock;
-            if ($stok - (intval($value['pd_qty']) * $b->bom_qty) < 0) {
-                $cek = 1;
+                    ->where("unit_id", "=", $value['unit_id'])->first();
+                    
+            if ($stok->ps_stock - (intval($value['pd_qty']) * $b->bom_qty) < 0) {
+                $r = ProductRelation::where('pr_unit_id_2', '=', $value["unit_id"])
+                    ->where('product_variant_id', '=', $value["product_variant_id"])->where('status','=',1)->first();
+                $stok_depan = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
+                    ->where("unit_id", "=", $r->pr_unit_id_1)->first();   
+                
+                if($stok_depan->ps_stock>0&&$stok_depan->ps_stock-$r->pr_unit_value_2>=0){
+                    $stok_depan->ps_stock -= $r->pr_unit_value_2;
+                    $stok->ps_stock +=$r->pr_unit_value_2;
+                    $stok->save();
+                    $stok_depan->save();
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => $p->production_code,
+                        'log_type' => 1, 'log_category' => 2,
+                        'log_item_id' => $value["product_variant_id"],
+                        'log_notes' => "Konversi Ke satuan terkecil, untuk pembatalan",
+                        'log_jumlah' => $r->pr_unit_value_2, 'unit_id' => $r->pr_unit_id_1,
+                    ]);
+                  
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => $p->production_code,
+                        'log_type' => 1, 'log_category' => 1,
+                        'log_item_id' => $value["product_variant_id"],
+                        'log_notes' => "Dapat dari satuan terbesar, untuk pembatalan",
+                        'log_jumlah' => $r->pr_unit_value_2, 'unit_id' => $r->pr_unit_id_2,
+                    ]);
+
+
+                } 
+                else{
+                    $cek = 1;
+                }
             }
         }
 
