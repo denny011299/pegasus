@@ -357,8 +357,7 @@ class ProductionController extends Controller
                     ->orderBy('ss_id', 'desc')->first();
 
                 if ($stokFinal) {
-                    $stokFinal->ss_stock -= $butuhTersedia; 
-                    $stokFinal->save();
+                    
                     $l = LogStock::where('log_kode','=', $p->production_code)
                     ->where('log_type','=',2)
                     ->where('log_category','=',2)
@@ -367,6 +366,8 @@ class ProductionController extends Controller
                     ->first();
 
                     if(!$l){
+                        $stokFinal->ss_stock -= $butuhTersedia; 
+                        $stokFinal->save();
                         // Pencatatan Log
                         (new LogStock())->insertLog([
                             'log_date' => now(),
@@ -505,22 +506,87 @@ class ProductionController extends Controller
 
         foreach ($p['items'] as $key => $value) {
             $b = bom::find($value->bom_id);
-            $v = ProductStock::where("product_variant_id", "=", $value["product_variant_id"])
-                ->where("unit_id", "=", $value["unit_id"])->first();
-            $v->ps_stock -= intval($value['pd_qty']) * $b->bom_qty;
-            $v->save();
+            $r = ProductRelation::where('pr_unit_id_2', '=', $value["unit_id"])
+                        ->where('product_variant_id', '=', $value["product_variant_id"])->where('status','=',1)->first();
+            if($r&&intval($value['pd_qty'])* $b->bom_qty>= $r->pr_unit_value_2){
+                        $jumlahTambah = intval($value['pd_qty'])* $b->bom_qty;
+                        $tambah = floor($jumlahTambah / $r->pr_unit_value_2);
+                        $sisa = $jumlahTambah%$r->pr_unit_value_2;
+                       
 
-            // Catat log
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $p->production_code,
-                'log_type'    => 1,
-                'log_category' => 2,
-                'log_item_id' => $value["product_variant_id"],
-                'log_notes'  => "Pembatalan produksi produk",
-                'log_jumlah' => intval($value['pd_qty']) * $b->bom_qty,
-                'unit_id'    => $value['unit_id'],
-            ]);
+                        $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
+                        ->where("unit_id",$r->pr_unit_id_1)->first();
+                        $ps_depan->ps_stock -= $tambah;
+                        $ps_depan->save();
+
+                        $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
+                        ->where("unit_id",$r->pr_unit_id_2)->first();
+                        $ps_belakang->ps_stock -= $sisa;
+                        $ps_belakang->save();
+
+                        $l = LogStock::where('log_kode','=', $p->production_code)
+                        ->where('log_type','=',1)
+                        ->where('log_category','=',2)
+                        ->where('log_item_id','=',$value["product_variant_id"])
+                        ->where('unit_id','=',$r->pr_unit_id_1)
+                        ->first();
+
+                        if($l){
+                            $l->log_jumlah += $tambah;
+                            $l->save();
+                        }
+                        else{
+                             (new LogStock())->insertLog([
+                                'log_date' => now(), 'log_kode' => $p->production_code,
+                                'log_type' => 1, 'log_category' => 2,
+                                'log_item_id' => $value["product_variant_id"],
+                                'log_notes' => "Pembatalan produksi produk",
+                                'log_jumlah' => $tambah, 'unit_id' => $r->pr_unit_id_1,
+                            ]);
+                        }
+                       
+                        
+                        if($sisa>0){
+                             $l = LogStock::where('log_kode','=', $p->production_code)
+                            ->where('log_type','=',1)
+                            ->where('log_category','=',2)
+                            ->where('log_item_id','=',$value["product_variant_id"])
+                            ->where('unit_id','=',$r->pr_unit_id_2)
+                            ->first();
+                             if($l){
+                                $l->log_jumlah += $sisa;
+                                $l->save();
+                            }
+                            else{
+                                (new LogStock())->insertLog([
+                                    'log_date' => now(), 'log_kode' => $p->production_code,
+                                    'log_type' => 1, 'log_category' => 2,
+                                    'log_item_id' => $value["product_variant_id"],
+                                    'log_notes' => "Pembatalan produksi produk",
+                                    'log_jumlah' => $sisa, 'unit_id' => $r->pr_unit_id_2,
+                                ]);
+                            }
+                        }
+            }
+            else{
+                $v = ProductStock::where("product_variant_id", "=", $value["product_variant_id"])
+                    ->where("unit_id", "=", $value["unit_id"])->first();
+                $v->ps_stock -= intval($value['pd_qty']) * $b->bom_qty;
+                $v->save();
+
+                // Catat log
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $p->production_code,
+                    'log_type'    => 1,
+                    'log_category' => 2,
+                    'log_item_id' => $value["product_variant_id"],
+                    'log_notes'  => "Pembatalan produksi produk",
+                    'log_jumlah' => intval($value['pd_qty']) * $b->bom_qty,
+                    'unit_id'    => $value['unit_id'],
+                ]);
+            }
+           
         }
     }
 
