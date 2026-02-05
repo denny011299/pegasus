@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class LogStock extends Model
 {
@@ -44,6 +45,16 @@ class LogStock extends Model
         foreach ($result as $key => $value) {
             $u = Unit::find($value->unit_id);
             $value->unit_name = $u->unit_name;
+            if($value->staff_id){
+                try {
+                    $value->staff_name =Staff::find($value->staff_id)->staff_name; 
+                } catch (\Throwable $th) {
+                     $value->staff_name ="-"; 
+                }
+            }
+            else{
+                $value->staff_name ="-"; 
+            }
         }
         return $result;
     }
@@ -59,6 +70,7 @@ class LogStock extends Model
         $t->log_notes = $data["log_notes"];
         $t->log_jumlah = $data["log_jumlah"];
         $t->unit_id = $data["unit_id"];
+        $t->staff_id = Session::get('user')->staff_id;
         $t->save();
         return $t->log_id;
     }
