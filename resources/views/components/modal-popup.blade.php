@@ -1853,6 +1853,7 @@
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
                                             <thead>
                                                 <th>Tanggal</th>
+                                                <th>Staff</th>
                                                 <th>No. Transaksi</th>
                                                 <th>Catatan</th>
                                                 <th class="text-center">Masuk</th>
