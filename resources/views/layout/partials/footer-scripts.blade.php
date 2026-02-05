@@ -286,10 +286,15 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       
     $('.btn-cancel').on("click",function(){
         closeModalDelete();
+        closeModalConfirm();
     })
     
     function closeModalDelete() {
         $('#modalDelete').modal("hide");
+    }
+
+    function closeModalConfirm() {
+        $('#modalKonfirmasi').modal("hide");
     }
 
     $(document).on("input", ".number-only", function() {
