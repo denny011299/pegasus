@@ -347,39 +347,32 @@ class ProductionController extends Controller
             }
 
             // 2. PENGURANGAN BAHAN (SUPPLIES)
-            foreach ($bom['items'] as $bd) {
-                $idBahan = $bd['supplies_id'];
-                $bahanDipilih = $bahan[$key] ?? [];
+            dd($aggregatedRequirements);
+            foreach ($aggregatedRequirements as $suppliesId => $butuh) {
+                
+                $butuhTersedia = (float)$butuh['total_butuh'];
+                if ($butuhTersedia <= 0) continue;
 
-                // Cek apakah bahan ini memang dipilih user untuk baris ini
-                if (in_array($idBahan, $bahanDipilih)) {
-                    
-                    // AMBIL DATA DARI AGREGASI (Hasil floor sudah ada di sini)
-                    // Kita tidak pakai rumus standar lagi agar Dos/Pack terhitung benar
-                    $kebutuhanFinal = $aggregatedRequirements[$idBahan]['total_butuh'] ?? 0;
+                // 1. Eksekusi Pengurangan Stok Utama (Hasil Agregasi)
+                $stokFinal = SuppliesStock::where('supplies_id', $suppliesId)
+                    ->where('status', 1)
+                    ->orderBy('ss_id', 'desc')->first();
 
-                    if ($kebutuhanFinal > 0) {
-                        // Cari stok di gudang
-                        $stokSupplies = SuppliesStock::where("supplies_id", $idBahan)
-                            ->where("unit_id", $bd['unit_id'])->first();
+                if ($stokFinal) {
+                    $stokFinal->ss_stock -= $butuhTersedia; 
+                    $stokFinal->save();
 
-                        if ($stokSupplies) {
-                            // EKSEKUSI PENGURANGAN: Menggunakan hasil Agregasi (Hasil 1.0)
-                            $stokSupplies->ss_stock -= $kebutuhanFinal;
-                            $stokSupplies->save();
-
-                            // LOG STOCK BAHAN
-                            (new LogStock())->insertLog([
-                                'log_date' => now(),
-                                'log_kode' => $p->production_code,
-                                'log_type' => 2, 'log_category' => 2,
-                                'log_item_id' => $idBahan,
-                                'log_notes' => "Pengurangan bahan untuk produksi",
-                                'log_jumlah' => $kebutuhanFinal,
-                                'unit_id' => $bd['unit_id'],
-                            ]);
-                        }
-                    }
+                    // Pencatatan Log
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode' => $p->production_code,
+                        'log_type' => 2,
+                        'log_category' => 2,
+                        'log_item_id' => $suppliesId,
+                        'log_notes' => "Pengurangan bahan untuk produksi",
+                        'log_jumlah' => $butuhTersedia, 
+                        'unit_id' => $stokFinal->unit_id,
+                    ]);
                 }
             }
 
