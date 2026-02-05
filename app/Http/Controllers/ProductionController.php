@@ -359,18 +359,26 @@ class ProductionController extends Controller
                 if ($stokFinal) {
                     $stokFinal->ss_stock -= $butuhTersedia; 
                     $stokFinal->save();
+                    $l = LogStock::where('log_kode','=', $p->production_code)
+                    ->where('log_type','=',2)
+                    ->where('log_category','=',2)
+                    ->where('log_item_id','=',$suppliesId)
+                    ->where('unit_id','=',$stokFinal->unit_id)
+                    ->first();
 
-                    // Pencatatan Log
-                    (new LogStock())->insertLog([
-                        'log_date' => now(),
-                        'log_kode' => $p->production_code,
-                        'log_type' => 2,
-                        'log_category' => 2,
-                        'log_item_id' => $suppliesId,
-                        'log_notes' => "Pengurangan bahan untuk produksi",
-                        'log_jumlah' => $butuhTersedia, 
-                        'unit_id' => $stokFinal->unit_id,
-                    ]);
+                    if(!$l){
+                        // Pencatatan Log
+                        (new LogStock())->insertLog([
+                            'log_date' => now(),
+                            'log_kode' => $p->production_code,
+                            'log_type' => 2,
+                            'log_category' => 2,
+                            'log_item_id' => $suppliesId,
+                            'log_notes' => "Pengurangan bahan untuk produksi",
+                            'log_jumlah' => $butuhTersedia, 
+                            'unit_id' => $stokFinal->unit_id,
+                        ]);
+                    }
                 }
             }
 
