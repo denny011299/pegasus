@@ -501,7 +501,7 @@ class ProductionController extends Controller
                 if ($stok->ps_stock - $sisa < 0) {
                     $stok_depan = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
                         ->where("unit_id", "=", $r->pr_unit_id_1)->first();   
-                    if($stok_depan->ps_stock>0&&$stok_depan->ps_stock-$r->pr_unit_value_2>=0){
+                    if($stok_depan->ps_stock>0&&($stok_depan->ps_stock * $r->pr_unit_value_2) - $jumlahTambah>=0){
                         $round = 0;
                         while ($stok->ps_stock - $sisa < 0) {
                             $round++;
@@ -563,47 +563,22 @@ class ProductionController extends Controller
                     $ps_belakang->ps_stock -= $sisa;
                     $ps_belakang->save();
 
-                    $l = LogStock::where('log_kode','=', $p->production_code)
-                    ->where('log_type','=',1)
-                    ->where('log_category','=',2)
-                    ->where('log_item_id','=',$value["product_variant_id"])
-                    ->where('unit_id','=',$r->pr_unit_id_1)
-                    ->first();
-                    if($l){
-                        $l->log_jumlah += $tambah;
-                        $l->save();
-                    }
-                    else{
-                         (new LogStock())->insertLog([
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => $p->production_code,
+                        'log_type' => 1, 'log_category' => 2,
+                        'log_item_id' => $value["product_variant_id"],
+                        'log_notes' => "Pembatalan produksi produk",
+                        'log_jumlah' => $tambah, 'unit_id' => $r->pr_unit_id_1,
+                    ]);
+                    
+                    if($sisa>0){
+                        (new LogStock())->insertLog([
                             'log_date' => now(), 'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 2,
                             'log_item_id' => $value["product_variant_id"],
                             'log_notes' => "Pembatalan produksi produk",
-                            'log_jumlah' => $tambah, 'unit_id' => $r->pr_unit_id_1,
+                            'log_jumlah' => $sisa, 'unit_id' => $r->pr_unit_id_2,
                         ]);
-                    }
-                   
-                    
-                    if($sisa>0){
-                         $l = LogStock::where('log_kode','=', $p->production_code)
-                        ->where('log_type','=',1)
-                        ->where('log_category','=',2)
-                        ->where('log_item_id','=',$value["product_variant_id"])
-                        ->where('unit_id','=',$r->pr_unit_id_2)
-                        ->first();
-                         if($l){
-                            $l->log_jumlah += $sisa;
-                            $l->save();
-                        }
-                        else{
-                            (new LogStock())->insertLog([
-                                'log_date' => now(), 'log_kode' => $p->production_code,
-                                'log_type' => 1, 'log_category' => 2,
-                                'log_item_id' => $value["product_variant_id"],
-                                'log_notes' => "Pembatalan produksi produk",
-                                'log_jumlah' => $sisa, 'unit_id' => $r->pr_unit_id_2,
-                            ]);
-                        }
                     }
                 }
                 else {
@@ -612,25 +587,13 @@ class ProductionController extends Controller
                     $v->ps_stock -= intval($value['pd_qty']) * $b->bom_qty;
                     $v->save();
 
-                    $l = LogStock::where('log_kode','=', $p->production_code)
-                    ->where('log_type','=',1)
-                    ->where('log_category','=',2)
-                    ->where('log_item_id','=',$value["product_variant_id"])
-                    ->where('unit_id','=',$value['unit_id'])
-                    ->first();
-                    if($l){
-                        $l->log_jumlah += $tambah;
-                        $l->save();
-                    }
-                    else{
-                         (new LogStock())->insertLog([
-                            'log_date' => now(), 'log_kode' => $p->production_code,
-                            'log_type' => 1, 'log_category' => 2,
-                            'log_item_id' => $value["product_variant_id"],
-                            'log_notes' => "Pembatalan produksi produk",
-                            'log_jumlah' => intval($value['pd_qty']) * $b->bom_qty, 'unit_id' => $value['unit_id'],
-                        ]);
-                    }
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => $p->production_code,
+                        'log_type' => 1, 'log_category' => 2,
+                        'log_item_id' => $value["product_variant_id"],
+                        'log_notes' => "Pembatalan produksi produk",
+                        'log_jumlah' => intval($value['pd_qty']) * $b->bom_qty, 'unit_id' => $value['unit_id'],
+                    ]);
                 }
             }
             else{
