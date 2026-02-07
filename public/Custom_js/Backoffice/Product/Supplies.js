@@ -46,8 +46,9 @@
         $('#tbVariant').append(`
             <tr class="row-variant">
                 <td style="width:15%;" class="td-supplier">
-                    <select class="form-select supplier_id select2" name="" id="" style="width:100%;">
-                    </select>
+                    <div class="input-block" id="row-supplier">
+                        <select class="form-select supplier_id select2 fill" name="" id="" style="width:100%;"></select>
+                    </div>
                 </td>
                 <td><input type="text" class="form-control fill variant_name" name="" id="" value="${names}"></td>
                 <td><input type="text" class="form-control fill variant_sku" name="" id=""></td>
@@ -158,11 +159,11 @@
                 $(this).addClass('is-invalid');
             }
         });
-         if($('#supplies_unit').val()==null||$('#supplies_unit').val()=="null"||$('#supplies_unit').val()==""){
+        if($('.supplier_id').val()==null||$('.supplier_id').val()=="null"||$('.supplier_id').val()==""){
             valid=-1;
-            $('#row-satuan .select2-selection--single').addClass('is-invalids');
+            $('#row-supplier .select2-selection--single').addClass('is-invalids');
         }
-         if($('#supplies_unit').val()==null||$('#supplies_unit').val()=="null"||$('#supplies_unit').val()==""){
+        if($('#supplies_unit').val()==null||$('#supplies_unit').val()=="null"||$('#supplies_unit').val()==""){
             valid=-1;
             $('#row-satuan .select2-selection--single').addClass('is-invalids');
         }

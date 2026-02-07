@@ -148,6 +148,7 @@ class ProductController extends Controller
         // Pengecekan Unique
         $productName = trim(strtolower($data['product_name']));
         $exists = Product::whereRaw('LOWER(product_name) = ?', [$productName])
+            ->where('status', 1)
             ->exists();
         if ($exists == true) {
             return response()->json([
@@ -201,6 +202,7 @@ class ProductController extends Controller
             ProductRelation::where('product_variant_id', '=', $pvr_id)->whereNotIn("pr_id", $id)->update(["status" => 0]);
         }
         (new ProductStock())->syncStock($data["product_id"]);
+        return 1;
     }
 
     function deleteProduct(Request $req)
@@ -279,6 +281,7 @@ class ProductController extends Controller
         SuppliesRelation::whereNotIn("sr_id", $id_r)->where('supplies_id', '=', $data["supplies_id"])->update(["status" => 0]);
         SuppliesVariant::where('supplies_id', '=', $data["supplies_id"])->whereNotIn("supplies_variant_id", $id)->update(["status" => 0]);
         (new SuppliesStock())->syncStock($data["supplies_id"]);
+        return 1;
     }
 
     function deleteSupplies(Request $req)

@@ -71,6 +71,9 @@ class ProductIssuesDetail extends Model
                 }
                 $total += $value['pod_subtotal'];
             }
+            $total -= $total * $po->po_discount/100;
+            $total += $total * $po->po_ppn/100;
+            $total += $po->po_cost;
 
             $inv->poi_total = $total;
             $inv->save();
@@ -143,6 +146,9 @@ class ProductIssuesDetail extends Model
                 }
                 $total += $value['pod_subtotal'];
             }
+            $total -= $total * $po->po_discount/100;
+            $total += $total * $po->po_ppn/100;
+            $total += $po->po_cost;
 
             $inv->poi_total = $total;
             $po->po_total = $total;
@@ -210,6 +216,10 @@ class ProductIssuesDetail extends Model
                 }
                 $total += $value['pod_subtotal'];
             }
+            $total -= $total * $po->po_discount/100;
+            $total += $total * $po->po_ppn/100;
+            $total += $po->po_cost;
+            
             $inv->poi_total = $total;
             $inv->save();
             $po->po_total = $total;

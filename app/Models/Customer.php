@@ -27,8 +27,8 @@ class Customer extends Model
         $result = $result->get();
         
         foreach ($result as $key => $value) {
-            $a = Area::find($value->area_id);
-            $value->area_name = $a->area_name;
+            // $a = Area::find($value->area_id);
+            // $value->area_name = $a->area_name;
 
             $u = Cities::find($value->city_id);
             $value->city_name = $u->city_name;
@@ -48,7 +48,7 @@ class Customer extends Model
     function insertCustomer($data)
     {
         $t = new self();
-        $t->area_id = $data["area_id"];
+        $t->area_id = 0;
         $t->customer_name = $data["customer_name"];
         $t->customer_code = $this->generateCustomerID();
         $t->customer_email = $data["customer_email"];
@@ -68,7 +68,7 @@ class Customer extends Model
     function updateCustomer($data)
     {
         $t = self::find($data["customer_id"]);
-        $t->area_id = $data["area_id"];
+        $t->area_id = 0;
         $t->customer_name = $data["customer_name"];
         $t->customer_code = $data["customer_code"];
         $t->customer_email = $data["customer_email"];

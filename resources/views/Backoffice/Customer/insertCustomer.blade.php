@@ -22,12 +22,6 @@
                                 <div class="form-group-item">
                                     <h5 class="form-title">Detail Dasar</h5>
                                     <div class="row">
-                                        <div class="col-lg-4 col-md-12">
-                                            <div class="input-block mb-3">
-                                                <label>Wilayah<span class="text-danger">*</span></label>
-                                                <select class="form-select fill" id="area_id"></select>
-                                            </div>
-                                        </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Nama <span class="text-danger">*</span></label>

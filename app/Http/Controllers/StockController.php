@@ -630,6 +630,10 @@ class StockController extends Controller
                         }
                         $total += $detail['pod_subtotal'];
                     }
+                    $total -= $total * $po->po_discount/100;
+                    $total += $total * $po->po_ppn/100;
+                    $total += $po->po_cost;
+                    
                     $inv->poi_total = $total;
                     $inv->save();
                     $po->po_total = $total;

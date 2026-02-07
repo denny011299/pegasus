@@ -118,7 +118,7 @@ $(document).on('click','.btnAddRow',function(){
             units.append(`<option value="${item.id}" >${item.text}</option>`);
         });
     }
-    modeRelasi=1;
+    if (mode==2) modeRelasi=1;
    
     units.val(units.find('option:first').val());
    if(mode==2) $(".btn-save").trigger("click");
@@ -327,8 +327,10 @@ $(document).on("change","#unit_id",function(){
     $('.select2-search__field').remove();
 });
 $(document).on("change",".unit_alert",function(){
-    modeRelasi=1;
-    if(mode==2) $(".btn-save").trigger("click");
+    if (mode == 2){
+        modeRelasi=1;
+        $(".btn-save").trigger("click");
+    }
 });
 
 $('#unit_id').on('click', function() {
@@ -379,9 +381,8 @@ $(document).on("click",".btn_delete_row",function(){
     var index = $(this).closest("tr").index();
     relasi.splice(index,1);
     $(this).closest("tr").remove();
-      if(mode==2){
-
-         modeRelasi=1;
+    if(mode==2){
+        modeRelasi=1;
         $(".btn-save").trigger("click");
     }
 });

@@ -1,6 +1,5 @@
 autocompleteProv('#state_id');
 autocompleteCity('#city_id');
-autocompleteArea('#area_id');
 autocompleteDistrict('#district_id');
 autocompleteStaffSales('#sales_id');
 
@@ -8,7 +7,6 @@ $(document).ready(function(){
     $('.btn-save').html(mode == 1?"Tambah Armada" : "Update Armada");
     if(mode==2) {
         console.log(data)
-        $('#area_id').append(`<option value="${data.area_id}">${data.area_name}</option>`);
         $('#customer_name').val(data.customer_name);
         $('#customer_email').val(data.customer_email);
         $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`).trigger('change');
@@ -44,7 +42,6 @@ $(document).on("click", ".btn-save", function () {
 
     // Siapkan data untuk dikirim
     param = {
-        area_id: $('#area_id').val(),
         customer_name: $("#customer_name").val(),
         customer_email: $("#customer_email").val(),
         state_id: $("#state_id").val(),

@@ -143,6 +143,23 @@ class ProductionController extends Controller
                         "message" => "Mohon masukkan relasi produk terlebih dahulu"
                     ]);
                 }
+
+                // Pengecekan apakah unit ini ada dalam relasi atau tidak
+                $ada = false;
+                foreach ($pr as $p) {
+                    if ($p['pr_unit_id_1'] == $value['unit_id'] || $p['pr_unit_id_2'] == $value['unit_id']) {
+                        $ada = true;
+                        break;
+                    }
+                }
+                if (!$ada){
+                    return response()->json([
+                        "status" => 0,
+                        "header" => "Gagal Insert",
+                        "message" => "Mohon masukkan relasi produk terlebih dahulu"
+                    ]);
+                }
+
                 foreach ($pr as $p) {
                     if ($p['pr_unit_id_2'] != $value['unit_id']) {
                         $qty *= $p['pr_unit_value_2'];

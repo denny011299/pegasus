@@ -120,11 +120,11 @@ class CustomerController extends Controller
                         $baseOrder = $stokAtas->ps_id * 10; 
                         $logSummary[$stokAtas->unit_id . '_cat2'] = [
                             'unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
-                            'cat' => 2, 'note' => "Konversi unit dari penjualan (Bongkar)", 'sort_order' => $baseOrder
+                            'cat' => 2, 'note' => "Konversi unit dari pengiriman (Bongkar)", 'sort_order' => $baseOrder
                         ];
                         $logSummary[$stokSekarang->unit_id . '_cat1'] = [
                             'unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
-                            'cat' => 1, 'note' => "Konversi unit dari penjualan (Hasil)", 'sort_order' => $baseOrder + 1
+                            'cat' => 1, 'note' => "Konversi unit dari pengiriman (Hasil)", 'sort_order' => $baseOrder + 1
                         ];
                         return true;
                     }
@@ -200,7 +200,7 @@ class CustomerController extends Controller
                 'log_type'    => 1,
                 'log_category' => 2,
                 'log_item_id' => $value['product_variant_id'],
-                'log_notes'  => "Penjualan produk",
+                'log_notes'  => "Pengiriman produk",
                 'log_jumlah' => $value["so_qty"],
                 'unit_id'    => $value['unit_id'],
             ]);
@@ -246,7 +246,7 @@ class CustomerController extends Controller
                     'log_type' => 1, 
                     'log_category' => 1,
                     'log_item_id' => $rev['pvr_id'], 
-                    'log_notes' => "Update Penjualan",
+                    'log_notes' => "Update Pengiriman",
                     'log_jumlah' => $rev['qty'], 
                     'unit_id' => $rev['unit_id'],
                 ]);
@@ -317,11 +317,11 @@ class CustomerController extends Controller
                         $baseOrder = $stokAtas->ps_id * 10; 
                         $logSummary[$stokAtas->unit_id . '_cat2'] = [
                             'unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
-                            'cat' => 2, 'note' => "Konversi unit (Bongkar)", 'sort_order' => $baseOrder
+                            'cat' => 2, 'note' => "Konversi unit dari pengiriman (Bongkar)", 'sort_order' => $baseOrder
                         ];
                         $logSummary[$stokSekarang->unit_id . '_cat1'] = [
                             'unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
-                            'cat' => 1, 'note' => "Konversi unit (Hasil)", 'sort_order' => $baseOrder + 1
+                            'cat' => 1, 'note' => "Konversi unit dari pengiriman (Hasil)", 'sort_order' => $baseOrder + 1
                         ];
                         return true;
                     }
@@ -377,7 +377,7 @@ class CustomerController extends Controller
 
                 (new LogStock())->insertLog([
                     'log_date' => now(), 'log_kode' => $data['so_number'], 'log_type' => 1, 'log_category' => 2, 
-                    'log_item_id' => $variantId, 'log_notes' => "Update Penjualan", 
+                    'log_item_id' => $variantId, 'log_notes' => "Update Pengiriman", 
                     'log_jumlah' => $qtyTotal, 'unit_id' => $unitId,
                 ]);
             }
@@ -410,7 +410,7 @@ class CustomerController extends Controller
                 'log_type'    => 1,
                 'log_category' => 1,
                 'log_item_id' => $value['product_variant_id'],
-                'log_notes'  => "Pembatalan penjualan produk",
+                'log_notes'  => "Pembatalan pengiriman produk",
                 'log_jumlah' => $value["sod_qty"],
                 'unit_id'    => $value['unit_id'],
             ]);
