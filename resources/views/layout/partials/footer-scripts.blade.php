@@ -309,6 +309,13 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         console.log($(this).val());
     });
 
+    $(document).on("input", ".include-nol", function () {
+        let val = $(this).val();
+        val = val.replace(/[^0-9]/g, '');
+        $(this).val(val);
+    });
+
+
     function formatRupiah(angka, prefix) {
         angka = angka.toString();
         var number_string = angka.replace(/[^,\d]/g, "").toString(),

@@ -38,7 +38,7 @@
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Nomor Telepon PIC <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill number-only" id="customer_pic_phone"
+                                                <input type="text" class="form-control fill include-nol" id="customer_pic_phone"
                                                     placeholder="08xxx">
                                             </div>
                                         </div>
