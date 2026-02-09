@@ -28,11 +28,9 @@
                 },
             },
             columns: [
-                { data: "customer_name" },
-                { data: "customer_code" },
+                { data: "customer_notes" },
+                { data: "customer_pic" },
                 { data: "customer_pic_phone" },
-                { data: "city_name" },
-                { data: "customer_payment" },
                 { data: "created" },
                 { data: "action", class: "d-flex align-items-center" },
             ],

@@ -1,23 +1,10 @@
-autocompleteProv('#state_id');
-autocompleteCity('#city_id');
-autocompleteDistrict('#district_id');
-autocompleteStaffSales('#sales_id');
-
 $(document).ready(function(){
     $('.btn-save').html(mode == 1?"Tambah Armada" : "Update Armada");
     if(mode==2) {
         console.log(data)
-        $('#customer_name').val(data.customer_name);
-        $('#customer_email').val(data.customer_email);
-        $('#state_id').append(`<option value="${data.state_id}">${data.state_name}</option>`).trigger('change');
-        $('#city_id').append(`<option value="${data.city_id}">${data.city_name}</option>`).trigger('change');
-        $('#district_id').append(`<option value="${data.district_id}">${data.district_name}</option>`);
-        $('#customer_address').val(data.customer_address);
-        $('#customer_phone').val(data.customer_phone);
         $('#customer_pic').val(data.customer_pic);
         $('#customer_pic_phone').val(data.customer_pic_phone);
         $('#customer_notes').val(data.customer_notes);
-        $('#sales_id').append(`<option value="${data.sales_id}">${data.staff_name}</option>`);
     }
 })
 
@@ -42,18 +29,9 @@ $(document).on("click", ".btn-save", function () {
 
     // Siapkan data untuk dikirim
     param = {
-        customer_name: $("#customer_name").val(),
-        customer_email: $("#customer_email").val(),
-        state_id: $("#state_id").val(),
-        city_id: $("#city_id").val(),
-        district_id: $("#district_id").val(),
-        customer_address: $("#customer_address").val(),
-        customer_phone: $("#customer_phone").val(),
         customer_pic: $("#customer_pic").val(),
         customer_pic_phone: $("#customer_pic_phone").val(),
         customer_notes: $("#customer_notes").val(),
-        sales_id: $('#sales_id').val(),
-        customer_payment: 0,
         _token:token
     };
 

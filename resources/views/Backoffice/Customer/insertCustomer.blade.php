@@ -24,39 +24,9 @@
                                     <div class="row">
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
-                                                <label>Nama <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill" id="customer_name" placeholder="Masukkan Nama Armada">
+                                                <label>No. Pol <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill" id="customer_notes" placeholder="L 1234 IPM">
                                             </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Email </label>
-                                                <input type="email" class="form-control " id="customer_email"
-                                                    placeholder="Masukkan Alamat Email">
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-12">
-                                            <div class="input-block mb-3">
-                                                <label>Provinsi <span class="text-danger">*</span></label>
-                                                <select class="form-select fill" id="state_id"></select>
-                                            </div>
-                                           
-                                        </div>
-                                        <div class="col-lg-4 col-md-12">
-                                            <div class="input-block mb-3">
-                                                <label>Kota <span class="text-danger">*</span></label>
-                                                <select class="form-select fill" id="city_id"></select>
-                                            </div> 
-                                        </div>
-                                        <div class="col-lg-4 col-md-12">
-                                            <div class="input-block mb-3">
-                                                <label>Kecamatan <span class="text-danger">*</span></label>
-                                                <select class="form-select fill" id="district_id"></select>
-                                            </div> 
-                                        </div>
-                                        <div class="input-block mb-3">
-                                            <label>Alamat <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill" id="customer_address" placeholder="Masukkan Alamat">
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
@@ -71,18 +41,6 @@
                                                 <input type="text" class="form-control fill number-only" id="customer_pic_phone"
                                                     placeholder="08xxx">
                                             </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Keterangan</label>
-                                                <input type="text" class="form-control" id="customer_notes" placeholder="Masukkan Catatan">
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Sales <span class="text-danger">*</span></label>
-                                                <select class="form-select fill" id="sales_id"></select>
-                                            </div> 
                                         </div>
                                     </div>
                                 </div>

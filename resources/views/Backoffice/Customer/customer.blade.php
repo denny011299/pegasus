@@ -25,11 +25,9 @@
                                 <table class="table table-center table-hover datatable" id="tableCustomer">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Nama Armada</th>
-                                            <th>Kode Armada</th>
-                                            <th>Telepon</th>
-                                            <th>Kota</th>
-                                            <th>Total Belanja</th>
+                                            <th>No Pol</th>
+                                            <th>Nama PIC</th>
+                                            <th>Telepon PIC</th>
                                             <th>Dibuat</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
