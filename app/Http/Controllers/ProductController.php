@@ -145,16 +145,16 @@ class ProductController extends Controller
     {
         $data = $req->all();
 
-        // Pengecekan Unique
-        $productName = trim(strtolower($data['product_name']));
-        $exists = Product::whereRaw('LOWER(product_name) = ?', [$productName])
-            ->where('status', 1)
-            ->exists();
-        if ($exists == true) {
-            return response()->json([
-                'message' => 'Nama produk sudah digunakan'
-            ]);
-        }
+        // // Pengecekan Unique
+        // $productName = trim(strtolower($data['product_name']));
+        // $exists = Product::whereRaw('LOWER(product_name) = ?', [$productName])
+        //     ->where('status', 1)
+        //     ->exists();
+        // if ($exists == true) {
+        //     return response()->json([
+        //         'message' => 'Nama produk sudah digunakan'
+        //     ]);
+        // }
 
         $id = (new Product())->insertProduct($data);
         $variant = json_decode($data['product_variant'], true);
