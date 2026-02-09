@@ -341,11 +341,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                 <div class="spinner-border" role="status">
                 </div>
             </div>   
-        `).attr("disabled", true);
+        `).prop("disabled", true);
     }
 
     function ResetLoadingButton(id, text = null) {
-        $(id).html(`${text? text : 'Save Changes'}`).attr("disabled", false);
+        $(id).html(`${text? text : 'Save Changes'}`).prop("disabled", false);
         console.log("success");
     }
     
