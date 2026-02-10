@@ -157,6 +157,7 @@ function addRow(names="",idx=0) {
 
 $(document).on("click",".btn-save",function(){
     LoadingButton(this);
+
     $('.is-invalid').removeClass('is-invalid');
 
     var url ="/insertProduct";
