@@ -36,6 +36,7 @@
                                             <th>Edit</th>
                                             <th>Hapus</th>
                                             <th>Lihat</th>
+                                            <th>Acc / Lainnya</th>
                                             <th>Izinkan Semua</th>
                                         </tr>
                                     </thead>
@@ -70,6 +71,12 @@
                                                 <td>
                                                     <label class="custom_check">
                                                         <input type="checkbox" name="invoice" class="checkbox view">
+                                                        <span class="checkmark"></span>
+                                                    </label>
+                                                </td>
+                                                <td>
+                                                    <label class="custom_check">
+                                                        <input type="checkbox" name="invoice" class="checkbox others">
                                                         <span class="checkmark"></span>
                                                     </label>
                                                 </td>

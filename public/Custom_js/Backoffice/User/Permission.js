@@ -73,6 +73,7 @@
                 if($(this).find('.edit').is(":checked")) param.akses.push("edit");
                 if($(this).find('.delete').is(":checked")) param.akses.push("delete");
                 if($(this).find('.view').is(":checked")) param.akses.push("view");
+                if($(this).find('.others').is(":checked")) param.akses.push("others");
                 valid=1;
                 perm.push(param);
             }
@@ -83,7 +84,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan pilih minimal 1 permissions yang ingin ditambahkan');
-            ResetLoadingButton('.btn-save', 'Simpan perubahan');
+            ResetLoadingButton('.btn-save', 'Perbarui');
             return false;
         };
         
@@ -105,11 +106,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');      
+                ResetLoadingButton(".btn-save", 'Perbarui');      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", 'Simpan perubahan');
+                ResetLoadingButton(".btn-save", 'Perbarui');
                 console.log(e);
             }
         });

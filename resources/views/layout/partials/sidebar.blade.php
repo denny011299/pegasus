@@ -504,6 +504,9 @@
                 </nav>
                 <ul class="sidebar-vertical">
                     <!-- Main -->
+                    @php
+                            $akses = collect(json_decode(Session::get('user')->role_access));
+                    @endphp
                     <li class="menu-title"><span>Menu Utama</span></li>
                     <li class="submenu">
                         <li>
@@ -515,51 +518,78 @@
 
                     <!-- Master -->
                     <li class="menu-title"><span>Master</span></li>
-                    <li class="submenu">
-                        <a href="#"><i class="fe fe-list"></i> <span> Master</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                            <li><a href="{{ url('category') }}"
-                                    class="{{ Request::is('category') ? 'active' : '' }}">Kategori</a></li>
-                            <li><a href="{{ url('unit') }}"
-                                    class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
-                            <li><a href="{{ url('variant') }}"
-                                    class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
-                            {{-- <li><a href="{{ url('area') }}"
-                                    class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li> --}}
-                           
-                        </ul>
-                    </li>
+                        @php
+                                $showMaster =
+                                $akses->firstWhere('name', 'Kategori') ||
+                                $akses->firstWhere('name', 'Satuan') ||
+                                $akses->firstWhere('name', 'Variasi');
+                        @endphp
+                        @if ($showMaster)
+                        <li class="submenu">
+                            <a href="#"><i class="fe fe-list"></i> <span> Master</span> <span
+                                    class="menu-arrow"></span></a>
+                            <ul style="display: none;">
+                                    @if ($akses->firstWhere('name', 'Kategori'))
+                                    <li><a href="{{ url('category') }}"
+                                            class="{{ Request::is('category') ? 'active' : '' }}">Kategori</a></li>
+                                    @endif
+                                    @if ($akses->firstWhere('name', 'Satuan'))
+                                    <li><a href="{{ url('unit') }}"
+                                            class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
+                                    @endif
+                                    @if ($akses->firstWhere('name', 'Variasi'))
+                                    <li><a href="{{ url('variant') }}"
+                                            class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
+                                    @endif
+                                {{-- <li><a href="{{ url('area') }}"
+                                        class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li> --}}
+                               
+                            </ul>
+                        </li>
+                        @endif
+                    
                     <li class="submenu">
                         <a href="#"><i class="fe fe-package"></i> <span> Produk</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            <li><a href="{{ url('product') }}"
-                                    class="{{ Request::is('product') ? 'active' : '' }}">Daftar Produk</a></li>
-                            <li><a href="{{ url('stockProduct') }}"
-                                    class="{{ Request::is('stockProduct') ? 'active' : '' }}">Stok Produk</a></li>
+                                @if ($akses->firstWhere('name', 'Daftar Produk'))
+                                <li><a href="{{ url('product') }}"
+                                        class="{{ Request::is('product') ? 'active' : '' }}">Daftar Produk</a></li>
+                                @endif
+                                @if ($akses->firstWhere('name', 'Stok Produk'))
+                                <li><a href="{{ url('stockProduct') }}"
+                                        class="{{ Request::is('stockProduct') ? 'active' : '' }}">Stok Produk</a></li>
+                                @endif
                         </ul>
                     </li>
                     <li class="submenu">
                         <a href="#"><i class="fa fa-cubes"></i> <span> Bahan Mentah</span> <span
                                 class="menu-arrow"></span></a>
                         <ul style="display: none;">
-                            <li><a href="{{ url('supplies') }}"
-                                    class="{{ Request::is('supplies') ? 'active' : '' }}">Daftar Bahan Mentah</a></li>
-                            <li><a href="{{ url('stockSupplies') }}"
-                                    class="{{ Request::is('stockSupplies') ? 'active' : '' }}">Stok Bahan Mentah</a></li>
+                                @if ($akses->firstWhere('name', 'Daftar Bahan Mentah'))
+                                <li><a href="{{ url('supplies') }}"
+                                        class="{{ Request::is('supplies') ? 'active' : '' }}">Daftar Bahan Mentah</a></li>
+                                @endif
+                                @if ($akses->firstWhere('name', 'Stok Bahan Mentah'))
+                                <li><a href="{{ url('stockSupplies') }}"
+                                        class="{{ Request::is('stockSupplies') ? 'active' : '' }}">Stok Bahan Mentah</a></li>
+                                @endif
                         </ul>
                     </li>
                 
                     <li class="submenu">
+                        @if ($akses->firstWhere('name', 'Armada'))
                         <li>
                             <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
                                     class="fe fe-users"></i> <span>Armada</span></a>
-                        </li>
+                        </li>   
+                        @endif
+                        @if ($akses->firstWhere('name', 'Pemasok'))
                         <li>
                             <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i
                                     class="fe fe-truck"></i> <span>Pemasok</span></a>
-                        </li>
+                        </li>   
+                        @endif
                     </li>
                     <li class="submenu">
                         <a href="#"><i class="fe fe-briefcase"></i> <span> Inventaris</span> <span

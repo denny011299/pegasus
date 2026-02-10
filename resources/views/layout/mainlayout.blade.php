@@ -188,3 +188,28 @@
 <script>
     var token= "{{csrf_token()}}";
 </script>
+<script>
+    var route = "{{ Route::currentRouteName() }}";
+    // kirim semua permission dari user ke JS
+    window.permissionList = @json(Session::has('user') ? Session::get('user')->role_access : []);
+    // === GLOBAL PERMISSION HELPER ===
+    function hasMenuAccess(moduleName) {
+        if (!window.permissionList || !Array.isArray(window.permissionList)) return false;
+
+        return window.permissionList.some(
+            p => p.name.toLowerCase() === moduleName.toLowerCase()
+        );
+    }
+
+    function hasAccessAction(moduleName, action) {
+        if (!window.permissionList || !Array.isArray(window.permissionList)) return false;
+
+        const found = window.permissionList.find(p =>
+            p.name.toLowerCase() === moduleName.toLowerCase()
+        );
+
+        if (!found) return false;
+
+        return found.akses.map(a => a.toLowerCase()).includes(action.toLowerCase());
+    }
+</script>

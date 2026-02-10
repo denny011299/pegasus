@@ -1,35 +1,47 @@
 [
-  { "Id": "1", "Modules": "Product", "SubModules": "Category" },
-  { "Id": "2", "Modules": "Product", "SubModules": "Satuan" },
-  { "Id": "3", "Modules": "Product", "SubModules": "Variant Product" },
-  { "Id": "4", "Modules": "Product", "SubModules": "Bahan Mentah" },
-  { "Id": "5", "Modules": "Product", "SubModules": "Product" },
-  { "Id": "6", "Modules": "Supplier", "SubModules": "Supplier" },
-  { "Id": "7", "Modules": "Customer", "SubModules": "Customer" },
-  { "Id": "8", "Modules": "Inventory", "SubModules": "List Stock Barang" },
-  { "Id": "9", "Modules": "Inventory", "SubModules": "Barang Masuk & Keluar Product" },
-  { "Id": "10", "Modules": "Inventory", "SubModules": "Product Issues" },
-  { "Id": "11", "Modules": "Inventory", "SubModules": "Stock Opname" },
-  { "Id": "12", "Modules": "Inventory", "SubModules": "Stock Alert" },
-  { "Id": "13", "Modules": "Order", "SubModules": "Sales Order" },
-  { "Id": "14", "Modules": "Order", "SubModules": "Purchase Order" },
-  { "Id": "15", "Modules": "Order", "SubModules": "Purchase" },
-  { "Id": "16", "Modules": "Order", "SubModules": "Surat Jalan PO" },
-  { "Id": "17", "Modules": "Order", "SubModules": "Tanda Terima PO & Payment" },
-  { "Id": "18", "Modules": "Order", "SubModules": "Work Order Letter" },
-  { "Id": "19", "Modules": "Production", "SubModules": "Manajemen Bahan Mentah" },
-  { "Id": "20", "Modules": "Production", "SubModules": "Proses Produksi Multi Tahap" },
-  { "Id": "21", "Modules": "Production", "SubModules": "Bill of Materials (BoM)" },
-  { "Id": "22", "Modules": "Production", "SubModules": "Management Product Jadi" },
-  { "Id": "23", "Modules": "Staff", "SubModules": "Staff" },
-  { "Id": "24", "Modules": "Staff", "SubModules": "Staff User Permissions" },
-  { "Id": "27", "Modules": "Accounting", "SubModules": "Kas Kecil" },
-  { "Id": "28", "Modules": "Accounting", "SubModules": "Kas" },
-  { "Id": "29", "Modules": "Accounting", "SubModules": "Piutang & Hutang" },
-  { "Id": "30", "Modules": "Reporting", "SubModules": "Laporan Barang Masuk & Keluar" },
-  { "Id": "31", "Modules": "Reporting", "SubModules": "Laporan Absensi Pegawai" },
-  { "Id": "32", "Modules": "Reporting", "SubModules": "Laporan Produksi Harian / Mingguan / Bulanan" },
-  { "Id": "33", "Modules": "Reporting", "SubModules": "Laporan Pemakaian Bahan Baku" },
-  { "Id": "34", "Modules": "Reporting", "SubModules": "Laporan P/L" },
-  { "Id": "35", "Modules": "Reporting", "SubModules": "Laporan Barang Mentah Kembali" }
+  { "Id": 1, "Modules": "Dashboard", "SubModules": "Dashboard" },
+
+  { "Id": 2, "Modules": "Master", "SubModules": "Kategori" },
+  { "Id": 3, "Modules": "Master", "SubModules": "Satuan" },
+  { "Id": 4, "Modules": "Master", "SubModules": "Variasi" },
+
+  { "Id": 5, "Modules": "Produk", "SubModules": "Daftar Produk" },
+  { "Id": 6, "Modules": "Produk", "SubModules": "Stok Produk" },
+
+  { "Id": 7, "Modules": "Bahan Mentah", "SubModules": "Daftar Bahan Mentah" },
+  { "Id": 8, "Modules": "Bahan Mentah", "SubModules": "Stok Bahan Mentah" },
+
+  { "Id": 9, "Modules": "Armada", "SubModules": "Armada" },
+  { "Id": 10, "Modules": "Pemasok", "SubModules": "Pemasok" },
+
+  { "Id": 11, "Modules": "Inventaris", "SubModules": "Produk Bermasalah" },
+  { "Id": 12, "Modules": "Inventaris", "SubModules": "Peringatan Stok Produk" },
+  { "Id": 13, "Modules": "Inventaris", "SubModules": "Peringatan Stok Bahan Mentah" },
+  { "Id": 14, "Modules": "Inventaris", "SubModules": "Stok Opname Produk" },
+  { "Id": 15, "Modules": "Inventaris", "SubModules": "Stok Opname Bahan Mentah" },
+
+  { "Id": 16, "Modules": "Pengiriman", "SubModules": "Pengiriman" },
+  { "Id": 17, "Modules": "Pembelian", "SubModules": "Pembelian" },
+  { "Id": 18, "Modules": "Tanda Terima PO", "SubModules": "Tanda Terima PO" },
+
+  { "Id": 19, "Modules": "Produksi", "SubModules": "Resep Bahan Mentah" },
+  { "Id": 20, "Modules": "Produksi", "SubModules": "Produksi" },
+
+  { "Id": 21, "Modules": "Akuntansi", "SubModules": "Bank Account" },
+  { "Id": 22, "Modules": "Akuntansi", "SubModules": "Hutang" },
+  { "Id": 23, "Modules": "Akuntansi", "SubModules": "Kategori Kas" },
+  { "Id": 24, "Modules": "Akuntansi", "SubModules": "Kas Kecil" },
+  { "Id": 25, "Modules": "Akuntansi", "SubModules": "Kas" },
+
+  { "Id": 26, "Modules": "Laporan", "SubModules": "Pengelolaan Bahan Mentah" },
+  { "Id": 27, "Modules": "Laporan", "SubModules": "Retur Product" },
+  { "Id": 28, "Modules": "Laporan", "SubModules": "Laporan Produksi" },
+  { "Id": 29, "Modules": "Laporan", "SubModules": "Untung & Rugi" },
+  { "Id": 30, "Modules": "Laporan", "SubModules": "Barang Masuk Keluar" },
+
+  { "Id": 31, "Modules": "Manajemen Pengguna", "SubModules": "Pengguna" },
+  { "Id": 32, "Modules": "Manajemen Pengguna", "SubModules": "Peran & Perizinan" },
+
+  { "Id": 33, "Modules": "Pengaturan", "SubModules": "Profil" },
+  { "Id": 34, "Modules": "Pengaturan", "SubModules": "Pengaturan" }
 ]

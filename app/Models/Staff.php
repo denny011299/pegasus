@@ -49,6 +49,7 @@ class Staff extends Model
             $r = Role::find($value->role_id);
             if($r){
                 $value->role_name = $r->role_name;
+                $value->role_access = $r->role_access;
             }
         }
         
