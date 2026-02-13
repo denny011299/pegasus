@@ -510,202 +510,343 @@
                     <li class="menu-title"><span>Menu Utama</span></li>
                     <li class="submenu">
                         <li>
-                            <a class="{{ Request::is('index') ? 'active' : '' }}" href="/"><i
-                                    class="fe fe-home"></i> <span>Dashboard</span></a>
+                            <a class="{{ Request::is('index') ? 'active' : '' }}" href="/">
+                                <i class="fe fe-home"></i> <span>Dashboard</span>
+                            </a>
                         </li>
                     </li>
                     <!-- /Main -->
 
                     <!-- Master -->
-                    <li class="menu-title"><span>Master</span></li>
-                        @php
-                                $showMaster =
-                                $akses->firstWhere('name', 'Kategori') ||
-                                $akses->firstWhere('name', 'Satuan') ||
-                                $akses->firstWhere('name', 'Variasi');
-                        @endphp
+                    @php
+                        $showMaster =
+                        $akses->firstWhere('name', 'Kategori') ||
+                        $akses->firstWhere('name', 'Satuan') ||
+                        $akses->firstWhere('name', 'Variasi');
+                    @endphp
+                    @php
+                        $showProduk =
+                        $akses->firstWhere('name', 'Daftar Produk') ||
+                        $akses->firstWhere('name', 'Stok Produk');
+                    @endphp
+                    @php
+                        $showBahan =
+                        $akses->firstWhere('name', 'Daftar Bahan Mentah') ||
+                        $akses->firstWhere('name', 'Stok Bahan Mentah');
+                    @endphp
+                    @php
+                        $showInventory =
+                        $akses->firstWhere('name', 'Produk Bermasalah') ||
+                        $akses->firstWhere('name', 'Peringatan Stok Produk') ||
+                        $akses->firstWhere('name', 'Peringatan Stok Bahan Mentah') ||
+                        $akses->firstWhere('name', 'Stok Opname Produk') ||
+                        $akses->firstWhere('name', 'Stok Opname Bahan Mentah');
+                    @endphp
+
+                    @if ($showMaster || $showProduk || $showBahan || $showInventory || $akses->firstWhere('name', 'Armada') || $akses->firstWhere('name', 'Pemasok'))
+                        <li class="menu-title"><span>Master</span></li>
                         @if ($showMaster)
-                        <li class="submenu">
-                            <a href="#"><i class="fe fe-list"></i> <span> Master</span> <span
+                            <li class="submenu">
+                                <a href="#"><i class="fe fe-list"></i> <span> Master</span> <span
                                     class="menu-arrow"></span></a>
-                            <ul style="display: none;">
+                                <ul style="display: none;">
                                     @if ($akses->firstWhere('name', 'Kategori'))
-                                    <li><a href="{{ url('category') }}"
+                                        <li><a href="{{ url('category') }}"
                                             class="{{ Request::is('category') ? 'active' : '' }}">Kategori</a></li>
                                     @endif
+                                    
                                     @if ($akses->firstWhere('name', 'Satuan'))
-                                    <li><a href="{{ url('unit') }}"
+                                        <li><a href="{{ url('unit') }}"
                                             class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
                                     @endif
+
                                     @if ($akses->firstWhere('name', 'Variasi'))
-                                    <li><a href="{{ url('variant') }}"
+                                        <li><a href="{{ url('variant') }}"
                                             class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                                     @endif
-                                {{-- <li><a href="{{ url('area') }}"
-                                        class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li> --}}
-                               
-                            </ul>
-                        </li>
+
+                                    {{-- <li><a href="{{ url('area') }}"
+                                            class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li> --}}
+                                
+                                </ul>
+                            </li>
                         @endif
                     
-                    <li class="submenu">
-                        <a href="#"><i class="fe fe-package"></i> <span> Produk</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                                @if ($akses->firstWhere('name', 'Daftar Produk'))
-                                <li><a href="{{ url('product') }}"
-                                        class="{{ Request::is('product') ? 'active' : '' }}">Daftar Produk</a></li>
-                                @endif
-                                @if ($akses->firstWhere('name', 'Stok Produk'))
-                                <li><a href="{{ url('stockProduct') }}"
-                                        class="{{ Request::is('stockProduct') ? 'active' : '' }}">Stok Produk</a></li>
-                                @endif
-                        </ul>
-                    </li>
-                    <li class="submenu">
-                        <a href="#"><i class="fa fa-cubes"></i> <span> Bahan Mentah</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                                @if ($akses->firstWhere('name', 'Daftar Bahan Mentah'))
-                                <li><a href="{{ url('supplies') }}"
-                                        class="{{ Request::is('supplies') ? 'active' : '' }}">Daftar Bahan Mentah</a></li>
-                                @endif
-                                @if ($akses->firstWhere('name', 'Stok Bahan Mentah'))
-                                <li><a href="{{ url('stockSupplies') }}"
-                                        class="{{ Request::is('stockSupplies') ? 'active' : '' }}">Stok Bahan Mentah</a></li>
-                                @endif
-                        </ul>
-                    </li>
-                
-                    <li class="submenu">
-                        @if ($akses->firstWhere('name', 'Armada'))
-                        <li>
-                            <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
-                                    class="fe fe-users"></i> <span>Armada</span></a>
-                        </li>   
+                        @if ($showProduk)
+                            <li class="submenu">
+                                <a href="#"><i class="fe fe-package"></i> <span> Produk</span> <span
+                                    class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    @if ($akses->firstWhere('name', 'Daftar Produk'))
+                                        <li><a href="{{ url('product') }}"
+                                            class="{{ Request::is('product') ? 'active' : '' }}">Daftar Produk</a></li>
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Stok Produk'))
+                                        <li><a href="{{ url('stockProduct') }}"
+                                            class="{{ Request::is('stockProduct') ? 'active' : '' }}">Stok Produk</a></li>
+                                    @endif
+                                </ul>
+                            </li>
                         @endif
-                        @if ($akses->firstWhere('name', 'Pemasok'))
-                        <li>
-                            <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i
-                                    class="fe fe-truck"></i> <span>Pemasok</span></a>
-                        </li>   
+                        
+                        @if ($showBahan)
+                            <li class="submenu">
+                                <a href="#"><i class="fa fa-cubes"></i> <span> Bahan Mentah</span> <span
+                                    class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    @if ($akses->firstWhere('name', 'Daftar Bahan Mentah'))
+                                        <li><a href="{{ url('supplies') }}"
+                                            class="{{ Request::is('supplies') ? 'active' : '' }}">Daftar Bahan Mentah</a></li>
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Stok Bahan Mentah'))
+                                        <li><a href="{{ url('stockSupplies') }}"
+                                            class="{{ Request::is('stockSupplies') ? 'active' : '' }}">Stok Bahan Mentah</a></li>
+                                    @endif
+                                </ul>
+                            </li>
                         @endif
-                    </li>
-                    <li class="submenu">
-                        <a href="#"><i class="fe fe-briefcase"></i> <span> Inventaris</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                            <li><a href="{{ url('productIssue') }}"
-                                    class="{{ Request::is('productIssue') ? 'active' : '' }}">Produk Bermasalah</a></li>
-                            <li><a href="{{ url('stockAlert') }}"
-                                class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok Produk</a></li>
-                            <li><a href="{{ url('stockAlertSupplies') }}"
-                                class="{{ Request::is('stockAlertSupplies') ? 'active' : '' }}">Peringatan Stok Bahan Mentah</a></li>
-                            <li><a href="{{ url('stockOpname') }}"
-                                    class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname Produk</a></li>
-                            <li><a href="{{ url('stockOpnameBahan') }}"
-                                    class="{{ Request::is('stockOpnameBahan') ? 'active' : '' }}">Stok Opname Bahan Mentah</a></li>
-                        </ul>
-                    </li>
+                    
+                        <li class="submenu">
+                            @if ($akses->firstWhere('name', 'Armada'))
+                                <li>
+                                    <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
+                                        class="fe fe-users"></i> <span>Armada</span></a>
+                                </li>   
+                            @endif
+
+                            @if ($akses->firstWhere('name', 'Pemasok'))
+                                <li>
+                                    <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i
+                                        class="fe fe-truck"></i> <span>Pemasok</span></a>
+                                </li>   
+                            @endif
+                        </li>
+
+                        @if ($showInventory)
+                            <li class="submenu">
+                                <a href="#"><i class="fe fe-briefcase"></i> <span> Inventaris</span> <span
+                                    class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    @if ($akses->firstWhere('name', 'Produk Bermasalah'))
+                                        <li><a href="{{ url('productIssue') }}"
+                                            class="{{ Request::is('productIssue') ? 'active' : '' }}">Produk Bermasalah</a></li>
+                                    @endif
+    
+                                    @if ($akses->firstWhere('name', 'Peringatan Stok Produk'))
+                                        <li><a href="{{ url('stockAlert') }}"
+                                            class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok Produk</a></li>
+                                    @endif
+    
+                                    @if ($akses->firstWhere('name', 'Peringatan Stok Bahan Mentah'))
+                                        <li><a href="{{ url('stockAlertSupplies') }}"
+                                            class="{{ Request::is('stockAlertSupplies') ? 'active' : '' }}">Peringatan Stok Bahan Mentah</a></li>
+                                    @endif
+    
+                                    @if ($akses->firstWhere('name', 'Stok Opname Produk'))
+                                        <li><a href="{{ url('stockOpname') }}"
+                                            class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname Produk</a></li>
+                                    @endif
+    
+                                    @if ($akses->firstWhere('name', 'Stok Opname Bahan Mentah'))
+                                        <li><a href="{{ url('stockOpnameBahan') }}"
+                                            class="{{ Request::is('stockOpnameBahan') ? 'active' : '' }}">Stok Opname Bahan Mentah</a></li>
+                                    @endif
+                                </ul>
+                            </li>
+                        @endif
+                    @endif
                     <!-- /Master -->
+
                     {{-- Ordering --}}
-                    <li class="menu-title"><span>Penjualan & Pembelian</span></li>
-                    <li class="submenu">
-                        <li>
-                            <a class="{{ Request::is('salesOrder') ? 'active' : '' }}" href="/salesOrder"><i
-                                    class="fe fe-truck"></i> <span>Pengiriman</span></a>
+                    @if ($akses->firstWhere('name', 'Pengiriman') || $akses->firstWhere('name', 'Pembelian') || $akses->firstWhere('name', 'Tanda Terima PO'))
+                        <li class="menu-title"><span>Penjualan & Pembelian</span></li>
+                        <li class="submenu">
+                            @if ($akses->firstWhere('name', 'Pengiriman'))
+                                <li>
+                                    <a class="{{ Request::is('salesOrder') ? 'active' : '' }}" href="/salesOrder"><i
+                                            class="fe fe-truck"></i> <span>Pengiriman</span></a>
+                                </li>
+                            @endif
+
+                            @if ($akses->firstWhere('name', 'Pembelian'))
+                                <li>
+                                    <a class="{{ Request::is('purchaseOrder') ? 'active' : '' }}" href="/purchaseOrder">
+                                        <i class="fe fe-dollar-sign"></i> <span>Pembelian</span></a>
+                                </li>
+                            @endif
+
+                            @if ($akses->firstWhere('name', 'Tanda Terima PO'))
+                                <li>
+                                    <a class="{{ Request::is('tt') ? 'active' : '' }}" href="/tt">
+                                        <i class="fe fe-file-text"></i> <span>Tanda Terima PO</span></a>
+                                </li>
+                            @endif
                         </li>
-                        <li>
-                            <a class="{{ Request::is('purchaseOrder') ? 'active' : '' }}" href="/purchaseOrder">
-                                <i class="fe fe-dollar-sign"></i> <span>Pembelian</span></a>
-                        </li>
-                        <li>
-                            <a class="{{ Request::is('tt') ? 'active' : '' }}" href="/tt">
-                                <i class="fe fe-file-text"></i> <span>Tanda Terima PO</span></a>
-                        </li>
-                    </li>
+                    @endif
                     {{-- /Ordering --}}
-                 <li class="menu-title"><span>Produksi</span></li>
-                    <li class="submenu">
-                        <li>
-                            <a class="{{ Request::is('bom') ? 'active' : '' }}" href="/bom"><i
-                                    class="fe fe-file-text"></i> <span>Resep Bahan Mentah</span></a>
-                        </li>
-                        <li>
-                            <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">
-                                <i class="fa-solid fa-gear"></i> <span>Produksi</span></a>
-                        </li>
-                    </li>
+
+                    @if ($akses->firstWhere('name', 'Resep Bahan Mentah') || $akses->firstWhere('name', 'Produksi'))
+                        <li class="menu-title"><span>Produksi</span></li>
+                        <li class="submenu">
+                            @if ($akses->firstWhere('name', 'Resep Bahan Mentah'))
+                                <li>
+                                    <a class="{{ Request::is('bom') ? 'active' : '' }}" href="/bom"><i
+                                        class="fe fe-file-text"></i> <span>Resep Bahan Mentah</span></a>
+                                </li>
+                            @endif
+                           
+                            @if ($akses->firstWhere('name', 'Produksi'))
+                                <li>
+                                    <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">
+                                        <i class="fa-solid fa-gear"></i> <span>Produksi</span></a>
+                                </li>
+                            @endif
+                       </li>
+                    @endif
+
                     {{-- Report --}}
-                    <li class="menu-title"><span>Akuntansi & Laporan</span></li>
-                     <li>
-                        <a class="{{ Request::is('bank') ? 'active' : '' }}" href="/bank">
-                                <i class="bi bi-bank"></i> <span>Bank Account</span></a>
-                        </li>
-                <li>
-                        <a class="{{ Request::is('payReceive') ? 'active' : '' }}" href="/payReceive">
-                                <i class="bi bi-cash-coin"></i> <span>Hutang</span></a>
-                </li>
-                    <li class="submenu">
-                        <a href="#"><i class="fe fe-book"></i> <span> Akuntansi</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                                 <li><a href="{{ url('cashCategory') }}"
-                                    class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>
-                                    <li><a href="{{ url('pettyCash') }}"
+                    @php
+                        $showAccounting =
+                        $akses->firstWhere('name', 'Kategori Kas') ||
+                        $akses->firstWhere('name', 'Kas Kecil') ||
+                        $akses->firstWhere('name', 'Kas');
+                    @endphp
+                    @php
+                        $showLaporan =
+                        $akses->firstWhere('name', 'Pengelolaan Bahan Mentah') ||
+                        $akses->firstWhere('name', 'Retur Produk') ||
+                        $akses->firstWhere('name', 'Laporan Produksi') ||
+                        $akses->firstWhere('name', 'Untung & Rugi') ||
+                        $akses->firstWhere('name', 'Barang Masuk Keluar');
+                    @endphp
+
+                    @if ($showAccounting || $showLaporan || $akses->firstWhere('name', 'Bank Account') || $akses->firstWhere('name', 'Hutang'))
+                        <li class="menu-title"><span>Akuntansi & Laporan</span></li>
+                        
+                        @if ($akses->firstWhere('name', 'Bank Account'))
+                            <li>
+                                <a class="{{ Request::is('bank') ? 'active' : '' }}" href="/bank">
+                                    <i class="bi bi-bank"></i> <span>Bank Account</span></a>
+                            </li>
+                        @endif
+
+                        @if ($akses->firstWhere('name', 'Hutang'))
+                            <li>
+                                <a class="{{ Request::is('payReceive') ? 'active' : '' }}" href="/payReceive">
+                                    <i class="bi bi-cash-coin"></i> <span>Hutang</span></a>
+                            </li>
+                        @endif
+
+                        @if ($showAccounting)
+                            <li class="submenu">
+                                <a href="#"><i class="fe fe-book"></i> <span> Akuntansi</span> <span
+                                    class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    @if ($akses->firstWhere('name', 'Kategori Kas'))
+                                        <li><a href="{{ url('cashCategory') }}"
+                                        class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>    
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Kas Kecil'))
+                                        <li><a href="{{ url('pettyCash') }}"
                                             class="{{ Request::is('pettyCash') ? 'active' : '' }}">
                                             Kas Kecil</a></li>
-                            <li><a href="{{ url('cash') }}"
-                                    class="{{ Request::is('cash') ? 'active' : '' }}">
-                                    Kas</a></li>
-                        </ul>
-                    </li>
-                    
-                    <li class="submenu">
-                        <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
-                                class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                                <li><a href="/reportBahanBaku"
-                                    class="{{ Request::is('reportBahanBaku') ? 'active' : '' }}">
-                                    Pengelolaan Bahan Mentah</a></li>
-                            <li><a href="/ProductReturn"
-                                    class="{{ Request::is('ProductReturn') ? 'active' : '' }}">
-                                    Retur Product</a></li>
-                            <li><a href="/reportProduksi"
-                                    class="{{ Request::is('reportProduksi') ? 'active' : '' }}">
-                                    Laporan Produksi</a></li>
-                            <li><a href="{{ url('profitLoss') }}"
-                                    class="{{ Request::is('profitLoss') ? 'active' : '' }}">
-                                    Untung & Rugi</a></li>
-                            <li><a href="{{ url('inwardOutward') }}"
-                                    class="{{ Request::is('inwardOutward') ? 'active' : '' }}">
-                                    Barang Masuk Keluar</a></li>
-                           
-                        </ul>
-                    </li>
-                    <li class="menu-title"><span>Manajemen Pengguna</span></li>
-                        <li>
-                            <a class="{{ Request::is('staff') ? 'active' : '' }}" href="/staff"><i
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Kas'))
+                                        <li><a href="{{ url('cash') }}"
+                                            class="{{ Request::is('cash') ? 'active' : '' }}">
+                                            Kas</a></li>
+                                    @endif
+                                </ul>
+                            </li>
+                        @endif
+
+                        @if ($showLaporan)
+                            <li class="submenu">
+                                <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
+                                    class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    @if ($akses->firstWhere('name', 'Pengelolaan Bahan Mentah'))
+                                        <li><a href="/reportBahanBaku"
+                                            class="{{ Request::is('reportBahanBaku') ? 'active' : '' }}">
+                                            Pengelolaan Bahan Mentah</a></li>
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Retur Produk'))
+                                        <li><a href="/ProductReturn"
+                                            class="{{ Request::is('ProductReturn') ? 'active' : '' }}">
+                                            Retur Produk</a></li>
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Laporan Produksi'))
+                                        <li><a href="/reportProduksi"
+                                            class="{{ Request::is('reportProduksi') ? 'active' : '' }}">
+                                            Laporan Produksi</a></li>
+                                    @endif
+
+                                    {{-- @if ($akses->firstWhere('name', 'Untung & Rugi'))
+                                        <li><a href="{{ url('profitLoss') }}"
+                                            class="{{ Request::is('profitLoss') ? 'active' : '' }}">
+                                            Untung & Rugi</a></li>
+                                    @endif --}}
+
+                                    {{-- @if ($akses->firstWhere('name', 'Barang Masuk Keluar'))
+                                        <li><a href="{{ url('inwardOutward') }}"
+                                            class="{{ Request::is('inwardOutward') ? 'active' : '' }}">
+                                            Barang Masuk Keluar</a></li>
+                                    @endif --}}
+                                </ul>
+                            </li>
+                        @endif
+                    @endif
+
+                    @if ($akses->firstWhere('name', 'Pengguna') || $akses->firstWhere('name', 'Peran & Perizinan'))
+                        <li class="menu-title"><span>Manajemen Pengguna</span></li>
+                        @if ($akses->firstWhere('name', 'Pengguna'))
+                            <li>
+                                <a class="{{ Request::is('staff') ? 'active' : '' }}" href="/staff"><i
                                     class="fe fe-user"></i> <span>Pengguna</span></a>
-                        </li>
-                        <li>
-                            <a class="{{ Request::is('roles-permission', 'permission') ? 'active' : '' }}"
-                                href="/role"><i class="fe fe-clipboard"></i> <span>Peran &
-                                    Perizinan</span></a>
-                        </li>
-                    <li class="menu-title"><span>Pengaturan</span></li>
-                    <li class="submenu">
-                        <a href="#"><i class="fe fe-settings"></i> <span> Pengaturan</span> <span
+                            </li>
+                        @endif
+
+                        @if ($akses->firstWhere('name', 'Peran & Perizinan'))
+                            <li>
+                                <a class="{{ Request::is('roles-permission', 'permission') ? 'active' : '' }}"
+                                    href="/role"><i class="fe fe-clipboard"></i> <span>Peran &
+                                        Perizinan</span></a>
+                            </li>
+                        @endif
+                    @endif
+
+                    @php
+                        $showSetting =
+                        $akses->firstWhere('name', 'Profil') ||
+                        $akses->firstWhere('name', 'Pengaturan');
+                    @endphp
+                    
+                    @if ($showSetting)
+                        <li class="menu-title"><span>Pengaturan</span></li>
+                        <li class="submenu">
+                            <a href="#"><i class="fe fe-settings"></i> <span> Pengaturan</span> <span
                                 class="menu-arrow"></span></a>
-                        <ul style="display: none;">
-                            <li><a href="{{ url('profiles') }}"
-                                    class="{{ Request::is('profiles') ? 'active' : '' }}">
-                                    Profil</a></li>
-                            <li><a href="{{ url('settings') }}"
-                                    class="{{ Request::is('settings') ? 'active' : '' }}">
-                                    Pengaturan</a></li>
-                        </ul>
-                    </li>
+                            <ul style="display: none;">
+                                @if ($akses->firstWhere('name', 'Profil'))
+                                    <li><a href="{{ url('profiles') }}"
+                                        class="{{ Request::is('profiles') ? 'active' : '' }}">
+                                        Profil</a></li>
+                                @endif
+
+                                @if ($akses->firstWhere('name', 'Pengaturan'))
+                                    <li><a href="{{ url('settings') }}"
+                                        class="{{ Request::is('settings') ? 'active' : '' }}">
+                                        Pengaturan</a></li>
+                                @endif
+                            </ul>
+                        </li>
+                    @endif
                 </ul>
             </div>
         </div>

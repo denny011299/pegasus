@@ -15,7 +15,7 @@ use App\Http\Middleware\checkLogin;
 use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 
- Route::get('/login',[GeneralController::class,"login"])->name('login');
+Route::get('/login',[GeneralController::class,"login"])->name('login');
 Route::post('/loginUser', [UserController::class, "loginUser"])->name('loginUser');
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/', function () {
@@ -82,6 +82,12 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/tolakStockOpname',[StockController::class,"tolakStockOpname"])->name('tolakStockOpname');
     Route::get('/generateStockOpname/{id}',[StockController::class,"generateStockOpname"])->name('generateStockOpname');
 
+    Route::get('/detailStockOpname/{id}', [StockController::class, "DetailStockOpname"])->name('detailStockOpname');
+    Route::get('/getDetailStockOpname', [StockController::class, "getDetailStockOpname"])->name('getDetailStockOpname');
+    Route::post('/insertDetailStockOpname', [StockController::class, "insertDetailStockOpname"])->name('insertDetailStockOpname');
+    Route::post('/updateDetailStockOpname', [StockController::class, "updateDetailStockOpname"])->name('updateDetailStockOpname');
+    Route::post('/deleteDetailStockOpname', [StockController::class, "deleteDetailStockOpname"])->name('deleteDetailStockOpname');
+
     Route::get('/stockOpnameBahan',[StockController::class,"StockOpnameBahan"])->name('stockOpnameBahan');
     Route::get('/getStockOpnameBahan', [StockController::class, "getStockOpnameBahan"])->name('getStockOpnameBahan');
     Route::post('/insertStockOpnameBahan', [StockController::class, "insertStockOpnameBahan"])->name('insertStockOpnameBahan');
@@ -90,6 +96,12 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/accStockOpnameBahan',[StockController::class,"accStockOpnameBahan"])->name('accStockOpnameBahan');
     Route::post('/tolakStockOpnameBahan',[StockController::class,"tolakStockOpnameBahan"])->name('tolakStockOpnameBahan');
     Route::get('/generateStockOpnameBahan/{id}',[StockController::class,"generateStockOpnameBahan"])->name('generateStockOpnameBahan');
+    
+    Route::get('/detailStockOpnameBahan/{id}', [StockController::class, "DetailStockOpnameBahan"])->name('detailStockOpnameBahan');
+    Route::get('/getDetailStockOpnameBahan', [StockController::class, "getDetailStockOpnameBahan"])->name('getDetailStockOpnameBahan');
+    Route::post('/insertDetailStockOpnameBahan', [StockController::class, "insertDetailStockOpnameBahan"])->name('insertDetailStockOpnameBahan');
+    Route::post('/updateDetailStockOpnameBahan', [StockController::class, "updateDetailStockOpnameBahan"])->name('updateDetailStockOpnameBahan');
+    Route::post('/deleteDetailStockOpnameBahan', [StockController::class, "deleteDetailStockOpnameBahan"])->name('deleteDetailStockOpnameBahan');
 
     Route::get('/stockAlert',[StockController::class,"StockAlert"])->name('stockAlert');
     Route::get('/getStockAlert', [StockController::class, "getStockAlert"])->name('getStockAlert');
@@ -109,24 +121,13 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/updateProductIssues', [StockController::class, "updateProductIssue"])->name('updateProductIssue');
     Route::post('/deleteProductIssues', [StockController::class, "deleteProductIssue"])->name('deleteProductIssue');
 
-    Route::get('/detailStockOpname/{id}', [StockController::class, "DetailStockOpname"])->name('detailStockOpname');
-    Route::get('/getDetailStockOpname', [StockController::class, "getDetailStockOpname"])->name('getDetailStockOpname');
-    Route::post('/insertDetailStockOpname', [StockController::class, "insertDetailStockOpname"])->name('insertDetailStockOpname');
-    Route::post('/updateDetailStockOpname', [StockController::class, "updateDetailStockOpname"])->name('updateDetailStockOpname');
-    Route::post('/deleteDetailStockOpname', [StockController::class, "deleteDetailStockOpname"])->name('deleteDetailStockOpname');
-    
-    Route::get('/detailStockOpnameBahan/{id}', [StockController::class, "DetailStockOpnameBahan"])->name('detailStockOpnameBahan');
-    Route::get('/getDetailStockOpnameBahan', [StockController::class, "getDetailStockOpnameBahan"])->name('getDetailStockOpnameBahan');
-    Route::post('/insertDetailStockOpnameBahan', [StockController::class, "insertDetailStockOpnameBahan"])->name('insertDetailStockOpnameBahan');
-    Route::post('/updateDetailStockOpnameBahan', [StockController::class, "updateDetailStockOpnameBahan"])->name('updateDetailStockOpnameBahan');
-    Route::post('/deleteDetailStockOpnameBahan', [StockController::class, "deleteDetailStockOpnameBahan"])->name('deleteDetailStockOpnameBahan');
-
     Route::get('/inwardOutward',[ReportController::class,"InwardOutward"])->name('inwardOutward');
     Route::get('/getInwardOutward',[ReportController::class,"getInwardOutward"])->name('getInwardOutward');
 
     Route::get('/payReceive',[ReportController::class,"PayReceive"])->name('payReceive');
     Route::get('/checkHutang', [ReportController::class, "checkHutang"])->name('checkHutang');
     Route::get('/generateHutang', [ReportController::class, "generateHutang"])->name('generateHutang');
+    Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('getPoInvoice');
 
     Route::get('/salesOrder',[CustomerController::class,"SalesOrder"])->name('salesOrder');
     Route::get('/getSalesOrder', [CustomerController::class, "getSalesOrder"])->name('getSalesOrder');
@@ -174,9 +175,9 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/declinePoDelivery', [SupplierController::class, "declinePoDelivery"])->name('declinePoDelivery');
     Route::post('/pelunasanPurchaseOrder', [SupplierController::class, "pelunasanPurchaseOrder"])->name('pelunasanPurchaseOrder');
 
-    Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
-    Route::post('/insertManageStocks',[StockController::class,"insertManageStocks"])->name('insertManageStocks');
-    Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('getManageStock');
+    // Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
+    // Route::post('/insertManageStocks',[StockController::class,"insertManageStocks"])->name('insertManageStocks');
+    // Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('getManageStock');
 
     Route::get('/product',[ProductController::class,"Product"])->name('product');
     Route::get('/getProduct',[ProductController::class,"getProduct"])->name('getProduct');
@@ -189,6 +190,7 @@ Route::middleware(checkLogin::class)->group(function () {
 
     Route::get('/stockProduct',[StockController::class,"Stock"])->name('stockProduct');
     Route::get('/getStock',[StockController::class,"getStock"])->name('getStock');
+        
     Route::get('/stockSupplies',[StockController::class,"StockSupplies"])->name('stockSupplies');
     Route::get('/getStockSupplies',[StockController::class,"getStockSupplies"])->name('getStockSupplies');
 
@@ -198,10 +200,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/insertSupplies', [ProductController::class, "insertSupplies"])->name('insertSupplies');
     Route::post('/updateSupplies', [ProductController::class, "updateSupplies"])->name('updateSupplies');
     Route::post('/deleteSupplies', [ProductController::class, "deleteSupplies"])->name('deleteSupplies');
-
     Route::post('/insertSuppliesUnit',[ProductController::class,"insertSuppliesUnit"])->name('insertSuppliesUnit');
     Route::post('/insertSuppliesRelation',[ProductController::class,"insertSuppliesRelation"])->name('insertSuppliesRelation');
-
 
     Route::get('/role',[UserController::class,"role"])->name('role');
     Route::get('/getRole', [UserController::class, "getRole"])->name('getRole');
@@ -229,9 +229,11 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::get('/reportBahanBaku', [ReportController::class, "reportBahanBaku"])->name('reportBahanBaku');
     Route::get('/reportProduksi', [ReportController::class, "reportProduksi"])->name('reportProduksi');
     Route::get('/ProductReturn', [ReportController::class, "ProductReturn"])->name('ProductReturn');
+
     Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
     Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');
     Route::post('/insertCash',[ReportController::class,"insertCash"])->name('insertCash');
+
     Route::get('/pettyCash',[ReportController::class,"PettyCash"])->name('pettyCash');
     Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
     Route::post('/insertPettyCash',[ReportController::class,"insertPettyCash"])->name('insertPettyCash');
@@ -256,7 +258,6 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/updateStaff', [UserController::class, "updateStaff"])->name('updateStaff');
     Route::post('/deleteStaff', [UserController::class, "deleteStaff"])->name('deleteStaff');
 
-
     //produksi
     Route::get('/bom',[ProductionController::class,"bom"])->name('bom');
     Route::get('/getBom', [ProductionController::class, "getBom"])->name('getBom');
@@ -272,10 +273,13 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/deleteProduction', [ProductionController::class, "deleteProduction"])->name('deleteProduction');
     Route::post('/accDeleteProduction', [ProductionController::class, "accDeleteProduction"])->name('accDeleteProduction');
     Route::post('/tolakDeleteProduction', [ProductionController::class, "tolakDeleteProduction"])->name('tolakDeleteProduction');
+    Route::post('/uploadPhotoProduksi', [ProductionController::class, "uploadPhotoProduksi"])->name('uploadPhotoProduksi');
+    Route::get('/getFotoProduksi', [ProductionController::class, "getFotoProduksi"])->name('getFotoProduksi');
 
     // Settings
     Route::get('/testing',[GeneralController::class,"testing"])->name('testing');
     Route::get('/profiles',[SettingController::class,"Profiles"])->name('profiles');
+        
     Route::get('/settings',[SettingController::class,"Settings"])->name('settings');
     Route::post('/getSetting', [SettingController::class, "getSetting"])->name('getSetting');
     Route::post('/insertSetting', [SettingController::class, "insertSetting"])->name('insertSetting');
@@ -295,27 +299,27 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/updateCashCategory', [ReportController::class, "updateCashCategory"])->name('updateCashCategory');
     Route::post('/deleteCashCategory', [ReportController::class, "deleteCashCategory"])->name('deleteCashCategory');
 
-    Route::post('/uploadPhotoProduksi', [ProductionController::class, "uploadPhotoProduksi"])->name('uploadPhotoProduksi');
-    Route::get('/getFotoProduksi', [ProductionController::class, "getFotoProduksi"])->name('getFotoProduksi');
-    Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, "generateTandaTerima"])->name('generateTandaTerima');
-    Route::get('/generateTandaTerimaInvoice', [SupplierController::class, "generateTandaTerimaInvoice"])->name('generateTandaTerimaInvoice');
-    Route::get('/viewTandaTerima/{id}', [SupplierController::class, "viewTandaTerima"])->name('generateTandaTerima');
-
-
     //bank
-    Route::get('/bank',[UserController::class,"bank"])->name('bank');
-    Route::get('/getBank', [UserController::class, "getBank"])->name('getBank');
-    Route::post('/insertBank', [UserController::class, "insertBank"])->name('insertBank');
-    Route::post('/updateBank', [UserController::class, "updateBank"])->name('updateBank');
-    Route::post('/deleteBank', [UserController::class, "deleteBank"])->name('deleteBank');
+    Route::middleware('check.access:Bank Account')->group(function () {
+        Route::get('/bank',[UserController::class,"bank"])->name('bank');
+        Route::get('/getBank', [UserController::class, "getBank"])->name('getBank');
+        Route::post('/insertBank', [UserController::class, "insertBank"])->name('insertBank');
+        Route::post('/updateBank', [UserController::class, "updateBank"])->name('updateBank');
+        Route::post('/deleteBank', [UserController::class, "deleteBank"])->name('deleteBank');
+    });
 
-    Route::get('/tt',[SupplierController::class,"tt"])->name('tt');
-    Route::get('/getTt', [SupplierController::class, "getTt"])->name('getTt');
-    Route::post('/insertTt', [SupplierController::class, "insertTt"])->name('insertTt');
-    Route::post('/updateTt', [SupplierController::class, "updateTt"])->name('updateTt');
-    Route::post('/deleteTt', [SupplierController::class, "deleteTt"])->name('deleteTt');
-    Route::post('/accTt', [SupplierController::class, "accTt"])->name('accTt');
-    Route::post('/declineTt', [SupplierController::class, "declineTt"])->name('declineTt');
+    Route::middleware('check.access:Tanda Terima PO')->group(function () {
+        Route::get('/tt',[SupplierController::class,"tt"])->name('tt');
+        Route::get('/getTt', [SupplierController::class, "getTt"])->name('getTt');
+        Route::post('/insertTt', [SupplierController::class, "insertTt"])->name('insertTt');
+        Route::post('/updateTt', [SupplierController::class, "updateTt"])->name('updateTt');
+        Route::post('/deleteTt', [SupplierController::class, "deleteTt"])->name('deleteTt');
+        Route::post('/accTt', [SupplierController::class, "accTt"])->name('accTt');
+        Route::post('/declineTt', [SupplierController::class, "declineTt"])->name('declineTt');
+        Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, "generateTandaTerima"])->name('generateTandaTerima');
+        Route::get('/generateTandaTerimaInvoice', [SupplierController::class, "generateTandaTerimaInvoice"])->name('generateTandaTerimaInvoice');
+        Route::get('/viewTandaTerima/{id}', [SupplierController::class, "viewTandaTerima"])->name('generateTandaTerima');
+    });
 
     // Log
     Route::get('/getLog', [GeneralController::class, "getLog"])->name('getLog');
