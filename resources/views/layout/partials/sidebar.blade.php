@@ -710,7 +710,8 @@
                     @php
                         $showAccounting =
                         $akses->firstWhere('name', 'Kategori Kas') ||
-                        $akses->firstWhere('name', 'Kas Kecil') ||
+                        $akses->firstWhere('name', 'Kas Operasional') ||
+                        // $akses->firstWhere('name', 'Kas Kecil') ||
                         $akses->firstWhere('name', 'Kas');
                     @endphp
                     @php
@@ -749,11 +750,16 @@
                                         class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>    
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Kas Kecil'))
+                                    @if ($akses->firstWhere('name', 'Kas Operasional'))
+                                        <li><a href="{{ url('operationalCash') }}"
+                                        class="{{ Request::is('operationalCash') ? 'active' : '' }}">Kas Operasional</a></li>    
+                                    @endif
+
+                                    {{-- @if ($akses->firstWhere('name', 'Kas Kecil'))
                                         <li><a href="{{ url('pettyCash') }}"
                                             class="{{ Request::is('pettyCash') ? 'active' : '' }}">
                                             Kas Kecil</a></li>
-                                    @endif
+                                    @endif --}}
 
                                     @if ($akses->firstWhere('name', 'Kas'))
                                         <li><a href="{{ url('cash') }}"

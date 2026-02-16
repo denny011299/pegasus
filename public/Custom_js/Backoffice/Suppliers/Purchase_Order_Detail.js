@@ -1045,6 +1045,7 @@ $(document).on("click", "#btn-acc-po", function () {
 
     $(document).on('click', '.save-tolak', function(){
         showModalDelete("Apakah yakin ingin menolak po ini?","btn-tolak-po");
+        $("#btn-tolak-po").html("Konfirmasi");
     })
 
     $(document).on("click","#btn-tolak-po",function(){

@@ -11,12 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('petty_cashes', function (Blueprint $table) {
-            $table->integerIncrements('pc_id');
-            $table->date('pc_date');
-            $table->integer('staff_id');
-            $table->tinyInteger('status')->default(1)
-                  ->comment('3 = declined, 2 = accepted, 1 = pending, 0 = inactive');
+        Schema::create('petty_cash_details', function (Blueprint $table) {
+            $table->integerIncrements('pcd_id');
+            $table->string('pcd_notes', 255);
+            $table->integer('cc_id');
+            $table->integer('pcd_nominal');
             $table->timestamps();
         });
     }
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('petty_cashes');
+        Schema::dropIfExists('petty_cash_details');
     }
 };

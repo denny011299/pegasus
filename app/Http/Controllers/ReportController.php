@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Bank;
 use App\Models\Cash;
+use App\Models\CashAdmin;
+use App\Models\CashAdminDetail;
 use App\Models\CashCategory;
+use App\Models\CashGudang;
 use App\Models\InwardOutward;
 use App\Models\PettyCash;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\ReportLoss;
 use App\Models\ReportProfit;
 use App\Models\Role;
+use App\Models\Staff;
 use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -109,7 +113,18 @@ class ReportController extends Controller
 
     function insertCash(Request $req){
         $data = $req->all();
-        return (new Cash())->insertCash($data);
+        $cash_id = (new Cash())->insertCash($data);
+        if ($data['cash_tujuan'] != null) {
+            if ($data['cash_tujuan'] == "admin"){
+                (new CashAdmin())->insertCashAdmin([
+                    "staff_id" => session('user')->staff_id,
+                    "cash_id" => $cash_id,
+                    "ca_nominal" => $data['cash_nominal'],
+                    "ca_notes" => $data['cash_description'],
+                    "status" => 2
+                ]);
+            }
+        }
     }
 
     // Report Petty Cash
@@ -125,6 +140,145 @@ class ReportController extends Controller
     function insertPettyCash(Request $req){
         $data = $req->all();
         return (new PettyCash())->insertPettyCash($data);
+    }
+
+    // Report Kas Operasional
+    public function OperationalCash(){
+        return view('Backoffice.Reports.Cash_Operational');
+    }
+
+    function getCashAdmin(Request $req)
+    {
+        $data = (new CashAdmin())->getCashAdmin();
+        return response()->json($data);
+    }
+
+    function insertCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        // Ambil base64
+        $image = $req->photo;
+
+        // Hilangkan prefix base64
+        $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+        // Decode
+        $imageData = base64_decode($image);
+
+        // Nama file
+        $imageName = 'photo_' . time() . '.png';
+
+        // Path tujuan di public/produksi
+        $path = public_path('issue/' . $imageName);
+        // Simpan file
+        file_put_contents($path, $imageData);
+        $data["pi_img"] = $imageName;
+
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $total += $value['cad_nominal'];
+            }
+
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $data['ca_notes'] = "Pengeluaran " . $staff_name . " " . now()->format("Y-m-d");
+            $data['ca_nominal'] = $total;
+        }
+
+        // Pengajuan dana
+        if ($data['oc_transaksi'] == 1){
+            $cash_id = (new Cash())->insertCash([
+                "cash_date" => now(),
+                "cash_description" => $data['ca_notes'],
+                "cash_nominal" => $data['ca_nominal'],
+                "cash_type" => 2, // kredit 1
+                "status" => 1
+            ]);
+        }
+        // Pengembalian dana
+        else if ($data['oc_transaksi'] == 2) {
+            $cash_id = (new Cash())->insertCash([
+                "cash_date" => now(),
+                "cash_description" => $data['ca_notes'],
+                "cash_nominal" => $data['ca_nominal'],
+                "cash_type" => 1, // debit
+                "status" => 1
+            ]);
+        }
+        $data['cash_id'] = $cash_id;
+
+        if ($data['jenis_input'] == "operasional"){
+            $ca_id = (new CashAdmin())->insertCashAdmin($data);
+
+            foreach ($item as $key => $value) {
+                $value['ca_id'] = $ca_id;
+                (new CashAdminDetail())->insertCashAdminDetail($value);
+            }
+        }
+        
+        else if ($data['jenis_input'] == "saldo") {
+            (new CashAdmin())->insertCashAdmin($data);
+        }
+    }
+
+    function updateCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        $cash_id = (new Cash())->updateCash([
+            "cash_id" => $data['cash_id'],
+            "cash_date" => now(),
+            "cash_description" => $data['ca_notes'],
+            "cash_nominal" => $data['ca_nominal'],
+            "cash_type" => 2, // kredit 1
+            "status" => 1
+        ]);
+        $data['cash_id'] = $cash_id;
+        return (new CashAdmin())->updateCashAdmin($data);
+    }
+
+    function deleteCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        return (new CashAdmin())->deleteCashAdmin($data);
+    }
+
+    function acceptCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        return (new CashAdmin())->acceptCashAdmin($data);
+    }
+
+    function declineCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        return (new CashAdmin())->declineCashAdmin($data);
+    }
+
+    function getCashGudang(Request $req)
+    {
+        $data = (new CashGudang())->getCashGudang();
+        return response()->json($data);
+    }
+
+    function insertCashGudang(Request $req)
+    {
+        $data = $req->all();
+        return (new CashGudang())->insertCashGudang($data);
+    }
+
+    function updateCashGudang(Request $req)
+    {
+        $data = $req->all();
+        return (new CashGudang())->updateCashGudang($data);
+    }
+
+    function deleteCashGudang(Request $req)
+    {
+        $data = $req->all();
+        return (new CashGudang())->deleteCashGudang($data);
     }
     
     function reportBahanBaku(){

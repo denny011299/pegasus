@@ -1415,7 +1415,7 @@
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Kas</h4>
+                        <h4 class="mb-0 modal-title">Tambah Pencatatan Kas</h4>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
                     </button>
@@ -1426,7 +1426,7 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="input-block mb-3">
-                                        <label>Tanggal<span class="text-danger">*</span></label>
+                                        <label>Tanggal Pencatatan<span class="text-danger">*</span></label>
                                         <input type="date" class="form-control fill" id="cash_date">
                                     </div>
                                 </div>
@@ -1437,7 +1437,7 @@
                                             placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
-                                <div class="row input-block">
+                                <div class="row input-block mb-3">
                                     <label>Tipe<span class="text-danger">*</span></label>
                                     <div class="col-4">
                                         <select class="form-select" id="cash_select">
@@ -1453,6 +1453,16 @@
                                         </div> 
                                     </div>
                                 </div>
+                                <div class="col-12" id="tujuan">
+                                    <div class="input-block mb-3">
+                                        <label>Tujuan Kredit 1<span class="text-danger">*</span></label>
+                                        <select class="form-select fill" id="cash_tujuan">
+                                            <option value="" disabled selected>Pilih Tujuan</option>
+                                            <option value="admin">Kas Admin</option>
+                                            <option value="gudang" disabled>Kas Gudang</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1460,7 +1470,7 @@
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Kas</button>
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Pencatatan</button>
                     </div>
                 </form>
             </div>
@@ -1470,8 +1480,8 @@
 
 @if (Route::is(['pettyCash']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_petty_cash" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal modal-xl custom-modal fade" id="add_petty_cash" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
@@ -1496,32 +1506,55 @@
                                         <select class="form-select fill" id="staff_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Catatan<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="pc_description"
-                                            placeholder="Masukkan Catatan">
-                                    </div>
+                                <div class="col-12 py-3 mb-3">
+                                    <table class="table table-center" id="tableCash" style="min-height: 15vh">
+                                        <thead>
+                                            <th>Catatan</th>
+                                            <th>Kategori</th>
+                                            <th>Tipe</th>
+                                            <th>Nominal</th>
+                                            <th class="no-sort text-center">Aksi</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
                                 </div>
-                                <div class="col-12">
-                                    <div class="row input-block mb-3">
-                                        <div class="col-4">
-                                            <label>Kategori Kas<span class="text-danger">*</span></label>
-                                            <select class="form-select fill" id="cc_id">
-                                                <option value="debit" checked>Debit</option>
-                                                <option value="credit">Kredit</option>
-                                            </select>
+                                <div class="col-12 px-2 mb-3">
+                                    <div class="row input_table g-3 align-items-end">
+                                        <div class="col-12 col-lg-3 add">
+                                            <div class="input-block mb-3" id="row-product">
+                                                <label>Catatan<span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill_cash" id="pc_description"
+                                                    placeholder="Masukkan Catatan">
+                                            </div>
                                         </div>
-                                        <div class="col-4">
-                                            <label>Tipe Kas</label>
-                                            <input type="text" class="form-control" id="cc_type" disabled>
+                                        <div class="col-12 col-lg-3 add">
+                                            <div class="input-block mb-3" id="row-cash">
+                                                <label>Kategori Kas<span class="text-danger">*</span></label>
+                                                <select class="form-select fill_cash" id="cc_id">
+                                                    <option value="debit" checked>Debit</option>
+                                                    <option value="credit">Kredit</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="col-4">
-                                            <label>Nominal<span class="text-danger">*</span></label>
-                                            <div class="input-group fix-nominal">
-                                                <span class="input-group-text">Rp.</span>
-                                                <input type="text" name="" id="pc_nominal" class="form-control fill number-only nominal_only" placeholder="Contoh 10000">
-                                            </div> 
+                                        <div class="col-6 col-lg-2 add">
+                                            <div class="input-block mb-3">
+                                                <label>Tipe Kas<span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill_cash" id="cc_type" disabled>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 col-lg-3 add">
+                                            <div class="input-block mb-3">
+                                                <label>Nominal<span class="text-danger">*</span></label>
+                                                <div class="input-group fix-nominal">
+                                                    <span class="input-group-text">Rp.</span>
+                                                    <input type="text" name="" id="pc_nominal" class="form-control fill_cash number-only nominal_only" placeholder="Contoh 10000">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-12 col-lg-1 add text-end">
+                                            <button type="button" class="btn btn-primary w-100 btn-add-cash mb-3">
+                                                +
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1533,6 +1566,138 @@
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save">Tambah Kas</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if (Route::is(['operationalCash']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_cash_operational" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Aktivitas Admin</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-6 mb-4">
+                                    <div class="input-block">
+                                        <label>Jenis Aktivitas</label>
+                                        <select class="form-select" id="jenis_input">
+                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
+                                            <option value="operasional">Aktivitas Operasional</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-4"></div>
+                                <div class="row p-0 m-0" id="inputModal">
+                                    <div class="col-6 saldo_kas">
+                                        <div class="input-block mb-3">
+                                            <label>Aksi Dana<span class="text-danger">*</span></label>
+                                            <select class="form-select fill" id="oc_transaksi">
+                                                <option value=1>Pengajuan</option>
+                                                <option value=2>Pengembalian</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3" id="row-cash">
+                                            <label>Nama Staff<span class="text-danger">*</span></label>
+                                            <select class="form-select fill" id="staff_id"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 saldo_kas">
+                                        <div class="input-block mb-3">
+                                            <label>Nominal<span class="text-danger">*</span></label>
+                                            <div class="input-group fix-nominal">
+                                                <span class="input-group-text">Rp </span>
+                                                <input class="form-control fill number-only nominal_only" id="oc_nominal" placeholder="Contoh: 10.000"></input>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 operasional">
+                                        <label class="form-label d-flex">
+                                            Bukti Foto<span class="text-danger">*</span> 
+                                            <span id="check_foto" style="display: none" class="ms-2">
+                                                <div class="d-flex g-3">
+                                                    <i class="fa fa-check-circle text-success mt-1"></i>
+                                                    <p class="text-muted ms-1">gambar terunggah</p>
+                                                </div>
+                                            </span>
+                                        </label>
+                                        <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
+                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                        <input type="hidden" name="" id="bukti">
+                                    </div>
+                                    <div class="col-6 saldo_kas">
+                                        <div class="input-block mb-3">
+                                            <label>Keterangan<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill" id="oc_notes" placeholder="Contoh: Untuk kas harian">
+                                        </div>
+                                    </div>
+                                    <div class="col-12 operasional mt-2">
+                                        <h5 class="form-title mb-2 text-black">Detail</h5>
+                                    </div>
+                                    <div class="col-12 px-2 mb-3 operasional">
+                                        <div class="row input_table g-3 align-items-end px-1">
+                                            <div class="col-12 col-lg-6 add">
+                                                <div class="input-block mb-3" id="row-product">
+                                                    <label>Nama Pencatatan<span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control fill_catatan" id="cad_notes" placeholder="Contoh: Makan Siang">
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-lg-5 add">
+                                                <div class="input-block mb-3">
+                                                    <label>Nominal<span class="text-danger">*</span></label>
+                                                    <div class="input-group fix-nominal">
+                                                        <span class="input-group-text">Rp </span>
+                                                        <input class="form-control fill_catatan number-only nominal_only" id="cad_nominal" placeholder="Contoh: 10.000"></input>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-12 col-lg-1 add">
+                                                <button type="button" class="btn btn-primary w-100 btn-add-catatan mb-3">
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 py-3 mb-3 operasional">
+                                        <table class="table table-center" id="tableDetail" style="min-height: 15vh">
+                                            <thead>
+                                                <th>No</th>
+                                                <th>Nama</th>
+                                                <th class="text-end">Nominal</th>
+                                                <th class="no-sort text-center">Aksi</th>
+                                            </thead>
+                                            <tbody></tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="2" class="text-end fw-bold">Total : </td>
+                                                    <td class="total text-end fw-bold">Rp 0</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Aktivitas</button>
                     </div>
                 </form>
             </div>
@@ -1786,8 +1951,7 @@
                                         <label>Tipe Kategori<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="cc_type">
                                             <option value="" selected disabled>Pilih Tipe Kategori</option>
-                                            <option value="Credit 1">Credit 1</option>
-                                            <option value="Credit 2">Credit 2</option>
+                                            <option value="Kredit">Kredit 1 / Kredit</option>
                                             <option value="Debit">Debit / Setoran Tunai</option>
                                         </select>
                                     </div>

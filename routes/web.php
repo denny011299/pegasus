@@ -127,7 +127,6 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::get('/payReceive',[ReportController::class,"PayReceive"])->name('payReceive');
     Route::get('/checkHutang', [ReportController::class, "checkHutang"])->name('checkHutang');
     Route::get('/generateHutang', [ReportController::class, "generateHutang"])->name('generateHutang');
-    Route::get('/getPoInvoice', [SupplierController::class, "getPoInvoice"])->name('getPoInvoice');
 
     Route::get('/salesOrder',[CustomerController::class,"SalesOrder"])->name('salesOrder');
     Route::get('/getSalesOrder', [CustomerController::class, "getSalesOrder"])->name('getSalesOrder');
@@ -238,6 +237,20 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::get('/getPettyCash',[ReportController::class,"getPettyCash"])->name('getPettyCash');
     Route::post('/insertPettyCash',[ReportController::class,"insertPettyCash"])->name('insertPettyCash');
 
+    Route::get('/operationalCash',[ReportController::class,"OperationalCash"])->name('operationalCash');
+    Route::get('/getCashAdmin', [ReportController::class, "getCashAdmin"])->name('getCashAdmin');
+    Route::post('/insertCashAdmin', [ReportController::class, "insertCashAdmin"])->name('insertCashAdmin');
+    Route::post('/updateCashAdmin', [ReportController::class, "updateCashAdmin"])->name('updateCashAdmin');
+    Route::post('/deleteCashAdmin', [ReportController::class, "deleteCashAdmin"])->name('deleteCashAdmin');
+    Route::post('/acceptCashAdmin', [ReportController::class, "acceptCashAdmin"])->name('acceptCashAdmin');
+    Route::post('/declineCashAdmin', [ReportController::class, "declineCashAdmin"])->name('declineCashAdmin');
+
+
+    Route::get('/getCashGudang', [ReportController::class, "getCashGudang"])->name('getCashGudang');
+    Route::post('/insertCashGudang', [ReportController::class, "insertCashGudang"])->name('insertCashGudang');
+    Route::post('/updateCashGudang', [ReportController::class, "updateCashGudang"])->name('updateCashGudang');
+    Route::post('/deleteCashGudang', [ReportController::class, "deleteCashGudang"])->name('deleteCashGudang');
+
     // supplier
     Route::get('/getSupplier',[SupplierController::class,"getSupplier"])->name('getSupplier');
     Route::get('/supplier',[SupplierController::class,"supplier"])->name('supplier');
@@ -300,26 +313,22 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/deleteCashCategory', [ReportController::class, "deleteCashCategory"])->name('deleteCashCategory');
 
     //bank
-    Route::middleware('check.access:Bank Account')->group(function () {
-        Route::get('/bank',[UserController::class,"bank"])->name('bank');
-        Route::get('/getBank', [UserController::class, "getBank"])->name('getBank');
-        Route::post('/insertBank', [UserController::class, "insertBank"])->name('insertBank');
-        Route::post('/updateBank', [UserController::class, "updateBank"])->name('updateBank');
-        Route::post('/deleteBank', [UserController::class, "deleteBank"])->name('deleteBank');
-    });
+    Route::get('/bank',[UserController::class,"bank"])->name('bank');
+    Route::get('/getBank', [UserController::class, "getBank"])->name('getBank');
+    Route::post('/insertBank', [UserController::class, "insertBank"])->name('insertBank');
+    Route::post('/updateBank', [UserController::class, "updateBank"])->name('updateBank');
+    Route::post('/deleteBank', [UserController::class, "deleteBank"])->name('deleteBank');
 
-    Route::middleware('check.access:Tanda Terima PO')->group(function () {
-        Route::get('/tt',[SupplierController::class,"tt"])->name('tt');
-        Route::get('/getTt', [SupplierController::class, "getTt"])->name('getTt');
-        Route::post('/insertTt', [SupplierController::class, "insertTt"])->name('insertTt');
-        Route::post('/updateTt', [SupplierController::class, "updateTt"])->name('updateTt');
-        Route::post('/deleteTt', [SupplierController::class, "deleteTt"])->name('deleteTt');
-        Route::post('/accTt', [SupplierController::class, "accTt"])->name('accTt');
-        Route::post('/declineTt', [SupplierController::class, "declineTt"])->name('declineTt');
-        Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, "generateTandaTerima"])->name('generateTandaTerima');
-        Route::get('/generateTandaTerimaInvoice', [SupplierController::class, "generateTandaTerimaInvoice"])->name('generateTandaTerimaInvoice');
-        Route::get('/viewTandaTerima/{id}', [SupplierController::class, "viewTandaTerima"])->name('generateTandaTerima');
-    });
+    Route::get('/tt',[SupplierController::class,"tt"])->name('tt');
+    Route::get('/getTt', [SupplierController::class, "getTt"])->name('getTt');
+    Route::post('/insertTt', [SupplierController::class, "insertTt"])->name('insertTt');
+    Route::post('/updateTt', [SupplierController::class, "updateTt"])->name('updateTt');
+    Route::post('/deleteTt', [SupplierController::class, "deleteTt"])->name('deleteTt');
+    Route::post('/accTt', [SupplierController::class, "accTt"])->name('accTt');
+    Route::post('/declineTt', [SupplierController::class, "declineTt"])->name('declineTt');
+    Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, "generateTandaTerima"])->name('generateTandaTerima');
+    Route::get('/generateTandaTerimaInvoice', [SupplierController::class, "generateTandaTerimaInvoice"])->name('generateTandaTerimaInvoice');
+    Route::get('/viewTandaTerima/{id}', [SupplierController::class, "viewTandaTerima"])->name('generateTandaTerima');
 
     // Log
     Route::get('/getLog', [GeneralController::class, "getLog"])->name('getLog');

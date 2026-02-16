@@ -171,6 +171,29 @@
         });
     });
 
+    $(document).on('click', '.btn-add-cash', function(){
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        var valid=1;
+        $("#add_petty_cash .fill_cash").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+
+        if($('#cc_id').val()==null||$('#cc_id').val()=="null"||$('#cc_id').val()==""){
+            valid=-1;
+            $('#row-cash .select2-selection--single').addClass('is-invalids');
+        }
+
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Kas" : "Update Kas"); 
+            return false;
+        };
+    })
+
     function afterInsert() {
         $(".modal").modal("hide");
         if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Kas Kecil");

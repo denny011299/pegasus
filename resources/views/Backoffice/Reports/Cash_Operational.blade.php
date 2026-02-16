@@ -1,4 +1,4 @@
-<?php $page = 'cash'; ?>
+<?php $page = 'cash_operational'; ?>
 @extends('layout.mainlayout')
 @section('content')
     <!-- Page Wrapper -->
@@ -8,7 +8,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Kas
+                    Kas Operasional
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -19,41 +19,46 @@
             <!-- /Search Filter -->
 
             <!-- Table -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <select class="form-select" id="cashType">
+                        <option value="admin">Kas Admin</option>
+                        <option value="gudang">Kas Gudang</option>
+                        <option value="armada">Dompet Virtual Armada</option>
+                    </select>
+                </div>
+                <div class="col-md-8 text-end">
+                    <button class="btn btn-primary btnAddCash">
+                        <i class="fa fa-plus-circle me-2"></i>Tambah Aktivitas
+                    </button>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-sm-12">
-                    <div class=" card-table">
+                    <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
-                                        <tr>
+                                        <tr id="headers">
+                                            <th></th>
                                             <th>Tanggal</th>
+                                            <th>Staff</th>
                                             <th>Deskripsi</th>
-                                            <th>Debit</th>
-                                            <th>Kredit 1</th>
-                                            <th>Kredit 2</th>
+                                            <th>Nominal</th>
                                             <th>Status</th>
-                                            <th>Aksi</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        
-                                    </tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <td colspan="2" class="text-end fw-bold">Total : </td>
-                                            <td class="debits"></td>
-                                            <td class="credits1 text-danger"></td>
-                                            <td class="credits2 text-danger"></td>
-                                            <td colspan="2"></td>
-                                        </tr>
-                                    </tfoot>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
             <!-- /Table -->
 
         </div>
@@ -65,5 +70,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Cash.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/Cash_Operational.js')}}"></script>
 @endsection

@@ -28,7 +28,7 @@
   { "Id": 20, "Modules": "Akuntansi", "SubModules": "Bank Account" },
   { "Id": 21, "Modules": "Akuntansi", "SubModules": "Hutang" },
   { "Id": 22, "Modules": "Akuntansi", "SubModules": "Kategori Kas" },
-  { "Id": 23, "Modules": "Akuntansi", "SubModules": "Kas Kecil" },
+  { "Id": 23, "Modules": "Akuntansi", "SubModules": "Kas Operasional" },
   { "Id": 24, "Modules": "Akuntansi", "SubModules": "Kas" },
 
   { "Id": 25, "Modules": "Laporan", "SubModules": "Pengelolaan Bahan Mentah" },

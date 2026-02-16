@@ -117,12 +117,12 @@
                                 aria-hidden="true"></i>Tambah Pemasok</a>
                     </li>
                 @endif
-                {{-- @if (Route::is(['cash']))
+                @if (Route::is(['cash']))
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Kas</a>
+                            Pencatatan</a>
                     </li>
-                @endif --}}
+                @endif
                 @if (Route::is(['pettyCash']))
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
