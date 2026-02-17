@@ -28,7 +28,7 @@ class CashAdmin extends Model
         foreach ($result as $key => $value) {
             $value->staff_name = Staff::find($value->staff_id)->staff_name;
 
-            $detail = CashAdminDetail::where('ca_id', $value->ca_id)->get();
+            $detail = CashAdminDetail::where('ca_id', $value->ca_id)->where('status', 1)->get();
             if ($detail->count() > 0) $value->detail = $detail;
         }
         return $result;
@@ -38,10 +38,11 @@ class CashAdmin extends Model
     {
         $t = new CashAdmin();
         $t->staff_id = $data["staff_id"];
-        $t->cash_id = $data['cash_id'];
+        $t->cash_id = $data['cash_id'] ?? 0;
         $t->ca_nominal = $data["ca_nominal"];
         $t->ca_notes = $data["ca_notes"];
         $t->ca_type = $data["ca_type"];
+        $t->ca_img = $data["ca_img"] ?? null;
         $t->status = $data['status'] ?? 1;
         $t->save();
         return $t->ca_id;
@@ -51,9 +52,12 @@ class CashAdmin extends Model
     {
         $t = CashAdmin::find($data["ca_id"]);
         $t->staff_id = $data["staff_id"];
+        $t->cash_id = $data['cash_id'] ?? 0;
         $t->ca_nominal = $data["ca_nominal"];
         $t->ca_notes = $data["ca_notes"];
         $t->ca_type = $data["ca_type"];
+        $t->ca_img = $data["ca_img"] ?? null;
+        $t->status = 1;
         $t->save();
         return $t->ca_id;
     }

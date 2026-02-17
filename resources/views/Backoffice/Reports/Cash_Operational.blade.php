@@ -1,5 +1,54 @@
 <?php $page = 'cash_operational'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        .child-wrapper {
+            margin-left: 60px; 
+            max-width: 80%;
+        }
+
+        .child-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 40px;               /* jarak antar kolom */
+            padding: 12px 0px 12px 36px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .child-left {
+            flex: 0 0 56%;
+            padding-left: 0.8rem
+        }
+
+        .child-right {
+            flex: 0 0 34%;
+            text-align: right;
+            padding-right: 20rem;
+        }
+
+        .child-left-total {
+            flex: 0 0 56%;
+            padding-left: 6.8rem
+        }
+
+        .left-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .date {
+            flex: 0 0 auto;
+        }
+
+        .notes {
+            max-width: 30rem;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -42,7 +91,7 @@
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
                                         <tr id="headers">
-                                            <th></th>
+                                            <th width="40"></th>
                                             <th>Tanggal</th>
                                             <th>Staff</th>
                                             <th>Deskripsi</th>

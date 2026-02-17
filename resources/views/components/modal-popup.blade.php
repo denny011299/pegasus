@@ -1672,22 +1672,24 @@
                                         </div>
                                     </div>
                                     <div class="col-12 py-3 mb-3 operasional">
-                                        <table class="table table-center" id="tableDetail" style="min-height: 15vh">
-                                            <thead>
-                                                <th>No</th>
-                                                <th>Nama</th>
-                                                <th class="text-end">Nominal</th>
-                                                <th class="no-sort text-center">Aksi</th>
-                                            </thead>
-                                            <tbody></tbody>
-                                            <tfoot>
-                                                <tr>
-                                                    <td colspan="2" class="text-end fw-bold">Total : </td>
-                                                    <td class="total text-end fw-bold">Rp 0</td>
-                                                    <td></td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
+                                        <div class="table-responsive">
+                                            <table class="table table-center" id="tableDetail" style="min-height: 15vh">
+                                                <thead>
+                                                    <th>No</th>
+                                                    <th style="width: 25%">Nama</th>
+                                                    <th class="text-end">Nominal</th>
+                                                    <th class="no-sort text-center">Aksi</th>
+                                                </thead>
+                                                <tbody></tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="2" class="text-end fw-bold">Total : </td>
+                                                        <td class="total text-end fw-bold">Rp 0</td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

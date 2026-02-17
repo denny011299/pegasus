@@ -11,19 +11,19 @@
         items = [];
         type = $(this).val();
         if (type === 'admin') {
-            $('#headers th:nth-child(2)').text('Staff');
+            $('#headers th:nth-child(3)').text('Staff');
             inisialisasi();
             refreshCashAdmin();
         }
         
         else if (type === 'gudang') {
-            $('#headers th:nth-child(2)').text('Staff');
+            $('#headers th:nth-child(3)').text('Staff');
             inisialisasi();
             refreshCashGudang();
         }
         
         else if (type === 'armada') {
-            $('#headers th:nth-child(2)').text('Armada');
+            $('#headers th:nth-child(3)').text('Armada');
         }
     });
 
@@ -53,6 +53,10 @@
         mode=1;
         items = [];
 
+        $('#add_cash_operational input').val("");
+        $('#jenis_input, #staff_id, #oc_transaksi').attr('disabled', false);
+        $('#oc_transaksi').val(1);
+
         if (type == "admin"){
             $('#row-cash').html(`
                 <label>Nama Staff<span class="text-danger">*</span></label>
@@ -60,11 +64,8 @@
             `);
 
             $('#add_cash_operational .modal-title').html("Tambah Aktivitas Admin");
-            $('#add_cash_operational input').val("");
             $('#staff_id').empty(null);
-            $('.is-invalid').removeClass('is-invalid');
             $('#jenis_input').val("saldo").trigger('change');
-            $('#oc_transaksi').val(1);
             autocompleteStaff('#staff_id', '#add_cash_operational');
             $('.total').html("Rp 0");
 
@@ -73,7 +74,6 @@
             $('#check_foto').hide();
 
             if ($('#jenis_input').val() == "operasional") $('#tableDetail tr.row-detail').remove();
-            $('#add_cash_operational').modal("show");
             
         }
         else if (type == "gudang"){
@@ -83,12 +83,9 @@
             `);
 
             $('#add_cash_operational .modal-title').html("Tambah Aktivitas Gudang");
-            $('#add_cash_operational input').val("");
             $('#staff_id').empty(null);
-            $('#oc_transaksi').val(1);
-            $('.is-invalid').removeClass('is-invalid');
             autocompleteStaff('#staff_id', '#add_cash_operational')
-            $('#add_cash_operational').modal("show");
+            
         }
         else if (type == "armada"){
             $('#row-cash').html(`
@@ -97,13 +94,14 @@
             `);
 
             $('#add_cash_operational .modal-title').html("Tambah Aktivitas Armada");
-            $('#add_cash_operational input').val("");
             $('#armada_id').empty(null);
-            $('#oc_transaksi').val(1);
-            $('.is-invalid').removeClass('is-invalid');
             autocompleteCustomer('#armada_id', '#add_cash_operational')
-            $('#add_cash_operational').modal("show");
         }
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        $('#add_cash_operational').modal("show");
+        $('.btn-save').html('Tambah Aktivitas');
     });
     
     function inisialisasi() {
@@ -118,11 +116,11 @@
         if (type === "admin") {
             column = [
                 {
-                    className: 'dt-control',
+                    className: 'dt-control text-center',
                     orderable: false,
                     data: null,
-                    defaultContent: '<i class="fe fe-plus"></i>',
-                    width: "20px"
+                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
+                    width: "40px"
                 },
                 { data: "date" },
                 { data: "staff_name" },
@@ -136,11 +134,11 @@
         else if (type === "gudang") {
             column = [
                 {
-                    className: 'dt-control',
+                    className: 'dt-control text-center',
                     orderable: false,
                     data: null,
-                    defaultContent: '<i class="fe fe-plus"></i>',
-                    width: "20px"
+                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
+                    width: "40px"
                 },
                 { data: "date" },
                 { data: "staff_name" },
@@ -203,17 +201,38 @@
                     }
                     e[i].action = "";
                     if (e[i].status == 1){
-                        e[i].action = `
-                            <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].ca_id}" data-bs-target="#edit-category">
-                                <i class="fe fe-edit"></i>
-                            </a>
-                            <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].ca_id}" href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                            </a>
-                        `;
+                        if (e[i].ca_type == 1){
+                            e[i].action = `
+                                <a class="me-2 btn-action-icon p-2 btn_edit_admin" data-id="${e[i].ca_id}" data-bs-target="#edit-category">
+                                    <i class="fe fe-edit"></i>
+                                </a>
+                                <a class="p-2 btn-action-icon btn_delete_admin" data-id="${e[i].ca_id}" href="javascript:void(0);">
+                                    <i class="fe fe-trash-2"></i>
+                                </a>
+                            `;
+                        } else if (e[i].ca_type == 2){
+                            e[i].action = `
+                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
+                                    <i class="fe fe-check"></i>
+                                </a>
+                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
+                                    <i class="fe fe-x"></i>
+                                </a>
+                            `;
+                        }
                     }
                 }
                 table.rows.add(e).draw();
+
+                // Expand child row
+                setTimeout(function () {
+                    $('#tableCash tbody td.dt-control').each(function () {
+                        $(this).trigger('click');
+                    });
+                }, 100);
+
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
@@ -265,43 +284,49 @@
 
     function format(detailData) {
         if (!detailData || detailData.length === 0) {
-            return `<div class="p-2 text-muted">Tidak ada detail</div>`;
+            return `
+                <div class="p-3">
+                    <em class="text-muted">Tidak ada detail</em>
+                </div>
+            `;
         }
 
-        let html = `
-            <table class="table table-sm table-bordered mb-0">
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>Catatan</th>
-                        <th class="text-end">Nominal</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
         let total = 0;
-        detailData.forEach((d, index) => {
+
+        let html = `<div class="px-5">`;
+        detailData.forEach((d) => {
+            total += parseInt(d.cad_nominal);
+
             html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${d.cad_notes}</td>
-                    <td class="text-end">Rp ${formatRupiah(d.cad_nominal)}</td>
-                </tr>
+                <div class="child-item">
+                    <div class="child-left d-flex g-3">
+                        <div class="date me-3">
+                            ${moment(d.created_at).format('D MMM YYYY')}
+                        </div>
+                        <div class="notes">
+                            ${d.cad_notes}
+                        </div>
+                    </div>
+                    <div class="child-right">
+                        Rp ${formatRupiah(d.cad_nominal)}
+                    </div>
+                </div>
+
             `;
-            total += d.cad_nominal;
         });
 
         html += `
-            </tbody>
-                <tfoot>
-                    <tr>
-                        <th colspan="2" class="text-end fw-bold">Total</th>
-                        <th class="text-end fw-bold">Rp ${formatRupiah(total)}</th>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="child-item fw-semibold pt-3 border-0">
+                <div class="child-left-total">
+                    Total
+                </div>
+                <div class="child-right">
+                    Rp ${formatRupiah(total)}
+                </div>
+            </div>
         `;
+
+        html += `</div>`;
         return html;
     }
 
@@ -355,13 +380,12 @@
     })
 
     function addRow() {
-        console.log(items);
         $('#tableDetail tr.row-detail').html(" ");
         items.forEach((e, index) => {
             $('#tableDetail tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
-                    <td>${e.cad_notes}</td>
+                    <td style="width: 25%">${e.cad_notes}</td>
                     <td class="text-end">Rp ${formatRupiah(e.cad_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
@@ -407,6 +431,12 @@
                 }
             }
             else if (type == "admin" && jenis_input == "operasional"){
+                if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+                    notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
+                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                    return false;
+                }
+                
                 if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                     if ($(this).attr('class') == "operasional"){
                         valid=-1;
@@ -433,12 +463,11 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Kas" : "Update Kas");
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
             return false;
         };
 
         if (type == "admin"){
-            url = "/insertCashAdmin";
             param = {
                 staff_id:$('#staff_id').val(),
                 ca_notes:$('#oc_notes').val(),
@@ -446,18 +475,29 @@
                 oc_transaksi: $('#oc_transaksi').val(),
                 ca_type: jenis_input == "saldo" ? 1 : 2,
                 jenis_input: jenis_input,
+                photo:$('#bukti').val(),
                 items: JSON.stringify(items),
                 _token:token
             };
+
+            if (mode == 1) url = "/insertCashAdmin";
+            else if (mode == 2) {
+                url = "/updateCashAdmin";
+                param.ca_id = $('#add_cash_operational').attr("ca_id");
+            }
         }
         else if (type == "gudang"){
-            url ="/insertCashGudang";
             param = {
                 staff_id:$('#staff_id').val(),
                 cg_notes:$('#oc_notes').val(),
                 cg_nominal:convertToAngka($('#oc_nominal').val()),
                 _token:token
             };
+            if (mode == 1) url = "/insertCashGudang";
+            else if (mode == 2) {
+                url = "/updateCashGudang";
+                param.cg_id = $('#add_cash_operational').attr("cg_id");
+            }
         }
         else if (type == "armada"){
             url ="/insertCashAdmin";
@@ -497,19 +537,147 @@
         else if (type=="armada") refreshCashAdmin();
     }
 
+    $(document).on('click', '.btn_edit_admin', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        mode=2;
+        items = [];
+        console.log(data);
+        $('#add_cash_operational .modal-title').html("Update Aktivitas Admin");
+        $('#add_cash_operational input').empty().val("");
+        $('#staff_id').empty(null);
+        
+        if (data.detail?.length) {
+            $('#jenis_input').val("operasional").trigger('change').attr('disabled', true);
+
+            let total = 0;
+            data.detail.forEach(e => {
+                var temp = {
+                    "cad_id" : e.cad_id,
+                    "cad_notes" : e.cad_notes,
+                    "cad_nominal" : e.cad_nominal,
+                };
+                items.push(temp);
+                total += e.cad_nominal;
+            })
+            $('.total').html(`Rp ${formatRupiah(total)}`)
+            addRow();
+
+            $('#btn_bukti_foto').hide();
+            $('#btn-lihat-bukti').show();
+            $('#bukti').val(data.ca_img);
+            $('#check_foto').show();
+            imageValue(data.ca_img);
+        }
+        else {
+            $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
+            $('#oc_transaksi').val(data.ca_type).attr('disabled', true);
+            $('#oc_nominal').val(data.ca_nominal);
+            $('#oc_notes').val(data.ca_notes);
+        }
+        $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        $('.btn-save').html('Update Aktivitas');
+        $('#add_cash_operational').modal("show");
+        $('#add_cash_operational').attr("ca_id", data.ca_id);
+    })
+
+    $(document).on('click', '.btn_delete_admin', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin menghapus pengajuan ini?","btn-delete-admin");
+        $('#btn-delete-admin').attr("ca_id", data.ca_id);
+    })
+
+    $(document).on("click","#btn-delete-admin",function(){
+        $.ajax({
+            url:"/deleteCashAdmin",
+            data:{
+                ca_id:$('#btn-delete-admin').attr('ca_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                refreshCashAdmin();
+                notifikasi('success', "Berhasil Delete", "Berhasil delete pengajuan");
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    });
+
+    $(document).on('click', '.btn_acc', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalKonfirmasi(
+            "Apakah yakin ingin Approve pengajuan ini?",
+            "btn-accept-kas"
+        );
+        $('#btn-accept-kas').attr("cash_id", data.cash_id);
+        $('#btn-accept-kas').html("Konfirmasi");
+    })
+
+    $(document).on('click', '#btn-accept-kas', function(){
+        $.ajax({
+            url:"/acceptCashAdmin",
+            data:{
+                cash_id:$('#btn-accept-kas').attr('cash_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                refreshCashAdmin();
+                $('.modal').modal("hide");
+                notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengajuan");
+                
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    })
+
+    $(document).on('click', '.btn_decline', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin tolak pengajuan ini?","btn-decline-kas");
+        $('#btn-decline-kas').attr("cash_id", data.cash_id);
+        $('#btn-decline-kas').html("Konfirmasi");
+    })
+
+    $(document).on('click', '#btn-decline-kas', function(){
+        $.ajax({
+            url:"/declineCashAdmin",
+            data:{
+                cash_id:$('#btn-decline-kas').attr('cash_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                refreshCashAdmin();
+                $('.modal').modal("hide");
+                notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
+                
+            },
+            error:function(e){
+                console.log(e);
+            }
+        });
+    })
+
     function imageValue(image){
-        $('#fotoProduksiImage').attr('src', public+"issue/"+image);
+        $('#fotoProduksiImage').attr('src', public+"kas_admin/"+image);
         $('#fotoProduksiImage').attr('index', 0);
     }
 
     $(document).on("click", "#btn-lihat-bukti", function () {
-        $("#add-product-issues").modal("hide");
+        $("#add_cash_operational").modal("hide");
         $('.btn-prev,.btn-next').hide();
         $('#modalViewPhoto').modal("show");
     });
 
     $(document).on("hidden.bs.modal", "#modalViewPhoto", function () {
-        $("#add-product-issues").modal("show");
+        $("#add_cash_operational").modal("show");
         $('#modalViewPhoto').modal("hide");
     });
 

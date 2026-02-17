@@ -59,4 +59,10 @@ class Cash extends Model
         $t->save();
         return $t->cash_id;
     }
+
+    function deleteCash($data){
+        $t = Cash::find($data["cash_id"]);
+        $t->status = 0;
+        $t->save();
+    }
 }
