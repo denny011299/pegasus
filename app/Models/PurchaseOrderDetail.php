@@ -57,9 +57,9 @@ class PurchaseOrderDetail extends Model
         $t->pod_nama            = $data["pod_nama"];
         $t->pod_variant         = $data["pod_variant"] ?? null;
         $t->pod_sku             = $data["pod_sku"] ?? null;
-        $t->pod_harga           = $data["pod_harga"];
-        $t->pod_qty             = $data["pod_qty"];
-        $t->pod_subtotal        = $data["pod_subtotal"];
+        $t->pod_harga           = $data["pod_harga"] ?? 0;
+        $t->pod_qty             = $data["pod_qty"] ?? 0;
+        $t->pod_subtotal        = $data["pod_subtotal"] ?? 0;
         $t->unit_id        = $data["unit_id_select"];
         $t->status              = 1;
         $t->save();
@@ -75,9 +75,9 @@ class PurchaseOrderDetail extends Model
         $t->pod_nama            = $data["pod_nama"];
         $t->pod_variant         = $data["pod_variant"] ?? null;
         $t->pod_sku             = $data["pod_sku"] ?? null;
-        $t->pod_harga           = $data["pod_harga"];
-        $t->pod_qty             = $data["pod_qty"];
-        $t->pod_subtotal        = $data["pod_subtotal"];
+        $t->pod_harga           = $data["pod_harga"] ?? 0;
+        $t->pod_qty             = $data["pod_qty"] ?? 0;
+        $t->pod_subtotal        = $data["pod_subtotal"] ?? 0;
         $t->save();
 
         return $t->po_id;

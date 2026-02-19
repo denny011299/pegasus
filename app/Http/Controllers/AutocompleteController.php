@@ -315,13 +315,13 @@ class AutocompleteController extends Controller
 
         $p = new Customer();
         $data_city = $p->getCustomer([
-            "customer_name" => $keyword,
+            "customer_notes" => $keyword,
         ]);
 
 
         foreach ($data_city as $r) {
             $r->id = $r["customer_id"];
-            $r->text = $r["customer_name"];
+            $r->text = $r["customer_notes"];
         };
 
         echo json_encode(array(

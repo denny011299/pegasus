@@ -15,6 +15,7 @@ class Customer extends Model
     {
         $data = array_merge([
             "customer_name"=>null,
+            "customer_notes"=>null,
             "customer_id"=>null,
             "city_id"=>null
         ], $data);
@@ -22,6 +23,7 @@ class Customer extends Model
         $result = self::where('status', '=', 1);
         // if($data["customer_name"]) $result->where('customer_name','like','%'.$data["customer_name"].'%');
         // if($data["city_id"]) $result->where('city_id','=',$data["city_id"]);
+        if($data["customer_notes"]) $result->where('customer_notes','like','%'.$data["customer_notes"].'%');
         if($data["customer_id"]) $result->where('customer_id','=',$data["customer_id"]);
         $result->orderBy('created_at', 'asc');
         $result = $result->get();

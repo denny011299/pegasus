@@ -64,11 +64,11 @@ class PurchaseOrderDetailInvoice extends Model
                 $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
                 $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
 
-                $result->whereDate('purchase_order_detail_invoices.poi_due', '>=', $startDate->toDateString())
-                        ->whereDate('purchase_order_detail_invoices.poi_due', '<=', $endDate->toDateString());
+                $result->whereDate('purchase_order_detail_invoices.poi_date', '>=', $startDate->toDateString())
+                        ->whereDate('purchase_order_detail_invoices.poi_date', '<=', $endDate->toDateString());
             } else {
                 $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
-                $result->whereDate('purchase_order_detail_invoices.poi_due', $date);
+                $result->whereDate('purchase_order_detail_invoices.poi_date', $date);
             }
         }
 

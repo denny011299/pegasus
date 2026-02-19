@@ -31,7 +31,7 @@ class SalesOrder extends Model
         $result->orderBy("created_at", "desc");
         $result= $result->get();
         foreach ($result as $key => $value) {
-            $value->customer_name = Customer::find($value->so_customer)->customer_name ?? "-";
+            $value->customer_name = Customer::find($value->so_customer)->customer_notes ?? "-";
             $value->items = (new SalesOrderDetail())->getSalesOrderDetail(["so_id"=>$value->so_id]);
             $value->staff_name = Staff::find($value->so_cashier)->staff_name ?? "-";
         }

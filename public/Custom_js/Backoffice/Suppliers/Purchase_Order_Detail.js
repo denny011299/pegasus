@@ -144,7 +144,7 @@
         data.items.forEach((element, index) => {
             element.qty = `
                 <div class="input-group">
-                    <input type="number" class="form-control text-center qtySummary" data-price="${element.pod_harga}" index="${index}" value="${element.pod_qty}" min="0">
+                    <input type="number" class="form-control text-center qtySummary number-only" data-price="${element.pod_harga}" index="${index}" value="${element.pod_qty}" min="0">
                     <span class="input-group-text">${element.unit_name}</span>
                 </div>
             `;

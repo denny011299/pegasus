@@ -41,7 +41,7 @@ class SalesOrderDetailInvoice extends Model
         $result = $result->get();
         foreach ($result as $key => $value) {
             $so = SalesOrder::find($value->so_id);
-            $value->customer_name = Customer::find($so->so_customer)->customer_name;
+            $value->customer_name = Customer::find($so->so_customer)->customer_notes;
             $value->so_code = $so->so_number;
         }
         return $result;
