@@ -409,7 +409,7 @@
 
 
     $(document).on("click","#btn-delete-purchase",function(){
-        
+        LoadingButton(this);
         $.ajax({
             url:"/deletePurchaseOrder",
             data:{
@@ -419,6 +419,7 @@
             method:"post",
             success:function(e){
                 $('.modal').modal("hide");
+                ResetLoadingButton("#btn-delete-purchase", "Delete");
                 refreshPurchaseOrder();
                 notifikasi('success', "Berhasil Delete", "Berhasil delete pesanan pembelian");
                 

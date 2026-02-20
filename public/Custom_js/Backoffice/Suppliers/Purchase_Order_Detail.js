@@ -1016,7 +1016,7 @@ $(document).on("click", ".save-terima", function () {
 });
 
 $(document).on("click", "#btn-acc-po", function () {
-
+    LoadingButton(this);
     $.ajax({
         url: "/accPO",
         data: {
@@ -1028,6 +1028,7 @@ $(document).on("click", "#btn-acc-po", function () {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
             $('#po_status').val(2).trigger('change');
+            ResetLoadingButton("#btn-acc-po", "Terima");
             notifikasi(
                 "success",
                 "Berhasil Approve",
@@ -1037,6 +1038,7 @@ $(document).on("click", "#btn-acc-po", function () {
         },
         error: function (e) {
             console.log(e);
+            ResetLoadingButton("#btn-acc-po", "Terima");
         },
     });
 });
@@ -1049,6 +1051,7 @@ $(document).on("click", "#btn-acc-po", function () {
     })
 
     $(document).on("click","#btn-tolak-po",function(){
+        LoadingButton(this);
         $.ajax({
             url:"/tolakPO",
             data:{
@@ -1059,6 +1062,7 @@ $(document).on("click", "#btn-acc-po", function () {
             success:function(e){
                 $('#modalDelete .modal-body').html('');
                 $(".modal").modal("hide");
+                ResetLoadingButton("#btn-tolak-po", "Tolak");
                 if (e == -1){
                     notifikasi(
                         "error",
@@ -1076,6 +1080,7 @@ $(document).on("click", "#btn-acc-po", function () {
                 
             },
             error:function(e){
+                ResetLoadingButton("#btn-tolak-po", "Tolak");
                 console.log(e);
             }
         });

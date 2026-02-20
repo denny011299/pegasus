@@ -363,6 +363,7 @@ $(document).on("click", ".save-terima", function () {
 });
 
 $(document).on("click", "#btn-acc-sto", function () {
+    LoadingButton(this);
     productSubmit = [];
     $('.row-stock').each(function () {
 
@@ -417,6 +418,7 @@ $(document).on("click", "#btn-acc-sto", function () {
         success: function (e) {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
+            ResetLoadingButton("#btn-acc-sto", "Konfirmasi");
             notifikasi(
                 "success",
                 "Berhasil Approve",
@@ -437,6 +439,7 @@ $(document).on("click", "#btn-acc-sto", function () {
     })
 
     $(document).on("click","#btn-tolak-sto",function(){
+        LoadingButton(this);
         $.ajax({
             url:"/tolakStockOpname",
             data:{
@@ -447,6 +450,7 @@ $(document).on("click", "#btn-acc-sto", function () {
             success:function(e){
                 $('#modalDelete .modal-body').html('');
                 $(".modal").modal("hide");
+                ResetLoadingButton("#btn-tolak-sto", "Delete");
                 notifikasi(
                     "success",
                     "Berhasil Tolak",
