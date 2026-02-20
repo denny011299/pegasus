@@ -428,6 +428,7 @@ $(document).on("click", "#btn-acc-sto", function () {
         },
         error: function (e) {
             console.log(e);
+            ResetLoadingButton("#btn-acc-sto", "Konfirmasi");
         },
     });
 });
@@ -461,6 +462,7 @@ $(document).on("click", "#btn-acc-sto", function () {
             },
             error:function(e){
                 console.log(e);
+                ResetLoadingButton("#btn-tolak-sto", "Delete");
             }
         });
     });

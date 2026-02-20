@@ -375,6 +375,7 @@ $(document).on("click", ".save-terima", function () {
 });
 
 $(document).on("click", "#btn-acc-stob", function () {
+    LoadingButton(this);
     suppliesSubmit = [];
     $('.row-stock').each(function () {
 
@@ -427,6 +428,7 @@ $(document).on("click", "#btn-acc-stob", function () {
         method: "post",
         success: function (e) {
             $('#modalDelete .modal-body').html('');
+            ResetLoadingButton("#btn-acc-stob", "Konfirmasi");
             $(".modal").modal("hide");
             notifikasi(
                 "success",
@@ -436,6 +438,7 @@ $(document).on("click", "#btn-acc-stob", function () {
             window.open('/stockOpnameBahan', '_self');
         },
         error: function (e) {
+            ResetLoadingButton("#btn-acc-stob", "Konfirmasi");
             console.log(e);
         },
     });
@@ -447,6 +450,7 @@ $(document).on("click", "#btn-acc-stob", function () {
     })
 
     $(document).on("click","#btn-tolak-stob",function(){
+        LoadingButton(this);
         $.ajax({
             url:"/tolakStockOpnameBahan",
             data:{
@@ -456,6 +460,7 @@ $(document).on("click", "#btn-acc-stob", function () {
             method:"post",
             success:function(e){
                 $('#modalDelete .modal-body').html('');
+                ResetLoadingButton("#btn-tolak-stob", "Delete");
                 $(".modal").modal("hide");
                 notifikasi(
                     "success",
@@ -466,6 +471,7 @@ $(document).on("click", "#btn-acc-stob", function () {
                 
             },
             error:function(e){
+                ResetLoadingButton("#btn-tolak-stob", "Delete");
                 console.log(e);
             }
         });

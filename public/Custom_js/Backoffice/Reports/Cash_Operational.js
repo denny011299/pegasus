@@ -590,6 +590,7 @@
     })
 
     $(document).on("click","#btn-delete-admin",function(){
+        LoadingButton(this);
         $.ajax({
             url:"/deleteCashAdmin",
             data:{
@@ -598,11 +599,13 @@
             },
             method:"post",
             success:function(e){
+                ResetLoadingButton('#btn-delete-admin', "Delete");
                 $('.modal').modal("hide");
                 refreshCashAdmin();
                 notifikasi('success', "Berhasil Delete", "Berhasil delete pengajuan");
             },
             error:function(e){
+                ResetLoadingButton('#btn-delete-admin', "Delete");
                 console.log(e);
             }
         });
@@ -619,6 +622,7 @@
     })
 
     $(document).on('click', '#btn-accept-kas', function(){
+        LoadingButton(this);
         $.ajax({
             url:"/acceptCashAdmin",
             data:{
@@ -627,6 +631,7 @@
             },
             method:"post",
             success:function(e){
+                ResetLoadingButton('#btn-accept-kas', "Konfirmasi");
                 refreshCashAdmin();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengajuan");
@@ -634,6 +639,7 @@
             },
             error:function(e){
                 console.log(e);
+                ResetLoadingButton('#btn-accept-kas', "Konfirmasi");
             }
         });
     })
@@ -646,6 +652,7 @@
     })
 
     $(document).on('click', '#btn-decline-kas', function(){
+        LoadingButton(this);
         $.ajax({
             url:"/declineCashAdmin",
             data:{
@@ -654,6 +661,7 @@
             },
             method:"post",
             success:function(e){
+                ResetLoadingButton('#btn-decline-kas', "Konfirmasi");
                 refreshCashAdmin();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
@@ -661,6 +669,7 @@
             },
             error:function(e){
                 console.log(e);
+                ResetLoadingButton('#btn-decline-kas', "Konfirmasi");
             }
         });
     })

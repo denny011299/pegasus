@@ -211,6 +211,7 @@
     })
 
     $(document).on('click', '#btn-accept-kas', function(){
+        LoadingButton(this);
         $.ajax({
             url:"/acceptCashAdmin",
             data:{
@@ -219,12 +220,14 @@
             },
             method:"post",
             success:function(e){
+                ResetLoadingButton('#btn-accept-kas', "Konfirmasi");
                 refreshCash();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Pencatatan Kas");
                 
             },
             error:function(e){
+                ResetLoadingButton('#btn-accept-kas', "Konfirmasi");
                 console.log(e);
             }
         });
@@ -238,6 +241,7 @@
     })
 
     $(document).on('click', '#btn-decline-kas', function(){
+        LoadingButton(this);
         $.ajax({
             url:"/declineCashAdmin",
             data:{
@@ -246,12 +250,14 @@
             },
             method:"post",
             success:function(e){
+                ResetLoadingButton('#btn-decline-kas', "Konfirmasi");
                 refreshCash();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pencatatan Kas");
                 
             },
             error:function(e){
+                ResetLoadingButton('#btn-decline-kas', "Konfirmasi");
                 console.log(e);
             }
         });
