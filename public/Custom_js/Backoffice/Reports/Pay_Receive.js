@@ -70,7 +70,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].check = `<input type="checkbox" class="form-check-input chk ch${e[i].poi_id}"  poi_id="${e[i].poi_id}" />`;
-                    e[i].date = moment(e[i].poi_date).format('D MMM YYYY');
+                    e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
                     e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
                     total += e[i].poi_total;

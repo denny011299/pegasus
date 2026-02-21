@@ -180,7 +180,7 @@
                 <table class="billing-table">
                     <thead>
                         <tr>
-                            <th style="width: 35%;">Nomor PO</th>
+                            <th style="width: 35%;">Nomor Invoice</th>
                             <th style="width: 65%; text-align: right;">Nominal Tagihan</th>
                         </tr>
                     </thead>
@@ -194,7 +194,7 @@
                                 $total +=$item->po_total;
                             @endphp
                             <tr>
-                                <td>{{$item->po_number}}</td>
+                                <td>{{ $item->poi_code }}</td>
                                 <td style="text-align: right;">Rp {{number_format($item->po_total,0,",",".")}}</td>
                             </tr>
                         @endforeach

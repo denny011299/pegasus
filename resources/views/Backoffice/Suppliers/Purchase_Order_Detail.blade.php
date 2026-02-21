@@ -109,7 +109,7 @@
 
                                         <div class="col-12 mt-3">
                                             <div class="table-responsive">
-                                                <table class="table table-center table-hover table-bordered w-100"
+                                                <table class="table table-center table-bordered w-100"
                                                     id="tableSupplies">
                                                     <thead class="table-light">
                                                         <tr>
@@ -118,6 +118,26 @@
                                                             <th>Qty</th>
                                                             <th>Harga Beli (Rp)</th>
                                                             <th>Subtotal</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 mt-3">
+                                            <div class="d-flex justify-content-between mt-4 mb-3">
+                                                <h5 class="pt-3 text-black">Diskon Retur</h5>
+                                                <button type="button" class="btn btn-primary retur-bahan">Tambah Retur</button>
+                                            </div>
+                                            <div class="table-responsive">
+                                                <table class="table table-center table-bordered w-100"
+                                                    id="tableRetur">
+                                                    <thead class="">
+                                                        <tr>
+                                                            <th>Tanggal</th>
+                                                            <th>Diskon Retur</th>
+                                                            <th>Total</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody></tbody>

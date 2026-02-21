@@ -14,7 +14,8 @@ class purchase_order_tt extends Model
     function getTt($data = [])
     {
         $data = array_merge([
-            "tt_kode" => null
+            "tt_kode" => null,
+            "tt_id" => null
         ], $data);
 
         $result = self::where('status', '>=', 0);
@@ -22,6 +23,7 @@ class purchase_order_tt extends Model
         if ($data["tt_kode"]) {
             $result->where('tt_kode', 'like', '%' . $data["tt_kode"] . '%');
         }
+        if ($data["tt_id"]) $result->where("tt_id", "=", $data["tt_id"]);
 
         $result->orderByRaw('FIELD(status, 1, 2, 0)')->orderBy('tt_date', 'desc')->orderBy('tt_kode', 'desc');
 

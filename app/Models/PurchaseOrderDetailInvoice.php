@@ -64,11 +64,11 @@ class PurchaseOrderDetailInvoice extends Model
                 $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
                 $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
 
-                $result->whereDate('purchase_order_detail_invoices.poi_date', '>=', $startDate->toDateString())
-                        ->whereDate('purchase_order_detail_invoices.poi_date', '<=', $endDate->toDateString());
+                $result->whereDate('purchase_orders.po_date', '>=', $startDate->toDateString())
+                        ->whereDate('purchase_orders.po_date', '<=', $endDate->toDateString());
             } else {
                 $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
-                $result->whereDate('purchase_order_detail_invoices.poi_date', $date);
+                $result->whereDate('purchase_orders.po_date', $date);
             }
         }
 
@@ -80,6 +80,7 @@ class PurchaseOrderDetailInvoice extends Model
             $po = PurchaseOrder::find($value->po_id);
             $value->supplier_name = Supplier::find($po->po_supplier)->supplier_name;
             $value->po_code = $po->po_number;
+            $value->po_date = $po->po_date;
             $value->pembayaran = $po->pembayaran;
 
             $b = Bank::find($value->bank_id);

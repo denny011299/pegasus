@@ -400,7 +400,7 @@ class SupplierController extends Controller
             ];
         }
 
-        $param["data"] = $valid;    
+        $param["data"] = $valid;
         if(count($param["data"])<=0){
             return -1;
         }
@@ -461,6 +461,10 @@ class SupplierController extends Controller
         $param["tt"] = (new purchase_order_tt())->getTt(["tt_id"=>$id])[0]??null;
         $param["data"] = PurchaseOrder::where('tt_id','=',$id)->get();
         $param["supplier"] = Supplier::find($param["tt"]["supplier_id"]); 
+
+        foreach ($param['data'] as $key => $value) {
+            $value->poi_code = PurchaseOrderDetailInvoice::where('po_id', $value->po_id)->first()->poi_code;
+        }
         $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
         //$pdf->stream();
         return $pdf->download(
