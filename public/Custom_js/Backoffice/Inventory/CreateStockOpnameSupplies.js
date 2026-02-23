@@ -37,7 +37,7 @@
                 item.sp_units = [];
                 item.units.forEach((unit, idx) => {
                     let systemQty  = parseInt(systemArr[idx])  || 0;
-                    let realQty    = parseInt(realArr[idx])    || 0;
+                    let realQty    = parseInt(realArr[idx])    || -1;
                     let selisihQty = parseInt(selisihArr[idx]) || 0;
                     item.sp_units.push({
                         unit_id: unit.unit_id,
@@ -54,7 +54,7 @@
                     rl_stock += `
                         <input type="number"
                             class="form-control real-stock"
-                            value="${element.real_qty}"
+                            value="${element.real_qty != -1 ? element.real_qty : ''}"
                             data-unit-id="${element.unit_id}"
                             data-unit-name="${element.unit_short_name}"
                             data-system-qty="${element.system_qty}">
@@ -151,7 +151,7 @@
                         rl_stock += `
                             <input type="number"
                                 class="form-control real-stock"
-                                value="0"
+                                value=""
                                 data-unit-id="${element.unit_id}"
                                 data-unit-name="${element.unit_short_name}"
                                 data-system-qty="${element.ss_stock}">
@@ -303,7 +303,7 @@ function insertData() {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || 0;
+            let realQty   = parseInt(input.val()) || -1;
 
             sp_units.push({
                 unit_id: unitId,
@@ -376,6 +376,7 @@ $(document).on("click", ".save-terima", function () {
 
 $(document).on("click", "#btn-acc-stob", function () {
     LoadingButton(this);
+
     suppliesSubmit = [];
     $('.row-stock').each(function () {
 
@@ -397,7 +398,7 @@ $(document).on("click", "#btn-acc-stob", function () {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || 0;
+            let realQty   = parseInt(input.val()) || -1;
 
             sp_units.push({
                 unit_id: unitId,
@@ -427,8 +428,9 @@ $(document).on("click", "#btn-acc-stob", function () {
         },
         method: "post",
         success: function (e) {
+            console.log("masuk");
             $('#modalDelete .modal-body').html('');
-            ResetLoadingButton("#btn-acc-stob", "Konfirmasi");
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
             $(".modal").modal("hide");
             notifikasi(
                 "success",
@@ -438,8 +440,8 @@ $(document).on("click", "#btn-acc-stob", function () {
             window.open('/stockOpnameBahan', '_self');
         },
         error: function (e) {
-            ResetLoadingButton("#btn-acc-stob", "Konfirmasi");
             console.log(e);
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
         },
     });
 });
@@ -447,6 +449,7 @@ $(document).on("click", "#btn-acc-stob", function () {
 
     $(document).on('click', '.save-tolak', function(){
         showModalDelete("Apakah yakin ingin menolak stock opname ini?","btn-tolak-stob");
+        $("#btn-tolak-stob").html("Delete");
     })
 
     $(document).on("click","#btn-tolak-stob",function(){
@@ -460,7 +463,7 @@ $(document).on("click", "#btn-acc-stob", function () {
             method:"post",
             success:function(e){
                 $('#modalDelete .modal-body').html('');
-                ResetLoadingButton("#btn-tolak-stob", "Delete");
+                ResetLoadingButton(".btn-konfirmasi", "Delete");
                 $(".modal").modal("hide");
                 notifikasi(
                     "success",
@@ -471,7 +474,7 @@ $(document).on("click", "#btn-acc-stob", function () {
                 
             },
             error:function(e){
-                ResetLoadingButton("#btn-tolak-stob", "Delete");
+                ResetLoadingButton(".btn-konfirmasi", "Delete");
                 console.log(e);
             }
         });

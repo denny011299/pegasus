@@ -1,5 +1,50 @@
 <?php $page = 'purchase_detail'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        .child-wrapper {
+            margin-left: 60px; 
+            max-width: 80%;
+        }
+
+        .child-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 40px;               /* jarak antar kolom */
+            padding: 12px 0px 12px 36px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .child-left {
+            flex: 0 0 70%;
+            padding-left: 0.8rem
+        }
+
+        .child-right {
+            flex: 0 0 20%;
+            text-align: right;
+            padding-right: 2rem;
+        }
+
+        .child-left-total {
+            flex: 0 0 70%;
+            padding-left: 28rem
+        }
+
+        .left-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .name {
+            max-width: 30rem;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+    </style>
+@endsection
 @section('content')
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -125,19 +170,20 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-12 mt-3">
+                                        <div class="col-12 mt-5">
                                             <div class="d-flex justify-content-between mt-4 mb-3">
-                                                <h5 class="pt-3 text-black">Diskon Retur</h5>
+                                                <h5 class="pt-2 text-black">Retur</h5>
                                                 <button type="button" class="btn btn-primary retur-bahan">Tambah Retur</button>
                                             </div>
                                             <div class="table-responsive">
-                                                <table class="table table-center table-bordered w-100"
-                                                    id="tableRetur">
+                                                <table class="table table-center table-hover w-100" id="tableRetur">
                                                     <thead class="">
                                                         <tr>
+                                                            <th></th>
                                                             <th>Tanggal</th>
-                                                            <th>Diskon Retur</th>
-                                                            <th>Total</th>
+                                                            <th>Keterangan</th>
+                                                            <th class="text-end">Subtotal</th>
+                                                            <th style="text-align: center">Aksi</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody></tbody>

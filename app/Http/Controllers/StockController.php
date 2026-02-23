@@ -172,32 +172,34 @@ class StockController extends Controller
                     ->where('unit_id', $u['unit_id'])
                     ->first();
                 
-                // Catat log
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $sto->sto_code,
-                    'log_type'    => 1,
-                    'log_category' => 2,
-                    'log_item_id' => $value['product_variant_id'],
-                    'log_notes'  => "Stock Opname Produk",
-                    'log_jumlah' => $s->ps_stock,
-                    'unit_id'    => $u['unit_id'],
-                ]);
-    
-                $s->ps_stock = $u['real_qty'];
-                $s->save();
-    
-                // Catat log
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $sto->sto_code,
-                    'log_type'    => 1,
-                    'log_category' => 1,
-                    'log_item_id' => $value['product_variant_id'],
-                    'log_notes'  => "Stock Opname Produk",
-                    'log_jumlah' => $s->ps_stock,
-                    'unit_id'    => $u['unit_id'],
-                ]);
+                if ($u['real_qty'] != -1) {
+                    // Catat log
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode'    => $sto->sto_code,
+                        'log_type'    => 1,
+                        'log_category' => 2,
+                        'log_item_id' => $value['product_variant_id'],
+                        'log_notes'  => "Stock Opname Produk",
+                        'log_jumlah' => $s->ps_stock,
+                        'unit_id'    => $u['unit_id'],
+                    ]);
+        
+                    $s->ps_stock = $u['real_qty'];
+                    $s->save();
+        
+                    // Catat log
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode'    => $sto->sto_code,
+                        'log_type'    => 1,
+                        'log_category' => 1,
+                        'log_item_id' => $value['product_variant_id'],
+                        'log_notes'  => "Stock Opname Produk",
+                        'log_jumlah' => $s->ps_stock,
+                        'unit_id'    => $u['unit_id'],
+                    ]);
+                }
             }
         }
         $sto->status = 2;
@@ -314,32 +316,35 @@ class StockController extends Controller
                 $s = SuppliesStock::where('supplies_id', $value['supplies_id'])
                     ->where('unit_id', $u['unit_id'])
                     ->first();
+                
+                if ($u['real_qty'] != -1){
+                    // Catat log
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode'    => $stob->stob_code,
+                        'log_type'    => 2,
+                        'log_category' => 2,
+                        'log_item_id' => $value['supplies_id'],
+                        'log_notes'  => "Stock Opname Bahan Mentah",
+                        'log_jumlah' => $s->ss_stock,
+                        'unit_id'    => $u['unit_id'],
+                    ]);
+                    $s->ss_stock = $u['real_qty'];
+                    $s->save();
+    
+                    // Catat log
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode'    => $stob->stob_code,
+                        'log_type'    => 2,
+                        'log_category' => 1,
+                        'log_item_id' => $value['supplies_id'],
+                        'log_notes'  => "Stock Opname Bahan Mentah",
+                        'log_jumlah' => $s->ss_stock,
+                        'unit_id'    => $u['unit_id'],
+                    ]);
+                }
 
-                // Catat log
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $stob->stob_code,
-                    'log_type'    => 2,
-                    'log_category' => 2,
-                    'log_item_id' => $value['supplies_id'],
-                    'log_notes'  => "Stock Opname Bahan Mentah",
-                    'log_jumlah' => $s->ss_stock,
-                    'unit_id'    => $u['unit_id'],
-                ]);
-                $s->ss_stock = $u['real_qty'];
-                $s->save();
-
-                // Catat log
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $stob->stob_code,
-                    'log_type'    => 2,
-                    'log_category' => 1,
-                    'log_item_id' => $value['supplies_id'],
-                    'log_notes'  => "Stock Opname Bahan Mentah",
-                    'log_jumlah' => $s->ss_stock,
-                    'unit_id'    => $u['unit_id'],
-                ]);
             }
         }
         $stob->status = 2;

@@ -11,6 +11,8 @@ use App\Models\PurchaseOrderDeliveryDetail;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\PurchaseOrderReceipt;
+use App\Models\ReturnSupplies;
+use App\Models\ReturnSuppliesDetail;
 use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
@@ -587,6 +589,53 @@ class SupplierController extends Controller
         purchase_order_tt::where('tt_id','=',$p->tt_id)->update(["status"=>0]);
         PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->update(["status"=>0]);
         PurchaseOrderDetailInvoice::where('po_id','=',$data["po_id"])->update(["status"=>0]);
+    }
+
+    function getReturnSupplies(Request $req){
+        $data = (new ReturnSupplies())->getReturnSupplies($req->all());
+        return response()->json($data);
+    }
+
+    function insertReturnSupplies(Request $req){
+        $data = $req->all();
+        $returs = json_decode($data["returs"], true);
+        $total = 0;
+        foreach ($returs as $key => $value) {
+            $total += ($value['rsd_price'] * $value['rsd_qty']);
+        }
+        $inv = PurchaseOrderDetailInvoice::find($data['poi_id']);
+        if ($inv->poi_total-$total < 0){
+            return [
+                "status"=>-1,
+                "message"=>"Jumlah retur melebihi total pembelian"
+            ];
+        }
+
+        $rs_id = (new ReturnSupplies())->insertReturnSupplies($data);
+
+        foreach ($returs as $key => $value) {
+            $value['rs_id'] = $rs_id;
+            (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
+        }
+
+        $inv->poi_total -= $total;
+        $inv->save();
+
+        $po = PurchaseOrder::find($data['po_id']);
+        $po->po_total -= $total;
+        $po->save();
+
+        return 1;
+    }
+
+    function updateReturnSupplies(Request $req){
+        $data = $req->all();
+        return (new ReturnSupplies())->updateReturnSupplies($data);
+    }
+
+    function deleteReturnSupplies(Request $req){
+        $data = $req->all();
+        return (new ReturnSupplies())->deleteReturnSupplies($data);
     }
 }
 

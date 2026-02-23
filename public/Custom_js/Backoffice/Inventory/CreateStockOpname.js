@@ -38,7 +38,7 @@
                     rl_stock += `
                         <input type="number"
                             class="form-control real-stock"
-                            value="${element.real_qty}"
+                            value="${element.real_qty != -1 ? element.real_qty : ''}"
                             data-unit-id="${element.unit_id}"
                             data-unit-name="${element.unit_short_name}"
                             data-system-qty="${element.system_qty}">
@@ -137,7 +137,7 @@
                         rl_stock += `
                             <input type="number"
                                 class="form-control real-stock"
-                                value="0"
+                                value=""
                                 data-unit-id="${element.unit_id}"
                                 data-unit-name="${element.unit_short_name}"
                                 data-system-qty="${element.ps_stock}">
@@ -291,7 +291,7 @@ function insertData() {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || 0;
+            let realQty   = parseInt(input.val()) || -1;
 
             units.push({
                 unit_id: unitId,
@@ -386,7 +386,7 @@ $(document).on("click", "#btn-acc-sto", function () {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || 0;
+            let realQty   = parseInt(input.val()) || -1;
 
             units.push({
                 unit_id: unitId,
@@ -418,7 +418,7 @@ $(document).on("click", "#btn-acc-sto", function () {
         success: function (e) {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
-            ResetLoadingButton("#btn-acc-sto", "Konfirmasi");
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
             notifikasi(
                 "success",
                 "Berhasil Approve",
@@ -428,7 +428,7 @@ $(document).on("click", "#btn-acc-sto", function () {
         },
         error: function (e) {
             console.log(e);
-            ResetLoadingButton("#btn-acc-sto", "Konfirmasi");
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
         },
     });
 });
@@ -437,6 +437,7 @@ $(document).on("click", "#btn-acc-sto", function () {
 
     $(document).on('click', '.save-tolak', function(){
         showModalDelete("Apakah yakin ingin menolak stock opname ini?","btn-tolak-sto");
+        $("#btn-tolak-sto").html("Delete");
     })
 
     $(document).on("click","#btn-tolak-sto",function(){
@@ -451,7 +452,7 @@ $(document).on("click", "#btn-acc-sto", function () {
             success:function(e){
                 $('#modalDelete .modal-body').html('');
                 $(".modal").modal("hide");
-                ResetLoadingButton("#btn-tolak-sto", "Delete");
+                ResetLoadingButton(".btn-konfirmasi", "Delete");
                 notifikasi(
                     "success",
                     "Berhasil Tolak",
@@ -462,7 +463,7 @@ $(document).on("click", "#btn-acc-sto", function () {
             },
             error:function(e){
                 console.log(e);
-                ResetLoadingButton("#btn-tolak-sto", "Delete");
+                ResetLoadingButton(".btn-konfirmasi", "Delete");
             }
         });
     });

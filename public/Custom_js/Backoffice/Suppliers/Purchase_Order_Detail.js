@@ -1,14 +1,18 @@
     var mode=1;
-    var tablePr, tableDn, tableInv, tablePrModal;
+    var totalRetur = 0;
+    var tablePr, tableDn, tableInv, tablePrModal, tableRetur;
     let detail_delivery = [];
     var list_photo=[];
+    var returs = [];
 
     autocompleteStaff("#pdo_receiver",null);
     autocompleteSupplier("#po_supplier",null);
+    autocompleteSuppliesVariantOnly("#supplies_id", "#add-retur", data.po_supplier);
 
     $(document).ready(function(){
         inisialisasi();
         refresh();
+        refreshRetur();
         refreshSummary();
         list_photo = JSON.parse(data.po_img || '[]');
          $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[0]);
@@ -135,6 +139,44 @@
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
         });
+
+        tableRetur = $('#tableRetur').DataTable({
+            bFilter: true,
+            sDom: 'fBtlpi',
+            lengthMenu: [10, 25, 50, 100],
+            ordering: true,
+            searching: false,
+            autoWidth: false,
+            responsive: false,
+            language: {
+                search: ' ',
+                sLengthMenu: '_MENU_',
+                searchPlaceholder: "Cari Retur",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                paginate: {
+                    next: ' <i class=" fa fa-angle-right"></i>',
+                    previous: '<i class="fa fa-angle-left"></i> '
+                },
+            },
+            columns: [
+                {
+                    className: 'dt-control text-center',
+                    orderable: false,
+                    data: null,
+                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
+                    width: "40px"
+                },
+                { data: "date" },
+                { data: "rs_notes", width: "45%" },
+                { data: "total", className: "text-end" },
+                { data: "action", class: "d-flex align-items-center" },
+            ],
+            initComplete: (settings, json) => {
+                $('.dataTables_filter').appendTo('#tableSearch');
+                $('.dataTables_filter').appendTo('.search-input');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            },
+        });
     }
 
     function refresh() {
@@ -252,6 +294,343 @@
             }
         });
     }
+
+    function refreshRetur() {
+        totalRetur = 0;
+        $.ajax({
+            url: "/getReturnSupplies",
+            method: "get",
+            data: {
+                supplier_id: data.po_supplier
+            },
+            success: function (e) {
+                if (!Array.isArray(e)) {
+                    e = e.original || [];
+                }
+                tableRetur.clear().draw(); 
+
+                // Manipulasi data sebelum masuk ke tabel
+                console.log(e);
+                for (let i = 0; i < e.length; i++) {
+                    e[i].date = moment(e[i].rs_date).format('D MMM YYYY');
+                    e[i].total = "Rp " + formatRupiah(e[i].rs_total);
+
+                    e[i].action = `
+                        <a class="p-2 btn-action-icon btn_delete_retur" data-id="${e[i].rs_id}" href="javascript:void(0);">
+                            <i class="fe fe-trash-2"></i>
+                        </a>
+                    `;
+
+                    totalRetur += e[i].rs_total;
+                }
+                totalRetur += data.po_discount;
+                $('#value_discount').html(`Rp ${formatRupiah(totalRetur)}`);
+                grandTotal();
+
+                tableRetur.rows.add(e).draw();
+
+                // Expand child row
+                setTimeout(function () {
+                    $('#tableRetur tbody td.dt-control').each(function () {
+                        $(this).trigger('click');
+                    });
+                }, 100);
+
+                feather.replace(); // Biar icon feather muncul lagi
+            },
+            error: function (err) {
+                console.error("Gagal load:", err);
+            }
+        });
+    }
+
+    function format(detailData) {
+        if (!detailData || detailData.length === 0) {
+            return `
+                <div class="p-3">
+                    <em class="text-muted">Tidak ada detail</em>
+                </div>
+            `;
+        }
+
+        let total = 0;
+
+        let html = `<div class="px-5">`;
+        detailData.forEach((d) => {
+            total += parseInt(d.rsd_price) * parseInt(d.rsd_qty);
+
+            html += `
+                <div class="child-item">
+                    <div class="child-left d-flex g-3">
+                        <div class="name me-5">
+                            ${d.supplies_variant_name}
+                        </div>
+                        <div class="qty me-5 ms-5">
+                            ${d.rsd_qty} ${d.unit_name}
+                        </div>
+                        <div class="price ms-5">
+                            Rp ${formatRupiah(d.rsd_price)}
+                        </div>
+                    </div>
+                    <div class="child-right">
+                        Rp ${formatRupiah(d.rsd_price * d.rsd_qty)}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            <div class="child-item fw-semibold pt-3 border-0">
+                <div class="child-left-total">
+                    Total
+                </div>
+                <div class="child-right">
+                    Rp ${formatRupiah(total)}
+                </div>
+            </div>
+        `;
+
+        html += `</div>`;
+        return html;
+    }
+
+    $('#tableRetur tbody').on('click', 'td.dt-control', function () {
+        let tr = $(this).closest('tr');
+        let row = tableRetur.row(tr);
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            tr.removeClass('shown');
+        } else {
+            row.child(format(row.data().detail)).show();
+            tr.addClass('shown');
+        }
+    });
+
+    // BAGIAN RETUR
+    $(document).on('click', '.retur-bahan', function(){
+        mode=1;
+        $('#add-retur .modal-title').html("Tambah Retur Bahan Mentah");
+        $('#add-retur .form-control').val("");
+        $('#tableSupplies tr.row-supplies').remove();
+        $('#supplies_id, #unit_supplies_id').empty();
+        $('.is-invalid').removeClass('is-invalid');
+
+        let today = new Date();
+        let yyyy = today.getFullYear();
+        let mm = String(today.getMonth() + 1).padStart(2, '0');
+        let dd = String(today.getDate()).padStart(2, '0');
+        let todayStr = yyyy + '-' + mm + '-' + dd;
+        $("#rs_date").val(todayStr);
+
+        $('#add-retur').modal("show");
+    })
+
+    $(document).on('change','#supplies_id',function(){
+        var data = $(this).select2("data")[0];
+        console.log(data);
+        $('#unit_supplies_id').empty();
+        
+        data.supplies_unit.forEach(element => {
+            $('#unit_supplies_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
+        });
+    });
+
+    $(document).on('click', '.btn-add-supplies', function(){
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        var valid=1;
+        $("#add-retur .fill_supplies").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+        if($('#supplies_id').val()==null||$('#supplies_id').val()=="null"||$('#supplies_id').val()==""){
+            valid=-1;
+            $('#row-supplies .select2-selection--single').addClass('is-invalids');
+        }
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur"); 
+            return false;
+        };
+        var temp = $('#supplies_id').select2("data")[0];
+        var idx = -1;
+
+        returs.forEach(element => {
+            if (element.supplies_variant_id == temp.supplies_variant_id && element.unit_id == $('#unit_supplies_id').val()) {
+                element.pid_qty += parseInt($('#pid_qty').val());
+                idx = 1;
+            }
+        }); 
+
+        if(idx==-1){
+            var data  = {
+                "supplies_variant_id": temp.supplies_variant_id,
+                "supplies_id": temp.supplies_id,
+                "supplies_variant_name": temp.supplies_variant_name,
+                "rsd_price": temp.supplies_variant_price,
+                "rsd_qty": parseInt($('#rsd_qty').val()),
+                "unit_name": $('#unit_supplies_id option:selected').text(),
+                "unit_id": $('#unit_supplies_id').val(),
+            };
+            returs.push(data);
+        }
+        addRow()
+
+        $('#supplies_id ').empty();
+        $('#unit_supplies_id').empty();
+        $('#rsd_qty').val("");
+    })
+    
+    // 1 = produk, 2 = bahan mentah
+    function addRow() {
+        $('#tableSupplies tr.row-supplies').html(" ");
+        let totals = 0;
+        returs.forEach(e => {
+            $('#tableSupplies tbody').append(`
+                <tr class="row-supplies" data-id="${e.supplies_variant_id}">
+                    <td>${e.supplies_variant_name || e.sup_name}</td>
+                    <td>${e.rsd_qty}</td>
+                    <td>${e.unit_name}</td>
+                    <td class="text-end">Rp ${formatRupiah(e.rsd_price)}</td>
+                    <td class="text-end">Rp ${formatRupiah(e.rsd_price * e.rsd_qty)}</td>
+                    <td class="text-center d-flex align-items-center">
+                        <a class="p-2 btn-action-icon btn_delete_row_sp mx-auto"  href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                        </a>
+                    </td>
+                </tr>    
+            `);
+            totals += e.rsd_price * e.rsd_qty;
+        });
+        $('.totals').html(`Rp ${formatRupiah(totals)}`);
+    }
+
+    $(document).on("click",".btn_delete_row_sp",function(){
+        let row = $(this).closest("tr");
+        let suppliesId = row.data("id");
+        returs = returs.filter(e => e.supplies_variant_id != suppliesId);
+        row.remove();
+    });
+
+    $(document).on('click', '.btn-save-retur', function(){
+        $(".is-invalid").removeClass("is-invalid");
+        var url = "/insertReturnSupplies";
+        var valid = 1;
+        $("#add-retur .fill").each(function () {
+            if ($(this).val() == null || $(this).val() == "null" || $(this).val() == "") {
+                valid = -1;
+                $(this).addClass("is-invalid");
+                console.log(this);
+            }
+        });
+
+        if (valid == -1) {
+            notifikasi("error", "Gagal Insert", "Silahkan cek kembali inputan anda");
+            ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur"); 
+            return false;
+        }
+
+        if ($("#tableSupplies tbody tr").length == 0) {
+            notifikasi('error', "Gagal Insert", 'Minimal input 1 bahan');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Retur" : "Update Retur"); 
+            return false;
+        }
+
+        // if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+        //     notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
+        //     ResetLoadingButton('.btn-save', mode == 1?"Tambah Retur" : "Update Retur");
+        //     return false;
+        // }
+
+        let total = 0;
+        returs.forEach(e => {
+            total += e.rsd_price * e.rsd_qty;
+        })
+
+        param = {
+            rs_date: $("#rs_date").val(),
+            rs_notes: $("#rs_notes").val(),
+            rs_total: total,
+            returs: JSON.stringify(returs),
+            supplier_id: data.po_supplier,
+            poi_id: data.poi_id,
+            po_id: data.po_id,
+            _token: token,
+        };
+        console.log(param);
+        LoadingButton($(this));
+
+        if (mode == 2) {
+            url = "/updateReturSupplies";
+            param.rs_id = $("#add-retur").attr("rs_id");
+        }
+
+        $.ajax({
+            url: url,
+            data: param,
+            method: "post",
+            headers: {
+                "X-CSRF-TOKEN": token,
+            },
+            success: function (e) {
+                console.log(e);
+                if (typeof e === "object") {
+                    notifikasi("error", "Gagal Insert", e.message);
+                }
+                else if (e == -1)
+                    notifikasi("error", "Gagal Insert", "Stock tidak mencukupi!");
+                else {
+                    $(".modal").modal("hide");
+                    if (mode == 1)
+                        notifikasi("success", "Berhasil Insert", "Retur Berhasil Ditambahkan");
+                    else if (mode == 2)
+                        notifikasi("success", "Berhasil Update", "Retur Berhasil Diupdate");
+                }
+                afterInsertRetur();
+            },
+            error: function (e) {
+                console.log(e);
+                ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur"); 
+            },
+        });
+    })
+
+    function afterInsertRetur() {
+       refreshRetur();
+       ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur"); 
+    }
+
+    $(document).on('click', '.btn_delete_retur', function(){
+        var datas = $('#tableRetur').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin menghapus retur pembelian ini?","btn-delete-retur");
+        $('#btn-delete-retur').attr("rs_id", datas.rs_id);
+    });
+
+    $(document).on("click","#btn-delete-retur",function(){
+        LoadingButton(this);
+        $.ajax({
+            url:"/deleteReturnSupplies",
+            data:{
+                rs_id:$('#btn-delete-retur').attr('rs_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                ResetLoadingButton("#btn-delete-retur", "Delete");
+                refreshRetur();
+                notifikasi('success', "Berhasil Delete", "Berhasil delete retur pembelian");
+            },
+            error:function(e){
+                ResetLoadingButton("#btn-delete-retur", "Delete");
+                console.log(e);
+            }
+        });
+    });
+
     $(document).on('click', '.btnBack', function(){
         window.open('/purchaseOrder', '_self');
     })
@@ -756,8 +1135,6 @@
         $('#value_grand').html(formatRupiah(grand,"Rp."))
     }
 
-
-        
     $(document).on("click", ".btn-save-invoice", function () {
         LoadingButton(this);
         $(".is-invalid").removeClass("is-invalid");

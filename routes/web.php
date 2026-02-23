@@ -174,6 +174,11 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/declinePoDelivery', [SupplierController::class, "declinePoDelivery"])->name('declinePoDelivery');
     Route::post('/pelunasanPurchaseOrder', [SupplierController::class, "pelunasanPurchaseOrder"])->name('pelunasanPurchaseOrder');
 
+    Route::get('/getReturnSupplies', [SupplierController::class, "getReturnSupplies"])->name('getReturnSupplies');
+    Route::post('/insertReturnSupplies', [SupplierController::class, "insertReturnSupplies"])->name('insertReturnSupplies');
+    Route::post('/updateReturnSupplies', [SupplierController::class, "updateReturnSupplies"])->name('updateReturnSupplies');
+    Route::post('/deleteReturnSupplies', [SupplierController::class, "deleteReturnSupplies"])->name('deleteReturnSupplies');
+
     // Route::get('/manageStock',[StockController::class,"ManageStock"])->name('manageStock');
     // Route::post('/insertManageStocks',[StockController::class,"insertManageStocks"])->name('insertManageStocks');
     // Route::get('/getManageStock',[StockController::class,"getManageStock"])->name('getManageStock');
