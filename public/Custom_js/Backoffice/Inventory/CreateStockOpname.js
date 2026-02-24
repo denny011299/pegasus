@@ -38,7 +38,7 @@
                     rl_stock += `
                         <input type="number"
                             class="form-control real-stock"
-                            value="${element.real_qty != -1 ? element.real_qty : ''}"
+                            value="${element.real_qty}"
                             data-unit-id="${element.unit_id}"
                             data-unit-name="${element.unit_short_name}"
                             data-system-qty="${element.system_qty}">
@@ -215,7 +215,7 @@
     //         let systemQty = parseInt($(this).data('system-qty')) || 0;
     //         let unitName  = $(this).data('unit-name');
 
-    //         selisihArr.push((realQty - systemQty) + ' ' + unitName);
+    //         selisihArr.push(((realQty != -1 ? realQty : systemQty) - systemQty) + ' ' + unitName);
     //     });
 
     //     row.find('.selisih').html(selisihArr.join(', '));
@@ -296,12 +296,12 @@ function insertData() {
             units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty
+                real_qty: realQty != -1 ? realQty : systemQty
             });
 
             systemArr.push(systemQty + ' ' + unitName);
-            realArr.push(realQty + ' ' + unitName);
-            selisihArr.push((realQty - systemQty) + ' ' + unitName);
+            realArr.push((realQty != -1 ? realQty : systemQty) + ' ' + unitName);
+            selisihArr.push(((realQty != -1 ? realQty : systemQty) - systemQty) + ' ' + unitName);
         });
 
         item.units = units;
@@ -391,12 +391,12 @@ $(document).on("click", "#btn-acc-sto", function () {
             units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty
+                real_qty: realQty != -1 ? realQty : systemQty
             });
 
             systemArr.push(systemQty + ' ' + unitName);
-            realArr.push(realQty + ' ' + unitName);
-            selisihArr.push((realQty - systemQty) + ' ' + unitName);
+            realArr.push((realQty != -1 ? realQty : systemQty) + ' ' + unitName);
+            selisihArr.push(((realQty != -1 ? realQty : systemQty) - systemQty) + ' ' + unitName);
         });
 
         item.units = units;
