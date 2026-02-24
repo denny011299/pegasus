@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bank;
 use App\Models\LogStock;
+use App\Models\ProductIssues;
 use App\Models\purchase_order_tt;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
@@ -616,6 +617,9 @@ class SupplierController extends Controller
         foreach ($returs as $key => $value) {
             $value['rs_id'] = $rs_id;
             (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
+
+            // Penyesuaian field untuk produk bermasalah
+            $value['pid_qty'] = $value['rsd_qty'];
         }
 
         $inv->poi_total -= $total;
@@ -624,6 +628,15 @@ class SupplierController extends Controller
         $po = PurchaseOrder::find($data['po_id']);
         $po->po_total -= $total;
         $po->save();
+
+        (new ProductIssues())->insertProductIssues([
+            "pi_type" => 1,
+            "ref_num" => $data['poi_id'],
+            "pi_date" => now(),
+            "pi_notes" => "Retur tambahan dari Invoice " . $data['poi_id'],
+            "tipe_return" => 1,
+            "items" => $data['returs'],
+        ]);
 
         return 1;
     }

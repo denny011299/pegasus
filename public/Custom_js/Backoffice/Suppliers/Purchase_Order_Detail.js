@@ -492,7 +492,7 @@
             $('#tableSupplies tbody').append(`
                 <tr class="row-supplies" data-id="${e.supplies_variant_id}">
                     <td>${e.supplies_variant_name || e.sup_name}</td>
-                    <td>${e.rsd_qty}</td>
+                    <td class="text-center">${e.rsd_qty}</td>
                     <td>${e.unit_name}</td>
                     <td class="text-end">Rp ${formatRupiah(e.rsd_price)}</td>
                     <td class="text-end">Rp ${formatRupiah(e.rsd_price * e.rsd_qty)}</td>

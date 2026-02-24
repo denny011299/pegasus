@@ -1160,11 +1160,11 @@
                                         <input type="text" class="form-control fill" id="rs_notes" placeholder="Tambahkan Catatan">
                                     </div>
                                 </div>
-                                <div class="col-12 py-3 mb-3">
+                                <div class="col-12 py-3 mb-3 table-responsive">
                                     <table class="table table-center" id="tableSupplies" style="min-height: 15vh">
                                         <thead>
                                             <th id="header_name">Nama Bahan</th>
-                                            <th>Qty</th>
+                                            <th class="text-center">Qty</th>
                                             <th>Satuan</th>
                                             <th class="text-end">Harga</th>
                                             <th class="text-end">Subtotal</th>

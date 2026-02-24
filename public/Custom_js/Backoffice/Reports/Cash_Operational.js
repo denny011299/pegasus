@@ -53,9 +53,9 @@
         mode=1;
         items = [];
 
-        $('#add_cash_operational input').val("");
+        $('#add_cash_operational input').val("").attr('disabled', false);
         $('#jenis_input, #staff_id, #oc_transaksi').attr('disabled', false);
-        $('#oc_transaksi').val(1);
+        $('#oc_transaksi').val(1).attr('disabled', false);
 
         if (type == "admin"){
             $('#row-cash').html(`
@@ -64,8 +64,8 @@
             `);
 
             $('#add_cash_operational .modal-title').html("Tambah Aktivitas Admin");
-            $('#staff_id').empty(null);
-            $('#jenis_input').val("saldo").trigger('change');
+            $('#staff_id').empty(null).attr('disabled', false);
+            $('#jenis_input').val("saldo").attr('disabled', false).trigger('change');
             autocompleteStaff('#staff_id', '#add_cash_operational');
             $('.total').html("Rp 0");
 
@@ -101,7 +101,9 @@
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('#add_cash_operational').modal("show");
-        $('.btn-save').html('Tambah Aktivitas');
+        $('.input_table, .btn_delete_row').show();
+        $('.btn-save').html('Tambah Aktivitas').show();
+        $('.cancel-btn').html('Batal');
     });
     
     function inisialisasi() {
@@ -199,10 +201,14 @@
                     } else if (e[i].status == 3){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
-                    e[i].action = "";
+                    e[i].action = `
+                        <a class="me-2 btn-action-icon p-2 btn_view_admin" data-id="${e[i].ca_id}" data-bs-target="#view-cash">
+                            <i class="fe fe-eye"></i>
+                        </a>
+                    `;
                     if (e[i].status == 1){
                         if (e[i].ca_type == 1){
-                            e[i].action = `
+                            e[i].action += `
                                 <a class="me-2 btn-action-icon p-2 btn_edit_admin" data-id="${e[i].ca_id}" data-bs-target="#edit-category">
                                     <i class="fe fe-edit"></i>
                                 </a>
@@ -211,7 +217,7 @@
                                 </a>
                             `;
                         } else if (e[i].ca_type == 2){
-                            e[i].action = `
+                            e[i].action += `
                                 <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
                                     <i class="fe fe-check"></i>
@@ -562,7 +568,7 @@
             $('.total').html(`Rp ${formatRupiah(total)}`)
             addRow();
 
-            $('#btn_bukti_foto').hide();
+            $('#btn-foto-bukti').hide();
             $('#btn-lihat-bukti').show();
             $('#bukti').val(data.ca_img);
             $('#check_foto').show();
@@ -571,14 +577,63 @@
         else {
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi').val(data.ca_type).attr('disabled', true);
-            $('#oc_nominal').val(data.ca_nominal);
-            $('#oc_notes').val(data.ca_notes);
+            $('#oc_nominal').val(data.ca_nominal).attr('disabled', false);
+            $('#oc_notes').val(data.ca_notes).attr('disabled', false);
         }
         $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
-        $('.btn-save').html('Update Aktivitas');
+        $('.btn-save').html('Update Aktivitas').show();
+        $('.cancel-btn').html('Batal');
+        $('.input_table, .btn_delete_row').show();
+        $('#add_cash_operational').modal("show");
+        $('#add_cash_operational').attr("ca_id", data.ca_id);
+    })
+
+    $(document).on('click', '.btn_view_admin', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        mode=3;
+        items = [];
+        console.log(data);
+        $('#add_cash_operational .modal-title').html("Lihat Aktivitas Admin");
+        $('#add_cash_operational input').empty().val("");
+        $('#staff_id').empty(null);
+        
+        if (data.detail?.length) {
+            $('#jenis_input').val("operasional").trigger('change').attr('disabled', true);
+
+            let total = 0;
+            data.detail.forEach(e => {
+                var temp = {
+                    "cad_id" : e.cad_id,
+                    "cad_notes" : e.cad_notes,
+                    "cad_nominal" : e.cad_nominal,
+                };
+                items.push(temp);
+                total += e.cad_nominal;
+            })
+            $('.total').html(`Rp ${formatRupiah(total)}`)
+            addRow();
+
+            $('#btn-foto-bukti').hide();
+            $('#btn-lihat-bukti').show();
+            $('#bukti').val(data.ca_img);
+            $('#check_foto').show();
+            imageValue(data.ca_img);
+        }
+        else {
+            $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
+            $('#oc_transaksi').val(data.ca_type).attr('disabled', true);
+            $('#oc_nominal').val(data.ca_nominal).attr('disabled', true);
+            $('#oc_notes').val(data.ca_notes).attr('disabled', true);
+        }
+        $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        $('.input_table, .btn-save, .btn_delete_row').hide();
+        $('.cancel-btn').html('Kembali');
         $('#add_cash_operational').modal("show");
         $('#add_cash_operational').attr("ca_id", data.ca_id);
     })

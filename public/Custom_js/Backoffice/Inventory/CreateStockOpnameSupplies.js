@@ -85,7 +85,7 @@
                 // Untuk Non Admin
                 $('#tbStock').append(`
                     <tr class="row-stock" data-supplies-id="${item.supplies_id}">
-                        <td>${item.supplies_name}</td>
+                        <td style="width:25%">${item.supplies_name}</td>
                         <td class="text-center" style="width:10%">
                             <div class="input-group mb-3 rstock">
                                 ${rl_stock}
@@ -183,7 +183,7 @@
                     // Untuk Non Admin
                     $('#tbStock').append(`
                         <tr class="row-stock" data-supplies-id="${item.supplies_id}">
-                            <td>${item.supplies_name}</td>
+                            <td style="width:25%">${item.supplies_name}</td>
                             <td class="text-center" style="width:10%">
                                 <div class="input-group mb-3 rstock">
                                     ${rl_stock}
