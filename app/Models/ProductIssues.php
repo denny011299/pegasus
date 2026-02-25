@@ -95,7 +95,7 @@ class ProductIssues extends Model
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];     
-        $t->pi_img = $data["pi_img"]; 
+        $t->pi_img = $data["pi_img"] ?? null; 
         // $t->pi_qty = $data["pi_qty"];   
         // $t->product_variant_id = $data["product_variant_id"];
         // $t->unit_id = $data["unit_id"]; 
@@ -104,7 +104,7 @@ class ProductIssues extends Model
         // $s->save();
 
         return $t;  
-    } 
+    }
 
     function updateProductIssues($data)
     {

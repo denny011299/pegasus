@@ -323,8 +323,9 @@
 
                     totalRetur += e[i].rs_total;
                 }
+                $('.total_akhir').html(`Rp ${formatRupiah(totalRetur)}`);
                 totalRetur += data.po_discount;
-                $('#value_discount').html(`Rp ${formatRupiah(totalRetur)}`);
+                $('#value_retur').html(`Rp ${formatRupiah(totalRetur)}`);
                 grandTotal();
 
                 tableRetur.rows.add(e).draw();
@@ -412,7 +413,7 @@
         mode=1;
         $('#add-retur .modal-title').html("Tambah Retur Bahan Mentah");
         $('#add-retur .form-control').val("");
-        $('#tableSupplies tr.row-supplies').remove();
+        $('#tableSuppliesModal tr.row-supplies').remove();
         $('#supplies_id, #unit_supplies_id').empty();
         $('.is-invalid').removeClass('is-invalid');
 
@@ -486,10 +487,10 @@
     
     // 1 = produk, 2 = bahan mentah
     function addRow() {
-        $('#tableSupplies tr.row-supplies').html(" ");
+        $('#tableSuppliesModal tr.row-supplies').html(" ");
         let totals = 0;
         returs.forEach(e => {
-            $('#tableSupplies tbody').append(`
+            $('#tableSuppliesModal tbody').append(`
                 <tr class="row-supplies" data-id="${e.supplies_variant_id}">
                     <td>${e.supplies_variant_name || e.sup_name}</td>
                     <td class="text-center">${e.rsd_qty}</td>
@@ -533,7 +534,7 @@
             return false;
         }
 
-        if ($("#tableSupplies tbody tr").length == 0) {
+        if ($("#tableSuppliesModal tbody tr").length == 0) {
             notifikasi('error', "Gagal Insert", 'Minimal input 1 bahan');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Retur" : "Update Retur"); 
             return false;
@@ -588,8 +589,9 @@
                         notifikasi("success", "Berhasil Insert", "Retur Berhasil Ditambahkan");
                     else if (mode == 2)
                         notifikasi("success", "Berhasil Update", "Retur Berhasil Diupdate");
+                    afterInsertRetur();
+                    window.location.reload();
                 }
-                afterInsertRetur();
             },
             error: function (e) {
                 console.log(e);
@@ -599,8 +601,8 @@
     })
 
     function afterInsertRetur() {
-       refreshRetur();
-       ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur"); 
+        refreshRetur();
+        ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur");
     }
 
     $(document).on('click', '.btn_delete_retur', function(){
@@ -615,6 +617,8 @@
             url:"/deleteReturnSupplies",
             data:{
                 rs_id:$('#btn-delete-retur').attr('rs_id'),
+                poi_id: data.poi_id,
+                po_id: data.po_id,
                 _token:token
             },
             method:"post",
@@ -623,6 +627,8 @@
                 ResetLoadingButton("#btn-delete-retur", "Delete");
                 refreshRetur();
                 notifikasi('success', "Berhasil Delete", "Berhasil delete retur pembelian");
+
+                window.location.reload();
             },
             error:function(e){
                 ResetLoadingButton("#btn-delete-retur", "Delete");
@@ -766,8 +772,9 @@
         var total = convertToAngka($('#value_total').html());
         var ppn = convertToAngka($('#value_ppn').html());
         var discount = convertToAngka($('#value_discount').html());
+        var retur = convertToAngka($('#value_retur').html());
         var cost = convertToAngka($('#value_cost').html());
-        var grand = total + ppn - discount + cost;
+        var grand = total + ppn - discount + retur + cost;
         $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
     }
 

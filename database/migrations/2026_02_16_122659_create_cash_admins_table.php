@@ -14,8 +14,11 @@ return new class extends Migration
         Schema::create('cash_admins', function (Blueprint $table) {
             $table->integerIncrements('ca_id');
             $table->integer('staff_id');
+            $table->integer('cash_id');
             $table->integer('ca_nominal');
             $table->string('ca_notes', 255);
+            $table->integer('ca_type')->comment('1 = saldo, 2 = operasional');
+            $table->text('ca_img')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();
         });

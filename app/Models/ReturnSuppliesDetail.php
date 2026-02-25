@@ -36,6 +36,7 @@ class ReturnSuppliesDetail extends Model
     {
         $t = new ReturnSuppliesDetail();
         $t->rs_id = $data["rs_id"];
+        $t->pid_id = $data["pid_id"];
         $t->supplies_variant_id = $data["supplies_variant_id"];
         $t->rsd_qty = $data["rsd_qty"];
         $t->rsd_price = $data["rsd_price"];
@@ -48,6 +49,7 @@ class ReturnSuppliesDetail extends Model
     {
         $t = ReturnSuppliesDetail::find($data["rsd_id"]);
         $t->rs_id = $data["rs_id"];
+        $t->pid_id = $data["pid_id"];
         $t->supplies_variant_id = $data["supplies_variant_id"];
         $t->rsd_qty = $data["rsd_qty"];
         $t->rsd_price = $data["rsd_price"];

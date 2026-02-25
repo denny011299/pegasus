@@ -187,6 +187,13 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody></tbody>
+                                                    <tfoot>
+                                                        <tr>
+                                                            <td></td>
+                                                            <td class="fw-bold text-end" colspan="2">Total :</td>
+                                                            <td class="total_akhir text-end"></td>
+                                                        </tr>
+                                                    </tfoot>
                                                 </table>
                                             </div>
                                         </div>
@@ -205,6 +212,10 @@
                                                 <div class="d-flex justify-content-between">
                                                     <p>Diskon</p>
                                                     <p id="value_discount">0</p>
+                                                </div>
+                                                <div class="d-flex justify-content-between">
+                                                    <p>Retur</p>
+                                                    <p id="value_retur">0</p>
                                                 </div>
                                                 <div class="d-flex justify-content-between">
                                                     <p>Biaya Pengiriman</p>

@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('return_supplies', function (Blueprint $table) {
             $table->integerIncrements('rs_id');
             $table->integer('supplier_id');
+            $table->integer('pi_id');
             $table->date('rs_date');
             $table->integer('rs_total');
             $table->integer('status')->default(1);

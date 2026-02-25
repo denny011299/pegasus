@@ -1161,7 +1161,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12 py-3 mb-3 table-responsive">
-                                    <table class="table table-center" id="tableSupplies" style="min-height: 15vh">
+                                    <table class="table table-center" id="tableSuppliesModal" style="min-height: 15vh">
                                         <thead>
                                             <th id="header_name">Nama Bahan</th>
                                             <th class="text-center">Qty</th>

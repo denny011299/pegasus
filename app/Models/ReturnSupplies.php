@@ -32,6 +32,7 @@ class ReturnSupplies extends Model
     {
         $t = new ReturnSupplies();
         $t->supplier_id = $data["supplier_id"];
+        $t->pi_id = $data["pi_id"];
         $t->rs_date = $data["rs_date"];
         $t->rs_notes = $data["rs_notes"];
         $t->rs_total = $data["rs_total"];
@@ -43,6 +44,7 @@ class ReturnSupplies extends Model
     {
         $t = ReturnSupplies::find($data["rs_id"]);
         $t->supplier_id = $data["supplier_id"];
+        $t->pi_id = $data["pi_id"];
         $t->rs_date = $data["rs_date"];
         $t->rs_notes = $data["rs_notes"];
         $t->rs_total = $data["rs_total"];

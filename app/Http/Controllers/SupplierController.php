@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bank;
 use App\Models\LogStock;
 use App\Models\ProductIssues;
+use App\Models\ProductIssuesDetail;
 use App\Models\purchase_order_tt;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDelivery;
@@ -612,16 +613,6 @@ class SupplierController extends Controller
             ];
         }
 
-        $rs_id = (new ReturnSupplies())->insertReturnSupplies($data);
-
-        foreach ($returs as $key => $value) {
-            $value['rs_id'] = $rs_id;
-            (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
-
-            // Penyesuaian field untuk produk bermasalah
-            $value['pid_qty'] = $value['rsd_qty'];
-        }
-
         $inv->poi_total -= $total;
         $inv->save();
 
@@ -629,14 +620,42 @@ class SupplierController extends Controller
         $po->po_total -= $total;
         $po->save();
 
-        (new ProductIssues())->insertProductIssues([
-            "pi_type" => 1,
+        $pi = (new ProductIssues())->insertProductIssues([
+            "pi_type" => 2,
             "ref_num" => $data['poi_id'],
-            "pi_date" => now(),
-            "pi_notes" => "Retur tambahan dari Invoice " . $data['poi_id'],
+            "pi_date" => now()->format('d-m-Y'),
+            "pi_notes" => "Retur tambahan dari Invoice " . $inv->poi_code,
             "tipe_return" => 1,
-            "items" => $data['returs'],
         ]);
+
+        $data['pi_id'] = $pi->pi_id;
+        $rs_id = (new ReturnSupplies())->insertReturnSupplies($data);
+
+        foreach ($returs as $key => $value) {
+            $value['pi_id'] = $pi->pi_id;
+            $value['tipe_return'] = 1;
+            $value['ref_num'] = $data['poi_id'];
+            $value['pid_qty'] = $value['rsd_qty'];
+            $pid_id = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+
+            // Catat Log
+            $sup = SuppliesVariant::find($value['supplies_variant_id']);
+
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $pi->pi_code,
+                'log_type'    => 2,
+                'log_category' => 2,
+                'log_item_id' => $sup->supplies_id,
+                'log_notes'  => 'Retur pembelian invoice ' . $inv->poi_code,
+                'log_jumlah' => $value['pid_qty'],
+                'unit_id'    => $value['unit_id'],
+            ]);
+
+            $value['rs_id'] = $rs_id;
+            $value['pid_id'] = $pid_id;
+            (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
+        }
 
         return 1;
     }
@@ -648,7 +667,47 @@ class SupplierController extends Controller
 
     function deleteReturnSupplies(Request $req){
         $data = $req->all();
-        return (new ReturnSupplies())->deleteReturnSupplies($data);
+        $rs = ReturnSupplies::find($data['rs_id']);
+        $returs = ReturnSuppliesDetail::where('rs_id', $data['rs_id'])->where('status', 1)->get();
+        $pi = ProductIssues::find($rs->pi_id);
+        $total = 0;
+        foreach ($returs as $key => $value) {
+            $total += ($value['rsd_price'] * $value['rsd_qty']);
+        }
+
+        $inv = PurchaseOrderDetailInvoice::find($data['poi_id']);
+        $inv->poi_total += $total;
+        $inv->save();
+
+        $po = PurchaseOrder::find($data['po_id']);
+        $po->po_total += $total;
+        $po->save();
+
+        (new ProductIssues())->deleteProductIssues($rs);
+        foreach ($returs as $key => $value) {
+            (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
+
+            // Catat Log
+            $sup = SuppliesVariant::find($value['supplies_variant_id']);
+
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $pi->pi_code,
+                'log_type'    => 2,
+                'log_category' => 2,
+                'log_item_id' => $sup->supplies_id,
+                'log_notes'  => 'Pembatalan retur pembelian invoice ' . $inv->poi_code,
+                'log_jumlah' => $value['rsd_qty'],
+                'unit_id'    => $value['unit_id'],
+            ]);
+        }
+
+        (new ReturnSupplies())->deleteReturnSupplies($data);
+        foreach ($returs as $key => $value) {
+            (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($value);
+        }
+
+        return 1;
     }
 }
 

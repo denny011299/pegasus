@@ -453,22 +453,24 @@ class StockController extends Controller
     {
         $data = $req->all();
         // Ambil base64
-        $image = $req->photo;
-
-        // Hilangkan prefix base64
-        $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
-
-        // Decode
-        $imageData = base64_decode($image);
-
-        // Nama file
-        $imageName = 'photo_' . time() . '.png';
-
-        // Path tujuan di public/produksi
-        $path = public_path('issue/' . $imageName);
-        // Simpan file
-        file_put_contents($path, $imageData);
-        $data["pi_img"] = $imageName;
+        if (isset($req->photo)){
+            $image = $req->photo;
+    
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+    
+            // Decode
+            $imageData = base64_decode($image);
+    
+            // Nama file
+            $imageName = 'photo_' . time() . '.png';
+    
+            // Path tujuan di public/produksi
+            $path = public_path('issue/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            $data["pi_img"] = $imageName;
+        }
 
         if ($data['tipe_return'] == 1){
             $bermasalah = [];

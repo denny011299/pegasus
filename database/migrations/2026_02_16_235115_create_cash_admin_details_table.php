@@ -16,7 +16,6 @@ return new class extends Migration
             $table->integer('ca_id');
             $table->string('cad_notes', 255);
             $table->integer('cad_nominal');
-            $table->text('cad_img')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();
         });
