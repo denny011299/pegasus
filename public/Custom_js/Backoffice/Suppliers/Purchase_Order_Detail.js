@@ -301,7 +301,7 @@
             url: "/getReturnSupplies",
             method: "get",
             data: {
-                supplier_id: data.po_supplier
+                poi_id: data.poi_id
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -556,7 +556,6 @@
             rs_notes: $("#rs_notes").val(),
             rs_total: total,
             returs: JSON.stringify(returs),
-            supplier_id: data.po_supplier,
             poi_id: data.poi_id,
             po_id: data.po_id,
             _token: token,

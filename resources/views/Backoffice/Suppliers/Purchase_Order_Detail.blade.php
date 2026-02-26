@@ -43,6 +43,10 @@
             word-break: break-word;
         }
 
+        #add-retur .select2-container {
+            width: 100% !important;
+        }
+
     </style>
 @endsection
 @section('content')

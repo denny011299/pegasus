@@ -31,7 +31,7 @@ class ReturnSupplies extends Model
     function insertReturnSupplies($data)
     {
         $t = new ReturnSupplies();
-        $t->supplier_id = $data["supplier_id"];
+        $t->poi_id = $data["poi_id"];
         $t->pi_id = $data["pi_id"];
         $t->rs_date = $data["rs_date"];
         $t->rs_notes = $data["rs_notes"];
@@ -43,7 +43,7 @@ class ReturnSupplies extends Model
     function updateReturnSupplies($data)
     {
         $t = ReturnSupplies::find($data["rs_id"]);
-        $t->supplier_id = $data["supplier_id"];
+        $t->poi_id = $data["poi_id"];
         $t->pi_id = $data["pi_id"];
         $t->rs_date = $data["rs_date"];
         $t->rs_notes = $data["rs_notes"];
