@@ -14,11 +14,11 @@ class ReturnSupplies extends Model
     function getReturnSupplies($data = [])
     {
         $data = array_merge([
-            "supplier_id"=>null
+            "poi_id"=>null,
         ], $data);
 
         $result = ReturnSupplies::where('status', '=', 1);
-        if($data["supplier_id"]) $result->where('supplier_id', '=', $data["supplier_id"]);
+        if($data["poi_id"]) $result->where('poi_id', '=', $data["poi_id"]);
         $result->orderBy('created_at', 'asc');
        
         $result = $result->get();

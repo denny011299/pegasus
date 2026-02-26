@@ -12,6 +12,8 @@ use App\Models\ProductVariant;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderDetail;
 use App\Models\PurchaseOrderDetailInvoice;
+use App\Models\ReturnSupplies;
+use App\Models\ReturnSuppliesDetail;
 use App\Models\Staff;
 use App\Models\Stock;
 use App\Models\StockAlert;
@@ -794,9 +796,24 @@ class StockController extends Controller
                 "message" => "Invoice tersebut sudah terbayar"
             ]);
         }
+
+        // Delete retur (header)
+        $rs = ReturnSupplies::where('pi_id', $data['pi_id'])->where('status', 1)->first();
+        if ($rs) (new ReturnSupplies())->deleteReturnSupplies($rs);
+
         foreach ($v as $key => $value) {
             $value['tipe_return'] = $pi->tipe_return;
-            if (isset($pi->ref_num)) $value['ref_num'] = $pi->ref_num;
+            if (isset($pi->ref_num) && $pi->ref_num != 0) $value['ref_num'] = $pi->ref_num;
+            
+            // Hapus retur kalau ada
+            if ($rs){
+                $rsd = ReturnSuppliesDetail::where('pid_id', $value['pid_id'])
+                                        ->where('supplies_variant_id', $value['item_id'])
+                                        ->where('unit_id', $value['unit_id'])
+                                        ->where('status', 1)->first();
+                (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($rsd);
+            }
+
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
             // Catat Log

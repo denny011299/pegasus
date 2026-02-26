@@ -613,12 +613,28 @@ class SupplierController extends Controller
             ];
         }
 
-        $inv->poi_total -= $total;
-        $inv->save();
+        $bermasalah = [];
+        foreach ($returs as $key => $value) {
+            $value['tipe_return'] = 1;
+            $value['pid_qty'] = $value['rsd_qty'];
+            $cek = (new ProductIssuesDetail())->stockCheck($value);
+            if ($cek == -1){
+                array_push($bermasalah, $value['supplies_variant_name']);
+            }
+        }
+        if (count($bermasalah) > 0) {
+            return [
+                "status"=>-1,
+                "message"=>"Stok bahan tidak mencukupi : ".implode(", ",$bermasalah)
+            ];
+        }
 
+        $inv->poi_total -= $total;
+        
         $po = PurchaseOrder::find($data['po_id']);
         $po->po_total -= $total;
         $po->save();
+        $inv->save();
 
         $pi = (new ProductIssues())->insertProductIssues([
             "pi_type" => 2,
@@ -631,11 +647,19 @@ class SupplierController extends Controller
         $data['pi_id'] = $pi->pi_id;
         $rs_id = (new ReturnSupplies())->insertReturnSupplies($data);
 
+        $data_retur = ReturnSupplies::where('poi_id', $data['poi_id'])->where('status', 1)->get();
+        $total_retur = 0;
+        foreach ($data_retur as $key => $value) {
+            $total_retur += $value->rs_total;
+        }
+
         foreach ($returs as $key => $value) {
             $value['pi_id'] = $pi->pi_id;
             $value['tipe_return'] = 1;
             $value['ref_num'] = $data['poi_id'];
             $value['pid_qty'] = $value['rsd_qty'];
+            $value['retur_pembelian'] = 1;
+            $value['total_retur'] = $total_retur;
             $pid_id = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
 
             // Catat Log
@@ -647,7 +671,7 @@ class SupplierController extends Controller
                 'log_type'    => 2,
                 'log_category' => 2,
                 'log_item_id' => $sup->supplies_id,
-                'log_notes'  => 'Retur pembelian invoice ' . $inv->poi_code,
+                'log_notes'  => 'Retur pembelian dari invoice ' . $inv->poi_code,
                 'log_jumlah' => $value['pid_qty'],
                 'unit_id'    => $value['unit_id'],
             ]);
@@ -684,7 +708,17 @@ class SupplierController extends Controller
         $po->save();
 
         (new ProductIssues())->deleteProductIssues($rs);
+        (new ReturnSupplies())->deleteReturnSupplies($data);
+
+        $data_retur = ReturnSupplies::where('poi_id', $data['poi_id'])->where('status', 1)->get();
+        $total_retur = 0;
+        foreach ($data_retur as $key => $value) {
+            $total_retur += $value->rs_total;
+        }
+
         foreach ($returs as $key => $value) {
+            $value['retur_pembelian'] = 1;
+            $value['total_retur'] = $total_retur;
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
             // Catat Log
@@ -696,13 +730,11 @@ class SupplierController extends Controller
                 'log_type'    => 2,
                 'log_category' => 2,
                 'log_item_id' => $sup->supplies_id,
-                'log_notes'  => 'Pembatalan retur pembelian invoice ' . $inv->poi_code,
+                'log_notes'  => 'Pembatalan retur pembelian dari invoice ' . $inv->poi_code,
                 'log_jumlah' => $value['rsd_qty'],
                 'unit_id'    => $value['unit_id'],
             ]);
         }
-
-        (new ReturnSupplies())->deleteReturnSupplies($data);
         foreach ($returs as $key => $value) {
             (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($value);
         }

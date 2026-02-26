@@ -54,6 +54,7 @@ class ProductIssues extends Model
                 $inv = PurchaseOrderDetailInvoice::find($value->ref_num);
                 $value->poi_code = $inv->poi_code ?? "";
                 $po = PurchaseOrder::find($inv->po_id);
+                $value->po_id = $po->po_id;
                 $sup = Supplier::where('supplier_id', $po->po_supplier)->first();
                 $value->supplier_name = $sup->supplier_name ?? "";
             }
@@ -159,10 +160,12 @@ class ProductIssues extends Model
     function deleteProductIssues($data)
     {
         $t = self::find($data["pi_id"]);
-        $inv = PurchaseOrderDetailInvoice::find($t->ref_num);
-        $po = PurchaseOrder::find($inv->po_id);
-        if ($po->tt_id != null) {
-            return -1;
+        if (isset($t->ref_num) && $t->ref_num != 0){
+            $inv = PurchaseOrderDetailInvoice::find($t->ref_num);
+            $po = PurchaseOrder::find($inv->po_id);
+            if ($po->tt_id != null) {
+                return -1;
+            }
         }
         $t->status = 0;
         $t->save();

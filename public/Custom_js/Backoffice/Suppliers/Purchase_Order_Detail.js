@@ -12,7 +12,12 @@
     $(document).ready(function(){
         inisialisasi();
         refresh();
-        refreshRetur();
+        if (data.status == 2 && data.pembayaran == 1){
+            $('.table-retur').show();
+            refreshRetur();
+        } else {
+            $('.table-retur').hide();
+        }
         refreshSummary();
         list_photo = JSON.parse(data.po_img || '[]');
          $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[0]);
@@ -20,7 +25,10 @@
             $('#btn_download_photo').attr('href', public+"issue/"+list_photo[0]);
         console.log(data);
         if (data.status == -1) $('#po_status').val(data.status).trigger('change');
-        else $('#po_status').val(data.pembayaran).trigger('change');
+        else {
+            if (data.status == 1) $('#po_status').val(4).trigger('change'); //Menunggu approval
+            else $('#po_status').val(data.pembayaran).trigger('change');
+        }
         $('#poi_due').val(data.poi_due != "-" ? moment(data.poi_due).format('D MMMM YYYY') : '-');
         $('#po_date').val(data.po_date ? moment(data.po_date).format('D MMMM YYYY') : '-');
    
@@ -773,7 +781,7 @@
         var discount = convertToAngka($('#value_discount').html());
         var retur = convertToAngka($('#value_retur').html());
         var cost = convertToAngka($('#value_cost').html());
-        var grand = total + ppn - discount + retur + cost;
+        var grand = total + ppn - discount - retur + cost;
         $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
     }
 

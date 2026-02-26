@@ -142,17 +142,34 @@
                 e.forEach(item => {
                     item.date = moment(item.pi_date).format('D MMM YYYY');
                     item.ref_num_text = item.poi_code || "-";
+                    
+                    
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
                             <i class="fe fe-eye"></i>
                         </a>
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
                     `;
+
+                    if (item.pi_img == null){
+                        item.action += `
+                            <a class="me-2 btn-action-icon p-2" href="/purchaseOrderDetail/${item.po_id}" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Detail Pembelian">
+                                <i class="fe fe-dollar-sign"></i>
+                            </a>
+                            <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                            </a>
+                        `;
+                    } else {
+                        item.action += `
+                            <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
+                                <i class="fe fe-edit"></i>
+                            </a>
+                            <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                            </a>
+                        `;
+                    }
                 });
                 console.log(e);
                 

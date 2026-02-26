@@ -115,6 +115,7 @@
                                                     <label>Status</label>
                                                     <select id="po_status" class="form-control fill" disabled>
                                                         <option value="">Pilih Status</option>
+                                                        <option value="4">Menunggu Approval</option>
                                                         <option value="1">Belum Terbayar</option>
                                                         <option value="3">Menunggu Tanda Terima</option>
                                                         <option value="2">Terbayar</option>
@@ -174,7 +175,7 @@
                                             </div>
                                         </div>
 
-                                        <div class="col-12 mt-5">
+                                        <div class="col-12 mt-5 table-retur">
                                             <div class="d-flex justify-content-between mt-4 mb-3">
                                                 <h5 class="pt-2 text-black">Retur</h5>
                                                 <button type="button" class="btn btn-primary retur-bahan">Tambah Retur</button>
