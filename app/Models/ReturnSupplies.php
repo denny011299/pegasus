@@ -14,11 +14,11 @@ class ReturnSupplies extends Model
     function getReturnSupplies($data = [])
     {
         $data = array_merge([
-            "poi_id"=>null,
+            "po_id"=>null,
         ], $data);
 
         $result = ReturnSupplies::where('status', '=', 1);
-        if($data["poi_id"]) $result->where('poi_id', '=', $data["poi_id"]);
+        if($data["po_id"]) $result->where('po_id', '=', $data["po_id"]);
         $result->orderBy('created_at', 'asc');
        
         $result = $result->get();
@@ -31,7 +31,7 @@ class ReturnSupplies extends Model
     function insertReturnSupplies($data)
     {
         $t = new ReturnSupplies();
-        $t->poi_id = $data["poi_id"];
+        $t->po_id = $data["po_id"];
         $t->pi_id = $data["pi_id"];
         $t->rs_date = $data["rs_date"];
         $t->rs_notes = $data["rs_notes"];
@@ -43,7 +43,7 @@ class ReturnSupplies extends Model
     function updateReturnSupplies($data)
     {
         $t = ReturnSupplies::find($data["rs_id"]);
-        $t->poi_id = $data["poi_id"];
+        $t->po_id = $data["po_id"];
         $t->pi_id = $data["pi_id"];
         $t->rs_date = $data["rs_date"];
         $t->rs_notes = $data["rs_notes"];

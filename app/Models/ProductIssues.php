@@ -54,11 +54,10 @@ class ProductIssues extends Model
                 $inv = PurchaseOrderDetailInvoice::find($value->ref_num);
                 $value->poi_code = $inv->poi_code ?? "";
                 $po = PurchaseOrder::find($inv->po_id);
-                $value->po_id = $po->po_id;
                 $sup = Supplier::where('supplier_id', $po->po_supplier)->first();
                 $value->supplier_name = $sup->supplier_name ?? "";
             }
-
+            $value->po_number = PurchaseOrder::find($value['po_id'])->po_number;
             $value->items = (new ProductIssuesDetail())->getProductIssuesDetail(["pi_id" => $value->pi_id, "tipe_return" => $value->tipe_return]);
         }
  
@@ -93,6 +92,7 @@ class ProductIssues extends Model
         $t->pi_code   = $this->generateProductIssueID();
         $t->pi_type = $data["pi_type"];
         $t->ref_num = $data["ref_num"] ?? 0;
+        $t->po_id = $data["po_id"];
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];     
@@ -142,6 +142,7 @@ class ProductIssues extends Model
         // } 
         $t->pi_code   = $data['pi_code'];
         $t->pi_type = $data["pi_type"];
+        $t->po_id = $data["po_id"];
         $t->ref_num = $data["ref_num"];
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];

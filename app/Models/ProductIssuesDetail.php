@@ -59,44 +59,45 @@ class ProductIssuesDetail extends Model
             $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
             
             // Cek dari retur pembelian, apakah ada barang yang dibeli dari invoice ini
-            $pods = PurchaseOrderDetail::where('supplies_variant_id', $itemId)->where('unit_id', $data['unit_id'])->where('status', 1)->first();
-            if ($pods){
+            if ($data['ref_num'] != 0){
                 $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
-                $po = PurchaseOrder::find($inv->po_id);
-                $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
-    
-                // pengurangan qty invoice
-                $total = 0;
-                foreach ($pod as $key => $value) {
-                    // Kalau retur pembelian tidak perlu potong stok PO
-                    if (!isset($data['retur_pembelian'])){
-                        if ($data['supplies_variant_id'] == $value['supplies_variant_id'] && $data['unit_id'] == $value['unit_id']){
-                            $value['pod_qty'] -= $data['pid_qty'];
-                            $value['pod_subtotal'] = $value['pod_harga'] * $value['pod_qty'];
-                            $value->save();
-                        }
-                    }
-                    $total += $value['pod_subtotal'];
-                }
-                $total -= $total * $po->po_discount/100;
-                $total += $total * $po->po_ppn/100;
-                $total += $po->po_cost;
+            }
+            $po = PurchaseOrder::find(!isset($inv) ? $data['po_id'] : $inv->po_id);
+            $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
 
-                $data_retur = ReturnSupplies::where('poi_id', $data['ref_num'])->where('status', 1)->get();
-                $total_retur = 0;
-                if ($data_retur){
-                    foreach ($data_retur as $key => $value) {
-                        $total_retur += $value->rs_total;
+            // pengurangan qty invoice
+            $total = 0;
+            foreach ($pod as $key => $value) {
+                // Kalau retur pembelian tidak perlu potong stok PO
+                if (!isset($data['retur_pembelian'])){
+                    if ($data['supplies_variant_id'] == $value['supplies_variant_id'] && $data['unit_id'] == $value['unit_id']){
+                        $value['pod_qty'] -= $data['pid_qty'];
+                        $value['pod_subtotal'] = $value['pod_harga'] * $value['pod_qty'];
+                        $value->save();
                     }
-                    if (isset($data['total_retur'])) $total -= $data['total_retur'];
-                    else $total -= $total_retur;
                 }
-    
+                $total += $value['pod_subtotal'];
+            }
+            $total -= $total * $po->po_discount/100;
+            $total += $total * $po->po_ppn/100;
+            $total += $po->po_cost;
+
+            $data_retur = ReturnSupplies::where('po_id', !isset($inv) ? $data['po_id'] : $inv->po_id)->where('status', 1)->get();
+            $total_retur = 0;
+            if ($data_retur){
+                foreach ($data_retur as $key => $value) {
+                    $total_retur += $value->rs_total;
+                }
+                if (isset($data['total_retur'])) $total -= $data['total_retur'];
+                else $total -= $total_retur;
+            }
+
+            if (isset($inv)){
                 $inv->poi_total = $total;
                 $inv->save();
-                $po->po_total = $total;
-                $po->save();
             }
+            $po->po_total = $total;
+            $po->save();
             
             // pengurangan qty stok
             $stocks = $s->ss_stock ?? 0;
@@ -168,7 +169,7 @@ class ProductIssuesDetail extends Model
             $total += $total * $po->po_ppn/100;
             $total += $po->po_cost;
 
-            $data_retur = ReturnSupplies::where('poi_id', $data['ref_num'])->where('status', 1)->get();
+            $data_retur = ReturnSupplies::where('po_id', $po->po_id)->where('status', 1)->get();
             $total_retur = 0;
             if ($data_retur){
                 foreach ($data_retur as $key => $value) {
@@ -232,9 +233,10 @@ class ProductIssuesDetail extends Model
             $s->save();
 
             // Cek dari retur pembelian, apakah ada barang yang dibeli dari invoice ini
-            
-            $inv = PurchaseOrderDetailInvoice::find($pi['ref_num']);
-            $po = PurchaseOrder::find($inv->po_id);
+            if ($pi['ref_num'] != 0){
+                $inv = PurchaseOrderDetailInvoice::find($pi['ref_num']);
+            }
+            $po = PurchaseOrder::find(!isset($inv) ? $data['po_id'] : $inv->po_id);
             $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
             // pengurangan qty invoice
             $total = 0;
@@ -252,7 +254,7 @@ class ProductIssuesDetail extends Model
             $total += $total * $po->po_ppn/100;
             $total += $po->po_cost;
 
-            $data_retur = ReturnSupplies::where('poi_id', $pi['ref_num'])->where('status', 1)->get();
+            $data_retur = ReturnSupplies::where('po_id', !isset($inv) ? $data['po_id'] : $inv->po_id)->where('status', 1)->get();
             $total_retur = 0;
             if ($data_retur){
                 foreach ($data_retur as $key => $value) {
@@ -262,8 +264,10 @@ class ProductIssuesDetail extends Model
                 else $total -= $total_retur;
             }
             
-            $inv->poi_total = $total;
-            $inv->save();
+            if (isset($inv)){
+                $inv->poi_total = $total;
+                $inv->save();
+            }
             $po->po_total = $total;
             $po->save();
 

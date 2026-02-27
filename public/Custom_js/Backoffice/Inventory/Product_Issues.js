@@ -141,7 +141,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach(item => {
                     item.date = moment(item.pi_date).format('D MMM YYYY');
-                    item.ref_num_text = item.poi_code || "-";
+                    item.ref_num_text = item.poi_code || item.po_number;
                     
                     
                     item.action = `
@@ -308,7 +308,7 @@ function loadPiType() {
 
 
     $(document).on("click", ".btn-save", function () {
-        //LoadingButton(this);
+        LoadingButton(this);
         $(".is-invalid").removeClass("is-invalid");
         var url = "/insertProductIssues";
         var valid = 1;
@@ -679,7 +679,11 @@ $(document).on("click", ".btn_view", function () {
     $("#pi_type").empty().append(
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
-    $('#ref_num').empty().append(`<option value="${data.ref_num}">${data.supplier_name} - ${data.poi_code}</option>`);
+    $('#ref_num').empty().append(`
+        <option value="${data.ref_num}">
+            ${data.ref_num != 0 ? data.supplier_name + ' - ' + data.poi_code : '-'}
+        </option>
+    `);
     $('#tableProduct tr.row-product').remove();
     items = [];
 

@@ -510,6 +510,7 @@ class StockController extends Controller
         }
 
         // insert
+        $data['po_id'] = $po->po_id;
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;
@@ -569,6 +570,10 @@ class StockController extends Controller
         $data["pi_img"] = $imageName;
         
         $id = [];
+
+        $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
+        $po = PurchaseOrder::find($inv->po_id);
+        $data['po_id'] = $po->po_id;
         $pi = (new ProductIssues())->updateProductIssues($data);
 
         // Cek stock

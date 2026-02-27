@@ -12,14 +12,9 @@
     $(document).ready(function(){
         inisialisasi();
         refresh();
-        if (data.status >= 2 && data.pembayaran >= 1){
-            $('.table-retur').show();
-            refreshRetur();
-        } else {
-            $('.table-retur').hide();
-        }
+        refreshRetur();
 
-        if (data.status == 2 && data.pembayaran == 1){
+        if (data.status == 1 && data.pembayaran == 1){
             $('.retur-bahan').show();
         } else {
             $('.retur-bahan').hide();
@@ -316,7 +311,7 @@
             url: "/getReturnSupplies",
             method: "get",
             data: {
-                poi_id: data.poi_id
+                po_id: data.po_id
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -331,7 +326,7 @@
                     e[i].total = "Rp " + formatRupiah(e[i].rs_total);
 
                     e[i].action = "";
-                    if (data.status == 2 && data.pembayaran == 1){
+                    if (data.status == 1 && data.pembayaran == 1){
                         e[i].action = `
                             <a class="p-2 btn-action-icon btn_delete_retur" data-id="${e[i].rs_id}" href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -531,6 +526,11 @@
         let row = $(this).closest("tr");
         let suppliesId = row.data("id");
         returs = returs.filter(e => e.supplies_variant_id != suppliesId);
+        totals = 0;
+        returs.forEach(e => {
+            totals += e.rsd_price * e.rsd_qty;
+        });
+        $('.totals').html(`Rp ${formatRupiah(totals)}`);
         row.remove();
     });
 
@@ -574,7 +574,6 @@
             rs_notes: $("#rs_notes").val(),
             rs_total: total,
             returs: JSON.stringify(returs),
-            poi_id: data.poi_id,
             po_id: data.po_id,
             _token: token,
         };
@@ -635,7 +634,6 @@
             url:"/deleteReturnSupplies",
             data:{
                 rs_id:$('#btn-delete-retur').attr('rs_id'),
-                poi_id: data.poi_id,
                 po_id: data.po_id,
                 _token:token
             },
