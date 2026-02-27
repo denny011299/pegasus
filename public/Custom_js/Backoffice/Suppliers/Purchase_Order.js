@@ -166,7 +166,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
-            searching:false,
+            searching: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -193,6 +193,9 @@
                 }
             ],
             initComplete: (settings, json) => {
+                $('.dataTables_filter').appendTo('#tableSearch');
+                $('.dataTables_filter').appendTo('.search-input');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
         });
     }

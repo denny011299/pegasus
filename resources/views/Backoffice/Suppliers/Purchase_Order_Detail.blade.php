@@ -181,7 +181,7 @@
                                                 <button type="button" class="btn btn-primary retur-bahan">Tambah Retur</button>
                                             </div>
                                             <div class="table-responsive">
-                                                <table class="table table-center table-hover w-100" id="tableRetur">
+                                                <table class="table table-center w-100" id="tableRetur">
                                                     <thead class="">
                                                         <tr>
                                                             <th></th>
@@ -196,7 +196,7 @@
                                                         <tr>
                                                             <td></td>
                                                             <td class="fw-bold text-end" colspan="2">Total :</td>
-                                                            <td class="total_akhir text-end"></td>
+                                                            <td class="total_akhir text-end fw-bold"></td>
                                                         </tr>
                                                     </tfoot>
                                                 </table>

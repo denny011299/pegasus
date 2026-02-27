@@ -12,12 +12,19 @@
     $(document).ready(function(){
         inisialisasi();
         refresh();
-        if (data.status == 2 && data.pembayaran == 1){
+        if (data.status >= 2 && data.pembayaran >= 1){
             $('.table-retur').show();
             refreshRetur();
         } else {
             $('.table-retur').hide();
         }
+
+        if (data.status == 2 && data.pembayaran == 1){
+            $('.retur-bahan').show();
+        } else {
+            $('.retur-bahan').hide();
+        }
+
         refreshSummary();
         list_photo = JSON.parse(data.po_img || '[]');
          $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[0]);
@@ -323,11 +330,14 @@
                     e[i].date = moment(e[i].rs_date).format('D MMM YYYY');
                     e[i].total = "Rp " + formatRupiah(e[i].rs_total);
 
-                    e[i].action = `
-                        <a class="p-2 btn-action-icon btn_delete_retur" data-id="${e[i].rs_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    e[i].action = "";
+                    if (data.status == 2 && data.pembayaran == 1){
+                        e[i].action = `
+                            <a class="p-2 btn-action-icon btn_delete_retur" data-id="${e[i].rs_id}" href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                            </a>
+                        `;
+                    }
 
                     totalRetur += e[i].rs_total;
                 }
@@ -599,6 +609,7 @@
                     afterInsertRetur();
                     window.location.reload();
                 }
+                ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur");
             },
             error: function (e) {
                 console.log(e);

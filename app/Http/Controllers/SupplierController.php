@@ -728,7 +728,7 @@ class SupplierController extends Controller
                 'log_date' => now(),
                 'log_kode'    => $pi->pi_code,
                 'log_type'    => 2,
-                'log_category' => 2,
+                'log_category' => 1,
                 'log_item_id' => $sup->supplies_id,
                 'log_notes'  => 'Pembatalan retur pembelian dari invoice ' . $inv->poi_code,
                 'log_jumlah' => $value['rsd_qty'],
