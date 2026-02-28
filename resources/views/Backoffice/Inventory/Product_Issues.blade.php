@@ -10,7 +10,6 @@
         margin-top: 10px !important;
     }
     #tableReturn, #tableDamage {
-        table-layout: fixed !important;
         width: 100% !important;
     }
     #tableReturn td, #tableDamage td {

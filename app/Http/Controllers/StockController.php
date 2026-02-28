@@ -510,7 +510,7 @@ class StockController extends Controller
         }
 
         // insert
-        $data['po_id'] = $po->po_id;
+        if ($data['tipe_return'] == 1) $data['po_id'] = $po->po_id;
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;
@@ -571,9 +571,11 @@ class StockController extends Controller
         
         $id = [];
 
-        $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
-        $po = PurchaseOrder::find($inv->po_id);
-        $data['po_id'] = $po->po_id;
+        if ($data['tipe_return'] == 1) {
+            $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
+            $po = PurchaseOrder::find($inv->po_id);
+            $data['po_id'] = $po->po_id;
+        }
         $pi = (new ProductIssues())->updateProductIssues($data);
 
         // Cek stock
@@ -739,6 +741,37 @@ class StockController extends Controller
                 ]);
             }
             else {
+                // Catat Log
+                $logNotes = "";
+                $logCategory = 0;
+                $logType = 0;
+                $itemId = 0;
+                if ($pi->tipe_return == 1){
+                    $sup = SuppliesVariant::find($value['supplies_variant_id']);
+                    $spr = Supplier::find($sup->supplier_id);
+                    
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                    $logCategory = 1;
+                    $logType = 2;
+                    $itemId = $sup->supplies_id;
+
+                } elseif ($pi->tipe_return == 2){
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                    $logCategory = 2;
+                    $logType = 1;
+                    $itemId = $value['product_variant_id'];
+                }
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $pi->pi_code,
+                    'log_type'    => $logType,
+                    'log_category' => $logCategory,
+                    'log_item_id' => $itemId,
+                    'log_notes'  => $logNotes,
+                    'log_jumlah' => $value['pid_qty'],
+                    'unit_id'    => $value['unit_id'],
+                ]);
                 
                 $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
 

@@ -3,7 +3,6 @@
 @section('custom_css')
     <style>
         #tableSupplies {
-            table-layout: fixed !important;
             width: 100% !important;
         }
 

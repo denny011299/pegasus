@@ -88,7 +88,7 @@
             columns: [
                 { data: "date", width: "15%" },
                 { data: "pi_code", class: "width: 15%" },
-                { data: "pi_notes", width: "20%" },
+                { data: "pi_notes", width: "45%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -117,8 +117,8 @@
             columns: [
                 { data: "date", class: "width: 15%" },
                 { data: "pi_code", class: "width: 15%" },
-                { data: "ref_num_text", width: "10%"},
-                { data: "pi_notes", class: "width: 20%" },
+                { data: "ref_num_text", width: "15%"},
+                { data: "pi_notes", class: "width: 25%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -142,7 +142,6 @@
                 e.forEach(item => {
                     item.date = moment(item.pi_date).format('D MMM YYYY');
                     item.ref_num_text = item.poi_code || item.po_number;
-                    
                     
                     item.action = `
                         <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">

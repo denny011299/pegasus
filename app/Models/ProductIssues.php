@@ -50,14 +50,14 @@ class ProductIssues extends Model
             // $value->pr_sku = $pvr->product_variant_sku;
             // $u = Unit::find($value->unit_id);
             // $value->unit_name = $u->unit_name;
-            if ($value->ref_num){
+            if ($value->ref_num > 0){
                 $inv = PurchaseOrderDetailInvoice::find($value->ref_num);
                 $value->poi_code = $inv->poi_code ?? "";
                 $po = PurchaseOrder::find($inv->po_id);
                 $sup = Supplier::where('supplier_id', $po->po_supplier)->first();
                 $value->supplier_name = $sup->supplier_name ?? "";
             }
-            $value->po_number = PurchaseOrder::find($value['po_id'])->po_number;
+            if ($value->po_id > 0) $value->po_number = PurchaseOrder::find($value['po_id'])->po_number;
             $value->items = (new ProductIssuesDetail())->getProductIssuesDetail(["pi_id" => $value->pi_id, "tipe_return" => $value->tipe_return]);
         }
  
@@ -92,7 +92,7 @@ class ProductIssues extends Model
         $t->pi_code   = $this->generateProductIssueID();
         $t->pi_type = $data["pi_type"];
         $t->ref_num = $data["ref_num"] ?? 0;
-        $t->po_id = $data["po_id"];
+        $t->po_id = $data["po_id"] ?? 0;
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];     
@@ -142,7 +142,7 @@ class ProductIssues extends Model
         // } 
         $t->pi_code   = $data['pi_code'];
         $t->pi_type = $data["pi_type"];
-        $t->po_id = $data["po_id"];
+        $t->po_id = $data["po_id"] ?? 0;
         $t->ref_num = $data["ref_num"];
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];

@@ -216,6 +216,7 @@ class ReportController extends Controller
         }
 
         if ($data['jenis_input'] == "operasional"){
+            $data['oc_transaksi'] = 0;
             $ca_id = (new CashAdmin())->insertCashAdmin($data);
 
             foreach ($item as $key => $value) {

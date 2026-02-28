@@ -42,6 +42,7 @@ class CashAdmin extends Model
         $t->ca_nominal = $data["ca_nominal"];
         $t->ca_notes = $data["ca_notes"];
         $t->ca_type = $data["ca_type"];
+        $t->ca_aksi = $data['ca_aksi'] ?? 0;
         $t->ca_img = $data["ca_img"] ?? null;
         $t->status = $data['status'] ?? 1;
         $t->save();
@@ -56,6 +57,7 @@ class CashAdmin extends Model
         $t->ca_nominal = $data["ca_nominal"];
         $t->ca_notes = $data["ca_notes"];
         $t->ca_type = $data["ca_type"];
+        $t->ca_aksi = $data['ca_aksi'] ?? 0;
         $t->ca_img = $data["ca_img"] ?? null;
         $t->status = 1;
         $t->save();

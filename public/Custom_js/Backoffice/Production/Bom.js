@@ -74,10 +74,10 @@
                 },
             },
             columns: [
-                { data: "product_sku", width: '10%' },
-                { data: "product_name", width: "20%" },
-                { data: "supplies", width: '30%' },
-                { data: "unit_text", width: '10%' },
+                { data: "product_sku", width: '14%' },
+                { data: "product_name", width: "25%" },
+                { data: "supplies", width: '35%' },
+                { data: "unit_text", width: '14%' },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

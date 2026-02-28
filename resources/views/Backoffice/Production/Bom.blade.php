@@ -6,7 +6,6 @@
             width: 100% !important;
         }
         #tableBom {
-            table-layout: fixed !important;
             width: 100% !important;
         }
 

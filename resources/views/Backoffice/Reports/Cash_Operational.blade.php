@@ -95,12 +95,26 @@
                                             <th>Tanggal</th>
                                             <th>Staff</th>
                                             <th>Deskripsi</th>
-                                            <th>Nominal</th>
+                                            <th class="text-end">Debit</th>
+                                            <th class="text-end">Kredit</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="4" class="fw-bold">Total : </td>
+                                            <td class="fw-bold text-end debits text-success">Rp 0</td>
+                                            <td class="fw-bold text-end credits text-danger">Rp 0</td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
+                                            <td class="fw-bold text-end sisa">Rp 0</td>
+                                            <td colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
                                 </table>
                             </div>
                         </div>

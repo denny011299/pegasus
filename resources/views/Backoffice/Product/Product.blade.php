@@ -3,7 +3,6 @@
 @section('custom_css')
     <style>
         #tableProduct {
-            table-layout: fixed !important;
             width: 100% !important;
         }
 

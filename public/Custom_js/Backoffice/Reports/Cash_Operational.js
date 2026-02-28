@@ -36,12 +36,12 @@
             $('.saldo_kas').hide();
             $('.operasional').show();
         }
-        $('#add_cash_operational input').val("");
+        $('#add_cash_admin input').val("");
         $('#staff_id').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('#oc_transaksi').val(1);
         $('.total').html("Rp 0");
-        autocompleteStaff('#staff_id', '#add_cash_operational');
+        autocompleteStaff('#staff_id', '#add_cash_admin');
         $('#btn-foto-bukti').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
@@ -53,7 +53,7 @@
         mode=1;
         items = [];
 
-        $('#add_cash_operational input').val("").attr('disabled', false);
+        $('#add_cash_admin input').val("").attr('disabled', false);
         $('#jenis_input, #staff_id, #oc_transaksi').attr('disabled', false);
         $('#oc_transaksi').val(1).attr('disabled', false);
 
@@ -63,10 +63,10 @@
                 <select class="form-select fill" id="staff_id"></select>
             `);
 
-            $('#add_cash_operational .modal-title').html("Tambah Aktivitas Admin");
+            $('#add_cash_admin .modal-title').html("Tambah Aktivitas Admin");
             $('#staff_id').empty(null).attr('disabled', false);
             $('#jenis_input').val("saldo").attr('disabled', false).trigger('change');
-            autocompleteStaff('#staff_id', '#add_cash_operational');
+            autocompleteStaff('#staff_id', '#add_cash_admin');
             $('.total').html("Rp 0");
 
             $('#btn-foto-bukti').show();
@@ -82,9 +82,9 @@
                 <select class="form-select fill" id="staff_id"></select>
             `);
 
-            $('#add_cash_operational .modal-title').html("Tambah Aktivitas Gudang");
+            $('#add_cash_admin .modal-title').html("Tambah Aktivitas Gudang");
             $('#staff_id').empty(null);
-            autocompleteStaff('#staff_id', '#add_cash_operational')
+            autocompleteStaff('#staff_id', '#add_cash_admin')
             
         }
         else if (type == "armada"){
@@ -93,16 +93,16 @@
                 <select class="form-select fill" id="armada_id"></select>
             `);
 
-            $('#add_cash_operational .modal-title').html("Tambah Aktivitas Armada");
+            $('#add_cash_admin .modal-title').html("Tambah Aktivitas Armada");
             $('#armada_id').empty(null);
-            autocompleteCustomer('#armada_id', '#add_cash_operational')
+            autocompleteCustomer('#armada_id', '#add_cash_admin')
         }
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
-        $('#add_cash_operational').modal("show");
+        $('#add_cash_admin').modal("show");
         $('.input_table, .btn_delete_row').show();
-        $('.btn-save').html('Tambah Aktivitas').show();
+        $('.btn-save-admin').html('Tambah Aktivitas').show();
         $('.cancel-btn').html('Batal');
     });
     
@@ -122,12 +122,13 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "40px"
+                    width: "2.5rem"
                 },
                 { data: "date" },
                 { data: "staff_name" },
                 { data: "ca_notes", width: "25%" },
-                { data: "nominal" },
+                { data: "debit_text", className: "text-end" },
+                { data: "credit_text", className: "text-end" },
                 { data: "status_text" },
                 { data: "action", className: "d-flex align-items-center" },
             ];
@@ -140,12 +141,13 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "40px"
+                    width: "2.5rem"
                 },
                 { data: "date" },
                 { data: "staff_name" },
                 { data: "cg_notes", width: "25%" },
-                { data: "nominal" },
+                { data: "debit", className: "text-end" },
+                { data: "credit", className: "text-end" },
                 { data: "status_text" },
                 { data: "action", className: "d-flex align-items-center" },
             ];
@@ -190,9 +192,22 @@
 
                 // Manipulasi data sebelum masuk ke tabel
                 console.log(e);
+                let debits = 0;
+                let credits = 0;
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].created_at).format('D MMM YYYY');
-                    e[i].nominal = "Rp " + formatRupiah(e[i].ca_nominal);
+                    if (e[i].ca_aksi == 1){
+                        e[i].debit = "Rp " + formatRupiah(e[i].ca_nominal);
+                        e[i].credit = "Rp 0";
+                        debits += e[i].ca_nominal;
+                    }
+                    else{
+                        e[i].debit = "Rp 0";
+                        e[i].credit = "(Rp " + formatRupiah(e[i].ca_nominal) + ")";
+                        credits += e[i].ca_nominal;
+                    }
+                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
+                    e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
 
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Sedang Diajukan</span>`;
@@ -231,6 +246,13 @@
                     }
                 }
                 table.rows.add(e).draw();
+                $('.debits').html(`Rp ${formatRupiah(debits)}`);
+                $('.credits').html(`(Rp ${formatRupiah(credits)})`);
+                if (debits - credits < 0){
+                    $('.sisa').html(`<label class='text-danger'>Rp ${formatRupiah(debits - credits)}</label>`);
+                } else {
+                    $('.sisa').html(`Rp ${formatRupiah(debits - credits)}`);
+                }
 
                 // Expand child row
                 setTimeout(function () {
@@ -313,7 +335,7 @@
                             ${d.cad_notes}
                         </div>
                     </div>
-                    <div class="child-right">
+                    <div class="child-right text-end">
                         Rp ${formatRupiah(d.cad_nominal)}
                     </div>
                 </div>
@@ -326,7 +348,7 @@
                 <div class="child-left-total">
                     Total
                 </div>
-                <div class="child-right">
+                <div class="child-right text-end">
                     Rp ${formatRupiah(total)}
                 </div>
             </div>
@@ -354,7 +376,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         var valid=1;
-        $("#add_cash_operational .fill_catatan").each(function(){
+        $("#add_cash_admin .fill_catatan").each(function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
@@ -363,7 +385,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+            ResetLoadingButton('.btn-save-admin', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
             return false;
         };
 
@@ -418,7 +440,7 @@
         addRow();
     });
 
-    $(document).on("click",".btn-save",function(){
+    $(document).on("click",".btn-save-admin",function(){
         LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -427,7 +449,7 @@
         var valid=1;
         var jenis_input = $('#jenis_input').val();
 
-        $("#add_cash_operational .fill").each(function(){
+        $("#add_cash_admin .fill").each(function(){
             if (type == "admin" && jenis_input == "saldo"){
                 if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                     if ($(this).attr('class') == "saldo_kas"){
@@ -439,7 +461,7 @@
             else if (type == "admin" && jenis_input == "operasional"){
                 if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
                     notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
-                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                    ResetLoadingButton('.btn-save-admin', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
                     return false;
                 }
                 
@@ -469,7 +491,7 @@
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+            ResetLoadingButton('.btn-save-admin', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
             return false;
         };
 
@@ -489,7 +511,7 @@
             if (mode == 1) url = "/insertCashAdmin";
             else if (mode == 2) {
                 url = "/updateCashAdmin";
-                param.ca_id = $('#add_cash_operational').attr("ca_id");
+                param.ca_id = $('#add_cash_admin').attr("ca_id");
             }
         }
         else if (type == "gudang"){
@@ -502,7 +524,7 @@
             if (mode == 1) url = "/insertCashGudang";
             else if (mode == 2) {
                 url = "/updateCashGudang";
-                param.cg_id = $('#add_cash_operational').attr("cg_id");
+                param.cg_id = $('#add_cash_admin').attr("cg_id");
             }
         }
         else if (type == "armada"){
@@ -524,11 +546,11 @@
                 'X-CSRF-TOKEN': token
             },
             success:function(e){      
-                ResetLoadingButton(".btn-save", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");      
+                ResetLoadingButton(".btn-save-admin", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");      
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton(".btn-save", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                ResetLoadingButton(".btn-save-admin", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
                 console.log(e);
             }
         });
@@ -548,8 +570,8 @@
         mode=2;
         items = [];
         console.log(data);
-        $('#add_cash_operational .modal-title').html("Update Aktivitas Admin");
-        $('#add_cash_operational input').empty().val("");
+        $('#add_cash_admin .modal-title').html("Update Aktivitas Admin");
+        $('#add_cash_admin input').empty().val("");
         $('#staff_id').empty(null);
         
         if (data.detail?.length) {
@@ -576,7 +598,7 @@
         }
         else {
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
-            $('#oc_transaksi').val(data.ca_type).attr('disabled', true);
+            $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
             $('#oc_nominal').val(data.ca_nominal).attr('disabled', false);
             $('#oc_notes').val(data.ca_notes).attr('disabled', false);
         }
@@ -584,11 +606,11 @@
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
-        $('.btn-save').html('Update Aktivitas').show();
+        $('.btn-save-admin').html('Update Aktivitas').show();
         $('.cancel-btn').html('Batal');
         $('.input_table, .btn_delete_row').show();
-        $('#add_cash_operational').modal("show");
-        $('#add_cash_operational').attr("ca_id", data.ca_id);
+        $('#add_cash_admin').modal("show");
+        $('#add_cash_admin').attr("ca_id", data.ca_id);
     })
 
     $(document).on('click', '.btn_view_admin', function(){
@@ -596,8 +618,8 @@
         mode=3;
         items = [];
         console.log(data);
-        $('#add_cash_operational .modal-title').html("Lihat Aktivitas Admin");
-        $('#add_cash_operational input').empty().val("");
+        $('#add_cash_admin .modal-title').html("Lihat Aktivitas Admin");
+        $('#add_cash_admin input').empty().val("");
         $('#staff_id').empty(null);
         
         if (data.detail?.length) {
@@ -624,7 +646,7 @@
         }
         else {
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
-            $('#oc_transaksi').val(data.ca_type).attr('disabled', true);
+            $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
             $('#oc_nominal').val(data.ca_nominal).attr('disabled', true);
             $('#oc_notes').val(data.ca_notes).attr('disabled', true);
         }
@@ -632,10 +654,10 @@
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
-        $('.input_table, .btn-save, .btn_delete_row').hide();
+        $('.input_table, .btn-save-admin, .btn_delete_row').hide();
         $('.cancel-btn').html('Kembali');
-        $('#add_cash_operational').modal("show");
-        $('#add_cash_operational').attr("ca_id", data.ca_id);
+        $('#add_cash_admin').modal("show");
+        $('#add_cash_admin').attr("ca_id", data.ca_id);
     })
 
     $(document).on('click', '.btn_delete_admin', function(){
@@ -735,13 +757,13 @@
     }
 
     $(document).on("click", "#btn-lihat-bukti", function () {
-        $("#add_cash_operational").modal("hide");
+        $("#add_cash_admin").modal("hide");
         $('.btn-prev,.btn-next').hide();
         $('#modalViewPhoto').modal("show");
     });
 
     $(document).on("hidden.bs.modal", "#modalViewPhoto", function () {
-        $("#add_cash_operational").modal("show");
+        $("#add_cash_admin").modal("show");
         $('#modalViewPhoto').modal("hide");
     });
 
@@ -756,7 +778,7 @@
         $("#camera").show();
 
         startCamera();
-        $("#add_cash_operational").modal("hide");
+        $("#add_cash_admin").modal("hide");
         $('#modalPhoto').modal('show');
         console.log($('#bukti').val());
     });
@@ -767,5 +789,5 @@
         } else {
             $('#check_foto').hide();
         }
-        $("#add_cash_operational").modal("show");
+        $("#add_cash_admin").modal("show");
     })
