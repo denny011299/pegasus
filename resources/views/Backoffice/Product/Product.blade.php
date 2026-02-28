@@ -2,7 +2,15 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-        
+        #tableProduct {
+            table-layout: fixed !important;
+            width: 100% !important;
+        }
+
+        #tableProduct td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
     </style>
 @endsection
 @section('content')

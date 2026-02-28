@@ -83,9 +83,9 @@
             },
             columns: [
                 { data: "supplies_name", width: "25%" },
-                { data: "variant_values", width: "20%" },
+                { data: "variant_values", width: "25%" },
                 { data: "unit_values", width: "15%" },
-                { data: "desc", width: "25%" },
+                { data: "desc", width: "15%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

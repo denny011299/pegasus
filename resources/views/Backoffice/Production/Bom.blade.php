@@ -5,6 +5,15 @@
         #add_bom .select2-container {
             width: 100% !important;
         }
+        #tableBom {
+            table-layout: fixed !important;
+            width: 100% !important;
+        }
+
+        #tableBom td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
     </style>
 @endsection
 @section('content')

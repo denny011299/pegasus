@@ -26,10 +26,10 @@
                 },
             },
             columns: [
-                { data: "product_name" },
-                { data: "product_category" },
-                { data: "unit_values" },
-                { data: "variant_values" },
+                { data: "product_name", width: '15%' },
+                { data: "product_category", width: '10%' },
+                { data: "unit_values", width: '10%' },
+                { data: "variant_values", width: '34%' },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
