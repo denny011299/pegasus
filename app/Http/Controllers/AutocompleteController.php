@@ -277,7 +277,8 @@ class AutocompleteController extends Controller
 
         $p = new ProductVariant();
         $data_city = $p->getProductVariant([
-            "product_id" => $keyword,
+            "product_id" => $req->product_id,
+            "search_product" => $keyword,
         ]);
         
 
@@ -295,7 +296,8 @@ class AutocompleteController extends Controller
         $keyword = isset($req->keyword) ? $req->keyword : null;
         $p = new ProductVariant();
         $data_city = $p->getProductVariant([
-            "product_id" => $keyword,
+            "product_id" => $req->product_id,
+            "search_product" => $keyword,
         ]);
 
 
@@ -455,9 +457,10 @@ class AutocompleteController extends Controller
 
         $p = new PurchaseOrder();
         $data_city = $p->getPurchaseOrder([
-            "po_id" => $keyword,
+            "po_id" => $req->po_id,
             "ids" => $req->ids,
-            "pembayaran" => 1
+            "pembayaran" => 1,
+            "search" => $keyword
         ]);
 
 

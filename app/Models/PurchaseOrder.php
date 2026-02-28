@@ -23,9 +23,10 @@ class PurchaseOrder extends Model
             "pembayaran" => null,
             "status" => null,
             "ids" => null,
+            "search" => null
         ], $data);
 
-        $result = PurchaseOrder::where("status", ">=", -1)->where("status", '!=', 0);
+        $result = PurchaseOrder::where("purchase_orders.status", ">=", -1)->where("purchase_orders.status", '!=', 0);
 
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
@@ -34,16 +35,23 @@ class PurchaseOrder extends Model
             // ambil po_id setiap data
             $result->whereIn('po_id', $data['ids']);
         }
-        if ($data["status"]) $result->where("status", "=", $data["status"]);
+        if ($data['search']) {
+            $result->join("suppliers as sr", 'sr.supplier_id','purchase_orders.po_supplier');
+            $result->join("purchase_order_detail_invoices as poi", 'poi.po_id','purchase_orders.po_id');
+
+            $result->where("sr.supplier_name", "like", "%" . $data["search"] . "%")
+            ->orwhere("poi.poi_code", "like", "%" . $data["search"] . "%");
+        }
+        if ($data["status"]) $result->where("purchase_orders.status", "=", $data["status"]);
         if ($data["pembayaran"] && $data["pembayaran"] >= 0){
             if ($data["pembayaran"] == 4){
-                $result->where('status', 1)->where('pembayaran', 1);
+                $result->where('purchase_orders.status', 1)->where('pembayaran', 1);
             }
             else if ($data["pembayaran"] == 1){
-                $result->where('status', 2)->where('pembayaran', 1);
+                $result->where('purchase_orders.status', 2)->where('pembayaran', 1);
             }
             else if ($data["pembayaran"] == 5){
-                $result->where('status', -1);
+                $result->where('purchase_orders.status', -1);
             }
             else{
                 $result->where("pembayaran", "=", $data["pembayaran"]);
@@ -64,15 +72,15 @@ class PurchaseOrder extends Model
         }
 
         if ($data['pembayaran']){
-            $result->orderBy('status', 'asc')
+            $result->orderBy('purchase_orders.status', 'asc')
                 ->orderByRaw('FIELD(pembayaran, 1, 3, 2)')
                 ->orderBy("po_date", "desc")
-                ->orderBy("created_at", "desc");
+                ->orderBy("purchase_orders.created_at", "desc");
         } else {
-            $result->orderByRaw('FIELD(status, 1, 2, 3, -1)')
+            $result->orderByRaw('FIELD(purchase_orders.status, 1, 2, 3, -1)')
                 ->orderByRaw('FIELD(pembayaran, 1, 3, 2)')
                 ->orderBy("po_date", "desc")
-                ->orderBy("created_at", "desc");
+                ->orderBy("purchase_orders.created_at", "desc");
         }
         $result = $result->get();
 
