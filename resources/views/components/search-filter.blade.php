@@ -256,6 +256,60 @@
 <!-- /Filter Pencarian -->
 @endif
 
+@if(Route::is(['operationalCash']))
+<!-- Filter Pencarian -->
+<div class="container mt-3 ps-0">
+    <div class="row">
+        {{-- 
+        <div class="col-12 col-md-6">
+
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Rentang Tanggal -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search No Tanda terima</label>
+                        <input type="text" class="form-control" id="filter_po" placeholder="No.PO">
+                    </div>
+                    
+                    <!-- Supplier -->
+                    <div class="col-md">
+                        <label class="form-label mb-1">Search Supplier</label>
+                        <select class="form-select" id="filter_supplier"></select>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>--}}
+        
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <!-- Supplier -->
+                    <div class="col-md-4 row-supplier">
+                        <label class="form-label mb-1">Dari Tanggal</label>
+                        <input type="date" name="" id="start_date" class="form-control">
+                    </div>
+                    <div class="col-md-4 row-supplier">
+                        <label class="form-label mb-1">Sampai Tanggal</label>
+                        <input type="date" name="" id="end_date" class="form-control">
+                    </div>
+                    <div class="col-md-3 row-supplier">
+                        <label class="form-label mb-1">Staff</label>
+                        <select class="form-select" id="filter_staff_id"></select>
+                    </div>
+                    <div class="col-md-1 col-sm-12 pt-4 text-end">
+                        <a class="btn btn-outline-secondary btn-clear">
+                            Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Filter Pencarian -->
+@endif
+
 @if(Route::is(['payReceive']))
 <!-- Filter Pencarian -->
 <div class="container mt-3 ps-0">

@@ -14,8 +14,12 @@ return new class extends Migration
         Schema::create('cash_gudangs', function (Blueprint $table) {
             $table->integerIncrements('cg_id');
             $table->integer('staff_id');
+            $table->integer('cash_id');
             $table->integer('cg_nominal');
             $table->string('cg_notes', 255);
+            $table->integer('cg_type')->comment('1 = saldo, 2 = operasional');
+            $table->integer('cg_aksi')->comment('1 = Pengajuan, 2 = Pengembalian');
+            $table->text('ca_img')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();
         });

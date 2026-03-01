@@ -2,6 +2,35 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
+        #tableCash {
+            width: 100% !important;
+        }
+
+        #tableCash td {
+            white-space: normal !important;
+            word-wrap: break-word;
+            vertical-align: middle;
+        }
+
+        #tableCash td.d-flex a {
+            display: inline-flex !important;
+            align-items: center;
+        }
+
+        #tableCash td.d-flex {
+            display: table-cell !important; /* override d-flex di td */
+        }
+
+        #tableCash td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableCash td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+            margin-right: 4px;
+        }
+
         .child-wrapper {
             margin-left: 60px; 
             max-width: 80%;
@@ -16,18 +45,18 @@
         }
 
         .child-left {
-            flex: 0 0 56%;
+            flex: 0 0 50%;
             padding-left: 0.8rem
         }
 
         .child-right {
             flex: 0 0 34%;
             text-align: right;
-            padding-right: 20rem;
+            padding-right: 12rem;
         }
 
         .child-left-total {
-            flex: 0 0 56%;
+            flex: 0 0 50%;
             padding-left: 6.8rem
         }
 
@@ -73,7 +102,7 @@
                     <select class="form-select" id="cashType">
                         <option value="admin">Kas Admin</option>
                         <option value="gudang">Kas Gudang</option>
-                        <option value="armada">Dompet Virtual Armada</option>
+                        <option value="armada" disabled>Dompet Virtual Armada</option>
                     </select>
                 </div>
                 <div class="col-md-8 text-end">

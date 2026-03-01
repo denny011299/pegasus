@@ -15,6 +15,7 @@ return new class extends Migration
             $table->integerIncrements('cash_id');
             $table->date('cash_date');
             $table->tinyInteger('cash_type')->comment('1 = debit, 2 = credit 1, 3 = credit 2');
+            $table->tinyInteger('cash_tujuan')->comment('1 = Admin, 2 = Gudang');
             $table->string('cash_description', 255);
             $table->integer('cash_nominal');
             $table->integer('cash_balance');

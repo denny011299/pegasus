@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('ca_nominal');
             $table->string('ca_notes', 255);
             $table->integer('ca_type')->comment('1 = saldo, 2 = operasional');
+            $table->integer('ca_akse')->comment('1 = Pengajuan, 2 = Pengembalian');
             $table->text('ca_img')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();

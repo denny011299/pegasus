@@ -206,28 +206,35 @@
             "Apakah yakin ingin Approve pencatatan kas ini?",
             "btn-accept-kas"
         );
+        console.log(data);
         $('#btn-accept-kas').attr("cash_id", data.cash_id);
+        $('#btn-accept-kas').attr("cash_tujuan", data.cash_tujuan);
         $('#btn-accept-kas').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-accept-kas', function(){
         LoadingButton(this);
+        let tujuan = $('#btn-accept-kas').attr('cash_tujuan');
+        console.log(tujuan);
+        let url = "";
+        if (tujuan == 1) url = "/acceptCashAdmin";
+        else if (tujuan == 2) url = "/acceptCashGudang";
         $.ajax({
-            url:"/acceptCashAdmin",
+            url:url,
             data:{
                 cash_id:$('#btn-accept-kas').attr('cash_id'),
                 _token:token
             },
             method:"post",
             success:function(e){
-                ResetLoadingButton('#btn-accept-kas', "Konfirmasi");
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 refreshCash();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Pencatatan Kas");
                 
             },
             error:function(e){
-                ResetLoadingButton('#btn-accept-kas', "Konfirmasi");
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 console.log(e);
             }
         });
@@ -237,27 +244,32 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         showModalDelete("Apakah yakin ingin tolak pencatatan kas ini?","btn-decline-kas");
         $('#btn-decline-kas').attr("cash_id", data.cash_id);
+        $('#btn-decline-kas').attr("cash_tujuan", data.cash_tujuan);
         $('#btn-decline-kas').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-decline-kas', function(){
         LoadingButton(this);
+        let tujuan = $('#btn-decline-kas').attr('cash_tujuan');
+        let url = "";
+        if (tujuan == 1) url = "/declineCashAdmin";
+        else if (tujuan == 2) url = "/declineCashGudang";
         $.ajax({
-            url:"/declineCashAdmin",
+            url:url,
             data:{
                 cash_id:$('#btn-decline-kas').attr('cash_id'),
                 _token:token
             },
             method:"post",
             success:function(e){
-                ResetLoadingButton('#btn-decline-kas', "Konfirmasi");
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 refreshCash();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pencatatan Kas");
                 
             },
             error:function(e){
-                ResetLoadingButton('#btn-decline-kas', "Konfirmasi");
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 console.log(e);
             }
         });

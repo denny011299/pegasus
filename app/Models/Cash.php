@@ -27,11 +27,15 @@ class Cash extends Model
     }
 
     function insertCash($data){
+        if ($data['cash_tujuan'] == "admin") $data['cash_tujuan'] = 1;
+        else if ($data['cash_tujuan'] == "gudang") $data['cash_tujuan'] = 2;
+        
         $t = new self();
         $t->cash_date = $data["cash_date"];
         $t->cash_description = $data["cash_description"];
         $t->cash_nominal = $data["cash_nominal"];
         $t->cash_type = $data["cash_type"];
+        $t->cash_tujuan = $data["cash_tujuan"];
         $t->status = $data['status'] ?? 2;
         
         $t->save();
@@ -44,6 +48,7 @@ class Cash extends Model
         $t->cash_description = $data["cash_description"];
         $t->cash_nominal = $data["cash_nominal"];
         $t->cash_type = $data["cash_type"];
+        $t->cash_tujuan = $data["cash_tujuan"];
         $t->status = $data['status'];
 
         // Saldo

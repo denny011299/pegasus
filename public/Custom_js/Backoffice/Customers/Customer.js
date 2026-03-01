@@ -31,6 +31,7 @@
                 { data: "customer_notes" },
                 { data: "customer_pic" },
                 { data: "customer_pic_phone" },
+                { data: "saldo" },
                 { data: "created" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -55,6 +56,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].saldo = `Rp ${formatRupiah(e[i].customer_saldo)}`
                     // <a class="me-2 btn-action-icon p-2 btn_view" href="/customerDetail/${e[i].customer_id}" data-bs-target="#view-supplier">
                     //     <i class="fe fe-eye"></i>
                     // </a>

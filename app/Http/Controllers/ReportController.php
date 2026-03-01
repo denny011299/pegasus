@@ -8,6 +8,8 @@ use App\Models\CashAdmin;
 use App\Models\CashAdminDetail;
 use App\Models\CashCategory;
 use App\Models\CashGudang;
+use App\Models\CashGudangDetail;
+use App\Models\Customer;
 use App\Models\InwardOutward;
 use App\Models\PettyCash;
 use App\Models\PurchaseOrderDetailInvoice;
@@ -122,6 +124,18 @@ class ReportController extends Controller
                     "ca_nominal" => $data['cash_nominal'],
                     "ca_notes" => $data['cash_description'],
                     "ca_type" => 2, // kredit
+                    "oc_transaksi" => 1, // Supaya jadi debit
+                    "status" => 2
+                ]);
+            }
+            else if ($data['cash_tujuan'] == "gudang"){
+                (new CashGudang())->insertCashGudang([
+                    "staff_id" => session('user')->staff_id,
+                    "cash_id" => $cash_id,
+                    "cg_nominal" => $data['cash_nominal'],
+                    "cg_notes" => $data['cash_description'],
+                    "cg_type" => 2, // kredit
+                    "oc_transaksi" => 1, // Supaya jadi debit
                     "status" => 2
                 ]);
             }
@@ -150,7 +164,7 @@ class ReportController extends Controller
 
     function getCashAdmin(Request $req)
     {
-        $data = (new CashAdmin())->getCashAdmin();
+        $data = (new CashAdmin())->getCashAdmin($req->all());
         return response()->json($data);
     }
 
@@ -199,6 +213,7 @@ class ReportController extends Controller
                     "cash_description" => $data['ca_notes'],
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 2, // kredit 1
+                    "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
             }
@@ -209,6 +224,7 @@ class ReportController extends Controller
                     "cash_description" => $data['ca_notes'],
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 1, // debit
+                    "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
             }
@@ -279,6 +295,7 @@ class ReportController extends Controller
                     "cash_description" => $data['ca_notes'],
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 2, // kredit 1
+                    "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
             }
@@ -290,6 +307,7 @@ class ReportController extends Controller
                     "cash_description" => $data['ca_notes'],
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 1, // debit
+                    "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
             }
@@ -340,26 +358,203 @@ class ReportController extends Controller
 
     function getCashGudang(Request $req)
     {
-        $data = (new CashGudang())->getCashGudang();
+        $data = (new CashGudang())->getCashGudang($req->all());
         return response()->json($data);
     }
 
     function insertCashGudang(Request $req)
     {
         $data = $req->all();
-        return (new CashGudang())->insertCashGudang($data);
+        if ($req->photo){
+            // Ambil base64
+            $image = $req->photo;
+    
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+    
+            // Decode
+            $imageData = base64_decode($image);
+    
+            // Nama file
+            $imageName = 'photo_' . time() . '.png';
+    
+            // Path tujuan di public/produksi
+            $path = public_path('kas_admin/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            $data["cg_img"] = $imageName;
+        }
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $total += $value['cgd_nominal'];
+            }
+
+            $data['cg_notes'] = "Penyerahan kas armada " . now()->format("Y-m-d");
+            $data['cg_nominal'] = $total;
+        }
+
+        else if ($data['jenis_input'] == "saldo"){
+            // Pengajuan dana
+            if ($data['oc_transaksi'] == 1){
+                $cash_id = (new Cash())->insertCash([
+                    "cash_date" => now(),
+                    "cash_description" => $data['cg_notes'],
+                    "cash_nominal" => $data['cg_nominal'],
+                    "cash_type" => 2, // kredit 1
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            // Pengembalian dana
+            else if ($data['oc_transaksi'] == 2) {
+                $cash_id = (new Cash())->insertCash([
+                    "cash_date" => now(),
+                    "cash_description" => $data['cg_notes'],
+                    "cash_nominal" => $data['cg_nominal'],
+                    "cash_type" => 1, // debit
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            $data['cash_id'] = $cash_id;
+        }
+
+        if ($data['jenis_input'] == "operasional"){
+            $data['oc_transaksi'] = 0;
+            $cg_id = (new CashGudang())->insertCashGudang($data);
+
+            foreach ($item as $key => $value) {
+                $value['cg_id'] = $cg_id;
+                (new CashGudangDetail())->insertCashGudangDetail($value);
+            }
+        }
+        
+        else if ($data['jenis_input'] == "saldo") {
+            (new CashGudang())->insertCashGudang($data);
+        }
     }
 
     function updateCashGudang(Request $req)
     {
         $data = $req->all();
-        return (new CashGudang())->updateCashGudang($data);
+
+        if ($req->photo){
+            // Ambil base64
+            $image = $req->photo;
+    
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+    
+            // Decode
+            $imageData = base64_decode($image);
+    
+            // Nama file
+            $imageName = 'photo_' . time() . '.png';
+    
+            // Path tujuan di public/produksi
+            $path = public_path('kas_admin/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            $data["cg_img"] = $imageName;
+        }
+
+        $id = [];
+        $cash = CashGudang::find($data['cg_id']);
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $total += $value['cgd_nominal'];
+            }
+
+            $data['cg_notes'] = "Penyerahan kas armada " . now()->format("Y-m-d");
+            $data['cg_nominal'] = $total;
+        }
+
+        else if ($data['jenis_input'] == "saldo"){
+            // Pengajuan dana
+            if ($data['oc_transaksi'] == 1){
+                $cash_id = (new Cash())->updateCash([
+                    "cash_id" => $cash->cash_id,
+                    "cash_date" => now(),
+                    "cash_description" => $data['cg_notes'],
+                    "cash_nominal" => $data['cg_nominal'],
+                    "cash_type" => 2, // kredit 1
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            // Pengembalian dana
+            else if ($data['oc_transaksi'] == 2) {
+                $cash_id = (new Cash())->updateCash([
+                    "cash_id" => $cash->cash_id,
+                    "cash_date" => now(),
+                    "cash_description" => $data['cg_notes'],
+                    "cash_nominal" => $data['cg_nominal'],
+                    "cash_type" => 1, // debit
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            $data['cash_id'] = $cash_id;
+        }
+
+        (new CashGudang())->updateCashGudang($data);
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $value['cg_id'] = $data['cg_id'];
+
+                if (!isset($value['cgd_id']) || !$value['cgd_id']){
+                    $t = (new CashGudangDetail())->insertCashGudangDetail($value);
+                }
+                else {
+                    $t = (new CashGudangDetail())->updateCashGudangDetail($value);
+                }
+                array_push($id, $t);
+            }
+            CashGudangDetail::where('cg_id', '=', $data["cg_id"])->whereNotIn("cgd_id", $id)->update(["status" => 0]);
+        }
     }
 
     function deleteCashGudang(Request $req)
     {
         $data = $req->all();
-        return (new CashGudang())->deleteCashGudang($data);
+        $ca = CashGudang::find($data['cg_id']);
+        (new CashGudang())->deleteCashGudang($data);
+        // Kalau manajemen saldo, maka hapus dari kas juga
+        if ($ca->cg_type == 1) (new Cash())->deleteCash($ca);
+    }
+
+    function acceptCashGudang(Request $req)
+    {
+        $data = $req->all();
+
+        if (isset($data['cg_id'])){
+            $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
+
+            foreach ($cgd as $key => $value) {
+                $customer = Customer::find($value['customer_id']);
+                $customer->customer_saldo += $value['cgd_nominal'];
+                $customer->save();
+            }
+        }
+        return (new CashGudang())->acceptCashGudang($data);
+    }
+
+    function declineCashGudang(Request $req)
+    {
+        $data = $req->all();
+        return (new CashGudang())->declineCashGudang($data);
     }
     
     function reportBahanBaku(){

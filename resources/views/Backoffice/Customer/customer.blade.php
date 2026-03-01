@@ -28,6 +28,7 @@
                                             <th>No Pol</th>
                                             <th>Nama PIC</th>
                                             <th>Telepon PIC</th>
+                                            <th>Saldo Armada</th>
                                             <th>Dibuat</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
