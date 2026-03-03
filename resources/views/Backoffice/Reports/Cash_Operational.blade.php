@@ -102,7 +102,7 @@
                     <select class="form-select" id="cashType">
                         <option value="admin">Kas Admin</option>
                         <option value="gudang">Kas Gudang</option>
-                        <option value="armada" disabled>Dompet Virtual Armada</option>
+                        <option value="armada">Dompet Virtual Armada</option>
                     </select>
                 </div>
                 <div class="col-md-8 text-end">

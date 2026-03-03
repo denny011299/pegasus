@@ -6,6 +6,8 @@ use App\Models\Bank;
 use App\Models\Cash;
 use App\Models\CashAdmin;
 use App\Models\CashAdminDetail;
+use App\Models\CashArmada;
+use App\Models\CashArmadaDetail;
 use App\Models\CashCategory;
 use App\Models\CashGudang;
 use App\Models\CashGudangDetail;
@@ -185,7 +187,7 @@ class ReportController extends Controller
             $imageName = 'photo_' . time() . '.png';
     
             // Path tujuan di public/produksi
-            $path = public_path('kas_admin/' . $imageName);
+            $path = public_path('kas_admin/admin/' . $imageName);
             // Simpan file
             file_put_contents($path, $imageData);
             $data["ca_img"] = $imageName;
@@ -264,7 +266,7 @@ class ReportController extends Controller
             $imageName = 'photo_' . time() . '.png';
     
             // Path tujuan di public/produksi
-            $path = public_path('kas_admin/' . $imageName);
+            $path = public_path('kas_admin/admin/' . $imageName);
             // Simpan file
             file_put_contents($path, $imageData);
             $data["ca_img"] = $imageName;
@@ -379,7 +381,7 @@ class ReportController extends Controller
             $imageName = 'photo_' . time() . '.png';
     
             // Path tujuan di public/produksi
-            $path = public_path('kas_admin/' . $imageName);
+            $path = public_path('kas_admin/gudang/' . $imageName);
             // Simpan file
             file_put_contents($path, $imageData);
             $data["cg_img"] = $imageName;
@@ -456,7 +458,7 @@ class ReportController extends Controller
             $imageName = 'photo_' . time() . '.png';
     
             // Path tujuan di public/produksi
-            $path = public_path('kas_admin/' . $imageName);
+            $path = public_path('kas_admin/gudang/' . $imageName);
             // Simpan file
             file_put_contents($path, $imageData);
             $data["cg_img"] = $imageName;
@@ -555,6 +557,158 @@ class ReportController extends Controller
     {
         $data = $req->all();
         return (new CashGudang())->declineCashGudang($data);
+    }
+
+    function getCashArmada(Request $req)
+    {
+        $data = (new CashArmada())->getCashArmada($req->all());
+        return response()->json($data);
+    }
+
+    function insertCashArmada(Request $req)
+    {
+        $data = $req->all();
+
+        $total = 0;
+        $item = json_decode($data['items'], true);
+        dd($item[0]);
+
+        foreach ($item as $key => $value) {
+            $total += $value['crd_nominal'];
+        }
+
+        $customer = Customer::find($data['customer_id']);
+        if ($total > $customer->customer_saldo){
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal Insert",
+                "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+            ]);
+        }
+
+        if ($data['photo']){
+            $img = [];
+            foreach (json_decode($data["photo"]) as $key => $value) {
+                $image = $value;
+
+                // Hilangkan prefix base64
+                $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+                // Decode
+                $imageData = base64_decode($image);
+
+                // Nama file
+                $imageName = 'photo_' . uniqid() . '.png';
+
+                // Path tujuan di public/produksi
+                $path = public_path('kas_admin/armada/' . $imageName);
+                // Simpan file
+                file_put_contents($path, $imageData);
+                array_push($img, $imageName);
+            }
+            $data["cr_img"] = json_encode($img);
+        }
+
+        $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes . now()->format("Y-m-d");
+        $data['cr_nominal'] = $total;
+
+        $cash_id = (new Cash())->insertCash([
+            "cash_date" => now(),
+            "cash_description" => $data['cr_notes'],
+            "cash_nominal" => $data['cr_nominal'],
+            "cash_type" => $item[0]['crd_type'],
+            "cash_tujuan" => 3, // Armada
+            "status" => 1
+        ]);
+
+        $data['cash_id'] = $cash_id;
+        $cr_id = (new CashArmada())->insertCashArmada($data);
+
+        foreach ($item as $key => $value) {
+            $value['cr_id'] = $cr_id;
+            (new CashArmadaDetail())->insertCashArmadaDetail($value);
+        }
+    }
+
+    function updateCashArmada(Request $req)
+    {
+        $data = $req->all();
+
+        $id = [];
+        $customer = Customer::find($data['customer_id'])->customer_notes;
+
+        $total = 0;
+        $item = json_decode($data['items'], true);
+
+        foreach ($item as $key => $value) {
+            $total += $value['crd_nominal'];
+        }
+
+        $data['cr_notes'] = "Pengeluaran armada " . $customer . now()->format("Y-m-d");
+        $data['cr_nominal'] = $total;
+
+        $cr_id = (new CashArmada())->updateCashArmada($data);
+
+        foreach ($item as $key => $value) {
+            $cash_id = (new Cash())->updateCash([
+                "cash_date" => now(),
+                "cash_description" => $value['crd_notes'],
+                "cash_nominal" => $value['crd_nominal'],
+                "cash_type" => $value['crd_type'], // kredit 1
+                "cash_tujuan" => 3, // Armada
+                "status" => 1
+            ]);
+
+            $value['cr_id'] = $cr_id;
+            $value['cash_id'] = $cash_id;
+
+            if (!isset($value['crd_id']) || !$value['crd_id']){
+                $t = (new CashArmadaDetail())->insertCashArmadaDetail($value);
+            }
+            else {
+                $t = (new CashArmadaDetail())->updateCashArmadaDetail($value);
+            }
+            array_push($id, $t);
+        }
+        CashArmadaDetail::where('cr_id', '=', $data["cr_id"])->whereNotIn("crd_id", $id)->update(["status" => 0]);
+    }
+
+    function deleteCashArmada(Request $req)
+    {
+        $data = $req->all();
+        $ca = CashArmada::find($data['cr_id']);
+        (new CashArmada())->deleteCashArmada($data);
+        $detail = CashArmadaDetail::where('cr_id', $data['cr_id'])->where('status', 1)->get();
+        foreach ($detail as $key => $value) {
+            (new CashArmadaDetail())->deleteCashArmadaDetail($value);
+            (new Cash())->deleteCash($value);
+        }
+    }
+
+    function acceptCashArmada(Request $req)
+    {
+        $data = $req->all();
+
+        if (isset($data['cr_id'])){
+            $cr = CashArmada::find($data['cr_id']);
+
+            $customer = Customer::find($cr['customer_id']);
+            $customer->customer_saldo -= $cr['cr_nominal'];
+            $customer->save();
+        } else {
+            $cr = CashArmada::where('cash_id', $data["cash_id"])->first();
+
+            $customer = Customer::find($cr['customer_id']);
+            $customer->customer_saldo -= $cr['cr_nominal'];
+            $customer->save();
+        }
+        return (new CashArmada())->acceptCashArmada($data);
+    }
+
+    function declineCashArmada(Request $req)
+    {
+        $data = $req->all();
+        return (new CashArmada())->declineCashArmada($data);
     }
     
     function reportBahanBaku(){

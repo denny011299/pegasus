@@ -1,6 +1,6 @@
     var mode=1;
     var table;
-    var type;
+    var type, list_photo;
     var items = [];
     var sisa_kas = 0;
     var dates = null;
@@ -15,7 +15,8 @@
 
         // Setting filter
         $('#filter_staff_id').empty(null);
-        autocompleteStaff('#filter_staff_id');
+        $('#filter_customer_id').empty(null);
+        
         let today = new Date();
         let yyyy = today.getFullYear();
         let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -25,19 +26,36 @@
         $("#end_date").val(todayStr).trigger('change');
 
         if (type === 'admin') {
-            $('#headers th:nth-child(3)').text('Staff');
             inisialisasi();
+            $('#tableCash thead th').eq(2).text('Staff');
             refreshCashAdmin();
+            $('.filter_person').html(`
+                <label class="form-label mb-1">Staff</label>
+                <select class="form-select" id="filter_staff_id"></select>
+            `);
+            autocompleteStaff('#filter_staff_id');
         }
         
         else if (type === 'gudang') {
-            $('#headers th:nth-child(3)').text('Staff');
             inisialisasi();
+            $('#tableCash thead th').eq(2).text('Staff');
             refreshCashGudang();
+            $('.filter_person').html(`
+                <label class="form-label mb-1">Staff</label>
+                <select class="form-select" id="filter_staff_id"></select>
+            `);
+            autocompleteStaff('#filter_staff_id');
         }
         
         else if (type === 'armada') {
-            $('#headers th:nth-child(3)').text('Armada');
+            inisialisasi();
+            $('#tableCash thead th').eq(2).text('Armada');
+            refreshCashArmada();
+            $('.filter_person').html(`
+                <label class="form-label mb-1">Armada</label>
+                <select class="form-select" id="filter_customer_id"></select>
+            `);
+            autocompleteCustomer('#filter_customer_id');
         }
     });
 
@@ -85,6 +103,28 @@
         $('#check_foto_gudang').hide();
 
         if ($(this).val() == "operasional") $('#tableDetailGudang tr.row-detail').remove();
+    })
+    $(document).on('change', '#jenis_input_armada', function(){
+        items = [];
+        if ($(this).val() == "saldo") {
+            $('.saldo_kas').show();
+            $('.operasional').hide();
+        } else if ($(this).val() == "operasional") {
+            $('.saldo_kas').hide();
+            $('.operasional').show();
+        }
+        $('#add_cash_armada input').val("");
+        $('#customer_id_armada').empty(null);
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        $('#oc_transaksi_armada').val(1);
+        $('.total').html("Rp 0");
+        autocompleteCustomer('#customer_id_armada', '#add_cash_armada');
+        $('#btn-foto-bukti-armada').show();
+        $('#btn-lihat-bukti-armada').hide();
+        $('#check_foto_armada').hide();
+
+        if ($(this).val() == "operasional") $('#tableDetailArmada tr.row-detail').remove();
     })
 
     $(document).on('click','.btnAddCash',function(){
@@ -145,14 +185,28 @@
             $('.btn-save-gudang').html('Tambah Aktivitas').show();
         }
         else if (type == "armada"){
-            $('#row-cash').html(`
-                <label>Nama Armada<span class="text-danger">*</span></label>
-                <select class="form-select fill" id="armada_id"></select>
-            `);
+            $('#add_cash_armada input').val("").attr('disabled', false);
+            $('#jenis_input_armada, #customer_id_armada').attr('disabled', false);
+            $('#oc_transaksi_armada').val(1).attr('disabled', false);
 
-            $('#add_cash_admin .modal-title').html("Tambah Aktivitas Armada");
-            $('#armada_id').empty(null);
-            autocompleteCustomer('#armada_id', '#add_cash_admin');
+            // $('#row-cash').html(`
+            //     <label>Nama Armada<span class="text-danger">*</span></label>
+            //     <select class="form-select fill" id="customer_id_armada"></select>
+            // `);
+
+            $('#add_cash_armada .modal-title').html("Tambah Aktivitas Armada");
+            $('#customer_id_armada').empty(null).attr('disabled', false);
+            autocompleteCustomer('#customer_id_armada', '#add_cash_armada');
+            $('.total_armada').html("Rp 0");
+
+            $('#btn-foto-bukti-armada').show();
+            $('#btn-lihat-bukti-armada').hide();
+            $('#check_foto_armada').hide();
+
+            $('#tableDetailArmada tr.row-detail').remove();
+            $('#add_cash_armada').modal("show");
+            $('.input_table, .btn_delete_row_armada').show();
+            $('.btn-save-armada').html('Tambah Aktivitas').show();
         }
 
         $('.is-invalid').removeClass('is-invalid');
@@ -206,6 +260,25 @@
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
             searchText = "Cari Kas Gudang";
+        }
+        else if (type === "armada") {
+            column = [
+                {
+                    className: 'dt-control text-center',
+                    orderable: false,
+                    data: null,
+                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
+                    width: "2.5rem"
+                },
+                { data: "date", width: "12%" },
+                { data: "customer_notes", width: "12%" },
+                { data: "cr_notes", width: "22%" },
+                { data: "debit_text", className: "text-end", width: "15%" },
+                { data: "credit_text", className: "text-end", width: "15%" },
+                { data: "status_text", width: "13%" },
+                { data: "action", className: "d-flex align-items-center", width: "80px" },
+            ];
+            searchText = "Cari Kas Armada";
         }
 
         table = $('#tableCash').DataTable({
@@ -425,6 +498,103 @@
         });
     }
 
+    function refreshCashArmada() {
+        $.ajax({
+            url: "/getCashArmada",
+            data: {
+                dates: dates,
+                staff_id: $('#filter_staff_id').val()
+            },
+            method: "get",
+            success: function (e) {
+                if (!Array.isArray(e)) {
+                    e = e.original || [];
+                }
+                table.clear().draw(); 
+
+                // Manipulasi data sebelum masuk ke tabel
+                console.log(e);
+                let debits = 0;
+                let credits = 0;
+                for (let i = 0; i < e.length; i++) {
+                    e[i].date = moment(e[i].created_at).format('D MMM YYYY');
+                    if (e[i].cr_aksi == 1){
+                        e[i].debit = "Rp " + formatRupiah(e[i].cr_nominal);
+                        e[i].credit = "Rp 0";
+                        if (e[i].status == 2) debits += e[i].cr_nominal;
+                    }
+                    else{
+                        e[i].debit = "Rp 0";
+                        e[i].credit = "(Rp " + formatRupiah(e[i].cr_nominal) + ")";
+                        if (e[i].status == 2) credits += e[i].cr_nominal;
+                    }
+                    debits += e[i].customer_saldo;
+                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
+                    e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
+
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Sedang Diajukan</span>`;
+                    } else if (e[i].status == 2){
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
+                    } else if (e[i].status == 3){
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
+                    }
+                    e[i].action = `
+                        <a class="me-2 btn-action-icon p-2 btn_view_armada" data-id="${e[i].cr_id}" data-bs-target="#view-cash">
+                            <i class="fe fe-eye"></i>
+                        </a>
+                    `;
+                    if (e[i].status == 1){
+                        if (e[i].cr_type == 1){
+                            e[i].action += `
+                                <a class="me-2 btn-action-icon p-2 btn_edit_armada" data-id="${e[i].cr_id}" data-bs-target="#edit-category">
+                                    <i class="fe fe-edit"></i>
+                                </a>
+                                <a class="p-2 btn-action-icon btn_delete_armada" data-id="${e[i].cr_id}" href="javascript:void(0);">
+                                    <i class="fe fe-trash-2"></i>
+                                </a>
+                            `;
+                        } else if (e[i].cr_type == 2){
+                            e[i].action += `
+                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
+                                    <i class="fe fe-check"></i>
+                                </a>
+                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
+                                    <i class="fe fe-x"></i>
+                                </a>
+                            `;
+                        }
+                    }
+                }
+                table.rows.add(e).draw();
+                
+                $('.debits').html(`Rp ${formatRupiah(debits)}`);
+                $('.credits').html(`(Rp ${formatRupiah(credits)})`);
+                if (debits - credits < 0){
+                    $('.sisa').html(`<label class='text-danger'>(Rp ${formatRupiah(debits - credits)})</label>`);
+                    sisa_kas = 0;
+                } else {
+                    $('.sisa').html(`Rp ${formatRupiah(debits - credits)}`);
+                    sisa_kas = debits - credits;
+                }
+
+                // Expand child row
+                setTimeout(function () {
+                    $('#tableCash tbody td.dt-control').each(function () {
+                        $(this).trigger('click');
+                    });
+                }, 100);
+
+                feather.replace(); // Biar icon feather muncul lagi
+            },
+            error: function (err) {
+                console.error("Gagal load kategori:", err);
+            }
+        });
+    }
+
     function format(detailData) {
         if (!detailData || detailData.length === 0) {
             return `
@@ -520,6 +690,53 @@
         html += `</div>`;
         return html;
     }
+    function formatArmada(detailData) {
+        if (!detailData || detailData.length === 0) {
+            return `
+                <div class="p-3">
+                    <em class="text-muted">Tidak ada detail</em>
+                </div>
+            `;
+        }
+
+        let total = 0;
+
+        let html = `<div class="px-5">`;
+        detailData.forEach((d) => {
+            total += parseInt(d.crd_nominal);
+
+            html += `
+                <div class="child-item">
+                    <div class="child-left d-flex g-3">
+                        <div class="date me-3">
+                            ${moment(d.created_at).format('D MMM YYYY')}
+                        </div>
+                        <div class="notes">
+                            ${d.crd_notes}
+                        </div>
+                    </div>
+                    <div class="child-right text-end">
+                        Rp ${formatRupiah(d.crd_nominal)}
+                    </div>
+                </div>
+
+            `;
+        });
+
+        html += `
+            <div class="child-item fw-semibold pt-3 border-0">
+                <div class="child-left-total">
+                    Total
+                </div>
+                <div class="child-right text-end">
+                    Rp ${formatRupiah(total)}
+                </div>
+            </div>
+        `;
+
+        html += `</div>`;
+        return html;
+    }
 
     $('#tableCash tbody').on('click', 'td.dt-control', function () {
         let tr = $(this).closest('tr');
@@ -531,6 +748,7 @@
         } else {
             if (type == "admin") row.child(format(row.data().detail)).show();
             else if (type == "gudang") row.child(formatGudang(row.data().detail)).show();
+            else if (type == "armada") row.child(formatArmada(row.data().detail)).show();
             tr.addClass('shown');
         }
     });
@@ -736,7 +954,7 @@
         });
     });
 
-    // -------------- ROW DETAIL ADMIN --------------
+    // -------------- ROW DETAIL GUDANG --------------
     $(document).on('click', '.btn-add-gudang', function(){
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -921,13 +1139,188 @@
         });
     });
 
+    // -------------- ROW DETAIL ARMADA --------------
+    $(document).on('click', '.btn-add-armada', function(){
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        var valid=1;
+        $("#add_cash_armada .fill_catatan").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+                console.log(this);
+            }
+        });
+
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+            return false;
+        };
+
+        var newType = $('#oc_transaksi_armada').val();
+        var firstType = items.length > 0 ? items[0].crd_type : null;
+
+        var data = {
+            crd_type: newType,
+            crd_notes: $('#crd_notes').val(),
+            crd_nominal: convertToAngka($('#crd_nominal').val()),
+        };
+
+        if (items.length === 0) {
+            items.push(data);
+        } else {
+            if (
+                (newType == 1 && firstType == 1) ||
+                (newType == 2 && firstType == 2) ||
+                (newType == 3 && firstType == 3)
+            ) {
+                items.push(data);
+            }
+            else {
+                $('#oc_transaksi_armada').addClass('is-invalid');
+                notifikasi('error', "Gagal Insert", 'Tipe yang diinputkan wajib satu kategori (keluar / masuk)');
+                ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+                return false;
+            }
+        }
+
+        var total = 0;
+        items.forEach(element => {
+            total += element.crd_nominal;
+        });
+        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+
+        addRowArmada();
+
+        $('#customer_id').empty(null);
+        $('#crd_notes').val("");
+        $('#crd_nominal').val("");
+        $('#oc_transaksi_armada').val(1).trigger('change');
+    })
+
+    function addRowArmada() {
+        $('#tableDetailArmada tr.row-detail').html(" ");
+        console.log(items);
+        items.forEach((e, index) => {
+            let type = "";
+            if (e.crd_type == 1) type = "Masuk"
+            else if (e.crd_type == 2) type = "Keluar"
+            else if (e.crd_type == 3) type = "Keluar 1"
+            $('#tableDetailArmada tbody').append(`
+                <tr class="row-detail" data-id="${index}">
+                    <td>${index+1}</td>
+                    <td>${type}</td>
+                    <td style="width: 25%">${e.crd_notes}</td>
+                    <td class="text-end">Rp ${formatRupiah(e.crd_nominal)}</td>
+                    <td class="text-center d-flex align-items-center">
+                        <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                        </a>
+                    </td>
+                </tr>
+            `);
+        }); 
+    }
+
+    $(document).on("click", ".btn_delete_row_armada", function() {
+        let row = $(this).closest("tr");
+        let index = row.data("id");
+
+        items.splice(index, 1);
+
+        var total = 0;
+        items.forEach(element => {
+            total += element.crd_nominal;
+        });
+        console.log(total);
+        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+
+        addRowArmada();
+    });
+
+    $(document).on("click",".btn-save-armada",function(){
+        LoadingButton(this);
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        var valid=1;
+
+        $("#add_cash_armada .fill").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+
+        if($('#customer_id_armada').val()==null||$('#customer_id_armada').val()=="null"||$('#customer_id_armada').val()==""){
+            valid=-1;
+            $('#row-cash .select2-selection--single').addClass('is-invalids');
+        }
+
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+            return false;
+        };
+
+        if ($('#bukti_armada').val() == ""|| $('#bukti_armada').val() == null || $('#bukti_armada').val() == "null"){
+            notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
+            ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+            return false;
+        }
+
+        if ($("#tableDetailArmada tbody tr").length == 0) {
+            notifikasi('error', "Gagal Insert", 'Minimal input 1 armada');
+            ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+            return false;
+        }
+
+        param = {
+            customer_id:$('#customer_id_armada').val(),
+            items: JSON.stringify(items),
+            _token:token
+        };
+        let url = "/insertCashArmada";
+        if (mode == 2) {
+            url = "/updateCashArmada";
+            param.cr_id = $('#add_cash_armada').attr("cr_id");
+        }
+        else{
+            param.photo = $('#bukti_armada').val();
+        }
+
+        LoadingButton($(this));
+        $.ajax({
+            url:url,
+            data: param,
+            method:"post",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){
+                if (typeof e === "object"){
+                    notifikasi('error', e.header, e.message);
+                    ResetLoadingButton(".btn-save-armada", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");   
+                    return false;
+                } else {
+                    ResetLoadingButton(".btn-save-armada", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");      
+                    afterInsert();
+                }
+            },
+            error:function(e){
+                ResetLoadingButton(".btn-save-armada", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                console.log(e);
+            }
+        });
+    });
+
     function afterInsert() {
         $(".modal").modal("hide");
         if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Melakukan Pengajuan");
         else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Pengajuan");
         if (type=="admin") refreshCashAdmin();
         else if (type=="gudang") refreshCashGudang();
-        else if (type=="armada") refreshCashAdmin();
+        else if (type=="armada") refreshCashArmada();
     }
 
 
@@ -1101,7 +1494,7 @@
         $('.is-invalids').removeClass('is-invalids');
         $('.btn-save-gudang').html('Update Aktivitas').show();
         $('.cancel-btn').html('Batal');
-        $('.input_table, .btn_delete_row').show();
+        $('.input_table, .btn_delete_row_gudang').show();
         $('#add_cash_gudang').modal("show");
         $('#add_cash_gudang').attr("cg_id", data.cg_id);
     })
@@ -1149,7 +1542,7 @@
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
-        $('.input_table, .btn-save-gudang, .btn_delete_row').hide();
+        $('.input_table, .btn-save-gudang, .btn_delete_row_gudang').hide();
         $('.cancel-btn').html('Kembali');
         $('#add_cash_gudang').modal("show");
         $('#add_cash_gudang').attr("cg_id", data.cg_id);
@@ -1183,6 +1576,132 @@
         });
     });
 
+    // ------------- Edit, View, Delete ARMADA -------------
+    $(document).on('click', '.btn_edit_armada', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        mode=2;
+        items = [];
+        console.log(data);
+        $('#add_cash_armada .modal-title').html("Update Aktivitas Armada");
+        $('#add_cash_armada input').empty().val("");
+        $('#customer_id_armada').empty(null);
+        
+        let total = 0;
+        data.detail.forEach(e => {
+            var temp = {
+                "crd_id" : e.crd_id,
+                "crd_notes" : e.crd_notes,
+                "crd_nominal" : e.crd_nominal,
+                "crd_type" : e.crd_type,
+            };
+            items.push(temp);
+            total += e.crd_nominal;
+        })
+        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+        addRowArmada();
+
+        $('#btn-foto-bukti-armada').hide();
+        $('#btn-lihat-bukti-armada').show();
+
+        var img = JSON.parse(data.so_img);
+        list_photo = img;
+        console.log(list_photo);
+        
+        $('#modalViewPhoto .modal-footer').show();
+        $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+        $('#check_foto_armada').show();
+        $('#jumlahFoto').html(list_photo.length);
+        $('#bukti_armada').val(data.cr_img);
+
+        $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        $('.btn-save-armada').html('Update Aktivitas').show();
+        $('.cancel-btn').html('Batal');
+        $('.input_table, .btn_delete_row_armada').show();
+        $('#add_cash_armada').modal("show");
+        $('#add_cash_armada').attr("cr_id", data.cr_id);
+    })
+
+    $(document).on('click', '.btn_view_armada', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        mode=3;
+        items = [];
+        console.log(data);
+        $('#add_cash_armada .modal-title').html("Lihat Aktivitas Armada");
+        $('#add_cash_armada input').empty().val("");
+        $('#customer_id_armada').empty(null);
+        
+        let total = 0;
+        data.detail.forEach(e => {
+            var temp = {
+                "crd_id" : e.crd_id,
+                "crd_notes" : e.crd_notes,
+                "crd_nominal" : e.crd_nominal,
+            };
+            items.push(temp);
+            total += e.crd_nominal;
+        })
+        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+        addRowArmada();
+
+        $('#btn-foto-bukti-armada').hide();
+        $('#btn-lihat-bukti-armada').show();
+
+        var img = JSON.parse(data.so_img);
+        list_photo = img;
+        console.log(list_photo);
+
+        $('#modalViewPhoto .modal-footer').show();
+        $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+        $('#check_foto_armada').show();
+        $('#jumlahFoto').html(list_photo.length);
+        $('#bukti_armada').val(data.cr_img);
+
+        $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        $('.input_table, .btn-save-armada, .btn_delete_row_armada').hide();
+        $('.cancel-btn').html('Kembali');
+        $('#add_cash_armada').modal("show");
+        $('#add_cash_armada').attr("cr_id", data.cr_id);
+    })
+
+    $(document).on('click', '.btn_delete_armada', function(){
+        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin menghapus pengajuan ini?","btn-delete-armada");
+        $('#btn-delete-armada').attr("cr_id", data.cr_id);
+    })
+
+    $(document).on("click","#btn-delete-armada",function(){
+        LoadingButton(this);
+        $.ajax({
+            url:"/deleteCashArmada",
+            data:{
+                cr_id:$('#btn-delete-armada').attr('cr_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                ResetLoadingButton('#btn-delete-armada', "Delete");
+                $('.modal').modal("hide");
+                refreshCashAdmin();
+                notifikasi('success', "Berhasil Delete", "Berhasil delete pengajuan");
+            },
+            error:function(e){
+                ResetLoadingButton('#btn-delete-armada', "Delete");
+                console.log(e);
+            }
+        });
+    });
+
+    // --------- ACC KAS OPERASIONAL ---------
     $(document).on('click', '.btn_acc', function(){
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         showModalKonfirmasi(
@@ -1192,6 +1711,7 @@
         $('#btn-accept-kas').attr("cash_id", data.cash_id);
         if (type == "admin") $('#btn-accept-kas').attr("ca_id", data.ca_id);
         else if (type == "gudang") $('#btn-accept-kas').attr("cg_id", data.cg_id);
+        else if (type == "armada") $('#btn-accept-kas').attr("cr_id", data.cr_id);
         $('#btn-accept-kas').html("Konfirmasi");
     })
 
@@ -1214,6 +1734,14 @@
                 _token:token
             };
         }
+        else if (type == "armada") {
+            url = "/acceptCashArmada";
+            param = {
+                cash_id:$('#btn-accept-kas').attr('cash_id'),
+                cr_id:$('#btn-accept-kas').attr('cr_id'),
+                _token:token
+            };
+        }
         $.ajax({
             url:url,
             data:param,
@@ -1222,6 +1750,7 @@
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 if (type=="admin") refreshCashAdmin();
                 else if (type=="gudang") refreshCashGudang();
+                else if (type=="armada") refreshCashArmada();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengajuan");
                 
@@ -1239,6 +1768,7 @@
         $('#btn-decline-kas').attr("cash_id", data.cash_id);
         if (type == "admin") $('#btn-decline-kas').attr("ca_id", data.ca_id);
         else if (type == "gudang") $('#btn-decline-kas').attr("cg_id", data.cg_id);
+        else if (type == "armada") $('#btn-decline-kas').attr("cr_id", data.cr_id);
         $('#btn-decline-kas').html("Konfirmasi");
     })
 
@@ -1261,6 +1791,14 @@
                 _token:token
             };
         }
+        else if (type == "armada") {
+            url = "/declineCashArmada";
+            param = {
+                cash_id:$('#btn-accept-kas').attr('cash_id'),
+                cr_id:$('#btn-accept-kas').attr('cr_id'),
+                _token:token
+            };
+        }
         $.ajax({
             url:url,
             data:param,
@@ -1269,6 +1807,7 @@
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 if (type=="admin") refreshCashAdmin();
                 else if (type=="gudang") refreshCashGudang();
+                else if (type=="armada") refreshCashArmada();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
                 
@@ -1281,7 +1820,7 @@
     })
 
     function imageValue(image){
-        $('#fotoProduksiImage').attr('src', public+"kas_admin/"+image);
+        $('#fotoProduksiImage').attr('src', public+"kas_admin/"+type+"/"+image);
         $('#fotoProduksiImage').attr('index', 0);
     }
 
@@ -1295,10 +1834,16 @@
         $('.btn-prev,.btn-next').hide();
         $('#modalViewPhoto').modal("show");
     });
+    $(document).on("click", "#btn-lihat-bukti-armada", function () {
+        $("#add_cash_armada").modal("hide");
+        $('.btn-prev,.btn-next').show();
+        $('#modalViewPhoto').modal("show");
+    });
 
     $(document).on("hidden.bs.modal", "#modalViewPhoto", function () {
         if (type == "admin") $("#add_cash_admin").modal("show");
         else if (type == "gudang") $("#add_cash_gudang").modal("show");
+        else if (type == "armada") $("#add_cash_armada").modal("show");
         $('#modalViewPhoto').modal("hide");
     });
 
@@ -1331,6 +1876,20 @@
         $("#add_cash_gudang").modal("hide");
         $('#modalPhoto').modal('show');
     });
+    $(document).on('click', '#btn-foto-bukti-armada', function() {
+        rotationAngle = 0;
+        camRotation = 0;
+        photoData = "";
+        modeCamera=3;
+        inputFile ="#bukti_armada";
+        $("#video").removeClass("rot90 rot180 rot270");
+        $("#preview-box").hide();
+        $("#camera").show();
+
+        startCamera();
+        $("#add_cash_armada").modal("hide");
+        $('#modalPhoto').modal('show');
+    });
 
     $(document).on('click', '#uploadBtn', function(){
         if (type == "admin") {
@@ -1342,14 +1901,44 @@
             $("#add_cash_admin").modal("show");
         }
         else if (type == "gudang") {
-            if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
+            if ($('#bukti_gudang').val() != "" || $('#bukti_gudang').val() != "null" || $('#bukti_gudang').val() != null) {
                 $('#check_foto_gudang').show();
             } else {
                 $('#check_foto_gudang').hide();
             }
             $("#add_cash_gudang").modal("show");
         }
+        else if (type == "armada") {
+            if ($('#bukti_armada').val() != "" || $('#bukti_armada').val() != "null" || $('#bukti_armada').val() != null) {
+                $('#check_foto_armada').show();
+            } else {
+                $('#check_foto_armada').hide();
+            }
+            $("#add_cash_armada").modal("show");
+        }
     })
+
+    $(document).on('click', '.btn-prev', function(){
+        var index = parseInt($('#fotoProduksiImage').attr('index'));
+        console.log("index : "+index);
+        
+        if(index > 0){
+            index -= 1;
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+list_photo[index]);
+            $('#fotoProduksiImage').attr('index', index);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+list_photo[index]);
+        }
+    });
+    $(document).on('click', '.btn-next', function(){
+        var index = parseInt($('#fotoProduksiImage').attr('index'));
+        console.log("index : "+index);
+        if(index < list_photo.length - 1){
+            index += 1;
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+list_photo[index]);
+            $('#fotoProduksiImage').attr('index', index);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+list_photo[index]);
+        }
+    });
 
     $(document).on('change', '#start_date', function(){
         dates = [];
@@ -1359,6 +1948,7 @@
         dates.push(end);
         if (type=="admin") refreshCashAdmin();
         else if (type=="gudang") refreshCashGudang();
+        else if (type=="armada") refreshCashArmada();
     })
     $(document).on('change', '#end_date', function(){
         dates = [];
@@ -1368,6 +1958,7 @@
         dates.push(end);
         if (type=="admin") refreshCashAdmin();
         else if (type=="gudang") refreshCashGudang();
+        else if (type=="armada") refreshCashArmada();
     })
     $(document).on('click', '.btn-clear', function(){
         dates = null;
@@ -1376,8 +1967,10 @@
         $('#filter_staff_id').empty();
         if (type=="admin") refreshCashAdmin();
         else if (type=="gudang") refreshCashGudang();
+        else if (type=="armada") refreshCashArmada();
     })
     $(document).on('change', '#filter_staff_id', function(){
         if (type=="admin") refreshCashAdmin();
         else if (type=="gudang") refreshCashGudang();
+        else if (type=="armada") refreshCashArmada();
     })

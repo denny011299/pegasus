@@ -293,7 +293,7 @@
                         <label class="form-label mb-1">Sampai Tanggal</label>
                         <input type="date" name="" id="end_date" class="form-control">
                     </div>
-                    <div class="col-md-3 row-supplier">
+                    <div class="col-md-3 filter_person">
                         <label class="form-label mb-1">Staff</label>
                         <select class="form-select" id="filter_staff_id"></select>
                     </div>

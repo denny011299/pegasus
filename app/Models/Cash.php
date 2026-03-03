@@ -20,8 +20,13 @@ class Cash extends Model
         $result = self::where('status', '>=', 1)->where('status', '<', 3);
         if($data["cash_id"]) $result->where('cash_id','=',$data["cash_id"]);
         if($data["cash_date"]) $result->where('cash_date','=',$data["cash_date"]);
-        $result->orderBy('cash_date', 'desc')->orderBy('created_at', 'desc');
+        $result->orderBy('cash_date', 'desc')->orderBy('status', 'asc')->orderBy('created_at', 'desc');
         $result = $result->get();
+
+        foreach ($result as $key => $value) {
+            $detail = (new CashArmada())->getCashArmada(['cash_id' => $value['cash_id']])->first();
+            if ($detail) $value->armada = $detail;
+        }
         
         return $result;
     }

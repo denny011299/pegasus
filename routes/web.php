@@ -257,7 +257,13 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/deleteCashGudang', [ReportController::class, "deleteCashGudang"])->name('deleteCashGudang');
     Route::post('/acceptCashGudang', [ReportController::class, "acceptCashGudang"])->name('acceptCashGudang');
     Route::post('/declineCashGudang', [ReportController::class, "declineCashGudang"])->name('declineCashGudang');
-
+    
+    Route::get('/getCashArmada', [ReportController::class, "getCashArmada"])->name('getCashArmada');
+    Route::post('/insertCashArmada', [ReportController::class, "insertCashArmada"])->name('insertCashArmada');
+    Route::post('/updateCashArmada', [ReportController::class, "updateCashArmada"])->name('updateCashArmada');
+    Route::post('/deleteCashArmada', [ReportController::class, "deleteCashArmada"])->name('deleteCashArmada');
+    Route::post('/acceptCashArmada', [ReportController::class, "acceptCashArmada"])->name('acceptCashArmada');
+    Route::post('/declineCashArmada', [ReportController::class, "declineCashArmada"])->name('declineCashArmada');
 
     Route::get('/getCashGudang', [ReportController::class, "getCashGudang"])->name('getCashGudang');
     Route::post('/insertCashGudang', [ReportController::class, "insertCashGudang"])->name('insertCashGudang');

@@ -1785,7 +1785,7 @@
                                             <table class="table table-center" id="tableDetail" style="min-height: 15vh">
                                                 <thead>
                                                     <th>No</th>
-                                                    <th style="width: 25%">Nama</th>
+                                                    <th style="width: 25%">Keterangan</th>
                                                     <th class="text-end">Nominal</th>
                                                     <th class="no-sort text-center">Aksi</th>
                                                 </thead>
@@ -1946,6 +1946,110 @@
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
                             class="btn btn-primary paid-continue-btn btn-save-gudang">Tambah Aktivitas</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal modal-lg custom-modal fade" id="add_cash_armada" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Aktivitas Armada</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="row p-0 m-0" id="inputModal">
+                                    <div class="col-6">
+                                        <div class="input-block mb-3" id="row-cash">
+                                            <label>Nama Armada<span class="text-danger">*</span></label>
+                                            <select class="form-select fill" id="customer_id_armada"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 foto">
+                                        <label class="form-label d-flex">
+                                            Bukti Foto<span class="text-danger">*</span> 
+                                            <span id="check_foto_armada" style="display: none" class="ms-2">
+                                                <div class="d-flex g-3">
+                                                    <i class="fa fa-check-circle text-success mt-1"></i>
+                                                    <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
+                                                </div>
+                                            </span>
+                                        </label>
+                                        <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti-armada">Foto Bukti</button>
+                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-armada" style="display: none">Lihat Bukti</button>
+                                        <input type="hidden" name="" id="bukti_armada">
+                                    </div>
+                                    <div class="col-12 px-2 mb-3">
+                                        <div class="row input_table g-3 align-items-end px-1">
+                                            <div class="col-12 col-lg-3 saldo_kas">
+                                                <div class="input-block mb-3">
+                                                    <label>Tipe<span class="text-danger">*</span></label>
+                                                    <select class="form-select fill_catatan" id="oc_transaksi_armada">
+                                                        <option value=1>Masuk</option>
+                                                        <option value=2>Keluar</option>
+                                                        <option value=3>Keluar 1</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-lg-4 add">
+                                                <div class="input-block mb-3" id="row-product">
+                                                    <label>Nama Pencatatan<span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control fill_catatan" id="crd_notes" placeholder="Contoh: Makan Siang">
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-lg-4 add">
+                                                <div class="input-block mb-3">
+                                                    <label>Nominal<span class="text-danger">*</span></label>
+                                                    <div class="input-group fix-nominal">
+                                                        <span class="input-group-text">Rp </span>
+                                                        <input class="form-control fill_catatan number-only nominal_only" id="crd_nominal" placeholder="Contoh: 10.000"></input>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-md-12 col-lg-1 add">
+                                                <button type="button" class="btn btn-primary w-100 btn-add-armada mb-3">
+                                                    +
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 py-3 mb-3">
+                                        <div class="table-responsive">
+                                            <table class="table table-center" id="tableDetailArmada" style="min-height: 15vh">
+                                                <thead>
+                                                    <th>No</th>
+                                                    <th>Tipe</th>
+                                                    <th style="width: 25%">Keterangan</th>
+                                                    <th class="text-end">Nominal</th>
+                                                    <th class="no-sort text-center">Aksi</th>
+                                                </thead>
+                                                <tbody></tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <td colspan="3" class="text-end fw-bold">Total : </td>
+                                                        <td class="total_armada text-end fw-bold">Rp 0</td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save-armada">Tambah Aktivitas</button>
                     </div>
                 </form>
             </div>

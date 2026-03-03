@@ -28,7 +28,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
-            ordering: true,
+            ordering: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -40,9 +40,16 @@
                 },
             },
             columns: [
+                {
+                    className: 'dt-control text-center',
+                    orderable: false,
+                    data: null,
+                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
+                    width: "2.5rem"
+                },
                 { data: "date" },
                 { data: "cash_description" },
-                { data: "debit" },
+                { data: "debit_text" },
                 { data: "credit_text1" },
                 { data: "credit_text2" },
                 { data: "status_text" },
@@ -64,6 +71,7 @@
                 if (!Array.isArray(e)) {
                     e = e.original || [];
                 }
+                console.log(e);
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 var debits = 0;
@@ -89,6 +97,7 @@
                         e[i].debit = "Rp " + 0;
                         if (e[i].status == 2) credits2 += e[i].cash_nominal;
                     }
+                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text1 =`<label class='text-danger'>${e[i].credit1}</label>`
                     e[i].credit_text2 =`<label class='text-danger'>${e[i].credit2}</label>`
 
@@ -119,11 +128,82 @@
                 $('.credits2').html(`(Rp ${formatRupiah(credits2)})`);
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
+
+                // Expand child row
+                setTimeout(function () {
+                    $('#tableCash tbody td.dt-control').each(function () {
+                        $(this).trigger('click');
+                    });
+                }, 100);
             },
             error: function (err) {
                 console.error("Gagal load kas:", err);
             }
         });
+    }
+
+    $('#tableCash tbody').on('click', 'td.dt-control', function () {
+        let tr = $(this).closest('tr');
+        let row = table.row(tr);
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            tr.removeClass('shown');
+        } else {
+            if (row.data().armada){
+                row.child(format(row.data().armada.detail)).show();
+                tr.addClass('shown');
+            }
+        }
+    });
+
+    function format(detailData) {
+        console.log(detailData);
+        if (!detailData || detailData.length === 0) {
+            return `
+                <div class="p-3">
+                    <em class="text-muted">Tidak ada detail</em>
+                </div>
+            `;
+        }
+
+        let total = 0;
+
+        let html = `<div class="px-5">`;
+        detailData.forEach((d) => {
+            total += parseInt(d.crd_nominal);
+
+            html += `
+                <div class="child-item">
+                    <div class="child-left d-flex g-3">
+                        <div class="date me-3">
+                            ${moment(d.created_at).format('D MMM YYYY')}
+                        </div>
+                        <div class="notes">
+                            ${d.crd_notes}
+                        </div>
+                    </div>
+                    <div class="child-right text-end">
+                        Rp ${formatRupiah(d.crd_nominal)}
+                    </div>
+                </div>
+
+            `;
+        });
+
+        html += `
+            <div class="child-item fw-semibold pt-3 border-0">
+                <div class="child-left-total">
+                    Total
+                </div>
+                <div class="child-right text-end">
+                    Rp ${formatRupiah(total)}
+                </div>
+            </div>
+        `;
+
+        html += `</div>`;
+        return html;
     }
 
     $(document).on("click",".btn-save",function(){
@@ -219,6 +299,7 @@
         let url = "";
         if (tujuan == 1) url = "/acceptCashAdmin";
         else if (tujuan == 2) url = "/acceptCashGudang";
+        else if (tujuan == 3) url = "/acceptCashArmada";
         $.ajax({
             url:url,
             data:{
@@ -254,6 +335,7 @@
         let url = "";
         if (tujuan == 1) url = "/declineCashAdmin";
         else if (tujuan == 2) url = "/declineCashGudang";
+        else if (tujuan == 3) url = "/declineCashArmada";
         $.ajax({
             url:url,
             data:{

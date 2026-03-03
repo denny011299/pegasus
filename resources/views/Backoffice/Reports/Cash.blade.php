@@ -1,5 +1,53 @@
 <?php $page = 'cash'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        .child-wrapper {
+            margin-left: 60px; 
+            max-width: 80%;
+        }
+
+        .child-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 40px;               /* jarak antar kolom */
+            padding: 12px 0px 12px 36px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .child-left {
+            flex: 0 0 50%;
+            padding-left: 0.8rem
+        }
+
+        .child-right {
+            flex: 0 0 34%;
+            text-align: right;
+            padding-right: 12rem;
+        }
+
+        .child-left-total {
+            flex: 0 0 50%;
+            padding-left: 6.8rem
+        }
+
+        .left-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .date {
+            flex: 0 0 auto;
+        }
+
+        .notes {
+            max-width: 30rem;
+            white-space: normal;
+            word-break: break-word;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -27,11 +75,12 @@
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
                                         <tr>
+                                            <th></th>
                                             <th>Tanggal</th>
                                             <th>Deskripsi</th>
-                                            <th>Debit</th>
-                                            <th>Kredit 1</th>
-                                            <th>Kredit 2</th>
+                                            <th>Masuk</th>
+                                            <th>Keluar</th>
+                                            <th>Keluar 1</th>
                                             <th>Status</th>
                                             <th>Aksi</th>
                                         </tr>
@@ -41,7 +90,7 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="2" class="text-end fw-bold">Total : </td>
+                                            <td colspan="3" class="text-end fw-bold">Total : </td>
                                             <td class="debits"></td>
                                             <td class="credits1 text-danger"></td>
                                             <td class="credits2 text-danger"></td>

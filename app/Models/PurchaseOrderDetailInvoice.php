@@ -73,7 +73,10 @@ class PurchaseOrderDetailInvoice extends Model
         }
 
         $result->select('purchase_order_detail_invoices.*');
-        $result->orderByRaw('FIELD(purchase_orders.status, 1, 2, 3, -1)')->orderByRaw('FIELD(purchase_orders.pembayaran, 1, 3, 2)')->orderBy("purchase_order_detail_invoices.poi_due", "asc");
+        $result->orderByRaw('FIELD(purchase_orders.status, 1, 2, 3, -1)')
+                ->orderByRaw('FIELD(purchase_orders.pembayaran, 1, 3, 2)')
+                ->orderBy("purchase_orders.po_date", "asc")
+                ->orderBy("purchase_order_detail_invoices.poi_due", "asc");
         $result = $result->get();
         
         foreach ($result as $key => $value) {
