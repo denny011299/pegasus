@@ -116,6 +116,18 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
+                            <div class="row total-summary mt-3">
+                                <div class="col-8"></div>
+                                <div class="col-4">
+                                    <div class="card p-3">
+                                        <div class="row">
+                                            <div class="fw-bold text-center p-0">
+                                                <i class="fe fe-dollar-sign"></i> Kas Armada : <span id="totalArmada">Rp 0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">

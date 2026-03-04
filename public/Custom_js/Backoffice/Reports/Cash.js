@@ -49,9 +49,9 @@
                 },
                 { data: "date" },
                 { data: "cash_description" },
-                { data: "debit_text" },
-                { data: "credit_text1" },
-                { data: "credit_text2" },
+                { data: "debit_text", className: "text-end" },
+                { data: "credit_text1", className: "text-end" },
+                { data: "credit_text2", className: "text-end" },
                 { data: "status_text" },
                 { data: "action", className: "d-flex align-items-center" },
             ],
@@ -151,7 +151,7 @@
             tr.removeClass('shown');
         } else {
             if (row.data().armada){
-                row.child(format(row.data().armada.detail)).show();
+                row.child(format(row.data().armada)).show();
                 tr.addClass('shown');
             }
         }
@@ -170,25 +170,27 @@
         let total = 0;
 
         let html = `<div class="px-5">`;
-        detailData.forEach((d) => {
-            total += parseInt(d.crd_nominal);
-
-            html += `
-                <div class="child-item">
-                    <div class="child-left d-flex g-3">
-                        <div class="date me-3">
-                            ${moment(d.created_at).format('D MMM YYYY')}
+        detailData.forEach((e) => {
+            e.detail.forEach((d) => {
+                total += parseInt(d.crd_nominal);
+    
+                html += `
+                    <div class="child-item">
+                        <div class="child-left d-flex g-3">
+                            <div class="date me-3">
+                                ${moment(d.created_at).format('D MMM YYYY')}
+                            </div>
+                            <div class="notes">
+                                ${d.crd_notes}
+                            </div>
                         </div>
-                        <div class="notes">
-                            ${d.crd_notes}
+                        <div class="child-right text-end">
+                            Rp ${formatRupiah(d.crd_nominal)}
                         </div>
                     </div>
-                    <div class="child-right text-end">
-                        Rp ${formatRupiah(d.crd_nominal)}
-                    </div>
-                </div>
-
-            `;
+    
+                `;
+            })
         });
 
         html += `

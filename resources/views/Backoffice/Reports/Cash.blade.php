@@ -78,9 +78,9 @@
                                             <th></th>
                                             <th>Tanggal</th>
                                             <th>Deskripsi</th>
-                                            <th>Masuk</th>
-                                            <th>Keluar</th>
-                                            <th>Keluar 1</th>
+                                            <th class="text-end">Masuk</th>
+                                            <th class="text-end">Keluar</th>
+                                            <th class="text-end">Keluar 1</th>
                                             <th>Status</th>
                                             <th>Aksi</th>
                                         </tr>
@@ -91,7 +91,7 @@
                                     <tfoot>
                                         <tr>
                                             <td colspan="3" class="text-end fw-bold">Total : </td>
-                                            <td class="debits"></td>
+                                            <td class="debits text-success"></td>
                                             <td class="credits1 text-danger"></td>
                                             <td class="credits2 text-danger"></td>
                                             <td colspan="2"></td>

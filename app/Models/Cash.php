@@ -24,8 +24,8 @@ class Cash extends Model
         $result = $result->get();
 
         foreach ($result as $key => $value) {
-            $detail = (new CashArmada())->getCashArmada(['cash_id' => $value['cash_id']])->first();
-            if ($detail) $value->armada = $detail;
+            $detail = (new CashArmada())->getCashArmada(['cash_id' => $value['cash_id']]);
+            if ($detail) $value->armada = $detail['data'];
         }
         
         return $result;

@@ -38,13 +38,30 @@ class CashGudang extends Model
         $result->orderByRaw('FIELD(status, 2, 1, 3)')->orderBy('created_at', 'desc');
 
         $result = $result->get();
+
+        // hitung sisa kas
+        $allData = CashGudang::where('status', 2)->get();
+        $sisa_kas = 0;
+        foreach ($allData as $value) {
+            if ($value->cg_type == 1 && $value->cg_aksi == 1) {
+                $sisa_kas += $value->cg_nominal;
+            } else if ($value->cg_type == 1 && $value->cg_aksi == 2) {
+                $sisa_kas -= $value->cg_nominal;
+            } else if ($value->cg_type == 2) {
+                $sisa_kas -= $value->cg_nominal;
+            }
+        }
+        
         foreach ($result as $key => $value) {
             $value->staff_name = Staff::find($value->staff_id)->staff_name;
 
             $detail = (new CashGudangDetail())->getCashGudangDetail(['cg_id' => $value->cg_id]);
             if ($detail->count() > 0) $value->detail = $detail;
         }
-        return $result;
+        return [
+            'data' => $result,
+            'sisa_kas' => $sisa_kas
+        ];
     }
 
     function insertCashGudang($data)
@@ -97,6 +114,18 @@ class CashGudang extends Model
             $t->status = 2;
         }
         $t->save();
+
+        $detail = CashGudangDetail::where('cg_id', $t->cg_id)->where('status', 1)->get();
+        foreach ($detail as $key => $value) {
+            (new CashArmada())->insertCashArmada([
+                "customer_id" => $value->customer_id,
+                "cash_id" => 0,
+                "cr_nominal" => $value->cgd_nominal,
+                "cr_notes" => "Penyerahan kas dari gudang",
+                "cr_type" => 1,
+                "status" => 2
+            ]);
+        }
     }
 
     function declineCashGudang($data)

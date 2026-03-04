@@ -28,34 +28,34 @@
         if (type === 'admin') {
             inisialisasi();
             $('#tableCash thead th').eq(2).text('Staff');
-            refreshCashAdmin();
             $('.filter_person').html(`
                 <label class="form-label mb-1">Staff</label>
                 <select class="form-select" id="filter_staff_id"></select>
             `);
             autocompleteStaff('#filter_staff_id');
+            $('.total-summary').hide();
         }
         
         else if (type === 'gudang') {
             inisialisasi();
             $('#tableCash thead th').eq(2).text('Staff');
-            refreshCashGudang();
             $('.filter_person').html(`
                 <label class="form-label mb-1">Staff</label>
                 <select class="form-select" id="filter_staff_id"></select>
             `);
             autocompleteStaff('#filter_staff_id');
+            $('.total-summary').hide();
         }
         
         else if (type === 'armada') {
             inisialisasi();
             $('#tableCash thead th').eq(2).text('Armada');
-            refreshCashArmada();
             $('.filter_person').html(`
                 <label class="form-label mb-1">Armada</label>
                 <select class="form-select" id="filter_customer_id"></select>
             `);
             autocompleteCustomer('#filter_customer_id');
+            $('.total-summary').show();
         }
     });
 
@@ -213,6 +213,10 @@
         $('.is-invalids').removeClass('is-invalids');
         $('.cancel-btn').html('Batal');
     });
+
+    $(document).on('change', '#filter_customer_id', function(){
+        refreshCashArmada();
+    })
     
     function inisialisasi() {
         if ($.fn.DataTable.isDataTable('#tableCash')) {
@@ -315,14 +319,15 @@
                 staff_id: $('#filter_staff_id').val()
             },
             method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
+            success: function (data) {
+                // if (!Array.isArray(e)) {
+                //     e = e.original || [];
+                // }
                 table.clear().draw(); 
 
                 // Manipulasi data sebelum masuk ke tabel
-                console.log(e);
+                console.log(data['data']);
+                let e = data['data'];
                 let debits = 0;
                 let credits = 0;
                 for (let i = 0; i < e.length; i++) {
@@ -379,13 +384,8 @@
                 table.rows.add(e).draw();
                 $('.debits').html(`Rp ${formatRupiah(debits)}`);
                 $('.credits').html(`(Rp ${formatRupiah(credits)})`);
-                if (debits - credits < 0){
-                    $('.sisa').html(`<label class='text-danger'>Rp ${formatRupiah(debits - credits)}</label>`);
-                    sisa_kas = 0;
-                } else {
-                    $('.sisa').html(`Rp ${formatRupiah(debits - credits)}`);
-                    sisa_kas = debits - credits;
-                }
+                $('.sisa').html(`Rp ${formatRupiah(data['sisa_kas'])}`);
+                sisa_kas = data['sisa_kas'];
 
                 // Expand child row
                 setTimeout(function () {
@@ -410,12 +410,13 @@
                 staff_id: $('#filter_staff_id').val()
             },
             method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
+            success: function (data) {
+                // if (!Array.isArray(data)) {
+                //     data = data.original || [];
+                // }
                 table.clear().draw(); 
-                console.log(e);
+                console.log(data['data']);
+                e = data['data'];
                 let debits = 0;
                 let credits = 0;
                 // Manipulasi data sebelum masuk ke tabel
@@ -477,13 +478,8 @@
 
                 $('.debits').html(`Rp ${formatRupiah(debits)}`);
                 $('.credits').html(`(Rp ${formatRupiah(credits)})`);
-                if (debits - credits < 0){
-                    $('.sisa').html(`<label class='text-danger'>Rp ${formatRupiah(debits - credits)}</label>`);
-                    sisa_kas = 0;
-                } else {
-                    $('.sisa').html(`Rp ${formatRupiah(debits - credits)}`);
-                    sisa_kas = debits - credits;
-                }
+                $('.sisa').html(`Rp ${formatRupiah(data['sisa_kas'])}`);
+                sisa_kas = data['sisa_kas'];
 
                 // Expand child row
                 setTimeout(function () {
@@ -503,22 +499,27 @@
             url: "/getCashArmada",
             data: {
                 dates: dates,
-                staff_id: $('#filter_staff_id').val()
+                customer_id: $('#filter_customer_id').val()
             },
             method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
+            success: function (data) {
+                // if (!Array.isArray(e)) {
+                //     e = e.original || [];
+                // }
                 table.clear().draw(); 
 
                 // Manipulasi data sebelum masuk ke tabel
+                let e = data['data'];
                 console.log(e);
                 let debits = 0;
                 let credits = 0;
+                let totalAll = 0;
+                let totalSummary = 0;
                 for (let i = 0; i < e.length; i++) {
+                    totalAll = e[i].total_all;
+                    totalSummary = e[i].customer_saldo;
                     e[i].date = moment(e[i].created_at).format('D MMM YYYY');
-                    if (e[i].cr_aksi == 1){
+                    if (e[i].cr_type == 1){
                         e[i].debit = "Rp " + formatRupiah(e[i].cr_nominal);
                         e[i].credit = "Rp 0";
                         if (e[i].status == 2) debits += e[i].cr_nominal;
@@ -528,7 +529,6 @@
                         e[i].credit = "(Rp " + formatRupiah(e[i].cr_nominal) + ")";
                         if (e[i].status == 2) credits += e[i].cr_nominal;
                     }
-                    debits += e[i].customer_saldo;
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
 
@@ -567,18 +567,16 @@
                             `;
                         }
                     }
+                    if (e[i].status == 2 && e[i].cr_type == 1) e[i].action = "";
                 }
                 table.rows.add(e).draw();
                 
                 $('.debits').html(`Rp ${formatRupiah(debits)}`);
                 $('.credits').html(`(Rp ${formatRupiah(credits)})`);
-                if (debits - credits < 0){
-                    $('.sisa').html(`<label class='text-danger'>(Rp ${formatRupiah(debits - credits)})</label>`);
-                    sisa_kas = 0;
-                } else {
-                    $('.sisa').html(`Rp ${formatRupiah(debits - credits)}`);
-                    sisa_kas = debits - credits;
-                }
+                // $('#totalSeluruh').html(`Rp ${formatRupiah(totalAll)}`);
+                if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiah(totalSummary)}`);
+                else $('#totalArmada').html('-');
+                $('.sisa').html(`Rp ${formatRupiah(data['sisa_kas'])}`);
 
                 // Expand child row
                 setTimeout(function () {
@@ -855,15 +853,6 @@
                 }
             }
         });
-
-        if (type == "armada"){
-
-        } else {
-            if($('#staff_id').val()==null||$('#staff_id').val()=="null"||$('#staff_id').val()==""){
-                valid=-1;
-                $('#row-cash .select2-selection--single').addClass('is-invalids');
-            }
-        }
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
@@ -1965,6 +1954,7 @@
         $('#start_date').val("");
         $('#end_date').val("");
         $('#filter_staff_id').empty();
+        $('#filter_customer_id').empty();
         if (type=="admin") refreshCashAdmin();
         else if (type=="gudang") refreshCashGudang();
         else if (type=="armada") refreshCashArmada();

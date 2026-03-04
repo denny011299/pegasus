@@ -40,13 +40,29 @@ class CashAdmin extends Model
         $result->orderByRaw('FIELD(status, 2, 1, 3)')->orderBy('created_at', 'desc');
 
         $result = $result->get();
+
+        $allData = CashAdmin::where('status', 2)->get();
+        $sisa_kas = 0;
+        foreach ($allData as $value) {
+            if ($value->ca_type == 1 && $value->ca_aksi == 1) {
+                $sisa_kas += $value->ca_nominal;
+            } else if ($value->ca_type == 1 && $value->ca_aksi == 2) {
+                $sisa_kas -= $value->ca_nominal;
+            } else if ($value->ca_type == 2) {
+                $sisa_kas -= $value->ca_nominal;
+            }
+        }
+
         foreach ($result as $key => $value) {
             $value->staff_name = Staff::find($value->staff_id)->staff_name;
 
             $detail = CashAdminDetail::where('ca_id', $value->ca_id)->where('status', 1)->get();
             if ($detail->count() > 0) $value->detail = $detail;
         }
-        return $result;
+        return [
+            'data' => $result,
+            'sisa_kas' => $sisa_kas
+        ];
     }
 
     function insertCashAdmin($data)

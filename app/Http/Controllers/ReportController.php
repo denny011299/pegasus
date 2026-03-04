@@ -571,7 +571,6 @@ class ReportController extends Controller
 
         $total = 0;
         $item = json_decode($data['items'], true);
-        dd($item[0]);
 
         foreach ($item as $key => $value) {
             $total += $value['crd_nominal'];
@@ -609,7 +608,8 @@ class ReportController extends Controller
             $data["cr_img"] = json_encode($img);
         }
 
-        $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes . now()->format("Y-m-d");
+        $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
+        if ($item[0]['crd_type'] == 1) $data['cr_notes'] = "Setoran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
         $data['cr_nominal'] = $total;
 
         $cash_id = (new Cash())->insertCash([
@@ -644,7 +644,7 @@ class ReportController extends Controller
             $total += $value['crd_nominal'];
         }
 
-        $data['cr_notes'] = "Pengeluaran armada " . $customer . now()->format("Y-m-d");
+        $data['cr_notes'] = "Pengeluaran armada " . $customer . " " . now()->format("Y-m-d");
         $data['cr_nominal'] = $total;
 
         $cr_id = (new CashArmada())->updateCashArmada($data);
@@ -691,17 +691,12 @@ class ReportController extends Controller
 
         if (isset($data['cr_id'])){
             $cr = CashArmada::find($data['cr_id']);
-
-            $customer = Customer::find($cr['customer_id']);
-            $customer->customer_saldo -= $cr['cr_nominal'];
-            $customer->save();
         } else {
             $cr = CashArmada::where('cash_id', $data["cash_id"])->first();
-
-            $customer = Customer::find($cr['customer_id']);
-            $customer->customer_saldo -= $cr['cr_nominal'];
-            $customer->save();
         }
+        $customer = Customer::find($cr['customer_id']);
+        $customer->customer_saldo -= $cr['cr_nominal'];
+        $customer->save();
         return (new CashArmada())->acceptCashArmada($data);
     }
 
