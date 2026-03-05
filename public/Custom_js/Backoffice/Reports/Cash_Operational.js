@@ -187,7 +187,7 @@
         else if (type == "armada"){
             $('#add_cash_armada input').val("").attr('disabled', false);
             $('#jenis_input_armada, #customer_id_armada').attr('disabled', false);
-            $('#oc_transaksi_armada').val(1).attr('disabled', false);
+            $('#oc_transaksi_armada').val(1).attr('disabled', false).show();
 
             // $('#row-cash').html(`
             //     <label>Nama Armada<span class="text-danger">*</span></label>
@@ -196,6 +196,7 @@
 
             $('#add_cash_armada .modal-title').html("Tambah Aktivitas Armada");
             $('#customer_id_armada').empty(null).attr('disabled', false);
+            $('#jenis_input_armada').val("saldo").attr('disabled', false).trigger('change');
             autocompleteCustomer('#customer_id_armada', '#add_cash_armada');
             $('.total_armada').html("Rp 0");
 
@@ -544,29 +545,6 @@
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
-                    if (e[i].status == 1){
-                        if (e[i].cr_type == 1){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_edit_armada" data-id="${e[i].cr_id}" data-bs-target="#edit-category">
-                                    <i class="fe fe-edit"></i>
-                                </a>
-                                <a class="p-2 btn-action-icon btn_delete_armada" data-id="${e[i].cr_id}" href="javascript:void(0);">
-                                    <i class="fe fe-trash-2"></i>
-                                </a>
-                            `;
-                        } else if (e[i].cr_type == 2){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
-                        }
-                    }
                     if (e[i].status == 2 && e[i].cr_type == 1) e[i].action = "";
                 }
                 table.rows.add(e).draw();
@@ -1234,10 +1212,29 @@
         $('.is-invalids').removeClass('is-invalids');
         var valid=1;
 
+        var jenis_input = $('#jenis_input_armada').val();
         $("#add_cash_armada .fill").each(function(){
-            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
-                valid=-1;
-                $(this).addClass('is-invalid');
+            if (jenis_input == "saldo"){
+                if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                    if ($(this).hasClass("saldos")){
+                        valid=-1;
+                        $(this).addClass('is-invalid');
+                    }
+                }
+            }
+            else if (jenis_input == "operasional"){
+                if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                    if ($(this).hasClass('operasional')){
+                        valid=-1;
+                        $(this).addClass('is-invalid');
+                    }
+                }
+            } 
+            else {
+                if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                    valid=-1;
+                    $(this).addClass('is-invalid');
+                }
             }
         });
 
@@ -1252,13 +1249,13 @@
             return false;
         };
 
-        if ($('#bukti_armada').val() == ""|| $('#bukti_armada').val() == null || $('#bukti_armada').val() == "null"){
+        if (($('#bukti_armada').val() == ""|| $('#bukti_armada').val() == null || $('#bukti_armada').val() == "null") && jenis_input == "operasional"){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
             ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
             return false;
         }
 
-        if ($("#tableDetailArmada tbody tr").length == 0) {
+        if (($("#tableDetailArmada tbody tr").length == 0) && jenis_input == "operasional") {
             notifikasi('error', "Gagal Insert", 'Minimal input 1 armada');
             ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
             return false;
@@ -1266,6 +1263,9 @@
 
         param = {
             customer_id:$('#customer_id_armada').val(),
+            oc_transaksi: $('#jenis_input_armada').val(),
+            cr_notes: $('#oc_notes_armada').val(),
+            cr_nominal: convertToAngka($('#oc_nominal_armada').val()),
             items: JSON.stringify(items),
             _token:token
         };
@@ -1624,33 +1624,45 @@
         $('#add_cash_armada input').empty().val("");
         $('#customer_id_armada').empty(null);
         
-        let total = 0;
-        data.detail.forEach(e => {
-            var temp = {
-                "crd_id" : e.crd_id,
-                "crd_notes" : e.crd_notes,
-                "crd_nominal" : e.crd_nominal,
-            };
-            items.push(temp);
-            total += e.crd_nominal;
-        })
-        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
-        addRowArmada();
+        if (data.detail?.length){
+            $('#jenis_input_armada').val("operasional").trigger('change').attr('disabled', true);
+            let total = 0;
+            data.detail.forEach(e => {
+                var temp = {
+                    "crd_id" : e.crd_id,
+                    "crd_notes" : e.crd_notes,
+                    "crd_nominal" : e.crd_nominal,
+                };
+                items.push(temp);
+                total += e.crd_nominal;
+            })
+            $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+            addRowArmada();
+            
+            $('.foto').show();
+            $('#btn-foto-bukti-armada').hide();
+            $('#btn-lihat-bukti-armada').show();
+            var img = JSON.parse(data.cr_img);
+            list_photo = img || null;
+            console.log(list_photo);
+    
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+            $('#check_foto_armada').show();
+            $('#jumlahFoto').html(list_photo.length);
+            $('#bukti_armada').val(data.cr_img);
+            
+        } else {
+            $('.foto').hide();
+            $('#jenis_input_armada').val("saldo").trigger('change').attr('disabled', true);
+            $('#oc_transaksi_armada').val(data.cr_akse).attr('disabled', true);
+            $('#oc_nominal_armada').val(data.cr_nominal).attr('disabled', true);
+            $('#oc_notes_armada').val(data.cr_notes).attr('disabled', true);
+        }
 
-        $('#btn-foto-bukti-armada').hide();
-        $('#btn-lihat-bukti-armada').show();
-
-        var img = JSON.parse(data.so_img);
-        list_photo = img;
-        console.log(list_photo);
-
-        $('#modalViewPhoto .modal-footer').show();
-        $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-        $('#fotoProduksiImage').attr('index', 0);
-        $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-        $('#check_foto_armada').show();
-        $('#jumlahFoto').html(list_photo.length);
-        $('#bukti_armada').val(data.cr_img);
+        
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
 

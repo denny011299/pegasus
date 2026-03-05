@@ -570,19 +570,30 @@ class ReportController extends Controller
         $data = $req->all();
 
         $total = 0;
-        $item = json_decode($data['items'], true);
-
-        foreach ($item as $key => $value) {
-            $total += $value['crd_nominal'];
-        }
-
-        $customer = Customer::find($data['customer_id']);
-        if ($total > $customer->customer_saldo){
-            return response()->json([
-                "status" => 0,
-                "header" => "Gagal Insert",
-                "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
-            ]);
+        if ($data['oc_transaksi'] == "operasional"){
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['crd_nominal'];
+            }
+    
+            $customer = Customer::find($data['customer_id']);
+            if ($total > $customer->customer_saldo){
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal Insert",
+                    "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+                ]);
+            }
+        } else {
+            $customer = Customer::find($data['customer_id']);
+            if ($data['cr_nominal'] > $customer->customer_saldo){
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal Insert",
+                    "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+                ]);
+            }
         }
 
         if ($data['photo']){
@@ -608,25 +619,41 @@ class ReportController extends Controller
             $data["cr_img"] = json_encode($img);
         }
 
-        $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
-        if ($item[0]['crd_type'] == 1) $data['cr_notes'] = "Setoran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
-        $data['cr_nominal'] = $total;
+        if ($data['oc_transaksi'] == "operasional"){
+            $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
+            if ($item[0]['crd_type'] == 1) $data['cr_notes'] = "Setoran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
+            $data['cr_nominal'] = $total;
+    
+            $cash_id = (new Cash())->insertCash([
+                "cash_date" => now(),
+                "cash_description" => $data['cr_notes'],
+                "cash_nominal" => $data['cr_nominal'],
+                "cash_type" => $item[0]['crd_type'],
+                "cash_tujuan" => 3, // Armada
+                "status" => 1
+            ]);
+    
+            $data['cash_id'] = $cash_id;
+        } else {
+            $cash_id = (new Cash())->insertCash([
+                "cash_date" => now(),
+                "cash_description" => $data['cr_notes'],
+                "cash_nominal" => $data['cr_nominal'],
+                "cash_type" => 1,
+                "cash_tujuan" => 3, // Armada
+                "status" => 1
+            ]);
+    
+            $data['cash_id'] = $cash_id;
+        }
 
-        $cash_id = (new Cash())->insertCash([
-            "cash_date" => now(),
-            "cash_description" => $data['cr_notes'],
-            "cash_nominal" => $data['cr_nominal'],
-            "cash_type" => $item[0]['crd_type'],
-            "cash_tujuan" => 3, // Armada
-            "status" => 1
-        ]);
-
-        $data['cash_id'] = $cash_id;
         $cr_id = (new CashArmada())->insertCashArmada($data);
 
-        foreach ($item as $key => $value) {
-            $value['cr_id'] = $cr_id;
-            (new CashArmadaDetail())->insertCashArmadaDetail($value);
+        if ($data['oc_transaksi'] == "operasional"){
+            foreach ($item as $key => $value) {
+                $value['cr_id'] = $cr_id;
+                (new CashArmadaDetail())->insertCashArmadaDetail($value);
+            }
         }
     }
 

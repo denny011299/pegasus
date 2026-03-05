@@ -1965,6 +1965,16 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
+                                <div class="col-6 mb-4">
+                                    <div class="input-block">
+                                        <label>Jenis Aktivitas</label>
+                                        <select class="form-select" id="jenis_input_armada">
+                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
+                                            <option value="operasional">Aktivitas Operasional</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-4"></div>
                                 <div class="row p-0 m-0" id="inputModal">
                                     <div class="col-6">
                                         <div class="input-block mb-3" id="row-cash">
@@ -1972,7 +1982,7 @@
                                             <select class="form-select fill" id="customer_id_armada"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6 foto">
+                                    <div class="col-6 foto operasional">
                                         <label class="form-label d-flex">
                                             Bukti Foto<span class="text-danger">*</span> 
                                             <span id="check_foto_armada" style="display: none" class="ms-2">
@@ -1986,9 +1996,24 @@
                                         <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-armada" style="display: none">Lihat Bukti</button>
                                         <input type="hidden" name="" id="bukti_armada">
                                     </div>
-                                    <div class="col-12 px-2 mb-3">
+                                    <div class="col-6 saldo_kas">
+                                        <div class="input-block mb-3">
+                                            <label>Nominal Pengembalian<span class="text-danger">*</span></label>
+                                            <div class="input-group fix-nominal">
+                                                <span class="input-group-text">Rp </span>
+                                                <input class="form-control fill number-only nominal_only saldos" id="oc_nominal_armada" placeholder="Contoh: 10.000"></input>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 saldo_kas">
+                                        <div class="input-block mb-3">
+                                            <label>Keterangan<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill saldos" id="oc_notes_armada" placeholder="Contoh: Pengembalian kas harian">
+                                        </div>
+                                    </div>
+                                    <div class="col-12 px-2 mb-3 operasional">
                                         <div class="row input_table g-3 align-items-end px-1">
-                                            <div class="col-12 col-lg-3 saldo_kas">
+                                            <div class="col-12 col-lg-3">
                                                 <div class="input-block mb-3">
                                                     <label>Tipe<span class="text-danger">*</span></label>
                                                     <select class="form-select fill_catatan" id="oc_transaksi_armada">
@@ -2020,7 +2045,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-12 py-3 mb-3">
+                                    <div class="col-12 py-3 mb-3 operasional">
                                         <div class="table-responsive">
                                             <table class="table table-center" id="tableDetailArmada" style="min-height: 15vh">
                                                 <thead>

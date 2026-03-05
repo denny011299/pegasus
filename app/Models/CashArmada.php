@@ -80,6 +80,7 @@ class CashArmada extends Model
         $t->cr_nominal = $data["cr_nominal"];
         $t->cr_notes = $data["cr_notes"];
         $t->cr_type = $data["cr_type"] ?? 2;
+        $t->cr_aksi = $data["cr_aksi"] ?? 0;
         $t->cr_img = $data["cr_img"] ?? null;
         $t->status = $data['status'] ?? 1;
         $t->save();
@@ -94,6 +95,7 @@ class CashArmada extends Model
         $t->cr_nominal = $data["cr_nominal"];
         $t->cr_notes = $data["cr_notes"];
         $t->cr_type = $data["cr_type"] ?? 2;
+        $t->cr_aksi = $data["cr_aksi"] ?? 0;
         $t->cr_img = $data["cr_img"] ?? null;
         $t->status = $data['status'] ?? 1;
         $t->save();
