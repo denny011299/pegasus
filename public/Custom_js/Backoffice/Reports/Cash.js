@@ -1,6 +1,7 @@
     var mode=1;
     var table;
     let debit = 0, credit1 = 0, credit2 = 0;
+    var dates = null;
     $(document).ready(function(){
         inisialisasi();
         refreshCash();
@@ -67,6 +68,7 @@
         $.ajax({
             url: "/getCash",
             method: "get",
+            data: {dates: dates},
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
@@ -159,7 +161,7 @@
 
     function format(detailData) {
         console.log(detailData);
-        if (!detailData || detailData.length === 0) {
+        if (!detailData[0]?.detail || detailData[0]?.detail.length === 0) {
             return `
                 <div class="p-3">
                     <em class="text-muted">Tidak ada detail</em>
@@ -357,4 +359,27 @@
                 console.log(e);
             }
         });
+    })
+
+    $(document).on('change', '#start_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshCash();
+    })
+    $(document).on('change', '#end_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshCash();
+    })
+    $(document).on('click', '.btn-clear', function(){
+        dates = null;
+        $('#start_date').val("");
+        $('#end_date').val("");
+        refreshCash();
     })

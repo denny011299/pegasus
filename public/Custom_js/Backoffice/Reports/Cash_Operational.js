@@ -161,6 +161,7 @@
             $('#add_cash_gudang input').val("").attr('disabled', false);
             $('#jenis_input_gudang, #staff_id_gudang, #oc_transaksi_gudang').attr('disabled', false);
             $('#oc_transaksi_gudang').val(1).attr('disabled', false);
+            $('#oc_nominal_gudang').attr('disabled', true);
 
             // $('#row-cash').html(`
             //     <label>Nama Pengaju<span class="text-danger">*</span></label>
@@ -214,6 +215,15 @@
         $('.is-invalids').removeClass('is-invalids');
         $('.cancel-btn').html('Batal');
     });
+
+    // Input nominal Kas Gudang
+    $(document).on('change', '#jenis_nominal', function() {
+        if ($(this).val() == "manual"){
+            $('#oc_nominal_gudang').val("").attr('disabled', false);
+        } else {
+            $('#oc_nominal_gudang').val(formatRupiah($(this).val())).attr('disabled', true);
+        }
+    })
 
     $(document).on('change', '#filter_customer_id', function(){
         refreshCashArmada();

@@ -136,8 +136,8 @@
                                             <th>Tanggal</th>
                                             <th>Staff</th>
                                             <th>Deskripsi</th>
-                                            <th class="text-end">Debit</th>
-                                            <th class="text-end">Kredit</th>
+                                            <th class="text-end">Masuk</th>
+                                            <th class="text-end">Keluar</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>

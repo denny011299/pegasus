@@ -1550,9 +1550,9 @@
                                     <label>Tipe<span class="text-danger">*</span></label>
                                     <div class="col-4">
                                         <select class="form-select" id="cash_select">
-                                            <option value="debit" checked>Debit</option>
-                                            <option value="credit1">Kredit 1</option>
-                                            <option value="credit2">Kredit 2</option>
+                                            <option value="debit" checked>Masuk</option>
+                                            <option value="credit1">Keluar</option>
+                                            <option value="credit2">Keluar 1</option>
                                         </select>
                                     </div>
                                     <div class="col-8">
@@ -1564,7 +1564,7 @@
                                 </div>
                                 <div class="col-12" id="tujuan">
                                     <div class="input-block mb-3">
-                                        <label>Tujuan Kredit 1<span class="text-danger">*</span></label>
+                                        <label>Tujuan Keluar<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="cash_tujuan">
                                             <option value="" disabled selected>Pilih Tujuan</option>
                                             <option value="admin">Kas Admin</option>
@@ -1640,8 +1640,8 @@
                                             <div class="input-block mb-3" id="row-cash">
                                                 <label>Kategori Kas<span class="text-danger">*</span></label>
                                                 <select class="form-select fill_cash" id="cc_id">
-                                                    <option value="debit" checked>Debit</option>
-                                                    <option value="credit">Kredit</option>
+                                                    <option value="debit" checked>Masuk</option>
+                                                    <option value="credit">Keluar</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -1856,10 +1856,23 @@
                                     </div>
                                     <div class="col-6 saldo_kas">
                                         <div class="input-block mb-3">
+                                            <label>Pilih Jumlah Nominal<span class="text-danger">*</span></label>
+                                            <select class="form-select" id="jenis_nominal">
+                                                <option value="" disabled selected>Pilih Jumlah Nominal</option>
+                                                <option value="500000">Rp 500.000</option>
+                                                <option value="1000000">Rp 1.000.000</option>
+                                                <option value="1500000">Rp 1.500.000</option>
+                                                <option value="2000000">Rp 2.000.000</option>
+                                                <option value="manual">Input Manual</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-6 saldo_kas">
+                                        <div class="input-block mb-3">
                                             <label>Nominal<span class="text-danger">*</span></label>
                                             <div class="input-group fix-nominal">
                                                 <span class="input-group-text">Rp </span>
-                                                <input class="form-control fill number-only nominal_only saldos" id="oc_nominal_gudang" placeholder="Contoh: 10.000"></input>
+                                                <input class="form-control fill number-only nominal_only saldos" disabled id="oc_nominal_gudang" placeholder="Contoh: 10.000"></input>
                                             </div>
                                         </div>
                                     </div>
@@ -1877,7 +1890,7 @@
                                         <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-gudang" style="display: none">Lihat Bukti</button>
                                         <input type="hidden" name="" id="bukti_gudang">
                                     </div>
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-12 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
                                             <input type="text" class="form-control fill saldos" id="oc_notes_gudang" placeholder="Contoh: Untuk kas harian">
@@ -2328,8 +2341,8 @@
                                         <label>Tipe Kategori<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="cc_type">
                                             <option value="" selected disabled>Pilih Tipe Kategori</option>
-                                            <option value="Kredit">Kredit 1 / Kredit</option>
-                                            <option value="Debit">Debit / Setoran Tunai</option>
+                                            <option value="Kredit">Keluar 1 / Keluar</option>
+                                            <option value="Debit">Masuk / Setoran Tunai</option>
                                         </select>
                                     </div>
                                 </div>

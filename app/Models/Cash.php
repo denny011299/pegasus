@@ -15,11 +15,26 @@ class Cash extends Model
         $data = array_merge([
             "cash_id"=>null,
             "cash_date"=>null,
+            "dates" => null,
         ], $data);
 
         $result = self::where('status', '>=', 1)->where('status', '<', 3);
         if($data["cash_id"]) $result->where('cash_id','=',$data["cash_id"]);
         if($data["cash_date"]) $result->where('cash_date','=',$data["cash_date"]);
+
+        if ($data["dates"]) {
+            if (is_array($data["dates"]) && count($data["dates"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
+
+                $result->whereDate('cash_date', '>=', $startDate->toDateString())
+                        ->whereDate('cash_date', '<=', $endDate->toDateString());
+            } else {
+                $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
+                $result->whereDate('cash_date', $date);
+            }
+        }
+
         $result->orderBy('cash_date', 'desc')->orderBy('status', 'asc')->orderBy('created_at', 'desc');
         $result = $result->get();
 

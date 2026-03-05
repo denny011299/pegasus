@@ -111,7 +111,7 @@ class ReportController extends Controller
     }
 
     function getCash(Request $req){
-        $data = (new Cash())->getCash();
+        $data = (new Cash())->getCash($req->all());
         return response()->json($data);
     }
 
@@ -621,19 +621,13 @@ class ReportController extends Controller
 
         if ($data['oc_transaksi'] == "operasional"){
             $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
-            if ($item[0]['crd_type'] == 1) $data['cr_notes'] = "Setoran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
+            if ($item[0]['crd_type'] == 1) {
+                $data['cr_notes'] = "Setoran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
+                $data['cr_type'] = 1;
+            }
             $data['cr_nominal'] = $total;
-    
-            $cash_id = (new Cash())->insertCash([
-                "cash_date" => now(),
-                "cash_description" => $data['cr_notes'],
-                "cash_nominal" => $data['cr_nominal'],
-                "cash_type" => $item[0]['crd_type'],
-                "cash_tujuan" => 3, // Armada
-                "status" => 1
-            ]);
-    
-            $data['cash_id'] = $cash_id;
+            $data['cash_id'] = 0;
+            $data['cr_aksi'] = 2;
         } else {
             $cash_id = (new Cash())->insertCash([
                 "cash_date" => now(),
@@ -645,6 +639,7 @@ class ReportController extends Controller
             ]);
     
             $data['cash_id'] = $cash_id;
+            $data['cr_aksi'] = 1;
         }
 
         $cr_id = (new CashArmada())->insertCashArmada($data);
