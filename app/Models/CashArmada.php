@@ -91,7 +91,6 @@ class CashArmada extends Model
     {
         $t = CashArmada::find($data["cr_id"]);
         $t->customer_id = $data["customer_id"];
-        $t->cash_id = $data["cash_id"];
         $t->cr_nominal = $data["cr_nominal"];
         $t->cr_notes = $data["cr_notes"];
         $t->cr_type = $data["cr_type"] ?? 2;

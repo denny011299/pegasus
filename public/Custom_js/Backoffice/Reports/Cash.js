@@ -2,6 +2,7 @@
     var table;
     let debit = 0, credit1 = 0, credit2 = 0;
     var dates = null;
+    var list_photo;
     $(document).ready(function(){
         inisialisasi();
         refreshCash();
@@ -152,59 +153,106 @@
             row.child.hide();
             tr.removeClass('shown');
         } else {
-            if (row.data().armada){
-                row.child(format(row.data().armada)).show();
+            let rowData = row.data();
+            if (rowData.armada_operasional) {
+                row.child(formatArmada(rowData)).show();
                 tr.addClass('shown');
             }
         }
     });
 
-    function format(detailData) {
-        console.log(detailData);
-        if (!detailData[0]?.detail || detailData[0]?.detail.length === 0) {
+    function formatArmada(rowData) {
+        console.log(rowData)
+        let operasional = rowData.armada_operasional;
+        let penyerahan = rowData.armada_penyerahan;
+
+        if (!operasional || operasional.length === 0) {
             return `
                 <div class="p-3">
-                    <em class="text-muted">Tidak ada detail</em>
+                    <em class="text-muted">Tidak ada detail operasional armada</em>
                 </div>
             `;
         }
 
         let total = 0;
-
         let html = `<div class="px-5">`;
-        detailData.forEach((e) => {
-            e.detail.forEach((d) => {
-                total += parseInt(d.crd_nominal);
-    
+
+        if (penyerahan && penyerahan.length > 0) {
+            penyerahan.forEach((p) => {
+                total += parseInt(p.cr_nominal);
                 html += `
                     <div class="child-item">
                         <div class="child-left d-flex g-3">
+                            <div class="date me-3">${moment(p.created_at).format('D MMM YYYY')}</div>
+                            <div class="notes">${p.cr_notes}</div>
+                        </div>
+                        <div class="child-right text-end text-success">+ Rp ${formatRupiah(p.cr_nominal)}</div>
+                    </div>
+                `;
+            });
+        }
+
+        operasional.forEach((d) => {
+            if (d.cr_type == 1) total += parseInt(d.cr_nominal);
+            else if (d.cr_type == 2) total -= parseInt(d.cr_nominal);
+
+            var img = JSON.parse(d.cr_img);
+            list_photo = img || null;
+
+            html += `
+                <div class="child-item">
+                    <div class="child-left">
+                        <div class="d-flex g-3">
                             <div class="date me-3">
                                 ${moment(d.created_at).format('D MMM YYYY')}
                             </div>
                             <div class="notes">
-                                ${d.crd_notes}
+                                ${d.cr_notes}
                             </div>
                         </div>
-                        <div class="child-right text-end">
-                            Rp ${formatRupiah(d.crd_nominal)}
-                        </div>
+                        ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
-    
-                `;
-            })
+                    <div class="child-right text-end ${d.cr_type == 1 ? 'text-success' : 'text-danger'}">
+                        ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiah(d.cr_nominal)}
+                    </div>
+                    ${d.cr_img ? `
+                    <div>
+                        <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-armada" 
+                        data-img='${d.cr_img}'>
+                            <i class="fe fe-eye"></i>
+                        </a>
+                    </div>` : ''}
+                </div>
+            `;
         });
 
         html += `
-            <div class="child-item fw-semibold pt-3 border-0">
-                <div class="child-left-total">
-                    Total
-                </div>
-                <div class="child-right text-end">
-                    Rp ${formatRupiah(total)}
-                </div>
+            <div class="child-item fw-semibold pt-3 border-top">
+                <div class="child-left-total">Total Akhir</div>
+                <div class="child-right text-end ${total > 0 ? 'text-success' : 'text-danger'}">${total > 0 ? '+' : '-'}Rp ${formatRupiah(total)}</div>
             </div>
         `;
+
+        // // Info pengembalian
+        // if (pengembalian) {
+        //     html += `
+        //         <div class="child-item text-success pt-2">
+        //             <div class="child-left-total">
+        //                 Dikembalikan (${moment(pengembalian.created_at).format('D MMM YYYY')})
+        //             </div>
+        //             <div class="child-right text-end">
+        //                 Rp ${formatRupiah(pengembalian.cr_nominal)}
+        //             </div>
+        //         </div>
+        //     `;
+        // } else {
+        //     html += `
+        //         <div class="child-item text-warning pt-2">
+        //             <div class="child-left-total"><em>Belum dikembalikan</em></div>
+        //             <div class="child-right text-end">-</div>
+        //         </div>
+        //     `;
+        // }
 
         html += `</div>`;
         return html;
@@ -312,10 +360,16 @@
             },
             method:"post",
             success:function(e){
-                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                refreshCash();
-                $('.modal').modal("hide");
-                notifikasi('success', "Berhasil Terima", "Berhasil Terima Pencatatan Kas");
+                if (typeof e === "object"){
+                    notifikasi('error', e.header, e.message);
+                    ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");   
+                    return false;
+                } else {
+                    ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                    refreshCash();
+                    $('.modal').modal("hide");
+                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Pencatatan Kas");
+                }
                 
             },
             error:function(e){
@@ -383,3 +437,43 @@
         $('#end_date').val("");
         refreshCash();
     })
+
+    $(document).on("click", ".btn-lihat-bukti-armada", function () {
+    var imgRaw = $(this).attr('data-img');
+    
+    try {
+        list_photo = JSON.parse(imgRaw);
+    } catch(e) {
+        list_photo = [imgRaw];
+    }
+
+    if (!list_photo || list_photo.length === 0) return;
+        $('#fotoProduksiImage').attr('src', public + "kas_admin/armada/" + list_photo[0]);
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', public + "kas_admin/armada/" + list_photo[0]);
+        $('#jumlahFoto').html(list_photo.length);
+        $('.btn-prev, .btn-next').show();
+        $('#modalViewPhoto').modal("show");
+    });
+
+    $(document).on('click', '.btn-prev', function(){
+        var index = parseInt($('#fotoProduksiImage').attr('index'));
+        console.log("index : "+index);
+        
+        if(index > 0){
+            index -= 1;
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+list_photo[index]);
+            $('#fotoProduksiImage').attr('index', index);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+list_photo[index]);
+        }
+    });
+    $(document).on('click', '.btn-next', function(){
+        var index = parseInt($('#fotoProduksiImage').attr('index'));
+        console.log("index : "+index);
+        if(index < list_photo.length - 1){
+            index += 1;
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+list_photo[index]);
+            $('#fotoProduksiImage').attr('index', index);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+list_photo[index]);
+        }
+    });

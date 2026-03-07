@@ -15,7 +15,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
-            ordering: true,
+            ordering: false,
             searching: false,
             language: {
                 search: ' ',

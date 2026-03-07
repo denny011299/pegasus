@@ -39,8 +39,80 @@ class Cash extends Model
         $result = $result->get();
 
         foreach ($result as $key => $value) {
-            $detail = (new CashArmada())->getCashArmada(['cash_id' => $value['cash_id']]);
-            if ($detail) $value->armada = $detail['data'];
+            if ($value->cash_type == 1 && $value->cash_tujuan == 3){
+
+                $pengembalianIni = CashArmada::where('cash_id', $value->cash_id)
+                    ->where('customer_id', $value->customer_id)
+                    ->where('cr_aksi', 1)
+                    ->first();
+
+                if (!$pengembalianIni) continue;
+
+                $pengembalianSebelumnya = CashArmada::where('customer_id', $value->customer_id)
+                    ->where('cr_aksi', 1)
+                    ->where('cash_id', '!=', 0)
+                    ->where('cr_id', '<', $pengembalianIni->cr_id)
+                    ->orderBy('cr_id', 'desc')
+                    ->first();
+
+                $penyerahanPertama = CashArmada::where('customer_id', $value->customer_id)
+                    ->where('cr_aksi', 0)
+                    ->where('cash_id', 0)
+                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
+                        $q->where('cr_id', '>', $pengembalianSebelumnya->cr_id);
+                    })
+                    ->where('cr_id', '<', $pengembalianIni->cr_id)
+                    ->orderBy('cr_id', 'asc')
+                    ->first();
+
+                // ← GANTI if (!$penyerahanPertama) continue; DENGAN INI
+                if (!$penyerahanPertama && $pengembalianSebelumnya) {
+                    $penyerahanPertama = CashArmada::where('customer_id', $value->customer_id)
+                        ->where('cr_aksi', 0)
+                        ->where('cash_id', 0)
+                        ->where('cr_id', '<', $pengembalianSebelumnya->cr_id)
+                        ->orderBy('cr_id', 'desc')
+                        ->first();
+                }
+
+                if (!$penyerahanPertama) continue;
+
+                // Penyerahan — hanya yang baru di siklus ini
+                $allPenyerahan = CashArmada::where('customer_id', $value->customer_id)
+                    ->where('cr_aksi', 0)
+                    ->where('cash_id', 0)
+                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
+                        $q->where('cr_id', '>', $pengembalianSebelumnya->cr_id);
+                    })
+                    ->where('cr_id', '<', $pengembalianIni->cr_id)
+                    ->orderBy('cr_id', 'asc')
+                    ->get();
+
+                // Kalau tidak ada penyerahan baru, tampilkan penyerahanPertama
+                if ($allPenyerahan->isEmpty()) {
+                    $allPenyerahan = collect([$penyerahanPertama]);
+                }
+
+                // Semua operasional dari penyerahanPertama sampai pengembalianIni
+                $allOperasional = CashArmada::where('customer_id', $value->customer_id)
+                    ->where('cr_aksi', 2)
+                    ->where('cash_id', 0)
+                    ->where('cr_id', '>', $penyerahanPertama->cr_id)
+                    ->where('cr_id', '<', $pengembalianIni->cr_id)
+                    ->orderBy('cr_id', 'asc')
+                    ->get();
+
+                foreach ($allOperasional as $val) {
+                    $val->detail_armada = CashArmadaDetail::where('cr_id', $val->cr_id)
+                        ->where('status', 1)
+                        ->get()
+                        ->pluck('crd_notes')
+                        ->implode(', ');
+                }
+
+                $value->armada_penyerahan  = $allPenyerahan;
+                $value->armada_operasional = $allOperasional;
+            }
         }
         
         return $result;
@@ -51,6 +123,7 @@ class Cash extends Model
         else if ($data['cash_tujuan'] == "gudang") $data['cash_tujuan'] = 2;
         
         $t = new self();
+        $t->customer_id = $data["customer_id"] ?? 0;
         $t->cash_date = $data["cash_date"];
         $t->cash_description = $data["cash_description"];
         $t->cash_nominal = $data["cash_nominal"];
@@ -64,6 +137,7 @@ class Cash extends Model
 
     function updateCash($data){
         $t = Cash::find($data["cash_id"]);
+        $t->customer_id = $data["customer_id"] ?? 0;
         $t->cash_date = $data["cash_date"];
         $t->cash_description = $data["cash_description"];
         $t->cash_nominal = $data["cash_nominal"];

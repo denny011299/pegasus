@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('cashes', function (Blueprint $table) {
             $table->integerIncrements('cash_id');
             $table->date('cash_date');
+            $table->tinyInteger('customer_id');
             $table->tinyInteger('cash_type')->comment('1 = debit, 2 = credit 1, 3 = credit 2');
             $table->tinyInteger('cash_tujuan')->comment('1 = Admin, 2 = Gudang');
             $table->string('cash_description', 255);

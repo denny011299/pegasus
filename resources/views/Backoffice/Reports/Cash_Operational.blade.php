@@ -96,38 +96,36 @@
             @endcomponent
             <!-- /Search Filter -->
 
-            <!-- Table -->
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <select class="form-select" id="cashType">
-                        <option value="admin">Kas Admin</option>
-                        <option value="gudang">Kas Gudang</option>
-                        <option value="armada">Dompet Virtual Armada</option>
-                    </select>
-                </div>
-                <div class="col-md-8 text-end">
-                    <button class="btn btn-primary btnAddCash">
-                        <i class="fa fa-plus-circle me-2"></i>Tambah Aktivitas
-                    </button>
-                </div>
-            </div>
-
             <div class="row">
-                <div class="col-sm-12">
-                    <div class="card-table">
-                        <div class="card-body">
-                            <div class="row total-summary mt-3">
-                                <div class="col-8"></div>
-                                <div class="col-4">
-                                    <div class="card p-3">
+                <div class="row col-12 mx-1">
+                    <div class="card">
+                        <div class="card-body row">
+                            <div class="col-md-6">
+                                <div class="col-6">
+                                    <select class="form-select" id="cashType">
+                                        <option value="admin">Kas Admin</option>
+                                        <option value="gudang">Kas Gudang</option>
+                                        <option value="armada">Dompet Virtual Armada</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6 row justify-content-end">
+                                <div class="total-summary text-end w-75">
+                                    <div class="px-3 py-2 mb-0">
                                         <div class="row">
-                                            <div class="fw-bold text-center p-0">
+                                            <div class="fw-bold text-end text-black p-0">
                                                 <i class="fe fe-dollar-sign"></i> Kas Armada : <span id="totalArmada">Rp 0</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-12">
+                    <div class="card-table">
+                        <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">

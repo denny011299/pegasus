@@ -109,12 +109,12 @@ class CashGudang extends Model
             $k = Cash::find($data["cash_id"]);
             $k->status = 2;
             $k->save();
+            $t->save();
         } else {
             $t = CashGudang::find($data['cg_id']);
             $t->status = 2;
+            $t->save();
         }
-        $t->save();
-
         $detail = CashGudangDetail::where('cg_id', $t->cg_id)->where('status', 1)->get();
         foreach ($detail as $key => $value) {
             (new CashArmada())->insertCashArmada([

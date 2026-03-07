@@ -630,6 +630,7 @@ class ReportController extends Controller
             $data['cr_aksi'] = 2;
         } else {
             $cash_id = (new Cash())->insertCash([
+                "customer_id" => $data['customer_id'],
                 "cash_date" => now(),
                 "cash_description" => $data['cr_notes'],
                 "cash_nominal" => $data['cr_nominal'],
@@ -659,40 +660,58 @@ class ReportController extends Controller
         $id = [];
         $customer = Customer::find($data['customer_id'])->customer_notes;
 
-        $total = 0;
-        $item = json_decode($data['items'], true);
-
-        foreach ($item as $key => $value) {
-            $total += $value['crd_nominal'];
+        if ($data['oc_transaksi'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['crd_nominal'];
+            }
+    
+            $data['cr_notes'] = "Pengeluaran armada " . $customer . " " . now()->format("Y-m-d");
+            $data['cr_nominal'] = $total;
         }
 
-        $data['cr_notes'] = "Pengeluaran armada " . $customer . " " . now()->format("Y-m-d");
-        $data['cr_nominal'] = $total;
-
+        if ($data['oc_transaksi'] == "saldo") $data['cr_aksi'] = 1;
+        else if ($data['oc_transaksi'] == "operasional") $data['cr_aksi'] = 2;
         $cr_id = (new CashArmada())->updateCashArmada($data);
 
-        foreach ($item as $key => $value) {
+        if ($data['oc_transaksi'] == "saldo"){
             $cash_id = (new Cash())->updateCash([
+                "cash_id" => $data['cash_id'],
+                "customer_id" => $data['customer_id'],
                 "cash_date" => now(),
-                "cash_description" => $value['crd_notes'],
-                "cash_nominal" => $value['crd_nominal'],
-                "cash_type" => $value['crd_type'], // kredit 1
+                "cash_description" => $data['cr_notes'],
+                "cash_nominal" => $data['cr_nominal'],
+                "cash_type" => 1, // debit (pengembalian kas)
                 "cash_tujuan" => 3, // Armada
                 "status" => 1
             ]);
-
-            $value['cr_id'] = $cr_id;
-            $value['cash_id'] = $cash_id;
-
-            if (!isset($value['crd_id']) || !$value['crd_id']){
-                $t = (new CashArmadaDetail())->insertCashArmadaDetail($value);
-            }
-            else {
-                $t = (new CashArmadaDetail())->updateCashArmadaDetail($value);
-            }
-            array_push($id, $t);
         }
-        CashArmadaDetail::where('cr_id', '=', $data["cr_id"])->whereNotIn("crd_id", $id)->update(["status" => 0]);
+        else if ($data['oc_transaksi'] == "operasional"){
+            foreach ($item as $key => $value) {
+                $cash_id = (new Cash())->updateCash([
+                    "cash_date" => now(),
+                    "cash_description" => $value['crd_notes'],
+                    "cash_nominal" => $value['crd_nominal'],
+                    "cash_type" => $value['crd_type'], // kredit 1
+                    "cash_tujuan" => 3, // Armada
+                    "status" => 1
+                ]);
+    
+                $value['cr_id'] = $cr_id;
+                $value['cash_id'] = $cash_id;
+    
+                if (!isset($value['crd_id']) || !$value['crd_id']){
+                    $t = (new CashArmadaDetail())->insertCashArmadaDetail($value);
+                }
+                else {
+                    $t = (new CashArmadaDetail())->updateCashArmadaDetail($value);
+                }
+                array_push($id, $t);
+            }
+            CashArmadaDetail::where('cr_id', '=', $data["cr_id"])->whereNotIn("crd_id", $id)->update(["status" => 0]);
+        }
     }
 
     function deleteCashArmada(Request $req)
@@ -717,7 +736,18 @@ class ReportController extends Controller
             $cr = CashArmada::where('cash_id', $data["cash_id"])->first();
         }
         $customer = Customer::find($cr['customer_id']);
-        $customer->customer_saldo -= $cr['cr_nominal'];
+        if ($cr->cr_type == 1){
+            $customer->customer_saldo += $cr['cr_nominal'];
+        } else if ($cr->cr_type == 2) {
+            $customer->customer_saldo -= $cr['cr_nominal'];
+        }
+        if ($customer->customer_saldo < 0){
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal Konfirmasi",
+                "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+            ]);
+        }
         $customer->save();
         return (new CashArmada())->acceptCashArmada($data);
     }

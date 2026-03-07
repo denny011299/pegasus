@@ -129,6 +129,12 @@
                             Kas Kecil</a>
                     </li>
                 @endif
+                @if (Route::is(['operationalCash']))
+                    <li>
+                        <a class="btn btn-primary btnAddCash"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Aktivitas</a>
+                    </li>
+                @endif
                 @if (Route::is(['staff']))
                     <li>
                         <a class="btn btn-primary" href="/insertStaff"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah

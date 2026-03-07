@@ -162,6 +162,7 @@
             $('#jenis_input_gudang, #staff_id_gudang, #oc_transaksi_gudang').attr('disabled', false);
             $('#oc_transaksi_gudang').val(1).attr('disabled', false);
             $('#oc_nominal_gudang').attr('disabled', true);
+            $('#jenis_nominal').attr('disabled', false);
 
             // $('#row-cash').html(`
             //     <label>Nama Pengaju<span class="text-danger">*</span></label>
@@ -302,6 +303,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
+            searching: false,
             responsive: false,
             language: {
                 search: ' ',
@@ -556,6 +558,30 @@
                         </a>
                     `;
                     if (e[i].status == 2 && e[i].cr_type == 1) e[i].action = "";
+                    if (e[i].status == 1){
+                        if (e[i].cr_aksi == 1){
+                            e[i].action += `
+                                <a class="me-2 btn-action-icon p-2 btn_edit_armada" data-id="${e[i].cg_id}" data-bs-target="#edit-category">
+                                    <i class="fe fe-edit"></i>
+                                </a>
+                                <a class="p-2 btn-action-icon btn_delete_armada" data-id="${e[i].cg_id}" href="javascript:void(0);">
+                                    <i class="fe fe-trash-2"></i>
+                                </a>
+                            `;
+                        }
+                        else if (e[i].cr_aksi == 2){
+                            e[i].action += `
+                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
+                                    <i class="fe fe-check"></i>
+                                </a>
+                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
+                                    <i class="fe fe-x"></i>
+                                </a>
+                            `;
+                        }
+                    }
                 }
                 table.rows.add(e).draw();
                 
@@ -1283,6 +1309,7 @@
         if (mode == 2) {
             url = "/updateCashArmada";
             param.cr_id = $('#add_cash_armada').attr("cr_id");
+            param.cash_id = $('#add_cash_armada').attr("cash_id");
         }
         else{
             param.photo = $('#bukti_armada').val();
@@ -1486,6 +1513,7 @@
             $('#oc_transaksi_gudang').val(data.cg_aksi).attr('disabled', true);
             $('#oc_nominal_gudang').val(data.cg_nominal).attr('disabled', false);
             $('#oc_notes_gudang').val(data.cg_notes).attr('disabled', false);
+            $('#jenis_nominal').attr('disabled', false);
         }
         $('#staff_id_gudang').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
@@ -1536,6 +1564,7 @@
             $('#oc_transaksi_gudang').val(data.cg_aksi).attr('disabled', true);
             $('#oc_nominal_gudang').val(data.cg_nominal).attr('disabled', true);
             $('#oc_notes_gudang').val(data.cg_notes).attr('disabled', true);
+            $('#jenis_nominal').attr('disabled', true);
         }
         $('#staff_id_gudang').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
@@ -1585,34 +1614,43 @@
         $('#add_cash_armada input').empty().val("");
         $('#customer_id_armada').empty(null);
         
-        let total = 0;
-        data.detail.forEach(e => {
-            var temp = {
-                "crd_id" : e.crd_id,
-                "crd_notes" : e.crd_notes,
-                "crd_nominal" : e.crd_nominal,
-                "crd_type" : e.crd_type,
-            };
-            items.push(temp);
-            total += e.crd_nominal;
-        })
-        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
-        addRowArmada();
-
-        $('#btn-foto-bukti-armada').hide();
-        $('#btn-lihat-bukti-armada').show();
-
-        var img = JSON.parse(data.so_img);
-        list_photo = img;
-        console.log(list_photo);
-        
-        $('#modalViewPhoto .modal-footer').show();
-        $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-        $('#fotoProduksiImage').attr('index', 0);
-        $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-        $('#check_foto_armada').show();
-        $('#jumlahFoto').html(list_photo.length);
-        $('#bukti_armada').val(data.cr_img);
+        if (data.detail?.length){
+            $('#jenis_input_armada').val("operasional").trigger('change').attr('disabled', true);
+            let total = 0;
+            data.detail.forEach(e => {
+                var temp = {
+                    "crd_id" : e.crd_id,
+                    "crd_notes" : e.crd_notes,
+                    "crd_nominal" : e.crd_nominal,
+                };
+                items.push(temp);
+                total += e.crd_nominal;
+            })
+            $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+            addRowArmada();
+            
+            $('.foto').show();
+            $('#btn-foto-bukti-armada').hide();
+            $('#btn-lihat-bukti-armada').show();
+            var img = JSON.parse(data.cr_img);
+            list_photo = img || null;
+            console.log(list_photo);
+    
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+            $('#check_foto_armada').show();
+            $('#jumlahFoto').html(list_photo.length);
+            $('#bukti_armada').val(data.cr_img);
+            
+        } else {
+            $('.foto').hide();
+            $('#jenis_input_armada').val("saldo").trigger('change').attr('disabled', true);
+            $('#oc_transaksi_armada').val(data.cr_aksi).attr('disabled', true);
+            $('#oc_nominal_armada').val(formatRupiah(data.cr_nominal)).attr('disabled', false);
+            $('#oc_notes_armada').val(data.cr_notes).attr('disabled', false);
+        }
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
 
@@ -1623,6 +1661,7 @@
         $('.input_table, .btn_delete_row_armada').show();
         $('#add_cash_armada').modal("show");
         $('#add_cash_armada').attr("cr_id", data.cr_id);
+        $('#add_cash_armada').attr("cash_id", data.cash_id);
     })
 
     $(document).on('click', '.btn_view_armada', function(){
@@ -1667,12 +1706,10 @@
         } else {
             $('.foto').hide();
             $('#jenis_input_armada').val("saldo").trigger('change').attr('disabled', true);
-            $('#oc_transaksi_armada').val(data.cr_akse).attr('disabled', true);
+            $('#oc_transaksi_armada').val(data.cr_aksi).attr('disabled', true);
             $('#oc_nominal_armada').val(data.cr_nominal).attr('disabled', true);
             $('#oc_notes_armada').val(data.cr_notes).attr('disabled', true);
         }
-
-        
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
 
