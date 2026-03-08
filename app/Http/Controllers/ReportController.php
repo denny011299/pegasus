@@ -203,16 +203,18 @@ class ReportController extends Controller
             }
 
             $staff_name = Staff::find($data['staff_id'])->staff_name;
-            $data['ca_notes'] = "Pengeluaran " . $staff_name . " " . now()->format("Y-m-d");
+            $data['ca_notes'] = "Pengeluaran " . $staff_name;
             $data['ca_nominal'] = $total;
         }
 
         else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['ca_notes'] . " oleh " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
-                    "cash_description" => $data['ca_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 2, // kredit 1
                     "cash_tujuan" => 1, // admin
@@ -223,7 +225,7 @@ class ReportController extends Controller
             else if ($data['oc_transaksi'] == 2) {
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
-                    "cash_description" => $data['ca_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 1, // debit
                     "cash_tujuan" => 1, // admin
@@ -284,17 +286,19 @@ class ReportController extends Controller
             }
 
             $staff_name = Staff::find($data['staff_id'])->staff_name;
-            $data['ca_notes'] = "Pengeluaran " . $staff_name . " " . now()->format("Y-m-d");
+            $data['ca_notes'] = "Pengeluaran admin " . $staff_name;
             $data['ca_nominal'] = $total;
         }
 
         else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['ca_notes'] . " oleh admin " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
-                    "cash_description" => $data['ca_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 2, // kredit 1
                     "cash_tujuan" => 1, // admin
@@ -306,7 +310,7 @@ class ReportController extends Controller
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
-                    "cash_description" => $data['ca_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['ca_nominal'],
                     "cash_type" => 1, // debit
                     "cash_tujuan" => 1, // admin
@@ -394,17 +398,19 @@ class ReportController extends Controller
             foreach ($item as $key => $value) {
                 $total += $value['cgd_nominal'];
             }
-
-            $data['cg_notes'] = "Penyerahan kas armada " . now()->format("Y-m-d");
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $data['cg_notes'] = "Penyerahan kas armada dari gudang - " . $staff_name;
             $data['cg_nominal'] = $total;
         }
 
         else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['cg_notes'] . " dari gudang - " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
-                    "cash_description" => $data['cg_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['cg_nominal'],
                     "cash_type" => 2, // kredit 1
                     "cash_tujuan" => 2, // gudang
@@ -415,7 +421,7 @@ class ReportController extends Controller
             else if ($data['oc_transaksi'] == 2) {
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
-                    "cash_description" => $data['cg_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['cg_nominal'],
                     "cash_type" => 1, // debit
                     "cash_tujuan" => 2, // gudang
@@ -475,17 +481,20 @@ class ReportController extends Controller
                 $total += $value['cgd_nominal'];
             }
 
-            $data['cg_notes'] = "Penyerahan kas armada " . now()->format("Y-m-d");
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $data['cg_notes'] = "Penyerahan kas armada dari gudang - " . $staff_name;
             $data['cg_nominal'] = $total;
         }
 
         else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['cg_notes'] . " dari gudang - " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
-                    "cash_description" => $data['cg_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['cg_nominal'],
                     "cash_type" => 2, // kredit 1
                     "cash_tujuan" => 2, // gudang
@@ -497,7 +506,7 @@ class ReportController extends Controller
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
-                    "cash_description" => $data['cg_notes'],
+                    "cash_description" => $notes,
                     "cash_nominal" => $data['cg_nominal'],
                     "cash_type" => 1, // debit
                     "cash_tujuan" => 2, // gudang
@@ -620,19 +629,20 @@ class ReportController extends Controller
         }
 
         if ($data['oc_transaksi'] == "operasional"){
-            $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
+            $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes;
             if ($item[0]['crd_type'] == 1) {
-                $data['cr_notes'] = "Setoran armada " . $customer->customer_notes . " " . now()->format("Y-m-d");
+                $data['cr_notes'] = "Setoran armada " . $customer->customer_notes;
                 $data['cr_type'] = 1;
             }
             $data['cr_nominal'] = $total;
             $data['cash_id'] = 0;
             $data['cr_aksi'] = 2;
         } else {
+            $notes = $data['cr_notes'] . " dari armada " . $customer->customer_notes;
             $cash_id = (new Cash())->insertCash([
                 "customer_id" => $data['customer_id'],
                 "cash_date" => now(),
-                "cash_description" => $data['cr_notes'],
+                "cash_description" => $notes,
                 "cash_nominal" => $data['cr_nominal'],
                 "cash_type" => 1,
                 "cash_tujuan" => 3, // Armada
@@ -668,7 +678,7 @@ class ReportController extends Controller
                 $total += $value['crd_nominal'];
             }
     
-            $data['cr_notes'] = "Pengeluaran armada " . $customer . " " . now()->format("Y-m-d");
+            $data['cr_notes'] = "Pengeluaran armada " . $customer;
             $data['cr_nominal'] = $total;
         }
 
@@ -677,11 +687,12 @@ class ReportController extends Controller
         $cr_id = (new CashArmada())->updateCashArmada($data);
 
         if ($data['oc_transaksi'] == "saldo"){
+            $notes = $data['cr_notes'] . " dari armada " . $customer;
             $cash_id = (new Cash())->updateCash([
                 "cash_id" => $data['cash_id'],
                 "customer_id" => $data['customer_id'],
                 "cash_date" => now(),
-                "cash_description" => $data['cr_notes'],
+                "cash_description" => $notes,
                 "cash_nominal" => $data['cr_nominal'],
                 "cash_type" => 1, // debit (pengembalian kas)
                 "cash_tujuan" => 3, // Armada

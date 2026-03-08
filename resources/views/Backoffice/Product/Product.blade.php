@@ -10,6 +10,15 @@
             white-space: normal !important;
             word-wrap: break-word;
         }
+
+        #tableProduct td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableProduct td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
     </style>
 @endsection
 @section('content')

@@ -99,19 +99,19 @@
                                         </div>
                                         <hr>
                                        <div class="row mb-3">
-                                            <div class="col-12 col-lg-2">
+                                            <div class="col-12 col-md-2 col-lg-2">
                                                 <label>Variasi Produk</label>
                                             </div>
 
-                                            <div class="col-0 col-lg-5"></div>
+                                            <div class="col-0 col-md-4 col-lg-5"></div>
 
-                                            <div class="col-12 col-lg-3 mb-2 mb-lg-0">
+                                            <div class="col-12 col-md-3 col-lg-3 mb-2 mb-lg-0">
                                                 <select id="product_variant" class="form-select select2">
                                                     <option value="">Pilih Variasi</option>
                                                 </select>
                                             </div>
 
-                                            <div class="col-12 col-lg-2 text-start text-lg-end">
+                                            <div class="col-12 col-md-3 col-lg-2 text-start text-lg-end">
                                                 <button type="button" class="btn btn-primary btnAddRow w-100 w-lg-auto">
                                                     <i class="fa fa-plus-circle me-2"></i>
                                                     <span class="d-none d-lg-inline">Tambah</span>
@@ -128,7 +128,7 @@
                                                         <td>SKU<span class="text-danger">*</span></td>
                                                         {{-- <td>Harga<span class="text-danger">*</span></td> --}}
                                                         <td>Barcode</td>
-                                                        <td>Stock Alert<span class="text-danger">*</span></td>
+                                                        <td>Peringatan Stok<span class="text-danger">*</span></td>
                                                         <td class="text-center">Aksi</td>
                                                     </tr>
                                                 </thead>

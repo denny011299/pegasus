@@ -30,7 +30,7 @@
                 { data: "product_category", width: '10%' },
                 { data: "unit_values", width: '10%' },
                 { data: "variant_values", width: '34%' },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

@@ -45,7 +45,7 @@
         
         $('#tbVariant').append(`
             <tr class="row-variant">
-                <td style="width:15%;" class="td-supplier">
+                <td style="width:12%;" class="td-supplier">
                     <div class="input-block" id="row-supplier">
                         <select class="form-select supplier_id select2 fill" name="" id="" style="width:100%;"></select>
                     </div>

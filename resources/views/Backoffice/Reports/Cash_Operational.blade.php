@@ -105,7 +105,8 @@
                                     <select class="form-select" id="cashType">
                                         <option value="admin">Kas Admin</option>
                                         <option value="gudang">Kas Gudang</option>
-                                        <option value="armada">Dompet Virtual Armada</option>
+                                        <option value="armada">Dompet Virtual</option>
+                                        {{-- <option value="sales">Dompet Virtual Sales</option> --}}
                                     </select>
                                 </div>
                             </div>
