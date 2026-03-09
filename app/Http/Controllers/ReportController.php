@@ -203,20 +203,20 @@ class ReportController extends Controller
             }
 
             $staff_name = Staff::find($data['staff_id'])->staff_name;
-            $data['ca_notes'] = "Pengeluaran " . $staff_name;
+            $data['ca_notes'] = "Pengeluaran admin " . $staff_name;
             $data['ca_nominal'] = $total;
         }
 
         else if ($data['jenis_input'] == "saldo"){
             $staff_name = Staff::find($data['staff_id'])->staff_name;
-            $notes = $data['ca_notes'] . " oleh " . $staff_name;
+            $notes = $data['ca_notes'] . " oleh admin " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
                     "cash_description" => $notes,
                     "cash_nominal" => $data['ca_nominal'],
-                    "cash_type" => 2, // kredit 1
+                    "cash_type" => 3, // keluar 1
                     "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
@@ -300,7 +300,7 @@ class ReportController extends Controller
                     "cash_date" => now(),
                     "cash_description" => $notes,
                     "cash_nominal" => $data['ca_nominal'],
-                    "cash_type" => 2, // kredit 1
+                    "cash_type" => 3, // keluar 1
                     "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
@@ -412,7 +412,7 @@ class ReportController extends Controller
                     "cash_date" => now(),
                     "cash_description" => $notes,
                     "cash_nominal" => $data['cg_nominal'],
-                    "cash_type" => 2, // kredit 1
+                    "cash_type" => 3, // keluar 1
                     "cash_tujuan" => 2, // gudang
                     "status" => 1
                 ]);
@@ -496,7 +496,7 @@ class ReportController extends Controller
                     "cash_date" => now(),
                     "cash_description" => $notes,
                     "cash_nominal" => $data['cg_nominal'],
-                    "cash_type" => 2, // kredit 1
+                    "cash_type" => 3, // keluar 1
                     "cash_tujuan" => 2, // gudang
                     "status" => 1
                 ]);
@@ -699,30 +699,30 @@ class ReportController extends Controller
                 "status" => 1
             ]);
         }
-        else if ($data['oc_transaksi'] == "operasional"){
-            foreach ($item as $key => $value) {
-                $cash_id = (new Cash())->updateCash([
-                    "cash_date" => now(),
-                    "cash_description" => $value['crd_notes'],
-                    "cash_nominal" => $value['crd_nominal'],
-                    "cash_type" => $value['crd_type'], // kredit 1
-                    "cash_tujuan" => 3, // Armada
-                    "status" => 1
-                ]);
+        // else if ($data['oc_transaksi'] == "operasional"){
+        //     foreach ($item as $key => $value) {
+        //         $cash_id = (new Cash())->updateCash([
+        //             "cash_date" => now(),
+        //             "cash_description" => $value['crd_notes'],
+        //             "cash_nominal" => $value['crd_nominal'],
+        //             "cash_type" => $value['crd_type'], // kredit 1
+        //             "cash_tujuan" => 3, // Armada
+        //             "status" => 1
+        //         ]);
     
-                $value['cr_id'] = $cr_id;
-                $value['cash_id'] = $cash_id;
+        //         $value['cr_id'] = $cr_id;
+        //         $value['cash_id'] = $cash_id;
     
-                if (!isset($value['crd_id']) || !$value['crd_id']){
-                    $t = (new CashArmadaDetail())->insertCashArmadaDetail($value);
-                }
-                else {
-                    $t = (new CashArmadaDetail())->updateCashArmadaDetail($value);
-                }
-                array_push($id, $t);
-            }
-            CashArmadaDetail::where('cr_id', '=', $data["cr_id"])->whereNotIn("crd_id", $id)->update(["status" => 0]);
-        }
+        //         if (!isset($value['crd_id']) || !$value['crd_id']){
+        //             $t = (new CashArmadaDetail())->insertCashArmadaDetail($value);
+        //         }
+        //         else {
+        //             $t = (new CashArmadaDetail())->updateCashArmadaDetail($value);
+        //         }
+        //         array_push($id, $t);
+        //     }
+        //     CashArmadaDetail::where('cr_id', '=', $data["cr_id"])->whereNotIn("crd_id", $id)->update(["status" => 0]);
+        // }
     }
 
     function deleteCashArmada(Request $req)

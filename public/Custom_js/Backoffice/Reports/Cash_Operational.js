@@ -161,11 +161,9 @@
             $('#add_cash_gudang input').val("").attr('disabled', false);
             $('#jenis_input_gudang, #staff_id_gudang, #oc_transaksi_gudang').attr('disabled', false);
             $('#oc_transaksi_gudang').val(1).attr('disabled', false);
-
-            // $('#row-cash').html(`
-            //     <label>Nama Pengaju<span class="text-danger">*</span></label>
-            //     <select class="form-select fill" id="staff_id_gudang"></select>
-            // `);
+            $('#cgd_nominal').attr('disabled', true);
+            $('.input_nominal').hide();
+            $('#jenis_nominal').attr('disabled', false).val("");
 
             $('#add_cash_gudang .modal-title').html("Tambah Aktivitas Gudang");
             $('#staff_id_gudang').empty(null).attr('disabled', false);
@@ -188,8 +186,6 @@
             $('#add_cash_armada input').val("").attr('disabled', false);
             $('#jenis_input_armada, #customer_id_armada').attr('disabled', false);
             $('#oc_transaksi_armada').val(1).attr('disabled', false).show();
-            $('#oc_nominal_armada').attr('disabled', true);
-            $('#jenis_nominal').attr('disabled', false).val("");
             $('#cc_id').empty(null).attr('disabled', false);
             $('#add_cash_armada .modal-title').html("Tambah Aktivitas Armada");
             $('#customer_id_armada').empty(null).attr('disabled', false);
@@ -216,9 +212,15 @@
     // Input nominal Dompet Virtual
     $(document).on('change', '#jenis_nominal', function() {
         if ($(this).val() == "manual"){
-            $('#oc_nominal_armada').val("").attr('disabled', false);
-        } else {
-            $('#oc_nominal_armada').val(formatRupiah($(this).val())).attr('disabled', true);
+            $('#cgd_nominal').val("").attr('disabled', false);
+            $('.input_nominal').show();
+        }
+        else if ($(this).val() == "" || $(this).val() == null || $(this).val() == "null") {
+            $('.input_nominal').hide();
+        }
+        else {
+            $('#cgd_nominal').val(formatRupiah($(this).val())).attr('disabled', true);
+            $('.input_nominal').hide();
         }
     })
 
@@ -996,7 +998,9 @@
 
         $('#customer_id').empty(null);
         $('#cgd_notes').val("");
-        $('#cgd_nominal').val("");
+        $('#cgd_nominal').val("").attr('disabled', true);
+        $('.input_nominal').hide();
+        $('#jenis_nominal').val("").trigger('change');
     })
 
     function addRowGudang() {
@@ -1498,13 +1502,14 @@
                 items.push(temp);
                 total += e.cgd_nominal;
             })
-            $('.total').html(`Rp ${formatRupiah(total)}`)
+            $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
             addRowGudang();
 
             $('#btn-foto-bukti-gudang').hide();
             $('#btn-lihat-bukti-gudang').show();
             $('#bukti_gudang').val(data.cg_img);
             $('#check_foto_gudang').show();
+            $('#jenis_nominal').val("").trigger('change');
             imageValue(data.cg_img);
         }
         else {
@@ -1548,7 +1553,7 @@
                 items.push(temp);
                 total += e.cgd_nominal;
             })
-            $('.total').html(`Rp ${formatRupiah(total)}`)
+            $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
             addRowGudang();
 
             $('#btn-foto-bukti-gudang').hide();
@@ -1646,15 +1651,7 @@
             $('#jenis_input_armada').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_armada').val(data.cr_aksi).attr('disabled', true);
             $('#oc_notes_armada').val(data.cr_notes).attr('disabled', false);
-
-            var nominalVal = data.cr_nominal.toString();
-            var optionAda = $('#jenis_nominal option[value="' + nominalVal + '"]').length > 0;
-            if (optionAda) {
-                $('#jenis_nominal').val(nominalVal).trigger('change').attr('disabled', false);
-            } else {
-                $('#jenis_nominal').val('manual').trigger('change').attr('disabled', false);
-                $('#oc_nominal_armada').val(formatRupiah(data.cr_nominal));
-            }
+            $('#oc_nominal_armada').val(formatRupiah(data.cr_nominal)).attr('disabled', false);
         }
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);

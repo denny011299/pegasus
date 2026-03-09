@@ -1888,24 +1888,37 @@
                                     </div>
                                     <div class="col-12 px-2 mb-3 operasional">
                                         <div class="row input_table g-3 align-items-end px-1">
-                                            <div class="col-12 col-lg-3 add">
+                                            <div class="col-12 col-lg-6 add">
                                                 <div class="input-block mb-3" id="row-gudang">
                                                     <label>Nama Armada<span class="text-danger">*</span></label>
                                                     <select class="form-select fill" id="customer_id"></select>
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-lg-4 add">
+                                            <div class="col-12 col-lg-6 add">
                                                 <div class="input-block mb-3">
                                                     <label>Keterangan<span class="text-danger">*</span></label>
                                                     <input type="text" class="form-control fill_catatan" id="cgd_notes" placeholder="Contoh: Kas Harian">
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-lg-4 add">
+                                            <div class="col-6 col-lg-6 add">
+                                                <div class="input-block mb-3">
+                                                    <label>Pilih Jumlah Nominal<span class="text-danger">*</span></label>
+                                                    <select class="form-select fill_catatan" id="jenis_nominal">
+                                                        <option value="" disabled selected>Pilih Jumlah Nominal</option>
+                                                        <option value="500000">Rp 500.000</option>
+                                                        <option value="1000000">Rp 1.000.000</option>
+                                                        <option value="1500000">Rp 1.500.000</option>
+                                                        <option value="2000000">Rp 2.000.000</option>
+                                                        <option value="manual">Input Manual</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-lg-5 add input_nominal">
                                                 <div class="input-block mb-3">
                                                     <label>Nominal<span class="text-danger">*</span></label>
                                                     <div class="input-group fix-nominal">
                                                         <span class="input-group-text">Rp </span>
-                                                        <input class="form-control fill_catatan number-only nominal_only" id="cgd_nominal" placeholder="Contoh: 10.000"></input>
+                                                        <input class="form-control fill_catatan number-only nominal_only" disabled id="cgd_nominal" placeholder="Contoh: 10.000"></input>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1998,30 +2011,17 @@
                                     </div>
                                     <div class="col-6 saldo_kas">
                                         <div class="input-block mb-3">
-                                            <label>Keterangan<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill saldos" id="oc_notes_armada" placeholder="Contoh: Pengembalian kas harian">
-                                        </div>
-                                    </div>
-                                    <div class="col-6 saldo_kas">
-                                        <div class="input-block mb-3">
-                                            <label>Pilih Jumlah Nominal<span class="text-danger">*</span></label>
-                                            <select class="form-select" id="jenis_nominal">
-                                                <option value="" disabled selected>Pilih Jumlah Nominal</option>
-                                                <option value="500000">Rp 500.000</option>
-                                                <option value="1000000">Rp 1.000.000</option>
-                                                <option value="1500000">Rp 1.500.000</option>
-                                                <option value="2000000">Rp 2.000.000</option>
-                                                <option value="manual">Input Manual</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 saldo_kas">
-                                        <div class="input-block mb-3">
                                             <label>Nominal Pengembalian<span class="text-danger">*</span></label>
                                             <div class="input-group fix-nominal">
                                                 <span class="input-group-text">Rp </span>
                                                 <input class="form-control fill number-only nominal_only saldos" id="oc_nominal_armada" placeholder="Contoh: 10.000"></input>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 saldo_kas">
+                                        <div class="input-block mb-3">
+                                            <label>Keterangan<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill saldos" id="oc_notes_armada" placeholder="Contoh: Pengembalian kas harian">
                                         </div>
                                     </div>
                                     <div class="col-12 px-2 mb-3 operasional">
@@ -2477,7 +2477,7 @@
                                         <select class="form-select fill" id="cc_type">
                                             <option value="" selected disabled>Pilih Tipe Kategori</option>
                                             <option value="Keluar">Keluar</option>
-                                            {{-- <option value="Keluar 1">Keluar 1</option> --}}
+                                            <option value="Keluar 1">Keluar 1</option>
                                             <option value="Masuk">Masuk / Setoran Tunai</option>
                                         </select>
                                     </div>

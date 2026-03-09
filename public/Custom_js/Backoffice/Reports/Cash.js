@@ -325,7 +325,7 @@
     }
 
     $(document).on('change', '#cash_select', function(){
-        if($(this).val() == "credit1"){
+        if($(this).val() == "credit2"){
             $('#tujuan').show();
         } else {
             $('#tujuan').hide();
