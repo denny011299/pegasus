@@ -358,7 +358,7 @@ class AutocompleteController extends Controller
         $p = new Staff();
         $data_city = $p->getStaff([
             "staff_name" => $keyword,
-            "role_id" => 3
+            "role_name" => "sales"
         ]);
 
 

@@ -20,13 +20,18 @@ class Staff extends Model
             "staff_username"=>null,
             "staff_password"=>null,
             // "city_id"=>null,
-            "role_id"=>null
+            "role_id"=>null,
+            "role_name" => null
         ], $data);
 
         $result = self::where('status', '=', 1);
         if($data["staff_name"]) $result->where('staff_name','like','%'.$data["staff_name"].'%');
         // if($data["city_id"]) $result->where('city_id','=',$data["city_id"]);
         if($data["staff_id"]) $result->where('staff_id','=',$data["staff_id"]);
+        if ($data["role_name"]){
+            $roles = Role::where('role_name','like','%'.$data["role_name"].'%')->first();
+            $data['role_id'] = $roles->role_id;
+        }
         if($data["role_id"]) $result->where('role_id','=',$data["role_id"]);
         if($data["staff_username"] && isset($data["staff_password"])) {
             $staff = Staff::where('staff_username', $data["staff_username"])->first();

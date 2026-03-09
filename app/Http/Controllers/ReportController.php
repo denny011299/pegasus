@@ -11,6 +11,8 @@ use App\Models\CashArmadaDetail;
 use App\Models\CashCategory;
 use App\Models\CashGudang;
 use App\Models\CashGudangDetail;
+use App\Models\CashSales;
+use App\Models\CashSalesDetail;
 use App\Models\Customer;
 use App\Models\InwardOutward;
 use App\Models\PettyCash;
@@ -246,6 +248,7 @@ class ReportController extends Controller
         }
         
         else if ($data['jenis_input'] == "saldo") {
+            $data['ca_type'] = 1;
             (new CashAdmin())->insertCashAdmin($data);
         }
     }
@@ -293,6 +296,7 @@ class ReportController extends Controller
         else if ($data['jenis_input'] == "saldo"){
             $staff_name = Staff::find($data['staff_id'])->staff_name;
             $notes = $data['ca_notes'] . " oleh admin " . $staff_name;
+            $data['ca_type'] = 1;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
                 $cash_id = (new Cash())->updateCash([
@@ -640,7 +644,7 @@ class ReportController extends Controller
         } else {
             $notes = $data['cr_notes'] . " dari armada " . $customer->customer_notes;
             $cash_id = (new Cash())->insertCash([
-                "customer_id" => $data['customer_id'],
+                "person_id" => $data['customer_id'],
                 "cash_date" => now(),
                 "cash_description" => $notes,
                 "cash_nominal" => $data['cr_nominal'],
@@ -690,7 +694,7 @@ class ReportController extends Controller
             $notes = $data['cr_notes'] . " dari armada " . $customer;
             $cash_id = (new Cash())->updateCash([
                 "cash_id" => $data['cash_id'],
-                "customer_id" => $data['customer_id'],
+                "person_id" => $data['customer_id'],
                 "cash_date" => now(),
                 "cash_description" => $notes,
                 "cash_nominal" => $data['cr_nominal'],
@@ -767,6 +771,177 @@ class ReportController extends Controller
     {
         $data = $req->all();
         return (new CashArmada())->declineCashArmada($data);
+    }
+
+    function getCashSales(Request $req)
+    {
+        $data = (new CashSales())->getCashSales($req->all());
+        return response()->json($data);
+    }
+
+    function insertCashSales(Request $req)
+    {
+        $data = $req->all();
+
+        $total = 0;
+        $sales = Staff::find($data['staff_id']);
+        if ($data['oc_transaksi'] == "operasional"){
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['csd_nominal'];
+            }
+            if ($total > $sales->staff_saldo){
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal Insert",
+                    "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
+                ]);
+            }
+        }
+
+        if ($data['photo']){
+            $img = [];
+            foreach (json_decode($data["photo"]) as $key => $value) {
+                $image = $value;
+
+                // Hilangkan prefix base64
+                $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+                // Decode
+                $imageData = base64_decode($image);
+
+                // Nama file
+                $imageName = 'photo_' . uniqid() . '.png';
+
+                // Path tujuan di public/produksi
+                $path = public_path('kas_admin/sales/' . $imageName);
+                // Simpan file
+                file_put_contents($path, $imageData);
+                array_push($img, $imageName);
+            }
+            $data["cs_img"] = json_encode($img);
+        }
+
+        if ($data['oc_transaksi'] == "operasional"){
+            $data['cs_notes'] = "Pengeluaran sales " . $sales->staff_name;
+            $data['cs_transaction'] = $item[0]['csd_type'];
+            if ($item[0]['csd_type'] == 1) {
+                $data['cs_notes'] = "Setoran sales " . $sales->staff_name;
+            }
+            $data['cs_type'] = 2;
+            $data['cs_nominal'] = $total;
+            $data['cash_id'] = 0;
+        } else {
+            if ($data['cs_aksi'] == "2") {
+                $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+                $cash_id = (new Cash())->insertCash([
+                    "person_id" => $data['staff_id'],
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $data['cs_nominal'],
+                    "cash_type" => 3, // Keluar 1
+                    "cash_tujuan" => 4, // Sales
+                    "status" => 1
+                ]);
+        
+                $data['cash_id'] = $cash_id;
+                // $data['cs_aksi'] = 1;
+            }
+            $data['cs_type'] = 1;
+        }
+
+        $cs_id = (new CashSales())->insertCashSales($data);
+
+        if ($data['oc_transaksi'] == "operasional"){
+            foreach ($item as $key => $value) {
+                $value['cs_id'] = $cs_id;
+                (new CashSalesDetail())->insertCashSalesDetail($value);
+            }
+        }
+    }
+
+    function updateCashSales(Request $req)
+    {
+        $data = $req->all();
+
+        $id = [];
+        $sales = Staff::find($data['staff_id']);
+
+        if ($data['oc_transaksi'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['csd_nominal'];
+            }
+    
+            $data['cs_notes'] = "Pengeluaran sales " . $sales->staff_name;
+            $data['cs_nominal'] = $total;
+        }
+
+        if ($data['oc_transaksi'] == "saldo") $data['cs_aksi'] = 1;
+        else if ($data['oc_transaksi'] == "operasional") $data['cs_aksi'] = 2;
+        $cs_id = (new CashSales())->updateCashSales($data);
+
+        if ($data['oc_transaksi'] == "saldo"){
+            $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+            $cash_id = (new Cash())->updateCash([
+                "cash_id" => $data['cash_id'],
+                "person_id" => $data['staff_id'],
+                "cash_date" => now(),
+                "cash_description" => $notes,
+                "cash_nominal" => $data['cs_nominal'],
+                "cash_type" => 3, // keluar 1 (setor kas ke bank)
+                "cash_tujuan" => 3, // Armada
+                "status" => 1
+            ]);
+        }
+    }
+
+    function deleteCashSales(Request $req)
+    {
+        $data = $req->all();
+        $ca = CashSales::find($data['cs_id']);
+        (new CashSales())->deleteCashSales($data);
+        $detail = CashSalesDetail::where('cs_id', $data['cs_id'])->where('status', 1)->get();
+        foreach ($detail as $key => $value) {
+            (new CashSalesDetail())->deleteCashSalesDetail($value);
+            (new Cash())->deleteCash($value);
+        }
+    }
+
+    function acceptCashSales(Request $req)
+    {
+        $data = $req->all();
+
+        if (isset($data['cs_id'])){
+            $cs = CashSales::find($data['cs_id']);
+        } else {
+            $cs = CashSales::where('cash_id', $data["cash_id"])->first();
+        }
+        $sales = Staff::find($cs['staff_id']);
+        if ($cs->cs_type == 1 && $cs->cs_aksi == 1){
+            $sales->staff_saldo += $cs['cs_nominal'];
+            
+        } else {
+            $sales->staff_saldo -= $cs['cs_nominal'];
+        }
+        if ($sales->staff_saldo < 0){
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal Konfirmasi",
+                "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
+            ]);
+        }
+        $sales->save();
+        return (new CashSales())->acceptCashSales($data);
+    }
+
+    function declineCashSales(Request $req)
+    {
+        $data = $req->all();
+        return (new CashSales())->declineCashSales($data);
     }
     
     function reportBahanBaku(){

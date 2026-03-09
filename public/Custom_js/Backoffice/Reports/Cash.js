@@ -158,6 +158,10 @@
                 row.child(formatArmada(rowData)).show();
                 tr.addClass('shown');
             }
+            else if (rowData.sales_operasional) {
+                row.child(formatSales(rowData)).show();
+                tr.addClass('shown');
+            }
         }
     });
 
@@ -194,7 +198,7 @@
 
         operasional.forEach((d) => {
             if (d.cr_type == 1) total += parseInt(d.cr_nominal);
-            else if (d.cr_type == 2) total -= parseInt(d.cr_nominal);
+            else if (d.cr_type >= 2) total -= parseInt(d.cr_nominal);
 
             var img = JSON.parse(d.cr_img);
             list_photo = img || null;
@@ -253,6 +257,81 @@
         //         </div>
         //     `;
         // }
+
+        html += `</div>`;
+        return html;
+    }
+    function formatSales(rowData) {
+        console.log(rowData)
+        let operasional = rowData.sales_operasional;
+        let penyerahan = rowData.sales_penyerahan;
+
+        if (!operasional || operasional.length === 0) {
+            return `
+                <div class="p-3">
+                    <em class="text-muted">Tidak ada detail operasional armada</em>
+                </div>
+            `;
+        }
+
+        let total = 0;
+        let html = `<div class="px-5">`;
+
+        if (penyerahan && penyerahan.length > 0) {
+            penyerahan.forEach((p) => {
+                total += parseInt(p.cs_nominal);
+                html += `
+                    <div class="child-item">
+                        <div class="child-left d-flex g-3">
+                            <div class="date me-3">${moment(p.created_at).format('D MMM YYYY')}</div>
+                            <div class="notes">${p.cs_notes}</div>
+                        </div>
+                        <div class="child-right text-end text-success">+ Rp ${formatRupiah(p.cs_nominal)}</div>
+                    </div>
+                `;
+            });
+        }
+
+        operasional.forEach((d) => {
+            if (d.cs_transaction == 1) total += parseInt(d.cs_nominal);
+            else if (d.cs_transaction >= 2) total -= parseInt(d.cs_nominal);
+
+            var img = JSON.parse(d.cs_img);
+            list_photo = img || null;
+
+            html += `
+                <div class="child-item">
+                    <div class="child-left">
+                        <div class="d-flex g-3">
+                            <div class="date me-3">
+                                ${moment(d.created_at).format('D MMM YYYY')}
+                            </div>
+                            <div class="notes">
+                                ${d.cs_notes}
+                            </div>
+                        </div>
+                        ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
+                    </div>
+                    <div class="child-right text-end ${d.cs_transaction == 1 ? 'text-success' : 'text-danger'}">
+                        ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiah(d.cs_nominal)}
+                    </div>
+                    ${d.cs_img ? `
+                    <div>
+                        <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-sales" 
+                        data-img='${d.cs_img}'>
+                            <i class="fe fe-eye"></i>
+                        </a>
+                    </div>` : ''}
+                </div>
+            `;
+        });
+
+        html += `
+            <div class="child-item fw-semibold pt-3 border-top">
+                <div class="child-left-total">Total Akhir</div>
+                <div class="child-right text-end ${total > 0 ? 'text-success' : 'text-danger'}">${total > 0 ? '+' : '-'}Rp ${formatRupiah(total)}</div>
+            </div>
+        `;
 
         html += `</div>`;
         return html;
@@ -352,6 +431,7 @@
         if (tujuan == 1) url = "/acceptCashAdmin";
         else if (tujuan == 2) url = "/acceptCashGudang";
         else if (tujuan == 3) url = "/acceptCashArmada";
+        else if (tujuan == 4) url = "/acceptCashSales";
         $.ajax({
             url:url,
             data:{
@@ -394,6 +474,7 @@
         if (tujuan == 1) url = "/declineCashAdmin";
         else if (tujuan == 2) url = "/declineCashGudang";
         else if (tujuan == 3) url = "/declineCashArmada";
+        else if (tujuan == 4) url = "/declineCashSales";
         $.ajax({
             url:url,
             data:{
@@ -439,18 +520,35 @@
     })
 
     $(document).on("click", ".btn-lihat-bukti-armada", function () {
-    var imgRaw = $(this).attr('data-img');
-    
-    try {
-        list_photo = JSON.parse(imgRaw);
-    } catch(e) {
-        list_photo = [imgRaw];
-    }
+        var imgRaw = $(this).attr('data-img');
+        
+        try {
+            list_photo = JSON.parse(imgRaw);
+        } catch(e) {
+            list_photo = [imgRaw];
+        }
 
-    if (!list_photo || list_photo.length === 0) return;
+        if (!list_photo || list_photo.length === 0) return;
         $('#fotoProduksiImage').attr('src', public + "kas_admin/armada/" + list_photo[0]);
         $('#fotoProduksiImage').attr('index', 0);
         $('#btn_download_photo').attr('href', public + "kas_admin/armada/" + list_photo[0]);
+        $('#jumlahFoto').html(list_photo.length);
+        $('.btn-prev, .btn-next').show();
+        $('#modalViewPhoto').modal("show");
+    });
+    $(document).on("click", ".btn-lihat-bukti-sales", function () {
+        var imgRaw = $(this).attr('data-img');
+        
+        try {
+            list_photo = JSON.parse(imgRaw);
+        } catch(e) {
+            list_photo = [imgRaw];
+        }
+
+        if (!list_photo || list_photo.length === 0) return;
+        $('#fotoProduksiImage').attr('src', public + "kas_admin/sales/" + list_photo[0]);
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', public + "kas_admin/sales/" + list_photo[0]);
         $('#jumlahFoto').html(list_photo.length);
         $('.btn-prev, .btn-next').show();
         $('#modalViewPhoto').modal("show");

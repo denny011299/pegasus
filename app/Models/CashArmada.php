@@ -37,9 +37,17 @@ class CashArmada extends Model
             }
         }
 
-        $result->orderByRaw('FIELD(status, 2, 1, 3)')->orderBy('created_at', 'desc');
+        // $result->orderByRaw('FIELD(status, 2, 1, 3)')->orderBy('created_at', 'desc');
+        $result->orderBy('status', 'asc')->orderBy('created_at', 'desc');
 
         $result = $result->get();
+
+        // Ambil customer_saldo meski $result kosong
+        $customer_saldo = 0;
+        if ($data["customer_id"]) {
+            $selectedStaff = Customer::find($data["customer_id"]);
+            $customer_saldo   = $selectedStaff ? $selectedStaff->customer_saldo : 0;
+        }
 
         $allData = CashArmada::where('status', 2)->get();
         $sisa_kas = 0;
@@ -68,7 +76,8 @@ class CashArmada extends Model
         }
         return [
             'data' => $result,
-            'sisa_kas' => $sisa_kas
+            'sisa_kas' => $sisa_kas,
+            'customer_saldo' => $customer_saldo
         ];
     }
 
@@ -79,7 +88,7 @@ class CashArmada extends Model
         $t->cash_id = $data["cash_id"];
         $t->cr_nominal = $data["cr_nominal"];
         $t->cr_notes = $data["cr_notes"];
-        $t->cr_type = $data["cr_type"] ?? 2;
+        $t->cr_type = $data["cr_type"] ?? 3;
         $t->cr_aksi = $data["cr_aksi"] ?? 0;
         $t->cr_img = $data["cr_img"] ?? null;
         $t->status = $data['status'] ?? 1;
@@ -93,7 +102,7 @@ class CashArmada extends Model
         $t->customer_id = $data["customer_id"];
         $t->cr_nominal = $data["cr_nominal"];
         $t->cr_notes = $data["cr_notes"];
-        $t->cr_type = $data["cr_type"] ?? 2;
+        $t->cr_type = $data["cr_type"] ?? 3;
         $t->cr_aksi = $data["cr_aksi"] ?? 0;
         $t->cr_img = $data["cr_img"] ?? null;
         $t->status = $data['status'] ?? 1;

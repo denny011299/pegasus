@@ -24,6 +24,7 @@
                                             <th>No. Telepon</th>
                                             <th>Email</th>
                                             <th>Peran</th>
+                                            <th>Saldo</th>
                                             <th>Dibuat pada</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>

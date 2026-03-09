@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('cash_armadas', function (Blueprint $table) {
             $table->integerIncrements('cr_id');
-            $table->integer('customer_id');
             $table->integer('cash_id');
+            $table->integer('customer_id');
             $table->integer('cr_nominal');
-            $table->string('cr_notes', 255)->nullable();
             $table->integer('cr_type')->comment('1 = saldo, 2 = operasional');
             $table->integer('cr_aksi')->comment('1 = pengajuan, 2 = pengembalian');
+            $table->string('cr_notes', 255)->nullable();
             $table->text('cr_img')->nullable();
             $table->integer('status')->default(1);
             $table->timestamps();

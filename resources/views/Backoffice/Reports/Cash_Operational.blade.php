@@ -105,17 +105,17 @@
                                     <select class="form-select" id="cashType">
                                         <option value="admin">Kas Admin</option>
                                         <option value="gudang">Kas Gudang</option>
-                                        <option value="armada">Dompet Virtual</option>
-                                        {{-- <option value="sales">Dompet Virtual Sales</option> --}}
+                                        <option value="armada">Dompet Virtual Armada</option>
+                                        <option value="sales">Dompet Virtual Sales</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="col-md-6 row justify-content-end">
                                 <div class="total-summary text-end w-75">
                                     <div class="px-3 py-2 mb-0">
-                                        <div class="row">
+                                        <div class="row info_card">
                                             <div class="fw-bold text-end text-black p-0">
-                                                <i class="fe fe-dollar-sign"></i> Kas Armada : <span id="totalArmada">Rp 0</span>
+                                                <i class="fe fe-dollar-sign"></i> Kas Armada : <span id="totalArmada">-</span>
                                             </div>
                                         </div>
                                     </div>

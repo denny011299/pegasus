@@ -32,6 +32,7 @@
                 { data: "staff_phone_text" },
                 { data: "staff_email_text" },
                 { data: "role_name_text" },
+                { data: "saldo_text" },
                 { data: "created" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -60,6 +61,7 @@
                     e[i].staff_email_text = e[i].staff_email ?? "-";
                     e[i].role_name_text  = e[i].role_name  ?? "-";
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY') ?? "-"; 
+                    e[i].saldo_text = `Rp ${formatRupiah(e[i].staff_saldo)}`;
                     e[i].action = `
                         
                         <a class="me-2 btn-action-icon p-2 btn_edit" href="/updateStaff/${e[i].staff_id}" data-bs-target="#edit-supplier">
