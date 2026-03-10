@@ -17,6 +17,7 @@ return new class extends Migration
             $table->date('po_date');
             $table->string('po_customer',250);
             $table->integer('po_total')->nullable();
+            $table->string('jenis_discount', 10);
             $table->integer('po_discount')->default(0);
             $table->integer('po_ppn')->default(0);
             $table->integer('po_cost')->default(0);

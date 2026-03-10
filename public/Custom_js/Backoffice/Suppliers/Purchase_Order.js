@@ -7,8 +7,6 @@
     autocompleteSupplier("#po_supplier","#add_purchase_order");
     autocompleteSupplier("#select_supplier");
     autocompleteRekening("#bank_kode");
- 
-    
     
     $(document).ready(function(){
         inisialisasi();
@@ -24,6 +22,7 @@
         $('#add_purchase_order .modal-title').html("Tambah Pesanan Pembelian");
         $('#add_purchase_order input').val("");
         $('#add_purchase_order select2').empty();
+        $('#add_purchase_order #jenis_disc').val("persen").trigger('change');
         $('#add_purchase_order #po_discount').val(0);
         $('#add_purchase_order #po_ppn').val(0);
         $('#add_purchase_order #po_cost').val(0);
@@ -41,6 +40,25 @@
         $('.is-invalids').removeClass('is-invalids');
         $('#add_purchase_order').modal("show");
     });
+
+    $(document).on('change', '#jenis_disc', function(){
+        if ($(this).val() == "persen") {
+            $('.discount').html(`
+                <input type="text" class="form-control fill number-only" id="po_discount" 
+                    placeholder="Input Diskon" value="0">
+                <span class="input-group-text">%</span>
+            `);
+        }
+        else if ($(this).val() == "nominal") {
+            $('.discount').html(`
+                <span class="input-group-text">Rp </span>
+                <input type="text" class="form-control fill nominal_only" id="po_discount" 
+                    placeholder="Input Diskon" value="0">
+            `);
+        }
+        $('#po_discount').val(0).trigger('keyup');
+        refreshSummary();
+    })
 
     $(document).on('change','#po_supplier', function () {
         item = [];
@@ -144,7 +162,13 @@
             total+=(item.supplies_variant_price*item.qty);
         });
         $('#value_total').html(formatRupiah(total,"Rp."))
-        var diskon = Math.round(total * (parseInt($('#po_discount').val())/100));
+        var diskon = 0;
+        if ($('#jenis_disc').val() == "persen"){
+            diskon = Math.round(total * (parseInt($('#po_discount').val())/100));
+        } else if ($('#jenis_disc').val() == "nominal") {
+            diskon = convertToAngka($('#po_discount').val());
+        }
+        console.log(diskon)
         total -= diskon;
         var ppn = Math.round(total * (parseInt($('#po_ppn').val())/100));
         console.log((parseInt($('#po_ppn').val())/100));
@@ -332,7 +356,6 @@
         };
 
         if(item.length==0){
-            valid=-1;
             notifikasi('error', "Gagal Insert", 'Silahkan masukkan minimal 1 bahan');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian");     
             return false;
@@ -341,12 +364,27 @@
         $('.units_id').each(function(index){
             item[index].unit_id_select = $(this).val();
         });
+
+        var diskon = 0;
+        if ($('#jenis_disc').val() == "persen"){
+            diskon = $('#po_discount').val();
+        } else if ($('#jenis_disc').val() == "nominal"){
+            diskon = convertToAngka($('#po_discount').val());
+        }
+
+        if (diskon > grand) {
+            notifikasi('error', "Gagal Insert", 'Diskon tidak boleh melebihi total');
+            $('#po_discount').addClass('is-invalid'); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian");
+            return false;
+        }
         
         param = {
             // category_name:$('#category_name').val(),
             po_supplier : $('#po_supplier').val(),
             po_date : $('#po_date').val(),
-            po_discount : $('#po_discount').val(),
+            po_discount : diskon,
+            jenis_discount : $('#jenis_disc').val(),
             po_ppn : convertToAngka($('#po_ppn').val()),
             po_cost : convertToAngka($('#po_cost').val()),
             po_total : grand,

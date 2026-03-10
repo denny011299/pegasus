@@ -1007,17 +1007,26 @@
                                     </div>
                                 </div>
                                 <div class="col-12 row">
-                                    <div class="col-4">
+                                    <div class="col-3">
+                                        <div class="input-block">
+                                            <label>Tipe Diskon</label>
+                                            <select class="form-select" id="jenis_disc">
+                                                <option value="persen">Persen</option>
+                                                <option value="nominal">Nominal</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
                                         <div class="input-block">
                                             <label>Diskon</label>
-                                            <div class="input-group mb-3">
+                                            <div class="input-group mb-3 discount">
                                                 <input type="text" class="form-control fill number-only" id="po_discount" 
                                                 placeholder="Input Diskon" value="0">
                                                 <span class="input-group-text">%</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-3">
                                         <div class="input-block">
                                             <label>PPN</label>
                                             <div class="input-group mb-3">
@@ -1027,7 +1036,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-3">
                                         <div class="input-block mb-3">
                                             <label>Biaya Pengiriman</label>
                                             <div class="input-group mb-3">

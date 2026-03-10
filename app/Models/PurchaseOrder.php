@@ -107,6 +107,7 @@ class PurchaseOrder extends Model
         $t->po_date     = $data["po_date"];
         $t->po_total    = $data["po_total"];
         $t->po_ppn      = $data["po_ppn"] ?? 0;
+        $t->jenis_discount = $data["jenis_discount"];
         $t->po_discount = $data["po_discount"] ?? 0;
         $t->po_cost     = $data["po_cost"] ?? 0;
         $t->po_img      = $data["po_img"] ?? null;
@@ -124,6 +125,7 @@ class PurchaseOrder extends Model
         $t->po_date     = $data["po_date"];
         $t->po_total    = $data["po_total"];
         $t->po_ppn      = $data["po_ppn"] ?? 0;
+        $t->jenis_discount = $data["jenis_discount"];
         $t->po_discount = $data["po_discount"] ?? 0;
         $t->po_cost     = $data["po_cost"] ?? 0;
         $t->status      = $data["status"] ?? $t->status;

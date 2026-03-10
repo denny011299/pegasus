@@ -337,7 +337,7 @@
                     totalRetur += e[i].rs_total;
                 }
                 $('.total_akhir').html(`Rp ${formatRupiah(totalRetur)}`);
-                totalRetur += data.po_discount;
+                // totalRetur += data.po_discount;
                 $('#value_retur').html(`Rp ${formatRupiah(totalRetur)}`);
                 grandTotal();
 
@@ -1144,7 +1144,13 @@
             total+=(item.pod_harga*item.pod_qty);
         });
         $('#value_total').html(formatRupiah(total,"Rp."))
-        var diskon = Math.round(total * (parseInt(data.po_discount)/100));
+        var diskon = 0;
+        if (data.jenis_discount == "persen"){
+            diskon = Math.round(total * (parseInt(data.po_discount)/100));
+        } else if (data.jenis_discount == "nominal"){
+            diskon = data.po_discount;
+        }
+        console.log(diskon);
         total -= diskon;
         var ppn = Math.round(total * (parseInt(data.po_ppn)/100));
         var cost = data.po_cost;
