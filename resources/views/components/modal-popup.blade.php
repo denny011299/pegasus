@@ -2139,6 +2139,7 @@
                                             <select class="form-select fill" id="aksi_sales">
                                                 <option value=1>Pemasukan</option>
                                                 <option value=2>Setor ke Bank</option>
+                                                <option value=3>Pengembalian</option>
                                             </select>
                                         </div>
                                     </div>

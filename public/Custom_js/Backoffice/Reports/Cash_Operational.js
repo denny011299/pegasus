@@ -178,7 +178,7 @@
         if (type == "admin"){
             $('#add_cash_admin input').val("").attr('disabled', false);
             $('#jenis_input, #staff_id, #oc_transaksi').attr('disabled', false);
-            $('#oc_transaksi').val(1).attr('disabled', false);
+            $('#oc_transaksi').val(1).attr('disabled', false).trigger('change');
 
             $('#row-cash').html(`
                 <label>Nama Pengaju<span class="text-danger">*</span></label>
@@ -204,7 +204,7 @@
         else if (type == "gudang"){
             $('#add_cash_gudang input').val("").attr('disabled', false);
             $('#jenis_input_gudang, #staff_id_gudang, #oc_transaksi_gudang').attr('disabled', false);
-            $('#oc_transaksi_gudang').val(1).attr('disabled', false);
+            $('#oc_transaksi_gudang').val(1).attr('disabled', false).trigger('change');
             $('#cgd_nominal').attr('disabled', true);
             $('.input_nominal').hide();
             $('#jenis_nominal').attr('disabled', false).val("");
@@ -229,7 +229,7 @@
         else if (type == "armada"){
             $('#add_cash_armada input').val("").attr('disabled', false);
             $('#jenis_input_armada, #customer_id_armada').attr('disabled', false);
-            $('#oc_transaksi_armada').val(1).attr('disabled', false).show();
+            $('#oc_transaksi_armada').val(1).attr('disabled', false).show().trigger('change');
             $('#cc_id').empty(null).attr('disabled', false);
             $('#add_cash_armada .modal-title').html("Tambah Aktivitas Armada");
             $('#customer_id_armada').empty(null).attr('disabled', false);
@@ -250,7 +250,7 @@
         else if (type == "sales"){
             $('#add_cash_sales input').val("").attr('disabled', false);
             $('#jenis_input_sales, #staff_id_sales').attr('disabled', false);
-            $('#oc_transaksi_sales').val(1).attr('disabled', false).show();
+            $('#oc_transaksi_sales').val(1).attr('disabled', false).show().trigger('change');
             $('#cc_id_sales').empty(null).attr('disabled', false);
             $('#add_cash_sales .modal-title').html("Tambah Aktivitas Sales");
             $('#staff_id_sales').empty(null).attr('disabled', false);
@@ -274,6 +274,24 @@
         $('.is-invalids').removeClass('is-invalids');
         $('.cancel-btn').html('Batal');
     });
+
+    $(document).on('change', '#oc_transaksi', function(){
+        console.log($(this).val())
+        if ($(this).val() == 1){
+            $('#oc_nominal').val("").attr('disabled', false);
+        } else {
+            $('#oc_nominal').val(formatRupiah(sisa_kas)).attr('disabled', true);
+        }
+    })
+
+    $(document).on('change', '#oc_transaksi_gudang', function(){
+        console.log($(this).val())
+        if ($(this).val() == 1){
+            $('#oc_nominal_gudang').val("").attr('disabled', false);
+        } else {
+            $('#oc_nominal_gudang').val(formatRupiah(sisa_kas)).attr('disabled', true);
+        }
+    })
 
     // Input nominal Operasional Gudang
     $(document).on('change', '#jenis_nominal', function() {

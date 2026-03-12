@@ -848,6 +848,21 @@ class ReportController extends Controller
                 $data['cash_id'] = $cash_id;
                 // $data['cs_aksi'] = 1;
             }
+            else if ($data['cs_aksi'] == "3") {
+                $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+                $cash_id = (new Cash())->insertCash([
+                    "person_id" => $data['staff_id'],
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $data['cs_nominal'],
+                    "cash_type" => 1, // Debit
+                    "cash_tujuan" => 4, // Sales
+                    "status" => 1
+                ]);
+        
+                $data['cash_id'] = $cash_id;
+                // $data['cs_aksi'] = 1;
+            }
             $data['cs_type'] = 1;
         }
 

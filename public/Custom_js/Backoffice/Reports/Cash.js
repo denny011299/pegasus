@@ -216,7 +216,7 @@
                         </div>
                         ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
-                    <div class="child-right text-end ${d.cr_type == 1 ? 'text-success' : 'text-danger'}">
+                    <div class="child-right text-end ${d.cr_type <= 2 ? (d.cr_type == 1 ? 'text-success' : 'text-warning') : 'text-danger'}">
                         ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiah(d.cr_nominal)}
                     </div>
                     ${d.cr_img ? `
@@ -269,7 +269,7 @@
         if (!operasional || operasional.length === 0) {
             return `
                 <div class="p-3">
-                    <em class="text-muted">Tidak ada detail operasional armada</em>
+                    <em class="text-muted">Tidak ada detail operasional sales</em>
                 </div>
             `;
         }
@@ -312,7 +312,7 @@
                         </div>
                         ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
-                    <div class="child-right text-end ${d.cs_transaction == 1 ? 'text-success' : 'text-danger'}">
+                    <div class="child-right text-end ${d.cs_transaction <= 2 ? (d.cs_transaction == 1 ? 'text-success' : 'text-warning') : 'text-danger'}}">
                         ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiah(d.cs_nominal)}
                     </div>
                     ${d.cs_img ? `
