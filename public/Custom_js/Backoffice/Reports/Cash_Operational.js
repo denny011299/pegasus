@@ -136,7 +136,7 @@
             $('.operasional').show();
         }
         $('#add_cash_armada input').val("");
-        $('#customer_id_armada').empty(null);
+        $('#customer_id_armada').empty(null).trigger('change');
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('#oc_transaksi_armada').val(1);
@@ -228,7 +228,7 @@
         }
         else if (type == "armada"){
             $('#add_cash_armada input').val("").attr('disabled', false);
-            $('#jenis_input_armada, #customer_id_armada').attr('disabled', false);
+            $('#jenis_input_armada').attr('disabled', false).trigger('change');
             $('#oc_transaksi_armada').val(1).attr('disabled', false).show().trigger('change');
             $('#cc_id').empty(null).attr('disabled', false);
             $('#add_cash_armada .modal-title').html("Tambah Aktivitas Armada");
@@ -285,13 +285,40 @@
     })
 
     $(document).on('change', '#oc_transaksi_gudang', function(){
-        console.log($(this).val())
         if ($(this).val() == 1){
             $('#oc_nominal_gudang').val("").attr('disabled', false);
         } else {
             $('#oc_nominal_gudang').val(formatRupiah(sisa_kas)).attr('disabled', true);
         }
     })
+
+    $(document).on('change', '#customer_id_armada', function(){
+        if (mode == 1 && $('#jenis_input_armada').val() == "saldo"){
+            if ($(this).val()){
+                var temp = $('#customer_id_armada').select2("data")[0];
+                $('#oc_nominal_armada').val(formatRupiah(temp.customer_saldo)).attr('disabled', true);
+            } else {
+                $('#oc_nominal_armada').val("").attr('disabled', false);
+            }
+        }
+    })
+
+    $(document).on('change', '#aksi_sales', function(){
+        if ($('#jenis_input_sales').val() == "saldo"){
+            if ($(this).val() == 3 && $('#staff_id_sales').val()){
+                var temp = $('#staff_id_sales').select2("data")[0];
+                $('#oc_nominal_sales').val(formatRupiah(temp.staff_saldo)).attr('disabled', true);
+            } else {
+                $('#oc_nominal_sales').val("").attr('disabled', false);
+            }
+        }
+    })
+
+    // Khusus untuk saldo di dompet Sales
+    $(document).on('change', '#staff_id_sales', function(){
+        if ($('#jenis_input_sales').val() == "saldo") $('#aksi_sales').trigger('change');
+    })
+
 
     // Input nominal Operasional Gudang
     $(document).on('change', '#jenis_nominal', function() {

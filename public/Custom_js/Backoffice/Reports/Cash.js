@@ -216,7 +216,7 @@
                         </div>
                         ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
-                    <div class="child-right text-end ${d.cr_type <= 2 ? (d.cr_type == 1 ? 'text-success' : 'text-warning') : 'text-danger'}">
+                    <div class="child-right text-end" style="color: ${d.cr_type <= 2 ? (d.cr_type == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
                         ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiah(d.cr_nominal)}
                     </div>
                     ${d.cr_img ? `
@@ -312,7 +312,7 @@
                         </div>
                         ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
-                    <div class="child-right text-end ${d.cs_transaction <= 2 ? (d.cs_transaction == 1 ? 'text-success' : 'text-warning') : 'text-danger'}}">
+                    <div class="child-right text-end" style="color : ${d.cs_transaction <= 2 ? (d.cs_transaction == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
                         ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiah(d.cs_nominal)}
                     </div>
                     ${d.cs_img ? `

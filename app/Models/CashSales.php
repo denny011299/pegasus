@@ -49,12 +49,12 @@ class CashSales extends Model
             $staff_saldo   = $selectedStaff ? $selectedStaff->staff_saldo : 0;
         }
         
-        $allData = CashSales::where('status', 2)->get();
+        $allData = CashSales::where('status', '=', 2)->get();
         $sisa_kas = 0;
         foreach ($allData as $value) {
-            if ($value->cs_type == 1) {
+            if ($value->cs_transaction == 1) {
                 $sisa_kas += $value->cs_nominal;
-            } else if ($value->cs_type == 2) {
+            } else if ($value->cs_transaction >= 2) {
                 $sisa_kas -= $value->cs_nominal;
             }
         }

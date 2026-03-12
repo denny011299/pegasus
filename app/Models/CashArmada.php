@@ -54,7 +54,7 @@ class CashArmada extends Model
         foreach ($allData as $value) {
             if ($value->cr_type == 1) {
                 $sisa_kas += $value->cr_nominal;
-            } else if ($value->cr_type == 2) {
+            } else if ($value->cr_type >= 2) {
                 $sisa_kas -= $value->cr_nominal;
             }
         }

@@ -125,14 +125,14 @@ class Cash extends Model
                 $pengembalianIni = CashSales::where('cash_id', $value->cash_id)
                     ->where('staff_id', $value->person_id)
                     ->where('cs_type', 1)
-                    ->where('cs_aksi', 2)
+                    ->whereIn('cs_aksi', [2, 3])
                     ->first();
 
                 if (!$pengembalianIni) continue;
 
                 $pengembalianSebelumnya = CashSales::where('staff_id', $value->person_id)
                     ->where('cs_type', 1)
-                    ->where('cs_aksi', 2)
+                    ->whereIn('cs_aksi', [2, 3])
                     ->where('cash_id', '!=', 0)
                     ->where('cs_id', '<', $pengembalianIni->cs_id)
                     ->where('status', 2)

@@ -753,7 +753,7 @@ class ReportController extends Controller
         $customer = Customer::find($cr['customer_id']);
         if ($cr->cr_type == 1){
             $customer->customer_saldo += $cr['cr_nominal'];
-        } else if ($cr->cr_type == 2) {
+        } else if ($cr->cr_type >= 2) {
             $customer->customer_saldo -= $cr['cr_nominal'];
         }
         if ($customer->customer_saldo < 0){
@@ -833,8 +833,11 @@ class ReportController extends Controller
             $data['cs_nominal'] = $total;
             $data['cash_id'] = 0;
         } else {
-            if ($data['cs_aksi'] == "2") {
-                $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+            $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+            if ($data['cs_aksi'] == "1"){
+                $data['cs_transaction'] = 1;
+            }
+            else if ($data['cs_aksi'] == "2") {
                 $cash_id = (new Cash())->insertCash([
                     "person_id" => $data['staff_id'],
                     "cash_date" => now(),
@@ -846,10 +849,9 @@ class ReportController extends Controller
                 ]);
         
                 $data['cash_id'] = $cash_id;
-                // $data['cs_aksi'] = 1;
+                $data['cs_transaction'] = 3;
             }
             else if ($data['cs_aksi'] == "3") {
-                $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
                 $cash_id = (new Cash())->insertCash([
                     "person_id" => $data['staff_id'],
                     "cash_date" => now(),
@@ -861,7 +863,7 @@ class ReportController extends Controller
                 ]);
         
                 $data['cash_id'] = $cash_id;
-                // $data['cs_aksi'] = 1;
+                $data['cs_transaction'] = 2;
             }
             $data['cs_type'] = 1;
         }
