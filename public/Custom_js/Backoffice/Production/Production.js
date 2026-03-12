@@ -529,7 +529,7 @@ $(document).on("click", "#btn-delete-production", function () {
         method: "post",
         success: function (e) {
             $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
-            ResetLoadingButton("#btn-delete-production", "Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
@@ -539,7 +539,7 @@ $(document).on("click", "#btn-delete-production", function () {
             );
         },
         error: function (e) {
-            ResetLoadingButton("#btn-delete-production", "Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             console.log(e);
         },
     });
@@ -556,8 +556,8 @@ $(document).on("click", ".btn_acc", function () {
         "Apakah yakin ingin Approve pembatalan produksi ini?",
         "btn-acc-delete-production"
     );
-    $("#btn-acc-delete-production").html("Konfirmasi Batal Produksi");
     $("#btn-acc-delete-production").attr("production_id", data.production_id);
+    $(".btn-konfirmasi").html("Batal Produksi");
 });
 
 $(document).on("click", "#btn-acc-delete-production", function () {
@@ -571,7 +571,7 @@ $(document).on("click", "#btn-acc-delete-production", function () {
         method: "post",
         success: function (e) {
             $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
-            ResetLoadingButton("#btn-acc-delete-production", "Konfirmasi Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             $(".modal").modal("hide");
             if(e.status == -1){
                 notifikasi('error', "Stok Tidak Mencukupi", e.message);
@@ -585,7 +585,7 @@ $(document).on("click", "#btn-acc-delete-production", function () {
             );
         },
         error: function (e) {
-            ResetLoadingButton("#btn-acc-delete-production", "Konfirmasi Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             console.log(e);
         },
     });
@@ -602,7 +602,7 @@ $(document).on("click", ".btn_cancel", function () {
         "Apakah yakin ingin Tolak pembatalan produksi ini?",
         "btn-cancel-delete-production"
     );
-    $("#btn-cancel-delete-production").html("Konfirmasi Total Batal Produksi");
+    $(".btn-konfirmasi").html("Konfirmasi Batal Produksi");
     $("#btn-cancel-delete-production").attr("production_id", data.production_id);
 });
 
@@ -617,7 +617,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         method: "post",
         success: function (e) {
             $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
-            ResetLoadingButton("#btn-cancel-delete-production", "Konfirmasi Total Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi Batal Produksi");
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
@@ -627,7 +627,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
             );
         },
         error: function (e) {
-            ResetLoadingButton("#btn-cancel-delete-production", "Konfirmasi Total Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi Batal Produksi");
             console.log(e);
         },
     });

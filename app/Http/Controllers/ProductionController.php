@@ -502,6 +502,11 @@ class ProductionController extends Controller
     {
         $data = $req->all();
         $p = (new Production())->getProduction(["production_id" => $data['production_id']])->first();
+        if ($p['items']->count() == 0){
+            (new Production())->cancelProduction($data);
+            return 1;
+        }
+
         foreach ($p['items'] as $key => $value) {
             $b = Bom::find($value['bom_id']);
             $cek = -1;
