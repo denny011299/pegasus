@@ -429,6 +429,7 @@
         $('#tableSuppliesModal tr.row-supplies').remove();
         $('#supplies_id, #unit_supplies_id').empty();
         $('.is-invalid').removeClass('is-invalid');
+        $('.totals').html("Rp 0")
 
         let today = new Date();
         let yyyy = today.getFullYear();

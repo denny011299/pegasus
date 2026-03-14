@@ -107,6 +107,12 @@ class SupplierController extends Controller
             $total += $value["pod_subtotal"];
             (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
         }
+        $retur = ReturnSupplies::where('po_id', '=', $req->po_id)->where('status', 1)->get();
+        if ($retur->count() > 0){
+            foreach ($retur as $key => $val) {
+                $total -= $val->rs_total;
+            }
+        }
         $p = PurchaseOrder::find($req->po_id);
         $p->po_total = $total;
         $p->save();
@@ -632,7 +638,6 @@ class SupplierController extends Controller
                 "message"=>"Stok bahan tidak mencukupi : ".implode(", ",$bermasalah)
             ];
         }
-        
         $po->po_total -= $total;
         $po->save();
 
@@ -696,6 +701,8 @@ class SupplierController extends Controller
         $rs = ReturnSupplies::find($data['rs_id']);
         $returs = ReturnSuppliesDetail::where('rs_id', $data['rs_id'])->where('status', 1)->get();
         $pi = ProductIssues::find($rs->pi_id);
+
+        // Balikin ke awal sebelum ada retur ini
         $total = 0;
         foreach ($returs as $key => $value) {
             $total += ($value['rsd_price'] * $value['rsd_qty']);
