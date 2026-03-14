@@ -335,6 +335,65 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         return parseInt(rupiah.replace(/,.*|[^0-9]/g, ""), 10);
     }
 
+    $(document).on("input", ".number-minus", function() {
+        let val = $(this).val();
+        if (val === "-") return;
+        
+        // Izinkan minus hanya di awal
+        let isNegative = val.startsWith("-");
+        
+        // Hapus semua karakter selain angka
+        val = val.replace(/[^0-9]/g, '');
+        
+        // Hapus leading zero
+        if (val[0] === '0' && val.length > 1) {
+            val = val.substring(1);
+        }
+        
+        // Pasang kembali minus jika ada
+        if (isNegative && val.length > 0) {
+            val = "-" + val;
+        }
+        
+        $(this).val(val);
+    });
+    $(document).on("keyup", ".nominal_minus", function() {
+        let val = $(this).val();
+        if (val === "-") return;
+        
+        let formatted = formatRupiahMinus(convertToAngkaMinus(val));
+        
+        $(this).val(formatted);
+        console.log($(this).val());
+    });
+
+    function formatRupiahMinus(angka, prefix) {
+        if (isNaN(angka) || angka === "") return "";
+
+        let isNegative = angka < 0;
+        angka = Math.abs(angka).toString();
+        
+        var number_string = angka.replace(/[^,\d]/g, "").toString();
+        var split = number_string.split(",");
+        var sisa = split[0].length % 3;
+        var rupiah = split[0].substr(0, sisa);
+        var ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+        if (ribuan) {
+            separator = sisa ? "." : "";
+            rupiah += separator + ribuan.join(".");
+        }
+        rupiah = split[1] != undefined ? rupiah + "," + split[1] : rupiah;
+
+        let result = prefix == undefined ? rupiah : rupiah ? prefix + rupiah : "";
+        return isNegative && result ? "-" + result : result;
+    }
+
+    function convertToAngkaMinus(rupiah) {
+        let isNegative = rupiah.toString().startsWith("-");
+        let angka = parseInt(rupiah.replace(/,.*|[^0-9]/g, ""), 10);
+        return isNegative ? -angka : angka;
+    }
+
     function LoadingButton(id) {
         $(id).html(`
             <div class="text-center h-100">

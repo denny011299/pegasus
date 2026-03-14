@@ -210,8 +210,8 @@ class Cash extends Model
     }
 
     function insertCash($data){
-        if ($data['cash_tujuan'] == "admin") $data['cash_tujuan'] = 1;
-        else if ($data['cash_tujuan'] == "gudang") $data['cash_tujuan'] = 2;
+        // if ($data['cash_tujuan'] == "admin") $data['cash_tujuan'] = 1;
+        // else if ($data['cash_tujuan'] == "gudang") $data['cash_tujuan'] = 2;
         
         $t = new self();
         $t->person_id = $data["person_id"] ?? 0;
@@ -219,7 +219,7 @@ class Cash extends Model
         $t->cash_description = $data["cash_description"];
         $t->cash_nominal = $data["cash_nominal"];
         $t->cash_type = $data["cash_type"];
-        $t->cash_tujuan = $data["cash_tujuan"];
+        $t->cash_tujuan = $data["cash_tujuan"] ?? 0;
         $t->status = $data['status'] ?? 2;
         
         $t->save();

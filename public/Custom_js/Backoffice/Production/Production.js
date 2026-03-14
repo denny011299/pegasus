@@ -50,12 +50,13 @@
 
     $(document).on('change', '#product_id', function(){
         var data = $(this).select2("data")[0];
+        console.log(data);
         
         $('#unit_id').html("");
         data.pr_unit.forEach(element => {
             $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
         });
-        $('#unit_id').val(data.unit_id).trigger("change");
+        $('#unit_id').val(data.default_unit || data.unit_id).trigger("change");
         $('#pi_unit option').first().prop('selected', true);
         
         $('#production_qty').trigger('keyup');

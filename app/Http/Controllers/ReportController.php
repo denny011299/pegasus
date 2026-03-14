@@ -120,7 +120,7 @@ class ReportController extends Controller
     function insertCash(Request $req){
         $data = $req->all();
         $cash_id = (new Cash())->insertCash($data);
-        if ($data['cash_tujuan'] != null) {
+        if (isset($data['cash_tujuan']) && $data['cash_tujuan'] != null) {
             if ($data['cash_tujuan'] == "admin"){
                 (new CashAdmin())->insertCashAdmin([
                     "staff_id" => session('user')->staff_id,

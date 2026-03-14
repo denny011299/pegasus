@@ -45,6 +45,8 @@ class Bom extends Model
             $value->product_sku = $v->product_variant_sku;
             $value->product_variant_id = $v->product_variant_id;
             $u = Product::find($v->product_id);
+            $value->default_unit = $u->unit_id;
+            $value->default_unit_name = Unit::find($u->unit_id)->unit_short_name;
             $value->product_name =  $u->product_name . " " . $v->product_variant_name;
             $value->product_variant_sku = $v->product_variant_sku;
             $value->unit_name = Unit::find($value->unit_id)->unit_short_name;

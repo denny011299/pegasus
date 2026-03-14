@@ -96,6 +96,11 @@
                                             <td class="credits2 text-danger"></td>
                                             <td colspan="2"></td>
                                         </tr>
+                                        <tr>
+                                            <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
+                                            <td class="fw-bold text-end sisa">Rp 0</td>
+                                            <td colspan="2"></td>
+                                        </tr>
                                     </tfoot>
                                 </table>
                             </div>

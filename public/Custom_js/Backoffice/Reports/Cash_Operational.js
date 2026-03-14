@@ -17,14 +17,6 @@
         $('#filter_staff_id').empty(null);
         $('#filter_customer_id').empty(null);
         $('#filter_sales_id').empty(null);
-        
-        let today = new Date();
-        let yyyy = today.getFullYear();
-        let mm = String(today.getMonth() + 1).padStart(2, '0');
-        let dd = String(today.getDate()).padStart(2, '0');
-        let todayStr = yyyy + '-' + mm + '-' + dd;
-        $("#start_date").val(todayStr).trigger('change');
-        $("#end_date").val(todayStr).trigger('change');
 
         if (type === 'admin') {
             inisialisasi();
@@ -158,12 +150,13 @@
             $('.operasional').show();
         }
         $('#add_cash_sales input').val("");
-        $('#staff_id_sales').empty(null);
+        $('#staff_id_sales, #bank_account').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('#oc_transaksi_sales').val(1);
         $('.total_sales').html("Rp 0");
         autocompleteStaffSales('#staff_id_sales', '#add_cash_sales');
+        autocompleteRekening('#bank_account', '#add_cash_sales');
         $('#btn-foto-bukti-sales').show();
         $('#btn-lihat-bukti-sales').hide();
         $('#check_foto_sales').hide();
@@ -251,13 +244,13 @@
             $('#add_cash_sales input').val("").attr('disabled', false);
             $('#jenis_input_sales, #staff_id_sales').attr('disabled', false);
             $('#oc_transaksi_sales').val(1).attr('disabled', false).show().trigger('change');
-            $('#cc_id_sales').empty(null).attr('disabled', false);
             $('#add_cash_sales .modal-title').html("Tambah Aktivitas Sales");
-            $('#staff_id_sales').empty(null).attr('disabled', false);
+            $('#staff_id_sales, #bank_account, #cc_id_sales').empty(null).attr('disabled', false);
             $('#jenis_input_sales').val("saldo").attr('disabled', false).trigger('change');
-            $('#aksi_sales').val(1).attr('disabled', false);
+            $('#aksi_sales').val(1).attr('disabled', false).trigger('change');
             autocompleteStaffSales('#staff_id_sales', '#add_cash_sales');
             autocompleteCashCategory('#cc_id_sales', '#add_cash_sales');
+            autocompleteRekening('#bank_account', '#add_cash_sales');
             $('.total_sales').html("Rp 0");
 
             $('#btn-foto-bukti-sales').show();
@@ -296,7 +289,7 @@
         if (mode == 1 && $('#jenis_input_armada').val() == "saldo"){
             if ($(this).val()){
                 var temp = $('#customer_id_armada').select2("data")[0];
-                $('#oc_nominal_armada').val(formatRupiah(temp.customer_saldo)).attr('disabled', true);
+                $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', true);
             } else {
                 $('#oc_nominal_armada').val("").attr('disabled', false);
             }
@@ -305,12 +298,28 @@
 
     $(document).on('change', '#aksi_sales', function(){
         if ($('#jenis_input_sales').val() == "saldo"){
+            if ($(this).val() == 2) {
+                $('.banks').show();
+                $('#oc_notes_sales').val("").attr('disabled', true);
+            } else {
+                $('.banks').hide();
+                $('#oc_notes_sales').val("").attr('disabled', false);
+            }
             if ($(this).val() == 3 && $('#staff_id_sales').val()){
                 var temp = $('#staff_id_sales').select2("data")[0];
-                $('#oc_nominal_sales').val(formatRupiah(temp.staff_saldo)).attr('disabled', true);
+                $('#oc_nominal_sales').val(formatRupiahMinus(temp.staff_saldo)).attr('disabled', true);
             } else {
                 $('#oc_nominal_sales').val("").attr('disabled', false);
             }
+        }
+    })
+
+    $(document).on('change', '#bank_account', function(){
+        if ($(this).val()){
+            var temp = $('#bank_account').select2('data')[0];
+            $('#oc_notes_sales').val(`Setor ke bank ${temp.bank_kode}`);
+        } else {
+            $('#oc_notes_sales').val("");
         }
     })
 
@@ -659,18 +668,29 @@
                 let credits = 0;
                 let totalAll = 0;
                 let totalSummary = 0;
+                var sisa = 0;
                 for (let i = 0; i < e.length; i++) {
                     totalAll = e[i].total_all;
                     e[i].date = moment(e[i].created_at).format('D MMM YYYY');
                     if (e[i].cr_type == 1){
-                        e[i].debit = "Rp " + formatRupiah(e[i].cr_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cr_nominal);
                         e[i].credit = "Rp 0";
-                        if (e[i].status == 2) debits += e[i].cr_nominal;
+                        if (e[i].status == 2) {
+                            debits += e[i].cr_nominal;
+
+                            if (e[i].cr_nominal < 0) sisa -= e[i].cr_nominal;
+                            else sisa += e[i].cr_nominal;
+                        }
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiah(e[i].cr_nominal) + ")";
-                        if (e[i].status == 2) credits += e[i].cr_nominal;
+                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].cr_nominal) + ")";
+                        if (e[i].status == 2) {
+                            credits += e[i].cr_nominal;
+
+                            if (e[i].cr_nominal < 0) sisa += e[i].cr_nominal;
+                            else sisa -= e[i].cr_nominal;
+                        }
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
@@ -715,12 +735,14 @@
                 }
                 table.rows.add(e).draw();
                 
-                $('.debits').html(`Rp ${formatRupiah(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiah(credits)})`);
-                // $('#totalSeluruh').html(`Rp ${formatRupiah(totalAll)}`);
-                if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiah(data['customer_saldo'])}`);
+                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
+                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
+                // $('#totalSeluruh').html(`Rp ${formatRupiahMinus(totalAll)}`);
+                if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiahMinus(data['customer_saldo'])}`);
                 else $('#totalArmada').html('-');
-                $('.sisa').html(`Rp ${formatRupiah(data['sisa_kas'])}`);
+                console.log(sisa);
+                $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
+                // $('.sisa').html(`Rp ${formatRupiahMinus(data['sisa_kas'])}`);
 
                 // Expand child row
                 setTimeout(function () {
@@ -758,18 +780,28 @@
                 let credits = 0;
                 let totalAll = 0;
                 let totalSummary = 0;
+                var sisa = 0;
                 for (let i = 0; i < e.length; i++) {
                     totalAll = e[i].total_all;
                     e[i].date = moment(e[i].created_at).format('D MMM YYYY');
-                    if (e[i].cs_type == 1 && e[i].cs_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiah(e[i].cs_nominal);
+                    if (e[i].cs_transaction == 1 && e[i].cs_aksi == 1){
+                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cs_nominal);
                         e[i].credit = "Rp 0";
-                        if (e[i].status == 2) debits += e[i].cs_nominal;
+                        if (e[i].status == 2) {
+                            debits += e[i].cs_nominal;
+                            if (e[i].cs_nominal < 0) sisa -= e[i].cs_nominal;
+                            else sisa += e[i].cs_nominal;
+                        }
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiah(e[i].cs_nominal) + ")";
-                        if (e[i].status == 2) credits += e[i].cs_nominal;
+                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].cs_nominal) + ")";
+                        if (e[i].status == 2) {
+                            credits += e[i].cs_nominal;
+
+                            if (e[i].cs_nominal < 0) sisa += e[i].cs_nominal;
+                            else sisa -= e[i].cs_nominal;
+                        }
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
@@ -803,12 +835,13 @@
                 }
                 table.rows.add(e).draw();
                 
-                $('.debits').html(`Rp ${formatRupiah(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiah(credits)})`);
-                // $('#totalSeluruh').html(`Rp ${formatRupiah(totalAll)}`);
-                if ($('#filter_sales_id').val() != null) $('#totalSales').html(`Rp ${formatRupiah(data['staff_saldo'])}`);
+                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
+                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
+                // $('#totalSeluruh').html(`Rp ${formatRupiahMinus(totalAll)}`);
+                if ($('#filter_sales_id').val() != null) $('#totalSales').html(`Rp ${formatRupiahMinus(data['staff_saldo'])}`);
                 else $('#totalSales').html('-');
-                $('.sisa').html(`Rp ${formatRupiah(data['sisa_kas'])}`);
+                $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
+                // $('.sisa').html(`Rp ${formatRupiahMinus(data['sisa_kas'])}`);
 
                 // Expand child row
                 setTimeout(function () {
@@ -946,7 +979,7 @@
                         </div>
                     </div>
                     <div class="child-right text-end">
-                        Rp ${formatRupiah(d.crd_nominal)}
+                        Rp ${formatRupiahMinus(d.crd_nominal)}
                     </div>
                 </div>
 
@@ -959,7 +992,7 @@
                     Total
                 </div>
                 <div class="child-right text-end">
-                    Rp ${formatRupiah(total)}
+                    Rp ${formatRupiahMinus(total)}
                 </div>
             </div>
         `;
@@ -993,7 +1026,7 @@
                         </div>
                     </div>
                     <div class="child-right text-end">
-                        Rp ${formatRupiah(d.csd_nominal)}
+                        Rp ${formatRupiahMinus(d.csd_nominal)}
                     </div>
                 </div>
 
@@ -1006,7 +1039,7 @@
                     Total
                 </div>
                 <div class="child-right text-end">
-                    Rp ${formatRupiah(total)}
+                    Rp ${formatRupiahMinus(total)}
                 </div>
             </div>
         `;
@@ -1439,7 +1472,7 @@
         var data = {
             crd_type: newType,
             crd_notes: temp.cc_name,
-            crd_nominal: convertToAngka($('#crd_nominal').val()),
+            crd_nominal: convertToAngkaMinus($('#crd_nominal').val()),
         };
 
         if (items.length === 0) {
@@ -1464,7 +1497,7 @@
         items.forEach(element => {
             total += element.crd_nominal;
         });
-        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+        $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowArmada();
 
@@ -1481,12 +1514,14 @@
             if (e.crd_type == 1) type = "Masuk"
             else if (e.crd_type == 2) type = "Keluar"
             else if (e.crd_type == 3) type = "Keluar 1"
+            console.log(e.crd_nominal)
+            console.log(formatRupiahMinus(e.crd_nominal))
             $('#tableDetailArmada tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td>${type}</td>
                     <td style="width: 25%">${e.crd_notes}</td>
-                    <td class="text-end">Rp ${formatRupiah(e.crd_nominal)}</td>
+                    <td class="text-end">Rp ${formatRupiahMinus(e.crd_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1508,7 +1543,7 @@
             total += element.crd_nominal;
         });
         console.log(total);
-        $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+        $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowArmada();
     });
@@ -1572,7 +1607,7 @@
             customer_id:$('#customer_id_armada').val(),
             oc_transaksi: $('#jenis_input_armada').val(),
             cr_notes: $('#oc_notes_armada').val(),
-            cr_nominal: convertToAngka($('#oc_nominal_armada').val()),
+            cr_nominal: convertToAngkaMinus($('#oc_nominal_armada').val()),
             items: JSON.stringify(items),
             _token:token
         };
@@ -1645,7 +1680,7 @@
         var data = {
             csd_type: newType,
             csd_notes: temp.cc_name,
-            csd_nominal: convertToAngka($('#csd_nominal').val()),
+            csd_nominal: convertToAngkaMinus($('#csd_nominal').val()),
         };
 
         if (items.length === 0) {
@@ -1670,7 +1705,7 @@
         items.forEach(element => {
             total += element.csd_nominal;
         });
-        $('.total_sales').html(`Rp ${formatRupiah(total)}`)
+        $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowSales();
 
@@ -1692,7 +1727,7 @@
                     <td>${index+1}</td>
                     <td>${type}</td>
                     <td style="width: 25%">${e.csd_notes}</td>
-                    <td class="text-end">Rp ${formatRupiah(e.csd_nominal)}</td>
+                    <td class="text-end">Rp ${formatRupiahMinus(e.csd_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row_sales mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1714,7 +1749,7 @@
             total += element.csd_nominal;
         });
         console.log(total);
-        $('.total_sales').html(`Rp ${formatRupiah(total)}`)
+        $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowSales();
     });
@@ -1756,6 +1791,11 @@
             $('#row-cash .select2-selection--single').addClass('is-invalids');
         }
 
+        if(($('#bank_account').val()==null||$('#bank_account').val()=="null"||$('#bank_account').val()=="") && jenis_input == "saldo" && $('#aksi_sales').val() == 2){
+            valid=-1;
+            $('#row-bank .select2-selection--single').addClass('is-invalids');
+        }
+
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
@@ -1791,7 +1831,8 @@
             oc_transaksi: $('#jenis_input_sales').val(),
             cs_aksi: $('#aksi_sales').val(),
             cs_notes: $('#oc_notes_sales').val(),
-            cs_nominal: convertToAngka($('#oc_nominal_sales').val()),
+            cs_nominal: convertToAngkaMinus($('#oc_nominal_sales').val()),
+            bank_id: ($('#aksi_sales').val() == 2 ? $('#bank_account').val() : 0),
             items: JSON.stringify(items),
             _token:token
         };
@@ -2116,7 +2157,7 @@
                 items.push(temp);
                 total += e.crd_nominal;
             })
-            $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+            $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
             addRowArmada();
             
             $('.foto').show();
@@ -2139,7 +2180,7 @@
             $('#jenis_input_armada').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_armada').val(data.cr_aksi).attr('disabled', true);
             $('#oc_notes_armada').val(data.cr_notes).attr('disabled', false);
-            $('#oc_nominal_armada').val(formatRupiah(data.cr_nominal)).attr('disabled', false);
+            $('#oc_nominal_armada').val(formatRupiahMinus(data.cr_nominal)).attr('disabled', false);
         }
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
@@ -2175,7 +2216,7 @@
                 items.push(temp);
                 total += e.crd_nominal;
             })
-            $('.total_armada').html(`Rp ${formatRupiah(total)}`)
+            $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
             addRowArmada();
             
             $('.foto').show();
@@ -2204,7 +2245,7 @@
                 $('#jenis_nominal').val(nominalVal).trigger('change').attr('disabled', true);
             } else {
                 $('#jenis_nominal').val('manual').trigger('change').attr('disabled', true);
-                $('#oc_nominal_armada').val(formatRupiah(data.cr_nominal)).attr('disabled', true);
+                $('#oc_nominal_armada').val(formatRupiahMinus(data.cr_nominal)).attr('disabled', true);
             }
         }
 
@@ -2268,7 +2309,7 @@
                 items.push(temp);
                 total += e.csd_nominal;
             })
-            $('.total_sales').html(`Rp ${formatRupiah(total)}`)
+            $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
             addRowSales();
             
             $('.foto').show();
@@ -2291,7 +2332,7 @@
             $('#jenis_input_sales').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_sales').val(data.cs_aksi).attr('disabled', true);
             $('#oc_notes_sales').val(data.cs_notes).attr('disabled', false);
-            $('#oc_nominal_sales').val(formatRupiah(data.cs_nominal)).attr('disabled', false);
+            $('#oc_nominal_sales').val(formatRupiahMinus(data.cs_nominal)).attr('disabled', false);
         }
 
         $('#staff_id_sales').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
@@ -2328,7 +2369,7 @@
                 items.push(temp);
                 total += e.csd_nominal;
             })
-            $('.total_sales').html(`Rp ${formatRupiah(total)}`)
+            $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
             addRowSales();
             
             $('.foto').show();
@@ -2351,7 +2392,7 @@
             $('#jenis_input_sales').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_sales').val(data.cs_aksi).attr('disabled', true);
             $('#oc_notes_sales').val(data.cs_notes).attr('disabled', true);
-            $('#oc_nominal_sales').val(formatRupiah(data.cs_nominal)).attr('disabled', true);
+            $('#oc_nominal_sales').val(formatRupiahMinus(data.cs_nominal)).attr('disabled', true);
             $('#aksi_sales').val(data.cs_aksi).attr('disabled', true);
         }
 

@@ -471,9 +471,13 @@ class SupplierController extends Controller
         }
         $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
         //$pdf->stream();
-        return $pdf->download(
-            'Tanda-Terima-' . str_replace(' ', '-', $param["supplier"]["supplier_name"]) . '.pdf'
-        );
+        $supplierName = preg_replace('/[\/\\\\]/', '', $param["supplier"]->supplier_name);
+        $supplierName = str_replace(' ', '-', $supplierName);
+
+        return $pdf->download('Tanda-Terima-' . $supplierName . '.pdf');
+        // return $pdf->download(
+        //     'Tanda-Terima-' . str_replace(' ', '-', $param["supplier"]["supplier_name"]) . '.pdf'
+        // );
     }
 
     public function tt()

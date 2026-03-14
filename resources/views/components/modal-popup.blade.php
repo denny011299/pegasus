@@ -1571,7 +1571,7 @@
                                         </div> 
                                     </div>
                                 </div>
-                                <div class="col-12" id="tujuan">
+                                {{-- <div class="col-12" id="tujuan">
                                     <div class="input-block mb-3">
                                         <label>Tujuan Keluar<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="cash_tujuan">
@@ -1580,7 +1580,7 @@
                                             <option value="gudang">Kas Gudang</option>
                                         </select>
                                     </div>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </div>
@@ -2023,7 +2023,7 @@
                                             <label>Nominal Pengembalian<span class="text-danger">*</span></label>
                                             <div class="input-group fix-nominal">
                                                 <span class="input-group-text">Rp </span>
-                                                <input class="form-control fill number-only nominal_only saldos" id="oc_nominal_armada" placeholder="Contoh: 10.000"></input>
+                                                <input class="form-control fill number-minus nominal_minus saldos" id="oc_nominal_armada" placeholder="Contoh: 10.000"></input>
                                             </div>
                                         </div>
                                     </div>
@@ -2062,7 +2062,7 @@
                                                     <label>Nominal<span class="text-danger">*</span></label>
                                                     <div class="input-group fix-nominal">
                                                         <span class="input-group-text">Rp </span>
-                                                        <input class="form-control fill_catatan number-only nominal_only" id="crd_nominal" placeholder="Contoh: 10.000"></input>
+                                                        <input class="form-control fill_catatan number-minus nominal_minus" id="crd_nominal" placeholder="Contoh: 10.000"></input>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2122,8 +2122,8 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-6 mb-4">
-                                    <div class="input-block">
+                                <div class="col-12 col-lg-6">
+                                    <div class="input-block mb-3">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_sales">
                                             <option value="saldo" selected>Manajemen Saldo Kas</option>
@@ -2131,9 +2131,9 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-6 mb-4"></div>
+                                <div class="col-12 col-lg-6"></div>
                                 <div class="row p-0 m-0" id="inputModal">
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-12 col-lg-6 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Aksi Dana<span class="text-danger">*</span></label>
                                             <select class="form-select fill" id="aksi_sales">
@@ -2143,13 +2143,13 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-12 col-lg-6">
                                         <div class="input-block mb-3" id="row-cash">
                                             <label>Nama Sales<span class="text-danger">*</span></label>
                                             <select class="form-select fill" id="staff_id_sales"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6 foto operasional">
+                                    <div class="col-12 col-lg-6 foto operasional mb-3">
                                         <label class="form-label d-flex">
                                             Bukti Foto<span class="text-danger">*</span> 
                                             <span id="check_foto_sales" style="display: none" class="ms-2">
@@ -2163,16 +2163,22 @@
                                         <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-sales" style="display: none">Lihat Bukti</button>
                                         <input type="hidden" name="" id="bukti_sales">
                                     </div>
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-12 col-lg-6 saldo_kas banks">
+                                        <div class="input-block mb-3" id="row-bank">
+                                            <label>Bank Account<span class="text-danger">*</span></label>
+                                            <select class="form-select fill" id="bank_account"></select>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-lg-6 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Nominal<span class="text-danger">*</span></label>
                                             <div class="input-group fix-nominal">
                                                 <span class="input-group-text">Rp </span>
-                                                <input class="form-control fill number-only nominal_only saldos" id="oc_nominal_sales" placeholder="Contoh: 10.000"></input>
+                                                <input class="form-control fill number-minus nominal_minus saldos" id="oc_nominal_sales" placeholder="Contoh: 10.000"></input>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-12 col-lg-6 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
                                             <input type="text" class="form-control fill saldos" id="oc_notes_sales" placeholder="Contoh: Pengembalian kas harian">
@@ -2191,7 +2197,7 @@
                                                     <label>Nominal<span class="text-danger">*</span></label>
                                                     <div class="input-group fix-nominal">
                                                         <span class="input-group-text">Rp </span>
-                                                        <input class="form-control fill_catatan number-only nominal_only" id="csd_nominal" placeholder="Contoh: 10.000"></input>
+                                                        <input class="form-control fill_catatan number-minus nominal_minus" id="csd_nominal" placeholder="Contoh: 10.000"></input>
                                                     </div>
                                                 </div>
                                             </div>

@@ -80,25 +80,29 @@
                 var debits = 0;
                 var credits1 = 0;
                 var credits2 = 0;
+                var sisa = 0;
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].cash_date).format('D MMM YYYY');
                     if (e[i].cash_type == 1) {
-                        e[i].debit = "Rp " + formatRupiah(e[i].cash_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cash_nominal);
                         e[i].credit1 = "Rp " + 0;
                         e[i].credit2 = "Rp " + 0;
                         if (e[i].status == 2) debits += e[i].cash_nominal;
+                        sisa += e[i].cash_nominal;
                     }
                     else if (e[i].cash_type == 2) {
-                        e[i].credit1 = "(Rp " + formatRupiah(e[i].cash_nominal) + ")";
+                        e[i].credit1 = "(Rp " + formatRupiahMinus(e[i].cash_nominal) + ")";
                         e[i].debit = "Rp " + 0;
                         e[i].credit2 = "Rp " + 0;
                         if (e[i].status == 2) credits1 += e[i].cash_nominal;
+                        sisa -= e[i].cash_nominal;
                     }
                     else if (e[i].cash_type == 3) {
-                        e[i].credit2 = "(Rp " + formatRupiah(e[i].cash_nominal) + ")";
+                        e[i].credit2 = "(Rp " + formatRupiahMinus(e[i].cash_nominal) + ")";
                         e[i].credit1 = "Rp " + 0;
                         e[i].debit = "Rp " + 0;
                         if (e[i].status == 2) credits2 += e[i].cash_nominal;
+                        sisa -= e[i].cash_nominal;
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text1 =`<label class='text-danger'>${e[i].credit1}</label>`
@@ -126,9 +130,10 @@
                         `;
                     }
                 }
-                $('.debits').html(`Rp ${formatRupiah(debits)}`);
-                $('.credits1').html(`(Rp ${formatRupiah(credits1)})`);
-                $('.credits2').html(`(Rp ${formatRupiah(credits2)})`);
+                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
+                $('.credits1').html(`(Rp ${formatRupiahMinus(credits1)})`);
+                $('.credits2').html(`(Rp ${formatRupiahMinus(credits2)})`);
+                $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
 
@@ -190,7 +195,7 @@
                             <div class="date me-3">${moment(p.created_at).format('D MMM YYYY')}</div>
                             <div class="notes">${p.cr_notes}</div>
                         </div>
-                        <div class="child-right text-end text-success">+ Rp ${formatRupiah(p.cr_nominal)}</div>
+                        <div class="child-right text-end text-success">+ Rp ${formatRupiahMinus(p.cr_nominal)}</div>
                     </div>
                 `;
             });
@@ -217,7 +222,7 @@
                         ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
                     <div class="child-right text-end" style="color: ${d.cr_type <= 2 ? (d.cr_type == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
-                        ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiah(d.cr_nominal)}
+                        ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cr_nominal)}
                     </div>
                     ${d.cr_img ? `
                     <div>
@@ -233,7 +238,7 @@
         html += `
             <div class="child-item fw-semibold pt-3 border-top">
                 <div class="child-left-total">Total Akhir</div>
-                <div class="child-right text-end ${total > 0 ? 'text-success' : 'text-danger'}">${total > 0 ? '+' : '-'}Rp ${formatRupiah(total)}</div>
+                <div class="child-right text-end ${total > 0 ? 'text-success' : 'text-danger'}">${total > 0 ? '+' : '-'}Rp ${formatRupiahMinus(total)}</div>
             </div>
         `;
 
@@ -245,7 +250,7 @@
         //                 Dikembalikan (${moment(pengembalian.created_at).format('D MMM YYYY')})
         //             </div>
         //             <div class="child-right text-end">
-        //                 Rp ${formatRupiah(pengembalian.cr_nominal)}
+        //                 Rp ${formatRupiahMinus(pengembalian.cr_nominal)}
         //             </div>
         //         </div>
         //     `;
@@ -286,7 +291,7 @@
                             <div class="date me-3">${moment(p.created_at).format('D MMM YYYY')}</div>
                             <div class="notes">${p.cs_notes}</div>
                         </div>
-                        <div class="child-right text-end text-success">+ Rp ${formatRupiah(p.cs_nominal)}</div>
+                        <div class="child-right text-end text-success">+ Rp ${formatRupiahMinus(p.cs_nominal)}</div>
                     </div>
                 `;
             });
@@ -313,7 +318,7 @@
                         ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
                     <div class="child-right text-end" style="color : ${d.cs_transaction <= 2 ? (d.cs_transaction == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
-                        ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiah(d.cs_nominal)}
+                        ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cs_nominal)}
                     </div>
                     ${d.cs_img ? `
                     <div>
@@ -329,7 +334,7 @@
         html += `
             <div class="child-item fw-semibold pt-3 border-top">
                 <div class="child-left-total">Total Akhir</div>
-                <div class="child-right text-end ${total > 0 ? 'text-success' : 'text-danger'}">${total > 0 ? '+' : '-'}Rp ${formatRupiah(total)}</div>
+                <div class="child-right text-end ${total > 0 ? 'text-success' : 'text-danger'}">${total > 0 ? '+' : '-'}Rp ${formatRupiahMinus(total)}</div>
             </div>
         `;
 
@@ -373,7 +378,7 @@
             cash_description:$('#cash_description').val(),
             cash_type:type,
             cash_nominal:convertToAngka($('#cash_nominal').val()),
-            cash_tujuan: type == 2 ? $('#cash_tujuan').val() : null,
+            // cash_tujuan: type == 2 ? $('#cash_tujuan').val() : null,
             _token:token
         };
 
