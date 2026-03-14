@@ -87,22 +87,30 @@
                         e[i].debit = "Rp " + formatRupiahMinus(e[i].cash_nominal);
                         e[i].credit1 = "Rp " + 0;
                         e[i].credit2 = "Rp " + 0;
-                        if (e[i].status == 2) debits += e[i].cash_nominal;
-                        sisa += e[i].cash_nominal;
+                        if (e[i].status == 2) {
+                            debits += e[i].cash_nominal;
+                            sisa += e[i].cash_nominal;
+                        }
                     }
                     else if (e[i].cash_type == 2) {
                         e[i].credit1 = "(Rp " + formatRupiahMinus(e[i].cash_nominal) + ")";
                         e[i].debit = "Rp " + 0;
                         e[i].credit2 = "Rp " + 0;
-                        if (e[i].status == 2) credits1 += e[i].cash_nominal;
-                        sisa -= e[i].cash_nominal;
+                        if (e[i].status == 2) {
+                            credits1 += e[i].cash_nominal;
+                            sisa -= e[i].cash_nominal;
+                        }
                     }
                     else if (e[i].cash_type == 3) {
                         e[i].credit2 = "(Rp " + formatRupiahMinus(e[i].cash_nominal) + ")";
                         e[i].credit1 = "Rp " + 0;
                         e[i].debit = "Rp " + 0;
-                        if (e[i].status == 2) credits2 += e[i].cash_nominal;
-                        sisa -= e[i].cash_nominal;
+
+                        // Kalau ini sales dan ada keluar 1, jangan dihitung (setor ke bank)
+                        if (e[i].status == 2 && e[i].cash_tujuan != 4) {
+                            credits2 += e[i].cash_nominal;
+                            sisa -= e[i].cash_nominal;
+                        }
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text1 =`<label class='text-danger'>${e[i].credit1}</label>`

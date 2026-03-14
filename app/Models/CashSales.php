@@ -71,6 +71,8 @@ class CashSales extends Model
             }
             $value->total_all = $total;
 
+            if ($value->bank_id != 0) $value->bank_kode = Bank::find($value->bank_id)->bank_kode;
+
             $detail = (new CashSalesDetail())->getCashSalesDetail(['cs_id' => $value->cs_id]);
             if ($detail->count() > 0) $value->detail = $detail;
         }

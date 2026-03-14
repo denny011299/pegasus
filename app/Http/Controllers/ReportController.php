@@ -583,30 +583,31 @@ class ReportController extends Controller
         $data = $req->all();
 
         $total = 0;
+        $customer = Customer::find($data['customer_id']);
         if ($data['oc_transaksi'] == "operasional"){
             $item = json_decode($data['items'], true);
     
             foreach ($item as $key => $value) {
                 $total += $value['crd_nominal'];
             }
-    
-            $customer = Customer::find($data['customer_id']);
-            if ($total > $customer->customer_saldo){
-                return response()->json([
-                    "status" => 0,
-                    "header" => "Gagal Insert",
-                    "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
-                ]);
+
+            if ($item[0]['crd_type'] != 1) {
+                // if ($total > $customer->customer_saldo){
+                //     return response()->json([
+                //         "status" => 0,
+                //         "header" => "Gagal Insert",
+                //         "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+                //     ]);
+                // }
             }
         } else {
-            $customer = Customer::find($data['customer_id']);
-            if ($data['cr_nominal'] > $customer->customer_saldo){
-                return response()->json([
-                    "status" => 0,
-                    "header" => "Gagal Insert",
-                    "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
-                ]);
-            }
+            // if ($data['cr_nominal'] > $customer->customer_saldo){
+            //     return response()->json([
+            //         "status" => 0,
+            //         "header" => "Gagal Insert",
+            //         "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+            //     ]);
+            // }
         }
 
         if ($data['photo']){
@@ -756,13 +757,13 @@ class ReportController extends Controller
         } else if ($cr->cr_type >= 2) {
             $customer->customer_saldo -= $cr['cr_nominal'];
         }
-        if ($customer->customer_saldo < 0){
-            return response()->json([
-                "status" => 0,
-                "header" => "Gagal Konfirmasi",
-                "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
-            ]);
-        }
+        // if ($customer->customer_saldo < 0){
+        //     return response()->json([
+        //         "status" => 0,
+        //         "header" => "Gagal Konfirmasi",
+        //         "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+        //     ]);
+        // }
         $customer->save();
         return (new CashArmada())->acceptCashArmada($data);
     }
@@ -791,13 +792,16 @@ class ReportController extends Controller
             foreach ($item as $key => $value) {
                 $total += $value['csd_nominal'];
             }
-            if ($total > $sales->staff_saldo){
-                return response()->json([
-                    "status" => 0,
-                    "header" => "Gagal Insert",
-                    "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
-                ]);
-            }
+
+            // if ($item[0]['csd_type'] != 1){
+            //     if ($total > $sales->staff_saldo){
+            //         return response()->json([
+            //             "status" => 0,
+            //             "header" => "Gagal Insert",
+            //             "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
+            //         ]);
+            //     }
+            // }
         }
 
         if ($data['photo']){
@@ -944,13 +948,13 @@ class ReportController extends Controller
         } else {
             $sales->staff_saldo -= $cs['cs_nominal'];
         }
-        if ($sales->staff_saldo < 0){
-            return response()->json([
-                "status" => 0,
-                "header" => "Gagal Konfirmasi",
-                "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
-            ]);
-        }
+        // if ($sales->staff_saldo < 0){
+        //     return response()->json([
+        //         "status" => 0,
+        //         "header" => "Gagal Konfirmasi",
+        //         "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
+        //     ]);
+        // }
         $sales->save();
         return (new CashSales())->acceptCashSales($data);
     }

@@ -256,7 +256,7 @@ class AutocompleteController extends Controller
 
         $p = new SuppliesVariant();
         $data_city = $p->getSuppliesVariant([
-            "supplies_variant_sku" => $keyword,
+            "supplies_variant_name" => $keyword,
             "supplier_id" => $req->supplier_id,
         ]);
 

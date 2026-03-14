@@ -16,6 +16,7 @@ class SuppliesVariant extends Model
         $data = array_merge([
             "supplies_id" => null,
             "supplies_variant_sku" => null,
+            "supplies_variant_name" => null,
             "supplies_variant_barcode" => null,
             "supplies_variant_id" => null,
             "supplier_id" => null,
@@ -36,6 +37,10 @@ class SuppliesVariant extends Model
         // Filter berdasarkan SKU
         if ($data["supplies_variant_sku"]) {
             $result->where("supplies_variant_sku", "like", "%" . $data["supplies_variant_sku"] . "%");
+        }
+
+        if ($data["supplies_variant_name"]) {
+            $result->where("supplies_variant_name", "like", "%" . $data["supplies_variant_name"] . "%");
         }
 
         // Filter berdasarkan supplies_variant_id
