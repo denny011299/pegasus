@@ -227,18 +227,22 @@
                                 ${d.cr_notes}
                             </div>
                         </div>
-                        ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
                     </div>
                     <div class="child-right text-end" style="color: ${d.cr_type <= 2 ? (d.cr_type == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
                         ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cr_nominal)}
                     </div>
-                    ${d.cr_img ? `
-                    <div>
+                    <div class="d-flex">
+                        ${d.detail_armada && d.detail_armada.length > 0 ? `
+                        <a class="me-2 btn-action-icon p-2 btn-detail-armada" 
+                            data-detail='${JSON.stringify(d.detail_armada)}'>
+                            <i class="fe fe-list"></i>
+                        </a>` : ''}
+                        ${d.cr_img ? `
                         <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-armada" 
-                        data-img='${d.cr_img}'>
+                            data-img='${d.cr_img}'>
                             <i class="fe fe-eye"></i>
-                        </a>
-                    </div>` : ''}
+                        </a>` : ''}
+                    </div>
                 </div>
             `;
         });
@@ -323,18 +327,23 @@
                                 ${d.cs_notes}
                             </div>
                         </div>
-                        ${d.detail_armada ? `<div class="text-secondary small mt-1">Detail : ${d.detail_armada}</div>` : ''}
+                        
                     </div>
                     <div class="child-right text-end" style="color : ${d.cs_transaction <= 2 ? (d.cs_transaction == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
                         ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cs_nominal)}
                     </div>
-                    ${d.cs_img ? `
-                    <div>
+                    <div class="d-flex">
+                        ${d.detail_armada && d.detail_armada.length > 0 ? `
+                        <a class=" me-2 btn-action-icon p-2 btn-detail-sales" 
+                            data-detail='${JSON.stringify(d.detail_armada)}'>
+                            <i class="fe fe-list"></i>
+                        </a>` : ''}
+                        ${d.cs_img ? `
                         <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-sales" 
-                        data-img='${d.cs_img}'>
+                            data-img='${d.cs_img}'>
                             <i class="fe fe-eye"></i>
-                        </a>
-                    </div>` : ''}
+                        </a>` : ''}
+                    </div>
                 </div>
             `;
         });
@@ -349,6 +358,45 @@
         html += `</div>`;
         return html;
     }
+
+    $(document).on('click', '.btn-detail-sales', function () {
+        var detail = JSON.parse($(this).attr('data-detail'));
+        let rows = '';
+        let total = 0;
+
+        detail.forEach(item => {
+            total += item.csd_nominal;
+            rows += `
+                <tr>
+                    <td>${item.csd_notes ?? '-'}</td>
+                    <td class="text-end">Rp ${formatRupiahMinus(item.csd_nominal)}</td>
+                </tr>
+            `;
+        });
+
+        $('#detail-sales-body').html(rows);
+        $('#detail-sales-total').html(`Rp ${formatRupiahMinus(total)}`);
+        $('#modal-detail-sales').modal('show');
+    });
+    $(document).on('click', '.btn-detail-armada', function () {
+        var detail = JSON.parse($(this).attr('data-detail'));
+        let rows = '';
+        let total = 0;
+
+        detail.forEach(item => {
+            total += item.crd_nominal;
+            rows += `
+                <tr>
+                    <td>${item.crd_notes ?? '-'}</td>
+                    <td class="text-end">Rp ${formatRupiahMinus(item.crd_nominal)}</td>
+                </tr>
+            `;
+        });
+
+        $('#detail-sales-body').html(rows);
+        $('#detail-sales-total').html(`Rp ${formatRupiahMinus(total)}`);
+        $('#modal-detail-sales').modal('show');
+    });
 
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Cash extends Model
 {
@@ -110,9 +111,7 @@ class Cash extends Model
                 foreach ($allOperasional as $val) {
                     $val->detail_armada = CashArmadaDetail::where('cr_id', $val->cr_id)
                         ->where('status', 1)
-                        ->get()
-                        ->pluck('crd_notes')
-                        ->implode(', ');
+                        ->get();
                 }
 
                 $value->armada_penyerahan  = $allPenyerahan;
@@ -120,8 +119,7 @@ class Cash extends Model
             }
 
             // Sales
-            else if ($value->cash_type == 3 && $value->cash_tujuan == 4){
-
+            else if (in_array($value->cash_type, [1, 3]) && $value->cash_tujuan == 4){
                 $pengembalianIni = CashSales::where('cash_id', $value->cash_id)
                     ->where('staff_id', $value->person_id)
                     ->where('cs_type', 1)
@@ -196,9 +194,7 @@ class Cash extends Model
                 foreach ($allOperasional as $val) {
                     $val->detail_armada = CashSalesDetail::where('cs_id', $val->cs_id)
                         ->where('status', 1)
-                        ->get()
-                        ->pluck('csd_notes')
-                        ->implode(', ');
+                        ->get();
                 }
 
                 $value->sales_penyerahan  = $allPenyerahan;
