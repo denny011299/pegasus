@@ -78,7 +78,11 @@ class ProductIssuesDetail extends Model
                 }
                 $total += $value['pod_subtotal'];
             }
-            $total -= $total * $po->po_discount/100;
+            if ($po->jenis_discount == "persen"){
+                $total -= $total * $po->po_discount/100;
+            } else {
+                $total -= $po->po_discount;
+            }
             $total += $total * $po->po_ppn/100;
             $total += $po->po_cost;
 
@@ -165,7 +169,11 @@ class ProductIssuesDetail extends Model
                 }
                 $total += $value['pod_subtotal'];
             }
-            $total -= $total * $po->po_discount/100;
+            if ($po->jenis_discount == "persen"){
+                $total -= $total * $po->po_discount/100;
+            } else {
+                $total -= $po->po_discount;
+            }
             $total += $total * $po->po_ppn/100;
             $total += $po->po_cost;
 
@@ -250,7 +258,11 @@ class ProductIssuesDetail extends Model
                 }
                 $total += $value['pod_subtotal'];
             }
-            $total -= $total * $po->po_discount/100;
+            if ($po->jenis_discount == "persen"){
+                $total -= $total * $po->po_discount/100;
+            } else {
+                $total -= $po->po_discount;
+            }
             $total += $total * $po->po_ppn/100;
             $total += $po->po_cost;
 

@@ -607,7 +607,7 @@
                     else if (mode == 2)
                         notifikasi("success", "Berhasil Update", "Retur Berhasil Diupdate");
                     afterInsertRetur();
-                    window.location.reload();
+                    // window.location.reload();
                 }
                 ResetLoadingButton('.btn-save-retur', mode == 1?"Tambah Retur" : "Update Retur");
             },

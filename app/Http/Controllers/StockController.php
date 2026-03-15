@@ -642,7 +642,11 @@ class StockController extends Controller
                         }
                         $total += $detail['pod_subtotal'];
                     }
-                    $total -= $total * $po->po_discount/100;
+                    if ($po->jenis_discount == "persen"){
+                        $total -= $total * $po->po_discount/100;
+                    } else {
+                        $total -= $po->po_discount;
+                    }
                     $total += $total * $po->po_ppn/100;
                     $total += $po->po_cost;
                     
@@ -826,6 +830,19 @@ class StockController extends Controller
                 if ($c == -1) return -1;
             }
         }
+
+        // jaga2 takutnya butuh pengecekan delete
+
+        // if ($pi['po_id'] != 0) {
+        //     $po = PurchaseOrder::find($pi['po_id']);
+        //     if ($po->status != 1 && $po->pembayaran != 1){
+        //         return response()->json([
+        //             "status" => 0,
+        //             "header" => "Gagal Delete",
+        //             "message" => "Pembelian sudah memiliki Invoice"
+        //         ]);
+        //     }
+        // }
         $del = (new ProductIssues())->deleteProductIssues($data);
         if ($del == -1){
             return response()->json([
@@ -845,13 +862,22 @@ class StockController extends Controller
             
             // Hapus retur kalau ada
             if ($rs){
-                $rsd = ReturnSuppliesDetail::where('pid_id', $value['pid_id'])
-                                        ->where('supplies_variant_id', $value['item_id'])
-                                        ->where('unit_id', $value['unit_id'])
-                                        ->where('status', 1)->first();
-                (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($rsd);
+                // $rsd = ReturnSuppliesDetail::where('pid_id', $value['pid_id'])
+                //                         ->where('supplies_variant_id', $value['item_id'])
+                //                         ->where('unit_id', $value['unit_id'])
+                //                         ->where('status', 1)->first();
+                $rsd = ReturnSuppliesDetail::where('rs_id', $rs->rs_id)->where('status', 1)->get();
+                $total = 0;
+                foreach ($rsd as $key => $val) {
+                    $val['po_id'] = $pi['po_id'];
+                    $total += ($val['rsd_price'] * $val['rsd_qty']);
+                    (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($val);
+                }
+                $po = PurchaseOrder::find($pi['po_id']);
+                $po->po_total += $total;
+                $po->save();
             }
-
+            $value['po_id'] = $pi['po_id'];
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
             // Catat Log
