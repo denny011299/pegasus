@@ -149,12 +149,13 @@
         if ($(this).val() == "saldo") {
             $('.saldo_kas').show();
             $('.operasional').hide();
+            $('#aksi_sales').val(1).trigger('change');
         } else if ($(this).val() == "operasional") {
             $('.saldo_kas').hide();
             $('.operasional').show();
         }
         $('#add_cash_sales input').val("");
-        $('#staff_id_sales, #bank_account').empty(null);
+        $('#staff_id_sales, #bank_account, #cc_id').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('#oc_transaksi_sales').val(1);
@@ -329,7 +330,9 @@
 
     // Khusus untuk saldo di dompet Sales
     $(document).on('change', '#staff_id_sales', function(){
-        if ($('#jenis_input_sales').val() == "saldo") $('#aksi_sales').trigger('change');
+        if ($('#jenis_input_sales').val() == "saldo" && $('#aksi_sales').val() == 3){
+            $('#aksi_sales').trigger('change');
+        }
     })
 
 
