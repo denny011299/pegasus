@@ -303,11 +303,10 @@
 
     $(document).on('change', '#aksi_sales', function(){
         if ($('#jenis_input_sales').val() == "saldo"){
-            $('#add_cash_sales input').val("").attr('disabled', false);
-            $('#staff_id_sales, #bank_account, #cc_id_sales').empty(null).attr('disabled', false);
             if ($(this).val() == 2) {
                 $('.banks').show();
                 $('#oc_notes_sales').val("").attr('disabled', true);
+                $('#bank_account').trigger('change');
             } else {
                 $('.banks').hide();
                 $('#oc_notes_sales').val("").attr('disabled', false);
@@ -315,6 +314,9 @@
             if ($(this).val() == 3 && $('#staff_id_sales').val()){
                 var temp = $('#staff_id_sales').select2("data")[0];
                 $('#oc_nominal_sales').val(formatRupiahMinus(temp.staff_saldo)).attr('disabled', true);
+            } else if ($(this).val() == 2 && $('#staff_id_sales').val()){
+                var temp = $('#staff_id_sales').select2("data")[0];
+                $('#oc_nominal_sales').val(formatRupiahMinus(temp.staff_saldo)).attr('disabled', false);
             } else {
                 $('#oc_nominal_sales').val("").attr('disabled', false);
             }
@@ -332,7 +334,7 @@
 
     // Khusus untuk saldo di dompet Sales
     $(document).on('change', '#staff_id_sales', function(){
-        if ($('#jenis_input_sales').val() == "saldo" && $('#aksi_sales').val() == 3){
+        if ($('#jenis_input_sales').val() == "saldo" && $('#aksi_sales').val() >= 2){
             $('#aksi_sales').trigger('change');
         }
     })
