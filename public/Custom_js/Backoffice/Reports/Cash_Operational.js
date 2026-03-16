@@ -247,7 +247,7 @@
         }
         else if (type == "sales"){
             $('#add_cash_sales input').val("").attr('disabled', false);
-            $('#jenis_input_sales, #staff_id_sales').attr('disabled', false);
+            $('#jenis_input_sales').attr('disabled', false);
             $('#oc_transaksi_sales').val(1).attr('disabled', false).show().trigger('change');
             $('#add_cash_sales .modal-title').html("Tambah Aktivitas Sales");
             $('#staff_id_sales, #bank_account, #cc_id_sales').empty(null).attr('disabled', false);
@@ -303,6 +303,8 @@
 
     $(document).on('change', '#aksi_sales', function(){
         if ($('#jenis_input_sales').val() == "saldo"){
+            $('#add_cash_sales input').val("").attr('disabled', false);
+            $('#staff_id_sales, #bank_account, #cc_id_sales').empty(null).attr('disabled', false);
             if ($(this).val() == 2) {
                 $('.banks').show();
                 $('#oc_notes_sales').val("").attr('disabled', true);
