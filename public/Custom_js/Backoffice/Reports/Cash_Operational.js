@@ -138,6 +138,10 @@
         $('#oc_transaksi_armada').val(1);
         $('.total_armada').html("Rp 0");
         autocompleteCustomer('#customer_id_armada', '#add_cash_armada');
+        if ($('#filter_customer_id').val()){
+            let temp = $('#filter_customer_id').select2('data')[0];
+            $('#customer_id_armada').append(`<option value="${temp.customer_id}">${temp.customer_notes}</option>`);
+        }
         $('#btn-foto-bukti-armada').show();
         $('#btn-lihat-bukti-armada').hide();
         $('#check_foto_armada').hide();
@@ -161,6 +165,10 @@
         $('#oc_transaksi_sales').val(1);
         $('.total_sales').html("Rp 0");
         autocompleteStaffSales('#staff_id_sales', '#add_cash_sales');
+        if ($('#filter_sales_id').val()){
+            let temp = $('#filter_sales_id').select2('data')[0];
+            $('#staff_id_sales').append(`<option value="${temp.staff_id}">${temp.staff_name}</option>`);
+        }
         autocompleteRekening('#bank_account', '#add_cash_sales');
         $('#btn-foto-bukti-sales').show();
         $('#btn-lihat-bukti-sales').hide();
@@ -244,6 +252,11 @@
             $('#add_cash_armada').modal("show");
             $('.input_table, .btn_delete_row_armada').show();
             $('.btn-save-armada').html('Tambah Aktivitas').show();
+
+            if ($('#filter_customer_id').val()){
+                let temp = $('#filter_customer_id').select2('data')[0];
+                $('#customer_id_armada').append(`<option value="${temp.customer_id}">${temp.customer_notes}</option>`);
+            }
         }
         else if (type == "sales"){
             $('#add_cash_sales input').val("").attr('disabled', false);
@@ -266,6 +279,11 @@
             $('#add_cash_sales').modal("show");
             $('.input_table, .btn_delete_row_sales').show();
             $('.btn-save-sales').html('Tambah Aktivitas').show();
+
+            if ($('#filter_sales_id').val()){
+                let temp = $('#filter_sales_id').select2('data')[0];
+                $('#staff_id_sales').append(`<option value="${temp.staff_id}">${temp.staff_name}</option>`);
+            }
         }
 
         $('.is-invalid').removeClass('is-invalid');
