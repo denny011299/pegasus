@@ -2,12 +2,8 @@
     var table, tablePr;
     var item = [];
     var grand = 0;
+    var dates = null;
     autocompleteSupplier("#filter_supplier");
-    autocompleteSupplier("#po_supplier","#add_purchase_order");
-    autocompleteSupplier("#select_supplier");
-    autocompleteRekening("#bank_kode");
-    autocompleteSuppliesVariant("#po_sku","#add_purchase_order");
-    
     
     $(document).ready(function(){
         inisialisasi();
@@ -56,7 +52,10 @@
         $.ajax({
             url: "/getTt",
             method: "get",
-            
+            data: {
+                dates: dates,
+                supplier_id: $('#filter_supplier').val()
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
@@ -247,3 +246,30 @@ $(document).on("change", "#image", function () {
             }
         });
     });
+
+    $(document).on('change', '#start_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshPurchaseOrder()
+    })
+    $(document).on('change', '#end_date', function(){
+        dates = [];
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        dates.push(start);
+        dates.push(end);
+        refreshPurchaseOrder()
+    })
+    $(document).on('click', '.btn-clear', function(){
+        dates = null;
+        $('#start_date').val("");
+        $('#end_date').val("");
+        $('#filter_supplier').empty();
+        refreshPurchaseOrder()
+    })
+    $(document).on('change', '#filter_supplier', function(){
+        refreshPurchaseOrder();
+    })

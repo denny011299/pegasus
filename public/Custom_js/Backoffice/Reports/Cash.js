@@ -234,7 +234,8 @@
                     <div class="d-flex">
                         ${d.detail_armada && d.detail_armada.length > 0 ? `
                         <a class="me-2 btn-action-icon p-2 btn-detail-armada" 
-                            data-detail='${JSON.stringify(d.detail_armada)}'>
+                            data-detail='${JSON.stringify(d.detail_armada)}'
+                            data-notes='${d.cr_notes}'>
                             <i class="fe fe-list"></i>
                         </a>` : ''}
                         ${d.cr_img ? `
@@ -335,7 +336,8 @@
                     <div class="d-flex">
                         ${d.detail_armada && d.detail_armada.length > 0 ? `
                         <a class=" me-2 btn-action-icon p-2 btn-detail-sales" 
-                            data-detail='${JSON.stringify(d.detail_armada)}'>
+                            data-detail='${JSON.stringify(d.detail_armada)}'
+                            data-notes='${d.cs_notes}'>
                             <i class="fe fe-list"></i>
                         </a>` : ''}
                         ${d.cs_img ? `
@@ -361,6 +363,7 @@
 
     $(document).on('click', '.btn-detail-sales', function () {
         var detail = JSON.parse($(this).attr('data-detail'));
+        var notes  = $(this).attr('data-notes');
         let rows = '';
         let total = 0;
 
@@ -374,12 +377,14 @@
             `;
         });
 
+        $('#modal-detail-sales .modal-title').text(notes ?? 'Detail Operasional');
         $('#detail-sales-body').html(rows);
         $('#detail-sales-total').html(`Rp ${formatRupiahMinus(total)}`);
         $('#modal-detail-sales').modal('show');
     });
     $(document).on('click', '.btn-detail-armada', function () {
         var detail = JSON.parse($(this).attr('data-detail'));
+        var notes  = $(this).attr('data-notes');
         let rows = '';
         let total = 0;
 
@@ -393,6 +398,7 @@
             `;
         });
 
+        $('#modal-detail-sales .modal-title').text(notes ?? 'Detail Operasional');
         $('#detail-sales-body').html(rows);
         $('#detail-sales-total').html(`Rp ${formatRupiahMinus(total)}`);
         $('#modal-detail-sales').modal('show');

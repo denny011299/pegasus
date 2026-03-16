@@ -15,7 +15,9 @@ class purchase_order_tt extends Model
     {
         $data = array_merge([
             "tt_kode" => null,
-            "tt_id" => null
+            "tt_id" => null,
+            "dates" => null,
+            "supplier_id" => null,
         ], $data);
 
         $result = self::where('status', '>=', 0);
@@ -24,6 +26,20 @@ class purchase_order_tt extends Model
             $result->where('tt_kode', 'like', '%' . $data["tt_kode"] . '%');
         }
         if ($data["tt_id"]) $result->where("tt_id", "=", $data["tt_id"]);
+        if ($data["supplier_id"]) $result->where("supplier_id", "=", $data["supplier_id"]);
+
+        if ($data["dates"]) {
+            if (is_array($data["dates"]) && count($data["dates"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
+
+                $result->whereDate('tt_date', '>=', $startDate->toDateString())
+                        ->whereDate('tt_date', '<=', $endDate->toDateString());
+            } else {
+                $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
+                $result->whereDate('tt_date', $date);
+            }
+        }
 
         $result->orderByRaw('FIELD(status, 1, 2, 0)')->orderBy('tt_date', 'desc')->orderBy('tt_kode', 'desc');
 

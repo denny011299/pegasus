@@ -8,6 +8,11 @@
     .invalid{
         border: 1px solid red!important;
     }
+    #filter_supplier,
+    #filter_supplier + .select2-container {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
