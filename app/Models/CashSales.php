@@ -86,8 +86,10 @@ class CashSales extends Model
     function insertCashSales($data)
     {
         $t = new CashSales();
-        $t->staff_id = $data["staff_id"];
         $t->cash_id = $data["cash_id"] ?? 0;
+        $t->staff_id = $data["staff_id"];
+        $t->bank_id = $data["bank_id"];
+        $t->cs_date = $data["cs_date"];
         $t->cs_nominal = $data["cs_nominal"];
         $t->cs_notes = $data["cs_notes"];
         $t->cs_type = $data["cs_type"];
@@ -103,6 +105,7 @@ class CashSales extends Model
     {
         $t = CashSales::find($data["cs_id"]);
         $t->staff_id = $data["staff_id"];
+        $t->cs_date = $data["cs_date"];
         $t->cs_nominal = $data["cs_nominal"];
         $t->cs_notes = $data["cs_notes"];
         $t->cs_type = $data["cs_type"];

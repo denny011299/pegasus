@@ -107,9 +107,11 @@
                         e[i].debit = "Rp " + 0;
 
                         // Kalau ini sales dan ada keluar 1, jangan dihitung (setor ke bank)
-                        if (e[i].status == 2 && e[i].cash_tujuan != 4) {
+                        if (e[i].status == 2) {
+                            if (e[i].cash_tujuan != 4) {
+                                sisa -= e[i].cash_nominal;
+                            }
                             credits2 += e[i].cash_nominal;
-                            sisa -= e[i].cash_nominal;
                         }
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`

@@ -178,6 +178,13 @@
         $('#btn-lihat-bukti-sales').hide();
         $('#check_foto_sales').hide();
 
+        let today = new Date();
+        let yyyy = today.getFullYear();
+        let mm = String(today.getMonth() + 1).padStart(2, '0');
+        let dd = String(today.getDate()).padStart(2, '0');
+        let todayStr = yyyy + '-' + mm + '-' + dd;
+        $("#date_sales").val(todayStr);
+
         if ($(this).val() == "operasional") $('#tableDetailSales tr.row-detail').remove();
     })
 
@@ -292,6 +299,13 @@
                 $(option).data('data', temp);
                 $('#staff_id_sales').empty().append(option).attr('disabled',true).trigger('change');
             }
+
+            let today = new Date();
+            let yyyy = today.getFullYear();
+            let mm = String(today.getMonth() + 1).padStart(2, '0');
+            let dd = String(today.getDate()).padStart(2, '0');
+            let todayStr = yyyy + '-' + mm + '-' + dd;
+            $("#date_sales").val(todayStr);
         }
 
         $('.is-invalid').removeClass('is-invalid');
@@ -827,7 +841,7 @@
                 var sisa = 0;
                 for (let i = 0; i < e.length; i++) {
                     totalAll = e[i].total_all;
-                    e[i].date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].date = moment(e[i].cs_date).format('D MMM YYYY');
                     if (e[i].cs_transaction == 1 && e[i].cs_aksi == 1){
                         e[i].debit = "Rp " + formatRupiahMinus(e[i].cs_nominal);
                         e[i].credit = "Rp 0";
@@ -1884,6 +1898,7 @@
             cs_notes: $('#oc_notes_sales').val(),
             cs_nominal: convertToAngkaMinus($('#oc_nominal_sales').val()),
             bank_id: ($('#aksi_sales').val() == 2 ? $('#bank_account').val() : 0),
+            cs_date: $('#date_sales').val(),
             items: JSON.stringify(items),
             _token:token
         };
@@ -2383,6 +2398,7 @@
             $('#jenis_input_sales').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_sales').val(data.cs_aksi).attr('disabled', true);
             $('#oc_notes_sales').val(data.cs_notes).attr('disabled', false);
+            $('#date_sales').val(data.cs_date).attr('disabled', true);
             $('#oc_nominal_sales').val(formatRupiahMinus(data.cs_nominal)).attr('disabled', false);
         }
 
@@ -2444,6 +2460,7 @@
             $('#oc_transaksi_sales').val(data.cs_aksi).attr('disabled', true);
             $('#oc_notes_sales').val(data.cs_notes).attr('disabled', true);
             $('#oc_nominal_sales').val(formatRupiahMinus(data.cs_nominal)).attr('disabled', true);
+            $('#date_sales').val(data.cs_date).attr('disabled', true);
             $('#aksi_sales').val(data.cs_aksi).attr('disabled', true);
 
             if (data.cs_aksi != 2) {

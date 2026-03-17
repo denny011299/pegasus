@@ -16,6 +16,7 @@ return new class extends Migration
             $table->integer('cash_id');
             $table->integer('staff_id');
             $table->integer('bank_id');
+            $table->date('cs_date')->default(now());
             $table->integer('cs_nominal');
             $table->integer('cs_type')->comment('1 = saldo, 2 = operasional');
             $table->integer('cs_aksi')->comment('1 = pengajuan, 2 = pengembalian');

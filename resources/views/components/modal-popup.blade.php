@@ -2186,6 +2186,12 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="col-12 col-lg-6 saldo_kas">
+                                        <div class="input-block mb-3">
+                                            <label>Tanggal<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="date_sales"></input>
+                                        </div>
+                                    </div>
                                     <div class="col-12 col-lg-6">
                                         <div class="input-block mb-3" id="row-cash">
                                             <label>Nama Sales<span class="text-danger">*</span></label>
