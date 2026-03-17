@@ -345,7 +345,7 @@
             }
             if ($(this).val() == 3 && $('#staff_id_sales').val()){
                 var temp = $('#staff_id_sales').select2("data")[0];
-                $('#oc_nominal_sales').val(formatRupiahMinus(temp.staff_saldo)).attr('disabled', true);
+                $('#oc_nominal_sales').val(formatRupiahMinus(temp.staff_saldo)).attr('disabled', false);
             } else if ($(this).val() == 2 && $('#staff_id_sales').val()){
                 var temp = $('#staff_id_sales').select2("data")[0];
                 $('#oc_nominal_sales').val(formatRupiahMinus(temp.staff_saldo)).attr('disabled', false);
@@ -2550,8 +2550,14 @@
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 if (type=="admin") refreshCashAdmin();
                 else if (type=="gudang") refreshCashGudang();
-                else if (type=="armada") refreshCashArmada();
-                else if (type=="sales") refreshCashSales();
+                else if (type=="armada") {
+                    $('#filter_customer_id').empty(null);
+                    refreshCashArmada();
+                }
+                else if (type=="sales") {
+                    $('#filter_sales_id').empty(null);
+                    refreshCashSales();
+                }
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengajuan");
                 

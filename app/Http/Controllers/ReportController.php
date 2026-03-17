@@ -944,8 +944,9 @@ class ReportController extends Controller
         $sales = Staff::find($cs['staff_id']);
         if ($cs->cs_type == 1 && $cs->cs_aksi == 1){
             $sales->staff_saldo += $cs['cs_nominal'];
-            
-        } else {
+        } else if ($cs->cs_type == 2 && $cs->cs_aksi == 1) {
+            $sales->staff_saldo += $cs['cs_nominal'];
+        }else {
             $sales->staff_saldo -= $cs['cs_nominal'];
         }
         // if ($sales->staff_saldo < 0){
