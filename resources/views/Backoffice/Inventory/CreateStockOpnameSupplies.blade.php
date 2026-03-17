@@ -6,16 +6,33 @@
             display: block;
             width: 100%;
             overflow-x: auto !important;
-            overflow-y: hidden;
-            white-space: nowrap; /* biar kolom tidak turun ke bawah */
         }
 
-        .table {
-         min-width: 1200px; /* paksa tabel jadi lebih lebar dari layar */
+        #tb-stock-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        #tb-stock-table td,
+        #tb-stock-table th {
+            white-space: normal;
+            word-break: break-word;
+            vertical-align: middle;
+            overflow: hidden;
         }
 
         .invalid{
             border: 1px solid red!important;
+        }
+
+        .card-table .card-body {
+            display: block !important;
+        }
+
+        .search {
+            position: sticky;
+            top: 9.4vh;
+            z-index: 3;
         }
     </style>
     <!-- Page Wrapper -->
@@ -87,17 +104,21 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body p-4">
-                            <div class="row">
-                                <div class="col-6 text-end">
+                            <div class="d-flex justify-content-end mt-2 search">
+                                <div class="card shadow-sm" style="width: 300px; min-width: 300px;">
+                                    <div class="card-body p-3" style="padding: 15px !important">
+                                        <label>Cari Bahan</label>
+                                        <input type="text" class="form-control" id="filter_sup_name" placeholder="Cari Nama Bahan">
+                                    </div>
                                 </div>
                             </div>
                            <div class="table-responsive" style="overflow-x: auto;">
-                                <table class="table mt-3" id="tb-stock-table" style="min-width: 800px;">
+                                <table class="table" id="tb-stock-table" style="min-width: 800px;">
                                     <thead>
                                         <tr>
-                                            <td style="width:5%">Nama</td>
+                                            <td style="width:35%">Nama</td>
                                             {{-- <td class="text-center">Stok Komp.</td> --}}
-                                            <td class="text-center" style="width:35%">Stok Real</td>
+                                            <td class="text-center" style="width:40%">Stok Real</td>
                                             {{-- <td class="text-center">Selisih</td> --}}
                                             <td style="width:25%">Catatan</td>
                                         </tr>

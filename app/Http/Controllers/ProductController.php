@@ -228,7 +228,7 @@ class ProductController extends Controller
 
     function getSupplies(Request $req)
     {
-        $data = (new Supplies())->getSupplies();
+        $data = (new Supplies())->getSupplies($req->all());
         return response()->json($data);
     }
 
