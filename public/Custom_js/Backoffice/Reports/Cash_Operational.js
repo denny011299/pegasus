@@ -140,7 +140,9 @@
         autocompleteCustomer('#customer_id_armada', '#add_cash_armada');
         if ($('#filter_customer_id').val()){
             let temp = $('#filter_customer_id').select2('data')[0];
-            $('#customer_id_armada').append(`<option value="${temp.customer_id}">${temp.customer_notes}</option>`);
+            let option = new Option(temp.customer_notes, temp.customer_id, true, true);
+            $(option).data('data', temp);
+            $('#customer_id_armada').empty().append(option).attr('disabled',true).trigger('change');
         }
         $('#btn-foto-bukti-armada').show();
         $('#btn-lihat-bukti-armada').hide();
@@ -167,7 +169,9 @@
         autocompleteStaffSales('#staff_id_sales', '#add_cash_sales');
         if ($('#filter_sales_id').val()){
             let temp = $('#filter_sales_id').select2('data')[0];
-            $('#staff_id_sales').append(`<option value="${temp.staff_id}">${temp.staff_name}</option>`);
+            let option = new Option(temp.staff_name, temp.staff_id, true, true);
+            $(option).data('data', temp);
+            $('#staff_id_sales').empty().append(option).attr('disabled',true).trigger('change');
         }
         autocompleteRekening('#bank_account', '#add_cash_sales');
         $('#btn-foto-bukti-sales').show();
@@ -255,7 +259,9 @@
 
             if ($('#filter_customer_id').val()){
                 let temp = $('#filter_customer_id').select2('data')[0];
-                $('#customer_id_armada').append(`<option value="${temp.customer_id}">${temp.customer_notes}</option>`);
+                let option = new Option(temp.customer_notes, temp.customer_id, true, true);
+                $(option).data('data', temp);
+                $('#customer_id_armada').empty().append(option).attr('disabled',true).trigger('change');
             }
         }
         else if (type == "sales"){
@@ -282,7 +288,9 @@
 
             if ($('#filter_sales_id').val()){
                 let temp = $('#filter_sales_id').select2('data')[0];
-                $('#staff_id_sales').append(`<option value="${temp.staff_id}">${temp.staff_name}</option>`);
+                let option = new Option(temp.staff_name, temp.staff_id, true, true);
+                $(option).data('data', temp);
+                $('#staff_id_sales').empty().append(option).attr('disabled',true).trigger('change');
             }
         }
 
@@ -321,6 +329,12 @@
 
     $(document).on('change', '#aksi_sales', function(){
         if ($('#jenis_input_sales').val() == "saldo"){
+            if ($('#filter_sales_id').val()){
+                let temp = $('#filter_sales_id').select2('data')[0];
+                let option = new Option(temp.staff_name, temp.staff_id, true, true);
+                $(option).data('data', temp);
+                $('#staff_id_sales').empty().append(option).attr('disabled',true);
+            }
             if ($(this).val() == 2) {
                 $('.banks').show();
                 $('#oc_notes_sales').val("").attr('disabled', true);
@@ -336,6 +350,7 @@
                 var temp = $('#staff_id_sales').select2("data")[0];
                 $('#oc_nominal_sales').val(formatRupiahMinus(temp.staff_saldo)).attr('disabled', false);
             } else {
+                console.log("masuk")
                 $('#oc_nominal_sales').val("").attr('disabled', false);
             }
         }
