@@ -1,6 +1,7 @@
 
     var supplies = [];
     var suppliesSubmit = [];
+    var savedValues = {};
     autocompleteCategory("#kategori",null,1);
      
     $(document).ready(function () {
@@ -45,6 +46,19 @@
         autocompleteStaff("#penanggung-jawab");
     }
     function refreshStockOpname() {
+        // Simpan value yang sudah diinput sebelum refresh
+        $('.row-stock').each(function() {
+            var suppliesId = $(this).data('supplies-id');
+            var key = suppliesId;
+            savedValues[key] = {
+                notes: $(this).find('.notes').val(),
+                stocks: {}
+            };
+            $(this).find('.real-stock').each(function() {
+                var unitId = $(this).data('unit-id');
+                savedValues[key].stocks[unitId] = $(this).val();
+            });
+        });
         $.ajax({
             url:"/getSupplies",
             method:"get",
@@ -63,7 +77,6 @@
                     //     if(stp_type==1)st =  getData(item.pr_id);
                     //     else if(stp_type==2)st =  getData(item.sup_id);
                     // }
-                    console.log(item);
                     var rl_stock = "";
                     var system = "";
                     var selisihArr = [];
@@ -125,8 +138,22 @@
                     `);
                     $('.real-stock').trigger("keyup");
                 });
+                // Restore value yang sudah diinput
+                $('.row-stock').each(function() {
+                    var suppliesId = $(this).data('supplies-id');
+                    var key = suppliesId;
+                    if (savedValues[key]) {
+                        $(this).find('.notes').val(savedValues[key].notes);
+                        $(this).find('.real-stock').each(function() {
+                            var unitId = $(this).data('unit-id');
+                            if (savedValues[key].stocks[unitId] != undefined) {
+                                $(this).val(savedValues[key].stocks[unitId]);
+                            }
+                        });
+                    }
+                });
                 if(e.length==0){
-                    $('#tbStock').html(`<tr><td colspan="3" class="text-center">Tidak ada produk pada kategori ini</td></tr>`);
+                    $('#tbStock').html(`<tr><td colspan="3" class="text-center">Bahan tidak ditemukan</td></tr>`);
                 }
                 if(mode==2){
                     $(".real-stock, .notes").attr("disabled","disabled");
@@ -197,7 +224,7 @@
         });
 
         if (items.length == 0) {
-            $('#tbStock').html(`<tr><td colspan="3" class="text-center">Tidak ada produk</td></tr>`);
+            $('#tbStock').html(`<tr><td colspan="3" class="text-center">Bahan tidak ditemukan</td></tr>`);
         }
     }
 
@@ -242,7 +269,11 @@
     });
 
     $(document).on("click",".btn-save",function(){
-        insertData();
+        LoadingButton(this);
+        $('#filter_sup_name').val("").trigger('keyup')
+        setTimeout(function() {
+            insertData();
+        }, 1000);
     });
 
 function getData(id) {
@@ -259,7 +290,7 @@ function getData(id) {
 }
 
 function insertData() {
-    LoadingButton(this);
+    LoadingButton('.btn-save');
     $('.is-invalid').removeClass('is-invalid');
     $('.invalid').removeClass('invalid');
     var url ="/insertStockOpnameBahan";
