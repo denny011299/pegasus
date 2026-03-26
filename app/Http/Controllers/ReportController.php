@@ -783,7 +783,7 @@ class ReportController extends Controller
     function insertCashSales(Request $req)
     {
         $data = $req->all();
-dd($data);
+
         $total = 0;
         $sales = Staff::find($data['staff_id']);
         if ($data['oc_transaksi'] == "operasional"){

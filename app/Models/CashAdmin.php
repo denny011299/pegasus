@@ -70,6 +70,7 @@ class CashAdmin extends Model
         $t = new CashAdmin();
         $t->staff_id = $data["staff_id"];
         $t->cash_id = $data['cash_id'] ?? 0;
+        $t->ca_date = $data['ca_date'] ?? now();
         $t->ca_nominal = $data["ca_nominal"];
         $t->ca_notes = $data["ca_notes"];
         $t->ca_type = $data["ca_type"];
@@ -85,6 +86,7 @@ class CashAdmin extends Model
         $t = CashAdmin::find($data["ca_id"]);
         $t->staff_id = $data["staff_id"];
         $t->cash_id = $data['cash_id'] ?? 0;
+        $t->ca_date = $data['ca_date'] ?? now();
         $t->ca_nominal = $data["ca_nominal"];
         $t->ca_notes = $data["ca_notes"];
         $t->ca_type = $data["ca_type"];

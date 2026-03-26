@@ -29,7 +29,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
         $('#add_sales_order').modal("show");
-        updateTotal();
+        // updateTotal();
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
@@ -58,7 +58,6 @@
 
     $('#so_sku').on('change', function () {
         var data = $(this).select2('data')[0];
-        console.log(data);
 
         var cari = -1;
         products.forEach((element, index) => {
@@ -101,7 +100,7 @@
                 { data: "customer_name" },
                 { data: "date" },
                 { data: "so_invoice_no", default: "-" },
-                { data: "total" },
+                // { data: "total" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -125,7 +124,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].so_date).format('D MMM YYYY');
-                    e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
+                    // e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
                     e[i].action = `
                         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].so_id}" data-bs-target="#edit-sales">
                             <i class="fe fe-edit"></i>
@@ -151,7 +150,6 @@
         console.log(products)
         products.forEach((p, index) => {
             let options = "";
-            console.log(p);
             if (p.pr_unit && Array.isArray(p.pr_unit)) {
                 p.pr_unit.forEach(u => {
                     options += `<option value="${u.unit_id}" ${u.unit_id == p.unit_id ? 'selected' : ''}>${u.unit_name}</option>`;
@@ -162,9 +160,9 @@
 
             html += `
                 <tr>
-                    <td style="width: 18%">${p.product_name || p.pr_name}</td>
-                    <td style="width: 18%">${p.product_variant_name}</td>
-                    <td style="width: 12%">${p.product_variant_sku}</td>
+                    <td style="width: 25%">${p.product_name || p.pr_name}</td>
+                    <td style="width: 25%">${p.product_variant_name}</td>
+                    <td style="width: 15%">${p.product_variant_sku}</td>
                     <td style="width: 15%" class="text-center p-2 d-flex">
                         <input type="text" class="form-control fill number-only so_qty text-center px-1"
                             data-price="${p.product_variant_price}"
@@ -173,8 +171,6 @@
                             <select class="form-select fill" id="unit_id" style="width: 8rem" data-index="${index}">${options}</select>
                         </span>
                     </td>
-                    <td style="width: 12%" class="text-end">${p.product_variant_price}</td>
-                    <td style="width: 12%" class="subtotal text-end">${p.so_subtotal || 0}</td>
                     <td class="text-center text-danger" style="cursor:pointer; width: 13%"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
                 </tr>
             `;
@@ -197,8 +193,7 @@
             products.splice(index, 1);
             refreshTableProduct();
         }
-        updateTotal();
-        console.log(products);
+        // updateTotal();
     });
 
     $(document).on('change', '#unit_id', function(){
@@ -281,7 +276,7 @@
             sales_id: $('#sales_id').val(),
             so_date: $('#so_date').val(),
             so_invoice_no: $('#so_invoice_no').val(),
-            so_total: convertToAngka($('#value_grand').html()),
+            so_total: 0,
             products: JSON.stringify(products),
             
             _token:token
@@ -378,9 +373,9 @@
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
         if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date)
-        $('#so_discount').val(data.so_discount)
-        $('#so_ppn').val(data.so_ppn)
-        $('#so_cost').val(data.so_cost)
+        // $('#so_discount').val(data.so_discount)
+        // $('#so_ppn').val(data.so_ppn)
+        // $('#so_cost').val(data.so_cost)
         $('#so_invoice_no').val(data.so_invoice_no)
         $('#so_payment').val(data.so_payment)
         $('#bukti').val(data.so_img)
@@ -406,7 +401,7 @@
         $('#so_ppn').trigger('blur')
         $('#so_discount').trigger('blur')
         $('#so_cost').trigger('blur')
-        updateTotal()
+        // updateTotal()
 
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman");

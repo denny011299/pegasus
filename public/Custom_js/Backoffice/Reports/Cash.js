@@ -197,12 +197,13 @@
         let html = `<div class="px-5">`;
 
         if (penyerahan && penyerahan.length > 0) {
+            console.log(penyerahan)
             penyerahan.forEach((p) => {
                 total += parseInt(p.cr_nominal);
                 html += `
                     <div class="child-item">
                         <div class="child-left d-flex g-3">
-                            <div class="date me-3">${moment(p.created_at).format('D MMM YYYY')}</div>
+                            <div class="date me-3">${moment(p.cr_date).format('D MMM YYYY')}</div>
                             <div class="notes">${p.cr_notes}</div>
                         </div>
                         <div class="child-right text-end text-success">+ Rp ${formatRupiahMinus(p.cr_nominal)}</div>
@@ -223,7 +224,7 @@
                     <div class="child-left">
                         <div class="d-flex g-3">
                             <div class="date me-3">
-                                ${moment(d.created_at).format('D MMM YYYY')}
+                                ${moment(d.cr_date).format('D MMM YYYY')}
                             </div>
                             <div class="notes">
                                 ${d.cr_notes}
@@ -299,11 +300,12 @@
 
         if (penyerahan && penyerahan.length > 0) {
             penyerahan.forEach((p) => {
+                console.log(p)
                 total += parseInt(p.cs_nominal);
                 html += `
                     <div class="child-item">
                         <div class="child-left d-flex g-3">
-                            <div class="date me-3">${moment(p.created_at).format('D MMM YYYY')}</div>
+                            <div class="date me-3">${moment(p.cs_date).format('D MMM YYYY')}</div>
                             <div class="notes">${p.cs_notes}</div>
                         </div>
                         <div class="child-right text-end text-success">+ Rp ${formatRupiahMinus(p.cs_nominal)}</div>
@@ -324,7 +326,7 @@
                     <div class="child-left">
                         <div class="d-flex g-3">
                             <div class="date me-3">
-                                ${moment(d.created_at).format('D MMM YYYY')}
+                                ${moment(d.cs_date).format('D MMM YYYY')}
                             </div>
                             <div class="notes">
                                 ${d.cs_notes}

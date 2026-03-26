@@ -15,6 +15,7 @@ return new class extends Migration
             $table->integerIncrements('cg_id');
             $table->integer('staff_id');
             $table->integer('cash_id');
+            $table->date('cg_date');
             $table->integer('cg_nominal');
             $table->string('cg_notes', 255);
             $table->integer('cg_type')->comment('1 = saldo, 2 = operasional');

@@ -15,6 +15,7 @@ return new class extends Migration
             $table->integerIncrements('ca_id');
             $table->integer('staff_id');
             $table->integer('cash_id');
+            $table->date('ca_date');
             $table->integer('ca_nominal');
             $table->string('ca_notes', 255);
             $table->integer('ca_type')->comment('1 = saldo, 2 = operasional');

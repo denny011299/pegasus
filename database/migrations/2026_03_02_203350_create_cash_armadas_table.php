@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('cash_armadas', function (Blueprint $table) {
             $table->integerIncrements('cr_id');
-            $table->integer('cash_id');
             $table->integer('customer_id');
+            $table->integer('cash_id');
+            $table->date('cr_date');
             $table->integer('cr_nominal');
             $table->integer('cr_type')->comment('1 = saldo, 2 = operasional');
             $table->integer('cr_aksi')->comment('1 = pengajuan, 2 = pengembalian');

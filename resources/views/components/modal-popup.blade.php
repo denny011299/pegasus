@@ -797,15 +797,15 @@
                                         
                                     </div>
                                 </div>
-                                <div class="col-12 overflow-x-auto">
+                                <div class="col-12 overflow-x-auto mb-3">
                                     <table class="table table-center table-responsive">
                                         <thead>
                                             <th>Produk</th>
                                             <th>Variasi</th>
                                             <th>SKU</th>
                                             <th class="text-center">Jumlah</th>
-                                            <th class="text-end">Harga Satuan</th>
-                                            <th class="text-end">Subtotal</th>
+                                            {{-- <th class="text-end">Harga Satuan</th>
+                                            <th class="text-end">Subtotal</th> --}}
                                             <th class="text-center">Action</th>
                                         </thead>
                                         <tbody id="tableSalesModal">
@@ -813,7 +813,7 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <div class="col-12 row pt-3">
+                                {{-- <div class="col-12 row pt-3">
                                     <div class="col-6"></div>
                                     <div class="col-6">
                                         <div class="d-flex justify-content-between">
@@ -837,7 +837,7 @@
                                             <b id="value_grand">0</b>
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </div>
@@ -1770,6 +1770,12 @@
                                             </select>
                                         </div>
                                     </div>
+                                    <div class="col-12 col-lg-6 operasional">
+                                        <div class="input-block mb-3">
+                                            <label>Tanggal<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="oc_date"></input>
+                                        </div>
+                                    </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3" id="row-cash">
                                             <label>Nama Staff<span class="text-danger">*</span></label>
@@ -1805,7 +1811,7 @@
                                             <input type="text" class="form-control fill saldos" id="oc_notes" placeholder="Contoh: Untuk kas harian">
                                         </div>
                                     </div>
-                                    <div class="col-12 operasional mt-2">
+                                    <div class="col-12 operasional mt-3">
                                         <h5 class="form-title mb-2 text-black">Detail</h5>
                                     </div>
                                     <div class="col-12 px-2 mb-3 operasional">
@@ -1898,6 +1904,12 @@
                                                 <option value=1>Pengajuan</option>
                                                 <option value=2>Pengembalian</option>
                                             </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 col-lg-6 operasional">
+                                        <div class="input-block mb-3">
+                                            <label>Tanggal<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="oc_date_gudang"></input>
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -2041,6 +2053,12 @@
                                 </div>
                                 <div class="col-6 mb-4"></div>
                                 <div class="row p-0 m-0" id="inputModal">
+                                    <div class="col-12 col-lg-6 operasional">
+                                        <div class="input-block mb-3">
+                                            <label>Tanggal<span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="oc_date_armada"></input>
+                                        </div>
+                                    </div>
                                     <div class="col-6">
                                         <div class="input-block mb-3" id="row-cash">
                                             <label>Nama Armada<span class="text-danger">*</span></label>
@@ -2186,7 +2204,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-12 col-lg-6 saldo_kas">
+                                    <div class="col-12 col-lg-6">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="date_sales"></input>

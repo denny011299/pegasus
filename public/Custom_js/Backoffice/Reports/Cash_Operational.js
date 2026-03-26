@@ -5,6 +5,12 @@
     var sisa_kas = 0;
     var dates = null;
 
+    let today = new Date();
+    let yyyy = today.getFullYear();
+    let mm = String(today.getMonth() + 1).padStart(2, '0');
+    let dd = String(today.getDate()).padStart(2, '0');
+    let todayStr = yyyy + '-' + mm + '-' + dd;
+
     $(document).ready(function(){
         $('#cashType').trigger('change');
     });
@@ -87,6 +93,7 @@
             $('.operasional').show();
         }
         $('#add_cash_admin input').val("");
+        $("#oc_date").val(todayStr).attr('disabled', false);
         $('#staff_id').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -110,6 +117,7 @@
             $('.operasional').show();
         }
         $('#add_cash_gudang input').val("");
+        $("#oc_date_gudang").val(todayStr).attr('disabled', false);
         $('#staff_id_gudang').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -132,6 +140,7 @@
             $('.operasional').show();
         }
         $('#add_cash_armada input').val("");
+        $("#oc_date_armada").val(todayStr).attr('disabled', false);
         $('#customer_id_armada').empty(null).trigger('change');
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -161,6 +170,7 @@
             $('.operasional').show();
         }
         $('#add_cash_sales input').val("");
+        $("#date_sales").val(todayStr).attr('disabled', false);
         $('#staff_id_sales, #bank_account, #cc_id').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -178,13 +188,6 @@
         $('#btn-lihat-bukti-sales').hide();
         $('#check_foto_sales').hide();
 
-        let today = new Date();
-        let yyyy = today.getFullYear();
-        let mm = String(today.getMonth() + 1).padStart(2, '0');
-        let dd = String(today.getDate()).padStart(2, '0');
-        let todayStr = yyyy + '-' + mm + '-' + dd;
-        $("#date_sales").val(todayStr);
-
         if ($(this).val() == "operasional") $('#tableDetailSales tr.row-detail').remove();
     })
 
@@ -196,6 +199,7 @@
             $('#add_cash_admin input').val("").attr('disabled', false);
             $('#jenis_input, #staff_id, #oc_transaksi').attr('disabled', false);
             $('#oc_transaksi').val(1).attr('disabled', false).trigger('change');
+            $("#oc_date").val(todayStr).attr('disabled', false);
 
             $('#row-cash').html(`
                 <label>Nama Pengaju<span class="text-danger">*</span></label>
@@ -225,6 +229,7 @@
             $('#cgd_nominal').attr('disabled', true);
             $('.input_nominal').hide();
             $('#jenis_nominal').attr('disabled', false).val("");
+            $("#oc_date_gudang").val(todayStr).attr('disabled', false);
 
             $('#add_cash_gudang .modal-title').html("Tambah Aktivitas Gudang");
             $('#staff_id_gudang').empty(null).attr('disabled', false);
@@ -254,6 +259,7 @@
             autocompleteCustomer('#customer_id_armada', '#add_cash_armada');
             autocompleteCashCategory('#cc_id', '#add_cash_armada');
             $('.total_armada').html("Rp 0");
+            $("#oc_date_armada").val(todayStr).attr('disabled', false);
 
             $('#btn-foto-bukti-armada').show();
             $('#btn-lihat-bukti-armada').hide();
@@ -299,13 +305,7 @@
                 $(option).data('data', temp);
                 $('#staff_id_sales').empty().append(option).attr('disabled',true).trigger('change');
             }
-
-            let today = new Date();
-            let yyyy = today.getFullYear();
-            let mm = String(today.getMonth() + 1).padStart(2, '0');
-            let dd = String(today.getDate()).padStart(2, '0');
-            let todayStr = yyyy + '-' + mm + '-' + dd;
-            $("#date_sales").val(todayStr);
+            $("#date_sales").val(todayStr).attr('disabled', false);
         }
 
         $('.is-invalid').removeClass('is-invalid');
@@ -542,7 +542,7 @@
                 let debits = 0;
                 let credits = 0;
                 for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].date = moment(e[i].ca_date).format('D MMM YYYY');
                     if (e[i].ca_aksi == 1){
                         e[i].debit = "Rp " + formatRupiah(e[i].ca_nominal);
                         e[i].credit = "Rp 0";
@@ -632,7 +632,7 @@
                 let credits = 0;
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].date = moment(e[i].cg_date).format('D MMM YYYY');
                     if (e[i].cg_aksi == 1){
                         e[i].debit = "Rp " + formatRupiah(e[i].cg_nominal);
                         e[i].credit = "Rp 0";
@@ -729,7 +729,7 @@
                 var sisa = 0;
                 for (let i = 0; i < e.length; i++) {
                     totalAll = e[i].total_all;
-                    e[i].date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].date = moment(e[i].cr_date).format('D MMM YYYY');
                     if (e[i].cr_type == 1){
                         e[i].debit = "Rp " + formatRupiahMinus(e[i].cr_nominal);
                         e[i].credit = "Rp 0";
@@ -935,7 +935,7 @@
                 <div class="child-item">
                     <div class="child-left d-flex g-3">
                         <div class="date me-3">
-                            ${moment(d.created_at).format('D MMM YYYY')}
+                            ${moment(detailData.ca_date).format('D MMM YYYY')}
                         </div>
                         <div class="notes">
                             ${d.cad_notes}
@@ -983,7 +983,7 @@
                 <div class="child-item">
                     <div class="child-left d-flex g-3">
                         <div class="date me-3">
-                            ${moment(d.created_at).format('D MMM YYYY')}
+                            ${moment(detailData.cg_date).format('D MMM YYYY')}
                         </div>
                         <div class="notes">
                             ${d.customer_notes}
@@ -1030,7 +1030,7 @@
                 <div class="child-item">
                     <div class="child-left d-flex g-3">
                         <div class="date me-3">
-                            ${moment(d.created_at).format('D MMM YYYY')}
+                            ${moment(detailData.cr_date).format('D MMM YYYY')}
                         </div>
                         <div class="notes">
                             ${d.crd_notes}
@@ -1071,13 +1071,14 @@
 
         let html = `<div class="px-5">`;
         detailData.forEach((d) => {
+            console.log(d)
             total += parseInt(d.csd_nominal);
 
             html += `
                 <div class="child-item">
                     <div class="child-left d-flex g-3">
                         <div class="date me-3">
-                            ${moment(d.created_at).format('D MMM YYYY')}
+                            ${moment(detailData.cs_date).format('D MMM YYYY')}
                         </div>
                         <div class="notes">
                             ${d.csd_notes}
@@ -1114,10 +1115,26 @@
             row.child.hide();
             tr.removeClass('shown');
         } else {
-            if (type == "admin") row.child(format(row.data().detail)).show();
-            else if (type == "gudang") row.child(formatGudang(row.data().detail)).show();
-            else if (type == "armada") row.child(formatArmada(row.data().detail)).show();
-            else if (type == "sales") row.child(formatSales(row.data().detail)).show();
+            if (type == "admin") {
+                let detail = row.data().detail ?? null;
+                if (detail) detail.ca_date = row.data().ca_date;
+                row.child(format(detail)).show();
+            }
+            else if (type == "gudang") {
+                let detail = row.data().detail ?? null;
+                if (detail) detail.cg_date = row.data().cg_date;
+                row.child(formatGudang(detail)).show();
+            }
+            else if (type == "armada") {
+                let detail = row.data().detail ?? null;
+                if (detail) detail.cr_date = row.data().cr_date;
+                row.child(formatArmada(detail)).show();
+            }
+            else if (type == "sales") {
+                let detail = row.data().detail ?? null;
+                if (detail) detail.cs_date = row.data().cs_date;
+                row.child(formatSales(detail)).show();
+            }
             tr.addClass('shown');
         }
     });
@@ -1255,6 +1272,7 @@
 
         if (type == "admin"){
             param = {
+                ca_date: $('#oc_date').val(),
                 staff_id:$('#staff_id').val(),
                 ca_notes: $('#oc_notes').val(),
                 ca_nominal: convertToAngka($('#oc_nominal').val()),
@@ -1466,6 +1484,7 @@
         }
 
         param = {
+            cg_date: $('#oc_date_gudang').val(),
             staff_id:$('#staff_id_gudang').val(),
             cg_notes: $('#oc_notes_gudang').val(),
             cg_nominal: convertToAngka($('#oc_nominal_gudang').val()),
@@ -1662,6 +1681,7 @@
         }
 
         param = {
+            cr_date: $('#oc_date_armada').val(),
             customer_id:$('#customer_id_armada').val(),
             oc_transaksi: $('#jenis_input_armada').val(),
             cr_notes: $('#oc_notes_armada').val(),
@@ -1974,6 +1994,7 @@
             $('.total').html(`Rp ${formatRupiah(total)}`)
             addRow();
 
+            $('#oc_date').val(data.ca_date).attr('disabled', false);
             $('#btn-foto-bukti').hide();
             $('#btn-lihat-bukti').show();
             $('#bukti').val(data.ca_img);
@@ -2022,6 +2043,7 @@
             $('.total').html(`Rp ${formatRupiah(total)}`)
             addRow();
 
+            $('#oc_date').val(data.ca_date).attr('disabled', true);
             $('#btn-foto-bukti').hide();
             $('#btn-lihat-bukti').show();
             $('#bukti').val(data.ca_img);
@@ -2100,6 +2122,7 @@
             $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
             addRowGudang();
 
+            $('#oc_date_gudang').val(data.cg_date).attr('disabled', false);
             $('#btn-foto-bukti-gudang').hide();
             $('#btn-lihat-bukti-gudang').show();
             $('#bukti_gudang').val(data.cg_img);
@@ -2151,6 +2174,7 @@
             $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
             addRowGudang();
 
+            $('#oc_date_gudang').val(data.cg_date).attr('disabled', true);
             $('#btn-foto-bukti-gudang').hide();
             $('#btn-lihat-bukti-gudang').show();
             $('#bukti_gudang').val(data.cg_img);
@@ -2226,6 +2250,7 @@
             $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
             addRowArmada();
             
+            $('#oc_date_armada').val(data.cr_date).attr('disabled', false);
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
             $('#btn-lihat-bukti-armada').show();
@@ -2285,6 +2310,7 @@
             $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
             addRowArmada();
             
+            $('#oc_date_armada').val(data.cr_date).attr('disabled', true);
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
             $('#btn-lihat-bukti-armada').show();
@@ -2398,10 +2424,10 @@
             $('#jenis_input_sales').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_sales').val(data.cs_aksi).attr('disabled', true);
             $('#oc_notes_sales').val(data.cs_notes).attr('disabled', false);
-            $('#date_sales').val(data.cs_date).attr('disabled', true);
             $('#oc_nominal_sales').val(formatRupiahMinus(data.cs_nominal)).attr('disabled', false);
         }
 
+        $('#date_sales').val(data.cs_date).attr('disabled', false);
         $('#staff_id_sales').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
         $('.is-invalid').removeClass('is-invalid');
@@ -2471,6 +2497,7 @@
             }
         }
 
+        $('#date_sales').val(data.cs_date).attr('disabled', true);
         $('#staff_id_sales').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
         $('.is-invalid').removeClass('is-invalid');

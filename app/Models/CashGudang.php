@@ -69,6 +69,7 @@ class CashGudang extends Model
         $t = new CashGudang();
         $t->staff_id = $data["staff_id"];
         $t->cash_id = $data["cash_id"] ?? 0;
+        $t->cg_date = $data['cg_date'] ?? now();
         $t->cg_nominal = $data["cg_nominal"];
         $t->cg_notes = $data["cg_notes"];
         $t->cg_type = $data["cg_type"];
@@ -84,6 +85,7 @@ class CashGudang extends Model
         $t = CashGudang::find($data["cg_id"]);
         $t->staff_id = $data["staff_id"];
         $t->cash_id = $data["cash_id"] ?? 0;
+        $t->cg_date = $data['cg_date'] ?? now();
         $t->cg_nominal = $data["cg_nominal"];
         $t->cg_notes = $data["cg_notes"];
         $t->cg_type = $data["cg_type"];
