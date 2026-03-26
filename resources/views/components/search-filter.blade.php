@@ -49,8 +49,16 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6 col-sm-0"></div>
-            <div class="col-lg-2 col-md-6 col-sm-12">
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="input-block mb-3">
+                    <label>Supplier</label>
+                    <select class="form-select" id="supplier"></select>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
+                <a class="btn btn-outline-secondary btn-clear" href="#">
+                    Clear
+                </a>
                 <a class="btn btn-primary loss btn-filter" href="#">
                     Jalankan
                 </a>
@@ -111,7 +119,12 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-0"></div>
+        <div class="col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Supplier</label>
+                <select class="form-select" id="supplier"></select>
+            </div>
+        </div>
         <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
             <a class="btn btn-outline-secondary btn-clear">
                 Clear

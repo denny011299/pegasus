@@ -1,6 +1,18 @@
 <?php $page = 'cash'; ?>
 @extends('layout.mainlayout')
 @section('content')
+    <style>
+        #tableProduct thead th {
+            background-color: #e8f1ff !important;
+        }
+
+        #tableProduct .report-return-child thead th {
+            background-color: #f5f7fb !important;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+    </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -27,9 +39,10 @@
                                 <table class="table table-center table-hover" id="tableProduct">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Tanggal Retur</th>
-                                            <th>Nama Produk</th>
-                                            <th>Jumlah</th>
+                                            <th></th>
+                                            <th>Barang Retur</th>
+                                            <th>Total Transaksi Retur</th>
+                                            <th>Akumulasi Qty Retur</th>
                                         </tr>
                                     </thead>
                                     <tbody>
