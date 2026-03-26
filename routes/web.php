@@ -232,7 +232,9 @@ Route::middleware(checkLogin::class)->group(function () {
     //reporting
     Route::get('/reportBahanBaku', [ReportController::class, "reportBahanBaku"])->name('reportBahanBaku');
     Route::get('/reportProduksi', [ReportController::class, "reportProduksi"])->name('reportProduksi');
+    Route::get('/getReportProduksi', [ReportController::class, "getReportProduksi"])->name('getReportProduksi');
     Route::get('/ProductReturn', [ReportController::class, "ProductReturn"])->name('ProductReturn');
+    Route::get('/getReportReturn', [ReportController::class, "getReportReturn"])->name('getReportReturn');
 
     Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
     Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');

@@ -20,6 +20,8 @@ use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\ReportLoss;
 use App\Models\ReportProfit;
 use App\Models\Role;
+use App\Models\Production;
+use App\Models\ReturnSupplies;
 use App\Models\Staff;
 use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -973,9 +975,25 @@ class ReportController extends Controller
     function ProductReturn(){
         return view('Backoffice.Reports.ProductReturn');
     }
+
+    function getReportReturn(Request $req){
+        $data = (new ReturnSupplies())->getReturnReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id
+        ]);
+        return response()->json($data);
+    }
     
     function reportProduksi(){
         return view('Backoffice.Reports.ReportProduksi');
+    }
+
+    function getReportProduksi(Request $req){
+        $data = (new Production())->getProductionReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id
+        ]);
+        return response()->json($data);
     }
 
     // Cash Category

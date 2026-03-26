@@ -1,6 +1,18 @@
 <?php $page = 'cash'; ?>
 @extends('layout.mainlayout')
 @section('content')
+    <style>
+        #tableReportProduction thead th {
+            background-color: #e8f1ff !important;
+        }
+
+        #tableReportProduction .report-production-child thead th {
+            background-color: #f5f7fb !important;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+    </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -27,11 +39,11 @@
                                 <table class="table table-center table-hover" id="tableReportProduction">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Tanggal Produksi</th>
+                                            <th></th>
                                             <th>Nama Produk</th>
-                                            <th>Jumlah</th>
-                                            <th>Status</th>
-                                            <th>Diinput oleh</th>
+                                            <th>Total Produksi</th>
+                                            <th>Berhasil Produksi</th>
+                                            <th>Ditolak</th>
                                         </tr>
                                     </thead>
                                     <tbody>
