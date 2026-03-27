@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
 
 class LogStock extends Model
 {
@@ -73,5 +74,90 @@ class LogStock extends Model
         $t->staff_id = Session::get('user')->staff_id;
         $t->save();
         return $t->log_id;
+    }
+
+    function getRawMaterialUsageReport($data = [])
+    {
+        $data = array_merge([
+            "date" => null,
+            "supplier_id" => null,
+            "supplies_id" => null
+        ], $data);
+
+        $query = DB::table('log_stocks as l')
+            ->leftJoin('supplies as s', 's.supplies_id', '=', 'l.log_item_id')
+            ->leftJoin('units as u', 'u.unit_id', '=', 'l.unit_id')
+            ->leftJoin('productions as p', 'p.production_code', '=', 'l.log_kode')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->where('l.log_category', 2)
+            ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%')
+            ->select(
+                'l.log_id',
+                'l.log_date',
+                'l.log_kode',
+                'l.log_item_id',
+                'l.log_jumlah',
+                'l.log_notes',
+                'u.unit_name',
+                's.supplies_name',
+                'p.production_date'
+            );
+
+        if ($data["date"]) {
+            if (is_array($data["date"]) && count($data["date"]) === 2) {
+                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->startOfDay();
+                $endDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->endOfDay();
+                $query->whereBetween('l.log_date', [$startDate, $endDate]);
+            } else {
+                $date = $data["date"];
+                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d')) {
+                    $date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                }
+                $query->whereDate('l.log_date', $date);
+            }
+        }
+
+        if ($data["supplies_id"]) {
+            $query->where('l.log_item_id', $data["supplies_id"]);
+        }
+
+        if ($data["supplier_id"]) {
+            $supplierSupplies = DB::table('supplies_variants')
+                ->where('supplier_id', $data["supplier_id"])
+                ->pluck('supplies_id')
+                ->unique()
+                ->toArray();
+
+            if (count($supplierSupplies) <= 0) return [];
+            $query->whereIn('l.log_item_id', $supplierSupplies);
+        }
+
+        $rows = $query->orderBy('l.log_date', 'desc')->orderBy('l.log_id', 'desc')->get();
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $key = $row->log_item_id;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    "supplies_id" => $row->log_item_id,
+                    "item_name" => $row->supplies_name ?? '-',
+                    "transaction_count" => 0,
+                    "details" => []
+                ];
+            }
+
+            $grouped[$key]["transaction_count"] += 1;
+            $grouped[$key]["details"][] = [
+                "production_date" => $row->production_date ?: date('Y-m-d', strtotime($row->log_date)),
+                "log_date" => $row->log_date,
+                "production_code" => $row->log_kode,
+                "qty" => (int)$row->log_jumlah,
+                "unit_name" => $row->unit_name,
+                "notes" => $row->log_notes
+            ];
+        }
+
+        return array_values($grouped);
     }
 }

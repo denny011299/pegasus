@@ -15,12 +15,14 @@ use App\Models\CashSales;
 use App\Models\CashSalesDetail;
 use App\Models\Customer;
 use App\Models\InwardOutward;
+use App\Models\LogStock;
 use App\Models\PettyCash;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\ReportLoss;
 use App\Models\ReportProfit;
 use App\Models\Role;
 use App\Models\Production;
+use App\Models\ProductVariant;
 use App\Models\ReturnSupplies;
 use App\Models\Staff;
 use App\Models\Supplier;
@@ -971,6 +973,15 @@ class ReportController extends Controller
     function reportBahanBaku(){
         return view('Backoffice.Reports.Bahan_Baku');
     }
+
+    function getReportPemakaianBahan(Request $req){
+        $data = (new LogStock())->getRawMaterialUsageReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "supplies_id" => $req->supplies_id
+        ]);
+        return response()->json($data);
+    }
     
     function ProductReturn(){
         return view('Backoffice.Reports.ProductReturn');
@@ -991,9 +1002,27 @@ class ReportController extends Controller
     function getReportProduksi(Request $req){
         $data = (new Production())->getProductionReport([
             "date" => $req->date,
-            "supplier_id" => $req->supplier_id
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
         ]);
         return response()->json($data);
+    }
+
+    function generateReportProduksiPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
+        ];
+
+        $param["data"] = (new Production())->getProductionReport($filter);
+        $param["start_date"] = is_array($req->date) && isset($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && isset($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $param["product_name"] = $req->product_variant_id ? (ProductVariant::find($req->product_variant_id)->product_variant_name ?? "-") : "Semua Produk";
+
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportProduksi', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     // Cash Category

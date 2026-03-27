@@ -2,6 +2,27 @@
 @extends('layout.mainlayout')
 @section('content')
     <style>
+        .report-produksi-filter [class*="col-"] {
+            min-width: 0;
+        }
+
+        .report-produksi-filter .select2-container {
+            width: 100% !important;
+            max-width: 100%;
+        }
+
+        .report-produksi-filter .select2-container .select2-selection--single {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .report-produksi-filter .select2-container .select2-selection__rendered {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         #tableReportProduction thead th {
             background-color: #e8f1ff !important;
         }

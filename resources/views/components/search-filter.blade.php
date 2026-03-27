@@ -1,6 +1,6 @@
 @if(Route::is(['profitLoss']))
 <!-- Filter Pencarian -->
-<div class="profit-menu card">
+<div class="profit-menu card report-produksi-filter">
     <div class="row card-body pb-0">
         <div class="col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
@@ -70,9 +70,9 @@
 
 @if(Route::is(['reportBahanBaku']))
 <!-- Filter Pencarian -->
-<div class="profit-menu card">
-    <div class="row card-body pb-0">
-        <div class="col-lg-3 col-md-6 col-sm-12">
+<div class="profit-menu card report-bahan-filter">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Dari</label>
                 <div class="cal-icon cal-icon-info">
@@ -80,7 +80,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Sampai</label>
                 <div class="cal-icon cal-icon-info">
@@ -88,11 +88,27 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 col-md-6 col-sm-0"></div>
-        <div class="col-lg-2 col-md-6 col-sm-12">
-            <a class="btn btn-primary loss btn-filter"  href="#">
-                Jalankan
-            </a>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Supplier</label>
+                <select class="form-select" id="supplier"></select>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Bahan Mentah</label>
+                <select class="form-select" id="supplies_id"></select>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-12 col-md-12 col-sm-12">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
+                <a class="btn btn-outline-secondary btn-clear" href="#">
+                    Clear
+                </a>
+                <a class="btn btn-primary loss btn-filter" href="#">
+                    Jalankan
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -102,8 +118,8 @@
 @if(Route::is(['reportProduksi']))
 <!-- Filter Pencarian -->
 <div class="profit-menu card">
-    <div class="row card-body pb-0">
-        <div class="col-lg-3 col-md-6 col-sm-12">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Dari</label>
                 <div class="cal-icon cal-icon-info">
@@ -111,7 +127,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Sampai</label>
                 <div class="cal-icon cal-icon-info">
@@ -119,19 +135,25 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-12">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Supplier</label>
                 <select class="form-select" id="supplier"></select>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
-            <a class="btn btn-outline-secondary btn-clear">
-                Clear
-            </a>
-            <a class="btn btn-primary btn-filter">
-                Jalankan
-            </a>
+        <div class="col-xl-4 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Produk</label>
+                <select class="form-select" id="product_id"></select>
+            </div>
+        </div>
+        <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
+                
+                <a class="btn btn-outline-secondary btn-clear">
+                    Clear
+                </a>
+            </div>
         </div>
     </div>
 </div>

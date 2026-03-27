@@ -101,7 +101,8 @@ class Production extends Model
     {
         $data = array_merge([
             "date" => null,
-            "supplier_id" => null
+            "supplier_id" => null,
+            "product_variant_id" => null
         ], $data);
 
         $query = ProductionDetails::query()
@@ -116,6 +117,7 @@ class Production extends Model
                 'production_details.product_variant_id',
                 'production_details.pd_qty',
                 'production_details.list_bahan',
+                'production_details.bom_id',
                 'p.production_id',
                 'p.production_code',
                 'p.production_date',
@@ -124,6 +126,10 @@ class Production extends Model
                 'pr.product_name',
                 'u.unit_name'
             );
+
+        if ($data["product_variant_id"]) {
+            $query->where('production_details.product_variant_id', $data["product_variant_id"]);
+        }
 
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
@@ -147,18 +153,30 @@ class Production extends Model
         if ($data["supplier_id"]) {
             $supplierSupplies = DB::table('supplies_variants')
                 ->where('supplier_id', $data["supplier_id"])
-                ->where('status', 1)
                 ->pluck('supplies_id')
                 ->unique()
                 ->toArray();
         }
 
         $grouped = [];
+        $bomSuppliesCache = [];
         foreach ($rows as $row) {
             $listBahan = [];
             if (!empty($row->list_bahan)) {
                 $decoded = json_decode($row->list_bahan, true);
                 if (is_array($decoded)) $listBahan = $decoded;
+            }
+
+            // Fallback untuk data lama yang belum menyimpan list_bahan
+            if (count($listBahan) <= 0 && !empty($row->bom_id)) {
+                if (!isset($bomSuppliesCache[$row->bom_id])) {
+                    $bomSuppliesCache[$row->bom_id] = DB::table('bom_details')
+                        ->where('bom_id', $row->bom_id)
+                        ->where('status', 1)
+                        ->pluck('supplies_id')
+                        ->toArray();
+                }
+                $listBahan = $bomSuppliesCache[$row->bom_id];
             }
 
             if ($data["supplier_id"]) {

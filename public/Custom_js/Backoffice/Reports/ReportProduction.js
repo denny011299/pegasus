@@ -2,6 +2,7 @@
     var table;
     let dates = null;
     autocompleteSupplier("#supplier");
+    autocompleteProductVariantOnly("#product_id");
     $(document).ready(function(){
         inisialisasi();
         var startMonth = moment().startOf('month').format('DD-MM-YYYY');
@@ -143,7 +144,8 @@
             method: "get",
             data: {
                 date: dates,
-                supplier_id: $('#supplier').val()
+                supplier_id: $('#supplier').val(),
+                product_variant_id: $('#product_id').val()
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -190,7 +192,7 @@
         return parsed.format('DD-MM-YYYY');
     }
 
-    $(document).on('click', '.btn-filter', function(){
+    function applyProductionFilter() {
         dates = [];
         var start = normalizeDateValue($('#start_date').val());
         var end = normalizeDateValue($('#end_date').val());
@@ -205,18 +207,46 @@
         dates.push(end);
         console.log(dates);
         refreshProduction();
-    })
+    }
+
+    $(document).on('click', '.btn-filter', function(){
+        applyProductionFilter();
+    });
 
     $(document).on('click', '.btn-clear', function(){
         dates = null;
         $('#start_date').val("");
         $('#end_date').val("");
         $('#supplier').empty();
+        $('#product_id').empty();
         refreshProduction();
     })
 
     $(document).on('change', '#supplier', function(){
-        refreshProduction();
+        applyProductionFilter();
+    });
+
+    $(document).on('change', '#product_id', function(){
+        applyProductionFilter();
+    });
+
+    $(document).on('change change.datetimepicker dp.change', '#start_date, #end_date', function(){
+        applyProductionFilter();
+    });
+
+    $(document).on('click', '.btn-export-pdf', function(){
+        var start = normalizeDateValue($('#start_date').val());
+        var end = normalizeDateValue($('#end_date').val());
+        if (start && !end) end = start;
+        if (!start && end) start = end;
+
+        var params = {
+            date: [start, end],
+            supplier_id: $('#supplier').val(),
+            product_variant_id: $('#product_id').val()
+        };
+
+        window.open('/generateReportProduksiPdf?' + $.param(params), '_blank');
     });
 
     $('#tableReportProduction tbody').on('click', 'td.details-control .btn-toggle-detail', function (e) {
