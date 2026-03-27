@@ -15,7 +15,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
-            ordering: false,
+            order: [[0, 'asc']],
             searching: false,
             language: {
                 search: ' ',
@@ -33,8 +33,24 @@
             columns: [
                 { data: "check" },
                 { data: "bank_kode" },
-                { data: "date" },
-                { data: "date_due_date" },
+                { 
+                    data: "date",
+                    render: function(data, type, row) {
+                        if (type === 'sort') {
+                            return row.po_date ?? data; // pakai date_raw kalau ada
+                        }
+                        return data;
+                    }
+                },
+                { 
+                    data: "date_due_date",
+                    render: function(data, type, row) {
+                        if (type === 'sort') {
+                            return row.poi_due ?? data; // pakai date_raw kalau ada
+                        }
+                        return data;
+                    }
+                },
                 { data: "poi_code" },
                 { data: "supplier_name" },
                 { data: "poi_total_text" },

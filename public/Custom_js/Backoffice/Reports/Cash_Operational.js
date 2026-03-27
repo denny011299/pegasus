@@ -318,7 +318,7 @@
         if ($(this).val() == 1){
             $('#oc_nominal').val("").attr('disabled', false);
         } else {
-            $('#oc_nominal').val(formatRupiah(sisa_kas)).attr('disabled', true);
+            $('#oc_nominal').val(formatRupiah(sisa_kas)).attr('disabled', false);
         }
     })
 
@@ -326,7 +326,7 @@
         if ($(this).val() == 1){
             $('#oc_nominal_gudang').val("").attr('disabled', false);
         } else {
-            $('#oc_nominal_gudang').val(formatRupiah(sisa_kas)).attr('disabled', true);
+            $('#oc_nominal_gudang').val(formatRupiah(sisa_kas)).attr('disabled', false);
         }
     })
 
@@ -334,7 +334,7 @@
         if (mode == 1 && $('#jenis_input_armada').val() == "saldo"){
             if ($(this).val()){
                 var temp = $('#customer_id_armada').select2("data")[0];
-                $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', true);
+                $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', false);
             } else {
                 $('#oc_nominal_armada').val("").attr('disabled', false);
             }
