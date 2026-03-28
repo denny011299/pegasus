@@ -443,7 +443,7 @@
             cash_date:$('#cash_date').val(),
             cash_description:$('#cash_description').val(),
             cash_type:type,
-            cash_nominal:convertToAngka($('#cash_nominal').val()),
+            cash_nominal:convertToAngkaMinus($('#cash_nominal').val()),
             // cash_tujuan: type == 2 ? $('#cash_tujuan').val() : null,
             _token:token
         };

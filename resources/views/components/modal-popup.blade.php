@@ -2065,7 +2065,7 @@
                                             <select class="form-select fill" id="customer_id_armada"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6 foto operasional">
+                                    <div class="col-6 foto operasional mb-3">
                                         <label class="form-label d-flex">
                                             Bukti Foto<span class="text-danger">*</span> 
                                             <span id="check_foto_armada" style="display: none" class="ms-2">

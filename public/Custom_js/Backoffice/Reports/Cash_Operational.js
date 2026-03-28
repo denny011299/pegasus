@@ -318,7 +318,7 @@
         if ($(this).val() == 1){
             $('#oc_nominal').val("").attr('disabled', false);
         } else {
-            $('#oc_nominal').val(formatRupiah(sisa_kas)).attr('disabled', false);
+            $('#oc_nominal').val(formatRupiahMinus(sisa_kas)).attr('disabled', false);
         }
     })
 
@@ -326,7 +326,7 @@
         if ($(this).val() == 1){
             $('#oc_nominal_gudang').val("").attr('disabled', false);
         } else {
-            $('#oc_nominal_gudang').val(formatRupiah(sisa_kas)).attr('disabled', false);
+            $('#oc_nominal_gudang').val(formatRupiahMinus(sisa_kas)).attr('disabled', false);
         }
     })
 
@@ -397,7 +397,7 @@
             $('.input_nominal').hide();
         }
         else {
-            $('#cgd_nominal').val(formatRupiah($(this).val())).attr('disabled', true);
+            $('#cgd_nominal').val(formatRupiahMinus($(this).val())).attr('disabled', true);
             $('.input_nominal').hide();
         }
     })
@@ -544,13 +544,13 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].ca_date).format('D MMM YYYY');
                     if (e[i].ca_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiah(e[i].ca_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(e[i].ca_nominal);
                         e[i].credit = "Rp 0";
                         if (e[i].status == 2) debits += e[i].ca_nominal;
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiah(e[i].ca_nominal) + ")";
+                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].ca_nominal) + ")";
                         if (e[i].status == 2) credits += e[i].ca_nominal;
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
@@ -593,9 +593,9 @@
                     }
                 }
                 table.rows.add(e).draw();
-                $('.debits').html(`Rp ${formatRupiah(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiah(credits)})`);
-                $('.sisa').html(`Rp ${formatRupiah(data['sisa_kas'])}`);
+                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
+                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
+                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
                 sisa_kas = data['sisa_kas'];
 
                 // Expand child row
@@ -634,13 +634,13 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].cg_date).format('D MMM YYYY');
                     if (e[i].cg_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiah(e[i].cg_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cg_nominal);
                         e[i].credit = "Rp 0";
                         if (e[i].status == 2) debits += e[i].cg_nominal;
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiah(e[i].cg_nominal) + ")";
+                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].cg_nominal) + ")";
                         if (e[i].status == 2) credits += e[i].cg_nominal;
                     }
 
@@ -687,9 +687,9 @@
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
 
-                $('.debits').html(`Rp ${formatRupiah(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiah(credits)})`);
-                $('.sisa').html(`Rp ${formatRupiah(data['sisa_kas'])}`);
+                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
+                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
+                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
                 sisa_kas = data['sisa_kas'];
 
                 // Expand child row
@@ -799,7 +799,7 @@
                 if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiahMinus(data['customer_saldo'])}`);
                 else $('#totalArmada').html('-');
                 console.log(sisa);
-                $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
+                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
                 // $('.sisa').html(`Rp ${formatRupiahMinus(data['sisa_kas'])}`);
 
                 // Expand child row
@@ -898,7 +898,7 @@
                 // $('#totalSeluruh').html(`Rp ${formatRupiahMinus(totalAll)}`);
                 if ($('#filter_sales_id').val() != null) $('#totalSales').html(`Rp ${formatRupiahMinus(data['staff_saldo'])}`);
                 else $('#totalSales').html('-');
-                $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
+                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
                 // $('.sisa').html(`Rp ${formatRupiahMinus(data['sisa_kas'])}`);
 
                 // Expand child row
@@ -942,7 +942,7 @@
                         </div>
                     </div>
                     <div class="child-right text-end">
-                        Rp ${formatRupiah(d.cad_nominal)}
+                        Rp ${formatRupiahMinus(d.cad_nominal)}
                     </div>
                 </div>
 
@@ -955,7 +955,7 @@
                     Total
                 </div>
                 <div class="child-right text-end">
-                    Rp ${formatRupiah(total)}
+                    Rp ${formatRupiahMinus(total)}
                 </div>
             </div>
         `;
@@ -990,7 +990,7 @@
                         </div>
                     </div>
                     <div class="child-right text-end">
-                        Rp ${formatRupiah(d.cgd_nominal)}
+                        Rp ${formatRupiahMinus(d.cgd_nominal)}
                     </div>
                 </div>
 
@@ -1003,7 +1003,7 @@
                     Total
                 </div>
                 <div class="child-right text-end">
-                    Rp ${formatRupiah(total)}
+                    Rp ${formatRupiahMinus(total)}
                 </div>
             </div>
         `;
@@ -1159,7 +1159,7 @@
 
         var data  = {
             "cad_notes": $('#cad_notes').val(),
-            "cad_nominal": convertToAngka($('#cad_nominal').val()),
+            "cad_nominal": convertToAngkaMinus($('#cad_nominal').val()),
         };
         items.push(data);
 
@@ -1167,7 +1167,7 @@
         items.forEach(element => {
             total += element.cad_nominal;
         });
-        $('.total').html(`Rp ${formatRupiah(total)}`)
+        $('.total').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRow();
 
@@ -1182,7 +1182,7 @@
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td style="width: 25%">${e.cad_notes}</td>
-                    <td class="text-end">Rp ${formatRupiah(e.cad_nominal)}</td>
+                    <td class="text-end">Rp ${formatRupiahMinus(e.cad_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1203,7 +1203,7 @@
         items.forEach(element => {
             total += element.cad_nominal;
         });
-        $('.total').html(`Rp ${formatRupiah(total)}`)
+        $('.total').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRow();
     });
@@ -1275,7 +1275,7 @@
                 ca_date: $('#oc_date').val(),
                 staff_id:$('#staff_id').val(),
                 ca_notes: $('#oc_notes').val(),
-                ca_nominal: convertToAngka($('#oc_nominal').val()),
+                ca_nominal: convertToAngkaMinus($('#oc_nominal').val()),
                 oc_transaksi: $('#oc_transaksi').val(),
                 ca_type: jenis_input == "saldo" ? 1 : 2,
                 jenis_input: jenis_input,
@@ -1294,7 +1294,7 @@
             param = {
                 staff_id:$('#staff_id').val(),
                 cg_notes:$('#oc_notes').val(),
-                cg_nominal:convertToAngka($('#oc_nominal').val()),
+                cg_nominal:convertToAngkaMinus($('#oc_nominal').val()),
                 _token:token
             };
             if (mode == 1) url = "/insertCashGudang";
@@ -1308,7 +1308,7 @@
             param = {
                 staff_id:$('#staff_id').val(),
                 ca_notes:$('#oc_notes').val(),
-                ca_nominal:convertToAngka($('#oc_nominal').val()),
+                ca_nominal:convertToAngkaMinus($('#oc_nominal').val()),
                 _token:token
             };
         }
@@ -1361,7 +1361,7 @@
             "customer_id": $('#customer_id').val(),
             "customer_notes": temp.customer_notes,
             "cgd_notes": $('#cgd_notes').val(),
-            "cgd_nominal": convertToAngka($('#cgd_nominal').val()),
+            "cgd_nominal": convertToAngkaMinus($('#cgd_nominal').val()),
         };
         items.push(data);
 
@@ -1369,7 +1369,7 @@
         items.forEach(element => {
             total += element.cgd_nominal;
         });
-        $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
+        $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowGudang();
 
@@ -1389,7 +1389,7 @@
                     <td>${index+1}</td>
                     <td>${e.customer_notes}</td>
                     <td style="width: 25%">${e.cgd_notes}</td>
-                    <td class="text-end">Rp ${formatRupiah(e.cgd_nominal)}</td>
+                    <td class="text-end">Rp ${formatRupiahMinus(e.cgd_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
                         <a class="p-2 btn-action-icon btn_delete_row_gudang mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1411,7 +1411,7 @@
             total += element.cgd_nominal;
         });
         console.log(total);
-        $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
+        $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowGudang();
     });
@@ -1487,7 +1487,7 @@
             cg_date: $('#oc_date_gudang').val(),
             staff_id:$('#staff_id_gudang').val(),
             cg_notes: $('#oc_notes_gudang').val(),
-            cg_nominal: convertToAngka($('#oc_nominal_gudang').val()),
+            cg_nominal: convertToAngkaMinus($('#oc_nominal_gudang').val()),
             oc_transaksi: $('#oc_transaksi_gudang').val(),
             cg_type: jenis_input == "saldo" ? 1 : 2,
             jenis_input: jenis_input,
@@ -1991,7 +1991,7 @@
                 items.push(temp);
                 total += e.cad_nominal;
             })
-            $('.total').html(`Rp ${formatRupiah(total)}`)
+            $('.total').html(`Rp ${formatRupiahMinus(total)}`)
             addRow();
 
             $('#oc_date').val(data.ca_date).attr('disabled', false);
@@ -2040,7 +2040,7 @@
                 items.push(temp);
                 total += e.cad_nominal;
             })
-            $('.total').html(`Rp ${formatRupiah(total)}`)
+            $('.total').html(`Rp ${formatRupiahMinus(total)}`)
             addRow();
 
             $('#oc_date').val(data.ca_date).attr('disabled', true);
@@ -2119,7 +2119,7 @@
                 items.push(temp);
                 total += e.cgd_nominal;
             })
-            $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
+            $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
             addRowGudang();
 
             $('#oc_date_gudang').val(data.cg_date).attr('disabled', false);
@@ -2171,7 +2171,7 @@
                 items.push(temp);
                 total += e.cgd_nominal;
             })
-            $('.total_gudang').html(`Rp ${formatRupiah(total)}`)
+            $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
             addRowGudang();
 
             $('#oc_date_gudang').val(data.cg_date).attr('disabled', true);

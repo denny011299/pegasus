@@ -218,22 +218,34 @@ class ReportController extends Controller
             $notes = $data['ca_notes'] . " oleh admin " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['ca_nominal'],
-                    "cash_type" => 3, // keluar 1
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
                     "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
             }
             // Pengembalian dana
             else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 3;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['ca_nominal'],
-                    "cash_type" => 1, // debit
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
                     "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
@@ -303,24 +315,36 @@ class ReportController extends Controller
             $data['ca_type'] = 1;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['ca_nominal'],
-                    "cash_type" => 3, // keluar 1
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
                     "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
             }
             // Pengembalian dana
             else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 3;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['ca_nominal'],
-                    "cash_type" => 1, // debit
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
                     "cash_tujuan" => 1, // admin
                     "status" => 1
                 ]);
@@ -416,22 +440,34 @@ class ReportController extends Controller
             $notes = $data['cg_notes'] . " dari gudang - " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['cg_nominal'],
-                    "cash_type" => 3, // keluar 1
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
                     "cash_tujuan" => 2, // gudang
                     "status" => 1
                 ]);
             }
             // Pengembalian dana
             else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 3;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->insertCash([
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['cg_nominal'],
-                    "cash_type" => 1, // debit
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
                     "cash_tujuan" => 2, // gudang
                     "status" => 1
                 ]);
@@ -499,24 +535,36 @@ class ReportController extends Controller
             $notes = $data['cg_notes'] . " dari gudang - " . $staff_name;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['cg_nominal'],
-                    "cash_type" => 3, // keluar 1
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
                     "cash_tujuan" => 2, // gudang
                     "status" => 1
                 ]);
             }
             // Pengembalian dana
             else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 3;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
                 $cash_id = (new Cash())->updateCash([
                     "cash_id" => $cash->cash_id,
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['cg_nominal'],
-                    "cash_type" => 1, // debit
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
                     "cash_tujuan" => 2, // gudang
                     "status" => 1
                 ]);
@@ -648,12 +696,19 @@ class ReportController extends Controller
             $data['cr_aksi'] = 2;
         } else {
             $notes = $data['cr_notes'] . " dari armada " . $customer->customer_notes;
+            $type = 1;
+            $nominal = $data['cr_nominal'];
+            if ($data['cr_nominal'] < 0) {
+                $type = 3;
+                $nominal = $data['cr_nominal'] - ($data['cr_nominal'] * 2);
+            }
+            
             $cash_id = (new Cash())->insertCash([
                 "person_id" => $data['customer_id'],
                 "cash_date" => now(),
                 "cash_description" => $notes,
-                "cash_nominal" => $data['cr_nominal'],
-                "cash_type" => 1,
+                "cash_nominal" => $nominal,
+                "cash_type" => $type,
                 "cash_tujuan" => 3, // Armada
                 "status" => 1
             ]);
@@ -697,13 +752,19 @@ class ReportController extends Controller
 
         if ($data['oc_transaksi'] == "saldo"){
             $notes = $data['cr_notes'] . " dari armada " . $customer;
+            $type = 1;
+            $nominal = $data['cr_nominal'];
+            if ($data['cr_nominal'] < 0) {
+                $type = 3;
+                $nominal = $data['cr_nominal'] - ($data['cr_nominal'] * 2);
+            }
             $cash_id = (new Cash())->updateCash([
                 "cash_id" => $data['cash_id'],
                 "person_id" => $data['customer_id'],
                 "cash_date" => now(),
                 "cash_description" => $notes,
-                "cash_nominal" => $data['cr_nominal'],
-                "cash_type" => 1, // debit (pengembalian kas)
+                "cash_nominal" => $nominal,
+                "cash_type" => $type, // debit (pengembalian kas)
                 "cash_tujuan" => 3, // Armada
                 "status" => 1
             ]);
@@ -846,12 +907,19 @@ class ReportController extends Controller
                 $data['cs_transaction'] = 1;
             }
             else if ($data['cs_aksi'] == "2") {
+                $type = 3;
+                $nominal = $data['cs_nominal'];
+                if ($data['cs_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['cs_nominal'] - ($data['cs_nominal'] * 2);
+                }
+
                 $cash_id = (new Cash())->insertCash([
                     "person_id" => $data['staff_id'],
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['cs_nominal'],
-                    "cash_type" => 3, // Keluar 1
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // Keluar 1
                     "cash_tujuan" => 4, // Sales
                     "status" => 1
                 ]);
@@ -860,12 +928,19 @@ class ReportController extends Controller
                 $data['cs_transaction'] = 3;
             }
             else if ($data['cs_aksi'] == "3") {
+                $type = 1;
+                $nominal = $data['cs_nominal'];
+                if ($data['cs_nominal'] < 0) {
+                    $type = 3;
+                    $nominal = $data['cs_nominal'] - ($data['cs_nominal'] * 2);
+                }
+
                 $cash_id = (new Cash())->insertCash([
                     "person_id" => $data['staff_id'],
                     "cash_date" => now(),
                     "cash_description" => $notes,
-                    "cash_nominal" => $data['cs_nominal'],
-                    "cash_type" => 1, // Debit
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // Debit
                     "cash_tujuan" => 4, // Sales
                     "status" => 1
                 ]);
@@ -911,13 +986,19 @@ class ReportController extends Controller
 
         if ($data['oc_transaksi'] == "saldo"){
             $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+            $type = 3;
+            $nominal = $data['cs_nominal'];
+            if ($data['cs_nominal'] < 0) {
+                $type = 1;
+                $nominal = $data['cs_nominal'] - ($data['cs_nominal'] * 2);
+            }
             $cash_id = (new Cash())->updateCash([
                 "cash_id" => $data['cash_id'],
                 "person_id" => $data['staff_id'],
                 "cash_date" => now(),
                 "cash_description" => $notes,
-                "cash_nominal" => $data['cs_nominal'],
-                "cash_type" => 3, // keluar 1 (setor kas ke bank)
+                "cash_nominal" => $nominal,
+                "cash_type" => $type, // keluar 1 (setor kas ke bank)
                 "cash_tujuan" => 3, // Armada
                 "status" => 1
             ]);
