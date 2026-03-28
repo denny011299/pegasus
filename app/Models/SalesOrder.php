@@ -28,7 +28,7 @@ class SalesOrder extends Model
             $result->where("so_customer", "like", "%".$data["so_customer"]."%");
         }
 
-        $result->orderBy("created_at", "desc");
+        $result->orderBy('status', 'asc')->orderBy("created_at", "desc");
         $result= $result->get();
         foreach ($result as $key => $value) {
             $value->customer_name = Customer::find($value->so_customer)->customer_notes ?? "-";
@@ -121,6 +121,18 @@ class SalesOrder extends Model
     function deleteSalesOrder($data){
         $t = SalesOrder::find($data["so_id"]);
         $t->status = 0; // soft delete
+        $t->save();
+    }
+
+    function accSO($data){
+        $t = SalesOrder::find($data["so_id"]);
+        $t->status = 2; // accept
+        $t->save();
+    }
+    
+    function declineSO($data){
+        $t = SalesOrder::find($data["so_id"]);
+        $t->status = 3; // accept
         $t->save();
     }
 

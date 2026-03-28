@@ -30,6 +30,7 @@
                                             <th>Nama Armada</th>
                                             <th>Tanggal</th>
                                             <th>No. Invoice</th>
+                                            <th>Status</th>
                                             {{-- <th>Jumlah Total</th> --}}
                                             <th class="no-sort">Aksi</th>
                                         </tr>

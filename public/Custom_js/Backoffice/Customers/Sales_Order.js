@@ -20,14 +20,15 @@
         $('#tableSalesModal').html("");
         refreshTableProduct();
         $('#add_sales_order .modal-title').html("Tambah Pengiriman");
-        $('#add_sales_order input').val("");
-        $('#so_customer, #sales_id').empty();
+        $('#add_sales_order input').val("").attr("disabled", false);
+        $('#so_customer, #sales_id').empty().attr("disabled", false);
         $('#so_discount').val(0).trigger('blur');
         $('#so_cost').val(0).trigger('blur');
         $('#so_ppn').val(0).trigger('blur');
-        $('.form-select').not("#so_payment").empty();
+        $('.form-select').not("#so_payment").empty().attr("disabled", false);
+        $('#so_sku, .so_qty, .so_unit').attr("disabled", false);
         $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
+        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman").show();
         $('#add_sales_order').modal("show");
         // updateTotal();
         $('#btn_bukti_foto').show();
@@ -38,7 +39,7 @@
         let mm = String(today.getMonth() + 1).padStart(2, '0');
         let dd = String(today.getDate()).padStart(2, '0');
         let todayStr = yyyy + '-' + mm + '-' + dd;
-        $("#so_date").val(todayStr);
+        $("#so_date").val(todayStr).attr("disabled", false);
     });
 
     $(document).on('blur', '#so_ppn', function(){
@@ -101,6 +102,7 @@
                 { data: "date" },
                 { data: "so_invoice_no", default: "-" },
                 // { data: "total" },
+                { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -126,13 +128,41 @@
                     e[i].date = moment(e[i].so_date).format('D MMM YYYY');
                     // e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
                     e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].so_id}" data-bs-target="#edit-sales">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].so_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
+                        <a class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].so_id}" data-bs-target="#view-cash">
+                            <i class="fe fe-eye"></i>
                         </a>
                     `;
+
+                    if (e[i].status == 1){
+                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;
+                    } else if (e[i].status == 2){
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
+                    } else if (e[i].status == 3){
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
+                    }
+
+                    if (e[i].status == 1) {
+                        e[i].action += `
+                            <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Terima"  so_id = "${e[i].so_id}" >
+                                <i class="fe fe-check"></i>
+                            </a>
+                            <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Tolak"  so_id = "${e[i].so_id}" >
+                                <i class="fe fe-x"></i>
+                            </a>
+                        `;
+                    } 
+                    // else {
+                    //     e[i].action = `
+                    //         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].so_id}" data-bs-target="#edit-sales">
+                    //             <i class="fe fe-edit"></i>
+                    //         </a>
+                    //         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].so_id}" href="javascript:void(0);">
+                    //             <i class="fe fe-trash-2"></i>
+                    //         </a>
+                    //     `;
+                    // }
                 }
 
                 table.rows.add(e).draw();
@@ -168,7 +198,7 @@
                             data-price="${p.product_variant_price}"
                             data-index="${index}" style="width: 4rem" value="${p.so_qty || 1}">
                         <span>
-                            <select class="form-select fill" id="unit_id" style="width: 8rem" data-index="${index}">${options}</select>
+                            <select class="form-select fill so_unit" id="unit_id" style="width: 8rem" data-index="${index}">${options}</select>
                         </span>
                     </td>
                     <td class="text-center text-danger" style="cursor:pointer; width: 13%"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
@@ -411,6 +441,77 @@
         $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
     });
 
+    $(document).on("click",".btn_view",function(){
+        var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        console.log(data);
+        products = [];
+        mode=3;
+        $('#add_sales_order .modal-title').html("Detail Pengiriman");
+        // reset
+        $('#add_sales_order input').empty().val("");
+        $('#so_customer, #sales_id').empty();
+        // $('#so_discount').val(0).trigger('blur');
+        // $('#so_cost').val(0).trigger('blur');
+        // $('#so_ppn').val(0).trigger('blur');
+        $('.form-select').not("#so_payment").empty();
+        
+        $('#btn_bukti_foto').hide();
+        $('#btn-lihat-bukti').show();
+        
+        var img = JSON.parse(data.so_img);
+        list_photo = img;
+        console.log(list_photo);
+        
+        $('#modalViewPhoto .modal-footer').show();
+        $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
+        $('#check_foto').show();
+        $('#jumlahFoto').html(list_photo.length);
+
+        $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`).attr("disabled", true);
+        if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
+        $('#so_date').val(data.so_date).attr("disabled", true);
+        // $('#so_discount').val(data.so_discount)
+        // $('#so_ppn').val(data.so_ppn)
+        // $('#so_cost').val(data.so_cost)
+        $('#so_invoice_no').val(data.so_invoice_no).attr("disabled", true)
+        $('#so_payment').val(data.so_payment).attr("disabled", true)
+        $('#bukti').val(data.so_img)
+        data.items.forEach(e => {
+            var temp = {
+                "sod_id" : e.sod_id,
+                "product_variant_id" : e.product_variant_id,
+                "product_name" : e.sod_nama,
+                "product_variant_name" : e.sod_variant,
+                "product_variant_sku" : e.sod_sku,
+                "so_qty" : e.sod_qty,
+                "product_variant_price" : e.sod_harga,
+                "so_subtotal" : e.sod_subtotal,
+                "unit_name" : e.unit_name,
+                "unit_id" : e.unit_id,
+                "pr_unit" : e.pr_unit
+            };
+            products.push(temp);
+        });
+        refreshTableProduct();
+        $('.deleteRow').hide();
+        $('#so_sku, .so_qty, .so_unit').attr("disabled", true);
+
+        // update summary
+        $('#so_ppn').trigger('blur')
+        $('#so_discount').trigger('blur')
+        $('#so_cost').trigger('blur')
+        // updateTotal()
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman").hide();
+        $('#add_sales_order').modal("show");
+        $('#add_sales_order').attr("so_id", data.so_id);
+        $('#add_sales_order').attr("so_number", data.so_number);
+        $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
+    });
+
     //delete
     $(document).on("click",".btn_delete",function(){
         var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
@@ -438,6 +539,80 @@
             }
         });
     });
+
+    $(document).on('click', '.btn_acc', function(){
+        var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalKonfirmasi(
+            "Apakah yakin ingin Approve pengiriman ini?",
+            "btn-accept-so"
+        );
+        $('#btn-accept-so').attr("so_id", data.so_id);
+        $('#btn-accept-so').html("Konfirmasi");
+    })
+
+    $(document).on('click', '#btn-accept-so', function(){
+        LoadingButton(this);
+        $.ajax({
+            url:"/accSO",
+            data:{
+                so_id:$('#btn-accept-so').attr('so_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                if (e!=1){
+                    if (typeof e === "object"){
+                        notifikasi('error', e.header, e.message);
+                        ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                        return false;
+                    } else {
+                        ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
+                    }
+                }
+                else{
+                    ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                    refreshSalesOrder();
+                    $('.modal').modal("hide");
+                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengiriman");
+                }                
+            },
+            error:function(e){
+                console.log(e);
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+            }
+        });
+    })
+
+    $(document).on('click', '.btn_decline', function(){
+        var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin tolak pengiriman ini?","btn-decline-so");
+        $('#btn-decline-so').attr("so_id", data.so_id);
+        $('#btn-decline-so').html("Konfirmasi");
+    })
+
+    $(document).on('click', '#btn-decline-so', function(){
+        LoadingButton(this);
+        $.ajax({
+            url:"/declineSO",
+            data:{
+                so_id:$('#btn-decline-so').attr('so_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                refreshSalesOrder()
+                $('.modal').modal("hide");
+                notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
+                
+            },
+            error:function(e){
+                console.log(e);
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+            }
+        });
+    })
 
     
 $(document).on('click', '#btn_bukti_foto', function() {

@@ -45,7 +45,7 @@
         $("#penanggung-jawab").empty();
         autocompleteStaff("#penanggung-jawab");
     }
-    function refreshStockOpname() {
+    function refreshStockOpname(callback) {
         // Simpan value yang sudah diinput sebelum refresh
         $('.row-stock').each(function() {
             var suppliesId = $(this).data('supplies-id');
@@ -158,6 +158,7 @@
                 if(mode==2){
                     $(".real-stock, .notes").attr("disabled","disabled");
                 }
+                if (typeof callback === 'function') callback();
                 supplies = e;
             },
             error:function(e){
@@ -268,12 +269,12 @@
         refreshStockOpname();
     });
 
-    $(document).on("click",".btn-save",function(){
+    $(document).on("click", ".btn-save", function() {
         LoadingButton(this);
-        $('#filter_sup_name').val("").trigger('keyup')
-        setTimeout(function() {
+        $('#filter_sup_name').val("");
+        refreshStockOpname(function() {
             insertData();
-        }, 1000);
+        });
     });
 
 function getData(id) {
@@ -409,6 +410,9 @@ $(document).on("click", ".save-terima", function () {
 
 $(document).on("click", "#btn-acc-stob", function () {
     LoadingButton(this);
+
+    $('#filter_sup_name').val("");
+    renderMode2(data.item);
 
     suppliesSubmit = [];
     $('.row-stock').each(function () {

@@ -135,6 +135,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/updateSalesOrder', [CustomerController::class, "updateSalesOrder"])->name('updateSalesOrder');
     Route::post('/deleteSalesOrder', [CustomerController::class, "deleteSalesOrder"])->name('deleteSalesOrder');
     Route::post('/updateSalesOrderDetail', [CustomerController::class, "updateSalesOrderDetail"])->name('updateSalesOrderDetail');
+    Route::post('/accSO', [CustomerController::class, "accSO"])->name('accSO');
+    Route::post('/declineSO', [CustomerController::class, "declineSO"])->name('declineSO');
     Route::get('/getSoDelivery', [CustomerController::class, "getSoDelivery"])->name('getSoDelivery');
     Route::post('/insertSoDelivery', [CustomerController::class, "insertSoDelivery"])->name('insertSoDelivery');
     Route::post('/updateSoDelivery', [CustomerController::class, "updateSoDelivery"])->name('updateSoDelivery');

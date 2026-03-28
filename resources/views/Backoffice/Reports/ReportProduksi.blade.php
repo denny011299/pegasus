@@ -88,5 +88,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/ReportProduction.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/ReportProduction.js')}}?v=1"></script>
 @endsection
