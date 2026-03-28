@@ -115,16 +115,28 @@
                         <button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>
                     `;
 
-                    if(e[i].status != 1){
+                    if(e[i].status != 1 && e[i].status != 2){
                         e[i].action = `
                         <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                         `;
                     }
-                    if(e[i].status == 2){
+                    if(e[i].status == 3){
                          e[i].action = `
                             <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
                             <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
                             <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
+                        `;
+                    } else if (e[i].status == 1){
+                        e[i].action = `
+                            <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
+                            <button  class="btn btn-sm me-2 btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
+                                <i class="fa-solid fa-x"></i>
+                            </button>
+                            <button class="btn btn-sm btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Terima"  production_id = "${e[i].production_id}" >
+                                <i class="fa-solid fa-check"></i>
+                            </button>
                         `;
                     }
                     if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
@@ -134,10 +146,12 @@
                     }
 
                     if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Success</span>`;
+                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;
                     } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-primary" style="font-size: 12px">Pending Approval</span>`;
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Success</span>`;
                     } else if (e[i].status == 3){
+                        e[i].status_text = `<span class="badge bg-primary" style="font-size: 12px">Pending Cancel</span>`;
+                    } else if (e[i].status == 4){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Cancel</span>`;
                     }
                 }
@@ -633,6 +647,80 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         },
     });
 });
+
+    $(document).on('click', '.btn_acc_produksi', function(){
+        var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalKonfirmasi(
+            "Apakah yakin ingin Approve produksi ini?",
+            "btn-accept-production"
+        );
+        $('#btn-accept-production').attr("production_id", data.production_id);
+        $('#btn-accept-production').html("Konfirmasi");
+    })
+
+    $(document).on('click', '#btn-accept-production', function(){
+        LoadingButton(this);
+        $.ajax({
+            url:"/accProduction",
+            data:{
+                production_id:$('#btn-accept-production').attr('production_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                if (e!=1){
+                    if (typeof e === "object"){
+                        notifikasi('error', e.header, e.message);
+                        ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                        return false;
+                    } else {
+                        ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
+                    }
+                }
+                else{
+                    ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                    refreshProduction();
+                    $('.modal').modal("hide");
+                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Produksi");
+                }                
+            },
+            error:function(e){
+                console.log(e);
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+            }
+        });
+    })
+
+    $(document).on('click', '.btn_decline_produksi', function(){
+        var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin tolak produksi ini?","btn-decline-production");
+        $('#btn-decline-production').attr("production_id", data.production_id);
+        $('#btn-decline-production').html("Konfirmasi");
+    })
+
+    $(document).on('click', '#btn-decline-production', function(){
+        LoadingButton(this);
+        $.ajax({
+            url:"/declineProduction",
+            data:{
+                production_id:$('#btn-decline-production').attr('production_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                refreshProduction()
+                $('.modal').modal("hide");
+                notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
+                
+            },
+            error:function(e){
+                console.log(e);
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+            }
+        });
+    })
 
 $(document).on('click', '.btn-prev', function(){
     var index = parseInt($('#fotoProduksiImage').attr('index'));

@@ -20,6 +20,7 @@ class Production extends Model
             "production_id" => null
         ], $data);  
 
+        // status: 1 = menunggu approve, 2 = accept, 3 = tolak, 4 = menunggu cancel
         if ($data["report"] == null) $result = Production::where('status', '>=', 1);
         else if ($data["report"]) $result = Production::where('status', '>=', 0);
         if ($data["production_id"]) $result->where('production_id', '=', $data["production_id"]);
@@ -39,7 +40,7 @@ class Production extends Model
             }
         }
 
-        $result->orderByRaw('FIELD(status, 2, 1, 3)')->orderBy('created_at', 'desc');
+        $result->orderByRaw('FIELD(status, 1, 3, 2, 4)')->orderBy('created_at', 'desc');
 
         $result = $result->get();
         foreach ($result as $key => $value) {
@@ -72,20 +73,36 @@ class Production extends Model
     {
         $t = Production::find($data["production_id"]);
         $t->notes = $data["delete_reason"];
-        $t->status = 2;
+        $t->status = 3;
         $t->save();    
     }
+
+    function declineProduction($data)
+    {
+        $t = Production::find($data["production_id"]);
+        $t->notes = $data["delete_reason"];
+        $t->status = 4;
+        $t->save();    
+    }
+
+    function accProduction($data)
+    {
+        $t = Production::find($data["production_id"]);
+        $t->status = 2;
+        $t->save();
+    }
+
     function tolakDeleteProduction($data)
     {
         $t = Production::find($data["production_id"]);
         $t->notes = null;
-        $t->status = 1;
+        $t->status = 2;
         $t->save();    
     }
 
     function cancelProduction($data) {
         $t = Production::find($data['production_id']);
-        $t->status = 3;
+        $t->status = 4;
         $t->save();
     }
 

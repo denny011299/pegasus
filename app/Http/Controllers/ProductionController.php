@@ -345,7 +345,121 @@ class ProductionController extends Controller
             $value['list_bahan'] = json_encode($bahan[$key]);
             (new ProductionDetails())->insertProductionDetail($value);
         }
+        
+        return response()->json([
+            "status" => 1,
+            "message" => "Berhasil"
+        ]);
+    }
+
+    function updateProduction(Request $req) {}
+
+    function deleteProduction(Request $req)
+    {
+        $data = $req->all();
+        (new Production())->deleteProduction($data);
+    }
+
+    function accProduction(Request $req){
+        $data = $req->all();
+        $p = Production::find($data['production_id']);
+        $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();
+
         // --- TAHAP 2: EKSEKUSI REAL (PENGURANGAN & PENAMBAHAN) ---
+        // 1. AGGREGASI: Hitung total kebutuhan bahan mentah dari SEMUA item produksi di awal
+        $aggregatedRequirements = [];
+        foreach ($item as $key => $value) {
+            $qty = 1; // Reset pengali konversi produk untuk setiap item produksi
+            $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
+            if (!isset($bom)) {
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal Insert",
+                    "message" => "Mohon cek kembali resep bahan mentah"
+                ]);
+            }
+
+            // Logika pencarian pengali konversi (BOM vs Input User)
+            if ($bom['unit_id'] != $value['unit_id']){
+                $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
+                    ->where('status', 1)
+                    ->orderBy('pr_id', 'desc')
+                    ->get();
+                if (!isset($pr) || count($pr) <= 0) {
+                    return response()->json([
+                        "status" => 0,
+                        "header" => "Gagal Insert",
+                        "message" => "Mohon masukkan relasi produk terlebih dahulu"
+                    ]);
+                }
+
+                // Pengecekan apakah unit ini ada dalam relasi atau tidak
+                $ada = false;
+                foreach ($pr as $relasi) {
+                    if ($relasi['pr_unit_id_1'] == $value['unit_id'] || $relasi['pr_unit_id_2'] == $value['unit_id']) {
+                        $ada = true;
+                        break;
+                    }
+                }
+                if (!$ada){
+                    return response()->json([
+                        "status" => 0,
+                        "header" => "Gagal Insert",
+                        "message" => "Mohon masukkan relasi produk terlebih dahulu"
+                    ]);
+                }
+
+                foreach ($pr as $relasi) {
+                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
+                        $qty *= $relasi['pr_unit_value_2'];
+                    }
+                }
+            }
+
+            // Masukkan ke dalam array agregat berdasarkan supplies_id
+            foreach ($bom['items'] as $bd) {
+                $id = $bd['supplies_id'];
+                $namaBahan = Supplies::find($id)->supplies_name;
+                $isKemasanBesar = preg_match('/dos|pack/i', $namaBahan);
+
+                if ($isKemasanBesar) {
+                    // RUMUS DOS/PACK (PEMBULATAN KE BAWAH):
+                    // Menggunakan floor() agar sisa produksi yang tidak genap 1 dos tidak dihitung
+                    // Contoh: 38 / 12 = 3.16 -> floor jadi 3
+                    $relasiKonversi = ProductRelation::where('product_variant_id', $value['product_variant_id'])
+                        ->where('pr_unit_id_2', $bom['unit_id']) // Unit dasar resep
+                        ->where('status', 1)
+                        ->first();
+
+                    // Ambil nilai pembagi (misal 12)
+                    $nilaiIsiDos = ($relasiKonversi) ? $relasiKonversi->pr_unit_value_2 : 1;
+
+                    if ($bom['unit_id'] != $value['unit_id']) {
+                        // Jika user input dalam satuan besar (misal Lusin), 
+                        // gunakan $qty yang sudah dihitung di atas (total pcs)
+                        $totalPcs = $value['pd_qty'] * $qty;
+                    } else {
+                        // Jika user input dalam satuan kecil (Pcs)
+                        $totalPcs = $value['pd_qty'];
+                    }
+
+                    // Sekarang baru di-floor berdasarkan isi dos
+                    $jumlahDos = floor($totalPcs / $nilaiIsiDos);
+                    $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
+                } else {
+                    // RUMUS STANDAR (Label, Isi, dll):
+                    $kebutuhanBaris = $bd['bom_detail_qty'] * $value['pd_qty'] * $qty;
+                }
+
+                if (!isset($aggregatedRequirements[$id])) {
+                    $aggregatedRequirements[$id] = [
+                        'total_butuh' => 0,
+                        'details' => $bd // Simpan satu contoh detail untuk referensi
+                    ];
+                }
+                $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
+            }
+        }
         foreach ($item as $key => $value) {
             $qty_konversi_produk = 1; 
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
@@ -473,31 +587,25 @@ class ProductionController extends Controller
 
                     }
             }
-            
-            
         }
-        
 
-        return response()->json([
-            "status" => 1,
-            "message" => "Berhasil"
-        ]);
+        (new Production())->accProduction($data);
+        return 1;
     }
 
-    function updateProduction(Request $req) {}
-
-    function deleteProduction(Request $req)
+    function declineProduction(Request $req)
     {
         $data = $req->all();
-        (new Production())->deleteProduction($data);
-       
+        $data['delete_reason'] = "Tolak Produksi";
+        (new Production())->declineProduction($data);
     }
+
     function tolakDeleteProduction(Request $req)
     {
         $data = $req->all();
         (new Production())->tolakDeleteProduction($data);
-       
     }
+
     function accDeleteProduction(Request $req)
     {
         $data = $req->all();

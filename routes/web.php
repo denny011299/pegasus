@@ -311,6 +311,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/insertProduction', [ProductionController::class, "insertProduction"])->name('insertProduction');
     Route::post('/updateProduction', [ProductionController::class, "updateProduction"])->name('updateProduction');
     Route::post('/deleteProduction', [ProductionController::class, "deleteProduction"])->name('deleteProduction');
+    Route::post('/accProduction', [ProductionController::class, "accProduction"])->name('accProduction');
+    Route::post('/declineProduction', [ProductionController::class, "declineProduction"])->name('declineProduction');
     Route::post('/accDeleteProduction', [ProductionController::class, "accDeleteProduction"])->name('accDeleteProduction');
     Route::post('/tolakDeleteProduction', [ProductionController::class, "tolakDeleteProduction"])->name('tolakDeleteProduction');
     Route::post('/uploadPhotoProduksi', [ProductionController::class, "uploadPhotoProduksi"])->name('uploadPhotoProduksi');
