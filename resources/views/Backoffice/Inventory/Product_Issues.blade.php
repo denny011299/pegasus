@@ -67,6 +67,7 @@
                                                     <th>Tanggal Pengembalian</th>
                                                     <th>Kode</th>
                                                     <th>Catatan</th>
+                                                    <th>Status</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>
@@ -85,6 +86,7 @@
                                                     <th>Kode</th>
                                                     <th>Referensi</th>
                                                     <th>Catatan</th>
+                                                    <th>Status</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>

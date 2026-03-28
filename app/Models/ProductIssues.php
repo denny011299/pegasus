@@ -21,7 +21,7 @@ class ProductIssues extends Model
             "tipe_return"=>null,//default = product
         ], $data);
 
-        $result = self::where('status', '=', 1);
+        $result = self::where('status', '>=', 1);
         if($data["pi_type"])$result->where('pi_type','=',$data["pi_type"]);
         if($data["tipe_return"])$result->where('tipe_return','=',$data["tipe_return"]);
         
@@ -40,7 +40,7 @@ class ProductIssues extends Model
             }
         }
 
-        $result->orderBy('created_at', 'asc');
+        $result->orderBy('status', 'asc')->orderBy('created_at', 'desc');
        
         $result = $result->get();
         foreach ($result as $key => $value) {
@@ -96,7 +96,8 @@ class ProductIssues extends Model
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];    
         $t->tipe_return = $data["tipe_return"];     
-        $t->pi_img = $data["pi_img"] ?? null; 
+        $t->pi_img = $data["pi_img"] ?? null;
+        $t->status = $data['status'] ?? 1;
         // $t->pi_qty = $data["pi_qty"];   
         // $t->product_variant_id = $data["product_variant_id"];
         // $t->unit_id = $data["unit_id"]; 
@@ -147,6 +148,7 @@ class ProductIssues extends Model
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];
         $t->tipe_return = $data["tipe_return"];
+        $t->status = $data['status'] ?? 1;
         if (isset($data['pi_img'])) $t->pi_img = $data["pi_img"];
         // $t->pi_qty = $data["pi_qty"];   
         // $t->product_variant_id = $data["product_variant_id"];
@@ -179,6 +181,18 @@ class ProductIssues extends Model
         //     $s->ps_stock -= $t->pi_qty;
         // }
         // $s->save();
+    }
+
+    function accProductIssues($data){
+        $pi = ProductIssues::find($data['pi_id']);
+        $pi->status = 2;
+        $pi->save();
+    }
+
+    function declineProductIssues($data){
+        $pi = ProductIssues::find($data['pi_id']);
+        $pi->status = 3;
+        $pi->save();
     }
 
     function generateProductIssueID()

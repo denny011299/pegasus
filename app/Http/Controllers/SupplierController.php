@@ -648,6 +648,7 @@ class SupplierController extends Controller
             "pi_notes" => "Retur tambahan dari Pembelian " . $po->po_number,
             "tipe_return" => 1,
             "po_id" => $po->po_id,
+            "status" => 2,
         ]);
 
         $data['pi_id'] = $pi->pi_id;
@@ -687,6 +688,7 @@ class SupplierController extends Controller
             $value['pid_id'] = $pid_id;
             (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
         }
+        
 
         return 1;
     }

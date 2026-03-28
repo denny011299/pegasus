@@ -120,6 +120,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/insertProductIssues', [StockController::class, "insertProductIssue"])->name('insertProductIssue');
     Route::post('/updateProductIssues', [StockController::class, "updateProductIssue"])->name('updateProductIssue');
     Route::post('/deleteProductIssues', [StockController::class, "deleteProductIssue"])->name('deleteProductIssue');
+    Route::post('/accProductIssues', [StockController::class, "accProductIssues"])->name('accProductIssues');
+    Route::post('/declineProductIssues', [StockController::class, "declineProductIssues"])->name('declineProductIssues');
 
     Route::get('/inwardOutward',[ReportController::class,"InwardOutward"])->name('inwardOutward');
     Route::get('/getInwardOutward',[ReportController::class,"getInwardOutward"])->name('getInwardOutward');

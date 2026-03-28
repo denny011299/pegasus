@@ -47,6 +47,10 @@
             width: 100% !important;
         }
 
+        #po_supplier + .select2-container {
+            width: 100% !important;
+        }
+
     </style>
 @endsection
 @section('content')

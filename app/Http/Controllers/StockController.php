@@ -476,6 +476,7 @@ class StockController extends Controller
 
         if ($data['tipe_return'] == 1){
             $bermasalah = [];
+            $kurang = [];
             foreach (json_decode($data['items'], true) as $key => $value) { 
                 // Pengecekan invoice
                 if (isset($data['ref_num'])){
@@ -487,6 +488,9 @@ class StockController extends Controller
                     foreach ($pod as $key => $detail) {
                         if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
                             $ada = 1;
+                            if (($detail['pod_qty'] - $value['pid_qty']) < 0){
+                                array_push($kurang, $value['supplies_name']);
+                            }
                         }
                     }
                     if ($ada == -1) {
@@ -498,6 +502,12 @@ class StockController extends Controller
                 return [
                     "status"=>-1,
                     "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
+                ];
+            }
+            if (count($kurang) > 0) {
+                return [
+                    "status"=>-1,
+                    "message"=>"Stok dalam invoice tidak mencukupi : ".implode(", ",$kurang)
                 ];
             }
     
@@ -516,36 +526,6 @@ class StockController extends Controller
             $value['pi_id'] = $t->pi_id;
             if (isset($t->ref_num)) $value['ref_num'] = $t->ref_num;
             (new ProductIssuesDetail())->insertProductIssuesDetail($value);
-
-            // Catat Log
-            $logNotes = "";
-            $logCategory = 0;
-            $logType = 0;
-            $itemId = 0;
-            if ($t->tipe_return == 1){
-                $sup = SuppliesVariant::find($value['supplies_variant_id']);
-                $spr = Supplier::find($sup->supplier_id);
-                $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name;
-                $logCategory = 2;
-                $logType = 2;
-
-                $itemId = $sup->supplies_id;
-            } elseif ($t->tipe_return == 2){
-                $logNotes = 'Produk bermasalah retur Armada';
-                $logCategory = 1;
-                $logType = 1;
-                $itemId = $value['product_variant_id'];
-            }
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $t->pi_code,
-                'log_type'    => $logType,
-                'log_category' => $logCategory,
-                'log_item_id' => $itemId,
-                'log_notes'  => $logNotes,
-                'log_jumlah' => $value['pid_qty'],
-                'unit_id'    => $value['unit_id'],
-            ]);
         }
     }
 
@@ -911,6 +891,129 @@ class StockController extends Controller
                 'unit_id'    => $value['unit_id'],
             ]);
         }
+    }
+
+    function accProductIssues(Request $req){
+        $data = $req->all();
+        $pi = ProductIssues::find($data['pi_id']);
+        $item = ProductIssuesDetail::where('pi_id', $data['pi_id'])->where('status', 1)->get();
+        foreach ($item as $key => $value) {
+            $itemId = 0;
+            // Return to Supplier
+            if ($pi->tipe_return == 1){
+                $itemId = $value['item_id'];
+                $m = SuppliesVariant::find($itemId);
+                $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$value["unit_id"])->first();
+                
+                // Cek dari retur pembelian, apakah ada barang yang dibeli dari invoice ini
+                if ($pi['ref_num'] != 0){
+                    $inv = PurchaseOrderDetailInvoice::find($pi['ref_num']);
+                }
+                $po = PurchaseOrder::find(!isset($inv) ? $pi['po_id'] : $inv->po_id);
+                $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
+
+                // pengurangan qty stok
+                $stocks = $s->ss_stock ?? 0;
+                if ($stocks - $value["pid_qty"] >= 0) {
+                    $stocks -= $value["pid_qty"];
+                } else {
+                    return -1;
+                }
+
+                // pengurangan qty invoice
+                $total = 0;
+                foreach ($pod as $key => $val) {
+                    // Kalau retur pembelian tidak perlu potong stok PO
+                    if (!isset($data['retur_pembelian'])){
+                        if ($value['item_id'] == $val['supplies_variant_id'] && $value['unit_id'] == $val['unit_id']){
+                            $val['pod_qty'] -= $value['pid_qty'];
+                            $val['pod_subtotal'] = $val['pod_harga'] * $val['pod_qty'];
+                            $val->save();
+                        }
+                    }
+                    $total += $val['pod_subtotal'];
+                }
+                if ($po->jenis_discount == "persen"){
+                    $total -= $total * $po->po_discount/100;
+                } else {
+                    $total -= $po->po_discount;
+                }
+                $total += $total * $po->po_ppn/100;
+                $total += $po->po_cost;
+
+                $data_retur = ReturnSupplies::where('po_id', !isset($inv) ? $pi['po_id'] : $inv->po_id)->where('status', 1)->get();
+                $total_retur = 0;
+                if ($data_retur){
+                    foreach ($data_retur as $key => $dr) {
+                        $total_retur += $dr->rs_total;
+                    }
+                    if (isset($pi['total_retur'])) $total -= $pi['total_retur'];
+                    else $total -= $total_retur;
+                }
+
+                if (isset($inv)){
+                    $inv->poi_total = $total;
+                    $inv->save();
+                }
+                $po->po_total = $total;
+                $po->save();
+
+                $s->ss_stock = $stocks;
+                $m->save();
+                $s->save();
+            }
+
+            // Return from customer 
+            else{
+                $itemId = $value["item_id"];
+                $m = ProductVariant::find($itemId);
+                $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$value["unit_id"])->first();
+                
+                $stocks = $s->ps_stock ?? 0;
+                $stocks += $value["pid_qty"];
+
+                $s->ps_stock = $stocks;
+                $m->save();
+                $s->save();
+            }
+            // Catat Log
+            $logNotes = "";
+            $logCategory = 0;
+            $logType = 0;
+            $itemId = 0;
+            if ($pi->tipe_return == 1){
+                $sup = SuppliesVariant::find($value['item_id']);
+                $spr = Supplier::find($sup->supplier_id);
+                $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name;
+                $logCategory = 2;
+                $logType = 2;
+
+                $itemId = $sup->supplies_id;
+            } elseif ($pi->tipe_return == 2){
+                $logNotes = 'Produk bermasalah retur Armada';
+                $logCategory = 1;
+                $logType = 1;
+                $itemId = $value['item_id'];
+            }
+            (new LogStock())->insertLog([
+                'log_date' => now(),
+                'log_kode'    => $pi->pi_code,
+                'log_type'    => $logType,
+                'log_category' => $logCategory,
+                'log_item_id' => $itemId,
+                'log_notes'  => $logNotes,
+                'log_jumlah' => $value['pid_qty'],
+                'unit_id'    => $value['unit_id'],
+            ]);
+
+            (new ProductIssues())->accProductIssues($data);
+            return 1;
+        }
+    }
+
+    function declineProductIssues(Request $req){
+        $data = $req->all();
+        (new ProductIssues())->declineProductIssues($data);
     }
 
     // Manage Stock
