@@ -81,6 +81,7 @@
                 var credits1 = 0;
                 var credits2 = 0;
                 var sisa = 0;
+                var setor = 0;
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].cash_date).format('D MMM YYYY');
                     if (e[i].cash_type == 1) {
@@ -110,6 +111,8 @@
                         if (e[i].status == 2) {
                             if (e[i].cash_tujuan != 4) {
                                 sisa -= e[i].cash_nominal;
+                            } else {
+                                setor += e[i].cash_nominal;
                             }
                             credits2 += e[i].cash_nominal;
                         }
@@ -144,6 +147,7 @@
                 $('.credits1').html(`(Rp ${formatRupiahMinus(credits1)})`);
                 $('.credits2').html(`(Rp ${formatRupiahMinus(credits2)})`);
                 $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
+                $('.setor').html(`Rp ${formatRupiahMinus(setor)}`);
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
 

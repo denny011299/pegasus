@@ -99,7 +99,8 @@
                                         <tr>
                                             <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
-                                            <td colspan="2"></td>
+                                            <td class="fw-bold text-end">Total Setoran : </td>
+                                            <td class="fw-bold text-end setor">Rp 0</td>
                                         </tr>
                                     </tfoot>
                                 </table>
