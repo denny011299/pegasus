@@ -238,7 +238,7 @@ class ReportController extends Controller
                 $type = 1;
                 $nominal = $data['ca_nominal'];
                 if ($data['ca_nominal'] < 0) {
-                    $type = 3;
+                    $type = 2;
                     $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
                 }
                 $cash_id = (new Cash())->insertCash([
@@ -336,7 +336,7 @@ class ReportController extends Controller
                 $type = 1;
                 $nominal = $data['ca_nominal'];
                 if ($data['ca_nominal'] < 0) {
-                    $type = 3;
+                    $type = 2;
                     $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
                 }
                 $cash_id = (new Cash())->updateCash([
@@ -460,7 +460,7 @@ class ReportController extends Controller
                 $type = 1;
                 $nominal = $data['cg_nominal'];
                 if ($data['cg_nominal'] < 0) {
-                    $type = 3;
+                    $type = 2;
                     $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
                 }
                 $cash_id = (new Cash())->insertCash([
@@ -556,7 +556,7 @@ class ReportController extends Controller
                 $type = 1;
                 $nominal = $data['cg_nominal'];
                 if ($data['cg_nominal'] < 0) {
-                    $type = 3;
+                    $type = 2;
                     $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
                 }
                 $cash_id = (new Cash())->updateCash([
@@ -699,7 +699,7 @@ class ReportController extends Controller
             $type = 1;
             $nominal = $data['cr_nominal'];
             if ($data['cr_nominal'] < 0) {
-                $type = 3;
+                $type = 2;
                 $nominal = $data['cr_nominal'] - ($data['cr_nominal'] * 2);
             }
             
@@ -755,7 +755,7 @@ class ReportController extends Controller
             $type = 1;
             $nominal = $data['cr_nominal'];
             if ($data['cr_nominal'] < 0) {
-                $type = 3;
+                $type = 2;
                 $nominal = $data['cr_nominal'] - ($data['cr_nominal'] * 2);
             }
             $cash_id = (new Cash())->updateCash([
@@ -931,7 +931,7 @@ class ReportController extends Controller
                 $type = 1;
                 $nominal = $data['cs_nominal'];
                 if ($data['cs_nominal'] < 0) {
-                    $type = 3;
+                    $type = 2;
                     $nominal = $data['cs_nominal'] - ($data['cs_nominal'] * 2);
                 }
 

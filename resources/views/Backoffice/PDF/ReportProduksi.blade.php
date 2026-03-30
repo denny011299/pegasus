@@ -216,13 +216,13 @@
                         if (!isset($allQty[$unit])) $allQty[$unit] = 0;
                         $allQty[$unit] += (int)($d['qty'] ?? 0);
 
-                        if ((int)($d['status'] ?? 0) === 1) {
+                        if ((int)($d['status'] ?? 0) === 2) {
                             $successCount++;
                             if (!isset($successQty[$unit])) $successQty[$unit] = 0;
                             $successQty[$unit] += (int)($d['qty'] ?? 0);
                         }
 
-                        if ((int)($d['status'] ?? 0) === 3) {
+                        if ((int)($d['status'] ?? 0) === 4) {
                             $rejectCount++;
                             if (!isset($rejectQty[$unit])) $rejectQty[$unit] = 0;
                             $rejectQty[$unit] += (int)($d['qty'] ?? 0);
@@ -262,10 +262,12 @@
                                         <td class="text-right">{{ $d['qty'] ?? 0 }} {{ $d['unit_name'] ?? '' }}</td>
                                         <td class="text-center">
                                             @if((int)($d['status'] ?? 0) === 1)
-                                                <span class="status-text">SELESAI</span>
+                                                <span class="status-text" style="color:#7a7a7a;border-color:#7a7a7a;">PENDING</span>
                                             @elseif((int)($d['status'] ?? 0) === 2)
-                                                <span class="status-text" style="color:#2563eb;border-color:#2563eb;">PENDING</span>
+                                                <span class="status-text">SELESAI</span>
                                             @elseif((int)($d['status'] ?? 0) === 3)
+                                                <span class="status-text" style="color:#2563eb;border-color:#2563eb;">PENDING TOLAK</span>
+                                            @elseif((int)($d['status'] ?? 0) === 4)
                                                 <span class="status-text" style="color:#dc2626;border-color:#dc2626;">DITOLAK</span>
                                             @else
                                                 <span class="font-normal text-gray">-</span>

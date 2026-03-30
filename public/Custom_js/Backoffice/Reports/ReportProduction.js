@@ -52,9 +52,10 @@
     }
 
     function getStatusBadge(status) {
-        if (status == 1) return `<span class="badge bg-success">Selesai</span>`;
-        if (status == 2) return `<span class="badge bg-primary">Pending Approval</span>`;
-        if (status == 3) return `<span class="badge bg-danger">Ditolak</span>`;
+        if (status == 1) return `<span class="badge bg-secondary">Pending Approval</span>`;
+        if (status == 2) return `<span class="badge bg-success">Selesai</span>`;
+        if (status == 3) return `<span class="badge bg-primary">Pending Cancel</span>`;
+        if (status == 4) return `<span class="badge bg-danger">Ditolak</span>`;
         return `<span class="badge bg-secondary">-</span>`;
     }
 
@@ -65,9 +66,9 @@
         for (let i = 0; i < details.length; i++) {
             let d = details[i];
             let status = parseInt(d.status);
-            if (mode === "success" && status !== 1) continue;
-            if (mode === "reject" && status !== 3) continue;
-            if (mode === "all" && !(status === 1 || status === 2 || status === 3)) continue;
+            if (mode === "success" && status !== 2) continue;
+            if (mode === "reject" && status !== 4) continue;
+            if (mode === "all" && !(status === 1 || status === 2 || status === 3 || status === 4)) continue;
 
             let unitName = (d.unit_name || '').toString().trim();
             if (unitName === '') unitName = 'unit';
@@ -161,8 +162,8 @@
                         totalCount = e[i].details.length;
                         for (let j = 0; j < e[i].details.length; j++) {
                             let s = parseInt(e[i].details[j].status);
-                            if (s === 1) successCount += 1;
-                            if (s === 3) rejectCount += 1;
+                            if (s === 2) successCount += 1;
+                            if (s === 4) rejectCount += 1;
                         }
                     }
 
