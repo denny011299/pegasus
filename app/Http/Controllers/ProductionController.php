@@ -20,6 +20,8 @@ use GuzzleHttp\Psr7\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile as HttpUploadedFile;
 
+use function Termwind\parse;
+
 class ProductionController extends Controller
 {
     // BOM
@@ -103,6 +105,7 @@ class ProductionController extends Controller
     function getProduction(Request $req)
     {
         $data = (new Production())->getProduction([
+            "created_at" => $req->created_at,
             "date" => $req->date,
             "report" => $req->report ? $req->report : null
         ]);
@@ -501,7 +504,7 @@ class ProductionController extends Controller
                         $stokFinal->save();
                         // Pencatatan Log
                         (new LogStock())->insertLog([
-                            'log_date' => now(),
+                            'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                             'log_kode' => $p->production_code,
                             'log_type' => 2,
                             'log_category' => 2,
@@ -548,7 +551,8 @@ class ProductionController extends Controller
                         $ps_belakang->ps_stock += $sisa;
                         $ps_belakang->save();
                         (new LogStock())->insertLog([
-                            'log_date' => now(), 'log_kode' => $p->production_code,
+                            'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                            'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 1,
                             'log_item_id' => $value["product_variant_id"],
                             'log_notes' => "Hasil Produksi Produk",
@@ -557,7 +561,8 @@ class ProductionController extends Controller
                         
                         if($sisa>0){
                             (new LogStock())->insertLog([
-                                'log_date' => now(), 'log_kode' => $p->production_code,
+                                'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                                'log_kode' => $p->production_code,
                                 'log_type' => 1, 'log_category' => 1,
                                 'log_item_id' => $value["product_variant_id"],
                                 'log_notes' => "Hasil Produksi Produk",
@@ -577,7 +582,8 @@ class ProductionController extends Controller
                         $v->save();
 
                         (new LogStock())->insertLog([
-                            'log_date' => now(), 'log_kode' => $p->production_code,
+                            'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                            'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 1,
                             'log_item_id' => $value["product_variant_id"],
                             'log_notes' => "Hasil Produksi Produk",
