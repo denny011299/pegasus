@@ -165,9 +165,6 @@
                             data-bs-placement="bottom" title="Detail Pembelian">
                                 <i class="fe fe-dollar-sign"></i>
                             </a>
-                            <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                            </a>
                         `;
                     } else {
                         if (item.status == 1){
