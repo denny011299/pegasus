@@ -17,13 +17,15 @@ class Production extends Model
         $data = array_merge([
             "date" => null,
             "report" => null,
-            "production_id" => null
+            "production_id" => null,
+            "created_at" => null
         ], $data);  
 
         // status: 1 = menunggu approve, 2 = accept, 3 = tolak, 4 = menunggu cancel
         if ($data["report"] == null) $result = Production::where('status', '>=', 1);
         else if ($data["report"]) $result = Production::where('status', '>=', 0);
         if ($data["production_id"]) $result->where('production_id', '=', $data["production_id"]);
+        if ($data['created_at']) $result->whereDate('created_at', $data['created_at']);
         
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {

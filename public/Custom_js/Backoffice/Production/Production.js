@@ -99,7 +99,7 @@
             url: "/getProduction",
             method: "get",
             data:{
-                "date":$('#date_production').val()
+                "created_at":$('#date_production').val()
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -127,6 +127,7 @@
                             <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
                         `;
                     } else if (e[i].status == 1){
+                        console.log("masuk")
                         e[i].action = `
                             <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                             <button  class="btn btn-sm me-2 btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
@@ -139,7 +140,7 @@
                             </button>
                         `;
                     }
-                    if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
+                    if(moment(e[i].created_at).isBefore(moment().format('YYYY-MM-DD'))){
                         e[i].action = `
                             <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                         `;
