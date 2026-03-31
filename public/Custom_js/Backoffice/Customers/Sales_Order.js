@@ -4,7 +4,7 @@
     var list_photo;
     autocompleteCustomer('#so_customer', "#add_sales_order");
     autocompleteStaffSales('#sales_id', "#add_sales_order");
-    autocompleteProductVariant('#so_sku', "#add_sales_order");
+    autocompleteProductVariantOnly('#so_sku', "#add_sales_order");
     $(document).ready(function(){
         initSalesOrderProductInput();
         inisialisasi();
