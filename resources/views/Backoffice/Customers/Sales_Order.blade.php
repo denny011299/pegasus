@@ -52,6 +52,21 @@
 @endsection
 
 @section('custom_js')
+    <style>
+        /* Khusus modal Sales Order: body tabel scroll, header tetap terlihat */
+        #add_sales_order .col-12.overflow-x-auto.mb-3 {
+            max-height: 320px;
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+
+        #add_sales_order .col-12.overflow-x-auto.mb-3 thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #dce8f6;
+        }
+    </style>
     <script>
         var public = "{{ asset('') }}";    
     </script>
