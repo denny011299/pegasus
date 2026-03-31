@@ -516,13 +516,17 @@ class ProductionController extends Controller
 
             // 3. PENAMBAHAN PRODUK JADI (Sama seperti sebelumnya)
             $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                ->where("unit_id", $unitIdInputUser)->first();
+                ->where("unit_id", $unitIdInputUser)
+                ->where("status", 1)
+                ->first();
             
             if(!$v){
                 $pv = ProductVariant::find($value["product_variant_id"]);
                 (new ProductStock())->syncStock($pv->product_id);
                 $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id", $unitIdInputUser)->first();
+                    ->where("unit_id", $unitIdInputUser)
+                    ->where("status", 1)
+                    ->first();
             }
             $jumlahTambah = (int)($value['pd_qty'] * $bom->bom_qty);
             if ($v && $v->unit_id == $unitIdInputUser) {
@@ -538,13 +542,17 @@ class ProductionController extends Controller
                         $sisa = $jumlahTambah%$r->pr_unit_value_2;
                         //sekarang kita tambah yang awal dulu
                         $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                        ->where("unit_id",$r->pr_unit_id_1)->first();
+                        ->where("unit_id",$r->pr_unit_id_1)
+                        ->where("status", 1)
+                        ->first();
                         $ps_depan->ps_stock += $tambah;
                         $ps_depan->save();
 
                         //sekarang kita tambah yang belakang 
                         $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                        ->where("unit_id",$r->pr_unit_id_2)->first();
+                        ->where("unit_id",$r->pr_unit_id_2)
+                        ->where("status", 1)
+                        ->first();
                         $ps_belakang->ps_stock += $sisa;
                         $ps_belakang->save();
                         (new LogStock())->insertLog([
@@ -622,7 +630,9 @@ class ProductionController extends Controller
             $b = Bom::find($value['bom_id']);
             $cek = -1;
             $stok = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
-                    ->where("unit_id", "=", $value['unit_id'])->first();
+                    ->where("unit_id", "=", $value['unit_id'])
+                    ->where("status", 1)
+                    ->first();
                     
             // Cek kalau satuan terkecil, brarti convert ke satuan terbesar dulu & kalau ada relasi
             $r = ProductRelation::where('pr_unit_id_2', '=', $value["unit_id"])
@@ -633,7 +643,9 @@ class ProductionController extends Controller
                 $sisa = $jumlahTambah%$r->pr_unit_value_2;
                 if ($stok->ps_stock - $sisa < 0) {
                     $stok_depan = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
-                        ->where("unit_id", "=", $r->pr_unit_id_1)->first();   
+                        ->where("unit_id", "=", $r->pr_unit_id_1)
+                        ->where("status", 1)
+                        ->first();   
                     if($stok_depan->ps_stock>0&&($stok_depan->ps_stock * $r->pr_unit_value_2) - $jumlahTambah>=0){
                         $round = 0;
                         while ($stok->ps_stock - $sisa < 0) {
@@ -687,12 +699,16 @@ class ProductionController extends Controller
                     $sisa = $jumlahTambah%$r->pr_unit_value_2;
                    
                     $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id",$r->pr_unit_id_1)->first();
+                    ->where("unit_id",$r->pr_unit_id_1)
+                    ->where("status", 1)
+                    ->first();
                     $ps_depan->ps_stock -= $tambah;
                     $ps_depan->save();
 
                     $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id",$r->pr_unit_id_2)->first();
+                    ->where("unit_id",$r->pr_unit_id_2)
+                    ->where("status", 1)
+                    ->first();
                     $ps_belakang->ps_stock -= $sisa;
                     $ps_belakang->save();
 
@@ -716,7 +732,9 @@ class ProductionController extends Controller
                 }
                 else {
                     $v = ProductStock::where("product_variant_id", "=", $value["product_variant_id"])
-                    ->where("unit_id", "=", $value["unit_id"])->first();
+                    ->where("unit_id", "=", $value["unit_id"])
+                    ->where("status", 1)
+                    ->first();
                     $v->ps_stock -= intval($value['pd_qty']) * $b->bom_qty;
                     $v->save();
 
@@ -731,7 +749,9 @@ class ProductionController extends Controller
             }
             else{
                 $v = ProductStock::where("product_variant_id", "=", $value["product_variant_id"])
-                    ->where("unit_id", "=", $value["unit_id"])->first();
+                    ->where("unit_id", "=", $value["unit_id"])
+                    ->where("status", 1)
+                    ->first();
                 $v->ps_stock -= intval($value['pd_qty']) * $b->bom_qty;
                 $v->save();
 
