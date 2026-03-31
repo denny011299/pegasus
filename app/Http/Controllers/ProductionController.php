@@ -463,6 +463,41 @@ class ProductionController extends Controller
                 $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
             }
         }
+        // 2. PENGURANGAN BAHAN (SUPPLIES) - jalankan sekali per approval produksi
+        foreach ($aggregatedRequirements as $suppliesId => $butuh) {
+            $butuhTersedia = (float)$butuh['total_butuh'];
+            if ($butuhTersedia <= 0) continue;
+
+            $stokFinal = SuppliesStock::where('supplies_id', $suppliesId)
+                ->where('status', 1)
+                ->orderBy('ss_id', 'desc')->first();
+
+            if ($stokFinal) {
+                $l = LogStock::where('log_kode', '=', $p->production_code)
+                    ->where('log_type', '=', 2)
+                    ->where('log_category', '=', 2)
+                    ->where('log_item_id', '=', $suppliesId)
+                    ->where('unit_id', '=', $stokFinal->unit_id)
+                    ->first();
+
+                if (!$l) {
+                    $stokFinal->ss_stock -= $butuhTersedia;
+                    $stokFinal->save();
+
+                    (new LogStock())->insertLog([
+                        'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                        'log_kode' => $p->production_code,
+                        'log_type' => 2,
+                        'log_category' => 2,
+                        'log_item_id' => $suppliesId,
+                        'log_notes' => "Pengurangan bahan untuk produksi",
+                        'log_jumlah' => $butuhTersedia,
+                        'unit_id' => $stokFinal->unit_id,
+                    ]);
+                }
+            }
+        }
+
         foreach ($item as $key => $value) {
             $qty_konversi_produk = 1; 
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
@@ -475,44 +510,6 @@ class ProductionController extends Controller
                 foreach ($pr as $r) {
                     if ($r['pr_unit_id_2'] != $unitIdInputUser) {
                         $qty_konversi_produk *= $r['pr_unit_value_2'];
-                    }
-                }
-            }
-
-            // 2. PENGURANGAN BAHAN (SUPPLIES)
-            foreach ($aggregatedRequirements as $suppliesId => $butuh) {
-                
-                $butuhTersedia = (float)$butuh['total_butuh'];
-                if ($butuhTersedia <= 0) continue;
-
-                // 1. Eksekusi Pengurangan Stok Utama (Hasil Agregasi)
-                $stokFinal = SuppliesStock::where('supplies_id', $suppliesId)
-                    ->where('status', 1)
-                    ->orderBy('ss_id', 'desc')->first();
-
-                if ($stokFinal) {
-                    
-                    $l = LogStock::where('log_kode','=', $p->production_code)
-                    ->where('log_type','=',2)
-                    ->where('log_category','=',2)
-                    ->where('log_item_id','=',$suppliesId)
-                    ->where('unit_id','=',$stokFinal->unit_id)
-                    ->first();
-
-                    if(!$l){
-                        $stokFinal->ss_stock -= $butuhTersedia; 
-                        $stokFinal->save();
-                        // Pencatatan Log
-                        (new LogStock())->insertLog([
-                            'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
-                            'log_kode' => $p->production_code,
-                            'log_type' => 2,
-                            'log_category' => 2,
-                            'log_item_id' => $suppliesId,
-                            'log_notes' => "Pengurangan bahan untuk produksi",
-                            'log_jumlah' => $butuhTersedia, 
-                            'unit_id' => $stokFinal->unit_id,
-                        ]);
                     }
                 }
             }
