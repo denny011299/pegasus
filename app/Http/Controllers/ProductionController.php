@@ -10,6 +10,7 @@ use App\Models\ProductionDetails;
 use App\Models\ProductionPhoto;
 use App\Models\ProductRelation;
 use App\Models\ProductStock;
+use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
 use App\Models\SuppliesRelation;
@@ -119,6 +120,7 @@ class ProductionController extends Controller
         $bahan = json_decode($req->list_bahan, true);
         $cek = -1;
         $bahan_kurang = [];
+        $produk_tanpa_relasi = [];
         $qty = 1;
         // 1. AGGREGASI: Hitung total kebutuhan bahan mentah dari SEMUA item produksi di awal
         $aggregatedRequirements = [];
@@ -140,11 +142,15 @@ class ProductionController extends Controller
                     ->orderBy('pr_id', 'desc')
                     ->get();
                 if (!isset($pr) || count($pr) <= 0) {
-                    return response()->json([
-                        "status" => 0,
-                        "header" => "Gagal Insert",
-                        "message" => "Mohon masukkan relasi produk terlebih dahulu"
-                    ]);
+                    $pv = ProductVariant::find($value['product_variant_id']);
+                    $namaProduk = "-";
+                    if ($pv) {
+                        $prName = Product::find($pv['product_id']);
+                        $namaProduk = trim(($prName->product_name ?? "") . " " . ($pv['product_variant_name'] ?? ""));
+                        if ($namaProduk === "") $namaProduk = $pv['product_variant_name'] ?? "-";
+                    }
+                    if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
+                    continue;
                 }
 
                 // Pengecekan apakah unit ini ada dalam relasi atau tidak
@@ -156,11 +162,15 @@ class ProductionController extends Controller
                     }
                 }
                 if (!$ada){
-                    return response()->json([
-                        "status" => 0,
-                        "header" => "Gagal Insert",
-                        "message" => "Mohon masukkan relasi produk terlebih dahulu"
-                    ]);
+                    $pv = ProductVariant::find($value['product_variant_id']);
+                    $namaProduk = "-";
+                    if ($pv) {
+                        $prName = Product::find($pv['product_id']);
+                        $namaProduk = trim(($prName->product_name ?? "") . " " . ($pv['product_variant_name'] ?? ""));
+                        if ($namaProduk === "") $namaProduk = $pv['product_variant_name'] ?? "-";
+                    }
+                    if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
+                    continue;
                 }
 
                 foreach ($pr as $p) {
@@ -213,6 +223,14 @@ class ProductionController extends Controller
                 }
                 $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
             }
+        }
+
+        if (count($produk_tanpa_relasi) > 0) {
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal Insert",
+                "message" => "Mohon masukkan relasi produk: " . implode(", ", $produk_tanpa_relasi)
+            ]);
         }
 
         // 2. PROCESSING: Eksekusi Konversi Stok (Bongkar Satuan Besar) berdasarkan total agregat
@@ -371,7 +389,37 @@ class ProductionController extends Controller
     function accProduction(Request $req){
         $data = $req->all();
         $p = Production::find($data['production_id']);
+        if (!$p) {
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal Update",
+                "message" => "Data produksi tidak ditemukan"
+            ]);
+        }
+        // Idempotent guard: hanya proses produksi yang masih menunggu approval.
+        if ((int)$p->status !== 1) {
+            return response()->json([
+                "status" => 0,
+                "header" => "Sudah Diproses",
+                "message" => "Produksi ini sudah diproses sebelumnya"
+            ]);
+        }
         $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();
+        $produk_tanpa_relasi = [];
+
+        $insertProductLogOnce = function($payload) use ($p) {
+            $exists = LogStock::where('log_kode', '=', $p->production_code)
+                ->where('log_type', '=', $payload['log_type'])
+                ->where('log_category', '=', $payload['log_category'])
+                ->where('log_item_id', '=', $payload['log_item_id'])
+                ->where('unit_id', '=', $payload['unit_id'])
+                ->where('log_jumlah', '=', $payload['log_jumlah'])
+                ->where('log_notes', '=', $payload['log_notes'])
+                ->exists();
+            if (!$exists) {
+                (new LogStock())->insertLog($payload);
+            }
+        };
 
         // --- TAHAP 2: EKSEKUSI REAL (PENGURANGAN & PENAMBAHAN) ---
         // 1. AGGREGASI: Hitung total kebutuhan bahan mentah dari SEMUA item produksi di awal
@@ -394,11 +442,15 @@ class ProductionController extends Controller
                     ->orderBy('pr_id', 'desc')
                     ->get();
                 if (!isset($pr) || count($pr) <= 0) {
-                    return response()->json([
-                        "status" => 0,
-                        "header" => "Gagal Insert",
-                        "message" => "Mohon masukkan relasi produk terlebih dahulu"
-                    ]);
+                    $pv = ProductVariant::find($value['product_variant_id']);
+                    $namaProduk = "-";
+                    if ($pv) {
+                        $prName = Product::find($pv['product_id']);
+                        $namaProduk = trim(($prName->product_name ?? "") . " " . ($pv['product_variant_name'] ?? ""));
+                        if ($namaProduk === "") $namaProduk = $pv['product_variant_name'] ?? "-";
+                    }
+                    if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
+                    continue;
                 }
 
                 // Pengecekan apakah unit ini ada dalam relasi atau tidak
@@ -410,11 +462,15 @@ class ProductionController extends Controller
                     }
                 }
                 if (!$ada){
-                    return response()->json([
-                        "status" => 0,
-                        "header" => "Gagal Insert",
-                        "message" => "Mohon masukkan relasi produk terlebih dahulu"
-                    ]);
+                    $pv = ProductVariant::find($value['product_variant_id']);
+                    $namaProduk = "-";
+                    if ($pv) {
+                        $prName = Product::find($pv['product_id']);
+                        $namaProduk = trim(($prName->product_name ?? "") . " " . ($pv['product_variant_name'] ?? ""));
+                        if ($namaProduk === "") $namaProduk = $pv['product_variant_name'] ?? "-";
+                    }
+                    if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
+                    continue;
                 }
 
                 foreach ($pr as $relasi) {
@@ -467,6 +523,14 @@ class ProductionController extends Controller
                 }
                 $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
             }
+        }
+
+        if (count($produk_tanpa_relasi) > 0) {
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal Insert",
+                "message" => "Mohon masukkan relasi produk: " . implode(", ", $produk_tanpa_relasi)
+            ]);
         }
         // 2. PENGURANGAN BAHAN (SUPPLIES) - jalankan sekali per approval produksi
         foreach ($aggregatedRequirements as $suppliesId => $butuh) {
@@ -560,7 +624,7 @@ class ProductionController extends Controller
                         ->first();
                         $ps_belakang->ps_stock += $sisa;
                         $ps_belakang->save();
-                        (new LogStock())->insertLog([
+                        $insertProductLogOnce([
                             'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                             'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 1,
@@ -570,7 +634,7 @@ class ProductionController extends Controller
                         ]);
                         
                         if($sisa>0){
-                            (new LogStock())->insertLog([
+                            $insertProductLogOnce([
                                 'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                                 'log_kode' => $p->production_code,
                                 'log_type' => 1, 'log_category' => 1,
@@ -591,7 +655,7 @@ class ProductionController extends Controller
                         $v->ps_stock += $jumlahTambah;
                         $v->save();
 
-                        (new LogStock())->insertLog([
+                        $insertProductLogOnce([
                             'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                             'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 1,
