@@ -264,6 +264,29 @@
         $('#value_grand').html(`Rp ${formatRupiah(grand)}`);
     }
 
+    function getFallbackProductNames(items) {
+        if (!Array.isArray(items)) return [];
+        return [...new Set(items
+            .map(item => item.product_variant_name || item.product_name || item.pr_name || item.sod_variant || item.sod_nama)
+            .filter(name => typeof name === "string" && name.trim() !== ""))];
+    }
+
+    function normalizeProductErrorMessage(message, fallbackNames) {
+        var text = (message || "").toString().trim();
+        var names = (fallbackNames || []).filter(name => typeof name === "string" && name.trim() !== "");
+
+        if (text === "") {
+            return names.length ? names.join(", ") : "-";
+        }
+
+        // Jika backend mengirim ".... :" tanpa nama produk, isi dari fallback.
+        if (/:$/.test(text) && names.length) {
+            return `${text} ${names.join(", ")}`;
+        }
+
+        return text;
+    }
+
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
@@ -334,12 +357,16 @@
                 console.log(e);
                 if (e!=1){
                     if (typeof e === "object"){
-                        notifikasi('error', e.header, e.message);
+                        var fallbackNames = getFallbackProductNames(products);
+                        var messageText = normalizeProductErrorMessage(e.message, fallbackNames);
+                        notifikasi('error', e.header, messageText);
                         ResetLoadingButton(".btn-save", mode == 1?"Tambah Pengiriman" : "Update Pengiriman");   
                         return false;
                     } else {
                         ResetLoadingButton(".btn-save", mode == 1?"Tambah Pengiriman" : "Update Pengiriman");   
-                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
+                        var fallbackNames = getFallbackProductNames(products);
+                        var stockText = normalizeProductErrorMessage(e, fallbackNames);
+                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : " + stockText);
                     }
                 }
                 else{
@@ -548,6 +575,7 @@
             "btn-accept-so"
         );
         $('#btn-accept-so').attr("so_id", data.so_id);
+        $('#btn-accept-so').data("fallback_products", getFallbackProductNames(data.items || []));
         $('#btn-accept-so').html("Konfirmasi");
     })
 
@@ -563,12 +591,16 @@
             success:function(e){
                 if (e!=1){
                     if (typeof e === "object"){
-                        notifikasi('error', e.header, e.message);
+                        var fallbackNames = $('#btn-accept-so').data("fallback_products") || [];
+                        var messageText = normalizeProductErrorMessage(e.message, fallbackNames);
+                        notifikasi('error', e.header, messageText);
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                         return false;
                     } else {
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
+                        var fallbackNames = $('#btn-accept-so').data("fallback_products") || [];
+                        var stockText = normalizeProductErrorMessage(e, fallbackNames);
+                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : " + stockText);
                     }
                 }
                 else{

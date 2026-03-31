@@ -98,7 +98,7 @@ class CustomerController extends Controller
                 $sOld->ps_stock += $rev['qty'];
                 $sOld->save();
 
-                (new LogStock())->insertLog([
+                (new LogStock())->insertLog([                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
                     'log_date' => now(), 
                     'log_kode' => $data['so_number'], 
                     'log_type' => 1, 
@@ -281,6 +281,21 @@ class CustomerController extends Controller
         $so = SalesOrder::find($data['so_id']);
         $sod = SalesOrderDetail::where('so_id', $data['so_id'])->where('status', 1)->get();
 
+        $getProductDisplayName = function($variantId, $fallback = null) {
+            $fallback = is_string($fallback) ? trim($fallback) : '';
+            if ($fallback !== '') return $fallback;
+
+            $pvr = ProductVariant::find($variantId);
+            if (!$pvr) return "-";
+
+            $pr = Product::find($pvr['product_id']);
+            $productName = $pr ? trim((string)$pr['product_name']) : '';
+            $variantName = trim((string)$pvr['product_variant_name']);
+            $fullName = trim($productName . " " . $variantName);
+
+            return $fullName !== '' ? $fullName : "-";
+        };
+
         $p = [];
         $valid = 1;
         // 1. AGGREGASI: Gunakan kombinasi Variant ID dan Unit ID agar Liter dan Piece tidak bercampur
@@ -316,7 +331,7 @@ class CustomerController extends Controller
                 return response()->json([
                     "status" => 0,
                     "header" => "Gagal Insert",
-                    "message" => "Mohon masukkan relasi produk: " . $val["product_variant_name"]
+                    "message" => "Mohon masukkan relasi produk: " . $getProductDisplayName($variantId, $val["product_variant_name"] ?? null)
                 ]);
             }
 
