@@ -201,7 +201,7 @@
                             <select class="form-select fill so_unit" id="unit_id" style="width: 8rem" data-index="${index}">${options}</select>
                         </span>
                     </td>
-                    <td class="text-center text-danger" style="cursor:pointer; width: 13%"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
+                    <td class="text-center text-danger" style="cursor:pointer; width: 13%"><i data-feather="trash-2" class="feather-trash-2 deleteRow" index="${index}"></i></td>
                 </tr>
             `;
         });
@@ -367,6 +367,7 @@
 
     $(document).on("click",".deleteRow",function(){
         var index = $(this).attr("index");
+        console.log(index)
         products.splice(index,1);
         refreshTableProduct();
     });
