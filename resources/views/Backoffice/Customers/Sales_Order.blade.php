@@ -53,6 +53,14 @@
 
 @section('custom_js')
     <style>
+        #add_sales_order #so_qty_input {
+            text-align: center;
+        }
+
+        #add_sales_order #so_unit_input {
+            min-height: 38px;
+        }
+
         /* Khusus modal Sales Order: body tabel scroll, header tetap terlihat */
         #add_sales_order .col-12.overflow-x-auto.mb-3 {
             max-height: 320px;

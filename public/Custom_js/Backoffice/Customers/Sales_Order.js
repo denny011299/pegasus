@@ -6,15 +6,46 @@
     autocompleteStaffSales('#sales_id', "#add_sales_order");
     autocompleteProductVariant('#so_sku', "#add_sales_order");
     $(document).ready(function(){
+        initSalesOrderProductInput();
         inisialisasi();
         refreshSalesOrder();
     });
+
+    function initSalesOrderProductInput() {
+        const $skuCol = $('#so_sku').closest('.col-6');
+        const $inputCol = $skuCol.next('.col-6');
+        if ($inputCol.length <= 0) return;
+        if ($('#btn-add-product-so').length > 0) return;
+
+        $inputCol.html(`
+            <div class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <div class="input-block mb-0">
+                        <label>Qty</label>
+                        <input type="number" min="1" class="form-control" id="so_qty_input" value="1" placeholder="Qty">
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-block mb-0">
+                        <label>Satuan</label>
+                        <select class="form-select" id="so_unit_input">
+                            <option value="" selected>Pilih Satuan</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-add-product-so">Tambah Produk</button>
+                </div>
+            </div>
+        `);
+    }
 
     // Supaya bisa focus saat load modal
     $('#add_sales_order').on('shown.bs.modal', function () {
     });
     
     $(document).on('click','.btnAdd',function(){
+        initSalesOrderProductInput();
         mode=1;
         products = [];
         $('#tableSalesModal').html("");
@@ -34,6 +65,8 @@
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
+        $('#so_qty_input').val(1);
+        $('#so_unit_input').html('<option value="" selected>Pilih Satuan</option>');
         let today = new Date();
         let yyyy = today.getFullYear();
         let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -59,25 +92,74 @@
 
     $('#so_sku').on('change', function () {
         var data = $(this).select2('data')[0];
+        $('#so_unit_input').html('<option value="" selected>Pilih Satuan</option>');
+        if (!data) return;
 
-        var cari = -1;
+        if (Array.isArray(data.pr_unit) && data.pr_unit.length > 0) {
+            data.pr_unit.forEach(unit => {
+                $('#so_unit_input').append(`<option value="${unit.unit_id}">${unit.unit_name}</option>`);
+            });
+            $('#so_unit_input').val(data.default_unit || data.unit_id || data.pr_unit[0].unit_id);
+        } else if (data.unit_id && data.unit_name) {
+            $('#so_unit_input').append(`<option value="${data.unit_id}">${data.unit_name}</option>`);
+            $('#so_unit_input').val(data.unit_id);
+        }
+    });
+
+    $(document).on('click', '#btn-add-product-so', function(){
+        var temp = $('#so_sku').select2('data')[0];
+        var qty = parseInt($('#so_qty_input').val() || 0);
+        var unitId = parseInt($('#so_unit_input').val() || 0);
+
+        if (!temp || !temp.product_variant_id) {
+            notifikasi('error', "Gagal Insert", 'Silahkan pilih produk terlebih dahulu');
+            return false;
+        }
+        if (!qty || qty <= 0) {
+            notifikasi('error', "Qty Tidak Valid", 'Qty produk harus lebih dari 0');
+            $('#so_qty_input').addClass('is-invalid');
+            return false;
+        }
+        if (!unitId) {
+            notifikasi('error', "Gagal Insert", 'Silahkan pilih satuan produk');
+            $('#so_unit_input').addClass('is-invalid');
+            return false;
+        }
+
+        $('#so_qty_input').removeClass('is-invalid');
+        $('#so_unit_input').removeClass('is-invalid');
+
+        var unitText = $('#so_unit_input option:selected').text();
+        var idx = -1;
         products.forEach((element, index) => {
-            if (data.product_variant_id == element.product_variant_id) {
-                cari = index;
+            if (parseInt(element.product_variant_id) == parseInt(temp.product_variant_id) && parseInt(element.unit_id) == unitId) {
+                idx = index;
             }
         });
 
-        if (cari == -1) {
-            data.qty = 1;
+        if (idx == -1) {
+            var data = {
+                "product_variant_id": temp.product_variant_id,
+                "product_name": temp.product_name || temp.pr_name || "-",
+                "product_variant_name": temp.product_variant_name,
+                "product_variant_sku": temp.product_variant_sku,
+                "product_variant_price": temp.product_variant_price || 0,
+                "so_qty": qty,
+                "unit_id": unitId,
+                "unit_name": unitText,
+                "pr_unit": temp.pr_unit || []
+            };
             products.push(data);
         } else {
-            products[cari].qty++;
+            products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
         }
 
         toastr.success('', 'Berhasil menambahkan Produk');
         refreshTableProduct();
 
-        $('#so_sku').empty();
+        $('#so_sku').val(null).trigger('change');
+        $('#so_unit_input').html('<option value="" selected>Pilih Satuan</option>');
+        $('#so_qty_input').val(1);
     });
     
     function inisialisasi() {
