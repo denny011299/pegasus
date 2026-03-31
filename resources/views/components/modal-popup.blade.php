@@ -499,16 +499,21 @@
                                 </div> --}}
                                 <div class="col-12 py-3 mb-3">
                                     <table class="table table-center" id="tableProduct" style="min-height: 15vh">
-                                        <thead>
-                                            <th>Nama Produk</th>
-                                            <th class="text-center">Qty</th>
-                                            <th>Satuan</th>
-                                            <th class="no-sort text-center">Aksi</th>
+                                        <thead style="display: table; width: 100%; table-layout: fixed;">
+                                            <th style="width: 55%;">Nama Produk</th>
+                                            <th class="text-center" style="width: 15%;">Qty</th>
+                                            <th style="width: 15%;">Satuan</th>
+                                            <th class="no-sort text-center" style="width: 15%;">Aksi</th>
                                         </thead>
-                                        <tbody></tbody>
+                                        <tbody style="display: block; overflow-y: auto; max-height: 300px;"></tbody>
+                                        <tfoot class="dos" style="display: table; width: 100%; table-layout: fixed; border-top: 1px solid rgb(185, 185, 185);">
+                                            <td class="fw-bold text-black text-end" style="width: 55%;">Total Dos:</td>
+                                            <td class="fw-bold text-black text-end" style="width: 15%;"><span id="total_dos">0</span> Dos</td>
+                                            <td colspan="2" style="width: 30%;"></td>
+                                        </tfoot>
                                     </table>
                                 </div>
-                                <div class="col-12 px-2 mb-3">
+                                <div class="col-12 px-2">
                                     <div class="row input_table g-3 align-items-end">
                                         <div class="col-12 col-lg-4 add">
                                             <div class="input-block mb-3" id="row-product">

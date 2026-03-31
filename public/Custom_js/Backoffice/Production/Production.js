@@ -29,6 +29,7 @@
         $('.btn-save').show();
         $('.btn-cancel').html("Batal");
         $('#addProduction').modal("show");
+        $('.dos').hide();
         
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -99,7 +100,7 @@
             url: "/getProduction",
             method: "get",
             data:{
-                "created_at":$('#date_production').val()
+                "date":$('#date_production').val()
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -140,7 +141,7 @@
                             </button>
                         `;
                     }
-                    if(moment(e[i].created_at).isBefore(moment().format('YYYY-MM-DD'))){
+                    if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
                         e[i].action = `
                             <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                         `;
@@ -272,11 +273,12 @@
         e.forEach((element, index) => {
             console.log(element);
             $('#tableProduct tbody').append(`
-                <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
-                    <td>${element.product_name}</td>
-                    <td class="text-center">${element.pd_qty}</td>
-                    <td>${element.unit_name}</td>
-                    <td class="text-center d-flex align-items-center">
+                <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}"
+                style="display: table; width: 100%; table-layout: fixed;">
+                    <td style="width: 56%;">${element.product_name}</td>
+                    <td class="text-center" style="width: 15%;">${element.pd_qty}</td>
+                    <td style="width: 15%;">${element.unit_name}</td>
+                    <td class="text-center d-flex align-items-center" style="width: 14%;">
                         <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
                         </a>
@@ -372,8 +374,9 @@
         $('#tableProduct tr.row-product').remove();
         $('.is-invalid').removeClass('is-invalid');
         $('#unit_id').html("");
-
         $('#production_date').val(data.production_date);
+
+        var total_dos = 0;
 
         data.items.forEach(e => {
             var temp  = {
@@ -388,13 +391,19 @@
             items.push(temp);
 
             list_bahan.push(e.list_bahan);
+
+            if (e.unit_name.toUpperCase().includes("DOS")){
+                total_dos += e.pd_qty
+            }
         })
         console.log(items);
         console.log(list_bahan);
         addRow(items);
+        $('#total_dos').html(total_dos);
         
         $('.is-invalid').removeClass('is-invalid');
         $('.add, .btn-save, .btn_delete_row_pr').hide();
+        $('.dos').show();
         $('.btn-cancel').html("Kembali");
         $('#production_date').prop('disabled', true);
         $('#addProduction').attr("production_id", data.production_id);

@@ -348,6 +348,11 @@ class ProductionController extends Controller
             $value['list_bahan'] = json_encode($bahan[$key]);
             (new ProductionDetails())->insertProductionDetail($value);
         }
+
+        if ($data['production_date'] != now()->toDateString()){
+            $req->merge(['production_id' => $p->production_id]);
+            $this->accProduction($req);
+        }
         
         return response()->json([
             "status" => 1,
