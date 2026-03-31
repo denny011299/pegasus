@@ -141,11 +141,11 @@
                             </button>
                         `;
                     }
-                    if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
-                        e[i].action = `
-                            <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                        `;
-                    }
+                    // if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
+                    //     e[i].action = `
+                    //         <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
+                    //     `;
+                    // }
 
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;

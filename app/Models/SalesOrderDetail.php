@@ -44,7 +44,7 @@ class SalesOrderDetail extends Model
         $t = new SalesOrderDetail();
         $t->so_id = $data["so_id"];
         $t->product_variant_id = $data["product_variant_id"];
-        $t->sod_nama = $data["pr_name"];
+        $t->sod_nama = $data["pr_name"] ?? $data["product_name"];
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
         $t->unit_id = $data["unit_id"];

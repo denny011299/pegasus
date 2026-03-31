@@ -1007,8 +1007,8 @@ class StockController extends Controller
             ]);
 
             (new ProductIssues())->accProductIssues($data);
-            return 1;
         }
+        return 1;
     }
 
     function declineProductIssues(Request $req){

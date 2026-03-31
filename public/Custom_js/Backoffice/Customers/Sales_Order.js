@@ -57,7 +57,8 @@
         $('#so_cost').val(0).trigger('blur');
         $('#so_ppn').val(0).trigger('blur');
         $('.form-select').not("#so_payment").empty().attr("disabled", false);
-        $('#so_sku, .so_qty, .so_unit').attr("disabled", false);
+        $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", false);
+        $('#btn-add-product-so').show();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman").show();
         $('#add_sales_order').modal("show");
@@ -536,6 +537,8 @@
             products.push(temp);
         });
         refreshTableProduct();
+        $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
+        $('#btn-add-product-so').hide();
 
         // update summary
         $('#so_ppn').trigger('blur')
@@ -606,7 +609,8 @@
         });
         refreshTableProduct();
         $('.deleteRow').hide();
-        $('#so_sku, .so_qty, .so_unit').attr("disabled", true);
+        $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
+        $('#btn-add-product-so').hide();
 
         // update summary
         $('#so_ppn').trigger('blur')
