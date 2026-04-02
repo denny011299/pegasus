@@ -804,10 +804,29 @@ class StockController extends Controller
         $pi = ProductIssues::find($data['pi_id']);
         $v = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->where('status', '>=', 1)->get();
         if ($pi->tipe_return == 2){
+            $kurang = [];
             foreach ($v as $key => $value) {
                 $value['tipe_return'] = $pi['tipe_return'];
                 $c = (new ProductIssuesDetail())->stockCheck($value);
                 if ($c == -1) return -1;
+
+                $ps = ProductStock::where('product_variant_id', $value->item_id)
+                ->where('unit_id', $value->unit_id)
+                ->where('status', 1)
+                ->first();
+
+                if (($ps->ps_stock - $value->pid_qty < 0)){
+                    $pvr = ProductVariant::find($value->item_id);
+                    $pr = Product::find($pvr->product_id);
+                    array_push($kurang, $pr->product_name . ' ' . $pvr->product_variant_name);
+                }
+            }
+            if (count($kurang) > 0) {
+                return [
+                    "status"=>-1,
+                    "header"=>"Gagal menghapus",
+                    "message"=>"Stok produk tidak mencukupi: ".implode(", ",$kurang)
+                ];
             }
         }
 

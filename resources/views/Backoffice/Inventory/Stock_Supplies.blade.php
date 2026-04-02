@@ -9,7 +9,7 @@
         }
 
         #tableLog {
-            width: 100%;
+            width: 100% !important;
             border-collapse: collapse;
         }
 
@@ -25,6 +25,8 @@
         #tableLog tbody td {
             padding: 10px 8px;
             vertical-align: middle;
+            white-space: normal !important;
+            word-wrap: break-word;
         }
     </style>
 @endsection

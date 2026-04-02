@@ -47,6 +47,25 @@ class Production extends Model
         $result = $result->get();
         foreach ($result as $key => $value) {
             $value->items = (new ProductionDetails())->getProductionDetail(["production_id" => $value->production_id]);
+
+            $dos = 0;
+            foreach ($value->items as $key => $val) {
+                if (str($val->unit_name)->upper()->contains('DOS')) {
+                    $dos += $val->pd_qty;
+                } else {
+                    $pr = (new ProductRelation())->getProductRelation(['product_variant_id' => $val->product_variant_id]);
+
+                    $relasiDos = $pr->first(function ($rel) {
+                        return str($rel->pr_unit_name_1)->upper()->contains('DOS');
+                    });
+
+                    if ($relasiDos && $relasiDos->pr_unit_value_2 > 0) {
+                        // Contoh: pd_qty = 24 piece, pr_unit_value_2 = 12 → floor(24/12) = 2 dos
+                        $dos += floor($val->pd_qty / $relasiDos->pr_unit_value_2);
+                    }
+                }
+            }
+            $value->total_dos = $dos;
         }
         return $result;
     }

@@ -18,7 +18,7 @@ class ProductIssuesDetail extends Model
             "tipe_return"=>null
         ], $data);
 
-        $result = self::where('status', '=', 1);
+        $result = self::where('status', '>=', 1);
         if($data["pi_id"])$result->where('pi_id','=',$data["pi_id"]);
 
         $result->orderBy('created_at', 'asc');
@@ -161,7 +161,7 @@ class ProductIssuesDetail extends Model
     function deleteProductIssuesDetail($data)
     {
         $t = self::find($data["pid_id"]);
-        $t->status = 0;
+        $t->status = 2;
         $t->save();
         $pi = ProductIssues::find($t->pi_id);
         

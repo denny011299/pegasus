@@ -110,12 +110,12 @@
             data.forEach(e => {
                 $('#tableLog tbody').append(`
                     <tr class="row-log" data-id="${e.log_id}">
-                        <td>${moment(e.log_date).format('D MMM YYYY, HH:mm')}</td>
-                        <td>${e.staff_name}</td>
-                        <td>${e.log_kode}</td>
-                        <td>${e.log_notes}</td>
-                        <td class="text-success text-center">${e.log_category == 1 ? e.log_jumlah : "-"} ${e.log_category == 1 ? e.unit_name : ""}</td>
-                        <td class="text-danger text-center">${e.log_category == 2 ? e.log_jumlah : "-"} ${e.log_category == 2 ? e.unit_name : ""}</td>
+                        <td style="width:15%">${moment(e.log_date).format('D MMM YYYY, HH:mm')}</td>
+                        <td style="width:15%">${e.staff_name}</td>
+                        <td style="width:15%">${e.log_kode}</td>
+                        <td style="width:25%">${e.log_notes}</td>
+                        <td style="width:15%" class="text-success text-center">${e.log_category == 1 ? e.log_jumlah : "-"} ${e.log_category == 1 ? e.unit_name : ""}</td>
+                        <td style="width:15%" class="text-danger text-center">${e.log_category == 2 ? e.log_jumlah : "-"} ${e.log_category == 2 ? e.unit_name : ""}</td>
                     </tr>
                 `)
             })

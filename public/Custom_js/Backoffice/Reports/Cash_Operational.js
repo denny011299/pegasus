@@ -370,10 +370,11 @@
         }
     })
 
-    $(document).on('change', '#bank_account', function(){
-        if ($(this).val()){
+    $(document).on('change', '#bank_account, #date_sales', function(){
+        if ($('#bank_account').val()){
             var temp = $('#bank_account').select2('data')[0];
-            $('#oc_notes_sales').val(`Setor ke bank ${temp.bank_kode}`);
+            var date = moment($('#date_sales').val()).format('D MMM YYYY');
+            $('#oc_notes_sales').val(`Setor ke bank ${temp.bank_kode} - ${date}`);
         } else {
             $('#oc_notes_sales').val("");
         }

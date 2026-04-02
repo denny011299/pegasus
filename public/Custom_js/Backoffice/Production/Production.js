@@ -131,21 +131,21 @@
                         console.log("masuk")
                         e[i].action = `
                             <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                            <button  class="btn btn-sm me-2 btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
-                                <i class="fa-solid fa-x"></i>
-                            </button>
-                            <button class="btn btn-sm btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
+                            <button class="btn btn-sm me-2 btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
                             data-bs-placement="bottom" title="Terima"  production_id = "${e[i].production_id}" >
                                 <i class="fa-solid fa-check"></i>
                             </button>
+                            <button  class="btn btn-sm btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
+                                <i class="fa-solid fa-x"></i>
+                            </button>
                         `;
                     }
-                    // if(moment(e[i].production_date).isBefore(moment().format('YYYY-MM-DD'))){
-                    //     e[i].action = `
-                    //         <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                    //     `;
-                    // }
+                    if (moment(e[i].production_date).isBefore(moment().subtract(1, 'days').format('YYYY-MM-DD'))) {
+                        e[i].action = `
+                            <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
+                        `;
+                    }
 
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;
@@ -189,6 +189,12 @@
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
             return false;
         };
+        if(moment($('#production_date').val()).isAfter(moment().add(1, 'days'), 'day')){
+            $('#production_date').addClass('is-invalid');
+            notifikasi('error', "Gagal Insert", 'Input tanggal maksimal 1 hari setelah hari ini');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+            return false;
+        }
         param = {
             production_date:$('#production_date').val(),
             detail:JSON.stringify(items),
@@ -399,7 +405,7 @@
         console.log(items);
         console.log(list_bahan);
         addRow(items);
-        $('#total_dos').html(total_dos);
+        $('#total_dos').html(data.total_dos);
         
         $('.is-invalid').removeClass('is-invalid');
         $('.add, .btn-save, .btn_delete_row_pr').hide();
@@ -539,8 +545,9 @@ $(document).on("click", "#btn-delete-production", function () {
     console.log($('#delete_reason').val());
     
     if($('#delete_reason').val() == ""){
-        $('#delete_reason').addClass('is-invalid'); 
-
+        $('#delete_reason').addClass('is-invalid');
+        notifikasi('error', "Gagal Pembatalan", 'Alasan pembatalan wajib diisi');
+        ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
         return false;
     }
     LoadingButton(this);

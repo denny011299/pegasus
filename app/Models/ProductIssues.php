@@ -170,7 +170,7 @@ class ProductIssues extends Model
                 return -1;
             }
         }
-        $t->status = 0;
+        $t->status = 3;
         $t->save();
 
         // $m = ProductVariant::find($t->product_variant_id);

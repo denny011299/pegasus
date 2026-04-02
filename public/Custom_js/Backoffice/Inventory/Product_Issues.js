@@ -149,6 +149,9 @@
                         <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
                             <i class="fe fe-eye"></i>
                         </a>
+                        <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
+                            <i class="fe fe-trash-2"></i>
+                        </a>
                     `;
 
                     if (item.status == 1){
@@ -160,7 +163,10 @@
                     }
 
                     if (item.pi_img == null){
-                        item.action += `
+                        item.action = `
+                            <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                                <i class="fe fe-eye"></i>
+                            </a>
                             <a class="me-2 btn-action-icon p-2" href="/purchaseOrderDetail/${item.po_id}" data-bs-toggle="tooltip"
                             data-bs-placement="bottom" title="Detail Pembelian">
                                 <i class="fe fe-dollar-sign"></i>
@@ -168,7 +174,10 @@
                         `;
                     } else {
                         if (item.status == 1){
-                            item.action += `
+                            item.action = `
+                                <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                                    <i class="fe fe-eye"></i>
+                                </a>
                                 <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" title="Terima"  pi_id = "${item.pi_id}" >
                                     <i class="fe fe-check"></i>
@@ -857,6 +866,7 @@ $(document).on("click", ".btn_delete", function () {
 });
 
 $(document).on("click", "#btn-delete-issues", function () {
+    LoadingButton($(this));
     $.ajax({
         url: "/deleteProductIssues",
         data: {
@@ -865,7 +875,7 @@ $(document).on("click", "#btn-delete-issues", function () {
         },
         method: "post",
         success: function (e) {
-            $(".modal").modal("hide");
+            ResetLoadingButton(".btn-konfirmasi", "Delete");
             if (typeof e === "object") {
                 notifikasi(
                     "error",
@@ -880,6 +890,7 @@ $(document).on("click", "#btn-delete-issues", function () {
                 "Stock tidak mencukupi!"
             );
             else {
+                $(".modal").modal("hide");
                 afterInsert();
                 notifikasi(
                     "success",
@@ -890,6 +901,7 @@ $(document).on("click", "#btn-delete-issues", function () {
         },
         error: function (e) {
             console.log(e);
+            ResetLoadingButton(".btn-konfirmasi", "Delete");
         },
     });
 });

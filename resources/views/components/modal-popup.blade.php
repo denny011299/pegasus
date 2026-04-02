@@ -2629,12 +2629,12 @@
                                     <div class="table-scroll overflow-x-auto">
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
                                             <thead>
-                                                <th>Tanggal</th>
-                                                <th>Staff</th>
-                                                <th>No. Transaksi</th>
-                                                <th>Catatan</th>
-                                                <th class="text-center">Masuk</th>
-                                                <th class="text-center">Keluar</th>
+                                                <th style="width:15%">Tanggal</th>
+                                                <th style="width:15%">Staff</th>
+                                                <th style="width:15%">No. Transaksi</th>
+                                                <th style="width:25%">Catatan</th>
+                                                <th style="width:15%" class="text-center">Masuk</th>
+                                                <th style="width:15%" class="text-center">Keluar</th>
                                             </thead>
                                             <tbody></tbody>
                                         </table>
@@ -2700,12 +2700,12 @@
                                     <div class="table-scroll overflow-x-auto">
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
                                             <thead>
-                                                <th>Tanggal</th>
-                                                <th>Staff</th>
-                                                <th>No. Transaksi</th>
-                                                <th>Catatan</th>
-                                                <th class="text-center">Masuk</th>
-                                                <th class="text-center">Keluar</th>
+                                                <th style="width: 15%">Tanggal</th>
+                                                <th style="width: 15%">Staff</th>
+                                                <th style="width: 15%">No. Transaksi</th>
+                                                <th style="width: 25%">Catatan</th>
+                                                <th style="width: 15%" class="text-center">Masuk</th>
+                                                <th style="width: 15%" class="text-center">Keluar</th>
                                             </thead>
                                             <tbody></tbody>
                                         </table>
