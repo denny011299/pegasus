@@ -149,9 +149,6 @@
                         <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
                             <i class="fe fe-eye"></i>
                         </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
                     `;
 
                     if (item.status == 1){
@@ -185,6 +182,16 @@
                                 <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
                                 data-bs-placement="bottom" title="Tolak"  pi_id = "${item.pi_id}" >
                                     <i class="fe fe-x"></i>
+                                </a>
+                            `;
+                        }
+                        else if (item.status == 2){
+                            item.action = `
+                                <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                                    <i class="fe fe-eye"></i>
+                                </a>
+                                <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
+                                    <i class="fe fe-trash-2"></i>
                                 </a>
                             `;
                         }

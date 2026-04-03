@@ -624,12 +624,23 @@ class SupplierController extends Controller
         }
 
         $bermasalah = [];
+        $kurang = [];
         foreach ($returs as $key => $value) {
             $value['tipe_return'] = 1;
             $value['pid_qty'] = $value['rsd_qty'];
             $cek = (new ProductIssuesDetail())->stockCheck($value);
             if ($cek == -1){
                 array_push($bermasalah, $value['supplies_variant_name']);
+            }
+
+            $ss = SuppliesStock::where('supplies_id', $value["supplies_id"])
+                ->where('unit_id', $value['unit_id'])
+                ->where('status', 1)
+                ->first();
+            
+            if (($ss->ss_stock - $value['rsd_qty'] < 0)){
+                $svr = SuppliesVariant::find($value['supplies_variant_id']);
+                array_push($kurang, $svr->supplies_variant_name);
             }
         }
         if (count($bermasalah) > 0) {
@@ -638,6 +649,13 @@ class SupplierController extends Controller
                 "message"=>"Stok bahan tidak mencukupi : ".implode(", ",$bermasalah)
             ];
         }
+        if (count($kurang) > 0) {
+            return [
+                "status"=>-1,
+                "message"=>"Stok bahan tidak mencukupi: ".implode(", ",$kurang)
+            ];
+        }
+
         $po->po_total -= $total;
         $po->save();
 
@@ -669,6 +687,19 @@ class SupplierController extends Controller
             $value['total_retur'] = $total_retur;
             $value['po_id'] = $po->po_id;
             $pid_id = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+
+            $s = SuppliesStock::where('supplies_id','=',$value['supplies_id'])->where('unit_id','=',$value["unit_id"])->where('status', 1)->first();
+
+            // pengurangan qty stok
+            $stocks = $s->ss_stock ?? 0;
+            if ($stocks - $value["rsd_qty"] >= 0) {
+                $stocks -= $value["rsd_qty"];
+            } else {
+                return -1;
+            }
+
+            $s->ss_stock = $stocks;
+            $s->save();
 
             // Catat Log
             $sup = SuppliesVariant::find($value['supplies_variant_id']);

@@ -424,12 +424,13 @@
     // BAGIAN RETUR
     $(document).on('click', '.retur-bahan', function(){
         mode=1;
+        returs = [];
         $('#add-retur .modal-title').html("Tambah Retur Bahan Mentah");
         $('#add-retur .form-control').val("");
         $('#tableSuppliesModal tr.row-supplies').remove();
         $('#supplies_id, #unit_supplies_id').empty();
         $('.is-invalid').removeClass('is-invalid');
-        $('.totals').html("Rp 0")
+        $('.totals').html("Rp 0");
 
         let today = new Date();
         let yyyy = today.getFullYear();
