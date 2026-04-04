@@ -18,7 +18,8 @@ class Production extends Model
             "date" => null,
             "report" => null,
             "production_id" => null,
-            "created_at" => null
+            "created_at" => null,
+            "status" => null
         ], $data);  
 
         // status: 1 = menunggu approve, 2 = accept, 3 = tolak, 4 = menunggu cancel
@@ -26,6 +27,7 @@ class Production extends Model
         else if ($data["report"]) $result = Production::where('status', '>=', 0);
         if ($data["production_id"]) $result->where('production_id', '=', $data["production_id"]);
         if ($data['created_at']) $result->whereDate('created_at', $data['created_at']);
+        if ($data['status']) $result->where('status', $data['status']);
         
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {

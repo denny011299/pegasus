@@ -568,3 +568,39 @@
 </div>
 <!-- /Filter Pencarian -->
 @endif
+
+@if(Route::is(['production']))
+<!-- Filter Pencarian -->
+<div class="container mt-3 ps-0">
+    <div class="row">
+        <div class="col-12 col-md-12 mb-4">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <label>Tanggal</label>
+                        <input type="date" class="form-control fill" id="date_production" >
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-block">
+                            <label>Status</label>
+                            <select class="form-select fill" id="status">
+                                <option value="">Semua</option>
+                                <option value="1">Menunggu Approval</option>
+                                <option value="2">Success</option>
+                                <option value="3">Pending Cancel</option>
+                                <option value="4">Cancel</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-12 pt-4 text-end">
+                        <a class="btn btn-outline-secondary btn-clear">
+                            Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Filter Pencarian -->
+@endif

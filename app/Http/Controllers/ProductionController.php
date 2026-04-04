@@ -108,6 +108,7 @@ class ProductionController extends Controller
         $data = (new Production())->getProduction([
             "created_at" => $req->created_at,
             "date" => $req->date,
+            "status" => $req->status,
             "report" => $req->report ? $req->report : null
         ]);
         return response()->json($data);

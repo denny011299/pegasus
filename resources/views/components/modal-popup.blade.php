@@ -547,6 +547,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button type="button" id="btn-tolak" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
+                        <button type="button" id="btn-terima" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
                         <a class="btn btn-outline-secondary btn-cancel me-2" data-bs-dismiss="modal">Batal</a>
                         <a class="btn btn-primary btn-save">Tambah Produksi</a>
                     </div>

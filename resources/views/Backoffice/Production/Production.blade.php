@@ -31,15 +31,12 @@
             <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="row text-end ps-2 mb-2 mt-2">
-                        <div class="col-5 col-lg-8"></div>
+                    <div class="row text-end ps-2 mb-2">
+                        <div class="col-10 col-lg-11"></div>
                         <div class="col-lg-1 col-2">
                             <a class="btn btn-outline-primary LihatfotoProduksi" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti Produksi">
                                 <i class="fe fe-image"></i>
                             </a>
-                        </div>
-                        <div class="col-5 col-lg-3">
-                            <input type="date" class="form-control fill" id="date_production" >
                         </div>
                     </div>
                     <div class=" card-table">

@@ -30,6 +30,7 @@
         $('.btn-cancel').html("Batal");
         $('#addProduction').modal("show");
         $('.dos').hide();
+        $('#btn-terima, #btn-tolak').hide();
         
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -100,7 +101,8 @@
             url: "/getProduction",
             method: "get",
             data:{
-                "date":$('#date_production').val()
+                "date":$('#date_production').val(),
+                status: $('#status').val()
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -113,35 +115,41 @@
                     e[i].date = moment(e[i].production_date).format('D MMM YYYY');
                     e[i].action = `
                         <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
-                        <button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>
                     `;
+
+                    if (e[i].status == 2){
+                        e[i].action = `
+                            <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
+                            <button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>
+                        `;
+                    }
 
                     if(e[i].status != 1 && e[i].status != 2){
                         e[i].action = `
                         <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                         `;
                     }
-                    if(e[i].status == 3){
-                         e[i].action = `
-                            <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
-                            <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
-                            <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
-                        `;
-                    } else if (e[i].status == 1){
-                        console.log("masuk")
-                        e[i].action = `
-                            <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                            <button class="btn btn-sm me-2 btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Terima"  production_id = "${e[i].production_id}" >
-                                <i class="fa-solid fa-check"></i>
-                            </button>
-                            <button  class="btn btn-sm btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
-                                <i class="fa-solid fa-x"></i>
-                            </button>
-                        `;
-                    }
-                    if (moment(e[i].production_date).isBefore(moment().subtract(1, 'days').format('YYYY-MM-DD'))) {
+                    // if(e[i].status == 3){
+
+                    //      e[i].action = `
+                    //         <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
+                    //         <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
+                    //         <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
+                    //     `;
+                    // } else if (e[i].status == 1){
+                    //     e[i].action = `
+                    //         <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
+                    //         <button class="btn btn-sm me-2 btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
+                    //         data-bs-placement="bottom" title="Terima"  production_id = "${e[i].production_id}" >
+                    //             <i class="fa-solid fa-check"></i>
+                    //         </button>
+                    //         <button  class="btn btn-sm btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
+                    //         data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
+                    //             <i class="fa-solid fa-x"></i>
+                    //         </button>
+                    //     `;
+                    // }
+                    if (moment(e[i].production_date).isBefore(moment().subtract(2, 'days').format('YYYY-MM-DD'))) {
                         e[i].action = `
                             <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
                         `;
@@ -167,9 +175,15 @@
         });
     }
 
-    $(document).on("change","#date_production",function(){
+    $(document).on("change","#date_production, #status",function(){
         refreshProduction();
     });
+
+    $(document).on('click', '.btn-clear', function(){
+        $('#date_production').val("");
+        $('#status').val("");
+        refreshProduction();
+    })
 
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
@@ -406,6 +420,25 @@
         console.log(list_bahan);
         addRow(items);
         $('#total_dos').html(data.total_dos);
+        if (data.status == 1){
+            $('#btn-terima, #btn-tolak').show();
+            $('#btn-terima').addClass('btn_acc_produksi');
+            $('#btn-tolak').addClass('btn_decline_produksi');
+            $('#btn-terima').removeClass('btn_acc');
+            $('#btn-tolak').removeClass('btn_cancel');
+            $('#btn-terima').attr('production_id', data.production_id);
+            $('#btn-tolak').attr('production_id', data.production_id);
+        } else if (data.status == 3) {
+            $('#btn-terima, #btn-tolak').show();
+            $('#btn-terima').addClass('btn_acc');
+            $('#btn-tolak').addClass('btn_cancel');
+            $('#btn-terima').removeClass('btn_acc_produksi');
+            $('#btn-tolak').removeClass('btn_decline_produksi');
+            $('#btn-terima').attr('production_id', data.production_id);
+            $('#btn-tolak').attr('production_id', data.production_id);
+        } else {
+            $('#btn-terima, #btn-tolak').hide();
+        }
         
         $('.is-invalid').removeClass('is-invalid');
         $('.add, .btn-save, .btn_delete_row_pr').hide();
@@ -579,16 +612,18 @@ $(document).on("click", "#btn-delete-production", function () {
 
 //konfirmasi acc
 $(document).on("click", ".btn_acc", function () {
-    var tbId = $(this).closest("table").attr("id");
-    var data = $("#" + tbId)
-        .DataTable()
-        .row($(this).parents("tr"))
-        .data(); //ambil data dari table
+    // var tbId = $(this).closest("table").attr("id");
+    // var data = $("#" + tbId)
+    //     .DataTable()
+    //     .row($(this).parents("tr"))
+    //     .data(); //ambil data dari table
+    var production_id = $(this).attr('production_id');
+    $('.modal').modal('hide');
     showModalKonfirmasi(
         "Apakah yakin ingin Approve pembatalan produksi ini?",
         "btn-acc-delete-production"
     );
-    $("#btn-acc-delete-production").attr("production_id", data.production_id);
+    $("#btn-acc-delete-production").attr("production_id", production_id);
     $(".btn-konfirmasi").html("Batal Produksi");
 });
 
@@ -625,17 +660,19 @@ $(document).on("click", "#btn-acc-delete-production", function () {
 
 //konfirmasi acc
 $(document).on("click", ".btn_cancel", function () {
-    var tbId = $(this).closest("table").attr("id");
-    var data = $("#" + tbId)
-        .DataTable()
-        .row($(this).parents("tr"))
-        .data(); //ambil data dari table
+    // var tbId = $(this).closest("table").attr("id");
+    // var data = $("#" + tbId)
+    //     .DataTable()
+    //     .row($(this).parents("tr"))
+    //     .data(); //ambil data dari table
+    var production_id = $(this).attr('production_id');
+    $('.modal').modal('hide');
     showModalKonfirmasi(
         "Apakah yakin ingin Tolak pembatalan produksi ini?",
         "btn-cancel-delete-production"
     );
     $(".btn-konfirmasi").html("Konfirmasi Batal Produksi");
-    $("#btn-cancel-delete-production").attr("production_id", data.production_id);
+    $("#btn-cancel-delete-production").attr("production_id", production_id);
 });
 
 $(document).on("click", "#btn-cancel-delete-production", function () {
@@ -666,12 +703,14 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
 });
 
     $(document).on('click', '.btn_acc_produksi', function(){
-        var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        // var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var production_id = $(this).attr('production_id');
+        $('.modal').modal('hide');
         showModalKonfirmasi(
             "Apakah yakin ingin Approve produksi ini?",
             "btn-accept-production"
         );
-        $('#btn-accept-production').attr("production_id", data.production_id);
+        $('#btn-accept-production').attr("production_id", production_id);
         $('#btn-accept-production').html("Konfirmasi");
     })
 
@@ -710,9 +749,11 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
     })
 
     $(document).on('click', '.btn_decline_produksi', function(){
-        var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        // var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var production_id = $(this).attr('production_id');
+        $('.modal').modal('hide');
         showModalDelete("Apakah yakin ingin tolak produksi ini?","btn-decline-production");
-        $('#btn-decline-production').attr("production_id", data.production_id);
+        $('#btn-decline-production').attr("production_id", production_id);
         $('#btn-decline-production').html("Konfirmasi");
     })
 
