@@ -37,8 +37,10 @@ class ProductVariant extends Model
         }
 
         if ($data["search_product"]){
-            $result->where("pr.product_name", "like", "%" . $data["search_product"] . "%")
-            ->orwhere("product_variants.product_variant_name", "like", "%" . $data["search_product"] . "%");
+            $result->whereAny([
+                "pr.product_name",
+                "product_variants.product_variant_name"
+            ], "like", "%" . $data["search_product"] . "%");
         }
 
         // Filter berdasarkan product_variant_id

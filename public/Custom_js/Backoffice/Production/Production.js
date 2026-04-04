@@ -6,7 +6,7 @@
     var list_photo =  [];
     var list_bahan=[];
     $(document).ready(function(){
-        $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
+        // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
         inisialisasi();
         refreshProduction();
     });
@@ -68,7 +68,7 @@
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
-            ordering: true,
+            ordering: false,
             searching: false,
             language: {
                 search: ' ',

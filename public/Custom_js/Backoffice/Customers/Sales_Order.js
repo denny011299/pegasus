@@ -62,6 +62,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman").show();
         $('#add_sales_order').modal("show");
+        $('.btn_acc, .btn_decline').hide();
         // updateTotal();
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
@@ -226,26 +227,21 @@
 
                     if (e[i].status == 1) {
                         e[i].action += `
-                            <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Terima"  so_id = "${e[i].so_id}" >
-                                <i class="fe fe-check"></i>
-                            </a>
-                            <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Tolak"  so_id = "${e[i].so_id}" >
-                                <i class="fe fe-x"></i>
+                            <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].so_id}" href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
                             </a>
                         `;
-                    } 
-                    // else {
-                    //     e[i].action = `
-                    //         <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].so_id}" data-bs-target="#edit-sales">
-                    //             <i class="fe fe-edit"></i>
-                    //         </a>
-                    //         <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].so_id}" href="javascript:void(0);">
-                    //             <i class="fe fe-trash-2"></i>
-                    //         </a>
-                    //     `;
-                    // }
+                        // e[i].action += `
+                        //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                        //     data-bs-placement="bottom" title="Terima"  so_id = "${e[i].so_id}" >
+                        //         <i class="fe fe-check"></i>
+                        //     </a>
+                        //     <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                        //     data-bs-placement="bottom" title="Tolak"  so_id = "${e[i].so_id}" >
+                        //         <i class="fe fe-x"></i>
+                        //     </a>
+                        // `;
+                    }
                 }
 
                 table.rows.add(e).draw();
@@ -611,6 +607,16 @@
         $('.deleteRow').hide();
         $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
         $('#btn-add-product-so').hide();
+        if (data.status == 1){
+            console.log("masuk")
+            $('.btn_acc, .btn_decline').show();
+            $('.btn_acc').attr('so_id', data.so_id);
+            $('.btn_acc').data('items', data.items);
+            $('.btn_decline').attr('so_id', data.so_id);
+            $('.btn_decline').data('items', data.items);
+        } else {
+            $('.btn_acc, .btn_decline').hide();
+        }
 
         // update summary
         $('#so_ppn').trigger('blur')
@@ -655,13 +661,17 @@
     });
 
     $(document).on('click', '.btn_acc', function(){
-        var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        // var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var so_id = $(this).attr('so_id');
+        var item = $(this).data('items');
+        $('.modal').modal('hide');
         showModalKonfirmasi(
             "Apakah yakin ingin Approve pengiriman ini?",
             "btn-accept-so"
         );
-        $('#btn-accept-so').attr("so_id", data.so_id);
-        $('#btn-accept-so').data("fallback_products", getFallbackProductNames(data.items || []));
+        console.log(item)
+        $('#btn-accept-so').attr("so_id", so_id);
+        $('#btn-accept-so').data("fallback_products", getFallbackProductNames(item || []));
         $('#btn-accept-so').html("Konfirmasi");
     })
 
@@ -704,9 +714,13 @@
     })
 
     $(document).on('click', '.btn_decline', function(){
-        var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        // var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var so_id = $(this).attr('so_id');
+        var item = $(this).data('items');
+        $('.modal').modal('hide');
         showModalDelete("Apakah yakin ingin tolak pengiriman ini?","btn-decline-so");
-        $('#btn-decline-so').attr("so_id", data.so_id);
+        $('#btn-decline-so').attr("so_id", so_id);
+        $('#btn-decline-so').attr("item", item);
         $('#btn-decline-so').html("Konfirmasi");
     })
 

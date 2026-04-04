@@ -847,6 +847,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
+                        <button type="button" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
+                        <button type="button" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"

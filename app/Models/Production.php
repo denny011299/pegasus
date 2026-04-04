@@ -42,7 +42,7 @@ class Production extends Model
             }
         }
 
-        $result->orderByRaw('FIELD(status, 1, 3, 2, 4)')->orderBy('created_at', 'desc');
+        $result->orderBy('production_date', 'desc')->orderByRaw('FIELD(status, 1, 3, 2, 4)')->orderBy('created_at', 'desc');
 
         $result = $result->get();
         foreach ($result as $key => $value) {

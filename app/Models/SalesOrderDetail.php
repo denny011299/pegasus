@@ -78,11 +78,11 @@ class SalesOrderDetail extends Model
         $t->status = 0; // soft delete
         $t->save();
         
-        $m = ProductVariant::find($t->product_variant_id);
-        $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
+        // $m = ProductVariant::find($t->product_variant_id);
+        // $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
 
-        $s->ps_stock += $t->sod_qty;
-        $s->save();
-        return $m;
+        // $s->ps_stock += $t->sod_qty;
+        // $s->save();
+        return 1;
     }
 }
