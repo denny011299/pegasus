@@ -9,6 +9,7 @@
         inisialisasi();
         refreshProductIssues();
     });
+    
     $(document).on("click", ".nav-jenis", function () {
         type = $(this).attr("tipe");
         afterInsert();
@@ -57,6 +58,8 @@
         $('#btn-foto-bukti').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
+
+        $('#btn-terima, #btn-tolak').hide();
 
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -171,19 +174,20 @@
                         `;
                     } else {
                         if (item.status == 1){
-                            item.action = `
-                                <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
-                                    <i class="fe fe-eye"></i>
-                                </a>
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  pi_id = "${item.pi_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  pi_id = "${item.pi_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
+                            
+                            // item.action = `
+                            //     <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                            //         <i class="fe fe-eye"></i>
+                            //     </a>
+                            //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Terima"  pi_id = "${item.pi_id}" >
+                            //         <i class="fe fe-check"></i>
+                            //     </a>
+                            //     <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Tolak"  pi_id = "${item.pi_id}" >
+                            //         <i class="fe fe-x"></i>
+                            //     </a>
+                            // `;
                         }
                         else if (item.status == 2){
                             item.action = `
@@ -749,6 +753,14 @@ $(document).on("click", ".btn_view", function () {
         });
     }
 
+    if (data.status == 1){
+        $('#btn-terima, #btn-tolak').show();
+        $('.btn_acc').attr('pi_id', data.pi_id);
+        $('.btn_decline').attr('pi_id', data.pi_id);
+    } else {
+        $('#btn-terima, #btn-tolak').hide();
+    }
+
     $("#pi_date, #pi_type, #pi_notes, #tipe_return, #ref_num").prop("disabled", true);
     $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').hide();
     $('.is-invalid').removeClass('is-invalid');
@@ -770,8 +782,9 @@ $(document).on("click", ".btn_view", function () {
 
     $(document).on('click', '.btn_acc', function(){
         var pi_id = $(this).attr('pi_id');
+        $('.modal').modal('hide');
         showModalKonfirmasi(
-            "Apakah yakin ingin Approve pengiriman ini?",
+            "Apakah yakin ingin Approve pengajuan ini?",
             "btn-accept-pi"
         );
         $('#btn-accept-pi').attr("pi_id", pi_id);
@@ -802,7 +815,7 @@ $(document).on("click", ".btn_view", function () {
                     ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                     refreshProductIssues();
                     $('.modal').modal("hide");
-                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengiriman");
+                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengajuan");
                 }                
             },
             error:function(e){
@@ -814,7 +827,8 @@ $(document).on("click", ".btn_view", function () {
 
     $(document).on('click', '.btn_decline', function(){
         var pi_id = $(this).attr('pi_id');
-        showModalDelete("Apakah yakin ingin tolak masalah ini?","btn-decline-pi");
+        $('.modal').modal('hide');
+        showModalDelete("Apakah yakin ingin tolak pengajuan ini?","btn-decline-pi");
         $('#btn-decline-pi').attr("pi_id",  pi_id);
         $('#btn-decline-pi').html("Konfirmasi");
     })
