@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Http\Controllers\ProductionController;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -68,6 +70,27 @@ class Production extends Model
                 }
             }
             $value->total_dos = $dos;
+
+            // Kalau misal ada yang sudah 3 hari lebih dan statusnya masih menunggu approve, maka auto ACC
+            $productionDate = Carbon::parse($value->production_date);
+            $diffDays = Carbon::now()->diffInDays($productionDate, false); 
+
+            if ($diffDays < -4 && $value->status == 1) {
+                $requestAcc = new \Illuminate\Http\Request();
+                $requestAcc->merge(['production_id' => $value->production_id]);
+                
+                $resultAcc = (new ProductionController())->accProduction($requestAcc);
+                
+                // Cek apakah return 1 (sukses) atau bukan
+                $isSuccess = $resultAcc === 1;
+                if (!$isSuccess) {
+                    // Gagal, jalankan decline
+                    $newRequest = new \Illuminate\Http\Request();
+                    $newRequest->merge(['production_id' => $value->production_id]);
+                    (new ProductionController())->declineProduction($newRequest);
+                }
+                return $this->getProduction($data);
+            }
         }
         return $result;
     }

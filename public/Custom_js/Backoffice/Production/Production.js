@@ -439,6 +439,9 @@
         } else {
             $('#btn-terima, #btn-tolak').hide();
         }
+        if (moment(data.production_date).isBefore(moment().subtract(3, 'days').format('YYYY-MM-DD'))) {
+            $('#btn-terima, #btn-tolak').hide();
+        }
         
         $('.is-invalid').removeClass('is-invalid');
         $('.add, .btn-save, .btn_delete_row_pr').hide();
