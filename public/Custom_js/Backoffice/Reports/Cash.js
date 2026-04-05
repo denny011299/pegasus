@@ -31,6 +31,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -47,15 +48,15 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "2.5rem"
+                    width: "4%"
                 },
-                { data: "date" },
-                { data: "cash_description" },
-                { data: "debit_text", className: "text-end" },
-                { data: "credit_text1", className: "text-end" },
-                { data: "credit_text2", className: "text-end" },
-                { data: "status_text" },
-                { data: "action", className: "d-flex align-items-center" },
+                { data: "date", width: "9%"},
+                { data: "cash_description", width: "18%"},
+                { data: "debit_text", className: "text-end", width: "12%"},
+                { data: "credit_text1", className: "text-end", width: "12%"},
+                { data: "credit_text2", className: "text-end", width: "12%"},
+                { data: "status_text", className: "text-center", width: "18%"},
+                { data: "action", className: "d-flex align-items-center", width: "15%"},
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -122,24 +123,28 @@
                     e[i].credit_text2 =`<label class='text-danger'>${e[i].credit2}</label>`
 
                     if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Menunggu Konfirmasi</span>`;
+                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 11px">Menunggu Konfirmasi</span>`;
                     } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 11px">Diterima</span>`;
                     } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 11px">Ditolak</span>`;
                     }
 
                     e[i].action = "";
                     if (e[i].status == 1){
                         e[i].action = `
-                            <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                <i class="fe fe-check"></i>
-                            </a>
-                            <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                <i class="fe fe-x"></i>
-                            </a>
+                            <div class="d-flex align-items-center gap-1">
+                                <a class="btn-action-icon p-2 btn_acc bg-success text-light" 
+                                data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                title="Terima" cash_id="${e[i].cash_id}">
+                                    <i class="fe fe-check"></i>
+                                </a>
+                                <a class="btn-action-icon p-2 btn_decline bg-danger text-light" 
+                                data-bs-toggle="tooltip" data-bs-placement="bottom" 
+                                title="Tolak" cash_id="${e[i].cash_id}">
+                                    <i class="fe fe-x"></i>
+                                </a>
+                            </div>
                         `;
                     }
                 }

@@ -803,8 +803,9 @@ class ReportController extends Controller
         $detail = CashArmadaDetail::where('cr_id', $data['cr_id'])->where('status', 1)->get();
         foreach ($detail as $key => $value) {
             (new CashArmadaDetail())->deleteCashArmadaDetail($value);
-            (new Cash())->deleteCash($value);
         }
+        // Kalau manajemen saldo, maka hapus dari kas juga
+        if ($ca->cr_aksi == 1) (new Cash())->deleteCash($ca);
     }
 
     function acceptCashArmada(Request $req)
@@ -1013,8 +1014,9 @@ class ReportController extends Controller
         $detail = CashSalesDetail::where('cs_id', $data['cs_id'])->where('status', 1)->get();
         foreach ($detail as $key => $value) {
             (new CashSalesDetail())->deleteCashSalesDetail($value);
-            (new Cash())->deleteCash($value);
         }
+        // Kalau manajemen saldo, maka hapus dari kas juga
+        if ($ca->cs_aksi == 2 || $ca->cs_aksi == 3) (new Cash())->deleteCash($ca);
     }
 
     function acceptCashSales(Request $req)

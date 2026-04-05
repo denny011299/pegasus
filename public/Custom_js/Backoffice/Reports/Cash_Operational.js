@@ -93,6 +93,7 @@
             $('.operasional').show();
         }
         $('#add_cash_admin input').val("");
+        $('#add_cash_admin .btn_acc, #add_cash_admin .btn_decline').hide();
         $("#oc_date").val(todayStr).attr('disabled', false);
         $('#staff_id').empty(null);
         $('.is-invalid').removeClass('is-invalid');
@@ -117,6 +118,7 @@
             $('.operasional').show();
         }
         $('#add_cash_gudang input').val("");
+        $('#add_cash_gudang .btn_acc, #add_cash_gudang .btn_decline').hide();
         $("#oc_date_gudang").val(todayStr).attr('disabled', false);
         $('#staff_id_gudang').empty(null);
         $('.is-invalid').removeClass('is-invalid');
@@ -140,6 +142,7 @@
             $('.operasional').show();
         }
         $('#add_cash_armada input').val("");
+        $('#add_cash_armada .btn_acc, #add_cash_armada .btn_decline').hide();
         $("#oc_date_armada").val(todayStr).attr('disabled', false);
         $('#customer_id_armada').empty(null).trigger('change');
         $('.is-invalid').removeClass('is-invalid');
@@ -170,6 +173,7 @@
             $('.operasional').show();
         }
         $('#add_cash_sales input').val("");
+        $('#add_cash_sales .btn_acc, #add_cash_sales .btn_decline').hide();
         $("#date_sales").val(todayStr).attr('disabled', false);
         $('#staff_id_sales, #bank_account, #cc_id').empty(null);
         $('.is-invalid').removeClass('is-invalid');
@@ -221,6 +225,7 @@
             $('#add_cash_admin').modal("show");
             $('.input_table, .btn_delete_row').show();
             $('.btn-save-admin').html('Tambah Aktivitas').show();
+            $('#add_cash_admin .btn_acc, #add_cash_admin .btn_decline').hide();
         }
         else if (type == "gudang"){
             $('#add_cash_gudang input').val("").attr('disabled', false);
@@ -426,7 +431,7 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "2.5rem"
+                    width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
                 { data: "staff_name", width: "12%" },
@@ -445,7 +450,7 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "2.5rem"
+                    width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
                 { data: "staff_name", width: "12%" },
@@ -464,7 +469,7 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "2.5rem"
+                    width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
                 { data: "customer_notes", width: "12%" },
@@ -483,7 +488,7 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "2.5rem"
+                    width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
                 { data: "staff_name", width: "12%" },
@@ -580,16 +585,16 @@
                                 </a>
                             `;
                         } else if (e[i].ca_type == 2){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
+                            // e[i].action += `
+                            //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-check"></i>
+                            //     </a>
+                            //     <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-x"></i>
+                            //     </a>
+                            // `;
                         }
                     }
                 }
@@ -672,16 +677,16 @@
                                 </a>
                             `;
                         } else if (e[i].cg_type == 2){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
+                            // e[i].action += `
+                            //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-check"></i>
+                            //     </a>
+                            //     <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-x"></i>
+                            //     </a>
+                            // `;
                         }
                     }
                 }
@@ -766,9 +771,14 @@
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
-                    if (e[i].status == 2 && e[i].cr_type == 1) e[i].action = "";
+                    // if (e[i].status == 2 && e[i].cr_type == 1) e[i].action = "";
                     if (e[i].status == 1){
-                        // if (e[i].cr_aksi == 1){
+                        if (e[i].cr_aksi == 1){
+                            e[i].action += `
+                                <a class="me-2 btn-action-icon p-2 btn_delete_armada" data-id="${e[i].cr_id}" data-bs-target="#view-cash">
+                                    <i class="fe fe-trash-2"></i>
+                                </a>
+                            `;
                         //     e[i].action += `
                         //         <a class="me-2 btn-action-icon p-2 btn_edit_armada" data-id="${e[i].cs_id}" data-bs-target="#edit-category">
                         //             <i class="fe fe-edit"></i>
@@ -777,18 +787,18 @@
                         //             <i class="fe fe-trash-2"></i>
                         //         </a>
                         //     `;
-                        // }
+                        }
                         if (e[i].cr_aksi == 2){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
+                            // e[i].action += `
+                            //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-check"></i>
+                            //     </a>
+                            //     <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-x"></i>
+                            //     </a>
+                            // `;
                         }
                     }
                 }
@@ -878,17 +888,22 @@
                         </a>
                     `;
                     if (e[i].status == 1){
-                        if (e[i].cs_aksi == 1){
+                        if (e[i].cs_aksi == 3){
                             e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
+                                <a class="me-2 btn-action-icon p-2 btn_delete_sales" data-id="${e[i].cs_id}" data-bs-target="#view-cash">
+                                    <i class="fe fe-trash-2"></i>
                                 </a>
                             `;
+                            // e[i].action += `
+                            //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-check"></i>
+                            //     </a>
+                            //     <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
+                            //     data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
+                            //         <i class="fe fe-x"></i>
+                            //     </a>
+                            // `;
                         }
                     }
                 }
@@ -2010,6 +2025,7 @@
         }
         $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
+        $('#add_cash_admin .btn_acc, #add_cash_admin .btn_decline').hide();
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('.btn-save-admin').html('Update Aktivitas').show();
@@ -2050,15 +2066,25 @@
             $('#bukti').val(data.ca_img);
             $('#check_foto').show();
             imageValue(data.ca_img);
+
+            $('#add_cash_admin .btn_acc').attr('detail_id', data.ca_id);
+            $('#add_cash_admin .btn_acc').attr('cash_id', data.cash_id);
+            $('#add_cash_admin .btn_decline').attr('detail_id', data.ca_id);
+            $('#add_cash_admin .btn_decline').attr('cash_id', data.cash_id);
+
+            if (data.status == 1) {
+                $('#add_cash_admin .btn_acc, #add_cash_admin .btn_decline').show();
+            }
         }
         else {
+            $('#add_cash_admin .btn_acc, #add_cash_admin .btn_decline').hide();
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
             $('#oc_nominal').val(data.ca_nominal).attr('disabled', true);
             $('#oc_notes').val(data.ca_notes).attr('disabled', true);
         }
         $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
-
+ 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('.input_table, .btn-save-admin, .btn_delete_row').hide();
@@ -2138,6 +2164,7 @@
             $('#oc_notes_gudang').val(data.cg_notes).attr('disabled', false);
         }
         $('#staff_id_gudang').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
+        $('#add_cash_gudang .btn_acc, #add_cash_gudang .btn_decline').hide();
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -2181,8 +2208,18 @@
             $('#bukti_gudang').val(data.cg_img);
             $('#check_foto_gudang').show();
             imageValue(data.cg_img);
+
+            $('#add_cash_gudang .btn_acc').attr('detail_id', data.cg_id);
+            $('#add_cash_gudang .btn_acc').attr('cash_id', data.cash_id);
+            $('#add_cash_gudang .btn_decline').attr('detail_id', data.cg_id);
+            $('#add_cash_gudang .btn_decline').attr('cash_id', data.cash_id);
+
+            if (data.status == 1) {
+                $('#add_cash_gudang .btn_acc, #add_cash_gudang .btn_decline').show();
+            }
         }
         else {
+            $('#add_cash_gudang .btn_acc, #add_cash_gudang .btn_decline').hide();
             $('#jenis_input_gudang').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_gudang').val(data.cg_aksi).attr('disabled', true);
             $('#oc_nominal_gudang').val(data.cg_nominal).attr('disabled', true);
@@ -2216,7 +2253,7 @@
             success:function(e){
                 ResetLoadingButton('#btn-delete-gudang', "Delete");
                 $('.modal').modal("hide");
-                refreshCashAdmin();
+                refreshCashGudang();
                 notifikasi('success', "Berhasil Delete", "Berhasil delete pengajuan");
             },
             error:function(e){
@@ -2244,6 +2281,7 @@
                     "crd_id" : e.crd_id,
                     "crd_notes" : e.crd_notes,
                     "crd_nominal" : e.crd_nominal,
+                    "crd_type" : e.crd_type
                 };
                 items.push(temp);
                 total += e.crd_nominal;
@@ -2276,6 +2314,7 @@
         }
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
+        $('#add_cash_armada .btn_acc, #add_cash_armada .btn_decline').hide();
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -2304,6 +2343,7 @@
                     "crd_id" : e.crd_id,
                     "crd_notes" : e.crd_notes,
                     "crd_nominal" : e.crd_nominal,
+                    "crd_type" : e.crd_type
                 };
                 items.push(temp);
                 total += e.crd_nominal;
@@ -2327,19 +2367,29 @@
             $('#jumlahFoto').html(list_photo.length);
             $('#bukti_armada').val(data.cr_img);
             
+            $('#add_cash_armada .btn_acc').attr('detail_id', data.cr_id);
+            $('#add_cash_armada .btn_acc').attr('cash_id', data.cash_id);
+            $('#add_cash_armada .btn_decline').attr('detail_id', data.cr_id);
+            $('#add_cash_armada .btn_decline').attr('cash_id', data.cash_id);
+
+            if (data.status == 1) {
+                $('#add_cash_armada .btn_acc, #add_cash_armada .btn_decline').show();
+            }
         } else {
             $('.foto').hide();
+            $('#add_cash_armada .btn_acc, #add_cash_armada .btn_decline').hide();
             $('#jenis_input_armada').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_armada').val(data.cr_aksi).attr('disabled', true);
             $('#oc_notes_armada').val(data.cr_notes).attr('disabled', true);
-            var nominalVal = data.cr_nominal.toString();
-            var optionAda = $('#jenis_nominal option[value="' + nominalVal + '"]').length > 0;
-            if (optionAda) {
-                $('#jenis_nominal').val(nominalVal).trigger('change').attr('disabled', true);
-            } else {
-                $('#jenis_nominal').val('manual').trigger('change').attr('disabled', true);
-                $('#oc_nominal_armada').val(formatRupiahMinus(data.cr_nominal)).attr('disabled', true);
-            }
+            // var nominalVal = data.cr_nominal.toString();
+            // var optionAda = $('#jenis_nominal option[value="' + nominalVal + '"]').length > 0;
+            // if (optionAda) {
+            //     $('#jenis_nominal').val(nominalVal).trigger('change').attr('disabled', true);
+            // } else {
+            //     $('#jenis_nominal').val('manual').trigger('change').attr('disabled', true);
+            //     $('#oc_nominal_armada').val(formatRupiahMinus(data.cr_nominal)).attr('disabled', true);
+            // }
+            $('#oc_nominal_armada').val(formatRupiahMinus(data.cr_nominal)).attr('disabled', true);
         }
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
@@ -2398,6 +2448,7 @@
                     "csd_id" : e.csd_id,
                     "csd_notes" : e.csd_notes,
                     "csd_nominal" : e.csd_nominal,
+                    "csd_type" : e.csd_type
                 };
                 items.push(temp);
                 total += e.csd_nominal;
@@ -2430,7 +2481,8 @@
 
         $('#date_sales').val(data.cs_date).attr('disabled', false);
         $('#staff_id_sales').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
-
+        $('#add_cash_sales .btn_acc, #add_cash_sales .btn_decline').hide();
+        
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('.btn-save-sales').html('Update Aktivitas').show();
@@ -2481,8 +2533,18 @@
             $('#jumlahFoto').html(list_photo.length);
             $('#bukti_sales').val(data.cs_img);
             
+            $('#add_cash_sales .btn_acc').attr('detail_id', data.cs_id);
+            $('#add_cash_sales .btn_acc').attr('cash_id', data.cash_id);
+            $('#add_cash_sales .btn_decline').attr('detail_id', data.cs_id);
+            $('#add_cash_sales .btn_decline').attr('cash_id', data.cash_id);
+            
+            if (data.status == 1) {
+                $('#add_cash_sales .btn_acc, #add_cash_sales .btn_decline').show();
+            }
+
         } else {
             $('.foto').hide();
+            $('#add_cash_sales .btn_acc, #add_cash_sales .btn_decline').hide();
             $('#jenis_input_sales').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_sales').val(data.cs_aksi).attr('disabled', true);
             $('#oc_notes_sales').val(data.cs_notes).attr('disabled', true);
@@ -2490,6 +2552,15 @@
             $('#date_sales').val(data.cs_date).attr('disabled', true);
             $('#aksi_sales').val(data.cs_aksi).attr('disabled', true);
 
+            if (data.cs_aksi == 1) {
+                $('#add_cash_sales .btn_acc').attr('detail_id', data.cs_id);
+                $('#add_cash_sales .btn_acc').attr('cash_id', data.cash_id);
+                $('#add_cash_sales .btn_decline').attr('detail_id', data.cs_id);
+                $('#add_cash_sales .btn_decline').attr('cash_id', data.cash_id);
+                if (data.status == 1) {
+                    $('#add_cash_sales .btn_acc, #add_cash_sales .btn_decline').show();
+                }
+            }
             if (data.cs_aksi != 2) {
                 $('.banks').hide();
             } else {
@@ -2539,16 +2610,21 @@
 
     // --------- ACC KAS OPERASIONAL ---------
     $(document).on('click', '.btn_acc', function(){
-        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        // var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var cash_id = $(this).attr('cash_id');
+        var id = $(this).attr('detail_id');
+        $('.modal').modal('hide');
         showModalKonfirmasi(
             "Apakah yakin ingin Approve pengajuan ini?",
             "btn-accept-kas"
         );
-        $('#btn-accept-kas').attr("cash_id", data.cash_id);
-        if (type == "admin") $('#btn-accept-kas').attr("ca_id", data.ca_id);
-        else if (type == "gudang") $('#btn-accept-kas').attr("cg_id", data.cg_id);
-        else if (type == "armada") $('#btn-accept-kas').attr("cr_id", data.cr_id);
-        else if (type == "sales") $('#btn-accept-kas').attr("cs_id", data.cs_id);
+        console.log(id);
+        console.log(cash_id);
+        $('#btn-accept-kas').attr("cash_id", cash_id);
+        if (type == "admin") $('#btn-accept-kas').attr("ca_id", id);
+        else if (type == "gudang") $('#btn-accept-kas').attr("cg_id", id);
+        else if (type == "armada") $('#btn-accept-kas').attr("cr_id", id);
+        else if (type == "sales") $('#btn-accept-kas').attr("cs_id", id);
         $('#btn-accept-kas').html("Konfirmasi");
     })
 
@@ -2615,13 +2691,16 @@
     })
 
     $(document).on('click', '.btn_decline', function(){
-        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        // var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var cash_id = $(this).attr('cash_id');
+        var id = $(this).attr('detail_id');
+        $('.modal').modal('hide');
         showModalDelete("Apakah yakin ingin tolak pengajuan ini?","btn-decline-kas");
-        $('#btn-decline-kas').attr("cash_id", data.cash_id);
-        if (type == "admin") $('#btn-decline-kas').attr("ca_id", data.ca_id);
-        else if (type == "gudang") $('#btn-decline-kas').attr("cg_id", data.cg_id);
-        else if (type == "armada") $('#btn-decline-kas').attr("cr_id", data.cr_id);
-        else if (type == "sales") $('#btn-decline-kas').attr("cs_id", data.cs_id);
+        $('#btn-decline-kas').attr("cash_id", cash_id);
+        if (type == "admin") $('#btn-decline-kas').attr("ca_id", id);
+        else if (type == "gudang") $('#btn-decline-kas').attr("cg_id", id);
+        else if (type == "armada") $('#btn-decline-kas').attr("cr_id", id);
+        else if (type == "sales") $('#btn-decline-kas').attr("cs_id", id);
         $('#btn-decline-kas').html("Konfirmasi");
     })
 

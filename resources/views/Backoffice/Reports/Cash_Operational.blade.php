@@ -76,6 +76,11 @@
             word-break: break-word;
         }
 
+        body.modal-open {
+            overflow: hidden !important; /* kembalikan ke default Bootstrap */
+            padding-right: 0 !important; /* tapi hilangkan padding-right yang bikin geser */
+        }
+
     </style>
 @endsection
 @section('content')
@@ -131,7 +136,7 @@
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
                                         <tr id="headers">
-                                            <th width="40"></th>
+                                            <th width="20"></th>
                                             <th>Tanggal</th>
                                             <th>Staff</th>
                                             <th>Deskripsi</th>

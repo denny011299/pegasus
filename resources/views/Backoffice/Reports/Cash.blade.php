@@ -46,6 +46,24 @@
             white-space: normal;
             word-break: break-word;
         }
+
+        #tableCash {
+            width: 100% !important;
+            min-width: 900px;
+        }
+
+        #tableCash td, #tableCash th {
+            white-space: nowrap; /* jangan wrap, biar scroll horizontal yang kerja */
+            vertical-align: middle;
+            padding: 8px 10px;
+        }
+
+        /* Khusus deskripsi boleh wrap */
+        #tableCash td:nth-child(3),
+        #tableCash th:nth-child(3) {
+            white-space: normal;
+            min-width: 150px;
+        }
     </style>
 @endsection
 @section('content')
@@ -75,14 +93,14 @@
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th></th>
-                                            <th>Tanggal</th>
-                                            <th>Deskripsi</th>
-                                            <th class="text-end">Masuk</th>
-                                            <th class="text-end">Keluar</th>
-                                            <th class="text-end">Keluar 1</th>
-                                            <th>Status</th>
-                                            <th>Aksi</th>
+                                            <th style="width: 4%"></th>
+                                            <th style="width: 9%">Tanggal</th>
+                                            <th style="width: 18%">Deskripsi</th>
+                                            <th style="width: 12%" class="text-end">Masuk</th>
+                                            <th style="width: 12%" class="text-end">Keluar</th>
+                                            <th style="width: 12%" class="text-end">Keluar 1</th>
+                                            <th style="width: 18%">Status</th>
+                                            <th style="width: 15%">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -100,7 +118,7 @@
                                             <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
                                             <td class="fw-bold text-end">Total Setoran : </td>
-                                            <td class="fw-bold text-end setor">Rp 0</td>
+                                            <td class="fw-bold text-end setor pe-4">Rp 0</td>
                                         </tr>
                                     </tfoot>
                                 </table>
