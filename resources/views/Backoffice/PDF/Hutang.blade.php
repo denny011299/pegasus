@@ -181,7 +181,7 @@
             @foreach ($detail as $d)
                 <tr>
                     <td>{{ $d['bank_kode'] }}</td>
-                    <td>{{ date('d F Y', strtotime($d["poi_date"]))??null }}</td>
+                    <td>{{ date('d F Y', strtotime($d["po_date"]))??null }}</td>
                     <td style="color: #ef4444;">{{ date('d F Y', strtotime($d["poi_due"]))??null }}</td>
                     <td style="color: #082a58; font-weight: bold;">{{ $d['poi_code'] }}</td>
                     <td>{{ $d['supplier_name'] }}</td>
