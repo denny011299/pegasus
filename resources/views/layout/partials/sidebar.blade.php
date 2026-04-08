@@ -784,7 +784,7 @@
                                     @if ($akses->firstWhere('name', 'Retur Produk'))
                                         <li><a href="/ProductReturn"
                                             class="{{ Request::is('ProductReturn') ? 'active' : '' }}">
-                                            Retur Produk</a></li>
+                                            Laporan Retur</a></li>
                                     @endif
 
                                     @if ($akses->firstWhere('name', 'Laporan Produksi'))

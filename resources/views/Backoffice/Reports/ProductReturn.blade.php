@@ -30,7 +30,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Laporan Retur Product
+                    Laporan Retur
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -50,7 +50,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th></th>
-                                            <th>Barang Retur</th>
+                                            <th>Retur Bahan</th>
                                             <th>Supplier</th>
                                             <th>Total Transaksi Retur</th>
                                             <th>Akumulasi Qty Retur</th>

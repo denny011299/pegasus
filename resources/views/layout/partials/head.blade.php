@@ -51,6 +51,22 @@
             line-height: 1 !important;
         }
 
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+        }
+
+        .select2-container--default .select2-selection--single {
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .select2-container {
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
         /* Tombol clear select2 unit */
         button.select2-selection__clear[aria-describedby*="unit-container"] {
             padding: 0.1rem 0 0.8rem !important;
@@ -70,6 +86,7 @@
             flex-wrap: wrap !important;
             align-items: center !important;
             padding: 2px 4px !important;
+            overflow: visible !important; /* jangan hidden, biar chip wrap */
         }
 
         /* Inline search wrapper → biar search ikut fleksibel */

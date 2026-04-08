@@ -57,7 +57,7 @@
         </div>
         <div class="col-xl-4 col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
-                <label>Barang</label>
+                <label>Bahan Mentah</label>
                 <select class="form-select" id="supplies_id"></select>
             </div>
         </div>
