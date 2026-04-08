@@ -1127,7 +1127,7 @@ class ReportController extends Controller
             if ($startDate && $endDate) $qProduct->whereBetween('h.sto_date', [$startDate, $endDate]);
             else if ($startDate) $qProduct->where('h.sto_date', '>=', $startDate);
             else if ($endDate) $qProduct->where('h.sto_date', '<=', $endDate);
-            if ($type === 'product' && !empty($itemId)) $qProduct->where('d.product_id', $itemId);
+            if ($type === 'product' && !empty($itemId)) $qProduct->where('d.product_variant_id', $itemId);
             $rows = array_merge($rows, $qProduct->get()->toArray());
         }
 
@@ -1207,7 +1207,17 @@ class ReportController extends Controller
             if ($type === 'bahan') {
                 $itemName = Supplies::find($req->item_id)->supplies_name ?? "Semua Item";
             } elseif ($type === 'product') {
-                $itemName = Product::find($req->item_id)->product_name ?? "Semua Item";
+                $pv = ProductVariant::find($req->item_id);
+                if ($pv) {
+                    $p = Product::find($pv->product_id);
+                    $itemName = trim(
+                        (($p->product_name ?? '') !== '' ? $p->product_name . ' ' : '') .
+                        ($pv->product_variant_name ?? '')
+                    );
+                    $itemName = $itemName !== '' ? $itemName : "Semua Item";
+                } else {
+                    $itemName = "Semua Item";
+                }
             }
         }
         $param["item_name"] = $itemName;
@@ -1274,8 +1284,21 @@ class ReportController extends Controller
         return view('Backoffice.Reports.ReportProduksi');
     }
 
+    function reportEfisiensiProduksi(){
+        return view('Backoffice.Reports.ReportEfisiensiProduksi');
+    }
+
     function getReportProduksi(Request $req){
         $data = (new Production())->getProductionReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
+        ]);
+        return response()->json($data);
+    }
+
+    function getReportEfisiensiProduksi(Request $req){
+        $data = (new Production())->getProductionEfficiencyReport([
             "date" => $req->date,
             "supplier_id" => $req->supplier_id,
             "product_variant_id" => $req->product_variant_id
@@ -1298,6 +1321,23 @@ class ReportController extends Controller
 
         $pdf = Pdf::loadView('Backoffice.PDF.ReportProduksi', $param)->setPaper('a4', 'portrait');
         return $pdf->stream('Laporan_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    function generateReportEfisiensiProduksiPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
+        ];
+
+        $param["data"] = (new Production())->getProductionEfficiencyReport($filter);
+        $param["start_date"] = is_array($req->date) && isset($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && isset($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $param["product_name"] = $req->product_variant_id ? (ProductVariant::find($req->product_variant_id)->product_variant_name ?? "-") : "Semua Produk";
+
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportEfisiensiProduksi', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Efisiensi_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     // Cash Category

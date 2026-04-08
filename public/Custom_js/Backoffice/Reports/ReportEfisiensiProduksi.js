@@ -1,20 +1,20 @@
 var table;
 var dates = null;
-var filterType = "all";
+autocompleteSupplier("#supplier");
+autocompleteProductVariantOnly("#product_id");
 
 $(document).ready(function () {
     inisialisasi();
-    initTypeItemFilter();
     var startMonth = moment().startOf("month").format("DD-MM-YYYY");
     var endMonth = moment().endOf("month").format("DD-MM-YYYY");
     $("#start_date").val(startMonth);
     $("#end_date").val(endMonth);
     dates = [startMonth, endMonth];
-    refreshSelisihOpname();
+    refreshEfisiensi();
 });
 
 function inisialisasi() {
-    table = $("#tableSelisihOpname").DataTable({
+    table = $("#tableReportEfisiensi").DataTable({
         bFilter: true,
         sDom: "fBtlpi",
         lengthMenu: [10, 25, 50, 100],
@@ -23,7 +23,7 @@ function inisialisasi() {
         language: {
             search: " ",
             sLengthMenu: "_MENU_",
-            searchPlaceholder: "Cari Selisih Opname",
+            searchPlaceholder: "Cari Efisiensi",
             info: "_START_ - _END_ of _TOTAL_ items",
             paginate: {
                 next: ' <i class=" fa fa-angle-right"></i>',
@@ -38,10 +38,12 @@ function inisialisasi() {
                 defaultContent:
                     '<a href="javascript:void(0);" class="btn-action-icon p-1 btn-toggle-detail"><i class="fa fa-plus"></i></a>',
             },
-            { data: "kode" },
-            { data: "tanggal_text" },
-            { data: "item_summary" },
-            { data: "nominal_summary", className: "text-end" },
+            { data: "product_name" },
+            { data: "total_summary" },
+            { data: "reject_summary" },
+            { data: "reject_ratio_summary" },
+            { data: "waste_ratio_summary" },
+            { data: "efficiency_summary" },
         ],
         initComplete: () => {
             $(".dataTables_filter").appendTo("#tableSearch");
@@ -51,59 +53,59 @@ function inisialisasi() {
     });
 }
 
-function formatCurrency(value) {
-    return new Intl.NumberFormat("id-ID").format(Math.abs(value || 0));
+function statusBadge(status) {
+    if (status == 3) return '<span class="badge bg-danger">Reject</span>';
+    if (status == 2) return '<span class="badge bg-success">Selesai</span>';
+    if (status == 1) return '<span class="badge bg-secondary">Pending</span>';
+    return '<span class="badge bg-secondary">-</span>';
 }
 
-function formatNominal(value) {
-    var num = parseFloat(value || 0);
-    if (num > 0) return `<span class="text-success">+ Rp ${formatCurrency(num)}</span>`;
-    if (num < 0) return `<span class="text-danger">- Rp ${formatCurrency(num)}</span>`;
-    return "Rp 0";
+function ratioBadge(val, inverse) {
+    var v = parseFloat(val || 0);
+    if (inverse) {
+        if (v >= 90) return `<span class="badge bg-success">${v.toFixed(2)}%</span>`;
+        if (v >= 75) return `<span class="badge bg-warning">${v.toFixed(2)}%</span>`;
+        return `<span class="badge bg-danger">${v.toFixed(2)}%</span>`;
+    }
+    if (v <= 5) return `<span class="badge bg-success">${v.toFixed(2)}%</span>`;
+    if (v <= 15) return `<span class="badge bg-warning">${v.toFixed(2)}%</span>`;
+    return `<span class="badge bg-danger">${v.toFixed(2)}%</span>`;
 }
 
 function formatDetailRow(data) {
     var html = `
         <div class="child-row-wrapper" style="display:none; max-height: 320px; overflow-y: auto; overflow-x: auto;">
-            <table class="table table-sm table-bordered mb-0 report-selisih-child">
+            <table class="table table-sm table-bordered mb-0 report-efisiensi-child">
                 <thead>
                     <tr>
-                        <th>Sumber</th>
-                        <th>Item</th>
-                        <th>Stok Sistem</th>
-                        <th>Stok Fisik</th>
-                        <th>Selisih</th>
-                        <th>Harga Satuan</th>
-                        <th>Nominal</th>
+                        <th>Tanggal</th>
+                        <th>Kode Produksi</th>
+                        <th>Qty Produksi</th>
+                        <th>Status</th>
+                        <th>Pemakaian Bahan</th>
+                        <th>Bahan Terbuang</th>
                     </tr>
                 </thead>
                 <tbody>
     `;
-
     if (data.details && data.details.length > 0) {
         for (let i = 0; i < data.details.length; i++) {
-            const d = data.details[i];
-            const itemName =
-                d.variant_name && d.variant_name !== "-"
-                    ? `${d.item_name} - ${d.variant_name}`
-                    : d.item_name;
+            var d = data.details[i];
             html += `
                 <tr>
-                    <td>${d.sumber || "-"}</td>
-                    <td>${itemName || "-"}</td>
-                    <td>${d.stock_system || "-"}</td>
-                    <td>${d.stock_fisik || "-"}</td>
-                    <td>${d.selisih_text || "-"}</td>
-                    <td class="text-end">Rp ${formatCurrency(d.harga_satuan || 0)}</td>
-                    <td class="text-end">${formatNominal(d.nominal || 0)}</td>
+                    <td>${moment(d.production_date).format("D MMM YYYY")}</td>
+                    <td>${d.production_code || "-"}</td>
+                    <td>${d.qty} ${d.unit_name || ""}</td>
+                    <td>${statusBadge(d.status)}</td>
+                    <td>${d.material_usage_text || "-"}</td>
+                    <td>${d.material_waste_text || "-"}</td>
                 </tr>
             `;
         }
     } else {
-        html += `<tr><td colspan="7" class="text-center">Tidak ada detail selisih</td></tr>`;
+        html += '<tr><td colspan="6" class="text-center">Tidak ada detail</td></tr>';
     }
-
-    html += `</tbody></table></div>`;
+    html += "</tbody></table></div>";
     return html;
 }
 
@@ -126,28 +128,30 @@ function toggleDetailRow(tr, row) {
     }
 }
 
-function refreshSelisihOpname() {
+function refreshEfisiensi() {
     $.ajax({
-        url: "/getReportSelisihOpname",
+        url: "/getReportEfisiensiProduksi",
         method: "get",
         data: {
             date: dates,
-            type: filterType,
-            item_id: $("#selisih_item_id").val(),
+            supplier_id: $("#supplier").val(),
+            product_variant_id: $("#product_id").val(),
         },
         success: function (e) {
             if (!Array.isArray(e)) e = e.original || [];
             table.clear().draw();
             for (let i = 0; i < e.length; i++) {
-                e[i].tanggal_text = moment(e[i].tanggal).format("D MMM YYYY");
-                e[i].item_summary = `${e[i].total_item_selisih} Item Selisih`;
-                e[i].nominal_summary = formatNominal(e[i].total_nominal || 0);
+                e[i].total_summary = `${e[i].production_count} Batch (${e[i].total_qty} qty)`;
+                e[i].reject_summary = `${e[i].total_reject_count} Batch (${e[i].total_reject_qty} qty)`;
+                e[i].reject_ratio_summary = ratioBadge(e[i].reject_ratio || 0, false);
+                e[i].waste_ratio_summary = ratioBadge(e[i].material_waste_ratio || 0, false);
+                e[i].efficiency_summary = ratioBadge(e[i].efficiency_ratio || 0, true);
             }
             table.rows.add(e).draw();
             feather.replace();
         },
         error: function (err) {
-            console.error("Gagal load report selisih opname:", err);
+            console.error("Gagal load report efisiensi produksi:", err);
         },
     });
 }
@@ -169,46 +173,24 @@ function applyFilter() {
     $("#end_date").val(end);
     dates.push(start);
     dates.push(end);
-    refreshSelisihOpname();
-}
-
-function initTypeItemFilter() {
-    $("#selisih_type").val("all");
-    $("#selisih_item_id").prop("disabled", true).empty();
-}
-
-function initItemAutocompleteByType(type) {
-    var $item = $("#selisih_item_id");
-    $item.empty();
-    if (type === "bahan") {
-        $item.prop("disabled", false);
-        autocompleteSupplies("#selisih_item_id");
-    } else if (type === "product") {
-        $item.prop("disabled", false);
-        autocompleteProductVariantOnly("#selisih_item_id");
-    } else {
-        $item.prop("disabled", true);
-    }
+    refreshEfisiensi();
 }
 
 $(document).on("click", ".btn-clear", function () {
     dates = null;
     $("#start_date").val("");
     $("#end_date").val("");
-    filterType = "all";
-    $("#selisih_type").val("all").trigger("change");
-    $("#selisih_item_id").empty().trigger("change");
-    refreshSelisihOpname();
+    $("#supplier").empty();
+    $("#product_id").empty();
+    refreshEfisiensi();
 });
 
-$(document).on("change", "#selisih_type", function () {
-    filterType = $(this).val() || "all";
-    initItemAutocompleteByType(filterType);
-    refreshSelisihOpname();
+$(document).on("change", "#supplier", function () {
+    applyFilter();
 });
 
-$(document).on("change", "#selisih_item_id", function () {
-    refreshSelisihOpname();
+$(document).on("change", "#product_id", function () {
+    applyFilter();
 });
 
 $(document).on("change change.datetimepicker dp.change", "#start_date, #end_date", function () {
@@ -222,13 +204,13 @@ $(document).on("click", ".btn-export-pdf", function () {
     if (!start && end) start = end;
     var params = {
         date: [start, end],
-        type: filterType,
-        item_id: $("#selisih_item_id").val(),
+        supplier_id: $("#supplier").val(),
+        product_variant_id: $("#product_id").val(),
     };
-    window.open("/generateReportSelisihOpnamePdf?" + $.param(params), "_blank");
+    window.open("/generateReportEfisiensiProduksiPdf?" + $.param(params), "_blank");
 });
 
-$("#tableSelisihOpname tbody").on("click", "td.details-control .btn-toggle-detail", function (e) {
+$("#tableReportEfisiensi tbody").on("click", "td.details-control .btn-toggle-detail", function (e) {
     e.preventDefault();
     e.stopPropagation();
     var tr = $(this).closest("tr");
@@ -236,7 +218,7 @@ $("#tableSelisihOpname tbody").on("click", "td.details-control .btn-toggle-detai
     toggleDetailRow(tr, row);
 });
 
-$("#tableSelisihOpname tbody").on("click", "tr", function (e) {
+$("#tableReportEfisiensi tbody").on("click", "tr", function (e) {
     if ($(e.target).closest("tr.child").length) return;
     var tr = $(this).closest("tr");
     if (tr.hasClass("child")) return;

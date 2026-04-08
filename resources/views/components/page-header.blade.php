@@ -62,6 +62,13 @@
                         </a>
                     </li>
                 @endif
+                @if (Route::is(['reportEfisiensiProduksi']))
+                    <li>
+                        <a class="btn btn-outline-success btn-export-pdf">
+                            Export PDF
+                        </a>
+                    </li>
+                @endif
                 @if (Route::is(['ProductReturn']))
                     <li>
                         <a class="btn btn-outline-success btn-export-pdf">

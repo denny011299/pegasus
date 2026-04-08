@@ -210,6 +210,50 @@
 <!-- /Filter Pencarian -->
 @endif
 
+@if(Route::is(['reportEfisiensiProduksi']))
+<!-- Filter Pencarian -->
+<div class="profit-menu card">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Dari</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" id="start_date" placeholder="01 Jan 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Sampai</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="datetimepicker form-control" id="end_date" placeholder="31 Mar 2023">
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Supplier</label>
+                <select class="form-select" id="supplier"></select>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Produk</label>
+                <select class="form-select" id="product_id"></select>
+            </div>
+        </div>
+        <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
+                <a class="btn btn-outline-secondary btn-clear">
+                    Clear
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- /Filter Pencarian -->
+@endif
+
 @if(Route::is(['inwardOutward']))
 <!-- Filter Pencarian -->
 <div class="container mt-3">

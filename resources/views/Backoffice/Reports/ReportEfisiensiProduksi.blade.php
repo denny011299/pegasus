@@ -2,11 +2,11 @@
 @extends('layout.mainlayout')
 @section('content')
     <style>
-        #tableSelisihOpname thead th {
+        #tableReportEfisiensi thead th {
             background-color: #e8f1ff !important;
         }
 
-        #tableSelisihOpname .report-selisih-child thead th {
+        #tableReportEfisiensi .report-efisiensi-child thead th {
             background-color: #f5f7fb !important;
             position: sticky;
             top: 0;
@@ -17,7 +17,7 @@
         <div class="content container-fluid">
             @component('components.page-header')
                 @slot('title')
-                    Laporan Selisih Stok Opname
+                    Laporan Efisiensi Produksi (Barang Cacat/Reject)
                 @endslot
             @endcomponent
 
@@ -29,14 +29,16 @@
                     <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableSelisihOpname">
+                                <table class="table table-center table-hover" id="tableReportEfisiensi">
                                     <thead class="thead-light">
                                         <tr>
                                             <th></th>
-                                            <th>Kode Opname</th>
-                                            <th>Tanggal</th>
-                                            <th>Item Selisih</th>
-                                            <th>Nominal (+/-)</th>
+                                            <th>Produk</th>
+                                            <th>Total Produksi</th>
+                                            <th>Total Reject</th>
+                                            <th>Rasio Reject</th>
+                                            <th>Rasio Waste Bahan</th>
+                                            <th>Efisiensi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -54,5 +56,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{ asset('Custom_js/Backoffice/Reports/StockOpnameDifference.js') }}?v=2"></script>
+    <script src="{{ asset('Custom_js/Backoffice/Reports/ReportEfisiensiProduksi.js') }}?v=1"></script>
 @endsection

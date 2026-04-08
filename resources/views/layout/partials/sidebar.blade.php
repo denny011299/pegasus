@@ -719,6 +719,7 @@
                         $akses->firstWhere('name', 'Pengelolaan Bahan Mentah') ||
                         $akses->firstWhere('name', 'Retur Produk') ||
                         $akses->firstWhere('name', 'Laporan Produksi') ||
+                        $akses->firstWhere('name', 'Laporan Efisiensi Produksi') ||
                         $akses->firstWhere('name', 'Stok Opname Produk') ||
                         $akses->firstWhere('name', 'Stok Opname Bahan Mentah') ||
                         $akses->firstWhere('name', 'Untung & Rugi') ||
@@ -793,6 +794,12 @@
                                         <li><a href="/reportProduksi"
                                             class="{{ Request::is('reportProduksi') ? 'active' : '' }}">
                                             Laporan Produksi</a></li>
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Laporan Efisiensi Produksi') || $akses->firstWhere('name', 'Laporan Produksi'))
+                                        <li><a href="/reportEfisiensiProduksi"
+                                            class="{{ Request::is('reportEfisiensiProduksi') ? 'active' : '' }}">
+                                            Laporan Efisiensi Produksi</a></li>
                                     @endif
 
                                     @if ($akses->firstWhere('name', 'Stok Opname Produk') || $akses->firstWhere('name', 'Stok Opname Bahan Mentah'))

@@ -281,4 +281,222 @@ class Production extends Model
 
         return array_values($grouped);
     }
+
+    function getProductionEfficiencyReport($data = [])
+    {
+        $data = array_merge([
+            "date" => null,
+            "supplier_id" => null,
+            "product_variant_id" => null
+        ], $data);
+
+        $query = ProductionDetails::query()
+            ->join('productions as p', 'p.production_id', '=', 'production_details.production_id')
+            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'production_details.product_variant_id')
+            ->join('products as pr', 'pr.product_id', '=', 'pv.product_id')
+            ->leftJoin('units as u', 'u.unit_id', '=', 'production_details.unit_id')
+            ->where('production_details.status', '>=', 1)
+            // Efisiensi pakai data final: selesai + reject
+            ->whereIn('p.status', [2, 3])
+            ->select(
+                'production_details.pd_id',
+                'production_details.product_variant_id',
+                'production_details.pd_qty',
+                'production_details.list_bahan',
+                'production_details.bom_id',
+                'p.production_id',
+                'p.production_code',
+                'p.production_date',
+                'p.status as production_status',
+                'pv.product_variant_name',
+                'pr.product_name',
+                'u.unit_name'
+            );
+
+        if ($data["product_variant_id"]) {
+            $query->where('production_details.product_variant_id', $data["product_variant_id"]);
+        }
+
+        if ($data["date"]) {
+            if (is_array($data["date"]) && count($data["date"]) === 2) {
+                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
+                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
+                $query->whereBetween('p.production_date', [$startDate, $endDate]);
+            } else {
+                $date = $data["date"];
+                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d')) {
+                    $date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                }
+                $query->where('p.production_date', '=', $date);
+            }
+        }
+
+        $rows = $query->orderBy('p.production_date', 'desc')
+            ->orderBy('p.production_id', 'desc')
+            ->get();
+
+        $supplierSupplies = [];
+        if ($data["supplier_id"]) {
+            $supplierSupplies = DB::table('supplies_variants')
+                ->where('supplier_id', $data["supplier_id"])
+                ->pluck('supplies_id')
+                ->unique()
+                ->toArray();
+        }
+
+        $detailRows = [];
+        $bomSuppliesCache = [];
+        foreach ($rows as $row) {
+            $listBahan = [];
+            if (!empty($row->list_bahan)) {
+                $decoded = json_decode($row->list_bahan, true);
+                if (is_array($decoded)) $listBahan = $decoded;
+            }
+
+            if (count($listBahan) <= 0 && !empty($row->bom_id)) {
+                if (!isset($bomSuppliesCache[$row->bom_id])) {
+                    $bomSuppliesCache[$row->bom_id] = DB::table('bom_details')
+                        ->where('bom_id', $row->bom_id)
+                        ->where('status', 1)
+                        ->pluck('supplies_id')
+                        ->toArray();
+                }
+                $listBahan = $bomSuppliesCache[$row->bom_id];
+            }
+
+            if ($data["supplier_id"]) {
+                if (count($supplierSupplies) <= 0) continue;
+                if (count(array_intersect($listBahan, $supplierSupplies)) <= 0) continue;
+            }
+
+            $detailRows[] = $row;
+        }
+
+        if (count($detailRows) <= 0) return [];
+
+        $totalQtyByCode = [];
+        foreach ($detailRows as $row) {
+            if (!isset($totalQtyByCode[$row->production_code])) $totalQtyByCode[$row->production_code] = 0;
+            $totalQtyByCode[$row->production_code] += (float)$row->pd_qty;
+        }
+
+        $allCodes = array_values(array_unique(array_map(function ($r) {
+            return $r->production_code;
+        }, $detailRows)));
+
+        $logRows = [];
+        if (count($allCodes) > 0) {
+            $logRows = DB::table('log_stocks as l')
+                ->leftJoin('units as u', 'u.unit_id', '=', 'l.unit_id')
+                ->where('l.status', 1)
+                ->where('l.log_type', 2)
+                ->where('l.log_category', 2)
+                ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%')
+                ->whereIn('l.log_kode', $allCodes)
+                ->select('l.log_kode', 'l.log_jumlah', 'u.unit_name')
+                ->get();
+        }
+
+        $materialByCode = [];
+        foreach ($logRows as $lr) {
+            $code = $lr->log_kode;
+            $unit = trim((string)($lr->unit_name ?? ""));
+            if ($unit === "") $unit = "unit";
+            $qty = (float)($lr->log_jumlah ?? 0);
+            if (!isset($materialByCode[$code])) $materialByCode[$code] = [];
+            if (!isset($materialByCode[$code][$unit])) $materialByCode[$code][$unit] = 0;
+            $materialByCode[$code][$unit] += $qty;
+        }
+
+        $fmtUnitMap = function ($map) {
+            if (!is_array($map) || count($map) <= 0) return "-";
+            $parts = [];
+            foreach ($map as $unit => $qty) {
+                $v = (float)$qty;
+                if ($v <= 0) continue;
+                $textQty = (abs($v - floor($v)) < 0.0001) ? (string)((int)$v) : rtrim(rtrim(number_format($v, 2, '.', ''), '0'), '.');
+                $parts[] = $textQty . " " . $unit;
+            }
+            return count($parts) > 0 ? implode(" ", $parts) : "-";
+        };
+
+        $grouped = [];
+        foreach ($detailRows as $row) {
+            $variantId = $row->product_variant_id;
+            $key = (string)$variantId;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    "product_variant_id" => $variantId,
+                    "product_name" => trim($row->product_name . " " . $row->product_variant_name),
+                    "production_count" => 0,
+                    "total_qty" => 0,
+                    "total_reject_count" => 0,
+                    "total_reject_qty" => 0,
+                    "material_total_map" => [],
+                    "material_waste_map" => [],
+                    "production_code_set" => [],
+                    "reject_code_set" => [],
+                    "details" => []
+                ];
+            }
+
+            $code = $row->production_code;
+            $qty = (float)$row->pd_qty;
+            $isRejected = ((int)$row->production_status === 3);
+            $grouped[$key]["total_qty"] += $qty;
+            if ($isRejected) $grouped[$key]["total_reject_qty"] += $qty;
+
+            $grouped[$key]["production_code_set"][$code] = true;
+            if ($isRejected) $grouped[$key]["reject_code_set"][$code] = true;
+
+            $codeTotalQty = (float)($totalQtyByCode[$code] ?? 0);
+            $ratio = $codeTotalQty > 0 ? ($qty / $codeTotalQty) : 0;
+            $allocatedUsageMap = [];
+            $allocatedWasteMap = [];
+            $matCode = $materialByCode[$code] ?? [];
+            foreach ($matCode as $u => $matQty) {
+                $alloc = (float)$matQty * $ratio;
+                if ($alloc <= 0) continue;
+                $allocatedUsageMap[$u] = $alloc;
+                if (!isset($grouped[$key]["material_total_map"][$u])) $grouped[$key]["material_total_map"][$u] = 0;
+                $grouped[$key]["material_total_map"][$u] += $alloc;
+
+                if ($isRejected) {
+                    $allocatedWasteMap[$u] = $alloc;
+                    if (!isset($grouped[$key]["material_waste_map"][$u])) $grouped[$key]["material_waste_map"][$u] = 0;
+                    $grouped[$key]["material_waste_map"][$u] += $alloc;
+                }
+            }
+
+            $grouped[$key]["details"][] = [
+                "production_id" => $row->production_id,
+                "production_code" => $code,
+                "production_date" => $row->production_date,
+                "qty" => (int)$qty,
+                "unit_name" => $row->unit_name,
+                "status" => (int)$row->production_status,
+                "status_text" => $isRejected ? "Ditolak" : "Selesai",
+                "material_usage_text" => $fmtUnitMap($allocatedUsageMap),
+                "material_waste_text" => $isRejected ? $fmtUnitMap($allocatedWasteMap) : "-"
+            ];
+        }
+
+        $result = array_values($grouped);
+        foreach ($result as $idx => $row) {
+            $result[$idx]["production_count"] = count($row["production_code_set"]);
+            $result[$idx]["total_reject_count"] = count($row["reject_code_set"]);
+            $rejectRatio = $row["total_qty"] > 0 ? ($row["total_reject_qty"] / $row["total_qty"]) * 100 : 0;
+            $sumMatTotal = array_sum($row["material_total_map"]);
+            $sumMatWaste = array_sum($row["material_waste_map"]);
+            $materialWasteRatio = $sumMatTotal > 0 ? ($sumMatWaste / $sumMatTotal) * 100 : 0;
+            $result[$idx]["reject_ratio"] = round($rejectRatio, 2);
+            $result[$idx]["efficiency_ratio"] = round(max(0, 100 - $rejectRatio), 2);
+            $result[$idx]["material_waste_ratio"] = round($materialWasteRatio, 2);
+            $result[$idx]["material_total_text"] = $fmtUnitMap($row["material_total_map"]);
+            $result[$idx]["material_waste_text"] = $fmtUnitMap($row["material_waste_map"]);
+            unset($result[$idx]["material_total_map"], $result[$idx]["material_waste_map"], $result[$idx]["production_code_set"], $result[$idx]["reject_code_set"]);
+        }
+
+        return $result;
+    }
 }
