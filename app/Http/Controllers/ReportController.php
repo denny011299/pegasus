@@ -17,6 +17,7 @@ use App\Models\Customer;
 use App\Models\InwardOutward;
 use App\Models\LogStock;
 use App\Models\PettyCash;
+use App\Models\Product;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\ReportLoss;
 use App\Models\ReportProfit;
@@ -29,9 +30,29 @@ use App\Models\Staff;
 use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller
 {
+    private function parseSelisihNumeric($selisihText): float
+    {
+        if ($selisihText === null) return 0;
+        preg_match('/-?\d+(?:\.\d+)?/', (string) $selisihText, $m);
+        if (!isset($m[0])) return 0;
+        return (float) $m[0];
+    }
+
+    private function hasNonZeroSelisih($selisihText): bool
+    {
+        if ($selisihText === null) return false;
+        preg_match_all('/-?\d+(?:\.\d+)?/', (string) $selisihText, $matches);
+        if (!isset($matches[0]) || count($matches[0]) === 0) return false;
+        foreach ($matches[0] as $num) {
+            if ((float) $num != 0.0) return true;
+        }
+        return false;
+    }
+
     // Report Profit Loss
     public function ProfitLoss(){
         return view('Backoffice.Reports.Profit_Loss');
@@ -1065,6 +1086,133 @@ class ReportController extends Controller
             "supplies_id" => $req->supplies_id
         ]);
         return response()->json($data);
+    }
+
+    function reportSelisihOpname(){
+        return view('Backoffice.Reports.StockOpnameDifference');
+    }
+
+    function getReportSelisihOpname(Request $req){
+        $date = $req->date;
+        $type = strtolower((string)($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'])) $type = 'all';
+        $itemId = $req->item_id;
+        $startDate = null;
+        $endDate = null;
+        if (is_array($date) && count($date) === 2) {
+            $startRaw = trim((string)($date[0] ?? ""));
+            $endRaw = trim((string)($date[1] ?? ""));
+            if ($startRaw !== "") {
+                $startDate = \Carbon\Carbon::hasFormat($startRaw, 'Y-m-d')
+                    ? $startRaw
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $startRaw)->format('Y-m-d');
+            }
+            if ($endRaw !== "") {
+                $endDate = \Carbon\Carbon::hasFormat($endRaw, 'Y-m-d')
+                    ? $endRaw
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $endRaw)->format('Y-m-d');
+            }
+        }
+
+        $rows = [];
+
+        if ($type === 'all' || $type === 'product') {
+            $qProduct = DB::table('stock_opname_details as d')
+                ->join('stock_opnames as h', 'h.sto_id', '=', 'd.sto_id')
+                ->leftJoin('product_variants as pv', 'pv.product_variant_id', '=', 'd.product_variant_id')
+                ->leftJoin('products as p', 'p.product_id', '=', 'd.product_id')
+                ->where('d.status', 1)
+                ->where('h.status', '>=', 1)
+                ->select('h.sto_code as kode', 'h.sto_date as tanggal', DB::raw("'produk' as sumber"), 'p.product_name as item_name', 'pv.product_variant_name as variant_name', 'd.stod_system as stock_system', 'd.stod_real as stock_fisik', 'd.stod_selisih as selisih_text', 'pv.product_variant_price as harga_satuan');
+            if ($startDate && $endDate) $qProduct->whereBetween('h.sto_date', [$startDate, $endDate]);
+            else if ($startDate) $qProduct->where('h.sto_date', '>=', $startDate);
+            else if ($endDate) $qProduct->where('h.sto_date', '<=', $endDate);
+            if ($type === 'product' && !empty($itemId)) $qProduct->where('d.product_id', $itemId);
+            $rows = array_merge($rows, $qProduct->get()->toArray());
+        }
+
+        $lastHargaSub = DB::table('purchase_orders_details as pod')
+            ->join('supplies_variants as sv', 'sv.supplies_variant_id', '=', 'pod.supplies_variant_id')
+            ->where('pod.status', 1)
+            ->select('sv.supplies_id', DB::raw('MAX(pod.pod_harga) as last_harga'))
+            ->groupBy('sv.supplies_id');
+
+        if ($type === 'all' || $type === 'bahan') {
+            $qBahan = DB::table('stock_opname_detail_bahans as d')
+                ->join('stock_opname_bahans as h', 'h.stob_id', '=', 'd.stob_id')
+                ->leftJoin('supplies as s', 's.supplies_id', '=', 'd.supplies_id')
+                ->leftJoinSub($lastHargaSub, 'lh', function ($join) {
+                    $join->on('lh.supplies_id', '=', 'd.supplies_id');
+                })
+                ->where('d.status', 1)
+                ->where('h.status', '>=', 1)
+                ->select('h.stob_code as kode', 'h.stob_date as tanggal', DB::raw("'bahan' as sumber"), 's.supplies_name as item_name', DB::raw("'' as variant_name"), 'd.stobd_system as stock_system', 'd.stobd_real as stock_fisik', 'd.stobd_selisih as selisih_text', DB::raw('COALESCE(lh.last_harga,0) as harga_satuan'));
+            if ($startDate && $endDate) $qBahan->whereBetween('h.stob_date', [$startDate, $endDate]);
+            else if ($startDate) $qBahan->where('h.stob_date', '>=', $startDate);
+            else if ($endDate) $qBahan->where('h.stob_date', '<=', $endDate);
+            if ($type === 'bahan' && !empty($itemId)) $qBahan->where('d.supplies_id', $itemId);
+            $rows = array_merge($rows, $qBahan->get()->toArray());
+        }
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            if (!$this->hasNonZeroSelisih($row->selisih_text)) continue;
+            $selisihQty = $this->parseSelisihNumeric($row->selisih_text);
+            if ((float)$selisihQty == 0.0) continue;
+
+            $nominal = $selisihQty * ((float)($row->harga_satuan ?? 0));
+            $kode = $row->kode ?? '-';
+            if (!isset($grouped[$kode])) {
+                $grouped[$kode] = [
+                    "kode" => $kode,
+                    "tanggal" => $row->tanggal,
+                    "total_item_selisih" => 0,
+                    "total_nominal" => 0,
+                    "details" => []
+                ];
+            }
+            $grouped[$kode]["total_item_selisih"] += 1;
+            $grouped[$kode]["total_nominal"] += $nominal;
+            $grouped[$kode]["details"][] = [
+                "sumber" => $row->sumber,
+                "item_name" => $row->item_name ?? '-',
+                "variant_name" => $row->variant_name ?? '-',
+                "stock_system" => $row->stock_system ?? '-',
+                "stock_fisik" => $row->stock_fisik ?? '-',
+                "selisih_text" => $row->selisih_text ?? '-',
+                "selisih_qty" => $selisihQty,
+                "harga_satuan" => (float)($row->harga_satuan ?? 0),
+                "nominal" => $nominal
+            ];
+        }
+
+        $result = array_values($grouped);
+        usort($result, function($a, $b) {
+            return strcmp((string)$b["tanggal"], (string)$a["tanggal"]);
+        });
+        return response()->json($result);
+    }
+
+    function generateReportSelisihOpnamePdf(Request $req){
+        $json = $this->getReportSelisihOpname($req);
+        $data = $json->getData(true);
+        $param["data"] = is_array($data) ? $data : [];
+        $param["start_date"] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : "-";
+        $type = strtolower((string)($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'])) $type = 'all';
+        $param["type_label"] = $type === 'bahan' ? 'Bahan' : ($type === 'product' ? 'Product' : 'All');
+        $itemName = "Semua Item";
+        if (!empty($req->item_id)) {
+            if ($type === 'bahan') {
+                $itemName = Supplies::find($req->item_id)->supplies_name ?? "Semua Item";
+            } elseif ($type === 'product') {
+                $itemName = Product::find($req->item_id)->product_name ?? "Semua Item";
+            }
+        }
+        $param["item_name"] = $itemName;
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportSelisihOpname', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Selisih_Stok_Opname_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
     function generateReportPemakaianBahanPdf(Request $req){
