@@ -866,8 +866,8 @@
 
 @if (Route::is(['salesOrderDetail']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_sales_delivery" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal modal-xl custom-modal fade" id="add_sales_delivery" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
@@ -907,14 +907,18 @@
                                     </div>
                                 </div>
                                 <div class="col-12">
-                                    <table class="table table-center" id="tableSalesDelivery">
-                                        <thead>
-                                            <th>Produk</th>
-                                            <th>SKU</th>
-                                            <th>Qty</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-center" id="tableSalesDelivery">
+                                            <thead>
+                                                <th>Produk</th>
+                                                <th>Varian</th>
+                                                <th>SKU</th>
+                                                <th class="text-center">Qty</th>
+                                                <th class="text-center">Satuan</th>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>

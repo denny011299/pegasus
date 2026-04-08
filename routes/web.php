@@ -241,6 +241,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::get('/generateReportProduksiPdf', [ReportController::class, "generateReportProduksiPdf"])->name('generateReportProduksiPdf');
     Route::get('/ProductReturn', [ReportController::class, "ProductReturn"])->name('ProductReturn');
     Route::get('/getReportReturn', [ReportController::class, "getReportReturn"])->name('getReportReturn');
+    Route::get('/generateReportReturnPdf', [ReportController::class, "generateReportReturnPdf"])->name('generateReportReturnPdf');
 
     Route::get('/cash',[ReportController::class,"Cash"])->name('cash');
     Route::get('/getCash',[ReportController::class,"getCash"])->name('getCash');

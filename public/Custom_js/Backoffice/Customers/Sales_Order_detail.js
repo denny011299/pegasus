@@ -1,6 +1,26 @@
     var mode=1;
     var tablePr, tableDn, tableInv, tablePrModal;
     let detail_delivery = []
+
+    function matchingSoLine(row) {
+        if (!data.items || !data.items.length) return null;
+        if (row.sod_id != null && row.sod_id !== "") {
+            const m = data.items.find((i) => String(i.sod_id) === String(row.sod_id));
+            if (m) return m;
+        }
+        if (row.product_variant_id != null && row.product_variant_id !== "") {
+            const byPv = data.items.find(
+                (i) => String(i.product_variant_id) === String(row.product_variant_id)
+            );
+            if (byPv) return byPv;
+        }
+        const sku = row.sdod_sku || row.sod_sku;
+        if (sku) {
+            const bySku = data.items.find((i) => i.sod_sku === sku);
+            if (bySku) return bySku;
+        }
+        return null;
+    }
     // autocompleteStaff("#sdo_receiver",null);
     autocompleteCustomer("#so_customer",null);
     $(document).ready(function(){
@@ -263,9 +283,11 @@
                 }, 
             }, 
             columns: [ 
-                { data: "name", width: "40%" }, 
-                { data: "sku", width: "30%" }, 
-                { data: "stock", width: "30%" }, 
+                { data: "name", width: "28%" }, 
+                { data: "variant", width: "18%" }, 
+                { data: "sku", width: "22%" }, 
+                { data: "stock", width: "14%", className: "text-center" }, 
+                { data: "unit_display", width: "18%", className: "text-center", orderable: false }, 
             ], 
             initComplete: (settings, json) => { 
                 $('.dataTables_filter').appendTo('#tableSearch'); 
@@ -283,14 +305,14 @@
             console.log(data);
             
             for (let i = 0; i < e.length; i++) {
-                e[i].stock = `
-                    
-                    <div class="input-group">
-                        <input type="number" class="form-control qtyDn" index="${i + 1}" value="${e[i].sod_qty || e[i].sdod_qty}">
-                        <span class="input-group-text">${data.items[i].unit_name}</span>
-                    </div>
-                `;
-                e[i].name = e[i].sod_nama || `${e[i].product_name} ${e[i].product_variant_name}`;
+                const soLine = matchingSoLine(e[i]);
+                const unitName =
+                    e[i].unit_name || (soLine && soLine.unit_name) || "—";
+                e[i].variant =
+                    e[i].sod_variant || e[i].product_variant_name || "—";
+                e[i].stock = `<input type="number" class="form-control qtyDn text-center" index="${i + 1}" value="${e[i].sod_qty || e[i].sdod_qty}" min="0">`;
+                e[i].unit_display = `<span class="d-block py-2 text-center text-nowrap">${unitName}</span>`;
+                e[i].name = e[i].sod_nama || `${e[i].product_name} ${e[i].product_variant_name || ""}`.trim();
                 console.log(e[i])
                 e[i].sku = e[i].sod_sku || e[i].sdod_sku;
             }
@@ -405,13 +427,18 @@
             
             let qty = parseInt($(this).find('.qtyDn').val()) || 0;
             console.log(index);
+            const soLine = matchingSoLine(dataDelivery);
+            const unitId =
+                (soLine && soLine.unit_id) != null
+                    ? soLine.unit_id
+                    : dataDelivery.unit_id;
 
             let item = {
                 ...dataDelivery,
                 product_variant_id: dataDelivery.product_variant_id,
                 sdod_sku: dataDelivery.product_variant_sku || dataDelivery.sod_sku,
                 sdod_qty: qty,
-                unit_id: data.items[index].unit_id
+                unit_id: unitId
             };
             
             if(mode==2){

@@ -6,6 +6,16 @@
             background-color: #e8f1ff !important;
         }
 
+        #tableProduct th.col-item-name,
+        #tableProduct td.col-item-name,
+        #tableProduct th.col-supplier,
+        #tableProduct td.col-supplier {
+            white-space: normal !important;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            vertical-align: middle;
+        }
+
         #tableProduct .report-return-child thead th {
             background-color: #f5f7fb !important;
             position: sticky;
@@ -36,11 +46,12 @@
                     <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableProduct">
+                                <table class="table table-center " id="tableProduct">
                                     <thead class="thead-light">
                                         <tr>
                                             <th></th>
                                             <th>Barang Retur</th>
+                                            <th>Supplier</th>
                                             <th>Total Transaksi Retur</th>
                                             <th>Akumulasi Qty Retur</th>
                                         </tr>
@@ -65,5 +76,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/ProductReturn.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/ProductReturn.js')}}?v=1"></script>
 @endsection

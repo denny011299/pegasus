@@ -25,6 +25,7 @@ use App\Models\Production;
 use App\Models\ProductVariant;
 use App\Models\ReturnSupplies;
 use App\Models\Staff;
+use App\Models\SuppliesVariant;
 use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -1073,9 +1074,31 @@ class ReportController extends Controller
     function getReportReturn(Request $req){
         $data = (new ReturnSupplies())->getReturnReport([
             "date" => $req->date,
-            "supplier_id" => $req->supplier_id
+            "supplier_id" => $req->supplier_id,
+            "supplies_variant_id" => $req->supplies_variant_id
         ]);
         return response()->json($data);
+    }
+
+    function generateReportReturnPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "supplies_variant_id" => $req->supplies_variant_id
+        ];
+
+        $param["data"] = (new ReturnSupplies())->getReturnReport($filter);
+        $param["start_date"] = is_array($req->date) && isset($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && isset($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $variant = null;
+        if ($req->supplies_variant_id) {
+            $variant = (new SuppliesVariant())->getSuppliesVariant(["supplies_variant_id" => $req->supplies_variant_id])[0] ?? null;
+        }
+        $param["item_name"] = $variant ? trim(($variant->supplies_name ?? '') . ' ' . ($variant->supplies_variant_name ?? '')) : "Semua Barang";
+
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportReturn', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Retur_Product_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
     
     function reportProduksi(){

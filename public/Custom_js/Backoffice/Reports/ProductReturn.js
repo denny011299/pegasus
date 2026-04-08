@@ -1,6 +1,7 @@
     var table;
     var dates = null;
     autocompleteSupplier("#supplier");
+    autocompleteSuppliesVariantOnly("#supplies_id");
 
     $(document).ready(function(){
         inisialisasi();
@@ -19,6 +20,7 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
             searching: false,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -34,11 +36,13 @@
                     data: null,
                     className: "details-control text-center",
                     orderable: false,
+                    width: "4%",
                     defaultContent: `<a href="javascript:void(0);" class="btn-action-icon p-1 btn-toggle-detail"><i class="fa fa-plus"></i></a>`
                 },
-                { data: "item_name" },
-                { data: "transaction_summary" },
-                { data: "qty_summary" },
+                { data: "item_name", className: "col-item-name", width: "38%" },
+                { data: "supplier_summary", className: "col-supplier", width: "26%" },
+                { data: "transaction_summary", width: "16%" },
+                { data: "qty_summary", width: "16%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -131,7 +135,8 @@
             method: "get",
             data: {
                 date: dates,
-                supplier_id: $('#supplier').val()
+                supplier_id: $('#supplier').val(),
+                supplies_variant_id: $('#supplies_id').val()
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -139,8 +144,17 @@
                 }
                 table.clear().draw();
                 for (let i = 0; i < e.length; i++) {
+                    let supplierMap = {};
+                    if (Array.isArray(e[i].details)) {
+                        for (let j = 0; j < e[i].details.length; j++) {
+                            let supplierName = (e[i].details[j].supplier_name || '').toString().trim();
+                            if (supplierName !== "") supplierMap[supplierName] = true;
+                        }
+                    }
+                    let supplierList = Object.keys(supplierMap);
                     e[i].transaction_summary = `${e[i].transaction_count} Transaksi`;
                     e[i].qty_summary = buildQtyByUnitText(e[i].details);
+                    e[i].supplier_summary = supplierList.length ? supplierList.join(', ') : '-';
                 }
                 table.rows.add(e).draw();
                 feather.replace();
@@ -158,7 +172,7 @@
         return parsed.format('DD-MM-YYYY');
     }
 
-    $(document).on('click', '.btn-filter', function(){
+    function applyProductReturnFilter() {
         dates = [];
         var start = normalizeDateValue($('#start_date').val());
         var end = normalizeDateValue($('#end_date').val());
@@ -169,6 +183,10 @@
         dates.push(start);
         dates.push(end);
         refreshProductReturn();
+    }
+
+    $(document).on('click', '.btn-filter', function(){
+        applyProductReturnFilter();
     });
 
     $(document).on('click', '.btn-clear', function(){
@@ -176,11 +194,34 @@
         $('#start_date').val("");
         $('#end_date').val("");
         $('#supplier').empty();
+        $('#supplies_id').empty();
         refreshProductReturn();
     });
 
     $(document).on('change', '#supplier', function(){
-        refreshProductReturn();
+        applyProductReturnFilter();
+    });
+
+    $(document).on('change', '#supplies_id', function(){
+        applyProductReturnFilter();
+    });
+
+    $(document).on('change change.datetimepicker dp.change', '#start_date, #end_date', function(){
+        applyProductReturnFilter();
+    });
+
+    $(document).on('click', '.btn-export-pdf', function(){
+        var start = normalizeDateValue($('#start_date').val());
+        var end = normalizeDateValue($('#end_date').val());
+        if (start && !end) end = start;
+        if (!start && end) start = end;
+
+        var params = {
+            date: [start, end],
+            supplier_id: $('#supplier').val(),
+            supplies_variant_id: $('#supplies_id').val()
+        };
+        window.open('/generateReportReturnPdf?' + $.param(params), '_blank');
     });
 
     $('#tableProduct tbody').on('click', 'td.details-control .btn-toggle-detail', function (e) {

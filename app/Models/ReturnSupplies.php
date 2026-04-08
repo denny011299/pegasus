@@ -65,6 +65,7 @@ class ReturnSupplies extends Model
         $data = array_merge([
             "supplier_id" => null,
             "date" => null,
+            "supplies_variant_id" => null,
         ], $data);
 
         $query = DB::table('return_supplies as rs')
@@ -96,6 +97,9 @@ class ReturnSupplies extends Model
 
         if ($data["supplier_id"]) {
             $query->where('po.po_supplier', $data["supplier_id"]);
+        }
+        if ($data["supplies_variant_id"]) {
+            $query->where('rsd.supplies_variant_id', $data["supplies_variant_id"]);
         }
 
         if ($data["date"]) {
