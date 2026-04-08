@@ -121,13 +121,13 @@ class ReturnSupplies extends Model
         $grouped = [];
         foreach ($rows as $row) {
             $key = $row->supplies_variant_id;
-            $variantName = trim(($row->supplies_name ?? '') . ' ' . ($row->supplies_variant_name ?? ''));
-            if ($variantName == "") $variantName = $row->supplies_variant_name ?? '-';
+            $itemName = trim($row->supplies_name ?? '');
+            if ($itemName == "") $itemName = $row->supplies_variant_name ?? '-';
 
             if (!isset($grouped[$key])) {
                 $grouped[$key] = [
                     "supplies_variant_id" => $row->supplies_variant_id,
-                    "item_name" => $variantName,
+                    "item_name" => $itemName,
                     "transaction_count" => 0,
                     "details" => []
                 ];
