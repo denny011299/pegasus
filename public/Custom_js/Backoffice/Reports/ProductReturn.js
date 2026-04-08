@@ -1,7 +1,7 @@
     var table;
     var dates = null;
     autocompleteSupplier("#supplier");
-    autocompleteSuppliesVariantOnly("#supplies_id");
+    autocompleteSupplies("#supplies_id");
 
     $(document).ready(function(){
         inisialisasi();
@@ -136,7 +136,7 @@
             data: {
                 date: dates,
                 supplier_id: $('#supplier').val(),
-                supplies_variant_id: $('#supplies_id').val()
+                supplies_id: $('#supplies_id').val()
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -219,7 +219,7 @@
         var params = {
             date: [start, end],
             supplier_id: $('#supplier').val(),
-            supplies_variant_id: $('#supplies_id').val()
+            supplies_id: $('#supplies_id').val()
         };
         window.open('/generateReportReturnPdf?' + $.param(params), '_blank');
     });

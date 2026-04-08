@@ -65,7 +65,7 @@ class ReturnSupplies extends Model
         $data = array_merge([
             "supplier_id" => null,
             "date" => null,
-            "supplies_variant_id" => null,
+            "supplies_id" => null,
         ], $data);
 
         $query = DB::table('return_supplies as rs')
@@ -90,6 +90,7 @@ class ReturnSupplies extends Model
                 'rsd.rsd_price',
                 'rsd.unit_id',
                 'u.unit_name',
+                'sp.supplies_id',
                 'rsd.supplies_variant_id',
                 'sv.supplies_variant_name',
                 'sp.supplies_name'
@@ -98,8 +99,8 @@ class ReturnSupplies extends Model
         if ($data["supplier_id"]) {
             $query->where('po.po_supplier', $data["supplier_id"]);
         }
-        if ($data["supplies_variant_id"]) {
-            $query->where('rsd.supplies_variant_id', $data["supplies_variant_id"]);
+        if ($data["supplies_id"]) {
+            $query->where('sp.supplies_id', $data["supplies_id"]);
         }
 
         if ($data["date"]) {
@@ -120,13 +121,13 @@ class ReturnSupplies extends Model
 
         $grouped = [];
         foreach ($rows as $row) {
-            $key = $row->supplies_variant_id;
+            $key = $row->supplies_id;
             $itemName = trim($row->supplies_name ?? '');
             if ($itemName == "") $itemName = $row->supplies_variant_name ?? '-';
 
             if (!isset($grouped[$key])) {
                 $grouped[$key] = [
-                    "supplies_variant_id" => $row->supplies_variant_id,
+                    "supplies_id" => $row->supplies_id,
                     "item_name" => $itemName,
                     "transaction_count" => 0,
                     "details" => []
