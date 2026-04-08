@@ -103,17 +103,39 @@ class ReturnSupplies extends Model
             $query->where('sp.supplies_id', $data["supplies_id"]);
         }
 
-        if ($data["date"]) {
+        if (!empty($data["date"])) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
-                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
-                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
-                $query->whereBetween('rs.rs_date', [$startDate, $endDate]);
-            } else {
-                $date = $data["date"];
-                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d')) {
-                    $date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                $startRaw = trim((string)($data["date"][0] ?? ""));
+                $endRaw = trim((string)($data["date"][1] ?? ""));
+
+                $startDate = null;
+                $endDate = null;
+                if ($startRaw !== "") {
+                    $startDate = \Carbon\Carbon::hasFormat($startRaw, 'Y-m-d')
+                        ? $startRaw
+                        : \Carbon\Carbon::createFromFormat('d-m-Y', $startRaw)->format('Y-m-d');
                 }
-                $query->where('rs.rs_date', $date);
+                if ($endRaw !== "") {
+                    $endDate = \Carbon\Carbon::hasFormat($endRaw, 'Y-m-d')
+                        ? $endRaw
+                        : \Carbon\Carbon::createFromFormat('d-m-Y', $endRaw)->format('Y-m-d');
+                }
+
+                if ($startDate && $endDate) {
+                    $query->whereBetween('rs.rs_date', [$startDate, $endDate]);
+                } elseif ($startDate) {
+                    $query->where('rs.rs_date', '>=', $startDate);
+                } elseif ($endDate) {
+                    $query->where('rs.rs_date', '<=', $endDate);
+                }
+            } else {
+                $dateRaw = trim((string)$data["date"]);
+                if ($dateRaw !== "") {
+                    $date = \Carbon\Carbon::hasFormat($dateRaw, 'Y-m-d')
+                        ? $dateRaw
+                        : \Carbon\Carbon::createFromFormat('d-m-Y', $dateRaw)->format('Y-m-d');
+                    $query->where('rs.rs_date', $date);
+                }
             }
         }
 

@@ -1088,8 +1088,8 @@ class ReportController extends Controller
         ];
 
         $param["data"] = (new ReturnSupplies())->getReturnReport($filter);
-        $param["start_date"] = is_array($req->date) && isset($req->date[0]) ? $req->date[0] : "-";
-        $param["end_date"] = is_array($req->date) && isset($req->date[1]) ? $req->date[1] : "-";
+        $param["start_date"] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : "-";
         $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
         $item = null;
         if ($req->supplies_id) {
