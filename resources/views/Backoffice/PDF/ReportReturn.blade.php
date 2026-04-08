@@ -135,9 +135,9 @@
         <thead>
             <tr>
                 <th class="text-center col-no">NO</th>
-                <th style="width: 36%;">BARANG RETUR</th>
-                <th class="text-right" style="width: 25%;">TOTAL TRANSAKSI RETUR</th>
-                <th class="text-right" style="width: 34%;">AKUMULASI QTY RETUR</th>
+                <th style="width: 50%;">BARANG RETUR</th>
+                <th class="text-right" style="width: 20%;">TOTAL TRANSAKSI RETUR</th>
+                <th class="text-right" style="width: 25%;">AKUMULASI QTY RETUR</th>
             </tr>
         </thead>
         @forelse(($data ?? []) as $i => $row)
