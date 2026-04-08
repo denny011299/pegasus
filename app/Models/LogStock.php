@@ -142,6 +142,7 @@ class LogStock extends Model
                 $grouped[$key] = [
                     "supplies_id" => $row->log_item_id,
                     "item_name" => $row->supplies_name ?? '-',
+                    "supplier_summary" => "-",
                     "transaction_count" => 0,
                     "details" => []
                 ];
@@ -156,6 +157,29 @@ class LogStock extends Model
                 "unit_name" => $row->unit_name,
                 "notes" => $row->log_notes
             ];
+        }
+
+        if (count($grouped) > 0) {
+            $suppliesIds = array_keys($grouped);
+            $supplierRows = DB::table('supplies_variants as sv')
+                ->leftJoin('suppliers as sp', 'sp.supplier_id', '=', 'sv.supplier_id')
+                ->whereIn('sv.supplies_id', $suppliesIds)
+                ->where('sv.status', 1)
+                ->select('sv.supplies_id', 'sp.supplier_name')
+                ->distinct()
+                ->get();
+
+            $supplierMap = [];
+            foreach ($supplierRows as $srow) {
+                if (empty($srow->supplier_name)) continue;
+                if (!isset($supplierMap[$srow->supplies_id])) $supplierMap[$srow->supplies_id] = [];
+                $supplierMap[$srow->supplies_id][$srow->supplier_name] = true;
+            }
+
+            foreach ($grouped as $suppliesId => $item) {
+                $names = isset($supplierMap[$suppliesId]) ? array_keys($supplierMap[$suppliesId]) : [];
+                $grouped[$suppliesId]["supplier_summary"] = count($names) > 0 ? implode(', ', $names) : "-";
+            }
         }
 
         return array_values($grouped);

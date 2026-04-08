@@ -105,13 +105,10 @@
                 <select class="form-select" id="supplies_id"></select>
             </div>
         </div>
-        <div class="col-xl-2 col-lg-12 col-md-12 col-sm-12">
+        <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
             <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
                 <a class="btn btn-outline-secondary btn-clear" href="#">
                     Clear
-                </a>
-                <a class="btn btn-primary loss btn-filter" href="#">
-                    Jalankan
                 </a>
             </div>
         </div>

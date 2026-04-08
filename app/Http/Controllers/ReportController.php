@@ -1066,6 +1066,27 @@ class ReportController extends Controller
         ]);
         return response()->json($data);
     }
+
+    function generateReportPemakaianBahanPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "supplies_id" => $req->supplies_id
+        ];
+
+        $param["data"] = (new LogStock())->getRawMaterialUsageReport($filter);
+        $param["start_date"] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $item = null;
+        if ($req->supplies_id) {
+            $item = Supplies::find($req->supplies_id);
+        }
+        $param["supplies_name"] = $item->supplies_name ?? "Semua Bahan";
+
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportPemakaianBahan', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Pemakaian_Bahan_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
     
     function ProductReturn(){
         return view('Backoffice.Reports.ProductReturn');

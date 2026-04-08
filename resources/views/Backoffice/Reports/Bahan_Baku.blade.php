@@ -41,7 +41,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Laporan Penggunaan Bahan Baku
+                    Laporan Pemakaian Bahan
                 @endslot
             @endcomponent
             <!-- /Page Header -->
@@ -62,8 +62,9 @@
                                         <tr>
                                             <th></th>
                                             <th>Nama Bahan</th>
-                                            <th>Total Transaksi Pemakaian</th>
-                                            <th>Total Pemakaian</th>
+                                            <th>Supplier</th>
+                                            <th>Total Transaksi Keluar</th>
+                                            <th>Total Qty Keluar</th>
                                         </tr>
                                     </thead>
                                     <tbody>

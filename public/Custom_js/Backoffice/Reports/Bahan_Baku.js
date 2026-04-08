@@ -38,6 +38,7 @@
                     defaultContent: `<a href="javascript:void(0);" class="btn-action-icon p-1 btn-toggle-detail"><i class="fa fa-plus"></i></a>`
                 },
                 { data: "item_name" },
+                { data: "supplier_summary" },
                 { data: "transaction_summary" },
                 { data: "usage_summary" },
             ],
@@ -139,7 +140,7 @@
                 }
                 table.clear().draw();
                 for (let i = 0; i < e.length; i++) {
-                    e[i].transaction_summary = `${e[i].transaction_count} Transaksi`;
+                    e[i].transaction_summary = `${e[i].transaction_count} Transaksi Keluar`;
                     e[i].usage_summary = buildQtyByUnitText(e[i].details);
                 }
                 table.rows.add(e).draw();
@@ -158,7 +159,7 @@
         return parsed.format('DD-MM-YYYY');
     }
 
-    $(document).on('click', '.btn-filter', function(){
+    function applyBahanBakuFilter() {
         dates = [];
         var start = normalizeDateValue($('#start_date').val());
         var end = normalizeDateValue($('#end_date').val());
@@ -169,6 +170,10 @@
         dates.push(start);
         dates.push(end);
         refreshBahanBaku();
+    }
+
+    $(document).on('click', '.btn-filter', function(){
+        applyBahanBakuFilter();
     });
 
     $(document).on('click', '.btn-clear', function(){
@@ -181,11 +186,30 @@
     });
 
     $(document).on('change', '#supplier', function(){
-        refreshBahanBaku();
+        applyBahanBakuFilter();
     });
 
     $(document).on('change', '#supplies_id', function(){
-        refreshBahanBaku();
+        applyBahanBakuFilter();
+    });
+
+    $(document).on('change change.datetimepicker dp.change', '#start_date, #end_date', function(){
+        applyBahanBakuFilter();
+    });
+
+    $(document).on('click', '.btn-export-pdf', function(){
+        var start = normalizeDateValue($('#start_date').val());
+        var end = normalizeDateValue($('#end_date').val());
+        if (start && !end) end = start;
+        if (!start && end) start = end;
+
+        var params = {
+            date: [start, end],
+            supplier_id: $('#supplier').val(),
+            supplies_id: $('#supplies_id').val()
+        };
+
+        window.open('/generateReportPemakaianBahanPdf?' + $.param(params), '_blank');
     });
 
     $('#tableBahanBaku tbody').on('click', 'td.details-control .btn-toggle-detail', function (e) {

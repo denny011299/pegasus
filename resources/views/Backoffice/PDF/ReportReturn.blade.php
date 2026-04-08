@@ -96,15 +96,27 @@
             \Carbon\Carbon::setLocale('id');
             $startFormatted = '-';
             $endFormatted = '-';
-            try {
-                $startFormatted = \Carbon\Carbon::createFromFormat('d-m-Y', $start_date)->translatedFormat('j F Y');
-            } catch (\Throwable $th) {
-                if (!empty($start_date)) $startFormatted = \Carbon\Carbon::parse($start_date)->translatedFormat('j F Y');
+            if (!empty($start_date) && $start_date !== '-') {
+                try {
+                    $startFormatted = \Carbon\Carbon::createFromFormat('d-m-Y', $start_date)->translatedFormat('j F Y');
+                } catch (\Throwable $th) {
+                    try {
+                        $startFormatted = \Carbon\Carbon::parse($start_date)->translatedFormat('j F Y');
+                    } catch (\Throwable $th2) {
+                        $startFormatted = '-';
+                    }
+                }
             }
-            try {
-                $endFormatted = \Carbon\Carbon::createFromFormat('d-m-Y', $end_date)->translatedFormat('j F Y');
-            } catch (\Throwable $th) {
-                if (!empty($end_date)) $endFormatted = \Carbon\Carbon::parse($end_date)->translatedFormat('j F Y');
+            if (!empty($end_date) && $end_date !== '-') {
+                try {
+                    $endFormatted = \Carbon\Carbon::createFromFormat('d-m-Y', $end_date)->translatedFormat('j F Y');
+                } catch (\Throwable $th) {
+                    try {
+                        $endFormatted = \Carbon\Carbon::parse($end_date)->translatedFormat('j F Y');
+                    } catch (\Throwable $th2) {
+                        $endFormatted = '-';
+                    }
+                }
             }
         @endphp
         <tr>
