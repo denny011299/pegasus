@@ -64,17 +64,17 @@ function formatNominal(value) {
 
 function formatDetailRow(data) {
     var html = `
-        <div class="child-row-wrapper" style="display:none; max-height: 320px; overflow-y: auto; overflow-x: auto;">
-            <table class="table table-sm table-bordered mb-0 report-selisih-child">
+        <div class="child-row-wrapper" style="display:none; max-height: 360px; overflow-y: auto; overflow-x: auto;">
+            <table class="table table-sm mb-0 report-selisih-child">
                 <thead>
                     <tr>
-                        <th>Sumber</th>
-                        <th>Item</th>
-                        <th>Stok Sistem</th>
-                        <th>Stok Fisik</th>
-                        <th>Selisih</th>
-                        <th>Harga Satuan</th>
-                        <th>Nominal</th>
+                        <th style="width:9%;">Sumber</th>
+                        <th style="width:28%;">Item</th>
+                        <th class="text-end" style="width:13%;">Stok sistem</th>
+                        <th class="text-end" style="width:13%;">Stok fisik</th>
+                        <th class="text-end" style="width:12%;">Selisih</th>
+                        <th class="text-end" style="width:12%;">Harga satuan</th>
+                        <th class="text-end" style="width:13%;">Nominal</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -87,20 +87,21 @@ function formatDetailRow(data) {
                 d.variant_name && d.variant_name !== "-"
                     ? `${d.item_name} - ${d.variant_name}`
                     : d.item_name;
+            const sumber = (d.sumber || "-").toString().toUpperCase();
             html += `
                 <tr>
-                    <td>${d.sumber || "-"}</td>
+                    <td><span class="badge bg-light text-dark border text-uppercase selisih-badge-sumber">${sumber}</span></td>
                     <td>${itemName || "-"}</td>
-                    <td>${d.stock_system || "-"}</td>
-                    <td>${d.stock_fisik || "-"}</td>
-                    <td>${d.selisih_text || "-"}</td>
-                    <td class="text-end">Rp ${formatCurrency(d.harga_satuan || 0)}</td>
-                    <td class="text-end">${formatNominal(d.nominal || 0)}</td>
+                    <td class="text-end text-nowrap">${d.stock_system || "-"}</td>
+                    <td class="text-end text-nowrap">${d.stock_fisik || "-"}</td>
+                    <td class="text-end text-nowrap fw-medium">${d.selisih_text || "-"}</td>
+                    <td class="text-end text-nowrap">Rp ${formatCurrency(d.harga_satuan || 0)}</td>
+                    <td class="text-end text-nowrap">${formatNominal(d.nominal || 0)}</td>
                 </tr>
             `;
         }
     } else {
-        html += `<tr><td colspan="7" class="text-center">Tidak ada detail selisih</td></tr>`;
+        html += `<tr><td colspan="7" class="text-center text-muted py-3">Tidak ada detail selisih</td></tr>`;
     }
 
     html += `</tbody></table></div>`;

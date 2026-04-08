@@ -31,12 +31,14 @@
         .params-table td { padding: 3px 0; font-size: 11px; }
         .params-label { color: #555555; width: 90px; }
         .params-val { color: #000000; font-weight: bold; }
-        .table-data {
+        .table-legend {
             width: 100%;
             border-collapse: collapse;
             table-layout: auto;
+            margin-bottom: 4px;
+            page-break-after: avoid;
         }
-        .table-data > thead > tr > th {
+        .table-legend thead tr th {
             border-top: 1px solid #000000;
             border-bottom: 1px solid #000000;
             padding: 8px 4px;
@@ -47,19 +49,19 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .row-parent > td {
-            padding: 12px 6px;
+        .report-group-block {
+            padding: 0 0 12px 0;
+            border-bottom: 1px solid #cccccc;
+            page-break-inside: auto;
+        }
+        .report-group-block-first { page-break-before: avoid; }
+        .group-summary { width: 100%; border-collapse: collapse; margin: 0 0 2px 0; page-break-after: avoid; page-break-inside: avoid; }
+        .group-summary td {
+            padding: 8px 6px;
             font-size: 11px;
             color: #000000;
             font-weight: bold;
             vertical-align: middle;
-        }
-        .row-child-container > td {
-            padding: 0 4px 10px 14px;
-            border-bottom: 1px solid #cccccc;
-            vertical-align: top;
-            height: auto;
-            line-height: 1.25;
         }
         .table-detail {
             width: 100%;
@@ -67,7 +69,8 @@
             margin-top: 0;
             table-layout: auto;
         }
-        .table-detail th {
+        .table-detail thead { display: table-header-group; }
+        .table-detail thead th {
             border-bottom: 1px solid #eeeeee;
             padding: 6px 4px;
             font-size: 9px;
@@ -81,12 +84,13 @@
             color: #444444;
             border-bottom: 1px solid #f5f5f5;
         }
-        .table-detail tr:last-child td { border-bottom: none; }
+        .table-detail tbody tr:last-child td { border-bottom: none; }
         .text-right { text-align: right !important; }
         .text-center { text-align: center !important; }
         .font-normal { font-weight: normal; }
         .text-gray { color: #777777; }
         .col-no { width: 5%; color: #888888; font-size: 11px; }
+        .empty-msg { padding: 12px; text-align: center; color: #777777; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -122,6 +126,14 @@
                     }
                 }
             }
+            $fmt = function($arr) {
+                $parts = [];
+                foreach ($arr as $u => $q) {
+                    if ($q > 0) $parts[] = $q . ' ' . $u;
+                }
+                return count($parts) ? implode(' ', $parts) : '-';
+            };
+            $rows = is_array($data ?? null) ? $data : [];
         @endphp
         <tr>
             <td class="params-label">PERIODE</td>
@@ -137,26 +149,21 @@
         </tr>
     </table>
 
-    @php
-        $fmt = function($arr) {
-            $parts = [];
-            foreach ($arr as $u => $q) {
-                if ($q > 0) $parts[] = $q . ' ' . $u;
-            }
-            return count($parts) ? implode(' ', $parts) : '-';
-        };
-    @endphp
+    @if(count($rows) < 1)
+        <p class="empty-msg font-normal">Tidak ada data laporan retur</p>
+    @else
+        <table class="table-legend">
+            <thead>
+                <tr>
+                    <th class="text-center col-no" scope="col" style="width:5%;">NO</th>
+                    <th scope="col" style="width: 50%;">BARANG RETUR</th>
+                    <th class="text-right" scope="col" style="width: 20%;">TOTAL TRANSAKSI RETUR</th>
+                    <th class="text-right" scope="col" style="width: 25%;">AKUMULASI QTY RETUR</th>
+                </tr>
+            </thead>
+        </table>
 
-    <table class="table-data">
-        <thead>
-            <tr>
-                <th class="text-center col-no">NO</th>
-                <th style="width: 50%;">BARANG RETUR</th>
-                <th class="text-right" style="width: 20%;">TOTAL TRANSAKSI RETUR</th>
-                <th class="text-right" style="width: 25%;">AKUMULASI QTY RETUR</th>
-            </tr>
-        </thead>
-        @forelse(($data ?? []) as $i => $row)
+        @foreach($rows as $i => $row)
             @php
                 $details = $row['details'] ?? [];
                 $qtyMap = [];
@@ -167,49 +174,43 @@
                     $qtyMap[$unit] += (int)($d['qty'] ?? 0);
                 }
             @endphp
-            <tbody>
-                <tr class="row-parent">
-                    <td class="text-center text-gray font-normal">{{ $i + 1 }}.</td>
-                    <td>{{ $row['item_name'] ?? '-' }}</td>
-                    <td class="text-right">{{ (int)($row['transaction_count'] ?? 0) }} Transaksi</td>
-                    <td class="text-right">{{ $fmt($qtyMap) }}</td>
-                </tr>
-                <tr class="row-child-container">
-                    <td colspan="4">
-                        <table class="table-detail">
-                            <tbody>
-                                <tr>
-                                    <th class="text-gray font-normal" style="width: 20%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL RETUR</th>
-                                    <th class="text-gray font-normal" style="width: 20%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">REFERENSI PO</th>
-                                    <th class="text-gray font-normal" style="width: 30%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SUPPLIER</th>
-                                    <th class="text-right text-gray font-normal" style="width: 15%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY</th>
-                                    <th class="text-right text-gray font-normal" style="width: 15%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SUBTOTAL</th>
-                                </tr>
-                                @forelse($details as $d)
-                                    <tr>
-                                        <td>{{ \Carbon\Carbon::parse($d['rs_date'])->format('d M Y') }}</td>
-                                        <td>{{ $d['po_number'] ?? '-' }}</td>
-                                        <td>{{ $d['supplier_name'] ?? '-' }}</td>
-                                        <td class="text-right">{{ $d['qty'] ?? 0 }} {{ $d['unit_name'] ?? '' }}</td>
-                                        <td class="text-right">Rp {{ number_format((float)($d['subtotal'] ?? 0), 0, ',', '.') }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center text-gray">Tidak ada detail</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-            </tbody>
-        @empty
-            <tbody>
-                <tr class="row-parent">
-                    <td colspan="4" class="text-center text-gray font-normal">Tidak ada data laporan retur</td>
-                </tr>
-            </tbody>
-        @endforelse
-    </table>
+            <div class="report-group-block @if($loop->first) report-group-block-first @endif">
+                <table class="group-summary">
+                    <tr>
+                        <td class="text-center text-gray font-normal" style="width:5%;">{{ $i + 1 }}.</td>
+                        <td style="width:50%;">{{ $row['item_name'] ?? '-' }}</td>
+                        <td class="text-right" style="width:20%;">{{ (int)($row['transaction_count'] ?? 0) }} Transaksi</td>
+                        <td class="text-right" style="width:25%;">{{ $fmt($qtyMap) }}</td>
+                    </tr>
+                </table>
+                <table class="table-detail">
+                    <thead>
+                        <tr>
+                            <th class="text-gray font-normal" style="width: 20%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL RETUR</th>
+                            <th class="text-gray font-normal" style="width: 20%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">REFERENSI PO</th>
+                            <th class="text-gray font-normal" style="width: 30%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SUPPLIER</th>
+                            <th class="text-right text-gray font-normal" style="width: 15%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY</th>
+                            <th class="text-right text-gray font-normal" style="width: 15%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SUBTOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($details as $d)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($d['rs_date'])->format('d M Y') }}</td>
+                                <td>{{ $d['po_number'] ?? '-' }}</td>
+                                <td>{{ $d['supplier_name'] ?? '-' }}</td>
+                                <td class="text-right">{{ $d['qty'] ?? 0 }} {{ $d['unit_name'] ?? '' }}</td>
+                                <td class="text-right">Rp {{ number_format((float)($d['subtotal'] ?? 0), 0, ',', '.') }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-gray">Tidak ada detail</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        @endforeach
+    @endif
 </body>
 </html>

@@ -12,26 +12,68 @@
         .params-table td { padding: 3px 0; font-size: 11px; }
         .params-label { color: #555; width: 90px; }
         .params-val { color: #000; font-weight: bold; }
-        /* table-layout:auto + vertical-align top: cegah “celah” besar di DomPDF (fixed+colspan) */
-        .table-data { width: 100%; border-collapse: collapse; table-layout: auto; }
-        .table-data > thead > tr > th { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 4px; text-align: left; font-size: 9px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: .5px; }
-        .row-parent > td { padding: 8px 6px; font-size: 11px; color: #000; font-weight: bold; vertical-align: middle; }
-        .row-child-container > td {
-            padding: 0 4px 10px 14px;
-            border-bottom: 1px solid #ccc;
-            vertical-align: top;
-            height: auto;
-            line-height: 1.25;
+        /* table-layout:auto — header ringkas hanya di awal (tabel 1 baris), isi grup menyambung tanpa orphan thead besar */
+        .table-legend {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+            margin-bottom: 4px;
+            page-break-after: avoid;
         }
-        .table-detail { width: 100%; border-collapse: collapse; margin-top: 0; table-layout: auto; }
-        .table-detail th { border-bottom: 1px solid #eee; padding: 6px 4px; font-size: 9px; color: #888; font-weight: normal; text-align: left; }
+        .table-legend thead tr th {
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+            padding: 8px 4px;
+            text-align: left;
+            font-size: 9px;
+            font-weight: bold;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        .report-group-block {
+            padding: 0 0 12px 0;
+            border-bottom: 1px solid #ccc;
+            page-break-inside: auto;
+        }
+        .report-group-block-first { page-break-before: avoid; }
+        .group-summary {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 0 2px 0;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+        }
+        .group-summary td {
+            padding: 8px 6px;
+            font-size: 11px;
+            color: #000;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+        .table-detail {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0;
+            table-layout: auto;
+        }
+        .table-detail thead { display: table-header-group; }
+        .table-detail thead th {
+            border-bottom: 1px solid #eee;
+            padding: 6px 4px;
+            font-size: 9px;
+            color: #888;
+            font-weight: normal;
+            text-align: left;
+        }
         .table-detail td { padding: 6px 4px; font-size: 11px; color: #444; border-bottom: 1px solid #f5f5f5; }
-        .table-detail tr:last-child td { border-bottom: none; }
+        .table-detail tbody tr:last-child td { border-bottom: none; }
         .text-right { text-align: right !important; }
         .text-center { text-align: center !important; }
         .font-normal { font-weight: normal; }
         .text-gray { color: #777; }
         .col-no { width: 5%; color: #888; font-size: 11px; }
+        .empty-msg { padding: 12px; text-align: center; color: #777; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -64,22 +106,28 @@
                 foreach ($arr as $u => $q) if ($q > 0) $parts[] = $q . ' ' . $u;
                 return count($parts) ? implode(' ', $parts) : '-';
             };
+            $rows = is_array($data ?? null) ? $data : [];
         @endphp
         <tr><td class="params-label">PERIODE</td><td class="params-val">: {{ $startFormatted }} s/d {{ $endFormatted }}</td></tr>
         <tr><td class="params-label">SUPPLIER</td><td class="params-val">: {{ strtoupper($supplier_name ?? 'Semua Supplier') }}</td></tr>
         <tr><td class="params-label">BAHAN</td><td class="params-val">: {{ strtoupper($supplies_name ?? 'Semua Bahan') }}</td></tr>
     </table>
 
-    <table class="table-data">
-        <thead>
-            <tr>
-                <th class="text-center col-no">NO</th>
-                <th style="width: 40%;">NAMA BAHAN</th>
-                <th class="text-right" style="width: 25%;">TOTAL TRANSAKSI KELUAR</th>
-                <th class="text-center" style="width: 30%;">TOTAL QTY KELUAR</th>
-            </tr>
-        </thead>
-        @forelse(($data ?? []) as $i => $row)
+    @if(count($rows) < 1)
+        <p class="empty-msg font-normal">Tidak ada data laporan pemakaian bahan</p>
+    @else
+        <table class="table-legend">
+            <thead>
+                <tr>
+                    <th class="text-center col-no" scope="col" style="width:5%;">NO</th>
+                    <th scope="col" style="width: 40%;">NAMA BAHAN</th>
+                    <th class="text-right" scope="col" style="width: 25%;">TOTAL TRANSAKSI KELUAR</th>
+                    <th class="text-center" scope="col" style="width: 30%;">TOTAL QTY KELUAR</th>
+                </tr>
+            </thead>
+        </table>
+
+        @foreach($rows as $i => $row)
             @php
                 $details = $row['details'] ?? [];
                 $qtyMap = [];
@@ -90,41 +138,39 @@
                     $qtyMap[$unit] += (int)($d['qty'] ?? 0);
                 }
             @endphp
-            <tbody>
-                <tr class="row-parent">
-                    <td class="text-center text-gray font-normal">{{ $i + 1 }}.</td>
-                    <td>{{ $row['item_name'] ?? '-' }}</td>
-                    <td class="text-right">{{ (int)($row['transaction_count'] ?? 0) }} Transaksi Keluar</td>
-                    <td class="text-center">{{ $fmt($qtyMap) }}</td>
-                </tr>
-                <tr class="row-child-container">
-                    <td colspan="4">
-                        <table class="table-detail">
-                            <tbody>
-                                <tr>
-                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL PRODUKSI</th>
-                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KODE PRODUKSI</th>
-                                    <th class="text-center text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY PEMAKAIAN</th>
-                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KETERANGAN</th>
-                                </tr>
-                                @forelse($details as $d)
-                                    <tr>
-                                        <td>{{ \Carbon\Carbon::parse($d['production_date'])->format('d M Y') }}</td>
-                                        <td>{{ $d['production_code'] ?? '-' }}</td>
-                                        <td class="text-center">{{ $d['qty'] ?? 0 }} {{ $d['unit_name'] ?? '' }}</td>
-                                        <td>{{ $d['notes'] ?? '-' }}</td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="text-center text-gray">Tidak ada detail</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </td>
-                </tr>
-            </tbody>
-        @empty
-            <tbody><tr class="row-parent"><td colspan="4" class="text-center text-gray font-normal">Tidak ada data laporan pemakaian bahan</td></tr></tbody>
-        @endforelse
-    </table>
+            <div class="report-group-block @if($loop->first) report-group-block-first @endif">
+                <table class="group-summary">
+                    <tr>
+                        <td class="text-center text-gray font-normal" style="width:5%;">{{ $i + 1 }}.</td>
+                        <td style="width:40%;">{{ $row['item_name'] ?? '-' }}</td>
+                        <td class="text-right" style="width:25%;">{{ (int)($row['transaction_count'] ?? 0) }} Transaksi Keluar</td>
+                        <td class="text-center" style="width:30%;">{{ $fmt($qtyMap) }}</td>
+                    </tr>
+                </table>
+                <table class="table-detail">
+                    <thead>
+                        <tr>
+                            <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL PRODUKSI</th>
+                            <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KODE PRODUKSI</th>
+                            <th class="text-center text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY PEMAKAIAN</th>
+                            <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KETERANGAN</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($details as $d)
+                            <tr>
+                                <td>{{ \Carbon\Carbon::parse($d['production_date'])->format('d M Y') }}</td>
+                                <td>{{ $d['production_code'] ?? '-' }}</td>
+                                <td class="text-center">{{ $d['qty'] ?? 0 }} {{ $d['unit_name'] ?? '' }}</td>
+                                <td>{{ $d['notes'] ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="text-center text-gray">Tidak ada detail</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        @endforeach
+    @endif
 </body>
 </html>
