@@ -52,10 +52,10 @@
     }
 
     function getStatusBadge(status) {
-        if (status == 1) return `<span class="badge bg-secondary">Pending Approval</span>`;
-        if (status == 2) return `<span class="badge bg-success">Selesai</span>`;
-        if (status == 3) return `<span class="badge bg-primary">Pending Cancel</span>`;
-        if (status == 4) return `<span class="badge bg-danger">Ditolak</span>`;
+        if (status == 1) return `<span class="badge bg-secondary">Pending</span>`;
+        if (status == 2) return `<span class="badge bg-success">Berhasil</span>`;
+        if (status == 3) return `<span class="badge bg-danger">Tolak</span>`;
+        if (status == 4) return `<span class="badge bg-warning text-dark">Menunggu batal</span>`;
         return `<span class="badge bg-secondary">-</span>`;
     }
 
@@ -163,7 +163,7 @@
                         for (let j = 0; j < e[i].details.length; j++) {
                             let s = parseInt(e[i].details[j].status);
                             if (s === 2) successCount += 1;
-                            if (s === 4) rejectCount += 1;
+                            if (s === 3) rejectCount += 1;
                         }
                     }
 
@@ -173,8 +173,7 @@
 
                     e[i].total_summary = `${totalCount} Produksi (${totalQtyText})`;
                     e[i].production_summary = `${successCount} Berhasil (${successQtyText})`;
-                    e[i].reject_summary = `${e[i].total_reject_count} Ditolak (${rejectQtyText})`;
-                    e[i].reject_summary = `${rejectCount} Ditolak (${rejectQtyText})`;
+                    e[i].reject_summary = `${rejectCount} Tolak (${rejectQtyText})`;
                 }
 
                 table.rows.add(e).draw();

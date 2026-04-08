@@ -12,11 +12,18 @@
         .params-table td { padding: 3px 0; font-size: 11px; }
         .params-label { color: #555; width: 90px; }
         .params-val { color: #000; font-weight: bold; }
-        .table-data { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        /* table-layout:auto + vertical-align top: cegah “celah” besar di DomPDF (fixed+colspan) */
+        .table-data { width: 100%; border-collapse: collapse; table-layout: auto; }
         .table-data > thead > tr > th { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 4px; text-align: left; font-size: 9px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: .5px; }
-        .row-parent > td { padding: 12px 6px; font-size: 11px; color: #000; font-weight: bold; vertical-align: middle; }
-        .row-child-container > td { padding: 0 4px 24px 30px; border-bottom: 1px solid #ccc; }
-        .table-detail { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        .row-parent > td { padding: 8px 6px; font-size: 11px; color: #000; font-weight: bold; vertical-align: middle; }
+        .row-child-container > td {
+            padding: 0 4px 10px 14px;
+            border-bottom: 1px solid #ccc;
+            vertical-align: top;
+            height: auto;
+            line-height: 1.25;
+        }
+        .table-detail { width: 100%; border-collapse: collapse; margin-top: 0; table-layout: auto; }
         .table-detail th { border-bottom: 1px solid #eee; padding: 6px 4px; font-size: 9px; color: #888; font-weight: normal; text-align: left; }
         .table-detail td { padding: 6px 4px; font-size: 11px; color: #444; border-bottom: 1px solid #f5f5f5; }
         .table-detail tr:last-child td { border-bottom: none; }
@@ -93,15 +100,13 @@
                 <tr class="row-child-container">
                     <td colspan="4">
                         <table class="table-detail">
-                            <thead>
-                                <tr>
-                                    <th style="width: 25%;">TANGGAL PRODUKSI</th>
-                                    <th style="width: 25%;">KODE PRODUKSI</th>
-                                    <th class="text-center" style="width: 25%;">QTY PEMAKAIAN</th>
-                                    <th style="width: 25%;">KETERANGAN</th>
-                                </tr>
-                            </thead>
                             <tbody>
+                                <tr>
+                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL PRODUKSI</th>
+                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KODE PRODUKSI</th>
+                                    <th class="text-center text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY PEMAKAIAN</th>
+                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KETERANGAN</th>
+                                </tr>
                                 @forelse($details as $d)
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($d['production_date'])->format('d M Y') }}</td>

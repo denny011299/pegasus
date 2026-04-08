@@ -37,27 +37,21 @@
         .params-label { color: #555555; width: 90px; }
         .params-val { color: #000000; font-weight: bold; }
 
-        /* Tabel Data Utama */
+        /* Tabel Data Utama — auto layout + jangan paksa satu halaman (DomPDF = gap kosong) */
         .table-data {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: auto;
         }
         .product-group {
-            page-break-inside: avoid;
-            break-inside: avoid;
+            page-break-inside: auto;
+            break-inside: auto;
         }
         .row-parent,
         .row-child-container,
         .row-child-container > td {
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-        .row-parent {
-            page-break-after: avoid;
-        }
-        .row-child-container {
-            page-break-before: avoid;
+            page-break-inside: auto;
+            break-inside: auto;
         }
         
         /* Header Tabel Utama */
@@ -222,7 +216,7 @@
                             $successQty[$unit] += (int)($d['qty'] ?? 0);
                         }
 
-                        if ((int)($d['status'] ?? 0) === 4) {
+                        if ((int)($d['status'] ?? 0) === 3) {
                             $rejectCount++;
                             if (!isset($rejectQty[$unit])) $rejectQty[$unit] = 0;
                             $rejectQty[$unit] += (int)($d['qty'] ?? 0);
@@ -237,7 +231,7 @@
                     <td class="text-right">{{ $successCount }} Berhasil <br> <span class="font-normal text-gray">({{ $fmt($successQty) }})</span></td>
                     <td class="text-right">
                         @if($rejectCount > 0)
-                            {{ $rejectCount }} Ditolak <br> <span class="font-normal text-gray">({{ $fmt($rejectQty) }})</span>
+                            {{ $rejectCount }} Tolak <br> <span class="font-normal text-gray">({{ $fmt($rejectQty) }})</span>
                         @else
                             <span class="font-normal text-gray">0 (-)</span>
                         @endif
@@ -246,15 +240,13 @@
                 <tr class="row-child-container">
                     <td colspan="5">
                         <table class="table-detail">
-                            <thead>
-                                <tr>
-                                    <th style="width: 25%;">TANGGAL</th>
-                                    <th style="width: 25%;">KODE PRODUKSI</th>
-                                    <th class="text-right" style="width: 25%;">QTY</th>
-                                    <th class="text-center" style="width: 25%;">STATUS</th>
-                                </tr>
-                            </thead>
                             <tbody>
+                                <tr>
+                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL</th>
+                                    <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KODE PRODUKSI</th>
+                                    <th class="text-right text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY</th>
+                                    <th class="text-center text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">STATUS</th>
+                                </tr>
                                 @forelse($details as $d)
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($d['production_date'])->format('d M Y') }}</td>
@@ -264,11 +256,11 @@
                                             @if((int)($d['status'] ?? 0) === 1)
                                                 <span class="status-text" style="color:#7a7a7a;border-color:#7a7a7a;">PENDING</span>
                                             @elseif((int)($d['status'] ?? 0) === 2)
-                                                <span class="status-text">SELESAI</span>
+                                                <span class="status-text">BERHASIL</span>
                                             @elseif((int)($d['status'] ?? 0) === 3)
-                                                <span class="status-text" style="color:#2563eb;border-color:#2563eb;">PENDING TOLAK</span>
+                                                <span class="status-text" style="color:#dc2626;border-color:#dc2626;">TOLAK</span>
                                             @elseif((int)($d['status'] ?? 0) === 4)
-                                                <span class="status-text" style="color:#dc2626;border-color:#dc2626;">DITOLAK</span>
+                                                <span class="status-text" style="color:#b45309;border-color:#b45309;">MENUNGGU BATAL</span>
                                             @else
                                                 <span class="font-normal text-gray">-</span>
                                             @endif

@@ -156,13 +156,13 @@
                     }
 
                     if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;
+                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Pending</span>`;
                     } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Success</span>`;
+                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Berhasil</span>`;
                     } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-primary" style="font-size: 12px">Pending Cancel</span>`;
+                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Tolak</span>`;
                     } else if (e[i].status == 4){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Cancel</span>`;
+                        e[i].status_text = `<span class="badge bg-warning text-dark" style="font-size: 12px">Menunggu batal</span>`;
                     }
                 }
 

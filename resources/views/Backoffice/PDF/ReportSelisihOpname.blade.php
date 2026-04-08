@@ -12,10 +12,18 @@
         .params-table td { padding: 3px 0; font-size: 11px; }
         .params-label { color: #555; width: 90px; }
         .params-val { color: #000; font-weight: bold; }
-        .table-data, .table-detail { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .table-data, .table-detail { width: 100%; border-collapse: collapse; table-layout: auto; }
         .table-data > thead > tr > th { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 4px; text-align: left; font-size: 9px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: .5px; }
         .row-parent > td { padding: 12px 6px; font-size: 11px; font-weight: bold; vertical-align: middle; }
-        .row-child-container > td { padding: 0 4px 24px 30px; border-bottom: 1px solid #ccc; }
+        .row-child-container > td {
+            padding: 0 4px 10px 14px;
+            border-bottom: 1px solid #ccc;
+            vertical-align: top;
+            height: auto;
+            line-height: 1.25;
+        }
+        .table-detail { margin-top: 0; }
+        .font-normal { font-weight: normal; }
         .table-detail th { border-bottom: 1px solid #eee; padding: 6px 4px; font-size: 9px; color: #888; font-weight: normal; text-align: left; }
         .table-detail td { padding: 6px 4px; font-size: 11px; color: #444; border-bottom: 1px solid #f5f5f5; }
         .table-detail tr:last-child td { border-bottom: none; }
@@ -50,6 +58,8 @@
         <tr><td class="params-label">TYPE</td><td class="params-val">: {{ strtoupper($type_label ?? 'ALL') }}</td></tr>
         <tr><td class="params-label">ITEM</td><td class="params-val">: {{ strtoupper($item_name ?? 'SEMUA ITEM') }}</td></tr>
     </table>
+
+    <p class="text-gray" style="font-size:10px;margin:0 0 16px 0;">Detail di bawah hanya baris dengan <strong>selisih stok tidak nol</strong> (sistem vs fisik).</p>
 
     <table class="table-data">
         <thead>
@@ -86,18 +96,16 @@
                 <tr class="row-child-container">
                     <td colspan="5">
                         <table class="table-detail">
-                            <thead>
-                                <tr>
-                                    <th style="width:10%">SUMBER</th>
-                                    <th style="width:24%">ITEM</th>
-                                    <th style="width:14%">STOK SISTEM</th>
-                                    <th style="width:14%">STOK FISIK</th>
-                                    <th style="width:12%">SELISIH</th>
-                                    <th style="width:13%" class="text-right">HARGA SATUAN</th>
-                                    <th style="width:13%" class="text-right">NOMINAL</th>
-                                </tr>
-                            </thead>
                             <tbody>
+                                <tr>
+                                    <th class="text-gray font-normal" style="width:10%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SUMBER</th>
+                                    <th class="text-gray font-normal" style="width:24%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">ITEM</th>
+                                    <th class="text-gray font-normal" style="width:14%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">STOK SISTEM</th>
+                                    <th class="text-gray font-normal" style="width:14%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">STOK FISIK</th>
+                                    <th class="text-gray font-normal" style="width:12%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SELISIH</th>
+                                    <th class="text-right text-gray font-normal" style="width:13%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">HARGA SATUAN</th>
+                                    <th class="text-right text-gray font-normal" style="width:13%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">NOMINAL</th>
+                                </tr>
                                 @forelse(($row['details'] ?? []) as $d)
                                     @php
                                         $item = ($d['item_name'] ?? '-') . ((isset($d['variant_name']) && $d['variant_name'] && $d['variant_name'] !== '-') ? ' - '.$d['variant_name'] : '');

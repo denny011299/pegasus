@@ -53,6 +53,59 @@ class ReportController extends Controller
         return false;
     }
 
+    /**
+     * PDF: hanya baris detail yang benar-benar ber-selisih; hitung ulang ringkasan per kode opname.
+     *
+     * @param  mixed  $data  Array hasil getReportSelisihOpname (bisa nested stdClass dari JSON).
+     * @return array<int, array<string, mixed>>
+     */
+    private function selisihOpnamePdfRowsOnlySelisih($data): array
+    {
+        if (!is_array($data)) {
+            return [];
+        }
+        $out = [];
+        foreach ($data as $row) {
+            $row = json_decode(json_encode($row), true);
+            if (!is_array($row)) {
+                continue;
+            }
+            $detailsIn = $row['details'] ?? [];
+            if (!is_array($detailsIn)) {
+                continue;
+            }
+            $details = [];
+            foreach ($detailsIn as $d) {
+                $d = json_decode(json_encode($d), true);
+                if (!is_array($d)) {
+                    continue;
+                }
+                $text = $d['selisih_text'] ?? '';
+                if (!$this->hasNonZeroSelisih($text)) {
+                    continue;
+                }
+                $qty = isset($d['selisih_qty']) ? (float) $d['selisih_qty'] : $this->parseSelisihNumeric($text);
+                if (abs($qty) < 0.0000001) {
+                    continue;
+                }
+                $details[] = $d;
+            }
+            if (count($details) === 0) {
+                continue;
+            }
+            $nominalTotal = 0.0;
+            foreach ($details as $d) {
+                $nominalTotal += (float) ($d['nominal'] ?? 0);
+            }
+            $row['details'] = $details;
+            $row['total_item_selisih'] = count($details);
+            $row['total_nominal'] = $nominalTotal;
+            $out[] = $row;
+        }
+
+        return $out;
+    }
+
     // Report Profit Loss
     public function ProfitLoss(){
         return view('Backoffice.Reports.Profit_Loss');
@@ -1196,7 +1249,8 @@ class ReportController extends Controller
     function generateReportSelisihOpnamePdf(Request $req){
         $json = $this->getReportSelisihOpname($req);
         $data = $json->getData(true);
-        $param["data"] = is_array($data) ? $data : [];
+        $raw = is_array($data) ? $data : [];
+        $param["data"] = $this->selisihOpnamePdfRowsOnlySelisih($raw);
         $param["start_date"] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : "-";
         $param["end_date"] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : "-";
         $type = strtolower((string)($req->type ?? 'all'));

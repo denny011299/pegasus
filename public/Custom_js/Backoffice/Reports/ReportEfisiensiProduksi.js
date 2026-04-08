@@ -40,10 +40,13 @@ function inisialisasi() {
             },
             { data: "product_name" },
             { data: "total_summary" },
+            { data: "good_qty_summary" },
             { data: "reject_summary" },
             { data: "reject_ratio_summary" },
             { data: "waste_ratio_summary" },
-            { data: "efficiency_summary" },
+            { data: "data_bahan_summary" },
+            { data: "yield_summary" },
+            { data: "operational_summary" },
         ],
         initComplete: () => {
             $(".dataTables_filter").appendTo("#tableSearch");
@@ -54,9 +57,10 @@ function inisialisasi() {
 }
 
 function statusBadge(status) {
-    if (status == 3) return '<span class="badge bg-danger">Reject</span>';
-    if (status == 2) return '<span class="badge bg-success">Selesai</span>';
+    if (status == 3) return '<span class="badge bg-danger">Tolak</span>';
+    if (status == 2) return '<span class="badge bg-success">Berhasil</span>';
     if (status == 1) return '<span class="badge bg-secondary">Pending</span>';
+    if (status == 4) return '<span class="badge bg-warning text-dark">Menunggu batal</span>';
     return '<span class="badge bg-secondary">-</span>';
 }
 
@@ -82,6 +86,7 @@ function formatDetailRow(data) {
                         <th>Kode Produksi</th>
                         <th>Qty Produksi</th>
                         <th>Status</th>
+                        <th>Log bahan</th>
                         <th>Pemakaian Bahan</th>
                         <th>Bahan Terbuang</th>
                     </tr>
@@ -91,22 +96,52 @@ function formatDetailRow(data) {
     if (data.details && data.details.length > 0) {
         for (let i = 0; i < data.details.length; i++) {
             var d = data.details[i];
+            var tracked =
+                d.material_tracked === true
+                    ? '<span class="badge bg-success">Terlacak</span>'
+                    : '<span class="badge bg-warning text-dark">Belum terlacak</span>';
             html += `
                 <tr>
                     <td>${moment(d.production_date).format("D MMM YYYY")}</td>
                     <td>${d.production_code || "-"}</td>
                     <td>${d.qty} ${d.unit_name || ""}</td>
                     <td>${statusBadge(d.status)}</td>
+                    <td>${tracked}</td>
                     <td>${d.material_usage_text || "-"}</td>
                     <td>${d.material_waste_text || "-"}</td>
                 </tr>
             `;
         }
     } else {
-        html += '<tr><td colspan="6" class="text-center">Tidak ada detail</td></tr>';
+        html += '<tr><td colspan="7" class="text-center">Tidak ada detail</td></tr>';
     }
     html += "</tbody></table></div>";
     return html;
+}
+
+function updateKpiSummary(rows) {
+    var wrap = $("#efisiensi-kpi-summary");
+    if (!rows || rows.length === 0) {
+        wrap.addClass("d-none");
+        return;
+    }
+    wrap.removeClass("d-none");
+    var n = rows.length;
+    var sumScore = 0;
+    var sumGood = 0;
+    var sumUntracked = 0;
+    var highRisk = 0;
+    for (var i = 0; i < n; i++) {
+        sumScore += parseFloat(rows[i].operational_score || 0);
+        sumGood += parseInt(rows[i].good_qty || 0, 10);
+        sumUntracked += parseInt(rows[i].untracked_batch_count || 0, 10);
+        var risk = rows[i].risk_level || "";
+        if (risk === "tinggi") highRisk++;
+    }
+    $("#kpi-avg-score").text((sumScore / n).toFixed(2) + "%");
+    $("#kpi-good-qty").text(sumGood.toLocaleString("id-ID"));
+    $("#kpi-untracked").text(sumUntracked.toLocaleString("id-ID"));
+    $("#kpi-high-risk").text(highRisk + " / " + n);
 }
 
 function toggleDetailRow(tr, row) {
@@ -142,16 +177,25 @@ function refreshEfisiensi() {
             table.clear().draw();
             for (let i = 0; i < e.length; i++) {
                 e[i].total_summary = `${e[i].production_count} Batch (${e[i].total_qty} qty)`;
-                e[i].reject_summary = `${e[i].total_reject_count} Batch (${e[i].total_reject_qty} qty)`;
+                e[i].good_qty_summary = (e[i].good_qty ?? 0).toLocaleString("id-ID");
+                e[i].reject_summary = `${e[i].total_reject_count} batch tolak (${e[i].total_reject_qty} qty)`;
                 e[i].reject_ratio_summary = ratioBadge(e[i].reject_ratio || 0, false);
                 e[i].waste_ratio_summary = ratioBadge(e[i].material_waste_ratio || 0, false);
-                e[i].efficiency_summary = ratioBadge(e[i].efficiency_ratio || 0, true);
+                var untracked = parseInt(e[i].untracked_batch_count || 0, 10);
+                e[i].data_bahan_summary =
+                    untracked > 0
+                        ? `<span class="badge bg-warning text-dark" title="Tidak ada log stok pemakaian bahan">${untracked} batch</span>`
+                        : '<span class="badge bg-light text-muted">OK</span>';
+                e[i].yield_summary = ratioBadge(e[i].yield_pct ?? e[i].efficiency_ratio ?? 0, true);
+                e[i].operational_summary = ratioBadge(e[i].operational_score || 0, true);
             }
+            updateKpiSummary(e);
             table.rows.add(e).draw();
             feather.replace();
         },
         error: function (err) {
             console.error("Gagal load report efisiensi produksi:", err);
+            updateKpiSummary([]);
         },
     });
 }

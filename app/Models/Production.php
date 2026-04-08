@@ -24,7 +24,7 @@ class Production extends Model
             "status" => null
         ], $data);  
 
-        // status: 1 = menunggu approve, 2 = accept, 3 = tolak, 4 = menunggu cancel
+        // status header produksi: 1 = pending, 2 = berhasil, 3 = tolak (4 = menunggu batal — jarang, bukan salah satu tiga utama)
         if ($data["report"] == null) $result = Production::where('status', '>=', 1);
         else if ($data["report"]) $result = Production::where('status', '>=', 0);
         if ($data["production_id"]) $result->where('production_id', '=', $data["production_id"]);
@@ -275,7 +275,7 @@ class Production extends Model
                 "qty" => (int)$row->pd_qty,
                 "unit_name" => $row->unit_name,
                 "status" => (int)$row->production_status,
-                "status_text" => $isRejected ? "Ditolak" : "Selesai"
+                "status_text" => $this->labelProduksiHeaderStatus((int)$row->production_status),
             ];
         }
 
@@ -296,7 +296,7 @@ class Production extends Model
             ->join('products as pr', 'pr.product_id', '=', 'pv.product_id')
             ->leftJoin('units as u', 'u.unit_id', '=', 'production_details.unit_id')
             ->where('production_details.status', '>=', 1)
-            // Efisiensi pakai data final: selesai + reject
+            // Hanya transaksi final: berhasil (2) dan tolak (3). Pending (1) tidak ikut.
             ->whereIn('p.status', [2, 3])
             ->select(
                 'production_details.pd_id',
@@ -468,6 +468,14 @@ class Production extends Model
                 }
             }
 
+            $hasMatLog = false;
+            foreach ($matCode as $mq) {
+                if ((float)$mq > 0) {
+                    $hasMatLog = true;
+                    break;
+                }
+            }
+
             $grouped[$key]["details"][] = [
                 "production_id" => $row->production_id,
                 "production_code" => $code,
@@ -475,9 +483,10 @@ class Production extends Model
                 "qty" => (int)$qty,
                 "unit_name" => $row->unit_name,
                 "status" => (int)$row->production_status,
-                "status_text" => $isRejected ? "Ditolak" : "Selesai",
+                "status_text" => $this->labelProduksiHeaderStatus((int)$row->production_status),
                 "material_usage_text" => $fmtUnitMap($allocatedUsageMap),
-                "material_waste_text" => $isRejected ? $fmtUnitMap($allocatedWasteMap) : "-"
+                "material_waste_text" => $isRejected ? $fmtUnitMap($allocatedWasteMap) : "-",
+                "material_tracked" => $hasMatLog,
             ];
         }
 
@@ -489,14 +498,83 @@ class Production extends Model
             $sumMatTotal = array_sum($row["material_total_map"]);
             $sumMatWaste = array_sum($row["material_waste_map"]);
             $materialWasteRatio = $sumMatTotal > 0 ? ($sumMatWaste / $sumMatTotal) * 100 : 0;
+            $yieldPct = max(0, 100 - $rejectRatio);
+            $rCap = min(100, max(0, $rejectRatio));
+            $wCap = min(100, max(0, $materialWasteRatio));
+            // Skor gabungan: yield output × retensi bahan (keduanya 0–100); turun jika reject ATAU waste tinggi
+            $operationalScore = round(((100 - $rCap) * (100 - $wCap)) / 100, 2);
+
+            $untrackedBatches = 0;
+            foreach (array_keys($row["production_code_set"]) as $pcode) {
+                $m = $materialByCode[$pcode] ?? [];
+                $has = false;
+                foreach ($m as $mq) {
+                    if ((float)$mq > 0) {
+                        $has = true;
+                        break;
+                    }
+                }
+                if (!$has) {
+                    $untrackedBatches++;
+                }
+            }
+
+            $result[$idx]["good_qty"] = (int)max(0, round($row["total_qty"] - $row["total_reject_qty"]));
+            $result[$idx]["yield_pct"] = round($yieldPct, 2);
             $result[$idx]["reject_ratio"] = round($rejectRatio, 2);
-            $result[$idx]["efficiency_ratio"] = round(max(0, 100 - $rejectRatio), 2);
+            $result[$idx]["efficiency_ratio"] = round($yieldPct, 2);
+            $result[$idx]["operational_score"] = $operationalScore;
             $result[$idx]["material_waste_ratio"] = round($materialWasteRatio, 2);
+            $result[$idx]["untracked_batch_count"] = $untrackedBatches;
             $result[$idx]["material_total_text"] = $fmtUnitMap($row["material_total_map"]);
             $result[$idx]["material_waste_text"] = $fmtUnitMap($row["material_waste_map"]);
+
+            if ($operationalScore >= 90) {
+                $result[$idx]["risk_level"] = "rendah";
+            } elseif ($operationalScore >= 75) {
+                $result[$idx]["risk_level"] = "sedang";
+            } else {
+                $result[$idx]["risk_level"] = "tinggi";
+            }
+
             unset($result[$idx]["material_total_map"], $result[$idx]["material_waste_map"], $result[$idx]["production_code_set"], $result[$idx]["reject_code_set"]);
         }
 
+        usort($result, function ($a, $b) {
+            $ua = (int)($a["untracked_batch_count"] ?? 0);
+            $ub = (int)($b["untracked_batch_count"] ?? 0);
+            if ($ua !== $ub) {
+                return $ub <=> $ua;
+            }
+            $sa = (float)($a["operational_score"] ?? 0);
+            $sb = (float)($b["operational_score"] ?? 0);
+            if (abs($sa - $sb) > 0.0001) {
+                return $sa <=> $sb;
+            }
+            $ra = (float)($a["reject_ratio"] ?? 0);
+            $rb = (float)($b["reject_ratio"] ?? 0);
+            return $rb <=> $ra;
+        });
+
         return $result;
+    }
+
+    /**
+     * Status header tabel `productions` sesuai operasional: pending, berhasil, tolak.
+     */
+    private function labelProduksiHeaderStatus(int $status): string
+    {
+        switch ($status) {
+            case 1:
+                return 'Pending';
+            case 2:
+                return 'Berhasil';
+            case 3:
+                return 'Tolak';
+            case 4:
+                return 'Menunggu batal';
+            default:
+                return '-';
+        }
     }
 }

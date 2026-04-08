@@ -34,7 +34,7 @@
         .table-data {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
+            table-layout: auto;
         }
         .table-data > thead > tr > th {
             border-top: 1px solid #000000;
@@ -55,13 +55,17 @@
             vertical-align: middle;
         }
         .row-child-container > td {
-            padding: 0 4px 24px 30px;
+            padding: 0 4px 10px 14px;
             border-bottom: 1px solid #cccccc;
+            vertical-align: top;
+            height: auto;
+            line-height: 1.25;
         }
         .table-detail {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
+            margin-top: 0;
+            table-layout: auto;
         }
         .table-detail th {
             border-bottom: 1px solid #eeeeee;
@@ -173,16 +177,14 @@
                 <tr class="row-child-container">
                     <td colspan="4">
                         <table class="table-detail">
-                            <thead>
-                                <tr>
-                                    <th style="width: 20%;">TANGGAL RETUR</th>
-                                    <th style="width: 20%;">REFERENSI PO</th>
-                                    <th style="width: 30%;">SUPPLIER</th>
-                                    <th class="text-right" style="width: 15%;">QTY</th>
-                                    <th class="text-right" style="width: 15%;">SUBTOTAL</th>
-                                </tr>
-                            </thead>
                             <tbody>
+                                <tr>
+                                    <th class="text-gray font-normal" style="width: 20%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL RETUR</th>
+                                    <th class="text-gray font-normal" style="width: 20%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">REFERENSI PO</th>
+                                    <th class="text-gray font-normal" style="width: 30%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SUPPLIER</th>
+                                    <th class="text-right text-gray font-normal" style="width: 15%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY</th>
+                                    <th class="text-right text-gray font-normal" style="width: 15%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">SUBTOTAL</th>
+                                </tr>
                                 @forelse($details as $d)
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($d['rs_date'])->format('d M Y') }}</td>
