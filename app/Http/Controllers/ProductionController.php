@@ -237,24 +237,24 @@ class ProductionController extends Controller
         // 2. PROCESSING: Eksekusi Konversi Stok (Bongkar Satuan Besar) berdasarkan total agregat
         foreach ($aggregatedRequirements as $suppliesId => $butuh) {
             $butuhTersedia = $butuh['total_butuh'];
-            if ($butuhTersedia <= 0) continue; // Jangan proses jika butuhnya 0
+            if ($butuhTersedia <= 0) continue;
             $bd = $butuh['details'];
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'desc') 
+                ->orderBy('ss_id', 'desc')
                 ->get();
 
             if (count($ss) > 0) {
                 $virtualStock = [];
-                $logSummary = []; 
+                $logSummary = [];
 
                 foreach ($ss as $stok) {
                     $virtualStock[$stok->ss_id] = [
-                        'model' => $stok,
+                        'model'   => $stok,
                         'current' => (float)$stok->ss_stock,
                         'unit_id' => $stok->unit_id,
-                        'ss_id' => $stok->ss_id
+                        'ss_id'   => $stok->ss_id
                     ];
                 }
 
@@ -310,50 +310,33 @@ class ProductionController extends Controller
                 };
 
                 $keyPalingBawah = 0;
-                $idPalingBawah = $ss[$keyPalingBawah]->ss_id;
-                $safety = 0; 
+                $idPalingBawah  = $ss[$keyPalingBawah]->ss_id;
+                $safety = 0;
 
-                // Bongkar stok sampai level terbawah mencukupi total agregat
                 while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
                     $safety++;
-                    if ($safety > 500) break; 
-                    if (!$siapkanStok($keyPalingBawah, $ss)) break; 
+                    if ($safety > 500) break;
+                    if (!$siapkanStok($keyPalingBawah, $ss)) break;
                 }
 
-                // --- FINAL EKSEKUSI PENYIAPAN ---
                 if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
-                    // 1. UPDATE STOK VIRTUAL (Hasil Bongkar/Konversi)
-                    foreach ($virtualStock as $v) {
-                        $v['model']->ss_stock = (int)$v['current']; 
-                        $v['model']->save();
-                    }
-                    
-                    usort($logSummary, function($a, $b) {
-                        return $a['sort_order'] <=> $b['sort_order'];
-                    });
-
-                    foreach ($logSummary as $l) {
-                        (new LogStock())->insertLog([
-                            'log_date' => now(), 
-                            'log_kode' => "-", 
-                            'log_type' => 2,
-                            'log_category' => $l['cat'], 
-                            'log_item_id' => $suppliesId,
-                            'log_notes' => $l['note'], 
-                            'log_jumlah' => $l['jumlah'], 
-                            'unit_id' => $l['unit_id'],
-                        ]);
-                    }
-                }
-                else {
+                    // Simpan hasil simulasi — TIDAK save ke DB
+                    $simulasiHasil[$suppliesId] = [
+                        'virtualStock'  => $virtualStock,
+                        'logSummary'    => $logSummary,
+                        'idPalingBawah' => $idPalingBawah,
+                        'butuhTersedia' => $butuhTersedia,
+                    ];
+                } else {
                     $cek = 1;
                     $s = Supplies::find($suppliesId);
                     if (!in_array($s['supplies_name'], $bahan_kurang, true)) {
-                        array_push($bahan_kurang, $s['supplies_name']);
+                        $bahan_kurang[] = $s['supplies_name'];
                     }
                 }
             }
         }
+
         if ($cek == 1) {
             return response()->json([
                 "status" => -1,
@@ -533,36 +516,125 @@ class ProductionController extends Controller
                 "message" => "Mohon masukkan relasi produk: " . implode(", ", $produk_tanpa_relasi)
             ]);
         }
-        // 2. PENGURANGAN BAHAN (SUPPLIES) - jalankan sekali per approval produksi
+        // 2. PENGURANGAN BAHAN (SUPPLIES) - dengan konversi dulu
         foreach ($aggregatedRequirements as $suppliesId => $butuh) {
             $butuhTersedia = (float)$butuh['total_butuh'];
             if ($butuhTersedia <= 0) continue;
+            $bd = $butuh['details'];
 
-            $stokFinal = SuppliesStock::where('supplies_id', $suppliesId)
+            $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'desc')->first();
+                ->orderBy('ss_id', 'desc')
+                ->get();
 
-            if ($stokFinal) {
-                $l = LogStock::where('log_kode', '=', $p->production_code)
-                    ->where('log_type', '=', 2)
-                    ->where('log_category', '=', 2)
-                    ->where('log_item_id', '=', $suppliesId)
-                    ->where('unit_id', '=', $stokFinal->unit_id)
+            if ($ss->isEmpty()) continue;
+
+            $virtualStock = [];
+            $logSummary   = [];
+
+            foreach ($ss as $stok) {
+                $virtualStock[$stok->ss_id] = [
+                    'model'   => $stok,
+                    'current' => (float)$stok->ss_stock,
+                    'unit_id' => $stok->unit_id,
+                    'ss_id'   => $stok->ss_id,
+                ];
+            }
+
+            $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $bd) {
+                if (!isset($units[$targetKey + 1])) return false;
+
+                $stokSekarang = $units[$targetKey];
+                $stokAtas     = $units[$targetKey + 1];
+
+                if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
+                    if (!$siapkanStok($targetKey + 1, $units)) return false;
+                }
+
+                $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
+                    ->where('su_id_2', $stokSekarang->unit_id)
+                    ->where('status', 1)
                     ->first();
 
-                if (!$l) {
-                    $stokFinal->ss_stock -= $butuhTersedia;
-                    $stokFinal->save();
+                if ($sr && $virtualStock[$stokAtas->ss_id]['current'] > 0) {
+                    $virtualStock[$stokAtas->ss_id]['current'] -= 1;
+                    $hasilBongkar = (float)$sr['sr_value_2'];
+                    $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
+
+                    $baseOrder = $stokAtas->ss_id * 10;
+                    $logSummary[$stokAtas->unit_id . '_cat2'] = [
+                        'unit_id'    => $stokAtas->unit_id,
+                        'jumlah'     => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
+                        'cat'        => 2,
+                        'note'       => "Konversi unit dari produksi (Bongkar)",
+                        'sort_order' => $baseOrder
+                    ];
+                    $logSummary[$stokSekarang->unit_id . '_cat1'] = [
+                        'unit_id'    => $stokSekarang->unit_id,
+                        'jumlah'     => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
+                        'cat'        => 1,
+                        'note'       => "Konversi unit dari produksi (Hasil)",
+                        'sort_order' => $baseOrder + 1
+                    ];
+                    return true;
+                }
+                return false;
+            };
+
+            $keyPalingBawah = 0;
+            $idPalingBawah  = $ss[$keyPalingBawah]->ss_id;
+            $safety = 0;
+
+            while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
+                $safety++;
+                if ($safety > 500) break;
+                if (!$siapkanStok($keyPalingBawah, $ss)) break;
+            }
+
+            if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
+                // 1. Save hasil konversi (bongkar DOS → Piece)
+                foreach ($virtualStock as $v) {
+                    $v['model']->ss_stock = (int)$v['current'];
+                    $v['model']->save();
+                }
+
+                // 2. Catat log konversi
+                usort($logSummary, fn($a, $b) => $a['sort_order'] <=> $b['sort_order']);
+                foreach ($logSummary as $l) {
+                    (new LogStock())->insertLog([
+                        'log_date'     => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                        'log_kode'     => $p->production_code,
+                        'log_type'     => 2,
+                        'log_category' => $l['cat'],
+                        'log_item_id'  => $suppliesId,
+                        'log_notes'    => $l['note'],
+                        'log_jumlah'   => $l['jumlah'],
+                        'unit_id'      => $l['unit_id'],
+                    ]);
+                }
+
+                // 3. Kurangi stok level terbawah (Piece) sebesar kebutuhan
+                $stokBawah = SuppliesStock::find($idPalingBawah);
+                $cekLog = LogStock::where('log_kode', $p->production_code)
+                    ->where('log_type', 2)
+                    ->where('log_category', 2)
+                    ->where('log_item_id', $suppliesId)
+                    ->where('unit_id', $stokBawah->unit_id)
+                    ->exists();
+
+                if (!$cekLog) {
+                    $stokBawah->ss_stock -= $butuhTersedia;
+                    $stokBawah->save();
 
                     (new LogStock())->insertLog([
-                        'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
-                        'log_kode' => $p->production_code,
-                        'log_type' => 2,
+                        'log_date'     => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                        'log_kode'     => $p->production_code,
+                        'log_type'     => 2,
                         'log_category' => 2,
-                        'log_item_id' => $suppliesId,
-                        'log_notes' => "Pengurangan bahan untuk produksi",
-                        'log_jumlah' => $butuhTersedia,
-                        'unit_id' => $stokFinal->unit_id,
+                        'log_item_id'  => $suppliesId,
+                        'log_notes'    => "Pengurangan bahan untuk produksi",
+                        'log_jumlah'   => $butuhTersedia,
+                        'unit_id'      => $stokBawah->unit_id,
                     ]);
                 }
             }
@@ -758,86 +830,134 @@ class ProductionController extends Controller
         (new Production())->cancelProduction($data);
         (new ProductionDetails())->cancelProductionDetail($data);
 
+        // Hitung aggregatedRequirements dari data produksi yang sudah ada
+        $aggregatedRequirements = [];
         foreach ($p['items'] as $key => $value) {
-            $b = bom::find($value->bom_id);
-            $r = ProductRelation::where('pr_unit_id_2', '=', $value["unit_id"])
-                        ->where('product_variant_id', '=', $value["product_variant_id"])->where('status','=',1)->first();
-            if($r){
-                if ($b['unit_id'] == $value['unit_id'] && intval($value['pd_qty'])* $b->bom_qty>= $r->pr_unit_value_2){
-                    $jumlahTambah = intval($value['pd_qty'])* $b->bom_qty;
-                    $tambah = floor($jumlahTambah / $r->pr_unit_value_2);
-                    $sisa = $jumlahTambah%$r->pr_unit_value_2;
-                   
-                    $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id",$r->pr_unit_id_1)
-                    ->where("status", 1)
-                    ->first();
-                    $ps_depan->ps_stock -= $tambah;
-                    $ps_depan->save();
+            $qty = 1;
+            $b   = Bom::find($value['bom_id']);
+            $bdetail = BomDetail::where('bom_id', $value['bom_id'])->where('status', 1)->get();
+            if (!$b) continue;
 
-                    $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id",$r->pr_unit_id_2)
-                    ->where("status", 1)
-                    ->first();
-                    $ps_belakang->ps_stock -= $sisa;
-                    $ps_belakang->save();
+            if ($b['unit_id'] != $value['unit_id']) {
+                $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
+                    ->where('status', 1)
+                    ->orderBy('pr_id', 'desc')
+                    ->get();
 
-                    (new LogStock())->insertLog([
-                        'log_date' => now(), 'log_kode' => $p->production_code,
-                        'log_type' => 1, 'log_category' => 2,
-                        'log_item_id' => $value["product_variant_id"],
-                        'log_notes' => "Pembatalan produksi produk",
-                        'log_jumlah' => $tambah, 'unit_id' => $r->pr_unit_id_1,
-                    ]);
-                    
-                    if($sisa>0){
-                        (new LogStock())->insertLog([
-                            'log_date' => now(), 'log_kode' => $p->production_code,
-                            'log_type' => 1, 'log_category' => 2,
-                            'log_item_id' => $value["product_variant_id"],
-                            'log_notes' => "Pembatalan produksi produk",
-                            'log_jumlah' => $sisa, 'unit_id' => $r->pr_unit_id_2,
-                        ]);
+                foreach ($pr as $relasi) {
+                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
+                        $qty *= $relasi['pr_unit_value_2'];
                     }
                 }
-                else {
-                    $v = ProductStock::where("product_variant_id", "=", $value["product_variant_id"])
-                    ->where("unit_id", "=", $value["unit_id"])
-                    ->where("status", 1)
+            }
+
+            foreach ($bdetail as $bd) {
+                $id          = $bd['supplies_id'];
+                $namaBahan   = Supplies::find($id)->supplies_name;
+                $isKemasanBesar = preg_match('/dos|pack/i', $namaBahan);
+
+                if ($isKemasanBesar) {
+                    $relasiKonversi = ProductRelation::where('product_variant_id', $value['product_variant_id'])
+                        ->where('pr_unit_id_2', $b['unit_id'])
+                        ->where('status', 1)
+                        ->first();
+
+                    $nilaiIsiDos = $relasiKonversi ? $relasiKonversi->pr_unit_value_2 : 1;
+                    $totalPcs    = ($b['unit_id'] != $value['unit_id']) 
+                                ? $value['pd_qty'] * $qty 
+                                : $value['pd_qty'];
+                    $jumlahDos   = floor($totalPcs / $nilaiIsiDos);
+                    $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
+                } else {
+                    $kebutuhanBaris = $bd['bom_detail_qty'] * $value['pd_qty'] * $qty;
+                }
+
+                if (!isset($aggregatedRequirements[$id])) {
+                    $aggregatedRequirements[$id] = [
+                        'total_butuh' => 0,
+                        'details'     => $bd
+                    ];
+                }
+                $aggregatedRequirements[$id]['total_butuh'] += $kebutuhanBaris;
+            }
+        }
+        foreach ($aggregatedRequirements as $suppliesId => $butuh) {
+            $butuhTersedia = (float)$butuh['total_butuh'];
+            if ($butuhTersedia <= 0) continue;
+
+            $ss = SuppliesStock::where('supplies_id', $suppliesId)
+                ->where('status', 1)
+                ->orderBy('ss_id', 'desc')
+                ->get();
+
+            if ($ss->isEmpty()) continue;
+
+            // Cek relasi satuan atas (DOS)
+            $stokBawah = $ss->first(); // unit terkecil (Piece)
+            $sr = SuppliesRelation::where('supplies_id', $suppliesId)
+                ->where('su_id_2', $stokBawah->unit_id)
+                ->where('status', 1)
+                ->first();
+
+            if ($sr && $butuhTersedia >= $sr->sr_value_2) {
+                // Kembalikan dalam DOS
+                $kembalikanDos   = floor($butuhTersedia / $sr->sr_value_2);
+                $sisaPiece       = $butuhTersedia % $sr->sr_value_2;
+
+                $stokAtas = SuppliesStock::where('supplies_id', $suppliesId)
+                    ->where('unit_id', $sr->su_id_1)
+                    ->where('status', 1)
                     ->first();
-                    $v->ps_stock -= intval($value['pd_qty']) * $b->bom_qty;
-                    $v->save();
+
+                if ($stokAtas) {
+                    $stokAtas->ss_stock += $kembalikanDos;
+                    $stokAtas->save();
 
                     (new LogStock())->insertLog([
-                        'log_date' => now(), 'log_kode' => $p->production_code,
-                        'log_type' => 1, 'log_category' => 2,
-                        'log_item_id' => $value["product_variant_id"],
-                        'log_notes' => "Pembatalan produksi produk",
-                        'log_jumlah' => intval($value['pd_qty']) * $b->bom_qty, 'unit_id' => $value['unit_id'],
+                        'log_date'     => now(),
+                        'log_kode'     => $p->production_code,
+                        'log_type'     => 2,
+                        'log_category' => 1,
+                        'log_item_id'  => $suppliesId,
+                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi",
+                        'log_jumlah'   => $kembalikanDos,
+                        'unit_id'      => $sr->su_id_1,
                     ]);
                 }
-            }
-            else{
-                $v = ProductStock::where("product_variant_id", "=", $value["product_variant_id"])
-                    ->where("unit_id", "=", $value["unit_id"])
-                    ->where("status", 1)
-                    ->first();
-                $v->ps_stock -= intval($value['pd_qty']) * $b->bom_qty;
-                $v->save();
 
-                // Catat log
+                // Kembalikan sisa piece kalau ada
+                if ($sisaPiece > 0) {
+                    $stokBawah->ss_stock += $sisaPiece;
+                    $stokBawah->save();
+
+                    (new LogStock())->insertLog([
+                        'log_date'     => now(),
+                        'log_kode'     => $p->production_code,
+                        'log_type'     => 2,
+                        'log_category' => 1,
+                        'log_item_id'  => $suppliesId,
+                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi",
+                        'log_jumlah'   => $sisaPiece,
+                        'unit_id'      => $stokBawah->unit_id,
+                    ]);
+                }
+
+            } else {
+                // Kembalikan langsung di unit terkecil
+                $stokBawah->ss_stock += $butuhTersedia;
+                $stokBawah->save();
+
                 (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $p->production_code,
-                    'log_type'    => 1,
-                    'log_category' => 2,
-                    'log_item_id' => $value["product_variant_id"],
-                    'log_notes'  => "Pembatalan produksi produk",
-                    'log_jumlah' => intval($value['pd_qty']) * $b->bom_qty,
-                    'unit_id'    => $value['unit_id'],
+                    'log_date'     => now(),
+                    'log_kode'     => $p->production_code,
+                    'log_type'     => 2,
+                    'log_category' => 1,
+                    'log_item_id'  => $suppliesId,
+                    'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi",
+                    'log_jumlah'   => $butuhTersedia,
+                    'unit_id'      => $stokBawah->unit_id,
                 ]);
             }
-           
         }
     }
 

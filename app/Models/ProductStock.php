@@ -77,6 +77,14 @@ class ProductStock extends Model
                         "unit_id" => $unit,
                         "ps_stock" => 0,
                     ]);
+                } else {
+                    $d = self::where('product_variant_id', '=', $value["product_variant_id"])->where('unit_id', '=', $unit)->get();
+                    foreach ($d as $key => $v) {
+                        if ($v->status == 0){
+                            $v->status = 1;
+                            $v->save();
+                        }
+                    }
                 }
             }
         }

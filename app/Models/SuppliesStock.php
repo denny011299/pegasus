@@ -74,6 +74,14 @@ class SuppliesStock extends Model
                     "unit_id" => $unit,
                     "ss_stock" => 0,
                 ]);
+            } else {
+                $d = self::where('supplies_id', '=', $supplies_id)->where('unit_id', '=', $unit)->get();
+                foreach ($d as $key => $v) {
+                    if ($v->status == 0){
+                        $v->status = 1;
+                        $v->save();
+                    }
+                }
             }
         }
     }

@@ -679,10 +679,10 @@
                             <label>Status</label>
                             <select class="form-select fill" id="status">
                                 <option value="">Semua</option>
-                                <option value="1">Menunggu Approval</option>
-                                <option value="2">Success</option>
-                                <option value="3">Pending Cancel</option>
-                                <option value="4">Cancel</option>
+                                <option value="1">Pending</option>
+                                <option value="2">Berhasil</option>
+                                <option value="4">Menunggu Batal</option>
+                                <option value="3">Total</option>
                             </select>
                         </div>
                     </div>

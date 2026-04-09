@@ -82,10 +82,10 @@
                 },
             },
             columns: [
-                { data: "date" },
-                { data: "production_code" },
+                { data: "date", width: "15%" },
+                { data: "production_code", width: "20%" },
                 { data: "status_text" },
-                { data: "notes", defaultContent: "-",width: "50px"  },
+                { data: "notes", defaultContent: "-", width: "30%"  },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -428,7 +428,7 @@
             $('#btn-tolak').removeClass('btn_cancel');
             $('#btn-terima').attr('production_id', data.production_id);
             $('#btn-tolak').attr('production_id', data.production_id);
-        } else if (data.status == 3) {
+        } else if (data.status == 4) {
             $('#btn-terima, #btn-tolak').show();
             $('#btn-terima').addClass('btn_acc');
             $('#btn-tolak').addClass('btn_cancel');
@@ -622,7 +622,7 @@ $(document).on("click", ".btn_acc", function () {
     //     .data(); //ambil data dari table
     var production_id = $(this).attr('production_id');
     $('.modal').modal('hide');
-    showModalKonfirmasi(
+    showModalDelete(
         "Apakah yakin ingin Approve pembatalan produksi ini?",
         "btn-acc-delete-production"
     );
@@ -714,7 +714,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
             "btn-accept-production"
         );
         $('#btn-accept-production').attr("production_id", production_id);
-        $('#btn-accept-production').html("Konfirmasi");
+        $('.btn-konfirmasi').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-accept-production', function(){
@@ -757,7 +757,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         $('.modal').modal('hide');
         showModalDelete("Apakah yakin ingin tolak produksi ini?","btn-decline-production");
         $('#btn-decline-production').attr("production_id", production_id);
-        $('#btn-decline-production').html("Konfirmasi");
+        $('.btn-konfirmasi').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-decline-production', function(){

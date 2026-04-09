@@ -46,7 +46,7 @@ class Production extends Model
             }
         }
 
-        $result->orderBy('production_date', 'desc')->orderByRaw('FIELD(status, 1, 3, 2, 4)')->orderBy('created_at', 'desc');
+        $result->orderBy('production_date', 'desc')->orderByRaw('FIELD(status, 1, 4, 2, 3)')->orderBy('created_at', 'desc');
 
         $result = $result->get();
         foreach ($result as $key => $value) {
@@ -90,6 +90,9 @@ class Production extends Model
                     (new ProductionController())->declineProduction($newRequest);
                 }
                 return $this->getProduction($data);
+            } else if ($diffDays < -4 && $value->status == 4) {
+                $this->accProduction($value);
+                return $this->getProduction($data);
             }
         }
         return $result;
@@ -119,7 +122,7 @@ class Production extends Model
     {
         $t = Production::find($data["production_id"]);
         $t->notes = $data["delete_reason"];
-        $t->status = 3;
+        $t->status = 4;
         $t->save();    
     }
 
@@ -127,7 +130,7 @@ class Production extends Model
     {
         $t = Production::find($data["production_id"]);
         $t->notes = $data["delete_reason"];
-        $t->status = 4;
+        $t->status = 3;
         $t->save();    
     }
 
@@ -148,7 +151,7 @@ class Production extends Model
 
     function cancelProduction($data) {
         $t = Production::find($data['production_id']);
-        $t->status = 4;
+        $t->status = 3;
         $t->save();
     }
 

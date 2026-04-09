@@ -29,7 +29,7 @@
                 { data: "product_name", width: '15%' },
                 { data: "product_category", width: '10%' },
                 { data: "unit_values", width: '10%' },
-                { data: "variant_values", width: '34%' },
+                { data: "variant_values", width: '50%' },
                 { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {

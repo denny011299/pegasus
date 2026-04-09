@@ -170,24 +170,48 @@
     function renderMode2(items) {
         $('#tbStock').html("");
         items.forEach((item) => {
-            let systemArr  = item.stobd_system ? item.stobd_system.split(', ') : [];
-            let realArr    = item.stobd_real ? item.stobd_real.split(', ') : [];
-            let selisihArr = item.stobd_selisih ? item.stobd_selisih.split(', ') : [];
-            console.log(item);
-            var rl_stock = "";
-            var rl = item.stobd_real.split(", ");
-            
+            var rl_stock = ""
+            let realMap = {};
+            if (item.stobd_real) {
+                item.stobd_real.split(', ').forEach(str => {
+                    let parts = str.trim().split(' ');
+                    let qty = parseInt(parts[0]);
+                    let unitName = parts.slice(1).join(' ');
+                    realMap[unitName] = isNaN(qty) ? -1 : qty;
+                });
+            }
+
+            let systemMap = {};
+            if (item.stobd_system) {
+                item.stobd_system.split(', ').forEach(str => {
+                    let parts = str.trim().split(' ');
+                    let qty = parseInt(parts[0]);
+                    let unitName = parts.slice(1).join(' ');
+                    systemMap[unitName] = isNaN(qty) ? 0 : qty;
+                });
+            }
+
+            let selisihMap = {};
+            if (item.stobd_selisih) {
+                item.stobd_selisih.split(', ').forEach(str => {
+                    let parts = str.trim().split(' ');
+                    let qty = parseInt(parts[0]);
+                    let unitName = parts.slice(1).join(' ');
+                    selisihMap[unitName] = isNaN(qty) ? 0 : qty;
+                });
+            }
+
             item.sp_units = [];
-            item.units.forEach((unit, idx) => {
-                let systemQty  = parseInt(systemArr[idx])  || 0;
-                let val = realArr[idx];
-                let realQty = (val === '' || val === null || val === undefined || isNaN(parseInt(val))) ? -1 : parseInt(val);
-                let selisihQty = parseInt(selisihArr[idx]) || 0;
+            item.units.forEach((unit) => {
+                let realQty   = realMap[unit.unit_short_name]   ?? -1; // -1 = tidak diinput
+                let systemQty = systemMap[unit.unit_short_name] ?? 0;
+                let selisihQty = selisihMap[unit.unit_short_name] ?? 0;
+
                 item.sp_units.push({
                     unit_id: unit.unit_id,
                     unit_short_name: unit.unit_short_name,
                     system_qty: systemQty,
-                    real_qty: realQty != -1 ? realQty : systemQty,
+                    real_qty: realQty !== -1 ? realQty : systemQty, // 0 tetap 0, -1 baru fallback ke system
                     selisih_qty: selisihQty
                 });
             });

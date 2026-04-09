@@ -7,6 +7,9 @@
             word-wrap: break-word;  /* Paksa teks turun */
             white-space: normal;    /* Pastikan teks tidak satu baris terus */
         }
+        #tableProduction {
+            width: 100% !important;
+        }
         #addProduction .select2-container {
             width: 100% !important;
         }
