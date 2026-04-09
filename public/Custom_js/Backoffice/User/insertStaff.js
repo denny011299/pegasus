@@ -115,11 +115,11 @@ $(document).on("click", ".btn-save", function () {
                 if (mode==2) notifikasi('error', "Gagal Update", "Mohon cek kembali password");
                 $('#staff_password').addClass('is-invalid');
                 $('#staff_confirm').addClass('is-invalid');
+            } else {
+                if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Staff");
+                else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Staff");
+                afterInsert();
             }
-            
-            if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Staff");
-            else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Staff");
-            afterInsert();
         },
         error: function (xhr) {
             // Re-enable button

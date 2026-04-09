@@ -47,8 +47,10 @@
         $('#add_bom input').val("");
         $('#supplies_id').empty();
         $('#unit_id').empty();
+        $('#unit_supplies_id').empty();
         $('#product_id').empty();
-        $('#bom_qty, #unit_id, #product_id').prop('disabled', false);
+        $('#bom_qty, #unit_id').prop('disabled', true);
+        $('#product_id').prop('disabled', false);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Tambah Resep');

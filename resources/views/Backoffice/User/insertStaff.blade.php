@@ -70,7 +70,7 @@
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Nomor Telepon <span class="text-danger">*</span></label>
-                                                <input type="text" id="staff_phone" class="form-control fill number-only"
+                                                <input type="text" id="staff_phone" class="form-control fill include-nol"
                                                     placeholder="08xxx" name="name">
                                             </div>
                                         </div>
