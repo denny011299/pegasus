@@ -180,7 +180,8 @@
             item.sp_units = [];
             item.units.forEach((unit, idx) => {
                 let systemQty  = parseInt(systemArr[idx])  || 0;
-                let realQty    = parseInt(realArr[idx])    || -1;
+                let val = realArr[idx];
+                let realQty = (val === '' || val === null || val === undefined || isNaN(parseInt(val))) ? -1 : parseInt(val);
                 let selisihQty = parseInt(selisihArr[idx]) || 0;
                 item.sp_units.push({
                     unit_id: unit.unit_id,
@@ -337,7 +338,8 @@ function insertData() {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || -1;
+            let val = input.val();
+            let realQty = (val === '' || val === null || val === undefined) ? -1 : parseInt(val);
 
             sp_units.push({
                 unit_id: unitId,
@@ -435,7 +437,8 @@ $(document).on("click", "#btn-acc-stob", function () {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || -1;
+            let val = input.val();
+            let realQty = (val === '' || val === null || val === undefined) ? -1 : parseInt(val);
 
             sp_units.push({
                 unit_id: unitId,

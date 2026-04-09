@@ -294,7 +294,8 @@ function insertData() {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || -1;
+            let val = input.val();
+            let realQty = (val === '' || val === null || val === undefined) ? -1 : parseInt(val);
 
             units.push({
                 unit_id: unitId,
@@ -393,7 +394,8 @@ $(document).on("click", "#btn-acc-sto", function () {
             let unitId    = input.data('unit-id');
             let unitName  = input.data('unit-name');
             let systemQty = parseInt(input.data('system-qty')) || 0;
-            let realQty   = parseInt(input.val()) || -1;
+            let val = input.val();
+            let realQty = (val === '' || val === null || val === undefined) ? -1 : parseInt(val);
 
             units.push({
                 unit_id: unitId,
