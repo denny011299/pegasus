@@ -242,7 +242,7 @@ class ProductionController extends Controller
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'desc')
+                ->orderBy('ss_id', 'asc')
                 ->get();
 
             if (count($ss) > 0) {
@@ -308,9 +308,20 @@ class ProductionController extends Controller
                     }
                     return false;
                 };
-
+                
                 $keyPalingBawah = 0;
-                $idPalingBawah  = $ss[$keyPalingBawah]->ss_id;
+                foreach ($ss as $idx => $stok) {
+                    $adaYangLebihKecil = SuppliesRelation::where('supplies_id', $suppliesId)
+                        ->where('su_id_1', $stok->unit_id)
+                        ->where('status', 1)
+                        ->exists();
+                    if (!$adaYangLebihKecil) {
+                        // Tidak punya bawahan = unit terkecil
+                        $keyPalingBawah = $idx;
+                        break;
+                    }
+                }
+                $idPalingBawah = $ss[$keyPalingBawah]->ss_id;
                 $safety = 0;
 
                 while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
@@ -524,7 +535,7 @@ class ProductionController extends Controller
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'desc')
+                ->orderBy('ss_id', 'asc')
                 ->get();
 
             if ($ss->isEmpty()) continue;
@@ -582,7 +593,17 @@ class ProductionController extends Controller
             };
 
             $keyPalingBawah = 0;
-            $idPalingBawah  = $ss[$keyPalingBawah]->ss_id;
+            foreach ($ss as $idx => $stok) {
+                $adaYangLebihKecil = SuppliesRelation::where('supplies_id', $suppliesId)
+                    ->where('su_id_1', $stok->unit_id)
+                    ->where('status', 1)
+                    ->exists();
+                if (!$adaYangLebihKecil) {
+                    $keyPalingBawah = $idx;
+                    break;
+                }
+            }
+            $idPalingBawah = $ss[$keyPalingBawah]->ss_id;
             $safety = 0;
 
             while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
@@ -830,6 +851,79 @@ class ProductionController extends Controller
         (new Production())->cancelProduction($data);
         (new ProductionDetails())->cancelProductionDetail($data);
 
+        // Stok produk
+        foreach ($p['items'] as $key => $value) {
+            $b = Bom::find($value->bom_id);
+            $jumlahKurang = intval($value['pd_qty']) * $b->bom_qty;
+
+            $r = ProductRelation::where('pr_unit_id_2', $value["unit_id"])
+                ->where('product_variant_id', $value["product_variant_id"])
+                ->where('status', 1)
+                ->first();
+
+            if ($r && $jumlahKurang >= $r->pr_unit_value_2) {
+                $kurangDos = floor($jumlahKurang / $r->pr_unit_value_2);
+                $sisaPiece = $jumlahKurang % $r->pr_unit_value_2;
+
+                $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
+                    ->where("unit_id", $r->pr_unit_id_1)
+                    ->where("status", 1)
+                    ->first();
+                $ps_depan->ps_stock -= $kurangDos;
+                $ps_depan->save();
+
+                (new LogStock())->insertLog([
+                    'log_date'     => now(),
+                    'log_kode'     => $p->production_code,
+                    'log_type'     => 1,
+                    'log_category' => 2,
+                    'log_item_id'  => $value["product_variant_id"],
+                    'log_notes'    => "Pembatalan produksi produk",
+                    'log_jumlah'   => $kurangDos,
+                    'unit_id'      => $r->pr_unit_id_1,
+                ]);
+
+                if ($sisaPiece > 0) {
+                    $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
+                        ->where("unit_id", $r->pr_unit_id_2)
+                        ->where("status", 1)
+                        ->first();
+                    $ps_belakang->ps_stock -= $sisaPiece;
+                    $ps_belakang->save();
+
+                    (new LogStock())->insertLog([
+                        'log_date'     => now(),
+                        'log_kode'     => $p->production_code,
+                        'log_type'     => 1,
+                        'log_category' => 2,
+                        'log_item_id'  => $value["product_variant_id"],
+                        'log_notes'    => "Pembatalan produksi produk",
+                        'log_jumlah'   => $sisaPiece,
+                        'unit_id'      => $r->pr_unit_id_2,
+                    ]);
+                }
+
+            } else {
+                $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
+                    ->where("unit_id", $value["unit_id"])
+                    ->where("status", 1)
+                    ->first();
+                $v->ps_stock -= $jumlahKurang;
+                $v->save();
+
+                (new LogStock())->insertLog([
+                    'log_date'     => now(),
+                    'log_kode'     => $p->production_code,
+                    'log_type'     => 1,
+                    'log_category' => 2,
+                    'log_item_id'  => $value["product_variant_id"],
+                    'log_notes'    => "Pembatalan produksi produk",
+                    'log_jumlah'   => $jumlahKurang,
+                    'unit_id'      => $value["unit_id"],
+                ]);
+            }
+        }
+
         // Hitung aggregatedRequirements dari data produksi yang sudah ada
         $aggregatedRequirements = [];
         foreach ($p['items'] as $key => $value) {
@@ -887,15 +981,26 @@ class ProductionController extends Controller
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'desc')
+                ->orderBy('ss_id', 'asc')
                 ->get();
 
             if ($ss->isEmpty()) continue;
 
             // Cek relasi satuan atas (DOS)
-            $stokBawah = $ss->first(); // unit terkecil (Piece)
+            $stokBawah = $ss->first(); // default
+            foreach ($ss as $stok) {
+                $adaYangLebihKecil = SuppliesRelation::where('supplies_id', $suppliesId)
+                    ->where('su_id_1', $stok->unit_id)
+                    ->where('status', 1)
+                    ->exists();
+                if (!$adaYangLebihKecil) {
+                    $stokBawah = $stok; // ini unit terkecil
+                    break;
+                }
+            }
+
             $sr = SuppliesRelation::where('supplies_id', $suppliesId)
-                ->where('su_id_2', $stokBawah->unit_id)
+                ->where('su_id_2', $stokBawah->unit_id) // su_id_2 = Piece ✓
                 ->where('status', 1)
                 ->first();
 
