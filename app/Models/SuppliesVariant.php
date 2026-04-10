@@ -105,7 +105,7 @@ class SuppliesVariant extends Model
         $t->supplies_variant_name = $data["supplies_variant_name"];
         $t->supplies_variant_sku = $data["supplies_variant_sku"];
         $t->supplies_variant_price = $data["supplies_variant_price"];
-        $t->supplies_variant_barcode = $data["supplies_variant_barcode"] ?? $t->generateBarcode();
+        $t->supplies_variant_barcode = $data["supplies_variant_barcode"] == "" ? $t->generateBarcode() : $data["supplies_variant_barcode"];
         $t->save();
 
         return $t->supplies_variant_id;

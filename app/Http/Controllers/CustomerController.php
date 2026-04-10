@@ -15,6 +15,7 @@ use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 
 class CustomerController extends Controller
 {
@@ -286,40 +287,38 @@ class CustomerController extends Controller
             return $fullName !== '' ? $fullName : "-";
         };
 
-        // ─── Langkah 1: Agregasi SOD ──────────────────────────────────────────────
-        $aggregatedProducts = [];
+        $aggregatedByVariant = [];
         foreach ($sod as $value) {
-            $uniqueKey = $value['product_variant_id'] . '_' . $value['unit_id'];
-            $qtyJual   = (int) $value['sod_qty'];
-
-            if (!isset($aggregatedProducts[$uniqueKey])) {
-                $aggregatedProducts[$uniqueKey] = [
-                    'variant_id'   => $value['product_variant_id'],
-                    'total_butuh'  => 0,
-                    'unit_id_jual' => $value['unit_id'],
-                    'details'      => $value,
+            $variantId = $value['product_variant_id'];
+            if (!isset($aggregatedByVariant[$variantId])) {
+                $aggregatedByVariant[$variantId] = [
+                    'variant_id' => $variantId,
+                    'kebutuhan'  => [],
+                    'details'    => $value,
                 ];
             }
-            $aggregatedProducts[$uniqueKey]['total_butuh'] += $qtyJual;
+            // Akumulasi qty per unit (kalau ada 2 baris dos misalnya)
+            $unitId = $value['unit_id'];
+            if (!isset($aggregatedByVariant[$variantId]['kebutuhan'][$unitId])) {
+                $aggregatedByVariant[$variantId]['kebutuhan'][$unitId] = 0;
+            }
+            $aggregatedByVariant[$variantId]['kebutuhan'][$unitId] += (int) $value['sod_qty'];
         }
 
-        // ─── Langkah 2: SIMULASI – cek semua produk, TIDAK ADA save() di sini ─────
+        // ─── Langkah 2: SIMULASI ─────────────────────────────────────────────────────
         $p             = [];
         $valid         = true;
-        $simulasiHasil = []; // Simpan hasil simulasi tiap produk untuk dipakai di fase eksekusi
+        $simulasiHasil = [];
 
-        foreach ($aggregatedProducts as $key => $item) {
-            $variantId    = $item['variant_id'];
-            $butuhTersedia = $item['total_butuh'];
-            $unitTarget   = $item['unit_id_jual'];
-            $val          = $item['details'];
+        foreach ($aggregatedByVariant as $variantId => $item) {
+            $val = $item['details'];
 
             // Cek relasi produk
-            $cekRelasi = ProductRelation::where('product_variant_id', $variantId)
+            $semuaRelasi = ProductRelation::where('product_variant_id', $variantId)
                             ->where('status', 1)
-                            ->exists();
+                            ->get();
 
-            if (!$cekRelasi) {
+            if ($semuaRelasi->isEmpty()) {
                 return response()->json([
                     'status'  => 0,
                     'header'  => 'Gagal Insert',
@@ -328,13 +327,58 @@ class CustomerController extends Controller
                 ]);
             }
 
-            // Ambil semua level stok
-            $ss = ProductStock::where('product_variant_id', $variantId)
-                    ->where('status', 1)
-                    ->orderBy('ps_id', 'desc')
-                    ->get();
+            // ── Bangun hierarki unit dari relasi ──────────────────────────────────────
+            // ProductRelation menyimpan: pr_unit_id_2 = unit kecil, hasil bongkar dari unit besar
+            // Contoh: 1 dos (unit atas) = 12 piece (pr_unit_id_2), pr_unit_value_2 = 12
+            //
+            // Dari sini kita tahu: unit yang muncul sebagai pr_unit_id_2 = unit BAWAH
+            // unit yang tidak muncul sebagai pr_unit_id_2 = unit PALING ATAS (root)
+            //
+            // Kita build: childOf[unit_bawah] = unit_atas
+            //             relasiMap[unit_bawah] = nilai konversi
 
-            if ($ss->isEmpty()) {
+            $childOf    = []; // childOf[unit_kecil] = unit_besar
+            $relasiMap  = []; // relasiMap[unit_kecil] = ['unit_atas' => x, 'nilai' => y]
+            $semuaUnit  = [];
+
+            foreach ($semuaRelasi as $rel) {
+                $unitAtas  = $rel->pr_unit_id_1 ?? null; // unit besar (dos)
+                $unitBawah = $rel->pr_unit_id_2;          // unit kecil (piece)
+                $nilai     = (float) $rel->pr_unit_value_2;
+
+                $childOf[$unitBawah]   = $unitAtas;
+                $relasiMap[$unitBawah] = ['unit_atas' => $unitAtas, 'nilai' => $nilai];
+
+                $semuaUnit[$unitBawah] = true;
+                if ($unitAtas) $semuaUnit[$unitAtas] = true;
+            }
+
+            // Cari root (unit paling atas = tidak pernah jadi unit_bawah)
+            $unitsSorted = [];
+            // Mulai dari tiap unit, telusuri ke atas untuk dapat depth
+            foreach (array_keys($semuaUnit) as $unit) {
+                $depth   = 0;
+                $current = $unit;
+                $visited = [];
+                while (isset($childOf[$current]) && !in_array($current, $visited)) {
+                    $visited[] = $current;
+                    $current   = $childOf[$current];
+                    $depth++;
+                }
+                $unitsSorted[$unit] = $depth;
+            }
+            // depth 0 = paling atas (root/dos), depth tinggi = paling bawah (piece)
+            // Kita urutkan: index 0 = paling bawah (piece), index tinggi = paling atas (dos)
+            arsort($unitsSorted); // sort by depth descending → piece dulu, dos terakhir
+            $orderedUnits = array_keys($unitsSorted); // [piece, ..., dos]
+
+            // ── Ambil stok dan susun virtualStock sesuai hierarki ────────────────────
+            $ssRaw = ProductStock::where('product_variant_id', $variantId)
+                        ->where('status', 1)
+                        ->get()
+                        ->keyBy('unit_id');
+
+            if ($ssRaw->isEmpty()) {
                 $pvr = ProductVariant::find($variantId);
                 $pr  = Product::find($pvr['product_id']);
                 $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
@@ -342,65 +386,59 @@ class CustomerController extends Controller
                 continue;
             }
 
-            // Bangun virtualStock (salinan di memory, tidak menyentuh DB)
             $virtualStock = [];
             $logSummary   = [];
-            $keyTarget    = null;
 
-            foreach ($ss as $idx => $stok) {
-                $virtualStock[$stok->ps_id] = [
+            foreach ($orderedUnits as $idx => $unitId) {
+                if (!isset($ssRaw[$unitId])) continue; // unit tidak punya stok row, skip
+                $stok = $ssRaw[$unitId];
+                $virtualStock[$idx] = [
                     'model'   => $stok,
                     'current' => (float) $stok->ps_stock,
                     'unit_id' => $stok->unit_id,
                     'ps_id'   => $stok->ps_id,
                 ];
-                if ($stok->unit_id == $unitTarget) {
-                    $keyTarget = $idx;
-                }
             }
 
-            if ($keyTarget === null) {
-                $pvr = ProductVariant::find($variantId);
-                $pr  = Product::find($pvr['product_id']);
-                $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
-                $valid = false;
-                continue;
-            }
+            // Re-index supaya index selalu 0,1,2,... tanpa gap
+            $virtualStock = array_values($virtualStock);
 
-            // Fungsi rekursif konversi (sama seperti sebelumnya, hanya di virtualStock)
-            $siapkanStok = function ($targetKey, $units) use (
+            // ── Fungsi rekursif konversi ──────────────────────────────────────────────
+            // index 0 = unit terkecil (piece), index N = unit terbesar (dos)
+            // $targetKey+1 = unit di atasnya
+            $siapkanStok = function ($targetKey) use (
                 &$virtualStock, &$logSummary, &$siapkanStok, $variantId
             ) {
-                if (!isset($units[$targetKey + 1])) return false;
+                if (!isset($virtualStock[$targetKey + 1])) return false;
 
-                $stokSekarang = $units[$targetKey];
-                $stokAtas     = $units[$targetKey + 1];
+                $stokSekarang = $virtualStock[$targetKey];
+                $stokAtas     = $virtualStock[$targetKey + 1];
 
-                if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
-                    if (!$siapkanStok($targetKey + 1, $units)) return false;
+                if ($stokAtas['current'] <= 0) {
+                    if (!$siapkanStok($targetKey + 1)) return false;
                 }
 
                 $sr = ProductRelation::where('product_variant_id', $variantId)
-                        ->where('pr_unit_id_2', $stokSekarang->unit_id)
+                        ->where('pr_unit_id_2', $stokSekarang['unit_id'])
                         ->where('status', 1)
                         ->first();
 
-                if ($sr && $virtualStock[$stokAtas->ps_id]['current'] > 0) {
-                    $virtualStock[$stokAtas->ps_id]['current'] -= 1;
+                if ($sr && $stokAtas['current'] > 0) {
+                    $virtualStock[$targetKey + 1]['current'] -= 1;
                     $hasilBongkar = (float) $sr['pr_unit_value_2'];
-                    $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
+                    $virtualStock[$targetKey]['current'] += $hasilBongkar;
 
-                    $baseOrder = $stokAtas->ps_id * 10;
-                    $logSummary[$stokAtas->unit_id . '_cat2'] = [
-                        'unit_id'    => $stokAtas->unit_id,
-                        'jumlah'     => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
+                    $baseOrder = ($targetKey + 1) * 10;
+                    $logSummary[$stokAtas['unit_id'] . '_cat2'] = [
+                        'unit_id'    => $stokAtas['unit_id'],
+                        'jumlah'     => ($logSummary[$stokAtas['unit_id'] . '_cat2']['jumlah'] ?? 0) + 1,
                         'cat'        => 2,
                         'note'       => 'Konversi unit dari pengiriman (Bongkar)',
                         'sort_order' => $baseOrder,
                     ];
-                    $logSummary[$stokSekarang->unit_id . '_cat1'] = [
-                        'unit_id'    => $stokSekarang->unit_id,
-                        'jumlah'     => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
+                    $logSummary[$stokSekarang['unit_id'] . '_cat1'] = [
+                        'unit_id'    => $stokSekarang['unit_id'],
+                        'jumlah'     => ($logSummary[$stokSekarang['unit_id'] . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
                         'cat'        => 1,
                         'note'       => 'Konversi unit dari pengiriman (Hasil)',
                         'sort_order' => $baseOrder + 1,
@@ -410,47 +448,64 @@ class CustomerController extends Controller
                 return false;
             };
 
-            // Jalankan simulasi konversi di virtualStock
-            $idPalingBawah = $ss[$keyTarget]->ps_id;
-            $safety = 0;
-            while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
-                $safety++;
-                if ($safety > 500) break;
-                if (!$siapkanStok($keyTarget, $ss)) break;
+            // ── Proses tiap kebutuhan dalam SATU virtualStock ─────────────────────────
+            $cukup = true;
+            foreach ($item['kebutuhan'] as $unitIdButuh => $butuh) {
+                $targetKey = null;
+                foreach ($virtualStock as $idx => $v) {
+                    if ($v['unit_id'] == $unitIdButuh) { $targetKey = $idx; break; }
+                }
+
+                if ($targetKey === null) {
+                    $pvr = ProductVariant::find($variantId);
+                    $pr  = Product::find($pvr['product_id']);
+                    $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
+                    $cukup = false;
+                    break;
+                }
+
+                $safety = 0;
+                while ($virtualStock[$targetKey]['current'] < $butuh) {
+                    $safety++;
+                    if ($safety > 500) break;
+                    if (!$siapkanStok($targetKey)) break;
+                }
+
+                if ($virtualStock[$targetKey]['current'] < $butuh) {
+                    $pvr = ProductVariant::find($variantId);
+                    $pr  = Product::find($pvr['product_id']);
+                    $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
+                    $cukup = false;
+                    break;
+                }
+
+                $virtualStock[$targetKey]['current'] -= $butuh;
             }
 
-            if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
-                // Simpan hasil simulasi – akan dipakai di fase eksekusi
-                $simulasiHasil[$key] = [
-                    'virtualStock'   => $virtualStock,
-                    'logSummary'     => $logSummary,
-                    'idPalingBawah'  => $idPalingBawah,
-                    'butuhTersedia'  => $butuhTersedia,
-                    'variantId'      => $variantId,
-                ];
-            } else {
-                // Stok tidak cukup, catat tapi jangan langsung return
-                $pvr = ProductVariant::find($variantId);
-                $pr  = Product::find($pvr['product_id']);
-                $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
+            if (!$cukup) {
                 $valid = false;
+                continue;
             }
+
+            $simulasiHasil[$variantId] = [
+                'virtualStock' => $virtualStock,
+                'logSummary'   => $logSummary,
+                'variantId'    => $variantId,
+            ];
         }
 
-        // ─── Langkah 3: Jika ada produk yang tidak cukup, hentikan semuanya ───────
+        // ─── Langkah 3: Jika ada produk yang tidak cukup, hentikan semuanya ──────────
         if (!$valid) {
             return implode(', ', $p);
         }
 
-        // ─── Langkah 4: EKSEKUSI – semua produk lolos, baru kurangi stok ──────────
+        // ─── Langkah 4: EKSEKUSI – semua produk lolos, baru simpan ke DB ─────────────
         foreach ($simulasiHasil as $hasil) {
-            $virtualStock  = $hasil['virtualStock'];
-            $logSummary    = $hasil['logSummary'];
-            $idPalingBawah = $hasil['idPalingBawah'];
-            $butuhTersedia = $hasil['butuhTersedia'];
-            $variantId     = $hasil['variantId'];
+            $virtualStock = $hasil['virtualStock'];
+            $logSummary   = $hasil['logSummary'];
+            $variantId    = $hasil['variantId'];
 
-            // Simpan perubahan virtualStock ke DB
+            // Simpan semua perubahan virtualStock ke DB
             foreach ($virtualStock as $v) {
                 $v['model']->ps_stock = (int) $v['current'];
                 $v['model']->save();
@@ -470,14 +525,9 @@ class CustomerController extends Controller
                     'unit_id'      => $l['unit_id'],
                 ]);
             }
-
-            // Kurangi stok final
-            $stokFinal = ProductStock::find($idPalingBawah);
-            $stokFinal->ps_stock -= $butuhTersedia;
-            $stokFinal->save();
         }
 
-        // Catat log pengiriman per baris SOD
+        // Catat log pengiriman per baris SOD — tidak berubah
         foreach ($sod as $value) {
             (new LogStock())->insertLog([
                 'log_date'     => now(),
