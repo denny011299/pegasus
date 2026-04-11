@@ -142,7 +142,7 @@ class ProductionController extends Controller
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
                     ->get();
-                if (!isset($pr) || count($pr) <= 0) {
+                if (!$pr) {
                     $pv = ProductVariant::find($value['product_variant_id']);
                     $namaProduk = "-";
                     if ($pv) {
@@ -242,12 +242,12 @@ class ProductionController extends Controller
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'asc')
+                ->orderBy('ss_id', 'desc')
                 ->get();
 
             if (count($ss) > 0) {
                 $virtualStock = [];
-                $logSummary = [];
+                $logSummary   = [];
 
                 foreach ($ss as $stok) {
                     $virtualStock[$stok->ss_id] = [
@@ -258,65 +258,69 @@ class ProductionController extends Controller
                     ];
                 }
 
-                // FUNGSI REKURSIF UNTUK BONGKAR STOK
-                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $bd) {
-                    if (!isset($units[$targetKey + 1])) return false; 
-
+                // FUNGSI REKURSIF — cari unit atas via relasi, tidak bergantung pada index
+                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $bd, $suppliesId) {
                     $stokSekarang = $units[$targetKey];
-                    $stokAtas = $units[$targetKey + 1];
 
-                    if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
-                        if (!$siapkanStok($targetKey + 1, $units)) return false;
-                    }
-
+                    // Cari relasi: su_id_2 = unit sekarang (Piece), su_id_1 = unit atas (DOS)
                     $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
                         ->where('su_id_2', $stokSekarang->unit_id)
                         ->where('status', 1)
                         ->first();
-                        
-                    if (!isset($sr)) {
-                        return response()->json([
-                            "status" => 0,
-                            "header" => "Gagal Insert",
-                            "message" => "Mohon masukkan relasi bahan mentah terlebih dahulu"
-                        ]);
+
+                    if (!$sr) return false;
+
+                    // Cari index unit atas di $units berdasarkan unit_id dari relasi
+                    $keyAtas = null;
+                    foreach ($units as $idx => $stok) {
+                        if ($stok->unit_id == $sr->su_id_1) {
+                            $keyAtas = $idx;
+                            break;
+                        }
                     }
 
-                    if ($sr && $virtualStock[$stokAtas->ss_id]['current'] > 0) {
+                    if ($keyAtas === null) return false;
+
+                    $stokAtas = $units[$keyAtas];
+
+                    // Kalau stok atas kosong, rekursif bongkar dari atasnya lagi
+                    if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
+                        if (!$siapkanStok($keyAtas, $units)) return false;
+                    }
+
+                    if ($virtualStock[$stokAtas->ss_id]['current'] > 0) {
                         $virtualStock[$stokAtas->ss_id]['current'] -= 1;
                         $hasilBongkar = (float)$sr['sr_value_2'];
                         $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
 
-                        $baseOrder = $stokAtas->ss_id * 10; 
-
+                        $baseOrder = $stokAtas->ss_id * 10;
                         $logSummary[$stokAtas->unit_id . '_cat2'] = [
-                            'unit_id' => $stokAtas->unit_id,
-                            'jumlah' => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
-                            'cat' => 2,
-                            'note' => "Konversi unit dari produksi (Bongkar)",
+                            'unit_id'    => $stokAtas->unit_id,
+                            'jumlah'     => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
+                            'cat'        => 2,
+                            'note'       => "Konversi unit dari produksi (Bongkar)",
                             'sort_order' => $baseOrder
                         ];
-
                         $logSummary[$stokSekarang->unit_id . '_cat1'] = [
-                            'unit_id' => $stokSekarang->unit_id,
-                            'jumlah' => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
-                            'cat' => 1,
-                            'note' => "Konversi unit dari produksi (Hasil)",
+                            'unit_id'    => $stokSekarang->unit_id,
+                            'jumlah'     => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
+                            'cat'        => 1,
+                            'note'       => "Konversi unit dari produksi (Hasil)",
                             'sort_order' => $baseOrder + 1
                         ];
                         return true;
                     }
                     return false;
                 };
-                
+
+                // Cari keyPalingBawah = unit yang tidak punya bawahan (Piece)
                 $keyPalingBawah = 0;
                 foreach ($ss as $idx => $stok) {
-                    $adaYangLebihKecil = SuppliesRelation::where('supplies_id', $suppliesId)
+                    $adaBawahan = SuppliesRelation::where('supplies_id', $suppliesId)
                         ->where('su_id_1', $stok->unit_id)
                         ->where('status', 1)
                         ->exists();
-                    if (!$adaYangLebihKecil) {
-                        // Tidak punya bawahan = unit terkecil
+                    if (!$adaBawahan) {
                         $keyPalingBawah = $idx;
                         break;
                     }
@@ -350,7 +354,7 @@ class ProductionController extends Controller
 
         if ($cek == 1) {
             return response()->json([
-                "status" => -1,
+                "status"  => -1,
                 "message" => "Bahan baku tidak mencukupi untuk : " . implode(", ", $bahan_kurang)
             ]);
         }
@@ -436,7 +440,7 @@ class ProductionController extends Controller
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
                     ->get();
-                if (!isset($pr) || count($pr) <= 0) {
+                if (!$pr) {
                     $pv = ProductVariant::find($value['product_variant_id']);
                     $namaProduk = "-";
                     if ($pv) {
@@ -535,7 +539,7 @@ class ProductionController extends Controller
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'asc')
+                ->orderBy('ss_id', 'desc')
                 ->get();
 
             if ($ss->isEmpty()) continue;
@@ -552,22 +556,37 @@ class ProductionController extends Controller
                 ];
             }
 
-            $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $bd) {
-                if (!isset($units[$targetKey + 1])) return false;
-
+            // FUNGSI REKURSIF — cari unit atas via relasi, tidak bergantung pada index
+            $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $bd, $suppliesId) {
                 $stokSekarang = $units[$targetKey];
-                $stokAtas     = $units[$targetKey + 1];
 
-                if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
-                    if (!$siapkanStok($targetKey + 1, $units)) return false;
-                }
-
+                // Cari relasi: su_id_2 = unit sekarang (Piece), su_id_1 = unit atas (DOS)
                 $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
                     ->where('su_id_2', $stokSekarang->unit_id)
                     ->where('status', 1)
                     ->first();
 
-                if ($sr && $virtualStock[$stokAtas->ss_id]['current'] > 0) {
+                if (!$sr) return false;
+
+                // Cari index unit atas di $units berdasarkan unit_id dari relasi
+                $keyAtas = null;
+                foreach ($units as $idx => $stok) {
+                    if ($stok->unit_id == $sr->su_id_1) {
+                        $keyAtas = $idx;
+                        break;
+                    }
+                }
+
+                if ($keyAtas === null) return false;
+
+                $stokAtas = $units[$keyAtas];
+
+                // Kalau stok atas kosong, rekursif bongkar dari atasnya lagi
+                if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
+                    if (!$siapkanStok($keyAtas, $units)) return false;
+                }
+
+                if ($virtualStock[$stokAtas->ss_id]['current'] > 0) {
                     $virtualStock[$stokAtas->ss_id]['current'] -= 1;
                     $hasilBongkar = (float)$sr['sr_value_2'];
                     $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
@@ -592,13 +611,14 @@ class ProductionController extends Controller
                 return false;
             };
 
+            // Cari keyPalingBawah = unit yang tidak punya bawahan (Piece)
             $keyPalingBawah = 0;
             foreach ($ss as $idx => $stok) {
-                $adaYangLebihKecil = SuppliesRelation::where('supplies_id', $suppliesId)
+                $adaBawahan = SuppliesRelation::where('supplies_id', $suppliesId)
                     ->where('su_id_1', $stok->unit_id)
                     ->where('status', 1)
                     ->exists();
-                if (!$adaYangLebihKecil) {
+                if (!$adaBawahan) {
                     $keyPalingBawah = $idx;
                     break;
                 }
@@ -613,8 +633,9 @@ class ProductionController extends Controller
             }
 
             if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
-                // 1. Save hasil konversi (bongkar DOS → Piece)
-                foreach ($virtualStock as $v) {
+                // 1. Save hasil konversi KECUALI unit terbawah
+                foreach ($virtualStock as $psId => $v) {
+                    if ($psId == $idPalingBawah) continue;
                     $v['model']->ss_stock = (int)$v['current'];
                     $v['model']->save();
                 }
@@ -634,7 +655,7 @@ class ProductionController extends Controller
                     ]);
                 }
 
-                // 3. Kurangi stok level terbawah (Piece) sebesar kebutuhan
+                // 3. Kurangi stok unit terbawah (Piece) sebesar kebutuhan
                 $stokBawah = SuppliesStock::find($idPalingBawah);
                 $cekLog = LogStock::where('log_kode', $p->production_code)
                     ->where('log_type', 2)
@@ -644,7 +665,7 @@ class ProductionController extends Controller
                     ->exists();
 
                 if (!$cekLog) {
-                    $stokBawah->ss_stock -= $butuhTersedia;
+                    $stokBawah->ss_stock = (int)($virtualStock[$idPalingBawah]['current'] - $butuhTersedia);
                     $stokBawah->save();
 
                     (new LogStock())->insertLog([
@@ -981,34 +1002,36 @@ class ProductionController extends Controller
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
-                ->orderBy('ss_id', 'asc')
+                ->orderBy('ss_id', 'desc')
                 ->get();
 
             if ($ss->isEmpty()) continue;
 
-            // Cek relasi satuan atas (DOS)
+            // Cari unit terkecil berdasarkan relasi, bukan index
             $stokBawah = $ss->first(); // default
             foreach ($ss as $stok) {
-                $adaYangLebihKecil = SuppliesRelation::where('supplies_id', $suppliesId)
+                $adaBawahan = SuppliesRelation::where('supplies_id', $suppliesId)
                     ->where('su_id_1', $stok->unit_id)
                     ->where('status', 1)
                     ->exists();
-                if (!$adaYangLebihKecil) {
-                    $stokBawah = $stok; // ini unit terkecil
+                if (!$adaBawahan) {
+                    $stokBawah = $stok; // tidak punya bawahan = unit terkecil (Piece)
                     break;
                 }
             }
 
+            // Cari relasi dari unit terkecil ke unit atas
             $sr = SuppliesRelation::where('supplies_id', $suppliesId)
-                ->where('su_id_2', $stokBawah->unit_id) // su_id_2 = Piece ✓
+                ->where('su_id_2', $stokBawah->unit_id) // su_id_2 = Piece
                 ->where('status', 1)
                 ->first();
 
             if ($sr && $butuhTersedia >= $sr->sr_value_2) {
-                // Kembalikan dalam DOS
-                $kembalikanDos   = floor($butuhTersedia / $sr->sr_value_2);
-                $sisaPiece       = $butuhTersedia % $sr->sr_value_2;
+                // Hitung konversi: 144 Piece / 24 = 6 DOS
+                $kembalikanDos = floor($butuhTersedia / $sr->sr_value_2);
+                $sisaPiece     = fmod($butuhTersedia, $sr->sr_value_2);
 
+                // Kembalikan ke unit atas (DOS)
                 $stokAtas = SuppliesStock::where('supplies_id', $suppliesId)
                     ->where('unit_id', $sr->su_id_1)
                     ->where('status', 1)
@@ -1048,7 +1071,7 @@ class ProductionController extends Controller
                 }
 
             } else {
-                // Kembalikan langsung di unit terkecil
+                // Tidak ada relasi atau jumlah kurang dari 1 DOS — kembalikan langsung ke unit terkecil
                 $stokBawah->ss_stock += $butuhTersedia;
                 $stokBawah->save();
 

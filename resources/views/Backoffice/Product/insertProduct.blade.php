@@ -179,6 +179,7 @@
                                 <tr>
                                     <td>Name Unit 1<span class="text-danger">*</span></td>
                                     <td>Name Unit 2<span class="text-danger">*</span></td>
+                                    <td>Aksi</td>
                                 </tr>
                             </thead>
                             <tbody class="tbRelasi" id="tbRelasi">

@@ -259,7 +259,9 @@ $(document).on("click","#btnAddRowRelasi",function(){
         notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh sama");
         return false;
     }
-    console.log(r1+" - "+r2);
+
+    var currentIndex = $('.row-relasi').length;
+    console.log("Menambahkan Baris ke-" + currentIndex + ": " + r1 + " - " + r2);
     
     addRowRelasi(
         {
@@ -362,10 +364,19 @@ function addRowRelasi(element1,element2) {
                     </span>
                 </div>
             </td>
+            <td>
+                <a class="p-2 btn-action-icon btn_delete_relasi" href="javascript:void(0);">
+                    <i class="fe fe-trash-2"></i>
+                </a>
+            </td>
         </tr>    
     `);      
     feather.replace();
 }
+
+$(document).on('click', '.btn_delete_relasi', function() {
+    $(this).closest('tr').remove();
+});
 
 function cekKembar() {
     relasi.forEach(element => {

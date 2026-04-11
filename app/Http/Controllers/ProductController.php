@@ -190,16 +190,39 @@ class ProductController extends Controller
         ProductVariant::where('product_id', '=', $data["product_id"])->whereNotIn("product_variant_id", $id)->update(["status" => 0]);
         $id = [];
         foreach (json_decode($data['product_relasi'], true) as $keyRelasi => $value) {
-            $pvr_id = 0;
-            foreach ($value as $key => $perVariant) {
-                $perVariant['product_variant_id'] = $variant[$keyRelasi]['product_variant_id'];
-                $pvr_id = $variant[$keyRelasi]['product_variant_id'];
-                $perVariant['pr_id'] = intval($perVariant['pr_id']);
-                if (!isset($perVariant["pr_id"]) || $perVariant['pr_id'] == "" || $perVariant['pr_id'] == null) $t = (new ProductRelation())->insertProductRelation($perVariant);
-                else $t = (new ProductRelation())->updateProductRelation($perVariant);
-                array_push($id, $t);
+            $pvr_id = $variant[$keyRelasi]['product_variant_id'] ?? 0;
+            $id = [];
+            $activeUnitPairs = [];
+            
+            // Jika ada data relasi dari frontend
+            if (!empty($value)) {
+                foreach ($value as $key => $perVariant) {
+                    $perVariant['product_variant_id'] = $pvr_id;
+                    
+                    // Konversi pr_id dengan aman
+                    $current_pr_id = isset($perVariant['pr_id']) ? intval($perVariant['pr_id']) : 0;
+                    $perVariant['pr_id'] = $current_pr_id;
+
+                    // Logic Insert atau Update
+                    if ($current_pr_id == 0) {
+                        $t = (new ProductRelation())->insertProductRelation($perVariant);
+                    } else {
+                        $t = (new ProductRelation())->updateProductRelation($perVariant);
+                    }
+                    
+                    // Simpan ID yang aktif ke array $id
+                    if ($t) $id[] = $t;
+
+                    $activeUnitPairs[] = [
+                        'pr_unit_id_1' => $perVariant['pr_unit_id_1'],
+                        'pr_unit_id_2' => $perVariant['pr_unit_id_2'],
+                    ];
+                }
             }
-            ProductRelation::where('product_variant_id', '=', $pvr_id)->whereNotIn("pr_id", $id)->update(["status" => 0]);
+            if ($pvr_id == 0) continue;
+            ProductRelation::where('product_variant_id', $pvr_id)
+                ->whereNotIn('pr_id', $id)
+                ->update(['status' => 0]);
         }
         (new ProductStock())->syncStock($data["product_id"]);
         return 1;
