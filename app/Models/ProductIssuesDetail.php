@@ -215,11 +215,8 @@ class ProductIssuesDetail extends Model
             $po->save();
 
             return $m;
-        }else if($pi->tipe_return == 2){
+        }else if ($pi->tipe_return == 2) {
             $m = ProductVariant::find($t->item_id);
-            $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
-            $s->ps_stock -= $t->pid_qty;
-            $s->save();
             return $m;
         }
     }

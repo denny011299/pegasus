@@ -194,10 +194,10 @@
                                 <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
                                     <i class="fe fe-eye"></i>
                                 </a>
-                                <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
-                                    <i class="fe fe-trash-2"></i>
-                                </a>
                             `;
+                            // <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
+                            //         <i class="fe fe-trash-2"></i>
+                            //     </a>
                         }
                         // item.action += `
                         //     <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">

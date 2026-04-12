@@ -7,6 +7,7 @@ use App\Models\ManageStock;
 use App\Models\Product;
 use App\Models\ProductIssues;
 use App\Models\ProductIssuesDetail;
+use App\Models\ProductRelation;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\PurchaseOrder;
@@ -797,74 +798,216 @@ class StockController extends Controller
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
 
-    function deleteProductIssue(Request $req)
+    function deleteProductIssue(Request $req) // MASIH NGEBUG
     {
         $data = $req->all();
 
         $pi = ProductIssues::find($data['pi_id']);
-        $v = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->where('status', '>=', 1)->get();
-        if ($pi->tipe_return == 2){
-            $kurang = [];
-            foreach ($v as $key => $value) {
-                $value['tipe_return'] = $pi['tipe_return'];
-                $c = (new ProductIssuesDetail())->stockCheck($value);
-                if ($c == -1) return -1;
+        $w = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->where('status', '>=', 1)->get();
 
-                $ps = ProductStock::where('product_variant_id', $value->item_id)
-                ->where('unit_id', $value->unit_id)
-                ->where('status', 1)
-                ->first();
+        if ($pi->tipe_return == 2) {
+            // ─── Fase 1: Agregasi ───────────────────────────────────────────
+            $aggregatedProducts = [];
+            foreach ($w as $value) {
+                $uniqueKey = $value->item_id . '_' . $value->unit_id;
+                if (!isset($aggregatedProducts[$uniqueKey])) {
+                    $aggregatedProducts[$uniqueKey] = [
+                        'variant_id'  => $value->item_id,
+                        'unit_id'     => $value->unit_id,
+                        'total_butuh' => 0,
+                        'details'     => $value,
+                    ];
+                }
+                $aggregatedProducts[$uniqueKey]['total_butuh'] += $value->pid_qty;
+            }
 
-                if (($ps->ps_stock - $value->pid_qty < 0)){
-                    $pvr = ProductVariant::find($value->item_id);
-                    $pr = Product::find($pvr->product_id);
-                    array_push($kurang, $pr->product_name . ' ' . $pvr->product_variant_name);
+            // ─── Fase 2: Simulasi virtualStock ──────────────────────────────
+            $kurang        = [];
+            $simulasiHasil = [];
+
+            foreach ($aggregatedProducts as $key => $item) {
+                $variantId     = $item['variant_id'];
+                $unitTarget    = (int)$item['unit_id'];
+                $butuhTersedia = $item['total_butuh'];
+
+                $ss = ProductStock::where('product_variant_id', $variantId)
+                    ->where('status', 1)
+                    ->orderBy('ps_id', 'desc')
+                    ->get()
+                    ->values();
+
+                if ($ss->isEmpty()) {
+                    $pvr = ProductVariant::find($variantId);
+                    $pr  = Product::find($pvr->product_id);
+                    $kurang[] = $pr->product_name . ' ' . $pvr->product_variant_name;
+                    continue;
+                }
+
+                // Bangun virtualStock
+                $virtualStock = [];
+                $logSummary   = [];
+                $keyTarget    = null;
+
+                foreach ($ss as $idx => $stok) {
+                    $virtualStock[$stok->ps_id] = [
+                        'model'   => $stok,
+                        'current' => (float)$stok->ps_stock,
+                        'unit_id' => $stok->unit_id,
+                        'ps_id'   => $stok->ps_id,
+                    ];
+                    if ((int)$stok->unit_id === $unitTarget) {
+                        $keyTarget = $idx;
+                    }
+                }
+
+                if ($keyTarget === null) {
+                    $pvr = ProductVariant::find($variantId);
+                    $pr  = Product::find($pvr->product_id);
+                    $kurang[] = $pr->product_name . ' ' . $pvr->product_variant_name;
+                    continue;
+                }
+
+                // Fungsi rekursif — cari unit atas via relasi, tidak bergantung index
+                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                    $stokSekarang = $units[$targetKey];
+
+                    $sr = ProductRelation::where('product_variant_id', $variantId)
+                        ->where('pr_unit_id_2', $stokSekarang->unit_id)
+                        ->where('status', 1)
+                        ->first();
+
+                    if (!$sr) return false;
+
+                    // Cari index unit atas berdasarkan relasi
+                    $keyAtas = null;
+                    foreach ($units as $idx => $stok) {
+                        if ((int)$stok->unit_id === (int)$sr->pr_unit_id_1) {
+                            $keyAtas = $idx;
+                            break;
+                        }
+                    }
+
+                    if ($keyAtas === null) return false;
+
+                    $stokAtas = $units[$keyAtas];
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
+                        if (!$siapkanStok($keyAtas, $units)) return false;
+                    }
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {
+                        $virtualStock[$stokAtas->ps_id]['current'] -= 1;
+                        $hasilBongkar = (float)$sr->pr_unit_value_2;
+                        $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
+
+                        $baseOrder = $stokAtas->ps_id * 10;
+                        $logSummary[$stokAtas->unit_id . '_cat2'] = [
+                            'unit_id'    => $stokAtas->unit_id,
+                            'jumlah'     => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
+                            'cat'        => 2,
+                            'note'       => 'Konversi unit dari retur armada (Bongkar)',
+                            'sort_order' => $baseOrder,
+                        ];
+                        $logSummary[$stokSekarang->unit_id . '_cat1'] = [
+                            'unit_id'    => $stokSekarang->unit_id,
+                            'jumlah'     => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
+                            'cat'        => 1,
+                            'note'       => 'Konversi unit dari retur armada (Hasil)',
+                            'sort_order' => $baseOrder + 1,
+                        ];
+                        return true;
+                    }
+                    return false;
+                };
+
+                $idPalingBawah = $ss[$keyTarget]->ps_id;
+                $safety = 0;
+
+                while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
+                    $safety++;
+                    if ($safety > 500) break;
+                    if (!$siapkanStok($keyTarget, $ss)) break;
+                }
+
+                if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
+                    $simulasiHasil[$key] = [
+                        'virtualStock'  => $virtualStock,
+                        'logSummary'    => $logSummary,
+                        'idPalingBawah' => $idPalingBawah,
+                        'butuhTersedia' => $butuhTersedia,
+                        'variantId'     => $variantId,
+                    ];
+                } else {
+                    $pvr = ProductVariant::find($variantId);
+                    $pr  = Product::find($pvr->product_id);
+                    $kurang[] = $pr->product_name . ' ' . $pvr->product_variant_name;
                 }
             }
+
+            // ─── Fase 3: Validasi ────────────────────────────────────────────
             if (count($kurang) > 0) {
                 return [
-                    "status"=>-1,
-                    "header"=>"Gagal menghapus",
-                    "message"=>"Stok produk tidak mencukupi: ".implode(", ",$kurang)
+                    "status"  => -1,
+                    "header"  => "Gagal menghapus",
+                    "message" => "Stok produk tidak mencukupi: " . implode(", ", $kurang)
                 ];
+            }
+
+            // ─── Fase 4: Eksekusi virtualStock ke DB ─────────────────────────
+            foreach ($simulasiHasil as $hasil) {
+                $virtualStock  = $hasil['virtualStock'];
+                $logSummary    = $hasil['logSummary'];
+                $idPalingBawah = $hasil['idPalingBawah'];
+                $butuhTersedia = $hasil['butuhTersedia'];
+                $variantId     = $hasil['variantId'];
+
+                // Save konversi HANYA kalau ada konversi yang terjadi
+                if (!empty($logSummary)) {
+                    foreach ($virtualStock as $psId => $v) {
+                        if ($psId == $idPalingBawah) continue; // skip unit target
+                        $v['model']->ps_stock = (int)$v['current'];
+                        $v['model']->save();
+                    }
+
+                    usort($logSummary, fn($a, $b) => $a['sort_order'] <=> $b['sort_order']);
+                    foreach ($logSummary as $l) {
+                        (new LogStock())->insertLog([
+                            'log_date'     => now(),
+                            'log_kode'     => $pi->pi_code,
+                            'log_type'     => 1,
+                            'log_category' => $l['cat'],
+                            'log_item_id'  => $variantId,
+                            'log_notes'    => $l['note'],
+                            'log_jumlah'   => $l['jumlah'],
+                            'unit_id'      => $l['unit_id'],
+                        ]);
+                    }
+                }
+
+                // Kurangi stok unit target — selalu dijalankan
+                $stokFinal = ProductStock::find($idPalingBawah);
+                $stokFinal->ps_stock = (int)($virtualStock[$idPalingBawah]['current'] - $butuhTersedia);
+                $stokFinal->save();
             }
         }
 
-        // jaga2 takutnya butuh pengecekan delete
-
-        // if ($pi['po_id'] != 0) {
-        //     $po = PurchaseOrder::find($pi['po_id']);
-        //     if ($po->status != 1 && $po->pembayaran != 1){
-        //         return response()->json([
-        //             "status" => 0,
-        //             "header" => "Gagal Delete",
-        //             "message" => "Pembelian sudah memiliki Invoice"
-        //         ]);
-        //     }
-        // }
         $del = (new ProductIssues())->deleteProductIssues($data);
-        if ($del == -1){
+        if ($del == -1) {
             return response()->json([
-                "status" => 0,
-                "header" => "Gagal Delete",
+                "status"  => 0,
+                "header"  => "Gagal Delete",
                 "message" => "Invoice tersebut sudah terbayar"
             ]);
         }
 
-        // Delete retur (header)
         $rs = ReturnSupplies::where('pi_id', $data['pi_id'])->where('status', 1)->first();
         if ($rs) (new ReturnSupplies())->deleteReturnSupplies($rs);
 
-        foreach ($v as $key => $value) {
+        foreach ($w as $key => $value) {
             $value['tipe_return'] = $pi->tipe_return;
             if (isset($pi->ref_num) && $pi->ref_num != 0) $value['ref_num'] = $pi->ref_num;
-            
-            // Hapus retur kalau ada
-            if ($rs){
-                // $rsd = ReturnSuppliesDetail::where('pid_id', $value['pid_id'])
-                //                         ->where('supplies_variant_id', $value['item_id'])
-                //                         ->where('unit_id', $value['unit_id'])
-                //                         ->where('status', 1)->first();
+
+            if ($rs) {
                 $rsd = ReturnSuppliesDetail::where('rs_id', $rs->rs_id)->where('status', 1)->get();
                 $total = 0;
                 foreach ($rsd as $key => $val) {
@@ -876,38 +1019,41 @@ class StockController extends Controller
                 $po->po_total += $total;
                 $po->save();
             }
+
             $value['po_id'] = $pi['po_id'];
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
             // Catat Log
-            $logNotes = "";
+            $logNotes    = "";
             $logCategory = 0;
-            $logType = 0;
-            $itemId = 0;
-            if ($pi->tipe_return == 1){
+            $logType     = 0;
+            $itemId      = 0;
+
+            if ($pi->tipe_return == 1) {
                 $sup = SuppliesVariant::find($value['item_id']);
                 $spr = Supplier::find($sup->supplier_id);
-                
-                $logNotes = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name;
-                $logCategory = 1;
-                $logType = 2;
 
-                $itemId = $sup->supplies_id;
-            } elseif ($pi->tipe_return == 2){
-                $logNotes = 'Penghapusan data produk bermasalah retur Armada';
+                $logNotes    = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                $logCategory = 1;
+                $logType     = 2;
+                $itemId      = $sup->supplies_id;
+
+            } elseif ($pi->tipe_return == 2) {
+                $logNotes    = 'Penghapusan data produk bermasalah retur Armada';
                 $logCategory = 2;
-                $logType = 1;
-                $itemId = $value['item_id'];
+                $logType     = 1;
+                $itemId      = $value['item_id'];
             }
+
             (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $pi->pi_code,
-                'log_type'    => $logType,
+                'log_date'     => now(),
+                'log_kode'     => $pi->pi_code,
+                'log_type'     => $logType,
                 'log_category' => $logCategory,
-                'log_item_id' => $itemId,
-                'log_notes'  => $logNotes,
-                'log_jumlah' => $value['pid_qty'],
-                'unit_id'    => $value['unit_id'],
+                'log_item_id'  => $itemId,
+                'log_notes'    => $logNotes,
+                'log_jumlah'   => $value['pid_qty'],
+                'unit_id'      => $value['unit_id'],
             ]);
         }
     }
