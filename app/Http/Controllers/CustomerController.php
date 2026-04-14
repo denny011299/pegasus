@@ -531,7 +531,7 @@ class CustomerController extends Controller
         foreach ($sod as $value) {
             (new LogStock())->insertLog([
                 'log_date'     => now(),
-                'log_kode'     => $so->so_number,
+                'log_kode'     => $so->so_invoice_no,
                 'log_type'     => 1,
                 'log_category' => 2,
                 'log_item_id'  => $value['product_variant_id'],

@@ -183,7 +183,7 @@
                 <form action="#">
                     <div class="modal-body">
                         <p class="text-center">Konfirmasi Pembayaran Semua Invoice Harap unggah Bukti Transfer Bank atau Slip Pembayaran yang valid sebagai syarat konfirmasi pelunasan semua invoice terkait.</p>
-                         <div class="profile-picture mt-3">
+                        <div class="profile-picture mt-3">
                             <div class="upload-profile">
                                 <div class="profile-img">
                                     <img id="preview_image" class="avatar" style="min-height: 200px;width:100%;border-radius:0px"
@@ -201,6 +201,10 @@
                                     accept="image/png, image/jpeg" id="image">
                                 </label>
                             </div>
+                        </div>
+                        <div class="mb-3 px-3">
+                            <label>Keterangan<span class="text-danger">*</span></label>
+                            <textarea class="form-control fill" cols="30" rows="2" id="keterangan" placeholder="Masukkan keterangan"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">

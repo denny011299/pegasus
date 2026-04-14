@@ -13,6 +13,13 @@
         width: 100% !important;
         max-width: 100% !important;
     }
+    #tableTTPurchaseOrder{
+        width: 100% !important;
+    }
+    #tableTTPurchaseOrder td {
+        white-space: normal !important;
+        word-wrap: break-word;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -44,6 +51,7 @@
                                             <th>Tanggal</th>
                                             <th>No.Tanda Terima </th>
                                             <th>Nama Pemasok</th>
+                                            <th>Keterangan</th>
                                             <th>Total</th>
                                             <th>Status</th>
                                             <th class="no-sort">Aksi</th>

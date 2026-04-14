@@ -512,6 +512,7 @@ class SupplierController extends Controller
         $p = purchase_order_tt::find($req->tt_id);
         $p->status=2;
         $p->tt_image = $data["tt_image"];
+        $p->tt_desc = $data['tt_desc'];
         $p->staffFinance_name = Session::get('user')->staff_name;
         $p->save();
         PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["pembayaran"=>2]);
