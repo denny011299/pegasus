@@ -30,11 +30,12 @@
                 },
             },
             columns: [
-                { data: "date" },
-                { data: "tt_kode" },
-                { data: "supplier_name" },
-                { data: "total" },
-                { data: "status_po" },
+                { data: "date", width: "15%" },
+                { data: "tt_kode", width: "10%" },
+                { data: "supplier_name", width: "20%" },
+                { data: "desc", width: "13%" },
+                { data: "total", width: "16%" },
+                { data: "status_po", width: "12%" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             columnDefs: [
@@ -66,6 +67,7 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].tt_date).format('D MMM YYYY');
                     e[i].total = `Rp ${formatRupiah(e[i].tt_total)}`;
+                    e[i].desc = e[i].tt_desc ? e[i].tt_desc : "-";
                     e[i].status_po = `<label class="badge bg-secondary badgeStatus">Menunggu</label>`;
                     
                     if(e[i].status == 0)e[i].status_po = `<label class="badge bg-danger badgeStatus">Ditolak</label>`;
@@ -113,15 +115,21 @@
 
     $(document).on("click",".btn-save",function(){
         console.log($('#image')[0].files[0]);
-        
+        $('#keterangan').removeClass('is-invalid');
         if($('#image')[0].files[0]=="undefined"||$('#image')[0].files[0]==undefined){
             notifikasi('error', "Gagal terima", "Upload Bukti transfer terlebih dahulu");
+            return false;
+        }
+        if($('#keterangan').val() ==""||$('#keterangan').val()==null || $('#keterangan').val()=="null"){
+            $('#keterangan').addClass('is-invalid');
+            notifikasi('error', "Gagal terima", "Isi keterangan terlebih dahulu");
             return false;
         }
 
         const fd = new FormData();
         fd.append('image', $('#image')[0].files[0]);
         fd.append('tt_id', $('#add_acc_tt').attr("tt_id"));
+        fd.append('tt_desc', $('#keterangan').val());
 
         $.ajax({
             url:"/accTt",
@@ -146,6 +154,8 @@
     $(document).on("click",".btn_acc_tt",function(){
         $('#preview_image').attr("src",public+"no_img.png")
         $('#image').val(null);
+        $('#keterangan').val("");
+        $('#keterangan').removeClass('is-invalid');
         $('#add_acc_tt').attr("tt_id",$(this).attr('tt_id'));
         $('#add_acc_tt').modal("show");
         
