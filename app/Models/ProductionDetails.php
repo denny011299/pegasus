@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class ProductionDetails extends Model
 {
@@ -46,6 +47,7 @@ class ProductionDetails extends Model
         $t->bom_id = $data["bom_id"];
         $t->unit_id = $data["unit_id"];
         $t->list_bahan = $data["list_bahan"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t;
     }
@@ -59,6 +61,7 @@ class ProductionDetails extends Model
         $t->bom_id = $data["bom_id"];
         $t->unit_id = $data["unit_id"];
         $t->list_bahan = $data["list_bahan"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->pd_id;
     }

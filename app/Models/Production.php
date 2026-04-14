@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Http\Controllers\ProductionController;
+use App\Models\Staff;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 
 class Production extends Model
 {
@@ -70,6 +72,7 @@ class Production extends Model
                 }
             }
             $value->total_dos = $dos;
+            $value->created_by_name = $value->production_created_by ? (Staff::find($value->production_created_by)->staff_name ?? '-') : '-';
 
             // Kalau misal ada yang sudah 3 hari lebih dan statusnya masih menunggu approve, maka auto ACC
             $productionDate = Carbon::parse($value->production_date);
@@ -103,7 +106,7 @@ class Production extends Model
         $t = new Production();
         $t->production_date = $data["production_date"];
         $t->production_code = $this->generateProductionID();
-        $t->production_created_by = 0;
+        $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : 0;
         $t->save();
         return $t;
     }
@@ -113,7 +116,7 @@ class Production extends Model
         $t = Production::find($data["production_id"]);
         $t->production_date = $data["production_date"];
         $t->production_code = $data["production_code"];
-        $t->production_created_by = 0;
+        $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : 0;
         $t->save();
         return $t->production_id;
     }
@@ -123,6 +126,7 @@ class Production extends Model
         $t = Production::find($data["production_id"]);
         $t->notes = $data["delete_reason"];
         $t->status = 4;
+        $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : $t->production_created_by;
         $t->save();    
     }
 
@@ -131,6 +135,7 @@ class Production extends Model
         $t = Production::find($data["production_id"]);
         $t->notes = $data["delete_reason"];
         $t->status = 3;
+        $t->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();    
     }
 
@@ -138,6 +143,7 @@ class Production extends Model
     {
         $t = Production::find($data["production_id"]);
         $t->status = 2;
+        $t->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 
@@ -146,12 +152,14 @@ class Production extends Model
         $t = Production::find($data["production_id"]);
         $t->notes = null;
         $t->status = 2;
+        $t->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();    
     }
 
     function cancelProduction($data) {
         $t = Production::find($data['production_id']);
         $t->status = 3;
+        $t->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 

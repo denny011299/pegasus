@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class ProductRelation extends Model
 {
@@ -38,6 +39,7 @@ class ProductRelation extends Model
         $t->pr_unit_value_1 = $data["unit_value_1"] ?? 1;
         $t->pr_unit_id_2 = $data["pr_unit_id_2"];
         $t->pr_unit_value_2 = $data["unit_value_2"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->pr_id;
     }
@@ -50,6 +52,7 @@ class ProductRelation extends Model
         $t->pr_unit_value_1 = $data["unit_value_1"] ?? 1;
         $t->pr_unit_id_2 = $data["pr_unit_id_2"];
         $t->pr_unit_value_2 = $data["unit_value_2"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->pr_id;
     }
@@ -58,6 +61,7 @@ class ProductRelation extends Model
     {
         $t = self::find($data["pr_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 }

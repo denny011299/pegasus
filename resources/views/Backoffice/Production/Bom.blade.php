@@ -46,6 +46,7 @@
                                             <th>Produk</th>
                                             <th>Material</th>
                                             <th>Qty Produksi</th>
+                                            <th>Dibuat Oleh</th>
                                             <th class="no-sort text-center">Aksi</th>
                                         </tr>
                                     </thead>

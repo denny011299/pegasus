@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class ProductVariant extends Model
 {
@@ -96,6 +97,7 @@ class ProductVariant extends Model
         $t->product_variant_barcode = $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"]!="" ? $data["variant_alert"] : 0;
         $t->product_variant_stock = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->product_variant_id;
     }
@@ -120,6 +122,7 @@ class ProductVariant extends Model
         $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"];
         $t->unit_id = $data["unit_id"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->product_variant_id;
@@ -132,6 +135,7 @@ class ProductVariant extends Model
             throw new \Exception("Product variant with ID " . $data["product_variant_id"] . " not found.");
         }
         $t->status = 0; // soft delete
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
      function generateBarcode() {

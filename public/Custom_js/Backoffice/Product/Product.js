@@ -30,6 +30,7 @@
                 { data: "product_category", width: '10%' },
                 { data: "unit_values", width: '10%' },
                 { data: "variant_values", width: '50%' },
+                { data: "created_by_name" },
                 { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {

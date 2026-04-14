@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class SuppliesVariant extends Model
 {
@@ -84,6 +85,7 @@ class SuppliesVariant extends Model
         $t->supplies_variant_price = $data["supplies_variant_price"];
         $t->supplies_variant_barcode = $data["supplies_variant_barcode"] ?? $t->generateBarcode();
         $t->supplies_variant_stock = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->supplies_variant_id;
@@ -106,6 +108,7 @@ class SuppliesVariant extends Model
         $t->supplies_variant_sku = $data["supplies_variant_sku"];
         $t->supplies_variant_price = $data["supplies_variant_price"];
         $t->supplies_variant_barcode = $data["supplies_variant_barcode"] == "" ? $t->generateBarcode() : $data["supplies_variant_barcode"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->supplies_variant_id;
@@ -118,6 +121,7 @@ class SuppliesVariant extends Model
             throw new \Exception("Supplies variant with ID " . $data["supplies_variant_id"] . " not found.");
         }
         $t->status = 0; // soft delete
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 

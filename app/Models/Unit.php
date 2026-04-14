@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Unit extends Model
 {
@@ -27,6 +29,7 @@ class Unit extends Model
         foreach ($result as $key => $value) {
             //$value->product_count = Product::where('unit_id', $value->unit_id)->where('status','=',1)->count();
             $value->product_count = 0;
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -36,6 +39,7 @@ class Unit extends Model
         $t = new self();
         $t->unit_short_name = $data["unit_short_name"];
         $t->unit_name = $data["unit_name"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->unit_id;
     }
@@ -45,6 +49,7 @@ class Unit extends Model
         $t = self::find($data["unit_id"]);
         $t->unit_short_name = $data["unit_short_name"];
         $t->unit_name = $data["unit_name"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->unit_id;
     }
@@ -53,6 +58,7 @@ class Unit extends Model
     {
         $t = self::find($data["unit_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 }

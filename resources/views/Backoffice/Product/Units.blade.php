@@ -30,6 +30,7 @@
                                             <th>Satuan</th>
                                             <th>Singkatan</th>
                                             <th>Dibuat Pada</th>
+                                            <th>Dibuat Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

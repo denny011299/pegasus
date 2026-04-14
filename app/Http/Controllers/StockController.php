@@ -204,6 +204,7 @@ class StockController extends Controller
             }
         }
         $sto->status = 2;
+        $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
     }
 
@@ -212,6 +213,7 @@ class StockController extends Controller
         $sto = StockOpname::find($data["sto_id"]);
 
         $sto->status = 3; // Tolak
+        $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
     }
 
@@ -347,6 +349,7 @@ class StockController extends Controller
             }
         }
         $stob->status = 2;
+        $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $stob->save();
     }
 
@@ -355,6 +358,7 @@ class StockController extends Controller
         $stob = StockOpnameBahan::find($data["stob_id"]);
 
         $stob->status = 3; // Tolak
+        $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $stob->save();
     }
 

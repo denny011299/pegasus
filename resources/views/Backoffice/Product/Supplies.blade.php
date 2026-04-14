@@ -49,6 +49,7 @@
                                             <th>Variasi</th>
                                             <th>Satuan</th>
                                             <th>Deskripsi</th>
+                                            <th>Dibuat Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

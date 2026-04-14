@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Supplies extends Model
 {
@@ -41,6 +43,7 @@ class Supplies extends Model
             $value->stock = (new SuppliesStock())->getProductStock([
                 "supplies_id" => $value->supplies_id
             ]);
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -53,6 +56,7 @@ class Supplies extends Model
         $t->supplies_unit = $data["supplies_unit"];
         $t->supplies_alert = $data["supplies_alert"];
         $t->supplies_default_unit = $data["supplies_default_unit"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplies_id;
     }
@@ -65,6 +69,7 @@ class Supplies extends Model
         $t->supplies_unit = $data["supplies_unit"];
         $t->supplies_alert = $data["supplies_alert"];
         $t->supplies_default_unit = $data["supplies_default_unit"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplies_id;
     }
@@ -73,6 +78,7 @@ class Supplies extends Model
     {
         $t = Supplies::find($data["supplies_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         SuppliesVariant::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);

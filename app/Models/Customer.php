@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Customer extends Model
 {
@@ -42,6 +44,7 @@ class Customer extends Model
             // $value->district_name = $v->name;
 
             // $value->staff_name = Staff::find($value->sales_id)->staff_name ?? "-";
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         
         return $result;
@@ -54,6 +57,7 @@ class Customer extends Model
         $t->customer_pic = $data["customer_pic"];
         $t->customer_pic_phone = $data["customer_pic_phone"];
         $t->customer_notes = $data["customer_notes"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->customer_id;
     }
@@ -65,6 +69,7 @@ class Customer extends Model
         $t->customer_pic = $data["customer_pic"];
         $t->customer_pic_phone = $data["customer_pic_phone"];
         $t->customer_notes = $data["customer_notes"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->customer_id;
     }
@@ -73,6 +78,7 @@ class Customer extends Model
     {
         $t = self::find($data["customer_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 

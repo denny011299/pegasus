@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 
 class Staff extends Model
 {
@@ -72,6 +73,7 @@ class Staff extends Model
         $t->staff_username = $data["staff_username"];
         $t->staff_password = Hash::make($data["staff_password"]);
         // $t->staff_notes = $data["staff_notes"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->pu_id;
     }
@@ -94,6 +96,7 @@ class Staff extends Model
         }
         
         // $t->staff_notes = $data["staff_notes"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->pu_id;
     }
@@ -102,6 +105,7 @@ class Staff extends Model
     {
         $t = self::find($data["staff_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 }

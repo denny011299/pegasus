@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Category extends Model
 {
@@ -24,7 +26,7 @@ class Category extends Model
        
         $result = $result->get();
         foreach ($result as $key => $value) {
-            
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -33,6 +35,7 @@ class Category extends Model
     {
         $t = new category();
         $t->category_name = $data["category_name"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->category_id;
     }
@@ -41,6 +44,7 @@ class Category extends Model
     {
         $t = category::find($data["category_id"]);
         $t->category_name = $data["category_name"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->category_id;
     }
@@ -49,6 +53,7 @@ class Category extends Model
     {
         $t = category::find($data["category_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Product extends Model
 {
@@ -40,6 +42,7 @@ class Product extends Model
             $value->pr_variant = (new ProductVariant())->getProductVariant(['product_id'=>$value->product_id]);
             //$value->pr_relasi = (new ProductRelation())->getProductRelation(['product_id'=>$value->product_id]);
             $value->product_category = Category::find($value->category_id)->category_name ?? "-";
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -52,6 +55,7 @@ class Product extends Model
         $t->product_unit = $data["product_unit"];
         $t->unit_id = $data["unit_id"];
         $t->status       = $data["status"] ?? 1;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
        
         return $t->product_id;
@@ -64,6 +68,7 @@ class Product extends Model
         $t->category_id  = $data["category_id"];
         $t->product_unit = $data["product_unit"];
         $t->unit_id = $data["unit_id"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         
         return $t->product_id;
@@ -73,6 +78,7 @@ class Product extends Model
     {
         $t = Product::find($data["product_id"]);
         $t->status = 0; // soft delete
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         ProductVariant::where("product_id", "=", $data["product_id"])->update(["status" => 0]);

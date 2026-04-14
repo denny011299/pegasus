@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class ManageStock extends Model
 {
@@ -94,7 +95,9 @@ class ManageStock extends Model
         $t = new self();    
         $t->ms_type = $data["ms_type"]; 
         $t->product_variant_id = $data["product_variant_id"];    
-        $t->ms_stock = $data["ms_stock"];   
+        $t->ms_stock = $data["ms_stock"];
+        $t->ms_created_by = Session::get('user') ? Session::get('user')->staff_id : null;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save(); 
         return $t->ms_id;   
     }
@@ -102,7 +105,8 @@ class ManageStock extends Model
     function updateManage($data)
     {
         $t = self::find($data["ms_id"]);    
-        $t->ms_stock += $data["ms_stock"];   
+        $t->ms_stock += $data["ms_stock"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save(); 
         return $t->ms_id;   
     }
@@ -111,6 +115,7 @@ class ManageStock extends Model
     {
         $t = self::find($data["ms_id"]);    
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 }

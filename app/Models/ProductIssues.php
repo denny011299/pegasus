@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class ProductIssues extends Model
 {
@@ -98,6 +99,7 @@ class ProductIssues extends Model
         $t->tipe_return = $data["tipe_return"];     
         $t->pi_img = $data["pi_img"] ?? null;
         $t->status = $data['status'] ?? 1;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         // $t->pi_qty = $data["pi_qty"];   
         // $t->product_variant_id = $data["product_variant_id"];
         // $t->unit_id = $data["unit_id"]; 
@@ -150,6 +152,7 @@ class ProductIssues extends Model
         $t->tipe_return = $data["tipe_return"];
         $t->status = $data['status'] ?? 1;
         if (isset($data['pi_img'])) $t->pi_img = $data["pi_img"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         // $t->pi_qty = $data["pi_qty"];   
         // $t->product_variant_id = $data["product_variant_id"];
         // $t->unit_id = $data["unit_id"];
@@ -171,6 +174,7 @@ class ProductIssues extends Model
             }
         }
         $t->status = 3;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         // $m = ProductVariant::find($t->product_variant_id);
@@ -186,12 +190,14 @@ class ProductIssues extends Model
     function accProductIssues($data){
         $pi = ProductIssues::find($data['pi_id']);
         $pi->status = 2;
+        $pi->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $pi->save();
     }
 
     function declineProductIssues($data){
         $pi = ProductIssues::find($data['pi_id']);
         $pi->status = 3;
+        $pi->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $pi->save();
     }
 

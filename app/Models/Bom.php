@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Bom extends Model
 {
@@ -52,6 +54,7 @@ class Bom extends Model
             $value->unit_name = Unit::find($value->unit_id)->unit_short_name;
             $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit, true))->get();
             $value->items = (new BomDetail())->getBomDetail(['bom_id' => $value->bom_id]);
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
 
         return $result;
@@ -63,6 +66,7 @@ class Bom extends Model
         $t->product_id = $data["product_id"];
         $t->bom_qty = $data["bom_qty"];
         $t->unit_id = $data["unit_id"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->bom_id;
     }
@@ -73,6 +77,7 @@ class Bom extends Model
         $t->product_id = $data["product_id"];
         $t->bom_qty = $data["bom_qty"];
         $t->unit_id = $data["unit_id"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->bom_id;
     }
@@ -81,6 +86,7 @@ class Bom extends Model
     {
         $t = Bom::find($data["bom_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 }

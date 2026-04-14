@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class ProductStock extends Model
 {
@@ -39,6 +40,7 @@ class ProductStock extends Model
         $t->product_variant_id = $data["product_variant_id"];
         $t->unit_id = $data["unit_id"];
         $t->ps_stock = $data["ps_stock"] ?? 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->role_id;
@@ -51,6 +53,7 @@ class ProductStock extends Model
         $t->product_variant_id = $data["product_variant_id"];
         $t->unit_id = $data["unit_id"];
         $t->ps_stock = $data["ps_stock"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->role_id;
     }
@@ -59,6 +62,7 @@ class ProductStock extends Model
     {
         $t = self::find($data["ps_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 

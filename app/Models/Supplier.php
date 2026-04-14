@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Supplier extends Model
 {
@@ -47,6 +49,7 @@ class Supplier extends Model
                 $total += $p->po_total;
             }
             $value->payment = $total;
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -70,6 +73,7 @@ class Supplier extends Model
         $t->bank_id = $data["bank_id"];
         $t->supplier_payment = $data["supplier_payment"];
         if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplier_id;
     }
@@ -92,6 +96,7 @@ class Supplier extends Model
         $t->bank_id = $data["bank_id"];
         $t->supplier_payment = $data["supplier_payment"];
         if(isset($data["supplier_image"])) $t->supplier_image = $data["supplier_image"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplier_id;
     }
@@ -100,6 +105,7 @@ class Supplier extends Model
     {
         $t = Supplier::find($data["supplier_id"]);
         $t->status = 0;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 

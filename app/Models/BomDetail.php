@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class BomDetail extends Model
 {
@@ -48,6 +49,7 @@ class BomDetail extends Model
         $t->supplies_id = $data["supplies_id"];
         $t->bom_detail_qty = $data["bom_detail_qty"];
         $t->unit_id = $data["unit_id"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->bom_detail_id;
     }
@@ -59,6 +61,7 @@ class BomDetail extends Model
         $t->supplies_id = $data["supplies_id"];
         $t->bom_detail_qty = $data["bom_detail_qty"];
         $t->unit_id = $data["unit_id"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->bom_detail_id;
     }

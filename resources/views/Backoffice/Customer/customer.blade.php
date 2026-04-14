@@ -30,6 +30,7 @@
                                             <th>Telepon PIC</th>
                                             <th>Saldo Armada</th>
                                             <th>Dibuat</th>
+                                            <th>Dibuat Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
