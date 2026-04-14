@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class purchase_order_tt extends Model
 {
@@ -49,6 +50,8 @@ class purchase_order_tt extends Model
             if($s){
                 $value->supplier_name = $s->supplier_name;
             }
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? $value->staff_name ?? '-') : ($value->staff_name ?? '-');
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? $value->staffFinance_name ?? '-') : ($value->staffFinance_name ?? '-');
         }
         return $result;
     }
@@ -61,6 +64,7 @@ class purchase_order_tt extends Model
         $t->tt_total = $data["tt_total"];
         $t->supplier_id = $data["supplier_id"];
         $t->staff_name = $data["staff_name"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->tt_id;
     }

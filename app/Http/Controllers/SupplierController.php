@@ -514,6 +514,7 @@ class SupplierController extends Controller
         $p->tt_image = $data["tt_image"];
         $p->tt_desc = $data['tt_desc'];
         $p->staffFinance_name = Session::get('user')->staff_name;
+        $p->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $p->save();
         PurchaseOrder::where('tt_id','=',$req->tt_id)->update(["pembayaran"=>2]);
     }
@@ -521,6 +522,7 @@ class SupplierController extends Controller
     function declineTt(Request $req){
         $p = purchase_order_tt::find($req->tt_id);
         $p->staffFinance_name = Session::get('user')->staff_name;
+        $p->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $p->status=0;
         $p->save();
 
