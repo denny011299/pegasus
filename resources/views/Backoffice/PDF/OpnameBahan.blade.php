@@ -107,15 +107,30 @@
             </thead>
             <tbody>
                 @foreach ($detail as $item)
+                    @php
+                        $hasSelisih = false;
+                        if (!empty($item['stobd_selisih'])) {
+                            // Cek apakah ada angka yang bukan 0 di stobd_selisih
+                            // Format: "0 DOS, 2 Piece" — cari angka selain 0
+                            preg_match_all('/(-?\d+)/', $item['stobd_selisih'], $matches);
+                            foreach ($matches[1] as $angka) {
+                                if ((int)$angka !== 0) {
+                                    $hasSelisih = true;
+                                    break;
+                                }
+                            }
+                        }
+                        $highlight = $hasSelisih ? 'background-color: #FFF9C4;' : '';
+                    @endphp
                     <tr>
                         <td>{{ $item['supplies_name'] ?? '-' }}</td>
-                        <td>{{ $item['stobd_system'] ?? '-' }}</td>
+                        <td style="{{ $highlight }}">{{ $item['stobd_system'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
-                        <td>{{ $item['stobd_real'] ?? '-' }}</td>
+                        <td style="{{ $highlight }}">{{ $item['stobd_real'] ?? '-' }}</td>
 
-                        <td>{{ $item['stobd_selisih'] ?? '-' }}</td>
+                        <td style="{{ $highlight }}">{{ $item['stobd_selisih'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         

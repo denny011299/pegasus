@@ -109,17 +109,32 @@
             </thead>
             <tbody>
                 @foreach ($detail as $item)
+                    @php
+                        $hasSelisih = false;
+                        if (!empty($item['stod_selisih'])) {
+                            // Cek apakah ada angka yang bukan 0 di stod_selisih
+                            // Format: "0 DOS, 2 Piece" — cari angka selain 0
+                            preg_match_all('/(-?\d+)/', $item['stod_selisih'], $matches);
+                            foreach ($matches[1] as $angka) {
+                                if ((int)$angka !== 0) {
+                                    $hasSelisih = true;
+                                    break;
+                                }
+                            }
+                        }
+                        $highlight = $hasSelisih ? 'background-color: #FFF9C4;' : '';
+                    @endphp
                     <tr>
                         <td>{{ empty($item['product_variant_sku']) ? '-' : $item['product_variant_sku'] }}</td>
                         <td>{{ $item['pr_name'] ?? '-' }}</td>
                         <td>{{ empty($item['product_variant_name']) ? '-' : $item['product_variant_name'] }}</td>
-                        <td>{{ $item['stod_system'] ?? '-' }}</td>
+                        <td style="{{ $highlight }}">{{ $item['stod_system'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
-                        <td>{{ $item['stod_real'] ?? '-' }}</td>
+                        <td style="{{ $highlight }}">{{ $item['stod_real'] ?? '-' }}</td>
 
-                        <td>{{ $item['stod_selisih'] ?? '-' }}</td>
+                        <td style="{{ $highlight }}">{{ $item['stod_selisih'] ?? '-' }}</td>
                         {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
                         @endif --}}
                         
