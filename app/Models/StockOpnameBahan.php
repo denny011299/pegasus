@@ -16,34 +16,33 @@ class StockOpnameBahan extends Model
     {
         $data = array_merge([
             'stob_date' => null,
-            'staff_id' => null,
-            'category_id' => null,
-            'stob_id' => null,
+            'staff_id'  => null,
+            'stob_id'   => null,
         ], $data);
 
         $result = self::where('status', '>=', 1);
 
-        if ($data['stob_date']) {
-            $result->whereDate('stob_date', $data['stob_date']);
-        }
-
-        if ($data['staff_id']) {
-            $result->where('staff_id', $data['staff_id']);
-        }
-        
-        if ($data['stob_id']) {
-            $result->where('stob_id','=', $data['stob_id']);
-        }
+        if ($data['stob_date']) $result->whereDate('stob_date', $data['stob_date']);
+        if ($data['staff_id'])  $result->where('staff_id', $data['staff_id']);
+        if ($data['stob_id'])   $result->where('stob_id', $data['stob_id']);
 
         $result->orderBy('status', 'asc')->orderBy('stob_date', 'desc');
 
-        $result =  $result->get();
-        
-        foreach ($result as $key => $value) {
-           $value->staff_name = Staff::find($value->staff_id)->staff_name;
-        //    $value->category_name = Category::find($value->category_id)->category_name;
-           $value->item = (new StockOpnameDetailBahan())->getDetail(["stob_id"=>$value->stob_id]);
+        $result = $result->get();
+
+        // ✅ Ambil semua staff_id sekaligus (1 query)
+        $staffIds = $result->pluck('staff_id')->unique()->filter();
+        $staffMap = Staff::whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id');
+
+        // ✅ Ambil semua stob_id sekaligus (1 query)
+        $stobIds = $result->pluck('stob_id')->unique()->filter();
+        $detailsGrouped = StockOpnameDetailBahan::getDetailBulk($stobIds->toArray());
+
+        foreach ($result as $value) {
+            $value->staff_name = $staffMap[$value->staff_id] ?? null;
+            $value->item = $detailsGrouped->get($value->stob_id, collect());
         }
+
         return $result;
     }
 

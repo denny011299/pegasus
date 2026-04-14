@@ -44,6 +44,42 @@ class StockOpnameDetailBahan extends Model
         return $result;
     }
 
+    public static function getDetailBulk(array $stobIds)
+    {
+        if (empty($stobIds)) return collect();
+
+        // ✅ 1 query untuk semua detail
+        $details = self::where('status', 1)
+            ->whereIn('stob_id', $stobIds)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        // ✅ 1 query untuk semua supplies
+        $suppliesIds = $details->pluck('supplies_id')->unique()->filter();
+        $suppliesMap = (new Supplies())->getSuppliesBulk($suppliesIds->toArray());
+
+        $mapped = $details->map(function ($value) use ($suppliesMap) {
+            $pv = $suppliesMap->get($value->supplies_id);
+
+            if (!$pv) return null;
+
+            // Clone supaya tidak mutate objek asli
+            $temp = clone $pv;
+            $temp->sp_units      = [];
+            $temp->stobd_system  = $value->stobd_system;
+            $temp->stobd_real    = $value->stobd_real;
+            $temp->stobd_selisih = $value->stobd_selisih;
+            $temp->stobd_notes   = $value->stobd_notes;
+            $temp->stobd_id      = $value->stobd_id;
+            $temp->stob_id       = $value->stob_id;
+
+            return $temp;
+        })->filter();
+
+        // Group by stob_id → ['stob_id_1' => [...], 'stob_id_2' => [...]]
+        return $mapped->groupBy('stob_id');
+    }
+
     /**
      * Insert detail
      */

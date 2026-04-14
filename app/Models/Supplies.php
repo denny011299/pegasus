@@ -48,6 +48,41 @@ class Supplies extends Model
         return $result;
     }
 
+    // Khusus untuk stock opname bahan
+    public function getSuppliesBulk(array $suppliesIds)
+    {
+        if (empty($suppliesIds)) return collect();
+
+        // Modifikasi getSupplies() support whereIn
+        $result = Supplies::where('status', 1)
+            ->whereIn('supplies_id', $suppliesIds)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($result as $key => $value) {
+            $value->sup_variant = (new SuppliesVariant())->getSuppliesVariant([
+                "supplies_id" => $value->supplies_id
+            ]);
+            if ($value->supplies_supplier) {
+                $value->supplier = Supplier::whereIn('supplier_id', json_decode($value->supplies_supplier, true))->get();
+            }
+            $value->supplies_unit = json_decode($value->supplies_unit);
+            $value->supplies_relasi = (new SuppliesRelation())->getSuppliesRelation([
+                "supplies_id" => $value->supplies_id
+            ]);
+            $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
+            $value->stock = (new SuppliesStock())->getProductStock([
+                "supplies_id" => $value->supplies_id
+            ]);
+            $value->created_by_name = $value->created_by 
+                ? (Staff::find($value->created_by)->staff_name ?? '-') 
+                : '-';
+        }
+
+        // keyBy supaya bisa lookup O(1) by supplies_id
+        return $result->keyBy('supplies_id');
+    }
+
     function insertSupplies($data)
     {
         $t = new Supplies();
