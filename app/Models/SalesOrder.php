@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class SalesOrder extends Model
 {
@@ -34,6 +35,7 @@ class SalesOrder extends Model
             $value->customer_name = Customer::find($value->so_customer)->customer_notes ?? "-";
             $value->items = (new SalesOrderDetail())->getSalesOrderDetail(["so_id"=>$value->so_id]);
             $value->staff_name = Staff::find($value->so_cashier)->staff_name ?? "-";
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -63,6 +65,7 @@ class SalesOrder extends Model
         $t->so_invoice_no  = $this->generateInvoiceSalesOrderID();
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = null;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t;
@@ -127,12 +130,14 @@ class SalesOrder extends Model
     function accSO($data){
         $t = SalesOrder::find($data["so_id"]);
         $t->status = 2; // accept
+        $t->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
     
     function declineSO($data){
         $t = SalesOrder::find($data["so_id"]);
-        $t->status = 3; // accept
+        $t->status = 3; // decline
+        $t->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
 

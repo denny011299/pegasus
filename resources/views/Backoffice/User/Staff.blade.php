@@ -26,6 +26,7 @@
                                             <th>Peran</th>
                                             <th>Saldo</th>
                                             <th>Dibuat pada</th>
+                                            <th>Dibuat Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

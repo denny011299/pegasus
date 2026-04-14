@@ -208,6 +208,8 @@
                 { data: "po_supplier_name"},
                 { data: "total" },
                 { data: "status_po" },
+                { data: "created_by_name" },
+                { data: "acc_by_name" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             columnDefs: [

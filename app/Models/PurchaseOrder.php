@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class PurchaseOrder extends Model
 {
@@ -94,6 +95,8 @@ class PurchaseOrder extends Model
             // contoh:
             // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";
             $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id" => $value->po_id]);
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
         }
 
         return $result;
@@ -112,6 +115,7 @@ class PurchaseOrder extends Model
         $t->po_cost     = $data["po_cost"] ?? 0;
         $t->po_img      = $data["po_img"] ?? null;
         $t->status      = 1;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->po_id;

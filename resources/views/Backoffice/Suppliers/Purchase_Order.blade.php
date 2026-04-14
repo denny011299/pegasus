@@ -50,6 +50,8 @@
                                             <th>Nama Pemasok</th>
                                             <th>Total</th>
                                             <th>Status</th>
+                                            <th>Dibuat Oleh</th>
+                                            <th>DiACC Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

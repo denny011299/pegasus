@@ -73,6 +73,7 @@ class Production extends Model
             }
             $value->total_dos = $dos;
             $value->created_by_name = $value->production_created_by ? (Staff::find($value->production_created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
 
             // Kalau misal ada yang sudah 3 hari lebih dan statusnya masih menunggu approve, maka auto ACC
             $productionDate = Carbon::parse($value->production_date);

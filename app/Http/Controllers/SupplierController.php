@@ -558,6 +558,7 @@ class SupplierController extends Controller
         $due  = date('Y-m-d', strtotime('+'.$s->supplier_top.' days'));
         (new PurchaseOrderDetailInvoice())->insertInvoicePO(["po_id"=>$data["po_id"],"poi_total"=>$po->po_total,"status"=>1,"poi_due"=>$due,"bank_id"=>$s->bank_id]);
         $po->status = 2; // Lunas
+        $po->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $po->save();
         return $due;
     }
@@ -596,6 +597,7 @@ class SupplierController extends Controller
         }
 
         $p->status = -1; // Tolak
+        $p->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $p->save(); 
 
         purchase_order_tt::where('tt_id','=',$p->tt_id)->update(["status"=>0]);

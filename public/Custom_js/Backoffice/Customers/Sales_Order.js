@@ -187,6 +187,7 @@
                 { data: "so_invoice_no", default: "-" },
                 // { data: "total" },
                 { data: "status_text" },
+                { data: "created_by_name" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

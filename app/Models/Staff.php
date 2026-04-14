@@ -57,6 +57,7 @@ class Staff extends Model
                 $value->role_name = $r->role_name;
                 $value->role_access = $r->role_access;
             }
+            $value->created_by_name = $value->created_by ? (self::find($value->created_by)->staff_name ?? '-') : '-';
         }
         
         return $result;

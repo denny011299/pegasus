@@ -34,6 +34,7 @@
                 { data: "role_name_text" },
                 { data: "saldo_text" },
                 { data: "created" },
+                { data: "created_by_name" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
