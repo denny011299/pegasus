@@ -8,13 +8,102 @@
     .invalid{
         border: 1px solid red!important;
     }
-    #tablePurchaseModal {
-        table-layout: fixed;
-        width: 100%;
+    table {
+        table-layout: auto;
     }
-    #tablePurchaseModal td  {
+    .table-po-wrap {
+        overflow-x: auto;
+    }
+
+    #tablePurchaseModal {
+        width: max-content;
+        min-width: 100%;
+    }
+    #tablePurchaseModal td {
         white-space: normal;
         word-break: break-word;
+        vertical-align: middle;
+        overflow: hidden;
+        overflow-x: auto;
+    }
+    #tablePurchaseModal td:nth-child(5),
+    #tablePurchaseModal td:nth-child(6),
+    #tablePurchaseModal td:nth-child(7) {
+        white-space: nowrap;
+        width: 1%;
+    }
+    #tablePurchaseModal td:nth-child(1),
+    #tablePurchaseModal td:nth-child(2) {
+        max-width: 200px;
+        word-break: break-word;
+    }
+    .qty-cell-inner {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        flex-wrap: wrap; /* ini penting */
+    }
+    .qty-cell-inner input {
+        min-width: 40px;
+        max-width: 150px;
+        width: 100%;
+        flex: 1;
+    }
+
+    .qty-cell-inner select {
+        min-width: 70px;
+        max-width: 220px;
+        width: 100%;
+        flex: 1;
+    }
+
+    /* ← INI KUNCINYA: di layar sempit, tabel disembunyikan */
+    /* dan diganti card list */
+    @media (max-width: 600px) {
+        #tablePurchaseModal thead { display: none; }
+        #tablePurchaseModal, 
+        #tablePurchaseModal tbody,
+        #tablePurchaseModal tr,
+        #tablePurchaseModal td { 
+            display: block; 
+            width: 100% !important;
+        }
+        #tablePurchaseModal tr {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            padding: 8px;
+        }
+        #tablePurchaseModal td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            border: none;
+        }
+        #tablePurchaseModal td::before {
+            content: attr(data-label);
+            font-weight: 500;
+            font-size: 12px;
+            color: #6c757d;
+            min-width: 80px;
+        }
+        .qty-cell-inner {
+            justify-content: flex-end;
+        }
+    }
+
+    /* Khusus modal Purchase Order: body tabel scroll, header tetap terlihat */
+    #add_purchase_order .col-12.overflow-x-auto.mb-3 {
+        max-height: 320px;
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+    #add_purchase_order .col-12.overflow-x-auto.mb-3 thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #dce8f6;
     }
 </style>
     <!-- Page Wrapper -->

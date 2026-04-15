@@ -15,7 +15,6 @@
  
     $(document).on('click','.btnAdd',function(){
         mode=1;
-        console.log(moment().format('dd/MM/YYYY'));
         item  = [];
         $('#tablePurchaseModal tbody').html("");
         refreshSummary();
@@ -110,26 +109,21 @@
             
             $('#tablePurchaseModal tbody').append(`
                 <tr>
-                    <td style="width:15%">${item.supplies_name}</td>
-                    <td style="width:20%">${item.supplies_variant_name}</td>
-                    <td style="width:10%">${item.supplies_variant_sku}</td>
-                    <td style="width:20%; padding:auto 0">
-                        <div class="row m-0 p-0">
-                            <div class="col-5 p-0">
-                                <input type="number" class="form-control qtyPesanan" index="${index}" value="${item.qty}">
-                            </div>
-                            
-                            <div class="col-7 p-0">
-                               <select class="form-select  units_id " >
-                                    ${opsi}
-                                </select>
-                            </div>
+                    <td style="width:18%">${item.supplies_name}</td>
+                    <td style="width:18%">${item.supplies_variant_name}</td>
+                    <td style="width:9%">${item.supplies_variant_sku}</td>
+                    <td style="width:20%; padding: 6px 8px" class="w-100">
+                        <div class="qty-cell-inner">
+                            <input type="text" class="form-control qtyPesanan number-only px-2" index="${index}" value="${item.qty}" min="1">
+                            <select class="form-select units_id px-2">${opsi}</select>
                         </div>
                     </td>
-                    <td style="width:13%" class="text-end">Rp ${formatRupiah(item.supplies_variant_price+"")}</td>
-                    <td style="width:13%" class="text-end">Rp ${formatRupiah((item.supplies_variant_price*item.qty)+"")}</td>
-                    <td class="text-center text-danger" style="cursor:pointer"><i data-feather="trash-2" class="feather-trash-2 deleteRow"></i></td>
-                </tr>    
+                    <td style="width:13%" class="text-end">Rp ${formatRupiah(item.supplies_variant_price + "")}</td>
+                    <td style="width:13%" class="text-end">Rp ${formatRupiah((item.supplies_variant_price * item.qty) + "")}</td>
+                    <td style="width:9%" class="text-center text-danger" style="cursor:pointer">
+                        <i data-feather="trash-2" class="feather-trash-2 deleteRow"></i>
+                    </td>
+                </tr>
             `);
         });
         feather.replace();
@@ -168,11 +162,11 @@
         } else if ($('#jenis_disc').val() == "nominal") {
             diskon = convertToAngka($('#po_discount').val());
         }
-        console.log(diskon)
+        // console.log(diskon)
         total -= diskon;
         var ppn = Math.round(total * (parseInt($('#po_ppn').val())/100));
-        console.log((parseInt($('#po_ppn').val())/100));
-        console.log(ppn);
+        // console.log((parseInt($('#po_ppn').val())/100));
+        // console.log(ppn);
         
         var cost = convertToAngka($('#po_cost').val());
         total +=ppn +cost;
@@ -299,7 +293,7 @@
     });
 
     $(document).on('change', '#status', function(){
-        console.log($(this).val());
+        // console.log($(this).val());
         refreshPurchaseOrder();
     })
 
@@ -512,7 +506,7 @@ $(document).on('click', '#btn-foto-bukti', function() {
     startCamera();
     $("#add_purchase_order").modal("hide");
     $('#modalPhoto').modal('show');
-    console.log($('#bukti').val());
+    // console.log($('#bukti').val());
 });
 
 $(document).on('click', '#uploadBtn', function(){

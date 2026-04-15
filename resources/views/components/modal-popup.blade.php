@@ -1088,21 +1088,19 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-12">
-                                    <div class="table-responsive">
-                                        <table class="table table-center" id="tablePurchaseModal">
-                                            <thead>
-                                                <th style="width: 15%">Produk</th>
-                                                <th style="width: 20%">Variasi</th>
-                                                <th style="width:10%">SKU</th>
-                                                <th style="width: 20%">Qty</th>
-                                                <th style="width:13%" class="text-end">Harga Beli</th>
-                                                <th style="width:13%" class="text-end">Subtotal</th>
-                                                <th class="text-center">Action</th>
-                                            </thead>
-                                            <tbody></tbody>
-                                        </table>
-                                    </div>
+                                <div class="col-12 overflow-x-auto mb-3 table-po-wrap">
+                                    <table class="table table-center" id="tablePurchaseModal">
+                                        <thead>
+                                            <th style="width:18%">Produk</th>
+                                            <th style="width:18%">Variasi</th>
+                                            <th style="width:9%">SKU</th>
+                                            <th style="width:20%">Qty</th>
+                                            <th style="width:13%" class="text-end">Harga Beli</th>
+                                            <th style="width:13%" class="text-end">Subtotal</th>
+                                            <th style="width:9%" class="text-center">Action</th>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
                                 </div>
                                 <div class="col-12 row pt-3">
                                     <div class="col-6"></div>

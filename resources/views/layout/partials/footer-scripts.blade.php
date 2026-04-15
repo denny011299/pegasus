@@ -409,12 +409,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
     
     function autocompleteCity(id, modalParent = null,prov_id=null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteCity",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -441,12 +446,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteProv(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteProv",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -470,12 +480,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteArea(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteArea",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -499,12 +514,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
     
     function autocompleteDistrict(id, modalParent = null, city_id=null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteDistrict",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -529,12 +549,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteCategory(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteCategory",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -558,12 +583,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteVariant(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteVariant",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -587,12 +617,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteUnit(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteUnit",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -618,12 +653,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteBom(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteBom",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -647,12 +687,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteProduct(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteProduct",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -676,12 +721,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteSupplies(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteSupplies",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -705,12 +755,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteSupplier(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteSupplier",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -734,12 +789,16 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteSuppliesVariant(id, modalParent = null,supplier_id=null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteSuppliesVariant",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -761,14 +820,20 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             width: "100%",
             dropdownParent: modalParent ? $(modalParent) : "",
         });
+        
     }
     function autocompleteSuppliesVariantOnly(id, modalParent = null,supplier_id=null) {
+        // Destroy dulu kalau sudah pernah di-init
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteSuppliesVariantOnly",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -790,15 +855,28 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             width: "100%",
             dropdownParent: modalParent ? $(modalParent) : "",
         });
+        $(id).on('select2:open', function() {
+            // Pastikan modal tetap scrollable saat dropdown terbuka
+            $('.modal').css('overflow', 'auto');
+        });
+
+        $(id).on('select2:close', function() {
+            $('.modal').css('overflow', '');
+        });
     }
 
     function autocompleteProductVariant(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteProductVariant",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -822,12 +900,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteProductVariantOnly(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteProductVariants",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -851,12 +934,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteCustomer(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteCustomer",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -880,12 +968,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
     
     function autocompleteStaffSales(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteStaffSales",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -909,12 +1002,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function autocompleteCashCategory(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
         //search country dan city
         $(id).select2({
             ajax: {
                 url: "/autocompleteCashCategory",
                 dataType: "json",
                 type: "post",
+                delay: 250,
                 data: function data(params) {
                     return {
                         "keyword": params.term,
@@ -939,7 +1037,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
     
      function autocompleteStaff(id, modalParent = null) {
-         //search country dan city
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
+        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompleteStaff",
@@ -969,7 +1071,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
      }
 
     function autocompleteRole(id, modalParent = null) {
-         //search country dan city
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
+        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompleteRole",
@@ -998,7 +1104,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
          });
     }
     function autocompleteRekening(id, modalParent = null) {
-         //search country dan city
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
+        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompleteRekening",
@@ -1027,7 +1137,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
          });
     }
     function autocompletePO(id, modalParent = null, ids = null, suppliesIds = null) {
-         //search country dan city
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
+        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompletePO",
@@ -1057,7 +1171,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
          });
     }
     function autocompleteSO(id, modalParent = null) {
-         //search country dan city
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
+        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompleteSO",
