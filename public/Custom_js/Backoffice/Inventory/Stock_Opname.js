@@ -25,6 +25,8 @@
                 { data: "sto_date"},
                 { data: "staff_name" },
                 { data: "sto_code" },
+                { data: "created_by_name" },
+                { data: "acc_by_name" },
                 { data: "status_text" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -45,6 +47,7 @@
                     e = e.original || [];
                 }
                 console.log(e);
+                table.clear().draw();
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].sto_date = moment(e[i].sto_date).format('D MMM YYYY');

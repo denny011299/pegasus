@@ -29,6 +29,7 @@
                                         <tr>
                                             <th>Nama Kategori</th>
                                             <th>Tipe</th>
+                                            <th>Dibuat Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

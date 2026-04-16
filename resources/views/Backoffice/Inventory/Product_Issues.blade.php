@@ -68,6 +68,8 @@
                                                     <th>Kode</th>
                                                     <th>Catatan</th>
                                                     <th>Status</th>
+                                                    <th>Dibuat Oleh</th>
+                                                    <th>Diapprove/Ditolak Oleh</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>
@@ -87,6 +89,8 @@
                                                     <th>Referensi</th>
                                                     <th>Catatan</th>
                                                     <th>Status</th>
+                                                    <th>Dibuat Oleh</th>
+                                                    <th>Diapprove/Ditolak Oleh</th>
                                                     <th class="no-sort">Aksi</th>
                                                 </tr>
                                             </thead>

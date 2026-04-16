@@ -230,6 +230,10 @@ class StockController extends Controller
             return -1;
         }
 
+        $u = session()->get('user');
+        $param['printed_by'] = $u ? ($u->staff_name ?? '-') : '-';
+        $param['printed_at'] = now()->format('d/m/Y H:i');
+
         $pdf = Pdf::loadView('Backoffice.PDF.Opname', $param);
         return $pdf->download('Stock Opname_'.$param["stockOpname"]["sto_code"].'.pdf');
     }
@@ -374,6 +378,10 @@ class StockController extends Controller
         if(count($param["detail"])<=0){
             return -1;
         }
+
+        $u = session()->get('user');
+        $param['printed_by'] = $u ? ($u->staff_name ?? '-') : '-';
+        $param['printed_at'] = now()->format('d/m/Y H:i');
 
         $pdf = Pdf::loadView('Backoffice.PDF.OpnameBahan', $param);
         return $pdf->download('Stock Opname_'.$param["stockOpname"]["stob_code"].'.pdf');

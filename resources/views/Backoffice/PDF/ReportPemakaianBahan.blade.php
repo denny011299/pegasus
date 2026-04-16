@@ -172,5 +172,6 @@
             </div>
         @endforeach
     @endif
+    @include('Backoffice.PDF.partials.dicetak_oleh')
 </body>
 </html>

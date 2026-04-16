@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class PettyCash extends Model
 {
@@ -36,6 +37,8 @@ class PettyCash extends Model
         foreach ($result as $key => $value) {
             $s = Staff::find($value->staff_id);
             $value->staff_name = $s->staff_name;
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
         }
 
         $balance = 0;
@@ -60,6 +63,7 @@ class PettyCash extends Model
         $t->pc_nominal = $data["pc_nominal"];
         $t->pc_type = $data["pc_type"];
         $t->cc_id = $data["cc_id"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         
         $t->save();
         return $t->pc_id;

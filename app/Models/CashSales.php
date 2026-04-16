@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class CashSales extends Model
 {
@@ -63,6 +64,8 @@ class CashSales extends Model
             $sales = Staff::find($value->staff_id);
             $value->staff_name = $sales->staff_name;
             $value->staff_saldo = $sales->staff_saldo;
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
 
             $staffAll = (new Staff())->getStaff();
             $total = 0;
@@ -97,6 +100,7 @@ class CashSales extends Model
         $t->cs_aksi = $data["cs_aksi"] ?? 0;
         $t->cs_img = $data["cs_img"] ?? null;
         $t->status = $data['status'] ?? 1;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->cs_id;
     }
@@ -126,30 +130,38 @@ class CashSales extends Model
 
     function acceptCashSales($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['cs_id'])){
             $t = CashSales::where('cash_id', $data["cash_id"])->first();
             $t->status = 2;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 2;
+            $k->acc_by = $uid;
             $k->save();
         } else {
             $t = CashSales::find($data['cs_id']);
             $t->status = 2;
+            $t->acc_by = $uid;
         }
         $t->save();
     }
 
     function declineCashSales($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['cs_id'])){
             $t = CashSales::where('cash_id', $data["cash_id"])->first();
             $t->status = 3;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 3;
+            $k->acc_by = $uid;
             $k->save();
         } else {
             $t = CashSales::find($data['cs_id']);
             $t->status = 3;
+            $t->acc_by = $uid;
         }
         $t->save();
     }

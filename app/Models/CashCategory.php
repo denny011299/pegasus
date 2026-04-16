@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class CashCategory extends Model
 {
@@ -24,7 +25,7 @@ class CashCategory extends Model
        
         $result = $result->get();
         foreach ($result as $key => $value) {
-            
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -34,6 +35,7 @@ class CashCategory extends Model
         $t = new CashCategory();
         $t->cc_name = $data["cc_name"];
         $t->cc_type = $data["cc_type"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->cc_id;
     }

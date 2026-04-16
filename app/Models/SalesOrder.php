@@ -36,6 +36,7 @@ class SalesOrder extends Model
             $value->items = (new SalesOrderDetail())->getSalesOrderDetail(["so_id"=>$value->so_id]);
             $value->staff_name = Staff::find($value->so_cashier)->staff_name ?? "-";
             $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }

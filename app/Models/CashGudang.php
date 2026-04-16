@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class CashGudang extends Model
 {
@@ -54,6 +55,8 @@ class CashGudang extends Model
         
         foreach ($result as $key => $value) {
             $value->staff_name = Staff::find($value->staff_id)->staff_name;
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
 
             $detail = (new CashGudangDetail())->getCashGudangDetail(['cg_id' => $value->cg_id]);
             if ($detail->count() > 0) $value->detail = $detail;
@@ -76,6 +79,7 @@ class CashGudang extends Model
         $t->cg_aksi = $data["oc_transaksi"] ?? 0;
         $t->cg_img = $data["cg_img"] ?? null;
         $t->status = $data['status'] ?? 1;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->cg_id;
     }
@@ -105,16 +109,20 @@ class CashGudang extends Model
 
     function acceptCashGudang($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['cg_id'])){
             $t = CashGudang::where('cash_id', $data["cash_id"])->first();
             $t->status = 2;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 2;
+            $k->acc_by = $uid;
             $k->save();
             $t->save();
         } else {
             $t = CashGudang::find($data['cg_id']);
             $t->status = 2;
+            $t->acc_by = $uid;
             $t->save();
         }
         $detail = CashGudangDetail::where('cg_id', $t->cg_id)->where('status', 1)->get();
@@ -132,16 +140,20 @@ class CashGudang extends Model
 
     function declineCashGudang($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['cg_id'])){
             $t = CashGudang::where('cash_id', $data["cash_id"])->first();
             $t->status = 3;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 3;
+            $k->acc_by = $uid;
+            $k->save();
         } else {
             $t = CashGudang::find($data['cg_id']);
             $t->status = 3;
+            $t->acc_by = $uid;
         }
         $t->save();
-        $k->save();
     }
 }

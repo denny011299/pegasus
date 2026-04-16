@@ -123,5 +123,6 @@
     @if ($label_count % 2 != 0)
         <div class="clear"></div>
     @endif
+    @include('Backoffice.PDF.partials.dicetak_oleh')
 </body>
 </html>

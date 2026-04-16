@@ -2,7 +2,7 @@
 @extends('layout.mainlayout')
 @section('content')
     <style>
-        table.dataTable td:nth-child(5) {
+        table.dataTable td:nth-child(4) {
             max-width: 250px;       /* Batasi lebar maksimal */
             word-wrap: break-word;  /* Paksa teks turun */
             white-space: normal;    /* Pastikan teks tidak satu baris terus */
@@ -54,6 +54,7 @@
                                             <th>Notes Pembatalan</th>
                                             <th>Dibuat Oleh</th>
                                             <th>Diterima Oleh</th>
+                                            <th>Pengajuan Batal Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

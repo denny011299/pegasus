@@ -30,6 +30,8 @@
                                             <th>Tanggal Opname</th>
                                             <th>Penanggung Jawab</th>
                                             <th>ID Opname</th>
+                                            <th>Dibuat Oleh</th>
+                                            <th>Diapprove/Ditolak Oleh</th>
                                             <th>Status</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>

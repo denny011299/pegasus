@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class CashArmada extends Model
 {
@@ -65,6 +66,8 @@ class CashArmada extends Model
             $customer = Customer::find($value->customer_id);
             $value->customer_notes = $customer->customer_notes;
             $value->customer_saldo = $customer->customer_saldo;
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
 
             $custAll = (new Customer())->getCustomer();
             $total = 0;
@@ -95,6 +98,7 @@ class CashArmada extends Model
         $t->cr_aksi = $data["cr_aksi"] ?? 0;
         $t->cr_img = $data["cr_img"] ?? null;
         $t->status = $data['status'] ?? 1;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->cr_id;
     }
@@ -123,30 +127,38 @@ class CashArmada extends Model
 
     function acceptCashArmada($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['cr_id'])){
             $t = CashArmada::where('cash_id', $data["cash_id"])->first();
             $t->status = 2;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 2;
+            $k->acc_by = $uid;
             $k->save();
         } else {
             $t = CashArmada::find($data['cr_id']);
             $t->status = 2;
+            $t->acc_by = $uid;
         }
         $t->save();
     }
 
     function declineCashArmada($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['cr_id'])){
             $t = CashArmada::where('cash_id', $data["cash_id"])->first();
             $t->status = 3;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 3;
+            $k->acc_by = $uid;
             $k->save();
         } else {
             $t = CashArmada::find($data['cr_id']);
             $t->status = 3;
+            $t->acc_by = $uid;
         }
         $t->save();
     }

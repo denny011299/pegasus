@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Variant extends Model
 {
@@ -21,7 +22,12 @@ class Variant extends Model
         if($data["variant_name"]) $result->where('variant_name','like','%'.$data["variant_name"].'%');
         $result->orderBy('created_at', 'asc');
        
-        return $result->get();
+        $rows = $result->get();
+        foreach ($rows as $value) {
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+        }
+        return $rows;
     }
 
     function insertVariant($data)
@@ -29,6 +35,7 @@ class Variant extends Model
         $t = new self();
         $t->variant_name = $data["variant_name"];
         $t->variant_attribute = $data["variant_attribute"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->variant_id;
     }
@@ -38,6 +45,7 @@ class Variant extends Model
         $t = self::find($data["variant_id"]);
         $t->variant_name = $data["variant_name"];
         $t->variant_attribute = $data["variant_attribute"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->pv_id;
     }

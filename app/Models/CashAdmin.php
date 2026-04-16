@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class CashAdmin extends Model
 {
@@ -55,6 +56,8 @@ class CashAdmin extends Model
 
         foreach ($result as $key => $value) {
             $value->staff_name = Staff::find($value->staff_id)->staff_name;
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
 
             $detail = CashAdminDetail::where('ca_id', $value->ca_id)->where('status', 1)->get();
             if ($detail->count() > 0) $value->detail = $detail;
@@ -77,6 +80,7 @@ class CashAdmin extends Model
         $t->ca_aksi = $data['oc_transaksi'] ?? 0;
         $t->ca_img = $data["ca_img"] ?? null;
         $t->status = $data['status'] ?? 1;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->ca_id;
     }
@@ -106,32 +110,40 @@ class CashAdmin extends Model
 
     function acceptCashAdmin($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['ca_id'])){
             $t = CashAdmin::where('cash_id', $data["cash_id"])->first();
             $t->status = 2;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 2;
+            $k->acc_by = $uid;
             $k->save();
         } else {
             $t = CashAdmin::find($data['ca_id']);
             $t->status = 2;
+            $t->acc_by = $uid;
         }
         $t->save();
     }
 
     function declineCashAdmin($data)
     {
+        $uid = Session::get('user') ? Session::get('user')->staff_id : null;
+        $k = null;
         if (!isset($data['ca_id'])){
             $t = CashAdmin::where('cash_id', $data["cash_id"])->first();
             $t->status = 3;
+            $t->acc_by = $uid;
             $k = Cash::find($data["cash_id"]);
             $k->status = 3;
+            $k->acc_by = $uid;
             $k->save();
         } else {
             $t = CashAdmin::find($data['ca_id']);
             $t->status = 3;
+            $t->acc_by = $uid;
         }
         $t->save();
-        $k->save();
     }
 }

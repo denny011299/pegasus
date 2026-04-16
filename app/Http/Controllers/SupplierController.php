@@ -25,6 +25,14 @@ use Illuminate\Support\Facades\Session;
 
 class SupplierController extends Controller
 {
+    private function mergePdfPrintMeta(array $param): array
+    {
+        $u = session()->get('user') ?? Session::get('user');
+        $param['printed_by'] = $u ? ($u->staff_name ?? '-') : '-';
+        $param['printed_at'] = now()->format('d/m/Y H:i');
+        return $param;
+    }
+
     function PurchaseOrder()
     {
         return view('Backoffice.Suppliers.Purchase_Order');
@@ -368,6 +376,7 @@ class SupplierController extends Controller
         $tt->save();
         $param["tt"] = $tt;
 
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
         //return $pdf->download('Tanda Terima'.$param["supplier"]["supplier_name"].'.pdf');
         return $tt->tt_id;
@@ -459,6 +468,7 @@ class SupplierController extends Controller
         $tt->save();
         $param["tt"] = $tt;
 
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
         //return $pdf->download('Tanda Terima'.$param["supplier"]["supplier_name"].'.pdf');
         return [
@@ -475,6 +485,7 @@ class SupplierController extends Controller
         foreach ($param['data'] as $key => $value) {
             $value->poi_code = PurchaseOrderDetailInvoice::where('po_id', $value->po_id)->first()->poi_code;
         }
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
         //$pdf->stream();
         $supplierName = preg_replace('/[\/\\\\]/', '', $param["supplier"]->supplier_name);
