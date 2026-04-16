@@ -86,9 +86,9 @@
                 { data: "production_code", width: "20%" },
                 { data: "status_text" },
                 { data: "notes", defaultContent: "-", width: "30%"  },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
-                { data: "cancel_requested_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
+                { data: "cancel_requested_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

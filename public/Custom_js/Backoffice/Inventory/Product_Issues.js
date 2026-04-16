@@ -93,8 +93,8 @@
                 { data: "pi_code", class: "width: 15%" },
                 { data: "pi_notes", width: "45%" },
                 { data: "status_text", class: "width: 15%" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {
@@ -126,8 +126,8 @@
                 { data: "ref_num_text", width: "15%"},
                 { data: "pi_notes", class: "width: 25%" },
                 { data: "status_text", class: "width: 15%" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

@@ -36,8 +36,8 @@
                 { data: "desc", width: "13%" },
                 { data: "total", width: "16%" },
                 { data: "status_po", width: "12%" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             columnDefs: [

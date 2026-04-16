@@ -433,8 +433,8 @@
                 { data: "ca_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
@@ -454,8 +454,8 @@
                 { data: "cg_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
@@ -475,8 +475,8 @@
                 { data: "cr_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
@@ -496,8 +496,8 @@
                 { data: "cs_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];

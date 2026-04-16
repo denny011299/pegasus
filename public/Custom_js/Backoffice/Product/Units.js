@@ -34,7 +34,7 @@
                 { data: "unit_name" },
                 { data: "unit_short_name" },
                 { data: "unit_date" },
-                { data: "created_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

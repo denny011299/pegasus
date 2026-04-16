@@ -33,7 +33,7 @@
             columns: [
                 { data: "category_name" },
                 { data: "category_date" },
-                { data: "created_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

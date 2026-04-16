@@ -80,7 +80,7 @@
                 { data: "product_name", width: "25%" },
                 { data: "supplies", width: '35%' },
                 { data: "unit_text", width: '14%' },
-                { data: "created_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

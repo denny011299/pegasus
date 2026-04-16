@@ -31,7 +31,7 @@
                 { data: "city_name" },
                 { data: "pay" },
                 { data: "created" },
-                { data: "created_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

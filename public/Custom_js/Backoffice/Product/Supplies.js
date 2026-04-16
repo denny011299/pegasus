@@ -86,7 +86,7 @@
                 { data: "variant_values", width: "25%" },
                 { data: "unit_values", width: "15%" },
                 { data: "desc", width: "15%" },
-                { data: "created_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

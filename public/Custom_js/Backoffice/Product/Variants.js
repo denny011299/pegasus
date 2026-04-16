@@ -34,8 +34,8 @@
                 { data: "variant_name"},
                 { data: "variant_values"},
                 { data: "variant_date" },
-                { data: "created_by_name" },
-                { data: "acc_by_name" },
+                { data: "created_by_name", defaultContent: "-" },
+                { data: "acc_by_name", defaultContent: "-" },
                 { data: "action",class:"d-flex align-items-center", },
             ],
 			initComplete: (settings, json)=>{
