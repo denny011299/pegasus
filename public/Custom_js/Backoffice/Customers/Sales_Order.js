@@ -67,7 +67,7 @@
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
-        $('#so_qty_input').val(1);
+        // $('#so_qty_input').val(""");
         $('#so_unit_input').html('<option value="" selected>Pilih Satuan</option>');
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -161,7 +161,7 @@
 
         $('#so_sku').val(null).trigger('change');
         $('#so_unit_input').html('<option value="" selected>Pilih Satuan</option>');
-        $('#so_qty_input').val(1);
+        $('#so_qty_input').val("");
     });
     
     function inisialisasi() {

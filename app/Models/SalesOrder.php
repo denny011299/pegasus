@@ -123,7 +123,7 @@ class SalesOrder extends Model
 
     function deleteSalesOrder($data){
         $t = SalesOrder::find($data["so_id"]);
-        $t->status = 0; // soft delete
+        $t->status = 3; // soft delete
         $t->save();
     }
 

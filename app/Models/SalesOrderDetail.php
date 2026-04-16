@@ -75,7 +75,7 @@ class SalesOrderDetail extends Model
 
     function deleteSalesOrderDetail($data){
         $t = SalesOrderDetail::find($data["sod_id"]);
-        $t->status = 0; // soft delete
+        $t->status = 1; // soft delete
         $t->save();
         
         // $m = ProductVariant::find($t->product_variant_id);
