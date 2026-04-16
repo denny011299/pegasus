@@ -33,6 +33,7 @@
                                             <th>Status</th>
                                             {{-- <th>Jumlah Total</th> --}}
                                             <th>Dibuat Oleh</th>
+                                            <th>Diapprove/Ditolak Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

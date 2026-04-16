@@ -188,6 +188,7 @@
                 // { data: "total" },
                 { data: "status_text" },
                 { data: "created_by_name" },
+                { data: "acc_by_name" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

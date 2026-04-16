@@ -56,6 +56,7 @@ class StockOpnameBahan extends Model
         $t->stob_code   = $this->generateStockOpnameBahanID();
         $t->staff_id = $data['staff_id'];
         $t->stob_notes = $data['stob_notes'] ?? null;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->stob_id;

@@ -74,6 +74,7 @@ class Production extends Model
             $value->total_dos = $dos;
             $value->created_by_name = $value->production_created_by ? (Staff::find($value->production_created_by)->staff_name ?? '-') : '-';
             $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+            $value->cancel_requested_by_name = $value->cancel_requested_by ? (Staff::find($value->cancel_requested_by)->staff_name ?? '-') : '-';
 
             // Kalau misal ada yang sudah 3 hari lebih dan statusnya masih menunggu approve, maka auto ACC
             $productionDate = Carbon::parse($value->production_date);
@@ -127,7 +128,7 @@ class Production extends Model
         $t = Production::find($data["production_id"]);
         $t->notes = $data["delete_reason"];
         $t->status = 4;
-        $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : $t->production_created_by;
+        $t->cancel_requested_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();    
     }
 

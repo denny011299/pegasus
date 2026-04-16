@@ -54,6 +54,8 @@ class StockOpname extends Model
            $value->staff_name = Staff::find($value->staff_id)->staff_name;
         //    $value->category_name = Category::find($value->category_id)->category_name;
            $value->item = (new StockOpnameDetail())->getDetail(["sto_id"=>$value->sto_id]);
+           $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? $value->staff_name ?? '-') : ($value->staff_name ?? '-');
+           $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
         }
         return $result;
     }
@@ -69,6 +71,7 @@ class StockOpname extends Model
         $t->staff_id = $data['staff_id'];
         $t->category_id = $data['category_id'];
         $t->sto_notes = $data['sto_notes'] ?? null;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->sto_id;

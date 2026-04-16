@@ -151,6 +151,7 @@
             segera tindak lanjuti selisih stok bila ada.
         </p>
     </div>
+    @include('Backoffice.PDF.partials.dicetak_oleh')
 </body>
 
 </html>

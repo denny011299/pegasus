@@ -99,6 +99,8 @@
                                             <th style="width: 12%" class="text-end">Masuk</th>
                                             <th style="width: 12%" class="text-end">Keluar</th>
                                             <th style="width: 12%" class="text-end">Keluar 1</th>
+                                            <th>Dibuat Oleh</th>
+                                            <th>Diapprove/Ditolak Oleh</th>
                                             <th style="width: 18%">Status</th>
                                             <th style="width: 15%">Aksi</th>
                                         </tr>
@@ -112,11 +114,12 @@
                                             <td class="debits text-success"></td>
                                             <td class="credits1 text-danger"></td>
                                             <td class="credits2 text-danger"></td>
-                                            <td colspan="2"></td>
+                                            <td colspan="4"></td>
                                         </tr>
                                         <tr>
                                             <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
+                                            <td colspan="2"></td>
                                             <td class="fw-bold text-end">Total Setoran : </td>
                                             <td class="fw-bold text-end setor pe-4">Rp 0</td>
                                         </tr>

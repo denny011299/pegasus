@@ -142,6 +142,8 @@
                                             <th>Deskripsi</th>
                                             <th class="text-end">Masuk</th>
                                             <th class="text-end">Keluar</th>
+                                            <th>Dibuat Oleh</th>
+                                            <th>Diapprove/Ditolak Oleh</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
@@ -152,12 +154,12 @@
                                             <td colspan="4" class="fw-bold">Total : </td>
                                             <td class="fw-bold text-end debits text-success">Rp 0</td>
                                             <td class="fw-bold text-end credits text-danger">Rp 0</td>
-                                            <td colspan="2"></td>
+                                            <td colspan="4"></td>
                                         </tr>
                                         <tr>
                                             <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
-                                            <td colspan="2"></td>
+                                            <td colspan="4"></td>
                                         </tr>
                                     </tfoot>
                                 </table>

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Session;
 
 class Bank extends Model
 {
@@ -24,13 +25,18 @@ class Bank extends Model
         }
 
         $result->orderBy('created_at', 'asc');
-        return $result->get();
+        $rows = $result->get();
+        foreach ($rows as $value) {
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+        }
+        return $rows;
     }
 
     function insertBank($data)
     {
         $t = new Bank();
         $t->bank_kode = $data["bank_kode"];
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->bank_id;
     }

@@ -42,6 +42,14 @@ class ReportController extends Controller
         return (float) $m[0];
     }
 
+    private function mergePdfPrintMeta(array $param): array
+    {
+        $u = session()->get('user');
+        $param['printed_by'] = $u ? ($u->staff_name ?? '-') : '-';
+        $param['printed_at'] = now()->format('d/m/Y H:i');
+        return $param;
+    }
+
     private function hasNonZeroSelisih($selisihText): bool
     {
         if ($selisihText === null) return false;
@@ -172,6 +180,7 @@ class ReportController extends Controller
         $role = Role::find($user->role_id)->role_name ?? "-";
         $param['role_name'] = $role;
 
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.Hutang', $param);
         return $pdf->download('Hutang_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
@@ -1275,6 +1284,7 @@ class ReportController extends Controller
             }
         }
         $param["item_name"] = $itemName;
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.ReportSelisihOpname', $param)->setPaper('a4', 'portrait');
         return $pdf->stream('Laporan_Selisih_Stok_Opname_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
@@ -1296,6 +1306,7 @@ class ReportController extends Controller
         }
         $param["supplies_name"] = $item->supplies_name ?? "Semua Bahan";
 
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.ReportPemakaianBahan', $param)->setPaper('a4', 'portrait');
         return $pdf->stream('Laporan_Pemakaian_Bahan_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
@@ -1330,6 +1341,7 @@ class ReportController extends Controller
         }
         $param["item_name"] = $item->supplies_name ?? "Semua Barang";
 
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.ReportReturn', $param)->setPaper('a4', 'portrait');
         return $pdf->stream('Laporan_Retur_Product_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
@@ -1373,6 +1385,7 @@ class ReportController extends Controller
         $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
         $param["product_name"] = $req->product_variant_id ? (ProductVariant::find($req->product_variant_id)->product_variant_name ?? "-") : "Semua Produk";
 
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.ReportProduksi', $param)->setPaper('a4', 'portrait');
         return $pdf->stream('Laporan_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
@@ -1390,6 +1403,7 @@ class ReportController extends Controller
         $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
         $param["product_name"] = $req->product_variant_id ? (ProductVariant::find($req->product_variant_id)->product_variant_name ?? "-") : "Semua Produk";
 
+        $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.ReportEfisiensiProduksi', $param)->setPaper('a4', 'portrait');
         return $pdf->stream('Laporan_Efisiensi_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }

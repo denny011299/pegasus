@@ -55,6 +55,8 @@
                 { data: "debit_text", className: "text-end", width: "12%"},
                 { data: "credit_text1", className: "text-end", width: "12%"},
                 { data: "credit_text2", className: "text-end", width: "12%"},
+                { data: "created_by_name" },
+                { data: "acc_by_name" },
                 { data: "status_text", className: "text-center", width: "18%"},
                 { data: "action", className: "d-flex align-items-center", width: "15%"},
             ],

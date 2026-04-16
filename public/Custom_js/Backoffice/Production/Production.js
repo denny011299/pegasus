@@ -88,6 +88,7 @@
                 { data: "notes", defaultContent: "-", width: "30%"  },
                 { data: "created_by_name" },
                 { data: "acc_by_name" },
+                { data: "cancel_requested_by_name" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

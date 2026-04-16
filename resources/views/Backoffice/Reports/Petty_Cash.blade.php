@@ -30,7 +30,9 @@
                                             <th>Tanggal</th>
                                             <th style="max-width:30%">Keterangan</th>
                                             <th>Diajukan Oleh</th>
+                                            <th>Dibuat Oleh</th>
                                             <th>Status</th>
+                                            <th>Diapprove/Ditolak Oleh</th>
                                             <th>Debit</th>
                                             <th>Kredit</th>
                                         </tr>
@@ -40,7 +42,7 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="4" class="text-end">Total : </td>
+                                            <td colspan="6" class="text-end">Total : </td>
                                             <td class="debits"></td>
                                             <td class="credits text-danger"></td>
                                         </tr>

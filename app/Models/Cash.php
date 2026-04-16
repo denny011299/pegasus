@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class Cash extends Model
 {
@@ -201,6 +202,11 @@ class Cash extends Model
                 $value->sales_operasional = $allOperasional;
             }
         }
+
+        foreach ($result as $value) {
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+        }
         
         return $result;
     }
@@ -217,6 +223,7 @@ class Cash extends Model
         $t->cash_type = $data["cash_type"];
         $t->cash_tujuan = $data["cash_tujuan"] ?? 0;
         $t->status = $data['status'] ?? 2;
+        $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         
         $t->save();
         return $t->cash_id;

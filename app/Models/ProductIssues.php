@@ -60,6 +60,8 @@ class ProductIssues extends Model
             }
             if ($value->po_id > 0) $value->po_number = PurchaseOrder::find($value['po_id'])->po_number;
             $value->items = (new ProductIssuesDetail())->getProductIssuesDetail(["pi_id" => $value->pi_id, "tipe_return" => $value->tipe_return]);
+            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
         }
  
         return $result;
@@ -197,7 +199,7 @@ class ProductIssues extends Model
     function declineProductIssues($data){
         $pi = ProductIssues::find($data['pi_id']);
         $pi->status = 3;
-        $pi->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
+        $pi->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $pi->save();
     }
 

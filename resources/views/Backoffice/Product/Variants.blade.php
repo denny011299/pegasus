@@ -46,6 +46,8 @@
                                             <th>Variasi</th>
                                             <th style="width: 40%">Nilai</th>
                                             <th>Dibuat Pada</th>
+                                            <th>Dibuat Oleh</th>
+                                            <th>Diapprove Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>
