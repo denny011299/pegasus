@@ -1408,6 +1408,64 @@ class ReportController extends Controller
         return $pdf->stream('Laporan_Efisiensi_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
 
+    function reportStockAging()
+    {
+        return view('Backoffice.Reports.StockAging');
+    }
+
+    function getReportStockAging(Request $req)
+    {
+        $type = strtolower((string) ($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'], true)) {
+            $type = 'all';
+        }
+        $data = (new LogStock())->getStockAgingReport([
+            'type' => $type,
+            'item_id' => $req->item_id,
+            'as_of' => $req->as_of,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function generateReportStockAgingPdf(Request $req)
+    {
+        $type = strtolower((string) ($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'], true)) {
+            $type = 'all';
+        }
+        $param['data'] = (new LogStock())->getStockAgingReport([
+            'type' => $type,
+            'item_id' => $req->item_id,
+            'as_of' => $req->as_of,
+        ]);
+        $param['type_label'] = $type === 'bahan' ? 'Bahan mentah' : ($type === 'product' ? 'Produk jadi' : 'Semua');
+        $rawAsOf = trim((string) ($req->as_of ?? ''));
+        if ($rawAsOf === '') {
+            $param['as_of_label'] = now()->format('d-m-Y');
+        } else {
+            $param['as_of_label'] = $rawAsOf;
+        }
+        $itemLabel = 'Semua item';
+        if (!empty($req->item_id)) {
+            if ($type === 'bahan') {
+                $itemLabel = Supplies::find($req->item_id)->supplies_name ?? 'Semua item';
+            } elseif ($type === 'product') {
+                $pv = ProductVariant::find($req->item_id);
+                if ($pv) {
+                    $p = Product::find($pv->product_id);
+                    $itemLabel = trim((($p->product_name ?? '') !== '' ? $p->product_name . ' ' : '') . ($pv->product_variant_name ?? ''));
+                    $itemLabel = $itemLabel !== '' ? $itemLabel : 'Semua item';
+                }
+            }
+        }
+        $param['item_label'] = $itemLabel;
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportStockAging', $param)->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Laporan_Stock_Aging_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
     // Cash Category
     public function CashCategory(){
         return view('Backoffice.Reports.Cash_Category');

@@ -720,6 +720,7 @@
                         $akses->firstWhere('name', 'Retur Produk') ||
                         $akses->firstWhere('name', 'Laporan Produksi') ||
                         $akses->firstWhere('name', 'Laporan Efisiensi Produksi') ||
+                        $akses->firstWhere('name', 'Laporan Stock Aging') ||
                         $akses->firstWhere('name', 'Stok Opname Produk') ||
                         $akses->firstWhere('name', 'Stok Opname Bahan Mentah') ||
                         $akses->firstWhere('name', 'Untung & Rugi') ||
@@ -806,6 +807,12 @@
                                         <li><a href="/reportSelisihOpname"
                                             class="{{ Request::is('reportSelisihOpname') ? 'active' : '' }}">
                                             Laporan Selisih Stok Opname</a></li>
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Laporan Stock Aging'))
+                                        <li><a href="/reportStockAging"
+                                            class="{{ Request::is('reportStockAging') ? 'active' : '' }}">
+                                            Laporan Stock Aging</a></li>
                                     @endif
 
                                     {{-- @if ($akses->firstWhere('name', 'Untung & Rugi'))
