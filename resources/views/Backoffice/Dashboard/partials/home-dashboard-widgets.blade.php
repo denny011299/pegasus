@@ -253,8 +253,8 @@
     <div class="row g-3 mb-3">
         <div class="col-xl-4 col-md-12">
             <div class="dash-card h-100">
-                <h6 class="mb-0 fw-bold" style="color: var(--dash-text);">Penjualan</h6>
-                <p class="small text-muted mb-2">Jumlah SO per bulan</p>
+                <h6 class="mb-0 fw-bold" style="color: var(--dash-text);">Pengiriman</h6>
+                <p class="small text-muted mb-2">Jumlah pengiriman per bulan</p>
                 <div id="chartExecSales" class="dash-exec-chart"></div>
             </div>
         </div>
@@ -342,7 +342,7 @@
             <div class="col-xl-4">
                 <div class="dash-card h-100 d-flex flex-column">
                     <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <h5 class="mb-0">Top penjualan</h5>
+                        <h5 class="mb-0">Top pengiriman</h5>
                     </div>
                     <span class="text-muted small mb-2 d-block" id="dash_top_sales_range">—</span>
                     <div class="table-responsive flex-grow-1 dash-top-sales-scroll">
@@ -361,7 +361,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <a href="{{ url('salesOrder') }}" class="btn btn-sm btn-outline-primary rounded-3 mt-2">Sales order</a>
+                    <a href="{{ url('salesOrder') }}" class="btn btn-sm btn-outline-primary rounded-3 mt-2">Pengiriman</a>
                 </div>
             </div>
         </div>
@@ -370,7 +370,7 @@
             <div class="col-md-6">
                 <div class="dash-card h-100">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Pola kemasan &amp; wadah</h5>
+                        <h5 class="mb-0">Top pemakaian kemasan &amp; wadah</h5>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-top-materials mb-0">
@@ -393,7 +393,7 @@
             <div class="col-md-6">
                 <div class="dash-card h-100">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Luar pola kemasan</h5>
+                        <h5 class="mb-0">Top pemakaian bahan di luar kemasan</h5>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-top-materials mb-0">
@@ -429,7 +429,7 @@
             <div class="col-12">
                 <div class="dash-card">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                        <h5 class="mb-0">Estimasi — pola kemasan &amp; wadah</h5>
+                        <h5 class="mb-0">Estimasi — pemakaian kemasan &amp; wadah</h5>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-top-materials mb-0" title="Format angka Indonesia: titik (.) = ribuan, koma (,) = desimal. Contoh 1.750 = seribu tujuh ratus lima puluh, bukan satu koma tujuh lima.">
@@ -456,7 +456,7 @@
             <div class="col-12">
                 <div class="dash-card">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                        <h5 class="mb-0">Estimasi — luar pola kemasan</h5>
+                        <h5 class="mb-0">Estimasi — pemakaian bahan di luar kemasan</h5>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-top-materials mb-0" title="Format angka Indonesia: titik (.) = ribuan, koma (,) = desimal. Contoh 1.750 = seribu tujuh ratus lima puluh, bukan satu koma tujuh lima.">

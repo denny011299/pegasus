@@ -136,14 +136,14 @@ class ReportController extends Controller
 
             return [
                 'sales' => [
-                    'title' => 'Penjualan',
-                    'subtitle' => 'Sales order · ' . $monthLabel,
+                    'title' => 'Pengiriman',
+                    'subtitle' => 'Pengiriman · ' . $monthLabel,
                     'primary' => $salesCnt,
-                    'primary_label' => 'SO',
+                    'primary_label' => 'pengiriman',
                     'secondary' => $fmtRp($salesSum),
                     'mom_pct' => $momSales,
                     'href' => url('/salesOrder'),
-                    'meta' => ['icon' => 'fe-shopping-cart'],
+                    'meta' => ['icon' => 'fe-truck'],
                 ],
                 'production' => [
                     'title' => 'Produksi',
@@ -163,7 +163,7 @@ class ReportController extends Controller
                     'secondary' => $fmtRp($poSum),
                     'mom_pct' => $momPo,
                     'href' => url('/purchaseOrder'),
-                    'meta' => ['icon' => 'fe-truck'],
+                    'meta' => ['icon' => 'fe-shopping-cart'],
                 ],
             ];
         } catch (\Throwable $e) {

@@ -70,7 +70,7 @@
         $tb.empty();
         if (!rows.length) {
             $tb.append(
-                '<tr><td colspan="3" class="text-center text-muted py-3">Belum ada baris SO di rentang ini.</td></tr>'
+                '<tr><td colspan="3" class="text-center text-muted py-3">Belum ada baris pengiriman di rentang ini.</td></tr>'
             );
             return;
         }
@@ -173,7 +173,7 @@
         if (!c || typeof ApexCharts === "undefined") return;
         var labels = c.labels || [];
         if (!labels.length) return;
-        execCharts.sales = renderOneExecBar("#chartExecSales", labels, "Jumlah SO", c.sales_count || []);
+        execCharts.sales = renderOneExecBar("#chartExecSales", labels, "Jumlah pengiriman", c.sales_count || []);
         execCharts.production = renderOneExecBar("#chartExecProduction", labels, "Batch", c.production_count || []);
         execCharts.purchase = renderOneExecBar("#chartExecPurchase", labels, "Jumlah PO", c.purchase_count || []);
     }
@@ -212,12 +212,12 @@
             },
             error: function () {
                 if ($r.length) {
-                    $r.html('<div class="col-12 text-danger small">Gagal memuat ringkasan penjualan/produksi/pembelian.</div>');
+                    $r.html('<div class="col-12 text-danger small">Gagal memuat ringkasan pengiriman/produksi/pembelian.</div>');
                 }
                 var $tsb = $("#dash_top_sales_body");
                 if ($tsb.length) {
                     $tsb.html(
-                        '<tr><td colspan="3" class="text-center text-danger py-3">Gagal memuat top penjualan.</td></tr>'
+                        '<tr><td colspan="3" class="text-center text-danger py-3">Gagal memuat top pengiriman.</td></tr>'
                     );
                 }
             },

@@ -43,7 +43,7 @@
             @component('components.search-filter')
             @endcomponent
 
-            <div class="alert alert-light border mb-3" role="alert" style="font-size: 0.875rem;">
+            {{-- <div class="alert alert-light border mb-3" role="alert" style="font-size: 0.875rem;">
                 <strong>Rumus (FIFO dari <code>log_stocks</code>):</strong> mutasi <strong>masuk</strong> memakai
                 <code>log_category = 1</code>, <strong>keluar</strong> <code>log_category = 2</code>, diurutkan
                 <code>log_date</code> lalu <code>log_id</code>. Keluar mengonsumsi lot tertua dulu. Baris catatan
@@ -51,7 +51,7 @@
                 sekarang, sisanya dianggap saldo awal dengan tanggal acuan = <code>created_at</code> baris stok.
                 <strong>Umur tertimbang (hari)</strong> = Σ(qty lot × hari sejak tanggal lot hingga tanggal acuan) /
                 qty total. <strong>Nilai</strong> = stok × harga varian (produk) atau harga beli terakhir PO (bahan).
-            </div>
+            </div> --}}
 
             <div class="row">
                 <div class="col-sm-12">
