@@ -220,8 +220,6 @@
 
 <script src="{{ URL::asset('/assets/js/html2canvas.min.js') }}"></script>
 
-@livewireScriptConfig
-
 @if (!Route::is(['index-two', 'index-three', 'index-four', 'index-five']))
     <!-- Theme Settings JS -->
     <script src="{{ URL::asset('/assets/js/theme-settings.js') }}"></script>

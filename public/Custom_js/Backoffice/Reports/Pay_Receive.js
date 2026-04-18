@@ -89,7 +89,7 @@
                     e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
                     e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
-                    total += e[i].poi_total;
+                    total += parseInt(e[i].poi_total);
                     
                     if (e[i].pembayaran == 1 && e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;

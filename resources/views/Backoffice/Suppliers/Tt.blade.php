@@ -55,7 +55,7 @@
                                             <th>Total</th>
                                             <th>Status</th>
                                             <th>Dibuat Oleh</th>
-                                            <th>Diterima/Ditolak Oleh</th>
+                                            <th>Diapprove/Ditolak Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

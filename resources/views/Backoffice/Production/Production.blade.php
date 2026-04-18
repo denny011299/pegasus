@@ -53,7 +53,7 @@
                                             <th>Status</th>
                                             <th>Notes Pembatalan</th>
                                             <th>Dibuat Oleh</th>
-                                            <th>Diterima Oleh</th>
+                                            <th>Diapprove Oleh</th>
                                             <th>Pengajuan Batal Oleh</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>

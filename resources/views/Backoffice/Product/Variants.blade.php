@@ -14,6 +14,13 @@
             margin-left: 5px;
             cursor: pointer;
         }
+        #tableVariant{
+            width: 100% !important;
+        }
+        #tableVariant td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
     </style>
 @endsection
 @section('content')
@@ -47,7 +54,7 @@
                                             <th style="width: 40%">Nilai</th>
                                             <th>Dibuat Pada</th>
                                             <th>Dibuat Oleh</th>
-                                            <th>Diapprove Oleh</th>
+                                            {{-- <th>Diapprove Oleh</th> --}}
                                             <th class="no-sort">Aksi</th>
                                         </tr>
                                     </thead>

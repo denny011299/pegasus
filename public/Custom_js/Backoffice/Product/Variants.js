@@ -31,11 +31,11 @@
 				},
 			 },
             columns: [
-                { data: "variant_name"},
-                { data: "variant_values"},
-                { data: "variant_date" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "acc_by_name", defaultContent: "-" },
+                { data: "variant_name", width: "15%"},
+                { data: "variant_values", width: "45%"},
+                { data: "variant_date", width: "15%" },
+                { data: "created_by_name", defaultContent: "-", width: "15%" },
+                // { data: "acc_by_name", defaultContent: "-" },
                 { data: "action",class:"d-flex align-items-center", },
             ],
 			initComplete: (settings, json)=>{
