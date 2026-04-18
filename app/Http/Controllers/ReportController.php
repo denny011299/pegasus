@@ -51,6 +51,230 @@ class ReportController extends Controller
         return $param;
     }
 
+    /**
+     * Widget ringkas: penjualan (SO), produksi, pembelian (PO) — bulan berjalan vs bulan lalu.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function buildDashboardCrossWidgets(): array
+    {
+        $fmtRp = static function (float $n): string {
+            return 'Rp ' . number_format($n, 0, ',', '.');
+        };
+
+        $fallback = static function (string $title, string $subtitle, string $href): array {
+            return [
+                'title' => $title,
+                'subtitle' => $subtitle,
+                'primary' => 0,
+                'primary_label' => '—',
+                'secondary' => '—',
+                'mom_pct' => null,
+                'href' => $href,
+                'meta' => ['icon' => 'fe-activity'],
+            ];
+        };
+
+        try {
+            $start = \Carbon\Carbon::now()->startOfMonth();
+            $end = \Carbon\Carbon::now()->endOfMonth();
+            $pStart = $start->copy()->subMonth()->startOfMonth();
+            $pEnd = $pStart->copy()->endOfMonth();
+
+            $startD = $start->toDateString();
+            $endD = $end->toDateString();
+            $pStartD = $pStart->toDateString();
+            $pEndD = $pEnd->toDateString();
+
+            // Hindari translatedFormat('MMM…') yang bisa berakhir ganda di beberapa lingkungan PHP/intl
+            try {
+                $monthLabel = $start->copy()->locale('id')->monthName . ' ' . $start->year;
+            } catch (\Throwable $e) {
+                $monthLabel = $start->format('Y-m');
+            }
+
+            $salesThis = DB::table('sales_orders')->where('status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$startD, $endD]);
+            $salesCnt = (clone $salesThis)->count();
+            $salesSum = (float) ((clone $salesThis)->sum('so_total') ?? 0);
+
+            $salesPrev = DB::table('sales_orders')->where('status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$pStartD, $pEndD]);
+            $salesCntPrev = (clone $salesPrev)->count();
+            $momSales = $salesCntPrev > 0 ? round((($salesCnt - $salesCntPrev) / $salesCntPrev) * 100, 1) : null;
+
+            $prodThis = DB::table('productions')->where('status', '>=', 1)
+                ->whereBetween('production_date', [$startD, $endD]);
+            $prodCnt = (clone $prodThis)->count();
+            $mixRows = (clone $prodThis)->select('status', DB::raw('COUNT(*) as c'))->groupBy('status')->get();
+            $mix = [];
+            foreach ($mixRows as $row) {
+                $mix[(string) $row->status] = (int) $row->c;
+            }
+            $acc = (int) ($mix['2'] ?? 0);
+            $wait = (int) ($mix['1'] ?? 0) + (int) ($mix['4'] ?? 0);
+            $rej = (int) ($mix['3'] ?? 0);
+
+            $prodPrev = DB::table('productions')->where('status', '>=', 1)
+                ->whereBetween('production_date', [$pStartD, $pEndD]);
+            $prodCntPrev = (clone $prodPrev)->count();
+            $momProd = $prodCntPrev > 0 ? round((($prodCnt - $prodCntPrev) / $prodCntPrev) * 100, 1) : null;
+
+            $poThis = DB::table('purchase_orders')
+                ->where('status', '!=', 0)
+                ->where('status', '>=', -1)
+                ->whereBetween('po_date', [$startD, $endD]);
+            $poCnt = (clone $poThis)->count();
+            $poSum = (float) ((clone $poThis)->sum('po_total') ?? 0);
+
+            $poPrev = DB::table('purchase_orders')
+                ->where('status', '!=', 0)
+                ->where('status', '>=', -1)
+                ->whereBetween('po_date', [$pStartD, $pEndD]);
+            $poCntPrev = (clone $poPrev)->count();
+            $momPo = $poCntPrev > 0 ? round((($poCnt - $poCntPrev) / $poCntPrev) * 100, 1) : null;
+
+            return [
+                'sales' => [
+                    'title' => 'Penjualan',
+                    'subtitle' => 'Sales order · ' . $monthLabel,
+                    'primary' => $salesCnt,
+                    'primary_label' => 'SO',
+                    'secondary' => $fmtRp($salesSum),
+                    'mom_pct' => $momSales,
+                    'href' => url('/salesOrder'),
+                    'meta' => ['icon' => 'fe-shopping-cart'],
+                ],
+                'production' => [
+                    'title' => 'Produksi',
+                    'subtitle' => 'Batch · ' . $monthLabel,
+                    'primary' => $prodCnt,
+                    'primary_label' => 'Batch',
+                    'secondary' => 'ACC ' . $acc . ' · Tunggu ' . $wait . ($rej > 0 ? ' · Tolak ' . $rej : ''),
+                    'mom_pct' => $momProd,
+                    'href' => url('/production'),
+                    'meta' => ['icon' => 'fe-layers'],
+                ],
+                'purchase' => [
+                    'title' => 'Pembelian',
+                    'subtitle' => 'Purchase order · ' . $monthLabel,
+                    'primary' => $poCnt,
+                    'primary_label' => 'PO',
+                    'secondary' => $fmtRp($poSum),
+                    'mom_pct' => $momPo,
+                    'href' => url('/purchaseOrder'),
+                    'meta' => ['icon' => 'fe-truck'],
+                ],
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'sales' => $fallback('Penjualan', 'Sales order', url('/salesOrder')),
+                'production' => $fallback('Produksi', 'Produksi', url('/production')),
+                'purchase' => $fallback('Pembelian', 'Purchase order', url('/purchaseOrder')),
+            ];
+        }
+    }
+
+    /**
+     * Seri bulanan untuk grafik dashboard (SO, produksi, PO).
+     *
+     * @return array{labels: array<int, string>, sales_count: array<int, int>, production_count: array<int, int>, purchase_count: array<int, int>, sales_total: array<int, float>, purchase_total: array<int, float>}
+     */
+    private function buildDashboardExecutiveChartSeries(int $months): array
+    {
+        $months = max(3, min(18, $months));
+        $empty = static function (int $n): array {
+            return [
+                'labels' => array_fill(0, $n, '-'),
+                'sales_count' => array_fill(0, $n, 0),
+                'production_count' => array_fill(0, $n, 0),
+                'purchase_count' => array_fill(0, $n, 0),
+                'sales_total' => array_fill(0, $n, 0.0),
+                'purchase_total' => array_fill(0, $n, 0.0),
+            ];
+        };
+
+        try {
+            $rangeEnd = \Carbon\Carbon::now()->endOfMonth();
+            $rangeStart = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+
+            $ymKeys = [];
+            $labels = [];
+            $cursor = $rangeStart->copy();
+            while ($cursor->lte($rangeEnd)) {
+                $ymKeys[] = $cursor->format('Y-m');
+                // Label pendek numerik (hindari artefak render Apex + locale di sumbu X)
+                $labels[] = $cursor->format('m/y');
+                $cursor->addMonth();
+            }
+
+            $n = count($ymKeys);
+            if ($n === 0) {
+                return $empty(1);
+            }
+
+            $startD = $rangeStart->toDateString();
+            $endD = $rangeEnd->toDateString();
+
+            $salesRows = DB::table('sales_orders')
+                ->where('status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$startD, $endD])
+                ->selectRaw("DATE_FORMAT(DATE(COALESCE(so_date, created_at)), '%Y-%m') as ym")
+                ->selectRaw('COUNT(*) as cnt')
+                ->selectRaw('SUM(COALESCE(so_total, 0)) as total')
+                ->groupBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $prodRows = DB::table('productions')
+                ->where('status', '>=', 1)
+                ->whereBetween('production_date', [$startD, $endD])
+                ->selectRaw("DATE_FORMAT(production_date, '%Y-%m') as ym")
+                ->selectRaw('COUNT(*) as cnt')
+                ->groupBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $poRows = DB::table('purchase_orders')
+                ->where('status', '!=', 0)
+                ->where('status', '>=', -1)
+                ->whereBetween('po_date', [$startD, $endD])
+                ->selectRaw("DATE_FORMAT(po_date, '%Y-%m') as ym")
+                ->selectRaw('COUNT(*) as cnt')
+                ->selectRaw('SUM(COALESCE(po_total, 0)) as total')
+                ->groupBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $salesCount = [];
+            $salesTotal = [];
+            $prodCount = [];
+            $poCount = [];
+            $poTotal = [];
+            foreach ($ymKeys as $ym) {
+                $sRow = $salesRows->get($ym);
+                $pRow = $prodRows->get($ym);
+                $poRow = $poRows->get($ym);
+                $salesCount[] = $sRow ? (int) $sRow->cnt : 0;
+                $salesTotal[] = $sRow ? (float) $sRow->total : 0.0;
+                $prodCount[] = $pRow ? (int) $pRow->cnt : 0;
+                $poCount[] = $poRow ? (int) $poRow->cnt : 0;
+                $poTotal[] = $poRow ? (float) $poRow->total : 0.0;
+            }
+
+            return [
+                'labels' => $labels,
+                'sales_count' => $salesCount,
+                'sales_total' => $salesTotal,
+                'production_count' => $prodCount,
+                'purchase_count' => $poCount,
+                'purchase_total' => $poTotal,
+            ];
+        } catch (\Throwable $e) {
+            return $empty(6);
+        }
+    }
+
     private function hasNonZeroSelisih($selisihText): bool
     {
         if ($selisihText === null) return false;
@@ -1140,6 +1364,120 @@ class ReportController extends Controller
     
     function reportBahanBaku(){
         return view('Backoffice.Reports.Bahan_Baku');
+    }
+
+    function getDashboardExecutiveWidgets(Request $req)
+    {
+        $chartMonths = (int) $req->get('chart_months', 6);
+        if (! in_array($chartMonths, [3, 6, 12], true)) {
+            $chartMonths = 6;
+        }
+
+        return response()->json([
+            'cross_widgets' => $this->buildDashboardCrossWidgets(),
+            'exec_charts' => $this->buildDashboardExecutiveChartSeries($chartMonths),
+            'top_sales' => $this->buildDashboardTopSalesByLine($chartMonths),
+        ]);
+    }
+
+    /**
+     * Top baris penjualan (agregasi detail SO) menurut qty terjual — rentang sama grafik "Penjualan" di atas.
+     *
+     * @return array{range: array{start: string, end: string}, rows: array<int, array{name: string, qty: float, unit: string}>}
+     */
+    private function buildDashboardTopSalesByLine(int $months): array
+    {
+        $months = max(3, min(18, $months));
+        $emptyRange = static function (): array {
+            $t = \Carbon\Carbon::now();
+
+            return [
+                'start' => $t->copy()->startOfMonth()->toDateString(),
+                'end' => $t->copy()->endOfMonth()->toDateString(),
+            ];
+        };
+
+        try {
+            $rangeEnd = \Carbon\Carbon::now()->endOfMonth();
+            $rangeStart = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+            $startD = $rangeStart->toDateString();
+            $endD = $rangeEnd->toDateString();
+
+            $rows = DB::table('sales_order_details as sod')
+                ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+                ->leftJoin('units as u', 'u.unit_id', '=', 'sod.unit_id')
+                ->where('so.status', '>=', 1)
+                ->where('sod.status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$startD, $endD])
+                ->select('sod.sod_nama', 'sod.sod_variant', 'sod.sod_sku', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
+                ->selectRaw('SUM(sod.sod_qty) as qty_sum')
+                ->groupBy('sod.sod_nama', 'sod.sod_variant', 'sod.sod_sku', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
+                ->orderByDesc('qty_sum')
+                ->limit(10)
+                ->get();
+
+            $out = [];
+            foreach ($rows as $r) {
+                $base = trim((string) ($r->sod_nama ?? ''));
+                $var = trim((string) ($r->sod_variant ?? ''));
+                $name = $base;
+                if ($var !== '') {
+                    $name = trim($base.' '.$var);
+                }
+                if ($name === '') {
+                    $name = trim((string) ($r->sod_sku ?? '')) ?: '-';
+                }
+                $short = trim((string) ($r->unit_short_name ?? ''));
+                $long = trim((string) ($r->unit_name ?? ''));
+                $unit = $short !== '' ? $short : ($long !== '' ? $long : '-');
+                $out[] = [
+                    'name' => $name,
+                    'qty' => (float) ($r->qty_sum ?? 0),
+                    'unit' => $unit,
+                ];
+            }
+
+            return [
+                'range' => ['start' => $startD, 'end' => $endD],
+                'rows' => $out,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'range' => $emptyRange(),
+                'rows' => [],
+            ];
+        }
+    }
+
+    function getDashboardPemakaianBahan(Request $req)
+    {
+        $months = (int) $req->get('months', 12);
+        if (! in_array($months, [6, 12, 18, 24], true)) {
+            $months = 12;
+        }
+
+        $data = (new LogStock())->getRawMaterialUsageMonthlyDashboard([
+            'months' => $months,
+            'supplies_id' => $req->filled('supplies_id') ? (int) $req->supplies_id : null,
+            'supplier_id' => $req->filled('supplier_id') ? (int) $req->supplier_id : null,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function getDashboardProcurementEstimate(Request $req)
+    {
+        $months = (int) $req->get('months', 6);
+        if (! in_array($months, [3, 6, 12, 18, 24], true)) {
+            $months = 6;
+        }
+        $top = (int) $req->get('top', 12);
+        $top = max(5, min(40, $top));
+
+        return response()->json((new LogStock())->getProcurementEstimateProductionMaterials([
+            'months' => $months,
+            'top' => $top,
+        ]));
     }
 
     function getReportPemakaianBahan(Request $req){

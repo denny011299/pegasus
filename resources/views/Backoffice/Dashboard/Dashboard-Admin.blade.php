@@ -1,12 +1,27 @@
-<?php $page = 'index'; ?>
+@php
+    $page = 'index';
+    $aksesHome = Session::has('user') ? collect(json_decode(Session::get('user')->role_access)) : collect();
+@endphp
+
 @extends('layout.mainlayout')
+
 @section('content')
-    <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
-            <div class="row">
-            </div>
+            @component('components.page-header')
+                @slot('title')
+                    Dashboard
+                @endslot
+            @endcomponent
+
+            @include('Backoffice.Dashboard.partials.home-dashboard-widgets', ['aksesHome' => $aksesHome])
         </div>
     </div>
-    <!-- /Page Wrapper -->
+@endsection
+
+@section('custom_js')
+    @if ($aksesHome->firstWhere('name', 'Pengelolaan Bahan Mentah'))
+        <script src="{{ asset('Custom_js/Backoffice/Reports/DashboardPemakaianBahan.js') }}?v=13"></script>
+    @endif
+    <script src="{{ asset('Custom_js/Backoffice/Dashboard/Dashboard-Admin.js') }}?v=9"></script>
 @endsection

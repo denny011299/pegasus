@@ -23,7 +23,7 @@
 <!-- select Js -->
 <script src="{{ URL::asset('/assets/plugins/select2/js/select2.min.js') }}"></script>
 
-@if (Route::is(['chart-apex', 'dashboard', 'index-five', 'index-four', 'index-three', 'index-two', 'index', '/']))
+@if (Route::is(['chart-apex', 'dashboard', 'dashboard-admin', 'index-five', 'index-four', 'index-three', 'index-two', 'index', '/']) || request()->routeIs(['index', 'dashboard-admin']))
     <!-- apexChart JS -->
     <script src="{{ URL::asset('/assets/plugins/apexchart/apexcharts.min.js') }}"></script>
     <script src="{{ URL::asset('/assets/plugins/apexchart/chart-data.js') }}"></script>

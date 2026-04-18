@@ -20,10 +20,10 @@ Route::post('/loginUser', [UserController::class, "loginUser"])->name('loginUser
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');
-    });
+    })->name('index');
     Route::get('/admin', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');
-    });
+    })->name('dashboard-admin');
 
     Route::post('/autocompleteCity', [AutocompleteController::class, "autocompleteCity"])->name('autocompleteCity');
     Route::post('/autocompleteProv', [AutocompleteController::class, "autocompleteProv"])->name('autocompleteProv');
@@ -235,6 +235,9 @@ Route::middleware(checkLogin::class)->group(function () {
 
     //reporting
     Route::get('/reportBahanBaku', [ReportController::class, "reportBahanBaku"])->name('reportBahanBaku');
+    Route::get('/getDashboardExecutiveWidgets', [ReportController::class, "getDashboardExecutiveWidgets"])->name('getDashboardExecutiveWidgets');
+    Route::get('/getDashboardPemakaianBahan', [ReportController::class, "getDashboardPemakaianBahan"])->name('getDashboardPemakaianBahan');
+    Route::get('/getDashboardProcurementEstimate', [ReportController::class, "getDashboardProcurementEstimate"])->name('getDashboardProcurementEstimate');
     Route::get('/getReportPemakaianBahan', [ReportController::class, "getReportPemakaianBahan"])->name('getReportPemakaianBahan');
     Route::get('/generateReportPemakaianBahanPdf', [ReportController::class, "generateReportPemakaianBahanPdf"])->name('generateReportPemakaianBahanPdf');
     Route::get('/reportSelisihOpname', [ReportController::class, "reportSelisihOpname"])->name('reportSelisihOpname');

@@ -197,6 +197,448 @@ class LogStock extends Model
     }
 
     /**
+     * Dashboard pemakaian bahan: agregat per bulan (grafik & KPI, tanpa prediksi).
+     * Net qty mengikuti logika getRawMaterialUsageReport (keluar produksi positif, pembatalan negatif).
+     *
+     * @param  array{months?:int, supplies_id?:int|null, supplier_id?:int|null}  $data
+     * @return array<string, mixed>
+     */
+    function getRawMaterialUsageMonthlyDashboard($data = [])
+    {
+        $data = array_merge([
+            'months' => 12,
+            'supplies_id' => null,
+            'supplier_id' => null,
+        ], $data);
+
+        $months = max(3, min(24, (int) $data['months']));
+        $end = \Carbon\Carbon::now()->endOfMonth();
+        $start = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+
+        $supplierSupplies = null;
+        if ($data['supplier_id']) {
+            $supplierSupplies = DB::table('supplies_variants')
+                ->where('supplier_id', $data['supplier_id'])
+                ->pluck('supplies_id')
+                ->unique()
+                ->filter()
+                ->values()
+                ->all();
+            if (count($supplierSupplies) === 0) {
+                return self::emptyRawMaterialUsageDashboard($start, $end, $months);
+            }
+        }
+
+        $base = DB::table('log_stocks as l')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
+            ->whereBetween('l.log_date', [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 23:59:59')]);
+
+        if ($data['supplies_id']) {
+            $base->where('l.log_item_id', (int) $data['supplies_id']);
+        }
+        if ($supplierSupplies !== null) {
+            $base->whereIn('l.log_item_id', $supplierSupplies);
+        }
+
+        $monthly = (clone $base)
+            ->selectRaw("DATE_FORMAT(l.log_date, '%Y-%m') as ym")
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', ['%Pengembalian stok bahan akibat pembatalan produksi%'])
+            ->selectRaw('COUNT(*) as txn_count')
+            ->groupBy(DB::raw("DATE_FORMAT(l.log_date, '%Y-%m')"))
+            ->orderBy('ym')
+            ->get()
+            ->keyBy('ym');
+
+        $ymKeys = [];
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $ymKeys[] = $cursor->format('Y-m');
+            $cursor->addMonth();
+        }
+
+        $netSeries = [];
+        $txnSeries = [];
+        $chartLabels = [];
+        foreach ($ymKeys as $ym) {
+            $row = $monthly->get($ym);
+            $netSeries[] = $row ? (float) $row->net_qty : 0.0;
+            $txnSeries[] = $row ? (int) $row->txn_count : 0;
+            try {
+                $chartLabels[] = \Carbon\Carbon::createFromFormat('Y-m', $ym)->locale('id')->translatedFormat('M Y');
+            } catch (\Throwable $e) {
+                $chartLabels[] = $ym;
+            }
+        }
+
+        $n = count($netSeries);
+
+        $thisMonth = \Carbon\Carbon::now()->format('Y-m');
+        $prevMonth = \Carbon\Carbon::now()->copy()->subMonth()->format('Y-m');
+        $thisRow = $monthly->get($thisMonth);
+        $prevRow = $monthly->get($prevMonth);
+        $thisNet = $thisRow ? (float) $thisRow->net_qty : ($n >= 1 ? $netSeries[$n - 1] : 0.0);
+        $prevNet = $prevRow ? (float) $prevRow->net_qty : 0.0;
+        $momPct = $prevNet != 0.0 ? round((($thisNet - $prevNet) / $prevNet) * 100, 1) : null;
+
+        $thisTxn = $thisRow ? (int) $thisRow->txn_count : ($n >= 1 ? $txnSeries[$n - 1] : 0);
+        $prevTxn = $prevRow ? (int) $prevRow->txn_count : 0;
+        $momTxnPct = $prevTxn > 0 ? round((($thisTxn - $prevTxn) / $prevTxn) * 100, 1) : null;
+
+        $topCandidates = (clone $base)
+            ->leftJoin('supplies as s', 's.supplies_id', '=', 'l.log_item_id')
+            ->leftJoin('units as du', 'du.unit_id', '=', 's.supplies_default_unit')
+            ->select('l.log_item_id as supplies_id', 's.supplies_name as name')
+            ->selectRaw(
+                "MAX(COALESCE(NULLIF(TRIM(du.unit_short_name), ''), NULLIF(TRIM(du.unit_name), ''), '-')) as unit_label"
+            )
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', ['%Pengembalian stok bahan akibat pembatalan produksi%'])
+            ->groupBy('l.log_item_id', 's.supplies_name')
+            ->orderByDesc('net_qty')
+            ->limit(120)
+            ->get();
+
+        [$topKemasan, $topBahan] = self::splitTopMaterialsByPackagingHeuristic($topCandidates->all(), 8);
+
+        $lowStockCount = (int) DB::table('supplies')
+            ->where('status', 1)
+            ->where('supplies_alert', '>', 0)
+            ->whereRaw(
+                '(SELECT COALESCE(SUM(ss_stock), 0) FROM supplies_stocks ss WHERE ss.supplies_id = supplies.supplies_id AND ss.status = 1) < supplies.supplies_alert'
+            )
+            ->count();
+
+        return [
+            'range' => [
+                'start' => $start->toDateString(),
+                'end' => $end->toDateString(),
+            ],
+            'months' => $months,
+            'disclaimer' => 'Grafik: total qty net log per bulan. Tabel top & estimasi: angka + satuan default master (supplies). Pisah kemasan vs lainnya dari pola nama. Rincian di laporan bahan baku.',
+            'series' => [
+                'labels' => $chartLabels,
+                'ym_keys' => $ymKeys,
+                'net_qty' => $netSeries,
+                'txn_count' => $txnSeries,
+            ],
+            'kpis' => [
+                'this_month_net' => $thisNet,
+                'prev_month_net' => $prevNet,
+                'mom_net_pct' => $momPct,
+                'this_month_txn' => $thisTxn,
+                'prev_month_txn' => $prevTxn,
+                'mom_txn_pct' => $momTxnPct,
+                'window_net_total' => round(array_sum($netSeries), 2),
+                'window_txn_total' => array_sum($txnSeries),
+            ],
+            'top_materials_kemasan' => $topKemasan,
+            'top_materials_bahan' => $topBahan,
+            'low_stock_count' => $lowStockCount,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function emptyRawMaterialUsageDashboard(\Carbon\Carbon $start, \Carbon\Carbon $end, int $months)
+    {
+        return [
+            'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+            'months' => $months,
+            'disclaimer' => 'Tidak ada bahan untuk supplier yang dipilih.',
+            'series' => ['labels' => [], 'ym_keys' => [], 'net_qty' => [], 'txn_count' => []],
+            'kpis' => [
+                'this_month_net' => 0,
+                'prev_month_net' => 0,
+                'mom_net_pct' => null,
+                'this_month_txn' => 0,
+                'prev_month_txn' => 0,
+                'mom_txn_pct' => null,
+                'window_net_total' => 0,
+                'window_txn_total' => 0,
+            ],
+            'top_materials_kemasan' => [],
+            'top_materials_bahan' => [],
+            'low_stock_count' => 0,
+        ];
+    }
+
+    /**
+     * Heuristik: kemasan / wadah / penunjang (botol, jerigen, tutup, sticker, …) vs sisa nama.
+     * Mengandalkan pola pada nama master (supplies_name); tidak memakai kolom kategori DB.
+     */
+    private static function suppliesNameLooksLikePackaging(?string $name): bool
+    {
+        if ($name === null || $name === '') {
+            return false;
+        }
+        $n = mb_strtolower($name, 'UTF-8');
+
+        $pattern = '/(' .
+            'botol|tutup|penutup|tutup\s*tumpul|closure|cap\\b|lid\\b|' .
+            'jerigen|jurigen|jerrycan|\\bgalon\\b|\\bibc\\b|sumpel|penyumbat|' .
+            'sticker|stiker|stickers|label|etiket|hang[\\s\\-]*tag|' .
+            'kardus|karton|\\bdus\\b|\\bdos\\b|inner\\s*master|master\\s*box|' .
+            'kemasan|packing|pembungkus|wrapper|wrapping|' .
+            'pouch|sachet|tube|kaleng|vial|ampul|' .
+            'shrink|sleeve|segel|lakban|isolasi|isolatif|' .
+            'foam|gabus|bubble|pipet|dropper|spray|pump|nozzle|' .
+            'paper\\s*cup|\\bcup\\b|gelas\\s*plastik|kantong\\s*plastik|plastik\\s*roll|' .
+            '\\bpet\\b|\\bhdpe\\b|\\bpp\\b' .
+            ')/iu';
+
+        return (bool) preg_match($pattern, $n);
+    }
+
+    /**
+     * @param  array<int, object>  $orderedCandidates  baris supplies_id, name, net_qty — sudah urut net_qty desc
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>}
+     */
+    private static function splitTopMaterialsByPackagingHeuristic(array $orderedCandidates, int $limitEach): array
+    {
+        $kemasan = [];
+        $bahan = [];
+        foreach ($orderedCandidates as $r) {
+            $name = is_object($r) ? ($r->name ?? '') : ($r['name'] ?? '');
+            $unitRaw = trim((string) (is_object($r) ? ($r->unit_label ?? '') : ($r['unit_label'] ?? '')));
+            $unit = ($unitRaw !== '' && $unitRaw !== '-') ? $unitRaw : '-';
+            $entry = [
+                'supplies_id' => (int) (is_object($r) ? $r->supplies_id : $r['supplies_id']),
+                'name' => is_object($r) ? ($r->name ?? '-') : ($r['name'] ?? '-'),
+                'net_qty' => round((float) (is_object($r) ? $r->net_qty : $r['net_qty']), 2),
+                'unit' => $unit,
+            ];
+            if (self::suppliesNameLooksLikePackaging($name)) {
+                if (count($kemasan) < $limitEach) {
+                    $kemasan[] = $entry;
+                }
+            } elseif (count($bahan) < $limitEach) {
+                $bahan[] = $entry;
+            }
+        }
+
+        return [$kemasan, $bahan];
+    }
+
+    /**
+     * @param  \stdClass  $t  supplies_id, name, net_qty
+     * @param  array<int, string>  $ymKeys
+     * @param  array<int, array<string, float>>  $pivot
+     * @param  \Illuminate\Support\Collection<int, mixed>  $stockById
+     * @return array<string, mixed>
+     */
+    private static function buildProcurementEstimateRow(object $t, array $ymKeys, array $pivot, $stockById, int $months): array
+    {
+        $sid = (int) $t->supplies_id;
+        $series = [];
+        foreach ($ymKeys as $ym) {
+            $series[] = isset($pivot[$sid][$ym]) ? (float) $pivot[$sid][$ym] : 0.0;
+        }
+        $forecast = self::forecastNetQtyFromMonthlySeries($series);
+        $windowTotal = (float) $t->net_qty;
+        $avgPerMonth = round($windowTotal / $months, 2);
+        $stok = isset($stockById[$sid]) ? (float) $stockById[$sid] : 0.0;
+        $gap = max(0.0, round($forecast - $stok, 2));
+
+        $unitRaw = trim((string) ($t->unit_label ?? ''));
+        $unit = ($unitRaw !== '' && $unitRaw !== '-') ? $unitRaw : '-';
+
+        return [
+            'supplies_id' => $sid,
+            'name' => $t->name ?? '-',
+            'unit' => $unit,
+            'window_total' => round($windowTotal, 2),
+            'avg_per_month' => $avgPerMonth,
+            'estimate_next_month' => $forecast,
+            'stock_agg' => round($stok, 2),
+            'gap_to_buy' => $gap,
+        ];
+    }
+
+    /**
+     * Perkiraan qty net bulan berikutnya dari deret bulanan (sama seperti rumus dashboard lama).
+     *
+     * @param  array<int, float>  $series
+     */
+    private static function forecastNetQtyFromMonthlySeries(array $series): float
+    {
+        $n = count($series);
+        if ($n === 0) {
+            return 0.0;
+        }
+        $last3 = array_slice($series, -min(3, $n));
+        $avg3 = array_sum($last3) / count($last3);
+        $trend = $n >= 2 ? ($series[$n - 1] - $series[$n - 2]) : 0.0;
+
+        return max(0.0, round($avg3 + 0.35 * $trend, 2));
+    }
+
+    /**
+     * Estimasi pembelian bahan mentah bulan depan: bahan dengan pemakaian produksi tertinggi (dari log),
+     * perkiraan per bahan = rata-rata 3 bulan terakhir + 0,35 × tren bulan terakhir.
+     *
+     * @param  array{months?:int, top?:int}  $data
+     * @return array<string, mixed>
+     */
+    function getProcurementEstimateProductionMaterials(array $data = []): array
+    {
+        $data = array_merge([
+            'months' => 6,
+            'top' => 12,
+        ], $data);
+
+        $months = max(3, min(24, (int) $data['months']));
+        $top = max(5, min(40, (int) $data['top']));
+        $end = \Carbon\Carbon::now()->endOfMonth();
+        $start = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+
+        $ymKeys = [];
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $ymKeys[] = $cursor->format('Y-m');
+            $cursor->addMonth();
+        }
+
+        $cancelLike = '%Pengembalian stok bahan akibat pembatalan produksi%';
+
+        $allTotals = DB::table('log_stocks as l')
+            ->leftJoin('supplies as s', 's.supplies_id', '=', 'l.log_item_id')
+            ->leftJoin('units as du', 'du.unit_id', '=', 's.supplies_default_unit')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->whereNotNull('l.log_item_id')
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
+            ->whereBetween('l.log_date', [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 23:59:59')])
+            ->select('l.log_item_id as supplies_id', 's.supplies_name as name')
+            ->selectRaw(
+                "MAX(COALESCE(NULLIF(TRIM(du.unit_short_name), ''), NULLIF(TRIM(du.unit_name), ''), '-')) as unit_label"
+            )
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', [$cancelLike])
+            ->groupBy('l.log_item_id', 's.supplies_name')
+            ->orderByDesc('net_qty')
+            ->limit(200)
+            ->get();
+
+        if ($allTotals->isEmpty()) {
+            return [
+                'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+                'months' => $months,
+                'next_month_label' => '-',
+                'rows_kemasan' => [],
+                'rows_bahan' => [],
+                'disclaimer' => 'Belum ada log pemakaian bahan untuk produksi di rentang ini.',
+            ];
+        }
+
+        $totalsKemasan = [];
+        $totalsBahan = [];
+        foreach ($allTotals as $row) {
+            if (self::suppliesNameLooksLikePackaging($row->name ?? '')) {
+                if (count($totalsKemasan) < $top) {
+                    $totalsKemasan[] = $row;
+                }
+            } elseif (count($totalsBahan) < $top) {
+                $totalsBahan[] = $row;
+            }
+        }
+
+        $totalsMerged = array_merge($totalsKemasan, $totalsBahan);
+        if ($totalsMerged === []) {
+            return [
+                'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+                'months' => $months,
+                'next_month_label' => '-',
+                'rows_kemasan' => [],
+                'rows_bahan' => [],
+                'disclaimer' => 'Belum ada log pemakaian bahan untuk produksi di rentang ini.',
+            ];
+        }
+
+        $ids = collect($totalsMerged)->pluck('supplies_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        $pivotRows = DB::table('log_stocks as l')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->whereNotNull('l.log_item_id')
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
+            ->whereBetween('l.log_date', [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 23:59:59')])
+            ->whereIn('l.log_item_id', $ids)
+            ->select('l.log_item_id as supplies_id')
+            ->selectRaw("DATE_FORMAT(l.log_date, '%Y-%m') as ym")
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', [$cancelLike])
+            ->groupBy('l.log_item_id', DB::raw("DATE_FORMAT(l.log_date, '%Y-%m')"))
+            ->orderBy('supplies_id')
+            ->orderBy('ym')
+            ->get();
+
+        $pivot = [];
+        foreach ($pivotRows as $pr) {
+            $sid = (int) $pr->supplies_id;
+            if (! isset($pivot[$sid])) {
+                $pivot[$sid] = [];
+            }
+            $pivot[$sid][$pr->ym] = (float) $pr->net_qty;
+        }
+
+        $stockById = DB::table('supplies_stocks')
+            ->where('status', 1)
+            ->whereIn('supplies_id', $ids)
+            ->selectRaw('supplies_id, SUM(ss_stock) as qty')
+            ->groupBy('supplies_id')
+            ->pluck('qty', 'supplies_id');
+
+        $nextMonth = \Carbon\Carbon::now()->copy()->addMonth()->startOfMonth();
+        try {
+            $nextLabel = $nextMonth->locale('id')->monthName . ' ' . $nextMonth->year;
+        } catch (\Throwable $e) {
+            $nextLabel = $nextMonth->format('Y-m');
+        }
+
+        $rowsKemasan = [];
+        foreach ($totalsKemasan as $t) {
+            $rowsKemasan[] = self::buildProcurementEstimateRow($t, $ymKeys, $pivot, $stockById, $months);
+        }
+        $rowsBahan = [];
+        foreach ($totalsBahan as $t) {
+            $rowsBahan[] = self::buildProcurementEstimateRow($t, $ymKeys, $pivot, $stockById, $months);
+        }
+
+        return [
+            'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+            'months' => $months,
+            'next_month_label' => $nextLabel,
+            'rows_kemasan' => $rowsKemasan,
+            'rows_bahan' => $rowsBahan,
+            'disclaimer' => 'Estimasi dari log produksi; satuan = default master per baris. Bukan perintah pembelian formal.',
+        ];
+    }
+
+    /**
      * Laporan stock aging: FIFO per (log_type, item, unit) dari log_stocks.
      * log_category 1 = masuk, 2 = keluar (sesuai pemakaian di StockController / SupplierController / Produksi).
      * Baris Stock Opname diabaikan (bukan delta FIFO).
