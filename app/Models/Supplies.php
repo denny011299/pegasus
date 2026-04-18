@@ -65,6 +65,9 @@ class Supplies extends Model
             return collect();
         }
 
+        // ✅ Helper untuk decode supplies_unit dengan aman (handle kalau sudah array atau masih string JSON)
+        $decodeUnit = fn($val) => is_array($val) ? $val : (json_decode($val ?? '[]', true) ?: []);
+
         $ids = $result->pluck('supplies_id')->all();
         $suppliesById = $result->keyBy('supplies_id');
 
@@ -75,7 +78,8 @@ class Supplies extends Model
 
         $allUnitIds = [];
         foreach ($result as $s) {
-            $unitArr = json_decode($s->getAttributes()['supplies_unit'] ?? '[]', true) ?: [];
+            // ✅ Pakai $decodeUnit, bukan langsung json_decode
+            $unitArr = $decodeUnit($s->getAttributes()['supplies_unit'] ?? null);
             foreach ($unitArr as $uid) {
                 $allUnitIds[(int) $uid] = true;
             }
@@ -105,7 +109,9 @@ class Supplies extends Model
         foreach ($result as $s) {
             $supRaw = $s->getAttributes()['supplies_supplier'] ?? null;
             if ($supRaw) {
-                foreach (json_decode($supRaw, true) ?: [] as $pid) {
+                // ✅ supplies_supplier juga bisa kena masalah yang sama
+                $supArr = is_array($supRaw) ? $supRaw : (json_decode($supRaw, true) ?: []);
+                foreach ($supArr as $pid) {
                     $supplierIdSet[(int) $pid] = true;
                 }
             }
@@ -164,15 +170,15 @@ class Supplies extends Model
 
             $supRaw = $value->getAttributes()['supplies_supplier'] ?? null;
             if ($supRaw) {
-                $value->supplier = Supplier::whereIn(
-                    'supplier_id',
-                    json_decode($supRaw, true) ?: []
-                )->get();
+                // ✅ Aman untuk supplies_supplier
+                $supIds = is_array($supRaw) ? $supRaw : (json_decode($supRaw, true) ?: []);
+                $value->supplier = Supplier::whereIn('supplier_id', $supIds)->get();
             }
 
-            $value->supplies_unit = json_decode($value->getAttributes()['supplies_unit'] ?? '[]');
+            // ✅ Aman untuk supplies_unit
+            $value->supplies_unit = $decodeUnit($value->getAttributes()['supplies_unit'] ?? null);
 
-            $unitArr = json_decode($value->getAttributes()['supplies_unit'] ?? '[]', true) ?: [];
+            $unitArr = $decodeUnit($value->getAttributes()['supplies_unit'] ?? null);
             $value->units = collect($unitArr)
                 ->map(fn ($uid) => $unitsMap->get((int) $uid))
                 ->filter()
@@ -182,14 +188,15 @@ class Supplies extends Model
 
             $stockForSupply = $stocksBySupply->get($sid, collect())->values();
 
-            $value->sup_variant = $variantsBySupply->get($sid, collect())->map(function ($variant) use ($suppliesById, $supplierMap, $unitsMap, $stockForSupply) {
+            $value->sup_variant = $variantsBySupply->get($sid, collect())->map(function ($variant) use ($suppliesById, $supplierMap, $unitsMap, $stockForSupply, $decodeUnit) {
                 $clone = clone $variant;
                 $s = $suppliesById->get($clone->supplies_id);
                 $clone->supplies_name = $s ? $s->supplies_name : '-';
                 $ssId = $clone->supplier_id;
                 $clone->supplier_name = $ssId ? ($supplierMap->get((int) $ssId) ?: null) : null;
 
-                $uArr = json_decode($s->getAttributes()['supplies_unit'] ?? '[]', true) ?: [];
+                // ✅ Aman untuk supplies_unit di dalam variant
+                $uArr = $decodeUnit($s ? ($s->getAttributes()['supplies_unit'] ?? null) : null);
                 $clone->supplies_unit = collect($uArr)
                     ->map(fn ($uid) => $unitsMap->get((int) $uid))
                     ->filter()

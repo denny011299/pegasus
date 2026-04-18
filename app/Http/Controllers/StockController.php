@@ -219,7 +219,7 @@ class StockController extends Controller
 
     function generateStockOpname($id) {
         $param['stockOpname'] = StockOpname::find($id);
-        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id'])->first();
+        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
         $param["detail"] = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
@@ -368,7 +368,7 @@ class StockController extends Controller
 
     function generateStockOpnameBahan($id) {
         $param['stockOpname'] = StockOpnameBahan::find($id);
-        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id'])->first();
+        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
         $param["detail"] = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
