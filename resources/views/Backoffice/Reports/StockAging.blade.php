@@ -87,5 +87,6 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
+    <script src="{{ asset('Custom_js/Backoffice/Reports/report_datatable_loading.js') }}?v=1"></script>
     <script src="{{ asset('Custom_js/Backoffice/Reports/StockAging.js') }}?v=1"></script>
 @endsection

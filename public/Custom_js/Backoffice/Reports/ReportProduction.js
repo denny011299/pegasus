@@ -148,6 +148,12 @@
                 supplier_id: $('#supplier').val(),
                 product_variant_id: $('#product_id').val()
             },
+            beforeSend: function () {
+                setReportDataTableLoading('#tableReportProduction', true);
+            },
+            complete: function () {
+                setReportDataTableLoading('#tableReportProduction', false);
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];

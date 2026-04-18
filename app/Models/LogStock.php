@@ -90,8 +90,15 @@ class LogStock extends Model
             ->leftJoin('productions as p', 'p.production_code', '=', 'l.log_kode')
             ->where('l.status', 1)
             ->where('l.log_type', 2)
-            ->where('l.log_category', 2)
-            ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%')
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
             ->select(
                 'l.log_id',
                 'l.log_date',
@@ -149,13 +156,17 @@ class LogStock extends Model
             }
 
             $grouped[$key]["transaction_count"] += 1;
+            $qty = (int) $row->log_jumlah;
+            if (stripos((string) ($row->log_notes ?? ''), 'Pengembalian stok bahan akibat pembatalan produksi') !== false) {
+                $qty = -abs($qty);
+            }
             $grouped[$key]["details"][] = [
                 "production_date" => $row->production_date ?: date('Y-m-d', strtotime($row->log_date)),
                 "log_date" => $row->log_date,
                 "production_code" => $row->log_kode,
-                "qty" => (int)$row->log_jumlah,
+                "qty" => $qty,
                 "unit_name" => $row->unit_name,
-                "notes" => $row->log_notes
+                "notes" => $row->log_notes,
             ];
         }
 

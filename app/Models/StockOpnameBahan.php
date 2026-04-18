@@ -30,17 +30,33 @@ class StockOpnameBahan extends Model
 
         $result = $result->get();
 
-        // ✅ Ambil semua staff_id sekaligus (1 query)
-        $staffIds = $result->pluck('staff_id')->unique()->filter();
-        $staffMap = Staff::whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id');
+        $staffIdSet = [];
+        foreach ($result as $value) {
+            if ($value->staff_id) {
+                $staffIdSet[(int) $value->staff_id] = true;
+            }
+            if ($value->created_by) {
+                $staffIdSet[(int) $value->created_by] = true;
+            }
+            if ($value->acc_by) {
+                $staffIdSet[(int) $value->acc_by] = true;
+            }
+        }
+        $staffMap = $staffIdSet !== []
+            ? Staff::whereIn('staff_id', array_keys($staffIdSet))->pluck('staff_name', 'staff_id')
+            : collect();
 
-        // ✅ Ambil semua stob_id sekaligus (1 query)
         $stobIds = $result->pluck('stob_id')->unique()->filter();
         $detailsGrouped = StockOpnameDetailBahan::getDetailBulk($stobIds->toArray());
 
         foreach ($result as $value) {
-            $value->staff_name = $staffMap[$value->staff_id] ?? null;
+            $value->staff_name = $staffMap[$value->staff_id] ?? '-';
             $value->item = $detailsGrouped->get($value->stob_id, collect());
+            $staffMain = $value->staff_name ?? '-';
+            $value->created_by_name = $value->created_by
+                ? ($staffMap[$value->created_by] ?? $staffMain)
+                : $staffMain;
+            $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
         }
 
         return $result;

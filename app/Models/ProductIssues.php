@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 class ProductIssues extends Model
@@ -209,6 +210,111 @@ class ProductIssues extends Model
         if (is_null($id)) $id = 0;
         $id++;
         return "PI" . str_pad($id, 4, "0", STR_PAD_LEFT);
+    }
+
+    /**
+     * Laporan retur produk dari Product Issue — pengembalian Armada (tipe_return = 2).
+     * Hanya transaksi yang sudah disetujui (status header = 2) agar selaras dengan mutasi stok setelah ACC.
+     *
+     * @param  array{date?: mixed, product_variant_id?: int|null}  $data
+     * @return array<int, array<string, mixed>>
+     */
+    function getArmadaReturnReport(array $data = []): array
+    {
+        $data = array_merge([
+            'date' => null,
+            'product_variant_id' => null,
+        ], $data);
+
+        $query = DB::table('product_issues_details as pid')
+            ->join('product_issues as pi', 'pi.pi_id', '=', 'pid.pi_id')
+            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'pid.item_id')
+            ->join('products as pr', 'pr.product_id', '=', 'pv.product_id')
+            ->leftJoin('units as u', 'u.unit_id', '=', 'pid.unit_id')
+            ->where('pi.tipe_return', 2)
+            ->where('pi.status', 2)
+            ->where('pid.status', '>=', 1)
+            ->select(
+                'pid.pid_id',
+                'pid.pi_id',
+                'pid.item_id as product_variant_id',
+                'pid.pid_qty',
+                'u.unit_name',
+                'pi.pi_code',
+                'pi.pi_date',
+                'pi.pi_notes',
+                'pv.product_variant_name',
+                'pr.product_name'
+            );
+
+        if (!empty($data['product_variant_id'])) {
+            $query->where('pid.item_id', (int) $data['product_variant_id']);
+        }
+
+        if (!empty($data['date'])) {
+            if (is_array($data['date']) && count($data['date']) === 2) {
+                $startRaw = trim((string) ($data['date'][0] ?? ''));
+                $endRaw = trim((string) ($data['date'][1] ?? ''));
+                $startDate = null;
+                $endDate = null;
+                if ($startRaw !== '') {
+                    $startDate = Carbon::hasFormat($startRaw, 'Y-m-d')
+                        ? $startRaw
+                        : Carbon::createFromFormat('d-m-Y', $startRaw)->format('Y-m-d');
+                }
+                if ($endRaw !== '') {
+                    $endDate = Carbon::hasFormat($endRaw, 'Y-m-d')
+                        ? $endRaw
+                        : Carbon::createFromFormat('d-m-Y', $endRaw)->format('Y-m-d');
+                }
+                if ($startDate && $endDate) {
+                    $query->whereBetween('pi.pi_date', [$startDate, $endDate]);
+                } elseif ($startDate) {
+                    $query->where('pi.pi_date', '>=', $startDate);
+                } elseif ($endDate) {
+                    $query->where('pi.pi_date', '<=', $endDate);
+                }
+            } else {
+                $dateRaw = trim((string) $data['date']);
+                if ($dateRaw !== '') {
+                    $date = Carbon::hasFormat($dateRaw, 'Y-m-d')
+                        ? $dateRaw
+                        : Carbon::createFromFormat('d-m-Y', $dateRaw)->format('Y-m-d');
+                    $query->whereDate('pi.pi_date', $date);
+                }
+            }
+        }
+
+        $rows = $query->orderBy('pi.pi_date', 'desc')->orderBy('pi.pi_id', 'desc')->orderBy('pid.pid_id', 'desc')->get();
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $key = (int) $row->product_variant_id;
+            $itemName = trim(($row->product_name ?? '') . ' ' . ($row->product_variant_name ?? ''));
+            if ($itemName === '') {
+                $itemName = '-';
+            }
+
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    'product_variant_id' => $key,
+                    'item_name' => $itemName,
+                    'transaction_count' => 0,
+                    'details' => [],
+                ];
+            }
+
+            $grouped[$key]['transaction_count'] += 1;
+            $grouped[$key]['details'][] = [
+                'pi_date' => $row->pi_date,
+                'pi_code' => $row->pi_code,
+                'qty' => (int) $row->pid_qty,
+                'unit_name' => $row->unit_name,
+                'pi_notes' => $row->pi_notes ?? '',
+            ];
+        }
+
+        return array_values($grouped);
     }
 }
 

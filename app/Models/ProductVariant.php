@@ -85,6 +85,137 @@ class ProductVariant extends Model
         return $variants;
     }
 
+    /**
+     * Same enrichment as getProductVariant(), but one round-trip for many IDs
+     * (used by stock opname list to avoid N+1).
+     *
+     * @param  array<int>  $productVariantIds
+     * @return \Illuminate\Support\Collection<string|int, self>
+     */
+    public function getProductVariantBulk(array $productVariantIds)
+    {
+        $productVariantIds = array_values(array_unique(array_filter(array_map('intval', $productVariantIds))));
+        if ($productVariantIds === []) {
+            return collect();
+        }
+
+        $result = self::where('product_variants.status', '=', 1)
+            ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
+            ->where('pr.status', '=', 1)
+            ->whereIn('product_variants.product_variant_id', $productVariantIds)
+            ->select('product_variants.*')
+            ->orderBy('product_variants.created_at', 'asc')
+            ->get();
+
+        if ($result->isEmpty()) {
+            return collect();
+        }
+
+        $productIds = $result->pluck('product_id')->unique()->filter()->all();
+        $products = Product::whereIn('product_id', $productIds)->get()->keyBy('product_id');
+
+        $allUnitIds = [];
+        foreach ($products as $p) {
+            foreach (json_decode($p->product_unit, true) ?: [] as $uid) {
+                $allUnitIds[(int) $uid] = true;
+            }
+        }
+
+        $relations = ProductRelation::where('status', '=', 1)
+            ->whereIn('product_variant_id', $productVariantIds)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($relations as $rel) {
+            $allUnitIds[(int) $rel->pr_unit_id_1] = true;
+            $allUnitIds[(int) $rel->pr_unit_id_2] = true;
+        }
+
+        $stocks = ProductStock::where('status', '=', 1)
+            ->whereIn('product_variant_id', $productVariantIds)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($stocks as $stk) {
+            $allUnitIds[(int) $stk->unit_id] = true;
+        }
+
+        $units = $allUnitIds !== []
+            ? Unit::whereIn('unit_id', array_keys($allUnitIds))->get()->keyBy('unit_id')
+            : collect();
+
+        foreach ($relations as $rel) {
+            $u1 = $units->get($rel->pr_unit_id_1);
+            $u2 = $units->get($rel->pr_unit_id_2);
+            $rel->pr_unit_name_1 = $u1 ? $u1->unit_short_name : '-';
+            $rel->pr_unit_name_2 = $u2 ? $u2->unit_short_name : '-';
+        }
+
+        foreach ($stocks as $stk) {
+            $u = $units->get($stk->unit_id);
+            $stk->unit_name = $u ? $u->unit_name : '-';
+            $stk->unit_short_name = $u ? $u->unit_short_name : '-';
+        }
+
+        $relationsGrouped = $relations->groupBy('product_variant_id');
+        $stocksGrouped = $stocks->groupBy('product_variant_id');
+
+        $categoryIds = $products->pluck('category_id')->unique()->filter()->all();
+        $categories = $categoryIds !== []
+            ? Category::whereIn('category_id', $categoryIds)->pluck('category_name', 'category_id')
+            : collect();
+
+        $prUnitsByProductId = [];
+        foreach ($products as $pid => $p) {
+            $uids = json_decode($p->product_unit, true) ?: [];
+            $prUnitsByProductId[$pid] = $uids !== []
+                ? Unit::whereIn('unit_id', $uids)->get()
+                : collect();
+        }
+
+        $out = collect();
+        foreach ($result as $variant) {
+            $clone = clone $variant;
+            $p = $products->get($clone->product_id);
+            if (! $p) {
+                $clone->pr_name = '-';
+                $clone->product_unit = '-';
+                $clone->product_category = '-';
+                $clone->category_id = null;
+                $clone->pr_unit = collect();
+                $clone->relasi = collect();
+                $clone->stock = collect();
+                $clone->ps_stock = 0;
+                $out->put($clone->product_variant_id, $clone);
+
+                continue;
+            }
+
+            $prUnitCol = $prUnitsByProductId[$p->product_id] ?? collect();
+            $uFirst = $prUnitCol->first();
+            $clone->pr_name = $p->product_name ?? '-';
+            $clone->product_unit = $uFirst ? $uFirst->unit_name : '-';
+            $clone->product_category = $categories->get($p->category_id) ?? '-';
+            $clone->category_id = $p->category_id;
+            $clone->pr_unit = $prUnitCol;
+            $clone->relasi = $relationsGrouped->get($clone->product_variant_id, collect());
+            $clone->stock = $stocksGrouped->get($clone->product_variant_id, collect());
+
+            $s = $clone->stock->firstWhere('unit_id', $clone->unit_id);
+            if (! $s) {
+                $s = ProductStock::where('product_variant_id', $clone->product_variant_id)
+                    ->where('unit_id', $clone->unit_id)
+                    ->where('status', '=', 1)
+                    ->first();
+            }
+            $clone->ps_stock = $s ? $s->ps_stock : 0;
+
+            $out->put($clone->product_variant_id, $clone);
+        }
+
+        return $out;
+    }
+
     public function insertProductVariant($data)
     {
         if($data["variant_name"]=="standar")$data["variant_name"] = "";

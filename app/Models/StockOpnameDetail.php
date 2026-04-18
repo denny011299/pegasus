@@ -46,6 +46,48 @@ class StockOpnameDetail extends Model
     }
 
     /**
+     * @param  array<int>  $stoIds
+     * @return \Illuminate\Support\Collection<int, \Illuminate\Support\Collection<int, mixed>>
+     */
+    public static function getDetailBulk(array $stoIds)
+    {
+        if ($stoIds === []) {
+            return collect();
+        }
+
+        $details = self::where('status', 1)
+            ->whereIn('sto_id', $stoIds)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        if ($details->isEmpty()) {
+            return collect();
+        }
+
+        $variantIds = $details->pluck('product_variant_id')->unique()->filter()->values()->all();
+        $variantMap = (new ProductVariant())->getProductVariantBulk($variantIds);
+
+        $mapped = $details->map(function ($value) use ($variantMap) {
+            $pv = $variantMap->get($value->product_variant_id);
+            if (! $pv) {
+                return null;
+            }
+
+            $temp = clone $pv;
+            $temp->stod_system = $value->stod_system;
+            $temp->stod_real = $value->stod_real;
+            $temp->stod_selisih = $value->stod_selisih;
+            $temp->stod_notes = $value->stod_notes;
+            $temp->stod_id = $value->stod_id;
+            $temp->sto_id = $value->sto_id;
+
+            return $temp;
+        })->filter();
+
+        return $mapped->groupBy('sto_id');
+    }
+
+    /**
      * Insert detail
      */
     public static function insertDetail($data)
