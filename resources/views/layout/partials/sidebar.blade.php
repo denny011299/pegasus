@@ -719,7 +719,7 @@
                         $akses->firstWhere('name', 'Pengelolaan Bahan Mentah') ||
                         $akses->firstWhere('name', 'Retur Produk') ||
                         $akses->firstWhere('name', 'Laporan Produksi') ||
-                        $akses->firstWhere('name', 'Laporan Efisiensi Produksi') ||
+                        // $akses->firstWhere('name', 'Laporan Efisiensi Produksi') ||
                         $akses->firstWhere('name', 'Laporan Stock Aging') ||
                         $akses->firstWhere('name', 'Stok Opname Produk') ||
                         $akses->firstWhere('name', 'Stok Opname Bahan Mentah') ||
@@ -788,7 +788,7 @@
                                     @if ($akses->firstWhere('name', 'Retur Produk'))
                                         <li><a href="/ProductReturn"
                                             class="{{ Request::is('ProductReturn') ? 'active' : '' }}">
-                                            Laporan Retur</a></li>
+                                            Laporan Retur Bahan</a></li>
                                     @endif
 
                                     @if ($akses->firstWhere('name', 'Laporan Produksi'))
@@ -797,11 +797,11 @@
                                             Laporan Produksi</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Laporan Efisiensi Produksi') || $akses->firstWhere('name', 'Laporan Produksi'))
+                                    {{-- @if ($akses->firstWhere('name', 'Laporan Efisiensi Produksi') || $akses->firstWhere('name', 'Laporan Produksi'))
                                         <li><a href="/reportEfisiensiProduksi"
                                             class="{{ Request::is('reportEfisiensiProduksi') ? 'active' : '' }}">
                                             Laporan Efisiensi Produksi</a></li>
-                                    @endif
+                                    @endif --}}
 
                                     @if ($akses->firstWhere('name', 'Stok Opname Produk') || $akses->firstWhere('name', 'Stok Opname Bahan Mentah'))
                                         <li><a href="/reportSelisihOpname"
