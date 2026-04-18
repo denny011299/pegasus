@@ -48,38 +48,165 @@ class Supplies extends Model
         return $result;
     }
 
-    // Khusus untuk stock opname bahan
+    // Khusus untuk stock opname bahan — isi field sama seperti getSupplies(), tapi query digabung (tanpa N+1).
     public function getSuppliesBulk(array $suppliesIds)
     {
-        if (empty($suppliesIds)) return collect();
+        $suppliesIds = array_values(array_unique(array_filter(array_map('intval', $suppliesIds))));
+        if ($suppliesIds === []) {
+            return collect();
+        }
 
-        // Modifikasi getSupplies() support whereIn
         $result = Supplies::where('status', 1)
             ->whereIn('supplies_id', $suppliesIds)
             ->orderBy('created_at', 'asc')
             ->get();
 
-        foreach ($result as $key => $value) {
-            $value->sup_variant = (new SuppliesVariant())->getSuppliesVariant([
-                "supplies_id" => $value->supplies_id
-            ]);
-            if ($value->supplies_supplier) {
-                $value->supplier = Supplier::whereIn('supplier_id', json_decode($value->supplies_supplier, true))->get();
+        if ($result->isEmpty()) {
+            return collect();
+        }
+
+        $ids = $result->pluck('supplies_id')->all();
+        $suppliesById = $result->keyBy('supplies_id');
+
+        $creatorIds = $result->pluck('created_by')->filter()->unique()->map(fn ($id) => (int) $id)->all();
+        $staffNames = $creatorIds !== []
+            ? Staff::whereIn('staff_id', $creatorIds)->pluck('staff_name', 'staff_id')
+            : collect();
+
+        $allUnitIds = [];
+        foreach ($result as $s) {
+            $unitArr = json_decode($s->getAttributes()['supplies_unit'] ?? '[]', true) ?: [];
+            foreach ($unitArr as $uid) {
+                $allUnitIds[(int) $uid] = true;
             }
-            $value->supplies_unit = json_decode($value->supplies_unit);
-            $value->supplies_relasi = (new SuppliesRelation())->getSuppliesRelation([
-                "supplies_id" => $value->supplies_id
-            ]);
-            $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
-            $value->stock = (new SuppliesStock())->getProductStock([
-                "supplies_id" => $value->supplies_id
-            ]);
-            $value->created_by_name = $value->created_by 
-                ? (Staff::find($value->created_by)->staff_name ?? '-') 
+        }
+
+        $relations = SuppliesRelation::where('status', 1)
+            ->whereIn('supplies_id', $ids)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($relations as $rel) {
+            $allUnitIds[(int) $rel->su_id_1] = true;
+            $allUnitIds[(int) $rel->su_id_2] = true;
+        }
+
+        $variants = SuppliesVariant::where('status', 1)
+            ->whereIn('supplies_id', $ids)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $supplierIdSet = [];
+        foreach ($variants as $v) {
+            if ($v->supplier_id) {
+                $supplierIdSet[(int) $v->supplier_id] = true;
+            }
+        }
+        foreach ($result as $s) {
+            $supRaw = $s->getAttributes()['supplies_supplier'] ?? null;
+            if ($supRaw) {
+                foreach (json_decode($supRaw, true) ?: [] as $pid) {
+                    $supplierIdSet[(int) $pid] = true;
+                }
+            }
+        }
+
+        $stocks = SuppliesStock::where('status', 1)
+            ->whereIn('supplies_id', $ids)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($stocks as $stk) {
+            $allUnitIds[(int) $stk->unit_id] = true;
+        }
+
+        $unitsMap = $allUnitIds !== []
+            ? Unit::whereIn('unit_id', array_keys($allUnitIds))->get()->keyBy('unit_id')
+            : collect();
+
+        foreach ($relations as $rel) {
+            $u1 = $unitsMap->get($rel->su_id_1);
+            $u2 = $unitsMap->get($rel->su_id_2);
+            if ($u1) {
+                $rel->pr_unit_id_1 = $u1->unit_id;
+                $rel->pr_unit_name_1 = $u1->unit_short_name;
+            } else {
+                $rel->pr_unit_id_1 = $rel->su_id_1;
+                $rel->pr_unit_name_1 = '-';
+            }
+            if ($u2) {
+                $rel->pr_unit_id_2 = $u2->unit_id;
+                $rel->pr_unit_name_2 = $u2->unit_short_name;
+            } else {
+                $rel->pr_unit_id_2 = $rel->su_id_2;
+                $rel->pr_unit_name_2 = '-';
+            }
+        }
+
+        foreach ($stocks as $stk) {
+            $sup = $suppliesById->get($stk->supplies_id);
+            $stk->supplies_name = $sup ? $sup->supplies_name : '-';
+            $u = $unitsMap->get($stk->unit_id);
+            $stk->unit_name = $u ? $u->unit_name : '-';
+            $stk->unit_short_name = $u ? $u->unit_short_name : '-';
+        }
+
+        $supplierMap = $supplierIdSet !== []
+            ? Supplier::whereIn('supplier_id', array_keys($supplierIdSet))->pluck('supplier_name', 'supplier_id')
+            : collect();
+
+        $stocksBySupply = $stocks->groupBy('supplies_id');
+        $relationsBySupply = $relations->groupBy('supplies_id');
+        $variantsBySupply = $variants->groupBy('supplies_id');
+
+        foreach ($result as $value) {
+            $sid = $value->supplies_id;
+
+            $supRaw = $value->getAttributes()['supplies_supplier'] ?? null;
+            if ($supRaw) {
+                $value->supplier = Supplier::whereIn(
+                    'supplier_id',
+                    json_decode($supRaw, true) ?: []
+                )->get();
+            }
+
+            $value->supplies_unit = json_decode($value->getAttributes()['supplies_unit'] ?? '[]');
+
+            $unitArr = json_decode($value->getAttributes()['supplies_unit'] ?? '[]', true) ?: [];
+            $value->units = collect($unitArr)
+                ->map(fn ($uid) => $unitsMap->get((int) $uid))
+                ->filter()
+                ->values();
+
+            $value->supplies_relasi = $relationsBySupply->get($sid, collect());
+
+            $stockForSupply = $stocksBySupply->get($sid, collect())->values();
+
+            $value->sup_variant = $variantsBySupply->get($sid, collect())->map(function ($variant) use ($suppliesById, $supplierMap, $unitsMap, $stockForSupply) {
+                $clone = clone $variant;
+                $s = $suppliesById->get($clone->supplies_id);
+                $clone->supplies_name = $s ? $s->supplies_name : '-';
+                $ssId = $clone->supplier_id;
+                $clone->supplier_name = $ssId ? ($supplierMap->get((int) $ssId) ?: null) : null;
+
+                $uArr = json_decode($s->getAttributes()['supplies_unit'] ?? '[]', true) ?: [];
+                $clone->supplies_unit = collect($uArr)
+                    ->map(fn ($uid) => $unitsMap->get((int) $uid))
+                    ->filter()
+                    ->values();
+
+                $clone->stock = $stockForSupply;
+
+                return $clone;
+            })->values();
+
+            $value->stock = $stockForSupply;
+
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
                 : '-';
         }
 
-        // keyBy supaya bisa lookup O(1) by supplies_id
         return $result->keyBy('supplies_id');
     }
 

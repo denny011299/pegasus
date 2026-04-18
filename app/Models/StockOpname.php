@@ -48,15 +48,40 @@ class StockOpname extends Model
 
         $result->orderBy('status', 'asc')->orderBy('sto_date', 'desc');
 
-        $result =  $result->get();
+        $result = $result->get();
 
-        foreach ($result as $key => $value) {
-           $value->staff_name = Staff::find($value->staff_id)->staff_name;
-        //    $value->category_name = Category::find($value->category_id)->category_name;
-           $value->item = (new StockOpnameDetail())->getDetail(["sto_id"=>$value->sto_id]);
-           $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? $value->staff_name ?? '-') : ($value->staff_name ?? '-');
-           $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+        $staffIds = [];
+        foreach ($result as $value) {
+            if ($value->staff_id) {
+                $staffIds[(int) $value->staff_id] = true;
+            }
+            if ($value->created_by) {
+                $staffIds[(int) $value->created_by] = true;
+            }
+            if ($value->acc_by) {
+                $staffIds[(int) $value->acc_by] = true;
+            }
         }
+        $staffMap = [];
+        if (count($staffIds) > 0) {
+            $staffMap = Staff::whereIn('staff_id', array_keys($staffIds))
+                ->pluck('staff_name', 'staff_id')
+                ->toArray();
+        }
+
+        $stoIds = $result->pluck('sto_id')->unique()->filter()->values()->all();
+        $detailsGrouped = StockOpnameDetail::getDetailBulk($stoIds);
+
+        foreach ($result as $value) {
+            $value->staff_name = $staffMap[$value->staff_id] ?? '-';
+            $value->item = $detailsGrouped->get($value->sto_id, collect())->values();
+            $staffMain = $value->staff_name ?? '-';
+            $value->created_by_name = $value->created_by
+                ? ($staffMap[$value->created_by] ?? $staffMain)
+                : $staffMain;
+            $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
+        }
+
         return $result;
     }
 
