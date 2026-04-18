@@ -138,6 +138,12 @@
                 supplier_id: $('#supplier').val(),
                 supplies_id: $('#supplies_id').val()
             },
+            beforeSend: function () {
+                setReportDataTableLoading('#tableProduct', true);
+            },
+            complete: function () {
+                setReportDataTableLoading('#tableProduct', false);
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];

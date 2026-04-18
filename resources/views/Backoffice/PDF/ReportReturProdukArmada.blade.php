@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Pemakaian Bahan</title>
+    <title>Laporan Retur Produk (Armada)</title>
     <style>
         body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #222; line-height: 1.4; margin: 0; padding: 30px 20px; }
         .report-header { border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 24px; width: 100%; }
@@ -10,61 +10,21 @@
         .report-meta { color: #666; font-size: 10px; }
         .params-table { width: 100%; margin-bottom: 35px; }
         .params-table td { padding: 3px 0; font-size: 11px; }
-        .params-label { color: #555; width: 90px; }
+        .params-label { color: #555; width: 110px; }
         .params-val { color: #000; font-weight: bold; }
-        /* table-layout:auto — header ringkas hanya di awal (tabel 1 baris), isi grup menyambung tanpa orphan thead besar */
-        .table-legend {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: auto;
-            margin-bottom: 4px;
-            page-break-after: avoid;
-        }
+        .table-legend { width: 100%; border-collapse: collapse; table-layout: auto; margin-bottom: 4px; page-break-after: avoid; }
         .table-legend thead tr th {
-            border-top: 1px solid #000;
-            border-bottom: 1px solid #000;
-            padding: 8px 4px;
-            text-align: left;
-            font-size: 9px;
-            font-weight: bold;
-            color: #555;
-            text-transform: uppercase;
-            letter-spacing: .5px;
+            border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 8px 4px; text-align: left;
+            font-size: 9px; font-weight: bold; color: #555; text-transform: uppercase; letter-spacing: .5px;
         }
-        .report-group-block {
-            padding: 0 0 12px 0;
-            border-bottom: 1px solid #ccc;
-            page-break-inside: auto;
-        }
+        .report-group-block { padding: 0 0 12px 0; border-bottom: 1px solid #ccc; page-break-inside: auto; }
         .report-group-block-first { page-break-before: avoid; }
-        .group-summary {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 0 0 2px 0;
-            page-break-after: avoid;
-            page-break-inside: avoid;
-        }
-        .group-summary td {
-            padding: 8px 6px;
-            font-size: 11px;
-            color: #000;
-            font-weight: bold;
-            vertical-align: middle;
-        }
-        .table-detail {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 0;
-            table-layout: auto;
-        }
+        .group-summary { width: 100%; border-collapse: collapse; margin: 0 0 2px 0; page-break-after: avoid; page-break-inside: avoid; }
+        .group-summary td { padding: 8px 6px; font-size: 11px; color: #000; font-weight: bold; vertical-align: middle; }
+        .table-detail { width: 100%; border-collapse: collapse; margin-top: 0; table-layout: auto; }
         .table-detail thead { display: table-header-group; }
         .table-detail thead th {
-            border-bottom: 1px solid #eee;
-            padding: 6px 4px;
-            font-size: 9px;
-            color: #888;
-            font-weight: normal;
-            text-align: left;
+            border-bottom: 1px solid #eee; padding: 6px 4px; font-size: 9px; color: #888; font-weight: normal; text-align: left;
         }
         .table-detail td { padding: 6px 4px; font-size: 11px; color: #444; border-bottom: 1px solid #f5f5f5; }
         .table-detail tbody tr:last-child td { border-bottom: none; }
@@ -78,8 +38,8 @@
 </head>
 <body>
     <div class="report-header">
-        <h1 class="report-title">Laporan Pemakaian Bahan</h1>
-        <div class="report-meta">TANGGAL CETAK: {{ strtoupper(now()->format('d M Y H:i')) }}</div>
+        <h1 class="report-title">Laporan Retur Produk (Armada)</h1>
+        <div class="report-meta">Sumber: Product Issue — pengembalian Armada, status disetujui (ACC). TANGGAL CETAK: {{ strtoupper(now()->format('d M Y H:i')) }}</div>
     </div>
 
     <table class="params-table">
@@ -101,10 +61,10 @@
                     try { $endFormatted = \Carbon\Carbon::parse($end_date)->translatedFormat('j F Y'); } catch (\Throwable $th2) { $endFormatted = '-'; }
                 }
             }
-            $fmt = function($arr) {
+            $fmt = function ($arr) {
                 $parts = [];
                 foreach ($arr as $u => $q) {
-                    if ((int) $q !== 0) {
+                    if ($q > 0) {
                         $parts[] = $q . ' ' . $u;
                     }
                 }
@@ -113,20 +73,19 @@
             $rows = is_array($data ?? null) ? $data : [];
         @endphp
         <tr><td class="params-label">PERIODE</td><td class="params-val">: {{ $startFormatted }} s/d {{ $endFormatted }}</td></tr>
-        <tr><td class="params-label">SUPPLIER</td><td class="params-val">: {{ strtoupper($supplier_name ?? 'Semua Supplier') }}</td></tr>
-        <tr><td class="params-label">BAHAN</td><td class="params-val">: {{ strtoupper($supplies_name ?? 'Semua Bahan') }}</td></tr>
+        <tr><td class="params-label">PRODUK</td><td class="params-val">: {{ strtoupper($product_label ?? 'Semua Produk') }}</td></tr>
     </table>
 
     @if(count($rows) < 1)
-        <p class="empty-msg font-normal">Tidak ada data laporan pemakaian bahan</p>
+        <p class="empty-msg font-normal">Tidak ada data retur produk (armada)</p>
     @else
         <table class="table-legend">
             <thead>
                 <tr>
                     <th class="text-center col-no" scope="col" style="width:5%;">NO</th>
-                    <th scope="col" style="width: 40%;">NAMA BAHAN</th>
-                    <th class="text-right" scope="col" style="width: 25%;">TOTAL TRANSAKSI KELUAR</th>
-                    <th class="text-center" scope="col" style="width: 30%;">TOTAL QTY KELUAR</th>
+                    <th scope="col" style="width: 55%;">NAMA PRODUK</th>
+                    <th class="text-right" scope="col" style="width: 20%;">TOTAL BARIS RETUR</th>
+                    <th class="text-right" scope="col" style="width: 20%;">AKUMULASI QTY</th>
                 </tr>
             </thead>
         </table>
@@ -146,27 +105,27 @@
                 <table class="group-summary">
                     <tr>
                         <td class="text-center text-gray font-normal" style="width:5%;">{{ $i + 1 }}.</td>
-                        <td style="width:40%;">{{ $row['item_name'] ?? '-' }}</td>
-                        <td class="text-right" style="width:25%;">{{ (int)($row['transaction_count'] ?? 0) }} Transaksi Keluar</td>
-                        <td class="text-center" style="width:30%;">{{ $fmt($qtyMap) }}</td>
+                        <td style="width:55%;">{{ $row['item_name'] ?? '-' }}</td>
+                        <td class="text-right" style="width:20%;">{{ (int)($row['transaction_count'] ?? 0) }} Baris</td>
+                        <td class="text-right" style="width:20%;">{{ $fmt($qtyMap) }}</td>
                     </tr>
                 </table>
                 <table class="table-detail">
                     <thead>
                         <tr>
-                            <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">TANGGAL PRODUKSI</th>
-                            <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KODE PRODUKSI</th>
-                            <th class="text-center text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">QTY PEMAKAIAN</th>
-                            <th class="text-gray font-normal" style="width: 25%; border-bottom: 1px solid #eee; padding: 5px 4px; font-size: 9px;">KETERANGAN</th>
+                            <th class="text-gray font-normal" style="width: 18%;">TANGGAL</th>
+                            <th class="text-gray font-normal" style="width: 18%;">KODE ISSUE</th>
+                            <th class="text-gray font-normal" style="width: 14%;">QTY</th>
+                            <th class="text-gray font-normal" style="width: 50%;">KETERANGAN</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($details as $d)
                             <tr>
-                                <td>{{ \Carbon\Carbon::parse($d['production_date'])->format('d M Y') }}</td>
-                                <td>{{ $d['production_code'] ?? '-' }}</td>
-                                <td class="text-center">{{ $d['qty'] ?? 0 }} {{ $d['unit_name'] ?? '' }}</td>
-                                <td>{{ $d['notes'] ?? '-' }}</td>
+                                <td>{{ \Carbon\Carbon::parse($d['pi_date'])->format('d M Y') }}</td>
+                                <td>{{ $d['pi_code'] ?? '-' }}</td>
+                                <td>{{ (int)($d['qty'] ?? 0) }} {{ $d['unit_name'] ?? '' }}</td>
+                                <td>{{ $d['pi_notes'] ?? '-' }}</td>
                             </tr>
                         @empty
                             <tr><td colspan="4" class="text-center text-gray">Tidak ada detail</td></tr>

@@ -97,6 +97,12 @@ function refreshStockAging() {
             item_id: $("#aging_item_id").val(),
             as_of: asOf,
         },
+        beforeSend: function () {
+            setReportDataTableLoading("#tableStockAging", true);
+        },
+        complete: function () {
+            setReportDataTableLoading("#tableStockAging", false);
+        },
         success: function (e) {
             if (!Array.isArray(e)) e = e.original || [];
             table.clear().draw();

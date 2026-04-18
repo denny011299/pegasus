@@ -136,6 +136,12 @@ function refreshSelisihOpname() {
             type: filterType,
             item_id: $("#selisih_item_id").val(),
         },
+        beforeSend: function () {
+            setReportDataTableLoading("#tableSelisihOpname", true);
+        },
+        complete: function () {
+            setReportDataTableLoading("#tableSelisihOpname", false);
+        },
         success: function (e) {
             if (!Array.isArray(e)) e = e.original || [];
             table.clear().draw();

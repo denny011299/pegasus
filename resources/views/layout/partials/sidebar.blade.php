@@ -789,6 +789,9 @@
                                         <li><a href="/ProductReturn"
                                             class="{{ Request::is('ProductReturn') ? 'active' : '' }}">
                                             Laporan Retur</a></li>
+                                        <li><a href="/reportReturProdukArmada"
+                                            class="{{ Request::is('reportReturProdukArmada') ? 'active' : '' }}">
+                                            Laporan Retur Produk (Armada)</a></li>
                                     @endif
 
                                     @if ($akses->firstWhere('name', 'Laporan Produksi'))

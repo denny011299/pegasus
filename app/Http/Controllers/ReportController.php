@@ -18,6 +18,7 @@ use App\Models\InwardOutward;
 use App\Models\LogStock;
 use App\Models\PettyCash;
 use App\Models\Product;
+use App\Models\ProductIssues;
 use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\ReportLoss;
 use App\Models\ReportProfit;
@@ -1344,6 +1345,46 @@ class ReportController extends Controller
         $param = $this->mergePdfPrintMeta($param);
         $pdf = Pdf::loadView('Backoffice.PDF.ReportReturn', $param)->setPaper('a4', 'portrait');
         return $pdf->stream('Laporan_Retur_Product_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    function reportReturProdukArmada()
+    {
+        return view('Backoffice.Reports.ReportReturProdukArmada');
+    }
+
+    function getReportReturProdukArmada(Request $req)
+    {
+        $data = (new ProductIssues())->getArmadaReturnReport([
+            'date' => $req->date,
+            'product_variant_id' => $req->product_variant_id,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function generateReportReturProdukArmadaPdf(Request $req)
+    {
+        $filter = [
+            'date' => $req->date,
+            'product_variant_id' => $req->product_variant_id,
+        ];
+
+        $param['data'] = (new ProductIssues())->getArmadaReturnReport($filter);
+        $param['start_date'] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : '-';
+        $param['end_date'] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : '-';
+        $param['product_label'] = 'Semua Produk';
+        if ($req->product_variant_id) {
+            $pv = ProductVariant::find($req->product_variant_id);
+            if ($pv) {
+                $pr = Product::find($pv->product_id);
+                $param['product_label'] = trim(($pr->product_name ?? '') . ' ' . ($pv->product_variant_name ?? '')) ?: 'Produk #' . $pv->product_variant_id;
+            }
+        }
+
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportReturProdukArmada', $param)->setPaper('a4', 'portrait');
+
+        return $pdf->stream('Laporan_Retur_Produk_Armada_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
     
     function reportProduksi(){

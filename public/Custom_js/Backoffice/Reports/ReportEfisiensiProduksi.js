@@ -172,6 +172,12 @@ function refreshEfisiensi() {
             supplier_id: $("#supplier").val(),
             product_variant_id: $("#product_id").val(),
         },
+        beforeSend: function () {
+            setReportDataTableLoading("#tableReportEfisiensi", true);
+        },
+        complete: function () {
+            setReportDataTableLoading("#tableReportEfisiensi", false);
+        },
         success: function (e) {
             if (!Array.isArray(e)) e = e.original || [];
             table.clear().draw();

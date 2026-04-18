@@ -64,7 +64,7 @@
 
         var parts = [];
         Object.keys(unitMap).forEach(function (unit) {
-            if (unitMap[unit] > 0) parts.push(unitMap[unit] + " " + unit);
+            if (unitMap[unit] !== 0) parts.push(unitMap[unit] + " " + unit);
         });
 
         return parts.length > 0 ? parts.join(" ") : "-";
@@ -133,6 +133,12 @@
                 date: dates,
                 supplier_id: $('#supplier').val(),
                 supplies_id: $('#supplies_id').val(),
+            },
+            beforeSend: function () {
+                setReportDataTableLoading('#tableBahanBaku', true);
+            },
+            complete: function () {
+                setReportDataTableLoading('#tableBahanBaku', false);
             },
             success: function (e) {
                 if (!Array.isArray(e)) {

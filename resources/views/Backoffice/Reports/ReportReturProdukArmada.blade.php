@@ -2,91 +2,88 @@
 @extends('layout.mainlayout')
 @section('content')
     <style>
-        .report-bahan-filter [class*="col-"] {
+        .report-retur-armada-filter [class*="col-"] {
             min-width: 0;
         }
 
-        .report-bahan-filter .select2-container {
+        .report-retur-armada-filter .select2-container {
             width: 100% !important;
             max-width: 100%;
         }
 
-        .report-bahan-filter .select2-container .select2-selection--single {
+        .report-retur-armada-filter .select2-container .select2-selection--single {
             width: 100%;
             overflow: hidden;
         }
 
-        .report-bahan-filter .select2-container .select2-selection__rendered {
+        .report-retur-armada-filter .select2-container .select2-selection__rendered {
             display: block;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        #tableBahanBaku thead th {
+        #tableReportReturArmada thead th {
             background-color: #e8f1ff !important;
         }
 
-        #tableBahanBaku .report-bahan-child thead th {
+        #tableReportReturArmada .report-retur-armada-child thead th {
             background-color: #f5f7fb !important;
             position: sticky;
             top: 0;
             z-index: 2;
         }
+
+        #tableReportReturArmada th.col-item-name,
+        #tableReportReturArmada td.col-item-name {
+            white-space: normal !important;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            vertical-align: middle;
+        }
     </style>
-    <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
 
-            <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Laporan Pemakaian Bahan
+                    Laporan Retur Produk (Armada)
                 @endslot
             @endcomponent
-            <!-- /Page Header -->
 
-            <!-- Search Filter -->
             @component('components.search-filter')
             @endcomponent
-            <!-- /Search Filter -->
 
-            <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
-                    <div class=" card-table">
+                    <div class="card-table">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableBahanBaku">
+                                <table class="table table-center table-hover" id="tableReportReturArmada">
                                     <thead class="thead-light">
                                         <tr>
                                             <th></th>
-                                            <th>Nama Bahan</th>
-                                            <th>Supplier</th>
-                                            <th>Total Transaksi Keluar</th>
-                                            <th>Total Qty Keluar</th>
+                                            <th>Nama Produk</th>
+                                            <th>Total Baris Retur</th>
+                                            <th>Akumulasi Qty Retur</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        
-                                    </tbody>
+                                    <tbody></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- /Table -->
 
         </div>
     </div>
-    <!-- /Page Wrapper -->
 @endsection
 
 @section('custom_js')
     <script>
-        var public = "{{ asset('') }}";    
+        var public = "{{ asset('') }}";
     </script>
     <script src="{{ asset('Custom_js/Backoffice/Reports/report_datatable_loading.js') }}?v=1"></script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Bahan_Baku.js')}}"></script>
+    <script src="{{ asset('Custom_js/Backoffice/Reports/ReportReturProdukArmada.js') }}?v=1"></script>
 @endsection
