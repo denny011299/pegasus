@@ -90,6 +90,13 @@
                         </a>
                     </li>
                 @endif
+                @if (Route::is(['reportStockAging']))
+                    <li>
+                        <a class="btn btn-outline-success btn-export-pdf">
+                            Export PDF
+                        </a>
+                    </li>
+                @endif
                 @if (Route::is(['purchaseOrderDetail']))
                     <li>
                         <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>

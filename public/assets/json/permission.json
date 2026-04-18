@@ -41,5 +41,7 @@
   { "Id": 31, "Modules": "Manajemen Pengguna", "SubModules": "Peran & Perizinan" },
 
   { "Id": 32, "Modules": "Pengaturan", "SubModules": "Profil" },
-  { "Id": 33, "Modules": "Pengaturan", "SubModules": "Pengaturan" }
+  { "Id": 33, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
+
+  { "Id": 34, "Modules": "Laporan", "SubModules": "Laporan Stock Aging" }
 ]
