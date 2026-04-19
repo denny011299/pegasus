@@ -651,15 +651,17 @@
                                 <hr>
                                 <label class="mb-3">Atur Relasi</label>
                                 <div class="row">
-                                    <div class="col-3">
+                                    <div class="col-lg-3 col-5">
                                         <select name="" id="relasi1" class="form-select"></select>
                                     </div>
-                                    <div class="col-1"> <h6 class="text-center pt-2"> - </h6> </div>
-                                    <div class="col-3">
+                                    <div class="col-lg-1 col-2"> <h6 class="text-center pt-2"> - </h6> </div>
+                                    <div class="col-lg-3 col-5">
                                         <select name="" id="relasi2" class="form-select"></select>
                                     </div>
-                                    <div class="col-3">
-                                        <button class="btn btn-primary w-100 btn-sm" type="button" id="btnAddRowRelasi">Tambah Row Relasi</button>
+                                    <div class="col-lg-3 col-12">
+                                        <div class="d-flex justify-content-end mt-3 mt-lg-0">
+                                            <button class="btn btn-primary btn-sm" type="button" id="btnAddRowRelasi">Tambah Row Relasi</button>
+                                        </div>
                                     </div>
                                 </div>
                                  <table class="table table-bordered mb-2 mt-4">

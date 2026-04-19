@@ -20,7 +20,7 @@
         </div>
         <div class="col-lg-4 col-md-6 col-sm-0"></div>
         <div class="col-lg-2 col-md-6 col-sm-12">
-            <a class="btn btn-primary loss btn-filter" href="#">
+            <a class="btn btn-primary loss btn-filter">
                 Jalankan
             </a>
         </div>
@@ -62,8 +62,8 @@
             </div>
         </div>
         <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
-                <a class="btn btn-outline-secondary btn-clear" href="#">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
+                <a class="btn btn-outline-secondary btn-clear">
                     Clear
                 </a>
             </div>
@@ -106,8 +106,8 @@
             </div>
         </div>
         <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
-                <a class="btn btn-outline-secondary btn-clear" href="#">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3 w-100">
+                <a class="btn btn-outline-secondary btn-clear">
                     Clear
                 </a>
             </div>
@@ -154,8 +154,8 @@
             </div>
         </div>
         <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
-                <a class="btn btn-outline-secondary btn-clear" href="#">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
+                <a class="btn btn-outline-secondary btn-clear">
                     Clear
                 </a>
             </div>
@@ -194,8 +194,8 @@
             </div>
         </div>
         <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
-                <a class="btn btn-outline-secondary btn-clear" href="#">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
+                <a class="btn btn-outline-secondary btn-clear">
                     Clear
                 </a>
             </div>
@@ -238,7 +238,7 @@
             </div>
         </div>
         <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
                 
                 <a class="btn btn-outline-secondary btn-clear">
                     Clear
@@ -276,8 +276,8 @@
             </div>
         </div>
         <div class="col-xl-2 col-lg-12 col-md-12 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
-                <a class="btn btn-outline-secondary btn-clear" href="#">Clear</a>
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
+                <a class="btn btn-outline-secondary btn-clear">Clear</a>
             </div>
         </div>
     </div>
@@ -317,7 +317,7 @@
             </div>
         </div>
         <div class="col-xl-1 col-lg-12 col-md-12 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-start justify-content-md-start justify-content-start mb-3">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
                 <a class="btn btn-outline-secondary btn-clear">
                     Clear
                 </a>
