@@ -156,11 +156,13 @@ function refreshManageStock(){
             for (var i = 0; i < e.length; i++) {
                 e[i].dates = moment(e[i].created_at).format('D MMM YYYY');
                 e[i].product = `<img src="${public+e[i].ms_image}" class="me-2" style="width:30px">`+e[i].ms_name;
-                e[i].action=`
-                    <a class="p-2 btn-action-icon btn_delete" href="javascript:void(0);">
-                        <i class="fe fe-trash-2"></i>
-                    </a>
-                `;
+                e[i].action =
+                    roleIconDelete(
+                        "Stok Produk",
+                        "p-2 btn-action-icon btn_delete",
+                        'href="javascript:void(0);"'
+                    ) ||
+                    '<span class="text-muted small">—</span>';
             }
             if(mode==1){
                 var uniqueData = e.filter((item, index, self) => 

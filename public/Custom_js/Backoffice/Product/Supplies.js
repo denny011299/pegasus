@@ -129,14 +129,24 @@
                             e[i].unit_values += ", ";
                          }
                     });
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].supplies_id}" data-bs-target="#edit-supplies">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].supplies_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var se =
+                        roleIconEdit(
+                            "Daftar Bahan Mentah",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'data-id="' +
+                                e[i].supplies_id +
+                                '" data-bs-target="#edit-supplies"'
+                        ) +
+                        roleIconDelete(
+                            "Daftar Bahan Mentah",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].supplies_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        se ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

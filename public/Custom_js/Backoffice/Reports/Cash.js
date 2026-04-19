@@ -133,21 +133,18 @@
                     }
 
                     e[i].action = "";
-                    if (e[i].status == 1){
-                        e[i].action = `
-                            <div class="d-flex align-items-center gap-1">
-                                <a class="btn-action-icon p-2 btn_acc bg-success text-light" 
-                                data-bs-toggle="tooltip" data-bs-placement="bottom" 
-                                title="Terima" cash_id="${e[i].cash_id}">
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a class="btn-action-icon p-2 btn_decline bg-danger text-light" 
-                                data-bs-toggle="tooltip" data-bs-placement="bottom" 
-                                title="Tolak" cash_id="${e[i].cash_id}">
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            </div>
-                        `;
+                    if (
+                        e[i].status == 1 &&
+                        hasAccessActionAny(KAS_OR_OP_MODS, "others")
+                    ) {
+                        e[i].action =
+                            '<div class="d-flex align-items-center gap-1">' +
+                            '<a class="btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' +
+                            e[i].cash_id +
+                            '"><i class="fe fe-check"></i></a>' +
+                            '<a class="btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' +
+                            e[i].cash_id +
+                            '"><i class="fe fe-x"></i></a></div>';
                     }
                 }
                 $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);

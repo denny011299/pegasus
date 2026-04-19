@@ -63,15 +63,24 @@
                     e[i].role_name_text  = e[i].role_name  ?? "-";
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY') ?? "-"; 
                     e[i].saldo_text = `Rp ${formatRupiah(e[i].staff_saldo)}`;
-                    e[i].action = `
-                        
-                        <a class="me-2 btn-action-icon p-2 btn_edit" href="/updateStaff/${e[i].staff_id}" data-bs-target="#edit-supplier">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].staff_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var st =
+                        roleIconEdit(
+                            "Pengguna",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'href="/updateStaff/' +
+                                e[i].staff_id +
+                                '" data-bs-target="#edit-supplier"'
+                        ) +
+                        roleIconDelete(
+                            "Pengguna",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].staff_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        st ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\RoleAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -10,25 +11,27 @@ use Symfony\Component\HttpFoundation\Response;
 class checkAccess
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  string|null  $spec  "NamaModul" atau "NamaModul|view|create|edit|delete|others" (tanpa pipe = view)
      */
-    public function handle(Request $request, Closure $next, $permission = null): Response
+    public function handle(Request $request, Closure $next, ?string $spec = null): Response
     {
-        if (!$permission) {
+        if ($spec === null || $spec === '') {
             return $next($request);
         }
 
+        $module = trim($spec);
+        $ability = 'view';
+        if (str_contains($spec, '|')) {
+            [$module, $ability] = explode('|', $spec, 2);
+            $module = trim($module);
+            $ability = trim(strtolower($ability));
+        }
+
         $user = Session::get('user');
-        $akses = collect(json_decode($user->role_access));
-
-        $hasAccess = $akses->firstWhere('name', $permission);
-
-        if (!$hasAccess) {
+        if (!RoleAccess::can($user, $module, $ability)) {
             abort(403, 'Unauthorized');
         }
-        
+
         return $next($request);
     }
 }

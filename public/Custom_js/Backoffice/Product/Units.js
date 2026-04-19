@@ -58,16 +58,26 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].unit_date = moment(e[i].created_at).format('D MMM YYYY');
-                    e[i].action = `
-                        <div class="edit-delete-action d-flex align-items-center">
-                            <a class="btn-action-icon me-2 p-2 btn_edit" data-id="${e[i].unit_id}" data-bs-target="#edit-unit">
-                                <i class="fe fe-edit"></i>
-                            </a>
-                            <a class="btn-action-icon p-2 btn_delete" data-id="${e[i].unit_id}" href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                            </a>
-                        </div>
-                    `;
+                    var ue =
+                        roleIconEdit(
+                            "Satuan",
+                            "btn-action-icon me-2 p-2 btn_edit",
+                            'data-id="' +
+                                e[i].unit_id +
+                                '" data-bs-target="#edit-unit"'
+                        ) +
+                        roleIconDelete(
+                            "Satuan",
+                            "btn-action-icon p-2 btn_delete",
+                            'data-id="' +
+                                e[i].unit_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action = ue
+                        ? '<div class="edit-delete-action d-flex align-items-center">' +
+                          ue +
+                          "</div>"
+                        : '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

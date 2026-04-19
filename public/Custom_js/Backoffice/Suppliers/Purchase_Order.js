@@ -260,18 +260,21 @@
                     if(e[i].pembayaran == 1)e[i].pembayaran_text = `<label class="badge bg-primary badgeStatus">Lunas</label>`;
                     var active = "disabled";
                     if(e[i].kodeTerima!=null) active="";
-                    e[i].action = `
-                        <a href="/purchaseOrderDetail/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_view" >
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
-                    if (e[i].status == 1){
-                        e[i].action += `
-                            <a class="p-2 btn-action-icon btn_delete"  href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                            </a>
-                        `;
+                    var poa = "";
+                    if (hasAccessAction("Pembelian", "view")) {
+                        poa +=
+                            '<a href="/purchaseOrderDetail/' +
+                            e[i].po_id +
+                            '" class="me-2 btn-action-icon p-2 btn_view"><i class="fe fe-eye"></i></a>';
                     }
+                    e[i].action = poa;
+                    if (e[i].status == 1 && hasAccessAction("Pembelian", "delete")) {
+                        e[i].action +=
+                            '<a class="p-2 btn-action-icon btn_delete" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
+                    }
+                    if (!e[i].action)
+                        e[i].action =
+                            '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

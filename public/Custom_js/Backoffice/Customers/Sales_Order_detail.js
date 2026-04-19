@@ -166,14 +166,24 @@
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
                     
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit_dn" data-id="${e[i].sod_id}" data-bs-target="#edit-sales">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete_dn" data-id="${e[i].sod_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var sda =
+                        roleIconEdit(
+                            "Pengiriman",
+                            "me-2 btn-action-icon p-2 btn_edit_dn",
+                            'data-id="' +
+                                e[i].sod_id +
+                                '" data-bs-target="#edit-sales"'
+                        ) +
+                        roleIconDelete(
+                            "Pengiriman",
+                            "p-2 btn-action-icon btn_delete_dn",
+                            'data-id="' +
+                                e[i].sod_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        sda ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 tableDn.rows.add(e).draw();
@@ -213,14 +223,18 @@
                     else if (e[i].status == 0){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit_invoice" >
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="me-2 btn-action-icon p-2 btn_delete_invoice">
-                            <i class="fe fe-trash"></i>
-                        </a>
-                    `;
+                    var sia =
+                        roleIconEdit(
+                            "Pengiriman",
+                            "me-2 btn-action-icon p-2 btn_edit_invoice",
+                            ""
+                        ) +
+                        (hasAccessAction("Pengiriman", "delete")
+                            ? '<a class="me-2 btn-action-icon p-2 btn_delete_invoice"><i class="fe fe-trash"></i></a>'
+                            : "");
+                    e[i].action =
+                        sia ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 tableInv.rows.add(e).draw();

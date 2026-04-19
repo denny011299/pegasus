@@ -106,14 +106,22 @@
                     e[i].bom_date = moment(e[i].created_at).format('D MMM YYYY');
                     console.log(e[i]);
                     e[i].unit_text = e[i].bom_qty + " " + e[i].unit_name;
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit"  data-bs-target="#edit-category">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].bom_id}  href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var bo =
+                        roleIconEdit(
+                            "Resep Bahan Mentah",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'data-bs-target="#edit-category"'
+                        ) +
+                        roleIconDelete(
+                            "Resep Bahan Mentah",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].bom_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        bo ||
+                        '<span class="text-muted small">—</span>';
                     e[i].supplies = e[i].details.map(d => d.supplies_name).join(", ");
                 }
 

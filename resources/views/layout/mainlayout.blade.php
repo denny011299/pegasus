@@ -190,10 +190,12 @@
 </script>
 <script>
     var route = "{{ Route::currentRouteName() }}";
+    window.userRoleId = @json(Session::has('user') ? (int) Session::get('user')->role_id : null);
     // kirim semua permission dari user ke JS
     window.permissionList = @json(Session::has('user') ? Session::get('user')->role_access : []);
     // === GLOBAL PERMISSION HELPER ===
     function hasMenuAccess(moduleName) {
+        if (window.userRoleId === -1) return true;
         if (!window.permissionList || !Array.isArray(window.permissionList)) return false;
 
         return window.permissionList.some(
@@ -202,6 +204,7 @@
     }
 
     function hasAccessAction(moduleName, action) {
+        if (window.userRoleId === -1) return true;
         if (!window.permissionList || !Array.isArray(window.permissionList)) return false;
 
         const found = window.permissionList.find(p =>
@@ -211,5 +214,55 @@
         if (!found) return false;
 
         return found.akses.map(a => a.toLowerCase()).includes(action.toLowerCase());
+    }
+
+    /** True jika salah satu modul punya akses tersebut (untuk Kas / Kas Operasional, Wilayah, dll.) */
+    function hasAccessActionAny(moduleNames, action) {
+        if (window.userRoleId === -1) return true;
+        if (!moduleNames || !moduleNames.length) return false;
+        var a = String(action).toLowerCase();
+        for (var i = 0; i < moduleNames.length; i++) {
+            if (hasAccessAction(moduleNames[i], a)) return true;
+        }
+        return false;
+    }
+
+    var KAS_OR_OP_MODS = ["Kas", "Kas Operasional"];
+    var AREA_MASTER_MODS = ["Kategori", "Satuan", "Variasi"];
+
+    /** Ikon lihat (fe fe-eye) jika modul punya akses view */
+    function roleIconView(moduleName, className, dataAttrs) {
+        if (!hasAccessAction(moduleName, "view")) return "";
+        return (
+            '<a class="' +
+            className +
+            '" ' +
+            (dataAttrs || "") +
+            '><i class="fe fe-eye"></i></a>'
+        );
+    }
+
+    /** Ikon edit (fe fe-edit) jika modul punya akses edit */
+    function roleIconEdit(moduleName, className, dataAttrs) {
+        if (!hasAccessAction(moduleName, "edit")) return "";
+        return (
+            '<a class="' +
+            className +
+            '" ' +
+            (dataAttrs || "") +
+            '><i class="fe fe-edit"></i></a>'
+        );
+    }
+
+    /** Ikon hapus (fe fe-trash-2) jika modul punya akses delete */
+    function roleIconDelete(moduleName, className, dataAttrs) {
+        if (!hasAccessAction(moduleName, "delete")) return "";
+        return (
+            '<a class="' +
+            className +
+            '" ' +
+            (dataAttrs || "") +
+            '><i class="fe fe-trash-2"></i></a>'
+        );
     }
 </script>

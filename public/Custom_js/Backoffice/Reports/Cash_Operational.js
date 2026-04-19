@@ -572,33 +572,42 @@
                     } else if (e[i].status == 3){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view_admin" data-id="${e[i].ca_id}" data-bs-target="#view-cash">
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
-                    if (e[i].status == 1){
-                        if (e[i].ca_type == 1){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_edit_admin" data-id="${e[i].ca_id}" data-bs-target="#edit-category">
-                                    <i class="fe fe-edit"></i>
-                                </a>
-                                <a class="p-2 btn-action-icon btn_delete_admin" data-id="${e[i].ca_id}" href="javascript:void(0);">
-                                    <i class="fe fe-trash-2"></i>
-                                </a>
-                            `;
-                        } else if (e[i].ca_type == 2){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
+                    e[i].action = "";
+                    if (hasAccessActionAny(KAS_OR_OP_MODS, "view")) {
+                        e[i].action +=
+                            '<a class="me-2 btn-action-icon p-2 btn_view_admin" data-id="' +
+                            e[i].ca_id +
+                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
+                    }
+                    if (e[i].status == 1) {
+                        if (e[i].ca_type == 1) {
+                            if (hasAccessActionAny(KAS_OR_OP_MODS, "edit")) {
+                                e[i].action +=
+                                    '<a class="me-2 btn-action-icon p-2 btn_edit_admin" data-id="' +
+                                    e[i].ca_id +
+                                    '" data-bs-target="#edit-category"><i class="fe fe-edit"></i></a>';
+                            }
+                            if (hasAccessActionAny(KAS_OR_OP_MODS, "delete")) {
+                                e[i].action +=
+                                    '<a class="p-2 btn-action-icon btn_delete_admin" data-id="' +
+                                    e[i].ca_id +
+                                    '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
+                            }
+                        } else if (e[i].ca_type == 2) {
+                            if (hasAccessActionAny(KAS_OR_OP_MODS, "others")) {
+                                e[i].action +=
+                                    '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
+                                    e[i].cash_id +
+                                    '" ><i class="fe fe-check"></i></a>' +
+                                    '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
+                                    e[i].cash_id +
+                                    '" ><i class="fe fe-x"></i></a>';
+                            }
                         }
+                    }
+                    if (!e[i].action) {
+                        e[i].action =
+                            '<span class="text-muted small">—</span>';
                     }
                 }
                 table.rows.add(e).draw();
@@ -664,33 +673,42 @@
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
 
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view_gudang" data-id="${e[i].cg_id}" data-bs-target="#view-cash">
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
-                    if (e[i].status == 1){
-                        if (e[i].cg_type == 1){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_edit_gudang" data-id="${e[i].cg_id}" data-bs-target="#edit-category">
-                                    <i class="fe fe-edit"></i>
-                                </a>
-                                <a class="p-2 btn-action-icon btn_delete_gudang" data-id="${e[i].cg_id}" href="javascript:void(0);">
-                                    <i class="fe fe-trash-2"></i>
-                                </a>
-                            `;
-                        } else if (e[i].cg_type == 2){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
+                    e[i].action = "";
+                    if (hasAccessActionAny(KAS_OR_OP_MODS, "view")) {
+                        e[i].action +=
+                            '<a class="me-2 btn-action-icon p-2 btn_view_gudang" data-id="' +
+                            e[i].cg_id +
+                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
+                    }
+                    if (e[i].status == 1) {
+                        if (e[i].cg_type == 1) {
+                            if (hasAccessActionAny(KAS_OR_OP_MODS, "edit")) {
+                                e[i].action +=
+                                    '<a class="me-2 btn-action-icon p-2 btn_edit_gudang" data-id="' +
+                                    e[i].cg_id +
+                                    '" data-bs-target="#edit-category"><i class="fe fe-edit"></i></a>';
+                            }
+                            if (hasAccessActionAny(KAS_OR_OP_MODS, "delete")) {
+                                e[i].action +=
+                                    '<a class="p-2 btn-action-icon btn_delete_gudang" data-id="' +
+                                    e[i].cg_id +
+                                    '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
+                            }
+                        } else if (e[i].cg_type == 2) {
+                            if (hasAccessActionAny(KAS_OR_OP_MODS, "others")) {
+                                e[i].action +=
+                                    '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
+                                    e[i].cash_id +
+                                    '" ><i class="fe fe-check"></i></a>' +
+                                    '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
+                                    e[i].cash_id +
+                                    '" ><i class="fe fe-x"></i></a>';
+                            }
                         }
+                    }
+                    if (!e[i].action) {
+                        e[i].action =
+                            '<span class="text-muted small">—</span>';
                     }
                 }
                 table.rows.add(e).draw();
@@ -769,35 +787,36 @@
                     } else if (e[i].status == 3){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view_armada" data-id="${e[i].cr_id}" data-bs-target="#view-cash">
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
-                    if (e[i].status == 2 && e[i].cr_type == 1) e[i].action = "";
-                    if (e[i].status == 1){
-                        // if (e[i].cr_aksi == 1){
-                        //     e[i].action += `
-                        //         <a class="me-2 btn-action-icon p-2 btn_edit_armada" data-id="${e[i].cs_id}" data-bs-target="#edit-category">
-                        //             <i class="fe fe-edit"></i>
-                        //         </a>
-                        //         <a class="p-2 btn-action-icon btn_delete_armada" data-id="${e[i].cs_id}" href="javascript:void(0);">
-                        //             <i class="fe fe-trash-2"></i>
-                        //         </a>
-                        //     `;
-                        // }
-                        if (e[i].cr_aksi == 2){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
+                    e[i].action = "";
+                    if (
+                        !(e[i].status == 2 && e[i].cr_type == 1) &&
+                        hasAccessActionAny(KAS_OR_OP_MODS, "view")
+                    ) {
+                        e[i].action +=
+                            '<a class="me-2 btn-action-icon p-2 btn_view_armada" data-id="' +
+                            e[i].cr_id +
+                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
+                    }
+                    if (e[i].status == 1) {
+                        if (
+                            e[i].cr_aksi == 2 &&
+                            hasAccessActionAny(KAS_OR_OP_MODS, "others")
+                        ) {
+                            e[i].action +=
+                                '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
+                                e[i].cash_id +
+                                '" ><i class="fe fe-check"></i></a>' +
+                                '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
+                                e[i].cash_id +
+                                '" ><i class="fe fe-x"></i></a>';
                         }
+                    }
+                    if (
+                        !e[i].action &&
+                        !(e[i].status == 2 && e[i].cr_type == 1)
+                    ) {
+                        e[i].action =
+                            '<span class="text-muted small">—</span>';
                     }
                 }
                 table.rows.add(e).draw();
@@ -880,24 +899,29 @@
                     } else if (e[i].status == 3){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view_sales" data-id="${e[i].cs_id}" data-bs-target="#view-cash">
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
-                    if (e[i].status == 1){
-                        if (e[i].cs_aksi == 1){
-                            e[i].action += `
-                                <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Terima"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-check"></i>
-                                </a>
-                                <a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip"
-                                data-bs-placement="bottom" title="Tolak"  cash_id = "${e[i].cash_id}" >
-                                    <i class="fe fe-x"></i>
-                                </a>
-                            `;
-                        }
+                    e[i].action = "";
+                    if (hasAccessActionAny(KAS_OR_OP_MODS, "view")) {
+                        e[i].action +=
+                            '<a class="me-2 btn-action-icon p-2 btn_view_sales" data-id="' +
+                            e[i].cs_id +
+                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
+                    }
+                    if (
+                        e[i].status == 1 &&
+                        e[i].cs_aksi == 1 &&
+                        hasAccessActionAny(KAS_OR_OP_MODS, "others")
+                    ) {
+                        e[i].action +=
+                            '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
+                            e[i].cash_id +
+                            '" ><i class="fe fe-check"></i></a>' +
+                            '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
+                            e[i].cash_id +
+                            '" ><i class="fe fe-x"></i></a>';
+                    }
+                    if (!e[i].action) {
+                        e[i].action =
+                            '<span class="text-muted small">—</span>';
                     }
                 }
                 table.rows.add(e).draw();

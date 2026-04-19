@@ -213,11 +213,14 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].so_date).format('D MMM YYYY');
                     // e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view" data-id="${e[i].so_id}" data-bs-target="#view-cash">
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
+                    var soa = "";
+                    if (hasAccessAction("Pengiriman", "view")) {
+                        soa +=
+                            '<a class="me-2 btn-action-icon p-2 btn_view" data-id="' +
+                            e[i].so_id +
+                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
+                    }
+                    e[i].action = soa;
 
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;
@@ -227,12 +230,11 @@
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
 
-                    if (e[i].status == 1) {
-                        e[i].action += `
-                            <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].so_id}" href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                            </a>
-                        `;
+                    if (e[i].status == 1 && hasAccessAction("Pengiriman", "delete")) {
+                        e[i].action +=
+                            '<a class="p-2 btn-action-icon btn_delete" data-id="' +
+                            e[i].so_id +
+                            '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
                         // e[i].action += `
                         //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
                         //     data-bs-placement="bottom" title="Terima"  so_id = "${e[i].so_id}" >
@@ -244,6 +246,9 @@
                         //     </a>
                         // `;
                     }
+                    if (!e[i].action)
+                        e[i].action =
+                            '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

@@ -57,14 +57,24 @@
                             if(index<e[i].stock.length-1)e[i].product_variant_stock_text +=", ";
                         });
                     if (e[i].product_variant_stock_text=="") e[i].product_variant_stock_text="-"
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].stk_id}" data-bs-target="#edit-category">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].stk_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var spe =
+                        roleIconEdit(
+                            "Stok Produk",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'data-id="' +
+                                e[i].stk_id +
+                                '" data-bs-target="#edit-category"'
+                        ) +
+                        roleIconDelete(
+                            "Stok Produk",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].stk_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        spe ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

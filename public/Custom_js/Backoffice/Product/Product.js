@@ -68,14 +68,20 @@
                             e[i].unit_values += ", ";
                          }
                     });
-                    e[i].action = `
-                        <a href="/updateProduct/${e[i].product_id}" class="me-2 btn-action-icon p-2 " >
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].pr_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var pe =
+                        roleIconEdit(
+                            "Daftar Produk",
+                            "me-2 btn-action-icon p-2",
+                            'href="/updateProduct/' + e[i].product_id + '"'
+                        ) +
+                        roleIconDelete(
+                            "Daftar Produk",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' + e[i].pr_id + '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        pe ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

@@ -154,11 +154,14 @@
                     item.date = moment(item.pi_date).format('D MMM YYYY');
                     item.ref_num_text = item.poi_code || item.po_number;
                     
-                    item.action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.pi_id}">
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
+                    var pia = "";
+                    if (hasAccessAction("Produk Bermasalah", "view")) {
+                        pia +=
+                            '<a class="me-2 btn-action-icon p-2 btn_view" data-id="' +
+                            item.product_id +
+                            '"><i class="fe fe-eye"></i></a>';
+                    }
+                    item.action = pia;
 
                     if (item.status == 1){
                         item.status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;
@@ -169,16 +172,22 @@
                     }
 
                     if (item.pi_img == null){
-                        item.action = `
-                            <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:center;">
-                                <a class="btn-action-icon p-2 btn_view" data-id="${item.pi_id}">
-                                    <i class="fe fe-eye"></i>
-                                </a>
-                                <a class="btn-action-icon p-2" href="/purchaseOrderDetail/${item.po_id}">
-                                    <i class="fe fe-dollar-sign"></i>
-                                </a>
-                            </div>
-                        `;
+                        item.action = "";
+                        if (hasAccessAction("Produk Bermasalah", "view")) {
+                            item.action +=
+                                '<a class="me-2 btn-action-icon p-2 btn_view" data-id="' +
+                                item.product_id +
+                                '"><i class="fe fe-eye"></i></a>';
+                        }
+                        if (hasAccessAction("Pembelian", "view")) {
+                            item.action +=
+                                '<a class="me-2 btn-action-icon p-2" href="/purchaseOrderDetail/' +
+                                item.po_id +
+                                '" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Detail Pembelian"><i class="fe fe-dollar-sign"></i></a>';
+                        }
+                        if (!item.action)
+                            item.action =
+                                '<span class="text-muted small">—</span>';
                     } else {
                         if (item.status == 1){
                             
@@ -197,12 +206,15 @@
                             // `;
                         }
                         else if (item.status == 2){
-                            item.action = `
-                                <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.pi_id}">
-                                    <i class="fe fe-eye"></i>
-                                </a>
-                            `;
-                            // <a class="p-2 btn-action-icon btn_delete" data-id="${item.pi_id}" href="javascript:void(0);">
+                            item.action = hasAccessAction(
+                                "Produk Bermasalah",
+                                "view"
+                            )
+                                ? '<a class="me-2 btn-action-icon p-2 btn_view" data-id="' +
+                                  item.product_id +
+                                  '"><i class="fe fe-eye"></i></a>'
+                                : '<span class="text-muted small">—</span>';
+                            // <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
                             //         <i class="fe fe-trash-2"></i>
                             //     </a>
                         }

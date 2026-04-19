@@ -61,14 +61,24 @@
                     // <a class="me-2 btn-action-icon p-2 btn_view" href="/customerDetail/${e[i].customer_id}" data-bs-target="#view-supplier">
                     //     <i class="fe fe-eye"></i>
                     // </a>
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" href="/updateCustomer/${e[i].customer_id}" data-bs-target="#edit-supplier">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].customer_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var ce =
+                        roleIconEdit(
+                            "Armada",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'href="/updateCustomer/' +
+                                e[i].customer_id +
+                                '" data-bs-target="#edit-supplier"'
+                        ) +
+                        roleIconDelete(
+                            "Armada",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].customer_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        ce ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

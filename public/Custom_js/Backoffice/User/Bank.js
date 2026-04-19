@@ -57,14 +57,24 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].bank_date = moment(e[i].created_at).format('D MMM YYYY');
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].bank_id}" data-bs-target="#edit-bank">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].bank_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var be =
+                        roleIconEdit(
+                            "Bank Account",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'data-id="' +
+                                e[i].bank_id +
+                                '" data-bs-target="#edit-bank"'
+                        ) +
+                        roleIconDelete(
+                            "Bank Account",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].bank_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        be ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

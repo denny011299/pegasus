@@ -55,14 +55,22 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].area_id}" data-bs-target="#edit-area">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].area_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var ae = "";
+                    if (hasAccessActionAny(AREA_MASTER_MODS, "edit")) {
+                        ae +=
+                            '<a class="me-2 btn-action-icon p-2 btn_edit" data-id="' +
+                            e[i].area_id +
+                            '" data-bs-target="#edit-area"><i class="fe fe-edit"></i></a>';
+                    }
+                    if (hasAccessActionAny(AREA_MASTER_MODS, "delete")) {
+                        ae +=
+                            '<a class="p-2 btn-action-icon btn_delete" data-id="' +
+                            e[i].area_id +
+                            '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
+                    }
+                    e[i].action =
+                        ae ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

@@ -2,6 +2,7 @@
     $akses = $aksesHome ?? collect();
     $showBahan = (bool) $akses->firstWhere('name', 'Pengelolaan Bahan Mentah');
 @endphp
+
 <style>
     :root {
         --dash-primary: #2d60ff;
@@ -131,18 +132,6 @@
         font-size: 0.8rem;
     }
 
-    .dash-pemakaian-page .dash-top-sales-scroll {
-        max-height: 22rem;
-        overflow-y: auto;
-    }
-
-    .dash-pemakaian-page .dash-top-sales-scroll thead th {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
-    }
-
     .dash-pemakaian-page .badge-dash {
         background: var(--dash-primary-soft);
         color: var(--dash-primary);
@@ -235,6 +224,7 @@
         text-decoration: underline;
     }
 </style>
+
 <div class="dash-pemakaian-page dash-home-embed">
     <div id="dash_cross_widgets" class="row g-3 mb-1"></div>
 
@@ -345,7 +335,7 @@
                         <h5 class="mb-0">Top pengiriman</h5>
                     </div>
                     <span class="text-muted small mb-2 d-block" id="dash_top_sales_range">—</span>
-                    <div class="table-responsive flex-grow-1 dash-top-sales-scroll">
+                    <div class="table-responsive flex-grow-1">
                         <table class="table table-sm table-hover table-top-materials mb-0">
                             <thead>
                                 <tr>

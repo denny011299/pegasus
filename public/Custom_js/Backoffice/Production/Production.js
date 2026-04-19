@@ -116,22 +116,30 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].production_date).format('D MMM YYYY');
-                    e[i].action = `
-                        <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
-                    `;
-
-                    if (e[i].status == 2){
-                        e[i].action = `
-                            <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
-                            <button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>
-                        `;
+                    const isOldRow = moment(e[i].production_date).isBefore(
+                        moment().subtract(2, "days").format("YYYY-MM-DD")
+                    );
+                    let prAct = "";
+                    if (hasAccessAction("Produksi", "view")) {
+                        prAct +=
+                            '<button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>';
                     }
-
-                    if(e[i].status != 1 && e[i].status != 2){
-                        e[i].action = `
-                        <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                        `;
+                    if (
+                        !isOldRow &&
+                        e[i].status == 2 &&
+                        hasAccessAction("Produksi", "delete")
+                    ) {
+                        prAct +=
+                            '<button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>';
                     }
+                    if (isOldRow || (e[i].status != 1 && e[i].status != 2)) {
+                        prAct = hasAccessAction("Produksi", "view")
+                            ? '<button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>'
+                            : "";
+                    }
+                    e[i].action =
+                        prAct ||
+                        '<span class="text-muted small">—</span>';
                     // if(e[i].status == 3){
 
                     //      e[i].action = `
@@ -152,12 +160,6 @@
                     //         </button>
                     //     `;
                     // }
-                    if (moment(e[i].production_date).isBefore(moment().subtract(2, 'days').format('YYYY-MM-DD'))) {
-                        e[i].action = `
-                            <button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                        `;
-                    }
-
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Pending</span>`;
                     } else if (e[i].status == 2){

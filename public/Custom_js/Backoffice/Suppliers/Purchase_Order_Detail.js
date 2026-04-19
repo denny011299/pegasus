@@ -232,14 +232,24 @@
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
                     
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit_dn" data-id="${e[i].pod_id}" data-bs-target="#edit-sales">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete_dn" data-id="${e[i].pod_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var pda =
+                        roleIconEdit(
+                            "Pembelian",
+                            "me-2 btn-action-icon p-2 btn_edit_dn",
+                            'data-id="' +
+                                e[i].pod_id +
+                                '" data-bs-target="#edit-sales"'
+                        ) +
+                        roleIconDelete(
+                            "Pembelian",
+                            "p-2 btn-action-icon btn_delete_dn",
+                            'data-id="' +
+                                e[i].pod_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        pda ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 tableDn.rows.add(e).draw();
@@ -280,14 +290,18 @@
                     else if (e[i].status == 0){
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit_invoice" >
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="me-2 btn-action-icon p-2 btn_delete_invoice">
-                            <i class="fe fe-trash"></i>
-                        </a>
-                    `;
+                    var pia =
+                        roleIconEdit(
+                            "Pembelian",
+                            "me-2 btn-action-icon p-2 btn_edit_invoice",
+                            ""
+                        ) +
+                        (hasAccessAction("Pembelian", "delete")
+                            ? '<a class="me-2 btn-action-icon p-2 btn_delete_invoice"><i class="fe fe-trash"></i></a>'
+                            : "");
+                    e[i].action =
+                        pia ||
+                        '<span class="text-muted small">—</span>';
                     if(e[i].status==2)total += e[i].poi_total;
                 }
                 console.log(total);
@@ -326,12 +340,15 @@
                     e[i].total = "Rp " + formatRupiah(e[i].rs_total);
 
                     e[i].action = "";
-                    if (data.status == 1 && data.pembayaran == 1){
-                        e[i].action = `
-                            <a class="p-2 btn-action-icon btn_delete_retur" data-id="${e[i].rs_id}" href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                            </a>
-                        `;
+                    if (
+                        data.status == 1 &&
+                        data.pembayaran == 1 &&
+                        hasAccessAction("Pembelian", "delete")
+                    ) {
+                        e[i].action =
+                            '<a class="p-2 btn-action-icon btn_delete_retur" data-id="' +
+                            e[i].rs_id +
+                            '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
                     }
 
                     totalRetur += e[i].rs_total;

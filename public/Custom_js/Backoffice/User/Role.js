@@ -57,12 +57,20 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].role_date = moment(e[i].created_at).format('D MMM YYYY');
-                    e[i].action = `
-                        <a href="#" class="btn btn-greys btn_edit me-2" data-bs-toggle="modal"
-                            data-bs-target="#edit_role"><i class="fa fa-edit me-1"></i> Edit Peran</a>
-                        <a href="/permission/${e[i].role_id}" class="btn btn-greys me-2"><i
-                            class="fa fa-shield me-1"></i> Perizinan</a>
-                    `;
+                    var rp = "";
+                    if (hasAccessAction("Peran & Perizinan", "edit")) {
+                        rp +=
+                            '<a href="#" class="btn btn-greys btn_edit me-2" data-bs-toggle="modal" data-bs-target="#edit_role"><i class="fa fa-edit me-1"></i> Edit Peran</a>';
+                    }
+                    if (hasAccessAction("Peran & Perizinan", "view")) {
+                        rp +=
+                            '<a href="/permission/' +
+                            e[i].role_id +
+                            '" class="btn btn-greys me-2"><i class="fa fa-shield me-1"></i> Perizinan</a>';
+                    }
+                    e[i].action =
+                        rp ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

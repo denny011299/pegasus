@@ -114,14 +114,22 @@
                     
                     item.product = `<img src="${public+item.stal_image}" class="me-2" style="width:30px">`+item.stal_name;
                     item.min_order = `${item.product_variant_alert - item.product_variant_stock} ${item.product_unit}`;
-                    item.action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var sa =
+                        roleIconEdit(
+                            "Peringatan Stok Produk",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'data-id="' + item.product_id + '"'
+                        ) +
+                        roleIconDelete(
+                            "Peringatan Stok Produk",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                item.product_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    item.action =
+                        sa ||
+                        '<span class="text-muted small">—</span>';
                     // Asumsi 'item' adalah objek produk lengkap dengan relasi dan stok.
                     // item.stock sudah diurutkan dari unit terbesar ke terkecil.
 

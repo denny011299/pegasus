@@ -63,14 +63,24 @@
                             e[i].variant_values += ", ";
                          }
                     });
-                    e[i].action = `
-                            <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].variant_id}" data-bs-target="#edit-unit">
-                                <i class="fe fe-edit"></i>
-                            </a>
-                            <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].variant_id}" href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
-                            </a>
-                    `;
+                    var ve =
+                        roleIconEdit(
+                            "Variasi",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'data-id="' +
+                                e[i].variant_id +
+                                '" data-bs-target="#edit-unit"'
+                        ) +
+                        roleIconDelete(
+                            "Variasi",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].variant_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        ve ||
+                        '<span class="text-muted small">—</span>';
                 }
                 
                 table.rows.add(e).draw();

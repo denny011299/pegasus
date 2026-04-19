@@ -75,32 +75,33 @@
                     if(e[i].status == 0)e[i].status_po = `<label class="badge bg-danger badgeStatus">Ditolak</label>`;
                     if(e[i].status == 2)e[i].status_po = `<label class="badge bg-success badgeStatus">Dibayarkan</label>`;
                
-                    e[i].action = `
-                        <a href="/viewTandaTerima/${e[i].tt_id}" class="me-2 btn-action-icon p-2 btn_view_tt" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Download Tanda Terima" kode = "${e[i].kodeTerima}" >
-                            <i class="fe fe-file-text"></i>
-                        </a>
-                    `;
-                    if(e[i].status==1){
-                        e[i].action += `
-                            <a class="me-2 btn-action-icon p-2 btn_acc_tt bg-success text-light" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Terima"  tt_id = "${e[i].tt_id}" >
-                                <i class="fe fe-check"></i>
-                            </a>
-                            <a  class="me-2 btn-action-icon p-2 btn_decline_tt bg-danger text-light" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Tolak"  tt_id = "${e[i].tt_id}" >
-                                <i class="fe fe-x"></i>
-                            </a>
-                        `;
+                    var tta = "";
+                    if (hasAccessAction("Tanda Terima PO", "view")) {
+                        tta +=
+                            '<a href="/viewTandaTerima/' +
+                            e[i].tt_id +
+                            '" class="me-2 btn-action-icon p-2 btn_view_tt" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Download Tanda Terima" kode = "' +
+                            (e[i].kodeTerima || "") +
+                            '"><i class="fe fe-file-text"></i></a>';
                     }
-                    if(e[i].status==2){
-                        e[i].action += `
-                            <a class="me-2 btn-action-icon p-2 btn_view_bukti_tt"  data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Lihat Bukti Transfer"  tt_id = "${e[i].tt_id}" >
-                                <i class="fe fe-eye"></i>
-                            </a>
-                        `;
+                    e[i].action = tta;
+                    if (e[i].status == 1 && hasAccessAction("Tanda Terima PO", "others")) {
+                        e[i].action +=
+                            '<a class="me-2 btn-action-icon p-2 btn_acc_tt bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  tt_id = "' +
+                            e[i].tt_id +
+                            '"><i class="fe fe-check"></i></a><a  class="me-2 btn-action-icon p-2 btn_decline_tt bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  tt_id = "' +
+                            e[i].tt_id +
+                            '"><i class="fe fe-x"></i></a>';
                     }
+                    if (e[i].status == 2 && hasAccessAction("Tanda Terima PO", "view")) {
+                        e[i].action +=
+                            '<a class="me-2 btn-action-icon p-2 btn_view_bukti_tt"  data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti Transfer"  tt_id = "' +
+                            e[i].tt_id +
+                            '"><i class="fe fe-eye"></i></a>';
+                    }
+                    if (!e[i].action)
+                        e[i].action =
+                            '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();

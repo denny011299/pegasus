@@ -1413,7 +1413,7 @@ class ReportController extends Controller
                 ->selectRaw('SUM(sod.sod_qty) as qty_sum')
                 ->groupBy('sod.sod_nama', 'sod.sod_variant', 'sod.sod_sku', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
                 ->orderByDesc('qty_sum')
-                ->limit(10)
+                ->limit(8)
                 ->get();
 
             $out = [];

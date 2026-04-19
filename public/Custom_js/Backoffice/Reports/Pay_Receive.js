@@ -100,11 +100,11 @@
                     } else {
                         e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
                     }
-                    e[i].action = `
-                        <a href="/purchaseOrderDetailHutang/${e[i].po_id}" class="me-2 btn-action-icon p-2 btn_edit_invoice" >
-                            <i class="fe fe-eye"></i>
-                        </a>
-                    `;
+                    e[i].action = hasAccessAction("Hutang", "view")
+                        ? '<a href="/purchaseOrderDetailHutang/' +
+                          e[i].po_id +
+                          '" class="me-2 btn-action-icon p-2 btn_edit_invoice"><i class="fe fe-eye"></i></a>'
+                        : '<span class="text-muted small">—</span>';
                 }
 
                 tablePayables.rows.add(e).draw();

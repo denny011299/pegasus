@@ -57,14 +57,24 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].action = `
-                        <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${e[i].cc_id}" data-bs-target="#edit-category">
-                            <i class="fe fe-edit"></i>
-                        </a>
-                        <a class="p-2 btn-action-icon btn_delete" data-id="${e[i].cc_id}" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
-                    `;
+                    var cc =
+                        roleIconEdit(
+                            "Kategori Kas",
+                            "me-2 btn-action-icon p-2 btn_edit",
+                            'data-id="' +
+                                e[i].cc_id +
+                                '" data-bs-target="#edit-category"'
+                        ) +
+                        roleIconDelete(
+                            "Kategori Kas",
+                            "p-2 btn-action-icon btn_delete",
+                            'data-id="' +
+                                e[i].cc_id +
+                                '" href="javascript:void(0);"'
+                        );
+                    e[i].action =
+                        cc ||
+                        '<span class="text-muted small">—</span>';
                 }
 
                 table.rows.add(e).draw();
