@@ -11,7 +11,7 @@
                     console.log($(this).attr("module"))
                     if(item.name == $(this).attr("module")){
                       
-                        if(item.akses.length==4){
+                        if(item.akses.length==5){
                             $(this).find(".all").prop("checked",true).trigger("change");
                             item.akses.forEach(element => {
                                 $(this).find("."+element).prop("checked",true);
