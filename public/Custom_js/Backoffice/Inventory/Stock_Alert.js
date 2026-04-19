@@ -23,12 +23,12 @@
                 },
             },
             columns: [
-                { data: "product_name_text" },
-                { data: "product_category" },
-                { data: "product_variant_sku" },
-                { data: "product_variant_stock_text" },
-                { data: "product_alert_text" },
-                { data: "minim_order" },
+                { data: "product_name_text", width: "25%" },
+                { data: "product_category", width: "10%" },
+                { data: "product_variant_sku", width: "15%" },
+                { data: "product_variant_stock_text", width: "15%" },
+                { data: "product_alert_text", width: "15%" },
+                { data: "minim_order", width: "15%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -54,12 +54,12 @@
             },
             autoWidth: false,
             columns: [
-                { data: "product_name_text" },
-                { data: "product_category" },
-                { data: "product_variant_sku" },
-                { data: "product_variant_stock_text" },
-                { data: "product_alert_text" },
-                { data: "minim_order" },
+                { data: "product_name_text", width: "25%" },
+                { data: "product_category", width: "10%" },
+                { data: "product_variant_sku", width: "15%" },
+                { data: "product_variant_stock_text", width: "15%" },
+                { data: "product_alert_text", width: "15%" },
+                { data: "minim_order", width: "15%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

@@ -2,9 +2,9 @@
     var table;
     var products = [];
     var list_photo;
-    autocompleteCustomer('#so_customer', "#add_sales_order");
-    autocompleteStaffSales('#sales_id', "#add_sales_order");
-    autocompleteProductVariantOnly('#so_sku', "#add_sales_order");
+    autocompleteCustomer('#so_customer', "#add_sales_order .modal-content");
+    autocompleteStaffSales('#sales_id', "#add_sales_order .modal-content");
+    autocompleteProductVariantOnly('#so_sku', "#add_sales_order .modal-content");
     $(document).ready(function(){
         initSalesOrderProductInput();
         inisialisasi();

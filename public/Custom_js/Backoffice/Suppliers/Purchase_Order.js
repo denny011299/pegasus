@@ -4,7 +4,7 @@
     var grand = 0;
     var dates = null;
     autocompleteSupplier("#filter_supplier");
-    autocompleteSupplier("#po_supplier","#add_purchase_order");
+    autocompleteSupplier("#po_supplier","#add_purchase_order .modal-content");
     autocompleteSupplier("#select_supplier");
     autocompleteRekening("#bank_kode");
     
@@ -63,7 +63,7 @@
         item = [];
         $('#tablePurchaseModal tbody').html("");
         refreshSummary();
-        autocompleteSuppliesVariant('#po_sku', '#add_purchase_order',$(this).val());
+        autocompleteSuppliesVariant('#po_sku', '#add_purchase_order .modal-content',$(this).val());
     });
 
     $(document).on('keyup','#filter_po', function () {
@@ -101,7 +101,7 @@
     function refreshItem() {
         $('#tablePurchaseModal tbody').html("");
         item.forEach((item,index) => {
-            console.log(item)
+            // console.log(item)
             var opsi = "";
             item.supplies_unit.forEach(element => {
                 opsi += `<option value='${element.unit_id}'>${element.unit_short_name}</option>`;
@@ -109,17 +109,17 @@
             
             $('#tablePurchaseModal tbody').append(`
                 <tr>
-                    <td style="width:18%">${item.supplies_name}</td>
-                    <td style="width:18%">${item.supplies_variant_name}</td>
-                    <td style="width:9%">${item.supplies_variant_sku}</td>
-                    <td style="width:20%; padding: 6px 8px" class="w-100">
+                    <td style="width:16%">${item.supplies_name}</td>
+                    <td style="width:20%">${item.supplies_variant_name}</td>
+                    <td style="width:10%">${item.supplies_variant_sku}</td>
+                    <td style="width:18%; padding: 6px 8px" class="w-100">
                         <div class="qty-cell-inner">
                             <input type="text" class="form-control qtyPesanan number-only px-2" index="${index}" value="${item.qty}" min="1">
                             <select class="form-select units_id px-2">${opsi}</select>
                         </div>
                     </td>
                     <td style="width:13%" class="text-end">Rp ${formatRupiah(item.supplies_variant_price + "")}</td>
-                    <td style="width:13%" class="text-end">Rp ${formatRupiah((item.supplies_variant_price * item.qty) + "")}</td>
+                    <td style="width:14%" class="text-end">Rp ${formatRupiah((item.supplies_variant_price * item.qty) + "")}</td>
                     <td style="width:9%" class="text-center text-danger" style="cursor:pointer">
                         <i data-feather="trash-2" class="feather-trash-2 deleteRow"></i>
                     </td>

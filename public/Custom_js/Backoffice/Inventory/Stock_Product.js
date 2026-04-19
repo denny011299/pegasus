@@ -24,11 +24,11 @@
                 },
             },
             columns: [
-                { data: "product_variant_sku" },
-                { data: "pr_name" },
-                { data: "product_variant_name" },
-                { data: "product_category" },
-                { data: "product_variant_stock_text", class: "fw-bold" },
+                { data: "product_variant_sku", width: "15%" },
+                { data: "pr_name", width: "20%" },
+                { data: "product_variant_name", width: "25%" },
+                { data: "product_category", width: "15%" },
+                { data: "product_variant_stock_text", class: "fw-bold", width: "25%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

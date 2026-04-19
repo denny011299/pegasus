@@ -36,7 +36,7 @@
                 { data: "variant_date", width: "15%" },
                 { data: "created_by_name", defaultContent: "-", width: "15%" },
                 // { data: "acc_by_name", defaultContent: "-" },
-                { data: "action",class:"d-flex align-items-center", },
+                { data: "action",class:"text-center align-middle", },
             ],
 			initComplete: (settings, json)=>{
 				$('.dataTables_filter').appendTo('#tableSearch');

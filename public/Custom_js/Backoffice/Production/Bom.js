@@ -1,5 +1,5 @@
-    autocompleteSupplies('#supplies_id', '#add_bom');
-    autocompleteProductVariantOnly('#product_id', '#add_bom');
+    autocompleteSupplies('#supplies_id', '#add_bom .modal-content');
+    autocompleteProductVariantOnly('#product_id', '#add_bom .modal-content');
 
     var mode=1;
     var table;
@@ -76,12 +76,12 @@
                 },
             },
             columns: [
-                { data: "product_sku", width: '14%' },
-                { data: "product_name", width: "25%" },
+                { data: "product_sku", width: '10%' },
+                { data: "product_name", width: "20%" },
                 { data: "supplies", width: '35%' },
-                { data: "unit_text", width: '14%' },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "unit_text", width: '12%' },
+                { data: "created_by_name", defaultContent: "-", width: '13%' },
+                { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

@@ -23,10 +23,10 @@
                 },
             },
             columns: [
-                { data: "supplies_name" },
-                { data: "supplies_variant_stock_text" },
-                { data: "supplies_alert_text" },
-                { data: "minim_order" },
+                { data: "supplies_name", width: "35%" },
+                { data: "supplies_variant_stock_text", width: "20%" },
+                { data: "supplies_alert_text", width: "20%" },
+                { data: "minim_order", width: "20%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -52,10 +52,10 @@
             },
             autoWidth: false,
             columns: [
-                { data: "supplies_name" },
-                { data: "supplies_variant_stock_text" },
-                { data: "supplies_alert_text" },
-                { data: "minim_order" },
+                { data: "supplies_name", width: "35%" },
+                { data: "supplies_variant_stock_text", width: "20%" },
+                { data: "supplies_alert_text", width: "20%" },
+                { data: "minim_order", width: "20%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

@@ -13,6 +13,15 @@
             white-space: normal !important;
             word-wrap: break-word;
         }
+
+        #tableBom td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableBom td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
     </style>
 @endsection
 @section('content')
@@ -42,12 +51,12 @@
                                 <table class="table table-center table-hover" id="tableBom">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>SKU</th>
-                                            <th>Produk</th>
-                                            <th>Material</th>
-                                            <th>Qty Produksi</th>
-                                            <th>Dibuat Oleh</th>
-                                            <th class="no-sort text-center">Aksi</th>
+                                            <th style="width: 10%">SKU</th>
+                                            <th style="width: 25%">Produk</th>
+                                            <th style="width: 40%">Material</th>
+                                            <th style="width: 14%">Qty Produksi</th>
+                                            <th style="width: 15%">Dibuat Oleh</th>
+                                            <th style="width: 15%" class="no-sort text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

@@ -9,17 +9,29 @@
             padding: .2em .4em;
             border-radius: .2rem;
         }
+        
         .bootstrap-tagsinput .tag [data-role="remove"] {
             color: #ffffff !important;
             margin-left: 5px;
             cursor: pointer;
         }
+
         #tableVariant{
             width: 100% !important;
         }
+
         #tableVariant td {
             white-space: normal !important;
             word-wrap: break-word;
+        }
+
+        #tableVariant td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableVariant td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
         }
     </style>
 @endsection

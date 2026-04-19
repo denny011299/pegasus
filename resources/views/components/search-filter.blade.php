@@ -365,55 +365,6 @@
 <!-- /Filter Pencarian -->
 @endif
 
-@if(Route::is(['tt']))
-<!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
-    <div class="row">
-        {{-- 
-        <div class="col-12 col-md-6">
-
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <!-- Rentang Tanggal -->
-                    <div class="col-md">
-                        <label class="form-label mb-1">Search No Tanda terima</label>
-                        <input type="text" class="form-control" id="filter_po" placeholder="No.PO">
-                    </div>
-                    
-                    <!-- Supplier -->
-                    <div class="col-md">
-                        <label class="form-label mb-1">Search Supplier</label>
-                        <select class="form-select" id="filter_supplier"></select>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>--}}
-        
-        {{-- New --}}
-        {{-- <div class="col-12 col-md-6">
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <!-- Supplier -->
-                    <div class="col-md row-supplier">
-                        <label class="form-label mb-1">Tanda Terima Supplier</label>
-                        <select class="form-select" id="select_supplier"></select>
-                    </div>
-                    <div class="col-md row-rekening">
-                        <label class="form-label mb-1">Bank Account</label>
-                        <select class="form-select" id="bank_kode"></select>
-                    </div>
-                     <div class="col-md-auto d-flex align-items-end pt-4">
-                        <button class="btn btn-primary w-100" id="generateTandaTerima">Buat Tanda Terima</button>
-                    </div>
-                </div>
-            </div>
-        </div> --}}
-    </div>
-</div>
-<!-- /Filter Pencarian -->
-@endif
-
 @if(Route::is(['pettyCash']))
 <!-- Filter Pencarian -->
 <div class="container mt-3 ps-0">
@@ -646,46 +597,39 @@
 <!-- /Filter Pencarian -->
 @endif
 @if(Route::is(['tt']))
-<!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
-    <div class="row">
-        <div class="col-12 col-md-12 mb-4 pe-0">
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-lg-4 col-md-4 col-sm-6 col-12">
+<div class="container mt-3 ps-0 pe-0" style="overflow-x: hidden; max-width: 100%;">
+    <div class="row g-0 mx-0">  {{-- ✅ g-0 dan mx-0 hilangkan gutter yang bikin overflow --}}
+        <div class="col-12 mb-4">
+            <div class="card p-3" style="overflow: hidden;">
+                <div class="row g-2 align-items-end mx-0">
+                    <div class="col-lg-3 col-md-3 col-sm-6 col-12">
                         <div class="input-block">
                             <label>Dari</label>
-                            <div>
-                                <input type="date" class="form-control" id="start_date">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-4 col-sm-6 col-12">
-                        <div class="input-block">
-                            <label>Sampai</label>
-                            <div>
-                                <input type="date" class="form-control" id="end_date">
-                            </div>
+                            <input type="date" class="form-control" id="start_date">
                         </div>
                     </div>
                     <div class="col-lg-3 col-md-3 col-sm-6 col-12">
                         <div class="input-block">
-                            <label>Supplier</label>
-                            <select class="form-select" id="filter_supplier">
-                            </select>
+                            <label>Sampai</label>
+                            <input type="date" class="form-control" id="end_date">
                         </div>
                     </div>
-                    <div class="col-lg-1 col-md-1 col-sm-6 col-12 pt-4 text-end">
-                        <a class="btn btn-outline-secondary btn-clear">
-                            Clear
-                        </a>
+                    <div class="col-lg-4 col-md-4 col-sm-6 col-12">
+                        <div class="input-block">
+                            <label>Supplier</label>
+                            <select class="form-select" id="filter_supplier"></select>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-2 col-sm-6 col-12">
+                        <div class="input-block">
+                            <a class="btn btn-outline-secondary btn-clear w-100">Clear</a>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<!-- /Filter Pencarian -->
 @endif
 
 @if(Route::is(['purchaseOrder']))

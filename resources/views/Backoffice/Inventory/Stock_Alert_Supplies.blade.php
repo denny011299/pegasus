@@ -1,5 +1,17 @@
 <?php $page = 'stock_alert'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        #tableStockAlertLow, #tableStockAlertOut {
+            width: 100% !important;
+        }
+
+        #tableStockAlertLow td, #tableStockAlertOut td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

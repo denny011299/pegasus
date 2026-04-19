@@ -51,6 +51,26 @@
             width: 100% !important;
         }
 
+        #add-retur .col-12.py-3.mb-3 {
+            max-height: unset;
+            overflow: unset;
+        }
+
+        #tableSuppliesModal thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #dce8f6;
+        }
+
+        #tableSuppliesModal tfoot td {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            background: white;
+            border-top: 2px solid #dee2e6;
+        }
+
     </style>
 @endsection
 @section('content')
@@ -238,9 +258,9 @@
                                         </div>
 
                                         <div class="row pt-3">
-                                            <div class="col-6">
+                                            <div class="col-4">
                                             </div>
-                                            <div class="col-6 text-end">
+                                            <div class="col-8 text-end">
                                                 <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
                                                 <button class="btn btn-success save-terima" style="display: none">Terima</button>
                                                 <button type="button" class="btn btn-info text-light    " id="btn-lihat-bukti">Lihat Bukti Foto</button>

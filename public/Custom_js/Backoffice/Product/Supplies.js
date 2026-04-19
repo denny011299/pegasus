@@ -4,8 +4,8 @@
     $(document).ready(function(){
         inisialisasi();
         refreshSupplies();
-        autocompleteUnit("#supplies_unit","#add_supplies");
-        autocompleteVariant("#supplies_variant","#add_supplies");
+        autocompleteUnit("#supplies_unit","#add_supplies .modal-content");
+        autocompleteVariant("#supplies_variant","#add_supplies .modal-content");
         
         
     });
@@ -45,24 +45,27 @@
         
         $('#tbVariant').append(`
             <tr class="row-variant">
-                <td style="width:12%;" class="td-supplier">
+                <td style="width:23%;" class="td-supplier">
                     <div class="input-block" id="row-supplier">
                         <select class="form-select supplier_id select2 fill" name="" id="" style="width:100%;"></select>
                     </div>
                 </td>
-                <td><input type="text" class="form-control fill variant_name" name="" id="" value="${names}"></td>
-                <td><input type="text" class="form-control fill variant_sku" name="" id=""></td>
-                <td><input type="text" class="form-control fill variant_price nominal_only" name="" id=""></td>
-                <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder=""><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
-                <td class="text-center d-flex align-items-center">
+                <td><input type="text" class="form-control fill variant_name" name="" id="" value="${names}" placeholder="Masukkan Nama"></td>
+                <td><input type="text" class="form-control fill variant_sku" name="" id="" placeholder="Masukkan SKU"></td>
+                <td><input type="text" class="form-control fill variant_price nominal_only" name="" id="" placeholder="Masukkan Harga"></td>
+                <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukkan Barcode"><input type="hidden" class="form-control variant_id" name="" id=""></td>
+                <td class="text-center">
                     <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                             <i data-feather="trash-2" class="feather-trash-2"></i>
                         </a>
                     </td>
                 </tr>    
         `);
-         feather.replace();
-         autocompleteSupplier('.supplier_id','#add_supplies');
+        feather.replace();
+
+        var $newRow = $('#tbVariant tr.row-variant:last');
+        var $newSelect = $newRow.find('.supplier_id');
+        autocompleteSupplier($newSelect, '#add_supplies .modal-content');
     }
     
     function inisialisasi() {
@@ -87,7 +90,7 @@
                 { data: "unit_values", width: "15%" },
                 { data: "desc", width: "15%" },
                 { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -109,7 +112,6 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    console.log(e[1]);
                     if (e[i].supplies_desc == null) e[i].desc = '-';
                     else e[i].desc = e[i].supplies_desc;
                     e[i].variant_values = "";
@@ -121,7 +123,6 @@
                     });
                     e[i].unit_values = "";
                     e[i].units.forEach((element,index) => {
-                        console.log(element);
                         
                          e[i].unit_values += element.unit_name;
                          if(index< e[i].units.length-1){
@@ -428,12 +429,19 @@ function addRowRelasi(element1,element2) {
                     </span>
                 </div>
             </td>
+            <td class="text-center">
+                <a class="p-2 btn-action-icon btn_delete_relasi" href="javascript:void(0);">
+                    <i class="fe fe-trash-2"></i>
+                </a>
+            </td>
         </tr>    
     `);      
     // feather.replace();
 }
 
-
+$(document).on('click', '.btn_delete_relasi', function() {
+    $(this).closest('tr').remove();
+});
 
 function cekKembar() {
     relasi.forEach(element => {

@@ -1,4 +1,4 @@
-    autocompleteBom('#product_id', '#addProduction')
+    autocompleteBom('#product_id', '#addProduction .modal-content')
     var mode=1; // 1 = insert; 2 = edit; 3 = view
     var modeBahan = 1;
     var table;
@@ -301,7 +301,7 @@
                     <td style="width: 56%;">${element.product_name}</td>
                     <td class="text-center" style="width: 15%;">${element.pd_qty}</td>
                     <td style="width: 15%;">${element.unit_name}</td>
-                    <td class="text-center d-flex align-items-center" style="width: 14%;">
+                    <td class="text-center align-middle" style="width: 14%;">
                         <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
                         </a>

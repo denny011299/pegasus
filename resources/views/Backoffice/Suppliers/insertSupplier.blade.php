@@ -29,25 +29,6 @@
                             <form action="#">
                                 <div class="form-group-item">
                                     <h5 class="form-title">Detail Dasar</h5>
-                                    <div class="profile-picture">
-                                        <div class="upload-profile">
-                                            <div class="profile-img">
-                                                <img id="preview_image" class="avatar"
-                                                    src="{{ URL::asset('/assets/img/profiles/avatar-14.jpg') }}"
-                                                    alt="profile-img">
-                                            </div>
-                                            <div class="add-profile">
-                                                <h5>Unggah Foto Baru</h5>
-                                                <span id="file_name">Profile-pic.jpg</span>
-                                            </div>
-                                        </div>
-                                        <div class="img-upload">
-                                            <label class="btn btn-upload">
-                                                Unggah <input type="file" class="form-control  input-gambar"
-                                                accept="image/png, image/jpeg" id="supplier_image">
-                                            </label>
-                                        </div>
-                                    </div>
                                     <div class="row">
                                         <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">

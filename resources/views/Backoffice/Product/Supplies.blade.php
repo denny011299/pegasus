@@ -10,11 +10,46 @@
             white-space: normal !important;
             word-wrap: break-word;
         }
+        #tableSupplies td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableSupplies td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
         .is-invalid{
             border-color: #dc3545!important;
         }
         .is-invalids {
             border-color: #dc3545!important;
+        }
+        .td-supplier {
+            max-width: 0;
+            overflow: hidden;
+        }
+
+        .td-supplier .input-block,
+        #row-supplier {
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .td-supplier .select2-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        .td-supplier .select2-selection--single {
+            overflow: hidden;
+        }
+
+        .td-supplier .select2-selection__rendered {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            max-width: calc(100% - 40px) !important;
         }
     </style>
 @endsection

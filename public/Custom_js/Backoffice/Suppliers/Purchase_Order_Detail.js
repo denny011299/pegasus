@@ -7,7 +7,7 @@
 
     autocompleteStaff("#pdo_receiver",null);
     autocompleteSupplier("#po_supplier",null);
-    autocompleteSuppliesVariantOnly("#supplies_id", "#add-retur", data.po_supplier);
+    autocompleteSuppliesVariantOnly("#supplies_id", "#add-retur .modal-content", data.po_supplier);
 
     $(document).ready(function(){
         inisialisasi();

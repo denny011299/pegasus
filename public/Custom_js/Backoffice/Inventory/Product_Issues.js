@@ -78,24 +78,25 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
+            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Produk Dikembalikan",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
+                    next: ' <i class="fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
                 },
             },
             columns: [
-                { data: "date", width: "15%" },
-                { data: "pi_code", class: "width: 15%" },
-                { data: "pi_notes", width: "45%" },
-                { data: "status_text", class: "width: 15%" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "date",             width: "10%" },
+                { data: "pi_code",          width: "10%" },
+                { data: "pi_notes",         width: "40%" },
+                { data: "status_text",      width: "15%", class: "text-center" },
+                { data: "created_by_name",  width: "10%", defaultContent: "-" },
+                { data: "acc_by_name",      width: "10%", defaultContent: "-" },
+                { data: "action",           width: "5%",  class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -110,30 +111,31 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
+            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Produk Rusak",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
+                    next: ' <i class="fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
                 },
             },
             columns: [
-                { data: "date", class: "width: 15%" },
-                { data: "pi_code", class: "width: 15%" },
-                { data: "ref_num_text", width: "15%"},
-                { data: "pi_notes", class: "width: 25%" },
-                { data: "status_text", class: "width: 15%" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "date",             width: "10%" },
+                { data: "pi_code",          width: "10%" },
+                { data: "ref_num_text",     width: "10%" },
+                { data: "pi_notes",         width: "25%" },
+                { data: "status_text",      width: "15%", class: "text-center" },
+                { data: "created_by_name",  width: "10%", defaultContent: "-" },
+                { data: "acc_by_name",      width: "10%", defaultContent: "-" },
+                { data: "action",           width: "10%",  class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
                 $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> '  );
             },
         });
     }
@@ -153,7 +155,7 @@
                     item.ref_num_text = item.poi_code || item.po_number;
                     
                     item.action = `
-                        <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                        <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.pi_id}">
                             <i class="fe fe-eye"></i>
                         </a>
                     `;
@@ -168,19 +170,20 @@
 
                     if (item.pi_img == null){
                         item.action = `
-                            <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
-                                <i class="fe fe-eye"></i>
-                            </a>
-                            <a class="me-2 btn-action-icon p-2" href="/purchaseOrderDetail/${item.po_id}" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Detail Pembelian">
-                                <i class="fe fe-dollar-sign"></i>
-                            </a>
+                            <div style="display:flex; flex-wrap:nowrap; gap:4px; justify-content:center;">
+                                <a class="btn-action-icon p-2 btn_view" data-id="${item.pi_id}">
+                                    <i class="fe fe-eye"></i>
+                                </a>
+                                <a class="btn-action-icon p-2" href="/purchaseOrderDetail/${item.po_id}">
+                                    <i class="fe fe-dollar-sign"></i>
+                                </a>
+                            </div>
                         `;
                     } else {
                         if (item.status == 1){
                             
                             // item.action = `
-                            //     <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                            //     <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.pi_id}">
                             //         <i class="fe fe-eye"></i>
                             //     </a>
                             //     <a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip"
@@ -195,19 +198,19 @@
                         }
                         else if (item.status == 2){
                             item.action = `
-                                <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.product_id}">
+                                <a class="me-2 btn-action-icon p-2 btn_view" data-id="${item.pi_id}">
                                     <i class="fe fe-eye"></i>
                                 </a>
                             `;
-                            // <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
+                            // <a class="p-2 btn-action-icon btn_delete" data-id="${item.pi_id}" href="javascript:void(0);">
                             //         <i class="fe fe-trash-2"></i>
                             //     </a>
                         }
                         // item.action += `
-                        //     <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.product_id}">
+                        //     <a class="me-2 btn-action-icon p-2 btn_edit" data-id="${item.pi_id}">
                         //         <i class="fe fe-edit"></i>
                         //     </a>
-                        //     <a class="p-2 btn-action-icon btn_delete" data-id="${item.product_id}" href="javascript:void(0);">
+                        //     <a class="p-2 btn-action-icon btn_delete" data-id="${item.pi_id}" href="javascript:void(0);">
                         //         <i class="fe fe-trash-2"></i>
                         //     </a>
                         // `;
@@ -286,8 +289,8 @@
                     </button>
                 </div>    
             `);
-            autocompleteSuppliesVariantOnly("#supplies_id", "#add-product-issues");
-            autocompletePO("#ref_num", "#add-product-issues");
+            autocompleteSuppliesVariantOnly("#supplies_id", "#add-product-issues .modal-content");
+            autocompletePO("#ref_num", "#add-product-issues .modal-content");
             $('#pi_type').val(2);
             $('#tableProduct tr.row-supplies').remove();
             $('#tableProduct tr.row-product').remove();
@@ -325,7 +328,7 @@
                     </button>
                 </div>    
             `);
-            autocompleteProductVariantOnly("#product_id", "#add-product-issues");
+            autocompleteProductVariantOnly("#product_id", "#add-product-issues .modal-content");
             $('#pi_type').val(1);
             $('#tableProduct tr.row-supplies').remove();
             $('#tableProduct tr.row-product').remove();
@@ -623,7 +626,7 @@ function loadPiType() {
                     ids.forEach(element => {
                         poIds.push(element.po_id);
                     });
-                    autocompletePO('#ref_num', '#add-product-issues', poIds);
+                    autocompletePO('#ref_num', '#add-product-issues .modal-content', poIds);
                 }
             })
         } else {
@@ -631,7 +634,7 @@ function loadPiType() {
             ids.forEach(element => {
                 poIds.push(element.po_id);
             });
-            autocompletePO('#ref_num', '#add-product-issues', poIds);
+            autocompletePO('#ref_num', '#add-product-issues .modal-content', poIds);
         }
     }
 

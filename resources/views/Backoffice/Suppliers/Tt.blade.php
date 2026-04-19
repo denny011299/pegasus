@@ -1,26 +1,45 @@
 <?php $page = 'purchase_order'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        .badgeStatus{
+            font-size:9pt!important;
+        }
+        .invalid{
+            border: 1px solid red!important;
+        }
+        #filter_supplier,
+        #filter_supplier + .select2-container {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+        #tableTTPurchaseOrder{
+            width: 100% !important;
+        }
+        #tableTTPurchaseOrder td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+        #tableTTPurchaseOrder td:last-child {
+            white-space: nowrap !important;
+        }
+        #tableTTPurchaseOrder td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
+        #filter_supplier,
+        #filter_supplier + .select2-container {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        /* Tambah ini */
+        .select2-container {
+            max-width: 100% !important;
+        }
+    </style>
+@endsection
 @section('content')
-<style>
-    .badgeStatus{
-        font-size:9pt!important;
-    }
-    .invalid{
-        border: 1px solid red!important;
-    }
-    #filter_supplier,
-    #filter_supplier + .select2-container {
-        width: 100% !important;
-        max-width: 100% !important;
-    }
-    #tableTTPurchaseOrder{
-        width: 100% !important;
-    }
-    #tableTTPurchaseOrder td {
-        white-space: normal !important;
-        word-wrap: break-word;
-    }
-</style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">

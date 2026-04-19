@@ -28,6 +28,16 @@
             white-space: normal !important;
             word-wrap: break-word;
         }
+
+        #tableStock {
+            width: 100% !important;
+        }
+
+        #tableStock td {
+            vertical-align: middle;
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
     </style>
 @endsection
 @section('content')

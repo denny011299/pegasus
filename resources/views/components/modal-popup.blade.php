@@ -635,12 +635,12 @@
                                     <table class="table">
                                         <thead>
                                             <tr>
-                                                <td>Supplier<span class="text-danger"  style="width:12%">*</span></td>
+                                                <td>Supplier<span class="text-danger"  style="width:23%">*</span></td>
                                                 <td>Nama Variasi<span class="text-danger">*</span></td>
                                                 <td>SKU<span class="text-danger">*</span></td>
                                                 <td>Harga<span class="text-danger">*</span></td>
                                                 <td>Barcode</td>
-                                                <td class="text-center" style="width:15%">Aksi</td>
+                                                <td class="text-center" style="width:10%">Aksi</td>
                                             </tr>
                                         </thead>
                                         <tbody id="tbVariant">
@@ -667,6 +667,7 @@
                                         <tr>
                                             <td>Name Unit 1<span class="text-danger">*</span></td>
                                             <td>Name Unit 2<span class="text-danger">*</span></td>
+                                            <td class="text-center">Aksi</td>
                                         </tr>
                                     </thead>
                                     <tbody class="tbRelasi" id="tbRelasi">
@@ -1091,12 +1092,12 @@
                                 <div class="col-12 overflow-x-auto mb-3 table-po-wrap">
                                     <table class="table table-center" id="tablePurchaseModal">
                                         <thead>
-                                            <th style="width:18%">Produk</th>
-                                            <th style="width:18%">Variasi</th>
-                                            <th style="width:9%">SKU</th>
-                                            <th style="width:20%">Qty</th>
+                                            <th style="width:16%">Produk</th>
+                                            <th style="width:20%">Variasi</th>
+                                            <th style="width:10%">SKU</th>
+                                            <th style="width:18%">Qty</th>
                                             <th style="width:13%" class="text-end">Harga Beli</th>
-                                            <th style="width:13%" class="text-end">Subtotal</th>
+                                            <th style="width:14%" class="text-end">Subtotal</th>
                                             <th style="width:9%" class="text-center">Action</th>
                                         </thead>
                                         <tbody></tbody>
@@ -1186,25 +1187,29 @@
                                         <input type="text" class="form-control fill" id="rs_notes" placeholder="Tambahkan Catatan">
                                     </div>
                                 </div>
-                                <div class="col-12 py-3 mb-3 table-responsive">
-                                    <table class="table table-center" id="tableSuppliesModal" style="min-height: 15vh">
-                                        <thead>
-                                            <th id="header_name">Nama Bahan</th>
-                                            <th class="text-center">Qty</th>
-                                            <th>Satuan</th>
-                                            <th class="text-end">Harga</th>
-                                            <th class="text-end">Subtotal</th>
-                                            <th class="no-sort text-center">Aksi</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                        <tfoot>
-                                            <tr>
-                                                <td colspan="4" class="text-end fw-bold">Total : </td>
-                                                <td class="totals fw-bold text-end">Rp 0</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
+                                <div class="col-12 py-3 mb-3">
+                                    <div style="max-height: 320px; overflow-y: auto; overflow-x: auto;">
+                                        <table class="table table-center" id="tableSuppliesModal">
+                                            <thead>
+                                                <tr>
+                                                    <th id="header_name" style="position: sticky; top: 0; z-index: 2; background: #dce8f6;">Nama Bahan</th>
+                                                    <th class="text-center" style="position: sticky; top: 0; z-index: 2; background: #dce8f6;">Qty</th>
+                                                    <th style="position: sticky; top: 0; z-index: 2; background: #dce8f6;">Satuan</th>
+                                                    <th class="text-end" style="position: sticky; top: 0; z-index: 2; background: #dce8f6;">Harga</th>
+                                                    <th class="text-end" style="position: sticky; top: 0; z-index: 2; background: #dce8f6;">Subtotal</th>
+                                                    <th class="text-center" style="position: sticky; top: 0; z-index: 2; background: #dce8f6;">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="4" class="text-end fw-bold">Total : </td>
+                                                    <td class="totals fw-bold text-end">Rp 0</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
                                 </div>
                                 <div class="col-12 px-2 mb-3">
                                     <div class="row input_table g-3 align-items-end">
