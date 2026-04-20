@@ -191,8 +191,20 @@
 <script>
     var route = "{{ Route::currentRouteName() }}";
     window.userRoleId = @json(Session::has('user') ? (int) Session::get('user')->role_id : null);
-    // kirim semua permission dari user ke JS
-    window.permissionList = @json(Session::has('user') ? Session::get('user')->role_access : []);
+    @php
+        $permissionListForJs = [];
+        if (Session::has('user')) {
+            $rawAccess = Session::get('user')->role_access ?? '[]';
+            if (is_array($rawAccess)) {
+                $permissionListForJs = $rawAccess;
+            } elseif (is_string($rawAccess)) {
+                $decodedAccess = json_decode($rawAccess, true);
+                $permissionListForJs = is_array($decodedAccess) ? $decodedAccess : [];
+            }
+        }
+    @endphp
+    // kirim semua permission dari user ke JS (role_access di DB berupa JSON string)
+    window.permissionList = @json($permissionListForJs);
     // === GLOBAL PERMISSION HELPER ===
     function hasMenuAccess(moduleName) {
         if (window.userRoleId === -1) return true;
@@ -213,7 +225,10 @@
 
         if (!found) return false;
 
-        return found.akses.map(a => a.toLowerCase()).includes(action.toLowerCase());
+        const akses = found.akses;
+        if (!Array.isArray(akses)) return false;
+
+        return akses.map(a => String(a).toLowerCase()).includes(action.toLowerCase());
     }
 
     /** True jika salah satu modul punya akses tersebut (untuk Kas / Kas Operasional, Wilayah, dll.) */
