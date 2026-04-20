@@ -15,6 +15,27 @@
         overflow-x: auto;
     }
 
+    #tablePurchaseOrder td {
+        white-space: normal !important;
+        word-wrap: break-word;
+        vertical-align: middle;
+    }
+
+    /* Kolom yang tidak perlu wrap */
+    #tablePurchaseOrder td:nth-child(1), /* Tanggal */
+    #tablePurchaseOrder td:nth-child(2), /* No. PO */
+    #tablePurchaseOrder td:nth-child(3), /* No. Invoice */
+    #tablePurchaseOrder td:nth-child(6), /* Total */
+    #tablePurchaseOrder td:nth-child(7), /* Status */
+    #tablePurchaseOrder td:last-child {  /* Aksi */
+        white-space: nowrap !important;
+    }
+
+    #tablePurchaseOrder td:last-child a {
+        display: inline-flex !important;
+        align-items: center;
+    }
+
     #tablePurchaseModal {
         width: max-content;
         min-width: 100%;
@@ -26,9 +47,9 @@
         overflow: hidden;
         overflow-x: auto;
     }
-    #tablePurchaseModal td:nth-child(5),
     #tablePurchaseModal td:nth-child(6),
-    #tablePurchaseModal td:nth-child(7) {
+    #tablePurchaseModal td:nth-child(7),
+    #tablePurchaseModal td:nth-child(8) {
         white-space: nowrap;
         width: 1%;
     }
@@ -137,6 +158,7 @@
                                             <th>No. PO</th>
                                             <th>No. Invoice</th>
                                             <th>Nama Pemasok</th>
+                                            <th>Keterangan</th>
                                             <th>Total</th>
                                             <th>Status</th>
                                             <th>Dibuat Oleh</th>

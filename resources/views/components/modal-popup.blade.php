@@ -1063,8 +1063,14 @@
                                             <label>Biaya Pengiriman</label>
                                             <div class="input-group mb-3">
                                                 <span class="input-group-text">Rp </span>
-                                                <input type="text" class="form-control fill number-only nominal_only" id="po_cost" value="0" placeholder="Input Biaya Pengiriman">
+                                                <input type="text" class="form-control fill number-only nominal_only" id="po_cost" value="0" placeholder="Masukkan Biaya Pengiriman">
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="input-block mb-3">
+                                            <label>Keterangan<span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control fill" id="po_desc" placeholder="Masukkan Keterangan">
                                         </div>
                                     </div>
                                     <div class="col-4">

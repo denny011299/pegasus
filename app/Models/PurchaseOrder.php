@@ -113,6 +113,7 @@ class PurchaseOrder extends Model
         $t->jenis_discount = $data["jenis_discount"];
         $t->po_discount = $data["po_discount"] ?? 0;
         $t->po_cost     = $data["po_cost"] ?? 0;
+        $t->po_desc     = $data["po_desc"];
         $t->po_img      = $data["po_img"] ?? null;
         $t->status      = 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
@@ -132,6 +133,7 @@ class PurchaseOrder extends Model
         $t->jenis_discount = $data["jenis_discount"];
         $t->po_discount = $data["po_discount"] ?? 0;
         $t->po_cost     = $data["po_cost"] ?? 0;
+        $t->po_desc     = $data["po_desc"];
         $t->status      = $data["status"] ?? $t->status;
         $t->po_img      = $data["po_img"] ?? null;
         $t->save();

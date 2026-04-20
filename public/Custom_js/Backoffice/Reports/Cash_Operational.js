@@ -553,14 +553,14 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].ca_date).format('D MMM YYYY');
                     if (e[i].ca_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(e[i].ca_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].ca_nominal));
                         e[i].credit = "Rp 0";
-                        if (e[i].status == 2) debits += e[i].ca_nominal;
+                        if (e[i].status == 2) debits += parseInt(e[i].ca_nominal);
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].ca_nominal) + ")";
-                        if (e[i].status == 2) credits += e[i].ca_nominal;
+                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].ca_nominal)) + ")";
+                        if (e[i].status == 2) credits += parseInt(e[i].ca_nominal);
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
@@ -652,14 +652,14 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].cg_date).format('D MMM YYYY');
                     if (e[i].cg_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cg_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].cg_nominal));
                         e[i].credit = "Rp 0";
-                        if (e[i].status == 2) debits += e[i].cg_nominal;
+                        if (e[i].status == 2) debits += parseInt(e[i].cg_nominal);
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].cg_nominal) + ")";
-                        if (e[i].status == 2) credits += e[i].cg_nominal;
+                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].cg_nominal)) + ")";
+                        if (e[i].status == 2) credits += parseInt(e[i].cg_nominal);
                     }
 
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
@@ -758,23 +758,23 @@
                     totalAll = e[i].total_all;
                     e[i].date = moment(e[i].cr_date).format('D MMM YYYY');
                     if (e[i].cr_type == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cr_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].cr_nominal));
                         e[i].credit = "Rp 0";
                         if (e[i].status == 2) {
-                            debits += e[i].cr_nominal;
+                            debits += parseInt(e[i].cr_nominal);
 
-                            if (e[i].cr_nominal < 0) sisa -= e[i].cr_nominal;
-                            else sisa += e[i].cr_nominal;
+                            if (e[i].cr_nominal < 0) sisa -= parseInt(e[i].cr_nominal);
+                            else sisa += parseInt(e[i].cr_nominal);
                         }
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].cr_nominal) + ")";
+                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].cr_nominal)) + ")";
                         if (e[i].status == 2) {
-                            credits += e[i].cr_nominal;
+                            credits += parseInt(e[i].cr_nominal);
 
-                            if (e[i].cr_nominal < 0) sisa += e[i].cr_nominal;
-                            else sisa -= e[i].cr_nominal;
+                            if (e[i].cr_nominal < 0) sisa += parseInt(e[i].cr_nominal);
+                            else sisa -= parseInt(e[i].cr_nominal);
                         }
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
@@ -871,22 +871,22 @@
                     totalAll = e[i].total_all;
                     e[i].date = moment(e[i].cs_date).format('D MMM YYYY');
                     if (e[i].cs_transaction == 1 && e[i].cs_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cs_nominal);
+                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].cs_nominal));
                         e[i].credit = "Rp 0";
                         if (e[i].status == 2) {
-                            debits += e[i].cs_nominal;
-                            if (e[i].cs_nominal < 0) sisa -= e[i].cs_nominal;
-                            else sisa += e[i].cs_nominal;
+                            debits += parseInt(e[i].cs_nominal);
+                            if (e[i].cs_nominal < 0) sisa -= parseInt(e[i].cs_nominal);
+                            else sisa += parseInt(e[i].cs_nominal);
                         }
                     }
                     else{
                         e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(e[i].cs_nominal) + ")";
+                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].cs_nominal)) + ")";
                         if (e[i].status == 2) {
-                            credits += e[i].cs_nominal;
+                            credits += parseInt(e[i].cs_nominal);
 
-                            if (e[i].cs_nominal < 0) sisa += e[i].cs_nominal;
-                            else sisa -= e[i].cs_nominal;
+                            if (e[i].cs_nominal < 0) sisa += parseInt(e[i].cs_nominal);
+                            else sisa -= parseInt(e[i].cs_nominal);
                         }
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
