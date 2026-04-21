@@ -150,10 +150,10 @@
                         <td>${moment(e.po_date).format('D MMM YYYY')}</td>
                         <td>${e.poi_due != "-" ? moment(e.poi_due).format('D MMM YYYY') : "-"}</td>
                         <td>${e.poi_code || "-"}</td>
-                        <td class="fw-bold">Rp ${formatRupiah(e.po_total)}</td>
+                        <td class="fw-bold">Rp ${formatRupiah(parseInt(e.po_total))}</td>
                     </tr>
                 `)
-                hutang += e.po_total;
+                hutang += parseInt(e.po_total);
             })
         } else {
             $('#tablePo tbody').append(`

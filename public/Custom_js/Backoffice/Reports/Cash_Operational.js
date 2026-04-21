@@ -2022,7 +2022,7 @@
                     "cad_nominal" : e.cad_nominal,
                 };
                 items.push(temp);
-                total += e.cad_nominal;
+                total += parseInt(e.cad_nominal);
             })
             $('.total').html(`Rp ${formatRupiahMinus(total)}`)
             addRow();
@@ -2071,7 +2071,7 @@
                     "cad_nominal" : e.cad_nominal,
                 };
                 items.push(temp);
-                total += e.cad_nominal;
+                total += parseInt(e.cad_nominal);
             })
             $('.total').html(`Rp ${formatRupiahMinus(total)}`)
             addRow();
@@ -2150,7 +2150,7 @@
                     "cgd_nominal" : e.cgd_nominal,
                 };
                 items.push(temp);
-                total += e.cgd_nominal;
+                total += parseInt(e.cgd_nominal);
             })
             $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
             addRowGudang();
@@ -2202,7 +2202,7 @@
                     "cgd_nominal" : e.cgd_nominal,
                 };
                 items.push(temp);
-                total += e.cgd_nominal;
+                total += parseInt(e.cgd_nominal);
             })
             $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
             addRowGudang();
@@ -2279,7 +2279,7 @@
                     "crd_type" : e.crd_type
                 };
                 items.push(temp);
-                total += e.crd_nominal;
+                total += parseInt(e.crd_nominal);
             })
             $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
             addRowArmada();
@@ -2340,7 +2340,7 @@
                     "crd_type" : e.crd_type
                 };
                 items.push(temp);
-                total += e.crd_nominal;
+                total += parseInt(e.crd_nominal);
             })
             $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
             addRowArmada();
@@ -2435,7 +2435,7 @@
                     "csd_type" : e.csd_type
                 };
                 items.push(temp);
-                total += e.csd_nominal;
+                total += parseInt(e.csd_nominal);
             })
             $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
             addRowSales();
@@ -2496,7 +2496,7 @@
                     "csd_type" : e.csd_type
                 };
                 items.push(temp);
-                total += e.csd_nominal;
+                total += parseInt(e.csd_nominal);
             })
             $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
             addRowSales();
