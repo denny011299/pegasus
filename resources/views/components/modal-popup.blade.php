@@ -482,11 +482,11 @@
                                 </div>
                                 <div class="col-lg-6 col-12">
                                     <div class="mb-3">
-                                        <label>Keterangan<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="production_desc" placeholder="Masukkan Keterangan">
+                                        <label>Keterangan</label>
+                                        <input type="text" class="form-control" id="production_desc" placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
-                                <div class="col-lg-6"></div>
+                                {{-- <div class="col-lg-6"></div> --}}
                                 {{-- <div class="col-lg-6 col-12">
                                     <div class="mb-3">
                                         <label class="form-label">Produk</label>

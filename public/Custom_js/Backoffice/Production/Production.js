@@ -215,6 +215,11 @@
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
             return false;
         }
+        if (items.length == 0){
+            notifikasi('error', "Gagal Insert", 'Harus ada 1 produk dipilih');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+            return false;
+        }
         param = {
             production_date:$('#production_date').val(),
             production_desc:$('#production_desc').val(),
