@@ -25,7 +25,7 @@
         $('#unit_id').html("");
         $('#unit_id').append("<option selected>Pilih Satuan</option>");
         $('.add, .btn-save, .btn_delete_row_pr').show();
-        $('#production_date').prop('disabled', false);
+        $('#production_desc').attr('disabled', false);
         $('.btn-save').show();
         $('.btn-cancel').html("Batal");
         $('#addProduction').modal("show");
@@ -37,7 +37,7 @@
         let mm = String(today.getMonth() + 1).padStart(2, '0');
         let dd = String(today.getDate()).padStart(2, '0');
         let todayStr = yyyy + '-' + mm + '-' + dd;
-        $("#production_date").val(todayStr);
+        $("#production_date").val(todayStr).prop('disabled', true);
     })
 
     $(document).on('keyup', '#production_qty', function(){
@@ -83,7 +83,8 @@
             },
             columns: [
                 { data: "date", width: "15%" },
-                { data: "production_code", width: "20%" },
+                { data: "production_code", width: "15%" },
+                { data: "production_desc", width: "20%", defaultContent: "-" },
                 { data: "status_text" },
                 { data: "notes", defaultContent: "-", width: "30%"  },
                 { data: "created_by_name", defaultContent: "-" },
@@ -216,6 +217,7 @@
         }
         param = {
             production_date:$('#production_date').val(),
+            production_desc:$('#production_desc').val(),
             detail:JSON.stringify(items),
             list_bahan: JSON.stringify(list_bahan),
             _token:token
@@ -400,6 +402,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#unit_id').html("");
         $('#production_date').val(data.production_date);
+        $('#production_desc').val(data.production_desc).attr('disabled', true);
 
         var total_dos = 0;
 
@@ -585,12 +588,6 @@ $(document).on("click", "#btn-delete-production", function () {
     $('.is-invalid').removeClass('is-invalid');
     console.log($('#delete_reason').val());
     
-    if($('#delete_reason').val() == ""){
-        $('#delete_reason').addClass('is-invalid');
-        notifikasi('error', "Gagal Pembatalan", 'Alasan pembatalan wajib diisi');
-        ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
-        return false;
-    }
     LoadingButton(this);
     $.ajax({
         url: "/deleteProduction",

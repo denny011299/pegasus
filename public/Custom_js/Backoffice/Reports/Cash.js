@@ -380,7 +380,7 @@
         let total = 0;
 
         detail.forEach(item => {
-            total += item.csd_nominal;
+            total += parseInt(item.csd_nominal);
             rows += `
                 <tr>
                     <td>${item.csd_notes ?? '-'}</td>
@@ -401,7 +401,8 @@
         let total = 0;
 
         detail.forEach(item => {
-            total += item.crd_nominal;
+            console.log(item)
+            total += parseInt(item.crd_nominal);
             rows += `
                 <tr>
                     <td>${item.crd_notes ?? '-'}</td>

@@ -476,8 +476,14 @@
                             <div class="row">
                                 <div class="col-lg-6 col-12">
                                     <div class="mb-3">
-                                        <label class="form-label">Tanggal</label>
-                                        <input type="date" class="form-control fill" id="production_date">
+                                        <label>Tanggal</label>
+                                        <input type="date" class="form-control fill" id="production_date" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-12">
+                                    <div class="mb-3">
+                                        <label>Keterangan<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="production_desc" placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
                                 <div class="col-lg-6"></div>

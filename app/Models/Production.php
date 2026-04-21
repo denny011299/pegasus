@@ -107,6 +107,7 @@ class Production extends Model
     {
         $t = new Production();
         $t->production_date = $data["production_date"];
+        $t->production_desc = $data["production_desc"];
         $t->production_code = $this->generateProductionID();
         $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : 0;
         $t->save();
@@ -117,6 +118,7 @@ class Production extends Model
     {
         $t = Production::find($data["production_id"]);
         $t->production_date = $data["production_date"];
+        $t->production_desc = $data["production_desc"];
         $t->production_code = $data["production_code"];
         $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : 0;
         $t->save();

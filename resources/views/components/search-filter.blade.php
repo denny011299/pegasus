@@ -700,7 +700,7 @@
                                 <option value="1">Pending</option>
                                 <option value="2">Berhasil</option>
                                 <option value="4">Menunggu Batal</option>
-                                <option value="3">Total</option>
+                                <option value="3">Tolak</option>
                             </select>
                         </div>
                     </div>

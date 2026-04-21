@@ -351,7 +351,7 @@
                             '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
                     }
 
-                    totalRetur += e[i].rs_total;
+                    totalRetur += parseInt(e[i].rs_total);
                 }
                 $('.total_akhir').html(`Rp ${formatRupiah(totalRetur)}`);
                 // totalRetur += data.po_discount;
