@@ -1,19 +1,15 @@
 (function () {
-    var execCharts = { sales: null, production: null, purchase: null };
-    var EXEC_BLUE = "#2D60FF";
+    var mainChart = null;
+    var dashAgingDetailByBucket = {};
 
     function fmtNum(n) {
-        if (n === null || n === undefined || isNaN(n)) return "—";
+        if (n === null || n === undefined || isNaN(n)) return "0";
         return Number(n).toLocaleString("id-ID");
     }
 
-    function momBadge(pct) {
-        if (pct === null || pct === undefined || isNaN(pct)) {
-            return '<span class="text-muted small">MoM —</span>';
-        }
-        var cls = pct >= 0 ? "trend-up" : "trend-down";
-        var sign = pct > 0 ? "+" : "";
-        return '<span class="small ' + cls + '">' + sign + pct + "% MoM</span>";
+    function fmtRp(n) {
+        if (n === null || n === undefined || isNaN(n)) return "Rp 0";
+        return "Rp " + Number(n).toLocaleString("id-ID");
     }
 
     function escHtml(str) {
@@ -24,213 +20,365 @@
             .replace(/"/g, "&quot;");
     }
 
-    function renderCrossWidgets(w) {
-        var $r = $("#dash_cross_widgets");
-        if (!$r.length) return;
-
-        var keys = ["sales", "production", "purchase"];
-        var html = "";
-        for (var i = 0; i < keys.length; i++) {
-            var x = w && w[keys[i]];
-            if (!x) continue;
-            var rawIcon = x.meta && x.meta.icon ? String(x.meta.icon) : "fe-activity";
-            // Font feather.css: wajib .fe + .fe-namaikon (bukan hanya .fe-namaikon)
-            var iconClass = ("fe " + rawIcon.replace(/^\s*fe\s+/i, "").trim()).replace(/\s+/g, " ");
-            var href = x.href || "#";
-            html += '<div class="col-xl-4 col-md-6"><div class="dash-cross-card">';
-            html += '<div class="dash-cross-head"><div>';
-            html += '<p class="dash-cross-title">' + escHtml(x.title) + "</p>";
-            html += '<p class="dash-cross-sub">' + escHtml(x.subtitle) + "</p></div>";
-            html += '<div class="dash-cross-icon"><i class="' + escHtml(iconClass) + '"></i></div></div>';
-            html += "<div><span class=\"dash-cross-value\">" + fmtNum(x.primary) + "</span>";
-            if (x.primary_label) {
-                html += ' <span class="text-muted small">' + escHtml(x.primary_label) + "</span>";
-            }
-            html += "</div>";
-            html += '<div class="dash-cross-secondary">' + escHtml(x.secondary) + "</div>";
-            html += '<div class="dash-cross-foot">' + momBadge(x.mom_pct);
-            html += '<a class="dash-cross-link" href="' + String(href).replace(/"/g, "") + '">Selengkapnya →</a></div>';
-            html += "</div></div>";
+    function renderTopRows(selector, rows) {
+        var $tb = $(selector);
+        if (!$tb.length) return;
+        $tb.empty();
+        if (!rows || !rows.length) {
+            $tb.append('<tr><td colspan="3" class="text-center text-muted">Tidak ada data</td></tr>');
+            return;
         }
-        $r.html(html || '<div class="col-12 text-muted small">Widget tidak tersedia.</div>');
-        if (typeof feather !== "undefined") {
-            feather.replace();
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            $tb.append(
+                '<tr><td class="dash-col-rank">' +
+                    (i + 1) +
+                    '</td><td class="dash-col-prod" title="' +
+                    escHtml(r.name || "-") +
+                    '">' +
+                    escHtml(r.name || "-") +
+                    '</td><td class="dash-col-qty">' +
+                    fmtNum(r.qty) +
+                    "</td></tr>"
+            );
         }
     }
 
-    /** Tabel #dash_top_sales_body (kolom kanan blok pemakaian bahan) */
-    function renderTopSalesWidget(ts) {
-        var $tb = $("#dash_top_sales_body");
+    function openAgingDetailModal(bucket, statusLabel) {
+        var items = dashAgingDetailByBucket[bucket] || [];
+        $("#dashAgingDetailTitle").text("Detail stok · " + bucket + " · " + (statusLabel || ""));
+        var $bod = $("#dash_aging_detail_body");
+        $bod.empty();
+        if (!items.length) {
+            $bod.append(
+                '<tr><td colspan="5" class="text-center text-muted">Tidak ada item di kelompok ini.</td></tr>'
+            );
+        } else {
+            for (var i = 0; i < items.length; i++) {
+                var it = items[i];
+                var u = it.unit ? " " + escHtml(it.unit) : "";
+                $bod.append(
+                    "<tr><td>" +
+                        escHtml(it.kind || "-") +
+                        '</td><td title="' +
+                        escHtml(it.name || "") +
+                        '">' +
+                        escHtml(it.name || "-") +
+                        '</td><td class="text-end text-nowrap">' +
+                        fmtNum(it.qty) +
+                        u +
+                        '</td><td class="text-end">' +
+                        fmtRp(it.value) +
+                        '</td><td class="text-end">' +
+                        fmtNum(it.age_days) +
+                        "</td></tr>"
+                );
+            }
+        }
+        var el = document.getElementById("dashAgingDetailModal");
+        if (el && window.bootstrap && bootstrap.Modal) {
+            bootstrap.Modal.getOrCreateInstance(el).show();
+        }
+    }
+
+    function renderAging(rows) {
+        var $tb = $("#dash_stock_aging_body");
         if (!$tb.length) return;
-        var rows = (ts && ts.rows) || [];
-        var rg = ts && ts.range;
-        $("#dash_top_sales_range").text(
-            rg && rg.start && rg.end ? rg.start + " → " + rg.end : "—"
-        );
         $tb.empty();
-        if (!rows.length) {
+        if (!rows || !rows.length) {
+            $tb.append('<tr><td colspan="5" class="text-center text-muted">Tidak ada data</td></tr>');
+            return;
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            var bkt = String(r.bucket || "");
+            var st = String(r.status || "");
+            var bEsc = bkt.replace(/"/g, "&quot;");
+            var sEsc = st.replace(/"/g, "&quot;");
             $tb.append(
-                '<tr><td colspan="3" class="text-center text-muted py-3">Belum ada baris pengiriman di rentang ini.</td></tr>'
+                "<tr><td>" +
+                    escHtml(r.bucket) +
+                    "</td><td>" +
+                    escHtml(r.status) +
+                    '</td><td class="text-end">' +
+                    fmtNum(r.qty) +
+                    '</td><td class="text-end">' +
+                    fmtRp(r.value) +
+                    '</td><td class="dash-aging-actions">' +
+                    '<button type="button" class="btn btn-sm btn-outline-primary py-0 dash-aging-detail-btn" data-aging-bucket="' +
+                    bEsc +
+                    '" data-aging-status="' +
+                    sEsc +
+                    '">Lihat</button></td></tr>'
+            );
+        }
+    }
+
+    function renderApprovalTable(tbodySelector, rows, emptyMsg) {
+        var $tb = $(tbodySelector);
+        if (!$tb.length) return;
+        $tb.empty();
+        if (!rows || !rows.length) {
+            $tb.append(
+                '<tr><td colspan="4" class="text-center text-muted">' +
+                    escHtml(emptyMsg) +
+                    "</td></tr>"
             );
             return;
         }
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
-            var nm = escHtml(r.name || "-");
-            var un = escHtml((r.unit && String(r.unit).trim()) || "-");
+            var url = r.url ? String(r.url) : "#";
+            var label = escHtml(r.url_label || "Buka");
             $tb.append(
                 "<tr><td>" +
-                    (i + 1) +
-                    '</td><td class="text-truncate" style="max-width: 7rem" title="' +
-                    nm +
+                    escHtml(r.module_label || "-") +
+                    "</td><td>" +
+                    escHtml(r.reference || "-") +
+                    '</td><td><span class="d-inline-block" title="' +
+                    escHtml(r.what_changed || r.summary || "") +
                     '">' +
-                    nm +
-                    '</td><td class="text-end text-nowrap">' +
-                    '<span class="fw-semibold">' +
-                    fmtNum(r.qty) +
-                    '</span> <span class="text-muted small">' +
-                    un +
-                    "</span></td></tr>"
+                    escHtml(r.what_changed || r.summary || "-") +
+                    '</span></td><td class="dash-col-actions"><a class="btn btn-sm btn-outline-primary py-1" href="' +
+                    url.replace(/"/g, "&quot;") +
+                    '">' +
+                    label +
+                    "</a></td></tr>"
             );
         }
     }
 
-    function destroyExecCharts() {
-        ["sales", "production", "purchase"].forEach(function (k) {
-            if (execCharts[k]) {
-                execCharts[k].destroy();
-                execCharts[k] = null;
-            }
-        });
+    function renderRecommendedRows(rows) {
+        var $tb = $("#dash_recommended_body");
+        if (!$tb.length) return;
+        $tb.empty();
+        if (!rows || !rows.length) {
+            $tb.append(
+                '<tr><td colspan="3" class="text-center text-muted">Belum ada rekomendasi produksi.</td></tr>'
+            );
+            return;
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            $tb.append(
+                '<tr><td class="dash-col-rank">' +
+                    (i + 1) +
+                    '</td><td class="dash-col-prod" title="' +
+                    escHtml(r.name || "-") +
+                    '">' +
+                    escHtml(r.name || "-") +
+                    '</td><td class="dash-col-qty">' +
+                    fmtNum(r.recommend_qty) +
+                    "</td></tr>"
+            );
+        }
     }
 
-    function renderOneExecBar(elId, categories, name, data) {
-        var el = document.querySelector(elId);
-        if (!el || typeof ApexCharts === "undefined") return null;
-        var cat = (categories || []).slice();
-        var d = (data || []).slice();
-        if (cat.length !== d.length) {
-            var n = Math.min(cat.length, d.length);
-            cat = cat.slice(0, n);
-            d = d.slice(0, n);
+    function renderList(selector, rows, mapFn, emptyText) {
+        var $ul = $(selector);
+        if (!$ul.length) return;
+        $ul.empty();
+        if (!rows || !rows.length) {
+            $ul.append('<li class="text-muted">' + escHtml(emptyText) + "</li>");
+            return;
         }
+        for (var i = 0; i < rows.length; i++) {
+            $ul.append("<li>" + mapFn(rows[i]) + "</li>");
+        }
+    }
+
+    function renderChart(payload) {
+        var el = document.querySelector("#dash_main_chart");
+        if (!el || typeof ApexCharts === "undefined") return;
+        if (mainChart) {
+            mainChart.destroy();
+            mainChart = null;
+        }
+        var c = payload.chart || {};
+        var growth = c.sales_growth_pct_by_bucket || [];
+        var f = payload.filter || {};
+        var cap =
+            "Periode: " +
+            (f.label || "-") +
+            ". Batang: qty pengiriman & retur; garis: % pertumbuhan qty antar potongan waktu.";
+        $("#dash_chart_caption").text(cap);
+
         var opts = {
-            chart: {
-                type: "bar",
-                height: 300,
-                fontFamily: "inherit",
-                toolbar: { show: false },
-                zoom: { enabled: false },
-                animations: { enabled: true },
-            },
-            series: [{ name: name, data: d }],
-            xaxis: {
-                categories: cat,
-                labels: {
-                    rotate: cat.length > 6 ? -45 : 0,
-                    hideOverlappingLabels: true,
-                    trim: true,
-                    maxHeight: 72,
-                    style: { fontSize: "11px" },
+            chart: { type: "line", height: 320, toolbar: { show: false }, zoom: { enabled: false } },
+            series: [
+                { name: "Pengiriman (qty)", type: "column", data: c.sales_qty || [] },
+                { name: "Retur armada (qty)", type: "column", data: c.return_qty || [] },
+                {
+                    name: "Growth % vs potongan sebelumnya",
+                    type: "line",
+                    data: growth,
+                    yAxisIndex: 1,
                 },
-            },
-            yaxis: {
-                labels: { formatter: function (v) { return Math.round(v); } },
-                min: 0,
-                forceNiceScale: true,
-            },
-            colors: [EXEC_BLUE],
-            plotOptions: {
-                bar: {
-                    borderRadius: 4,
-                    columnWidth: "62%",
-                    horizontal: false,
-                },
-            },
-            legend: { show: false },
+            ],
+            xaxis: { categories: c.labels || [] },
+            stroke: { curve: "smooth", width: [0, 0, 3] },
+            plotOptions: { bar: { columnWidth: "58%", borderRadius: 3 } },
+            colors: ["#2563eb", "#f97316", "#0f766e"],
             dataLabels: { enabled: false },
-            grid: { strokeDashArray: 4, padding: { top: 8, right: 8, bottom: 0, left: 8 } },
+            grid: { strokeDashArray: 4 },
+            legend: { position: "top", horizontalAlign: "right", fontSize: "11px" },
+            yaxis: [
+                {
+                    title: { text: "Qty" },
+                    labels: {
+                        formatter: function (v) {
+                            return fmtNum(v);
+                        },
+                    },
+                },
+                {
+                    opposite: true,
+                    title: { text: "Growth %" },
+                    labels: {
+                        formatter: function (v) {
+                            if (v === null || v === undefined || isNaN(v)) return "";
+                            return fmtNum(v) + "%";
+                        },
+                    },
+                },
+            ],
             tooltip: {
-                y: { formatter: function (val) { return fmtNum(val); } },
+                shared: true,
+                intersect: false,
+                y: {
+                    formatter: function (val, opts) {
+                        if (opts.seriesIndex === 2) {
+                            if (val === null || val === undefined || isNaN(val)) return "—";
+                            return fmtNum(val) + "%";
+                        }
+                        return fmtNum(val);
+                    },
+                },
             },
         };
-        try {
-            var ch = new ApexCharts(el, opts);
-            ch.render();
-            return ch;
-        } catch (e) {
-            if (typeof console !== "undefined" && console.warn) {
-                console.warn("exec chart " + elId + ":", e);
-            }
-            el.innerHTML =
-                '<p class="small text-danger mb-0 px-1">Grafik gagal dimuat. Muat ulang halaman atau cek konsol (F12).</p>';
-            return null;
-        }
+        mainChart = new ApexCharts(el, opts);
+        mainChart.render();
     }
 
-    function renderExecCharts(c) {
-        destroyExecCharts();
-        if (!c || typeof ApexCharts === "undefined") return;
-        var labels = c.labels || [];
-        if (!labels.length) return;
-        execCharts.sales = renderOneExecBar("#chartExecSales", labels, "Jumlah pengiriman", c.sales_count || []);
-        execCharts.production = renderOneExecBar("#chartExecProduction", labels, "Batch", c.production_count || []);
-        execCharts.purchase = renderOneExecBar("#chartExecPurchase", labels, "Jumlah PO", c.purchase_count || []);
-    }
-
-    function loadExecutiveWidgets() {
-        var $r = $("#dash_cross_widgets");
-        if ($r.length) {
-            $r.html('<div class="col-12 text-muted small py-2 px-1">Memuat widget…</div>');
-        }
-        var $tsb = $("#dash_top_sales_body");
-        if ($tsb.length) {
-            $tsb.html(
-                '<tr><td colspan="3" class="text-center text-muted py-3">Memuat…</td></tr>'
-            );
-            $("#dash_top_sales_range").text("—");
-        }
-        destroyExecCharts();
-        var chartMonths = 6;
-        var $sel = $("#exec_chart_months");
-        if ($sel.length) {
-            var v = parseInt($sel.val(), 10);
-            if ([3, 6, 12].indexOf(v) !== -1) {
-                chartMonths = v;
-            }
-        }
+    function loadDashboard() {
+        var period = $("#dash_filter_period").val() || "month";
         $.ajax({
-            url: "/getDashboardExecutiveWidgets",
+            url: "/getDashboardOverview",
             method: "get",
-            data: { chart_months: chartMonths },
+            data: { period: period },
             success: function (data) {
-                renderCrossWidgets(data.cross_widgets || {});
-                renderTopSalesWidget(data.top_sales || {});
-                setTimeout(function () {
-                    renderExecCharts(data.exec_charts || {});
-                }, 50);
+                var f = data.filter || {};
+                $("#dash_filter_label").text(
+                    (f.period_label ? f.period_label + ": " : "") + (f.label || "-")
+                );
+                var hintBase =
+                    "Pilih Minggu, Bulan, atau Tahun (periode berjalan menurut tanggal hari ini), lalu Terapkan.";
+                $("#dash_filter_hint").text(f.hint || hintBase);
+                $("#dash_top_yearly_sub").text(f.top_yearly_caption || "");
+                $("#dash_top_accum_sub").text(f.top_accum_caption || "");
+                var ch = data.changelog || {};
+                $("#kpi_changelog").text(fmtNum(ch.changelog_pending));
+                $("#kpi_confirmation").text(fmtNum(ch.confirmation_log));
+                $("#kpi_revision").text(fmtNum(ch.revision_log));
+                renderApprovalTable(
+                    "#dash_changelog_body",
+                    ch.changelog_items || [],
+                    "Tidak ada changelog di periode ini."
+                );
+                renderApprovalTable(
+                    "#dash_confirmation_body",
+                    ch.confirmation_items || [],
+                    "Tidak ada item yang perlu konfirmasi."
+                );
+                renderApprovalTable(
+                    "#dash_revision_body",
+                    ch.revision_items || [],
+                    "Tidak ada revisi di periode ini."
+                );
+                $("#kpi_inventory_value").text(fmtRp(data.inventory_value && data.inventory_value.total));
+                $("#kpi_inventory_split").text(
+                    "Produk " +
+                        fmtRp(data.inventory_value && data.inventory_value.product) +
+                        " · Bahan " +
+                        fmtRp(data.inventory_value && data.inventory_value.bahan)
+                );
+                var k = data.kpi || {};
+                var sg = k.sales_growth_pct;
+                if (sg === null || sg === undefined || isNaN(sg)) {
+                    $("#kpi_sales_growth").text("—");
+                } else {
+                    $("#kpi_sales_growth").text(fmtNum(sg) + "%");
+                }
+                $("#kpi_sales_growth_sub").text(
+                    "Qty periode ini " +
+                        fmtNum(k.sales_qty_current) +
+                        " vs sebelumnya " +
+                        fmtNum(k.sales_qty_previous) +
+                        " · " +
+                        (f.label || "")
+                );
+                $("#kpi_turnover").text(fmtNum(k.inventory_turnover));
+                $("#kpi_turnover_sub").text(
+                    "Keluar stok (log) vs stok sekarang, annualized · " + (f.label || "")
+                );
+                var dio = k.dio_days;
+                $("#kpi_dio").text(
+                    dio === null || dio === undefined || isNaN(dio) ? "—" : fmtNum(dio) + " hari"
+                );
+                $("#kpi_dio_sub").text("Dari turnover · " + (f.label || ""));
+                $("#kpi_return_rate").text(fmtNum(k.return_rate_product_pct || 0) + "%");
+                $("#kpi_return_split").text(
+                    "Barang jadi " +
+                        fmtNum(k.return_rate_product_pct || 0) +
+                        "% (retur÷pengiriman) · Bahan " +
+                        fmtNum(k.return_rate_bahan_pct || 0) +
+                        "% (retur÷PO) · " +
+                        (f.label || "")
+                );
+
+                renderTopRows("#dash_top_yearly", (data.top_products && data.top_products.yearly) || []);
+                renderTopRows("#dash_top_accum", (data.top_products && data.top_products.accumulative) || []);
+                dashAgingDetailByBucket = data.stock_aging_detail || {};
+                renderAging(data.stock_aging || []);
+                renderList(
+                    "#dash_overstock_list",
+                    (data.warnings && data.warnings.overstock_alerts) || [],
+                    function (r) {
+                        return (
+                            '<span title="' +
+                            escHtml(r.name || "-") +
+                            '">' +
+                            escHtml(r.name || "-") +
+                            "</span>" +
+                            " - umur " +
+                            fmtNum(r.age_days) +
+                            " hari - qty " +
+                            fmtNum(r.qty)
+                        );
+                    },
+                    "Tidak ada overstock."
+                );
+                var w = data.warnings || {};
+                $("#dash_recommended_note").text(w.recommended_note || "");
+                renderRecommendedRows(w.recommended_production || []);
+                renderChart(data);
             },
             error: function () {
-                if ($r.length) {
-                    $r.html('<div class="col-12 text-danger small">Gagal memuat ringkasan pengiriman/produksi/pembelian.</div>');
-                }
-                var $tsb = $("#dash_top_sales_body");
-                if ($tsb.length) {
-                    $tsb.html(
-                        '<tr><td colspan="3" class="text-center text-danger py-3">Gagal memuat top pengiriman.</td></tr>'
-                    );
-                }
+                $("#dash_filter_label").text("Gagal memuat dashboard.");
             },
         });
     }
 
     $(document).ready(function () {
-        loadExecutiveWidgets();
-        $(document).on("change", "#exec_chart_months", function () {
-            loadExecutiveWidgets();
+        loadDashboard();
+        $("#dash_refresh_btn").on("click", loadDashboard);
+        $("#dash_filter_period").on("change", loadDashboard);
+        $(document).on("click", ".dash-aging-detail-btn", function () {
+            var $btn = $(this);
+            openAgingDetailModal(
+                String($btn.attr("data-aging-bucket") || ""),
+                String($btn.attr("data-aging-status") || "")
+            );
         });
-        if (window.PemakaianBahanDashboard && typeof window.PemakaianBahanDashboard.init === "function") {
-            window.PemakaianBahanDashboard.init();
-        }
     });
 })();

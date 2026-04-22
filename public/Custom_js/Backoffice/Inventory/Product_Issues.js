@@ -236,11 +236,48 @@
                 tableDamage.clear().rows.add(damageProduct).draw();
                 
                 feather.replace(); // Biar icon feather muncul lagi
+                openProductIssueFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load:", err);
             }
         });
+    }
+
+    /** Dari dashboard: /productIssue?pi_id= — buka detail retur yang dimaksud */
+    function openProductIssueFromDashboardLink() {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var piId = params.get("pi_id");
+            if (!piId) {
+                return;
+            }
+            var opened = false;
+            [tableReturn, tableDamage].forEach(function (dt) {
+                if (opened || !dt) {
+                    return;
+                }
+                dt.rows().every(function () {
+                    var d = this.data();
+                    if (String(d.pi_id) === String(piId)) {
+                        $(this.node()).find(".btn_view").first().trigger("click");
+                        opened = true;
+                        return false;
+                    }
+                });
+            });
+            if (opened) {
+                params.delete("pi_id");
+                var q = params.toString();
+                window.history.replaceState(
+                    {},
+                    "",
+                    window.location.pathname + (q ? "?" + q : "")
+                );
+            }
+        } catch (err) {
+            console.warn("openProductIssueFromDashboardLink", err);
+        }
     }
 
     function afterInsert() {

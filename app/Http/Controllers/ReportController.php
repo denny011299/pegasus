@@ -1380,6 +1380,758 @@ class ReportController extends Controller
         ]);
     }
 
+    function getDashboardOverview(Request $req)
+    {
+        $period = strtolower((string) $req->get('period', 'month'));
+        if (!in_array($period, ['week', 'month', 'year'], true)) {
+            $period = 'month';
+        }
+
+        $anchor = trim((string) $req->get('anchor', ''));
+        $base = \Carbon\Carbon::now();
+        if ($anchor !== '') {
+            try {
+                $base = \Carbon\Carbon::parse($anchor);
+            } catch (\Throwable $e) {
+                $base = \Carbon\Carbon::now();
+            }
+        }
+
+        [$start, $end] = $this->dashboardPeriodRange($period, $base);
+        [$prevStart, $prevEnd] = $this->dashboardPreviousRange($start, $end);
+
+        $salesQty = $this->sumSalesQty($start, $end);
+        $salesQtyPrev = $this->sumSalesQty($prevStart, $prevEnd);
+        $salesGrowth = $salesQtyPrev > 0 ? round((($salesQty - $salesQtyPrev) / $salesQtyPrev) * 100, 2) : null;
+
+        $agingRows = (new LogStock())->getStockAgingReport([
+            'type' => 'all',
+            'as_of' => $end->toDateString(),
+        ]);
+        $aging = $this->buildAgingSummary($agingRows);
+        $agingDetailByBucket = $this->buildAgingDetailByBucket($agingRows);
+
+        $inventoryValue = $this->dashboardInventoryValue();
+        $turnover = $this->dashboardInventoryTurnover($start, $end);
+        $returnRate = $this->dashboardReturnRate($start, $end, $salesQty);
+        $queues = $this->dashboardApprovalQueues($start, $end, 40);
+        $changeLog = array_merge(
+            $this->dashboardChangeLogCounts($start, $end),
+            [
+                'changelog_items' => $queues['changelog'],
+                'confirmation_items' => $queues['confirmation'],
+                'revision_items' => $queues['revision'],
+            ]
+        );
+        $topProducts = $this->dashboardTopProducts($start, $end);
+        $warnings = $this->dashboardWarnings($agingRows, $start, $end);
+        $chart = $this->dashboardChartSeries($period, $start, $end);
+
+        return response()->json([
+            'filter' => [
+                'period' => $period,
+                'start' => $start->toDateString(),
+                'end' => $end->toDateString(),
+                'label' => $start->format('d M Y') . ' - ' . $end->format('d M Y'),
+                'period_label' => $period === 'week' ? 'Minggu' : ($period === 'year' ? 'Tahun' : 'Bulan'),
+                'hint' => 'Pilih Minggu, Bulan, atau Tahun lalu Terapkan. Grafik, KPI penjualan & retur, log ACC, stock aging & rekomendasi produksi mengikuti periode tersebut. Nilai inventory = snapshot stok saat ini.',
+                'top_yearly_caption' => '1 Jan '.$end->year.' → '.$end->format('d M Y').' (reset per tahun, mengikuti filter)',
+                'top_accum_caption' => 'Akumulasi semua pengiriman s/d '.$end->format('d M Y'),
+            ],
+            'changelog' => $changeLog,
+            'inventory_value' => $inventoryValue,
+            'top_products' => $topProducts,
+            'kpi' => [
+                'sales_growth_pct' => $salesGrowth,
+                'sales_qty_current' => round($salesQty, 2),
+                'sales_qty_previous' => round($salesQtyPrev, 2),
+                'inventory_turnover' => $turnover['turnover'],
+                'dio_days' => $turnover['dio_days'],
+                'return_rate_product_pct' => $returnRate['product'],
+                'return_rate_bahan_pct' => $returnRate['bahan'],
+            ],
+            'stock_aging' => $aging,
+            'stock_aging_detail' => $agingDetailByBucket,
+            'warnings' => $warnings,
+            'chart' => $chart,
+        ]);
+    }
+
+    private function dashboardPeriodRange(string $period, \Carbon\Carbon $base): array
+    {
+        if ($period === 'week') {
+            return [$base->copy()->startOfWeek(), $base->copy()->endOfWeek()];
+        }
+        if ($period === 'year') {
+            return [$base->copy()->startOfYear(), $base->copy()->endOfYear()];
+        }
+
+        return [$base->copy()->startOfMonth(), $base->copy()->endOfMonth()];
+    }
+
+    private function dashboardPreviousRange(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $days = $start->diffInDays($end) + 1;
+        $prevEnd = $start->copy()->subDay()->endOfDay();
+        $prevStart = $prevEnd->copy()->subDays($days - 1)->startOfDay();
+        return [$prevStart, $prevEnd];
+    }
+
+    private function sumSalesQty(\Carbon\Carbon $start, \Carbon\Carbon $end): float
+    {
+        return (float) (DB::table('sales_order_details as sod')
+            ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+            ->where('so.status', '>=', 1)
+            ->where('sod.status', '>=', 1)
+            ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$start->toDateString(), $end->toDateString()])
+            ->sum('sod.sod_qty') ?? 0);
+    }
+
+    private function dashboardInventoryValue(): array
+    {
+        $lastHargaSub = DB::table('purchase_orders_details as pod')
+            ->join('supplies_variants as sv', 'sv.supplies_variant_id', '=', 'pod.supplies_variant_id')
+            ->where('pod.status', 1)
+            ->select('sv.supplies_id', DB::raw('MAX(pod.pod_harga) as last_harga'))
+            ->groupBy('sv.supplies_id');
+
+        $productValue = (float) (DB::table('product_stocks as ps')
+            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'ps.product_variant_id')
+            ->where('ps.status', 1)
+            ->where('pv.status', 1)
+            ->selectRaw('SUM(ps.ps_stock * COALESCE(pv.product_variant_price,0)) as val')
+            ->value('val') ?? 0);
+
+        $bahanValue = (float) (DB::table('supplies_stocks as ss')
+            ->leftJoinSub($lastHargaSub, 'lh', function ($join) {
+                $join->on('lh.supplies_id', '=', 'ss.supplies_id');
+            })
+            ->where('ss.status', 1)
+            ->selectRaw('SUM(ss.ss_stock * COALESCE(lh.last_harga,0)) as val')
+            ->value('val') ?? 0);
+
+        return [
+            'total' => round($productValue + $bahanValue, 2),
+            'product' => round($productValue, 2),
+            'bahan' => round($bahanValue, 2),
+        ];
+    }
+
+    private function dashboardChangeLogCounts(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+
+        // Konfirmasi: transaksi baru (SO / PO / produksi) menunggu ACC
+        $confirmation = 0;
+        $confirmation += (int) DB::table('sales_orders')->where('status', 1)->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('productions')->whereIn('status', [1, 4])->whereBetween('production_date', [$s, $e])->count();
+        $confirmation += (int) DB::table('purchase_orders')->where('status', 1)->whereBetween('po_date', [$s, $e])->count();
+
+        // Changelog: permintaan modifikasi / mutasi khusus menunggu ACC Direktur (retur produk, penyesuaian kas sales)
+        $changelogPending = (int) DB::table('product_issues')
+            ->where('status', 1)
+            ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $changelogPending += (int) DB::table('cash_sales')
+            ->where('status', 1)
+            ->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+
+        // Revisi: ditolak — perlu input ulang
+        $revision = 0;
+        $revision += (int) DB::table('sales_orders')->where('status', 3)->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $revision += (int) DB::table('productions')->where('status', 3)->whereBetween('production_date', [$s, $e])->count();
+        $revision += (int) DB::table('purchase_orders')->where('status', 3)->whereBetween('po_date', [$s, $e])->count();
+        $revision += (int) DB::table('product_issues')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('cash_sales')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+
+        return [
+            'changelog_pending' => $changelogPending,
+            'confirmation_log' => $confirmation,
+            'revision_log' => $revision,
+        ];
+    }
+
+    /**
+     * Antrian untuk Direktur: changelog (modifikasi), konfirmasi transaksi baru, revisi setelah penolakan.
+     *
+     * @return array{changelog: array<int, array<string, mixed>>, confirmation: array<int, array<string, mixed>>, revision: array<int, array<string, mixed>>}
+     */
+    private function dashboardApprovalQueues(\Carbon\Carbon $start, \Carbon\Carbon $end, int $limit): array
+    {
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+        $limit = max(5, min(80, $limit));
+
+        $fmtRp = static function (float $n): string {
+            return 'Rp ' . number_format($n, 0, ',', '.');
+        };
+
+        $changelog = [];
+
+        $piRows = DB::table('product_issues as pi')
+            ->where('pi.status', 1)
+            ->whereRaw('DATE(COALESCE(pi.pi_date, pi.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('pi.created_at')
+            ->limit($limit)
+            ->get(['pi.pi_id', 'pi.pi_code', 'pi.pi_type', 'pi.tipe_return', 'pi.pi_notes', 'pi.pi_date']);
+
+        foreach ($piRows as $pi) {
+            $tipe = (int) ($pi->tipe_return ?? 0);
+            $tipeLabel = $tipe === 1 ? 'Retur ke pemasok' : ($tipe === 2 ? 'Retur dari armada' : 'Retur');
+            $changelog[] = [
+                'kind' => 'retur_produk',
+                'module_label' => 'Retur Produk',
+                'reference' => (string) ($pi->pi_code ?? '-'),
+                'date' => $pi->pi_date ? (string) $pi->pi_date : '',
+                'what_changed' => 'Permintaan '.$tipeLabel.' menunggu persetujuan Direktur sebelum mutasi stok.',
+                'summary' => trim($tipeLabel.(($pi->pi_notes ?? '') !== '' ? ' — '.(string) $pi->pi_notes : '')),
+                'url' => url('productIssue').'?pi_id='.(int) $pi->pi_id,
+                'url_label' => 'Buka baris ini',
+            ];
+        }
+
+        $csRows = DB::table('cash_sales as cs')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cs.staff_id')
+            ->where('cs.status', 1)
+            ->whereRaw('DATE(COALESCE(cs.cs_date, cs.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cs.created_at')
+            ->limit($limit)
+            ->get(['cs.cs_id', 'cs.cs_nominal', 'cs.cs_notes', 'cs.cs_date', 'st.staff_name']);
+
+        foreach ($csRows as $cs) {
+            $nom = (float) ($cs->cs_nominal ?? 0);
+            $staff = trim((string) ($cs->staff_name ?? ''));
+            $changelog[] = [
+                'kind' => 'kas_sales',
+                'module_label' => 'Kas Sales (Staff)',
+                'reference' => 'CS #'.$cs->cs_id,
+                'date' => $cs->cs_date ? (string) $cs->cs_date : '',
+                'what_changed' => 'Penyesuaian / mutasi kas sales menunggu ACC Direktur.',
+                'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($cs->cs_notes ?? '') !== '') ? ' — '.(string) $cs->cs_notes : ''),
+                'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
+                'url_label' => 'Buka baris ini',
+            ];
+        }
+
+        usort($changelog, static function ($a, $b) {
+            return strcmp((string) ($b['date'] ?? ''), (string) ($a['date'] ?? ''));
+        });
+        $changelog = array_slice($changelog, 0, $limit);
+
+        $confirmation = [];
+
+        $soPend = DB::table('sales_orders')
+            ->where('status', 1)
+            ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['so_id', 'so_number', 'so_invoice_no', 'so_date', 'so_total']);
+
+        foreach ($soPend as $so) {
+            $confirmation[] = [
+                'kind' => 'pengiriman',
+                'module_label' => 'Pengiriman (SO)',
+                'reference' => (string) ($so->so_number ?? '-'),
+                'date' => $so->so_date ? (string) $so->so_date : '',
+                'what_changed' => 'Pengiriman baru menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp((float) ($so->so_total ?? 0)).(($so->so_invoice_no ?? '') !== '' ? ' · Inv '.(string) $so->so_invoice_no : ''),
+                'url' => url('salesOrderDetail/'.$so->so_id),
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $poPend = DB::table('purchase_orders')
+            ->where('status', 1)
+            ->whereBetween('po_date', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['po_id', 'po_number', 'po_date', 'po_total']);
+
+        foreach ($poPend as $po) {
+            $confirmation[] = [
+                'kind' => 'pembelian',
+                'module_label' => 'Pembelian (PO)',
+                'reference' => (string) ($po->po_number ?? '-'),
+                'date' => $po->po_date ? (string) $po->po_date : '',
+                'what_changed' => 'PO menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp((float) ($po->po_total ?? 0)),
+                'url' => url('purchaseOrderDetail/'.$po->po_id),
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $prodPend = DB::table('productions')
+            ->whereIn('status', [1, 4])
+            ->whereBetween('production_date', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['production_id', 'production_code', 'production_date', 'status']);
+
+        foreach ($prodPend as $pr) {
+            $st = (int) ($pr->status ?? 0);
+            $stLabel = $st === 4 ? 'Menunggu pembatalan' : 'Menunggu ACC produksi';
+            $confirmation[] = [
+                'kind' => 'produksi',
+                'module_label' => 'Produksi',
+                'reference' => (string) ($pr->production_code ?? '-'),
+                'date' => $pr->production_date ? (string) $pr->production_date : '',
+                'what_changed' => $stLabel.'.',
+                'summary' => $stLabel,
+                'url' => url('production').'?production_id='.(int) $pr->production_id,
+                'url_label' => 'Buka batch ini',
+            ];
+        }
+
+        usort($confirmation, static function ($a, $b) {
+            return strcmp((string) ($b['date'] ?? ''), (string) ($a['date'] ?? ''));
+        });
+        $confirmation = array_slice($confirmation, 0, $limit);
+
+        $revision = [];
+
+        $soRev = DB::table('sales_orders')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['so_id', 'so_number', 'so_date']);
+
+        foreach ($soRev as $so) {
+            $revision[] = [
+                'kind' => 'pengiriman',
+                'module_label' => 'Pengiriman (SO)',
+                'reference' => (string) ($so->so_number ?? '-'),
+                'date' => $so->so_date ? (string) $so->so_date : '',
+                'what_changed' => 'Pengiriman ditolak — perlu perbaikan / input ulang.',
+                'summary' => 'Status ditolak',
+                'url' => url('salesOrderDetail/'.$so->so_id),
+                'url_label' => 'Perbaiki / lihat SO',
+            ];
+        }
+
+        $poRev = DB::table('purchase_orders')
+            ->where('status', 3)
+            ->whereBetween('po_date', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['po_id', 'po_number', 'po_date']);
+
+        foreach ($poRev as $po) {
+            $revision[] = [
+                'kind' => 'pembelian',
+                'module_label' => 'Pembelian (PO)',
+                'reference' => (string) ($po->po_number ?? '-'),
+                'date' => $po->po_date ? (string) $po->po_date : '',
+                'what_changed' => 'PO ditolak — perlu perbaikan / input ulang.',
+                'summary' => 'Status ditolak',
+                'url' => url('purchaseOrderDetail/'.$po->po_id),
+                'url_label' => 'Perbaiki / lihat PO',
+            ];
+        }
+
+        $prodRev = DB::table('productions')
+            ->where('status', 3)
+            ->whereBetween('production_date', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['production_id', 'production_code', 'production_date']);
+
+        foreach ($prodRev as $pr) {
+            $revision[] = [
+                'kind' => 'produksi',
+                'module_label' => 'Produksi',
+                'reference' => (string) ($pr->production_code ?? '-'),
+                'date' => $pr->production_date ? (string) $pr->production_date : '',
+                'what_changed' => 'Produksi ditolak — perlu perbaikan / input ulang.',
+                'summary' => 'Status ditolak',
+                'url' => url('production').'?production_id='.(int) $pr->production_id,
+                'url_label' => 'Buka batch ditolak',
+            ];
+        }
+
+        $piRev = DB::table('product_issues as pi')
+            ->where('pi.status', 3)
+            ->whereRaw('DATE(COALESCE(pi.pi_date, pi.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('pi.created_at')
+            ->limit($limit)
+            ->get(['pi.pi_id', 'pi.pi_code', 'pi.tipe_return', 'pi.pi_date']);
+
+        foreach ($piRev as $pi) {
+            $tipe = (int) ($pi->tipe_return ?? 0);
+            $tipeLabel = $tipe === 1 ? 'Retur ke pemasok' : ($tipe === 2 ? 'Retur dari armada' : 'Retur');
+            $revision[] = [
+                'kind' => 'retur_produk',
+                'module_label' => 'Retur Produk',
+                'reference' => (string) ($pi->pi_code ?? '-'),
+                'date' => $pi->pi_date ? (string) $pi->pi_date : '',
+                'what_changed' => 'Retur ditolak — sesuaikan data lalu ajukan ulang.',
+                'summary' => $tipeLabel.' ditolak',
+                'url' => url('productIssue').'?pi_id='.(int) $pi->pi_id,
+                'url_label' => 'Perbaiki retur',
+            ];
+        }
+
+        $csRev = DB::table('cash_sales as cs')
+            ->where('cs.status', 3)
+            ->whereRaw('DATE(COALESCE(cs.cs_date, cs.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cs.created_at')
+            ->limit($limit)
+            ->get(['cs.cs_id', 'cs.cs_date']);
+
+        foreach ($csRev as $cs) {
+            $revision[] = [
+                'kind' => 'kas_sales',
+                'module_label' => 'Kas Sales (Staff)',
+                'reference' => 'CS #'.$cs->cs_id,
+                'date' => $cs->cs_date ? (string) $cs->cs_date : '',
+                'what_changed' => 'Penyesuaian kas sales ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => 'Ditolak',
+                'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
+                'url_label' => 'Perbaiki kas sales',
+            ];
+        }
+
+        usort($revision, static function ($a, $b) {
+            return strcmp((string) ($b['date'] ?? ''), (string) ($a['date'] ?? ''));
+        });
+        $revision = array_slice($revision, 0, $limit);
+
+        return [
+            'changelog' => $changelog,
+            'confirmation' => $confirmation,
+            'revision' => $revision,
+        ];
+    }
+
+    private function dashboardInventoryTurnover(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $days = max(1, $start->diffInDays($end) + 1);
+        $outQty = (float) (DB::table('log_stocks')
+            ->where('status', 1)
+            ->where('log_category', 2)
+            ->whereBetween('log_date', [$start->toDateString() . ' 00:00:00', $end->toDateString() . ' 23:59:59'])
+            ->sum('log_jumlah') ?? 0);
+
+        $currentStock = (float) (DB::table('product_stocks')->where('status', 1)->sum('ps_stock') ?? 0)
+            + (float) (DB::table('supplies_stocks')->where('status', 1)->sum('ss_stock') ?? 0);
+
+        $avgStock = max(1.0, $currentStock);
+        $turnover = round($outQty / $avgStock, 3);
+        $annualized = $turnover * (365 / $days);
+        $dio = $annualized > 0 ? round(365 / $annualized, 1) : null;
+
+        return [
+            'turnover' => round($annualized, 2),
+            'dio_days' => $dio,
+        ];
+    }
+
+    private function dashboardReturnRate(\Carbon\Carbon $start, \Carbon\Carbon $end, float $salesQty): array
+    {
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+
+        $productReturnQty = (float) (DB::table('product_issues_details as pid')
+            ->join('product_issues as pi', 'pi.pi_id', '=', 'pid.pi_id')
+            ->where('pi.tipe_return', 2)
+            ->where('pi.status', 2)
+            ->where('pid.status', '>=', 1)
+            ->whereBetween('pi.pi_date', [$s, $e])
+            ->sum('pid.pid_qty') ?? 0);
+
+        $purchaseQty = (float) (DB::table('purchase_orders_details as pod')
+            ->join('purchase_orders as po', 'po.po_id', '=', 'pod.po_id')
+            ->where('pod.status', 1)
+            ->where('po.status', '>=', 1)
+            ->whereBetween('po.po_date', [$s, $e])
+            ->sum('pod.pod_qty') ?? 0);
+
+        $suppliesReturnQty = (float) (DB::table('return_supplies_detail as rsd')
+            ->join('return_supplies as rs', 'rs.rs_id', '=', 'rsd.rs_id')
+            ->where('rs.status', 1)
+            ->where('rsd.status', 1)
+            ->whereBetween('rs.rs_date', [$s, $e])
+            ->sum('rsd.rsd_qty') ?? 0);
+
+        return [
+            'product' => $salesQty > 0 ? round(($productReturnQty / $salesQty) * 100, 2) : 0.0,
+            'bahan' => $purchaseQty > 0 ? round(($suppliesReturnQty / $purchaseQty) * 100, 2) : 0.0,
+        ];
+    }
+
+    private function buildAgingSummary(array $agingRows): array
+    {
+        $map = [
+            '0-30 hari' => ['status' => 'Sehat', 'qty' => 0.0, 'value' => 0.0],
+            '31-60 hari' => ['status' => 'Waspada', 'qty' => 0.0, 'value' => 0.0],
+            '61-90 hari' => ['status' => 'Risiko', 'qty' => 0.0, 'value' => 0.0],
+            '>90 hari' => ['status' => 'Dead stock', 'qty' => 0.0, 'value' => 0.0],
+        ];
+        foreach ($agingRows as $r) {
+            $days = (float) ($r['weighted_age_days'] ?? 0);
+            if ($days <= 30) {
+                $key = '0-30 hari';
+            } elseif ($days <= 60) {
+                $key = '31-60 hari';
+            } elseif ($days <= 90) {
+                $key = '61-90 hari';
+            } else {
+                $key = '>90 hari';
+            }
+            $map[$key]['qty'] += (float) ($r['qty'] ?? 0);
+            $map[$key]['value'] += (float) ($r['stock_value'] ?? 0);
+        }
+
+        $rows = [];
+        foreach ($map as $bucket => $x) {
+            $rows[] = [
+                'bucket' => $bucket,
+                'status' => $x['status'],
+                'qty' => round($x['qty'], 2),
+                'value' => round($x['value'], 2),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Item per bucket umur (sama pembagian dengan ringkasan), untuk modal detail di dashboard.
+     *
+     * @return array<string, array<int, array{kind: string, name: string, qty: float, unit: string, value: float, age_days: float}>>
+     */
+    private function buildAgingDetailByBucket(array $agingRows): array
+    {
+        $buckets = [
+            '0-30 hari' => [],
+            '31-60 hari' => [],
+            '61-90 hari' => [],
+            '>90 hari' => [],
+        ];
+        foreach ($agingRows as $r) {
+            $days = (float) ($r['weighted_age_days'] ?? 0);
+            if ($days <= 30) {
+                $key = '0-30 hari';
+            } elseif ($days <= 60) {
+                $key = '31-60 hari';
+            } elseif ($days <= 90) {
+                $key = '61-90 hari';
+            } else {
+                $key = '>90 hari';
+            }
+            $src = strtolower((string) ($r['sumber'] ?? ''));
+            $kind = $src === 'bahan' ? 'Bahan mentah' : 'Barang jadi';
+            $buckets[$key][] = [
+                'kind' => $kind,
+                'name' => trim((string) ($r['item_label'] ?? '')) ?: '-',
+                'qty' => round((float) ($r['qty'] ?? 0), 2),
+                'unit' => trim((string) ($r['unit_name'] ?? '')),
+                'value' => round((float) ($r['stock_value'] ?? 0), 2),
+                'age_days' => round($days, 1),
+            ];
+        }
+        foreach ($buckets as &$items) {
+            usort($items, function ($a, $b) {
+                $da = (float) ($b['age_days'] ?? 0) <=> (float) ($a['age_days'] ?? 0);
+                if ($da !== 0) {
+                    return $da;
+                }
+
+                return strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+            });
+        }
+        unset($items);
+
+        return $buckets;
+    }
+
+    /**
+     * Top 5 qty pengiriman: (1) reset tahun = 1 Jan tahun dari $end sampai akhir rentang filter;
+     * (2) akumulasi = semua SO s/d akhir rentang filter. Keduanya mengikuti tanggal akhir periode (minggu/bulan/tahun).
+     *
+     * @return array{yearly: array, accumulative: array, range_yearly: array{start: string, end: string}, range_accum: array{end: string}}
+     */
+    private function dashboardTopProducts(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $yearStart = $end->copy()->startOfYear()->toDateString();
+        $endDate = $end->toDateString();
+
+        $build = function (?string $rangeStart, ?string $rangeEnd, bool $accumAllTime): array {
+            $q = DB::table('sales_order_details as sod')
+                ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+                ->where('so.status', '>=', 1)
+                ->where('sod.status', '>=', 1);
+            if ($accumAllTime) {
+                $q->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) <= ?', [$rangeEnd]);
+            } else {
+                $q->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$rangeStart, $rangeEnd]);
+            }
+            $rows = $q->select('sod.sod_nama', 'sod.sod_variant')
+                ->selectRaw('SUM(sod.sod_qty) as qty')
+                ->groupBy('sod.sod_nama', 'sod.sod_variant')
+                ->orderByDesc('qty')
+                ->limit(5)
+                ->get();
+            $out = [];
+            foreach ($rows as $r) {
+                $out[] = [
+                    'name' => trim(trim((string) $r->sod_nama) . ' ' . trim((string) $r->sod_variant)),
+                    'qty' => (float) ($r->qty ?? 0),
+                ];
+            }
+
+            return $out;
+        };
+
+        return [
+            'yearly' => $build($yearStart, $endDate, false),
+            'accumulative' => $build(null, $endDate, true),
+            'range_yearly' => ['start' => $yearStart, 'end' => $endDate],
+            'range_accum' => ['end' => $endDate],
+        ];
+    }
+
+    /**
+     * Overstock dari aging (sudah as_of akhir filter). Rekomendasi produksi dari ritme penjualan dalam rentang filter.
+     */
+    private function dashboardWarnings(array $agingRows, \Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $overstock = [];
+        foreach ($agingRows as $r) {
+            $days = (float) ($r['weighted_age_days'] ?? 0);
+            if ($days <= 90) {
+                continue;
+            }
+            $overstock[] = [
+                'name' => (string) ($r['item_label'] ?? '-'),
+                'age_days' => round($days, 1),
+                'qty' => (float) ($r['qty'] ?? 0),
+            ];
+            if (count($overstock) >= 8) {
+                break;
+            }
+        }
+
+        $rangeDays = max(1, $start->diffInDays($end) + 1);
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+
+        $salesInRange = DB::table('sales_order_details as sod')
+            ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'sod.product_variant_id')
+            ->join('products as p', 'p.product_id', '=', 'pv.product_id')
+            ->where('so.status', '>=', 1)
+            ->where('sod.status', '>=', 1)
+            ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->select('sod.product_variant_id', 'p.product_name', 'pv.product_variant_name')
+            ->selectRaw('SUM(sod.sod_qty) as sold_qty')
+            ->groupBy('sod.product_variant_id', 'p.product_name', 'pv.product_variant_name')
+            ->get();
+
+        $reco = [];
+        foreach ($salesInRange as $r) {
+            $stock = (float) (DB::table('product_stocks')
+                ->where('status', 1)
+                ->where('product_variant_id', $r->product_variant_id)
+                ->sum('ps_stock') ?? 0);
+            $daily = (float) $r->sold_qty / $rangeDays;
+            $need7 = max(0, ceil(($daily * 7) - $stock));
+            if ($need7 <= 0) {
+                continue;
+            }
+            $reco[] = [
+                'name' => trim((string) $r->product_name . ' ' . (string) $r->product_variant_name),
+                'recommend_qty' => (int) $need7,
+            ];
+        }
+        usort($reco, function ($a, $b) {
+            return ($b['recommend_qty'] ?? 0) <=> ($a['recommend_qty'] ?? 0);
+        });
+        $reco = array_slice($reco, 0, 8);
+
+        return [
+            'overstock_alerts' => $overstock,
+            'recommended_production' => $reco,
+            'recommended_note' => 'Ritme jual rata-rata dari penjualan '.$rangeDays.' hari dalam periode filter; kebutuhan 7 hari ke depan vs stok sekarang.',
+        ];
+    }
+
+    private function dashboardChartSeries(string $period, \Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $labels = [];
+        $ranges = [];
+        if ($period === 'week') {
+            $c = $start->copy()->startOfDay();
+            while ($c->lte($end)) {
+                $labels[] = $c->format('D');
+                $ranges[] = [$c->copy()->startOfDay(), $c->copy()->endOfDay()];
+                $c->addDay();
+            }
+        } elseif ($period === 'year') {
+            $c = $start->copy()->startOfMonth();
+            while ($c->lte($end)) {
+                $labels[] = $c->format('M');
+                $ranges[] = [$c->copy()->startOfMonth(), $c->copy()->endOfMonth()];
+                $c->addMonth();
+            }
+        } else {
+            $c = $start->copy()->startOfWeek();
+            while ($c->lte($end)) {
+                $wStart = $c->copy()->max($start);
+                $wEnd = $c->copy()->endOfWeek()->min($end);
+                $labels[] = 'W' . $wStart->format('W');
+                $ranges[] = [$wStart->copy()->startOfDay(), $wEnd->copy()->endOfDay()];
+                $c->addWeek();
+            }
+        }
+
+        $salesSeries = [];
+        $returSeries = [];
+        foreach ($ranges as $r) {
+            $sq = $this->sumSalesQty($r[0], $r[1]);
+            $rq = (float) (DB::table('product_issues_details as pid')
+                ->join('product_issues as pi', 'pi.pi_id', '=', 'pid.pi_id')
+                ->where('pi.tipe_return', 2)
+                ->where('pi.status', 2)
+                ->where('pid.status', '>=', 1)
+                ->whereBetween('pi.pi_date', [$r[0]->toDateString(), $r[1]->toDateString()])
+                ->sum('pid.pid_qty') ?? 0);
+            $salesSeries[] = round($sq, 2);
+            $returSeries[] = round($rq, 2);
+        }
+
+        $growthPct = [];
+        $n = count($salesSeries);
+        for ($i = 0; $i < $n; $i++) {
+            if ($i === 0) {
+                $growthPct[] = null;
+                continue;
+            }
+            $prev = (float) $salesSeries[$i - 1];
+            $cur = (float) $salesSeries[$i];
+            if ($prev <= 0) {
+                $growthPct[] = $cur > 0 ? 100.0 : 0.0;
+            } else {
+                $growthPct[] = round((($cur - $prev) / $prev) * 100, 2);
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'sales_qty' => $salesSeries,
+            'return_qty' => $returSeries,
+            'sales_growth_pct_by_bucket' => $growthPct,
+        ];
+    }
+
     /**
      * Top baris penjualan (agregasi detail SO) menurut qty terjual — rentang sama grafik "Penjualan" di atas.
      *

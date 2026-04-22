@@ -1,476 +1,512 @@
-@php
-    $akses = $aksesHome ?? collect();
-    $showBahan = (bool) $akses->firstWhere('name', 'Pengelolaan Bahan Mentah');
-@endphp
-
 <style>
-    :root {
-        --dash-primary: #2d60ff;
-        --dash-primary-soft: #e8efff;
-        --dash-accent: #0ea5e9;
-        --dash-bg: #f0f4fc;
-        --dash-card: #ffffff;
-        --dash-text: #1e293b;
-        --dash-muted: #64748b;
-        --dash-success: #10b981;
-        --dash-radius: 20px;
+    .dash-home {
+        background: #f3f6fb;
+        border: 1px solid #e4ebf5;
+        border-radius: 16px;
+        padding: 1rem 1rem 1.1rem;
+        overflow-x: hidden;
     }
 
-    .dash-pemakaian-page.dash-home-embed {
-        background: var(--dash-bg);
-        border-radius: var(--dash-radius);
-        padding: 1.25rem 1.35rem;
-        margin-bottom: 0.5rem;
-        border: 1px solid rgba(45, 96, 255, 0.08);
-    }
-
-    .dash-pemakaian-page .dash-toolbar {
-        background: var(--dash-card);
-        border-radius: var(--dash-radius);
-        box-shadow: 0 8px 24px rgba(45, 96, 255, 0.08);
-        padding: 1rem 1.25rem;
-        margin-bottom: 1.25rem;
-    }
-
-    .dash-pemakaian-page .dash-toolbar .form-select,
-    .dash-pemakaian-page .dash-toolbar .btn {
-        border-radius: 12px;
-    }
-
-    .dash-pemakaian-page .btn-dash-primary {
-        background: var(--dash-primary);
-        border: none;
-        color: #fff;
-        font-weight: 600;
-        padding: 0.5rem 1.25rem;
-    }
-
-    .dash-pemakaian-page .btn-dash-primary:hover {
-        background: #244bcc;
-        color: #fff;
-    }
-
-    .dash-pemakaian-page .dash-kpi {
-        background: var(--dash-card);
-        border-radius: var(--dash-radius);
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        padding: 1.15rem 1.25rem;
-        height: 100%;
-        border: 1px solid rgba(45, 96, 255, 0.06);
-    }
-
-    .dash-pemakaian-page .dash-kpi h6 {
-        color: var(--dash-muted);
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        margin-bottom: 0.35rem;
-    }
-
-    .dash-pemakaian-page .dash-kpi .value {
-        font-size: 1.65rem;
+    .dash-section-title {
+        margin: 0 0 0.55rem 0;
+        font-size: 0.93rem;
         font-weight: 700;
-        color: var(--dash-primary);
+        color: #0f172a;
+        letter-spacing: 0.01em;
+    }
+
+    .dash-card {
+        background: #fff;
+        border: 1px solid #e8edf6;
+        border-radius: 14px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        padding: 0.95rem;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    /* h-100 pada kartu: hanya kolom dengan satu kartu — hindari tumpang tindih jika satu kolom berisi dua+ kartu */
+    .dash-card.dash-card-fill {
+        height: 100%;
+    }
+
+    .dash-kpi-title {
+        font-size: 0.78rem;
+        color: #64748b;
+        text-transform: uppercase;
+        font-weight: 700;
+        line-height: 1.35;
+        margin-bottom: 0.25rem;
+    }
+
+    .dash-kpi-value {
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #1e3a8a;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+    }
+
+    .dash-kpi-sub {
+        font-size: 0.82rem;
+        color: #64748b;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        margin-top: 0.2rem;
+    }
+
+    .dash-table {
+        table-layout: auto;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .dash-table thead th {
+        background: #eef3ff !important;
+        font-size: 0.77rem;
+        color: #334155;
+    }
+
+    .dash-table td,
+    .dash-table th {
+        vertical-align: top;
+    }
+
+    /* Log persetujuan: jangan remuk kolom — scroll horizontal di dalam kartu */
+    .dash-approval-table {
+        min-width: 640px;
+    }
+
+    .dash-approval-table thead th {
+        white-space: nowrap;
+    }
+
+    .dash-approval-table td {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .dash-approval-table td.dash-col-actions {
+        width: 1%;
+        min-width: 9.5rem;
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: right;
+    }
+
+    .dash-approval-table td.dash-col-actions .btn {
+        display: inline-block;
+        max-width: 100%;
+        white-space: normal;
+        text-align: center;
         line-height: 1.2;
     }
 
-    .dash-pemakaian-page .dash-kpi .sub {
-        font-size: 0.85rem;
-        color: var(--dash-muted);
+    /* Top 5: nama produk boleh wrap; qty tetap rapat kanan */
+    .dash-top5-table {
+        min-width: 280px;
     }
 
-    .dash-pemakaian-page .dash-kpi .trend-up {
-        color: var(--dash-success);
-        font-weight: 600;
+    .dash-top5-table th:first-child,
+    .dash-top5-table td.dash-col-rank {
+        width: 2.25rem;
+        white-space: nowrap;
+        vertical-align: top;
     }
 
-    .dash-pemakaian-page .dash-kpi .trend-down {
-        color: #ef4444;
-        font-weight: 600;
+    .dash-top5-table td.dash-col-prod {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        hyphens: auto;
     }
 
-    .dash-pemakaian-page .dash-card {
-        background: var(--dash-card);
-        border-radius: var(--dash-radius);
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        padding: 1.25rem 1.35rem;
-        border: 1px solid rgba(45, 96, 255, 0.06);
+    .dash-top5-table th:last-child,
+    .dash-top5-table td.dash-col-qty {
+        width: 1%;
+        white-space: nowrap;
+        vertical-align: top;
+        text-align: right;
     }
 
-    .dash-pemakaian-page .dash-card h5 {
-        color: var(--dash-text);
-        font-weight: 700;
-        font-size: 1.05rem;
+    .dash-stock-aging-table td:nth-child(2) {
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
-    .dash-pemakaian-page #chartPemakaianBahan {
-        min-height: 340px;
+    .dash-stock-aging-table th:last-child,
+    .dash-stock-aging-table td.dash-aging-actions {
+        width: 1%;
+        white-space: nowrap;
+        vertical-align: middle;
+        text-align: center;
     }
 
-    .dash-pemakaian-page .dash-exec-chart {
-        min-height: 300px;
-        width: 100%;
+    .dash-scroll {
+        max-height: 245px;
+        overflow: auto;
     }
 
-    .dash-pemakaian-page .dash-exec-chart .apexcharts-canvas,
-    .dash-pemakaian-page .dash-exec-chart .apexcharts-svg {
-        overflow: visible;
+    #dash_overstock_list {
+        padding-left: 1rem;
+        margin-bottom: 0;
+        max-height: 190px;
+        overflow: auto;
     }
 
-    .dash-pemakaian-page .dash-disclaimer {
-        font-size: 0.8rem;
-        color: var(--dash-muted);
-        border-left: 3px solid var(--dash-accent);
-        padding-left: 0.75rem;
-        margin-top: 0.75rem;
-    }
-
-    .dash-pemakaian-page .table-top-materials thead th {
-        background: var(--dash-primary-soft) !important;
-        color: var(--dash-text);
-        font-weight: 600;
-        font-size: 0.8rem;
-    }
-
-    .dash-pemakaian-page .badge-dash {
-        background: var(--dash-primary-soft);
-        color: var(--dash-primary);
-        font-weight: 600;
-        border-radius: 999px;
-        padding: 0.35rem 0.65rem;
-    }
-
-    .dash-pemakaian-page .dash-cross-card {
-        background: var(--dash-card);
-        border-radius: var(--dash-radius);
-        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        padding: 1.15rem 1.2rem;
-        height: 100%;
-        border: 1px solid rgba(45, 96, 255, 0.08);
-        display: flex;
-        flex-direction: column;
-        gap: 0.65rem;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .dash-pemakaian-page .dash-cross-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 28px rgba(45, 96, 255, 0.12);
-    }
-
-    .dash-pemakaian-page .dash-cross-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.75rem;
-    }
-
-    .dash-pemakaian-page .dash-cross-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #2d60ff 0%, #5b8cff 100%);
-        color: #fff;
-        font-size: 1.25rem;
-        flex-shrink: 0;
-    }
-
-    .dash-pemakaian-page .dash-cross-title {
-        font-weight: 700;
-        font-size: 1.05rem;
-        color: var(--dash-text);
-        margin: 0;
-    }
-
-    .dash-pemakaian-page .dash-cross-sub {
-        font-size: 0.78rem;
-        color: var(--dash-muted);
-        margin: 0;
-    }
-
-    .dash-pemakaian-page .dash-cross-value {
-        font-size: 1.85rem;
-        font-weight: 800;
-        color: var(--dash-primary);
-        line-height: 1.1;
-    }
-
-    .dash-pemakaian-page .dash-cross-secondary {
-        font-size: 0.88rem;
-        color: var(--dash-muted);
+    #dash_overstock_list li {
+        margin-bottom: 0.35rem;
         line-height: 1.35;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
-    .dash-pemakaian-page .dash-cross-foot {
-        margin-top: auto;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 0.35rem;
+    #dash_overstock_list li:last-child {
+        margin-bottom: 0;
     }
 
-    .dash-pemakaian-page .dash-cross-link {
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: var(--dash-primary);
-        text-decoration: none;
+    .dash-reco-table {
+        min-width: 260px;
     }
 
-    .dash-pemakaian-page .dash-cross-link:hover {
-        text-decoration: underline;
+    .dash-reco-table th:first-child,
+    .dash-reco-table td.dash-col-rank {
+        width: 2.25rem;
+        white-space: nowrap;
+        vertical-align: top;
+    }
+
+    .dash-reco-table td.dash-col-prod {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .dash-reco-table th:last-child,
+    .dash-reco-table td.dash-col-qty {
+        width: 1%;
+        white-space: nowrap;
+        vertical-align: top;
+        text-align: right;
+    }
+
+    #dash_main_chart {
+        min-height: 300px;
+        overflow: hidden;
+    }
+
+    .dash-muted-note {
+        color: #64748b;
+        font-size: 0.78rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .dash-home {
+            padding: 0.8rem;
+        }
+
+        .dash-kpi-value {
+            font-size: 1.2rem;
+        }
+
+        #dash_filter_label {
+            text-align: left !important;
+            margin-top: 0.35rem;
+        }
+
+        .dash-scroll {
+            max-height: none;
+        }
     }
 </style>
 
-<div class="dash-pemakaian-page dash-home-embed">
-    <div id="dash_cross_widgets" class="row g-3 mb-1"></div>
-
-    <div class="row align-items-center mb-2 g-2">
-        <div class="col">
-            <span class="small text-muted fw-semibold text-uppercase" style="letter-spacing: 0.04em;">Grafik tren</span>
-        </div>
-        <div class="col-auto">
-            <select id="exec_chart_months" class="form-select form-select-sm" style="min-width: 130px;">
-                <option value="3">3 bulan</option>
-                <option value="6" selected>6 bulan</option>
-                <option value="12">12 bulan</option>
+<div class="dash-home">
+    <div class="row g-2 mb-3">
+        <div class="col-md-3">
+            <select id="dash_filter_period" class="form-select form-select-sm">
+                <option value="week">Minggu</option>
+                <option value="month" selected>Bulan</option>
+                <option value="year">Tahun</option>
             </select>
         </div>
+        <div class="col-md-3">
+            <button class="btn btn-primary btn-sm" id="dash_refresh_btn">
+                <i class="fe fe-refresh-cw me-1"></i>Terapkan
+            </button>
+        </div>
+        <div class="col-md-6 text-md-end text-muted small align-self-center" id="dash_filter_label">-</div>
     </div>
+    <p class="dash-muted-note small mb-3 mb-md-4" id="dash_filter_hint">Memuat penjelasan filter…</p>
+
+    <h6 class="dash-section-title">Ringkasan Changelog & KPI</h6>
     <div class="row g-3 mb-3">
-        <div class="col-xl-4 col-md-12">
-            <div class="dash-card h-100">
-                <h6 class="mb-0 fw-bold" style="color: var(--dash-text);">Pengiriman</h6>
-                <p class="small text-muted mb-2">Jumlah pengiriman per bulan</p>
-                <div id="chartExecSales" class="dash-exec-chart"></div>
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Changelog</div>
+                <div class="dash-kpi-value" id="kpi_changelog">0</div>
+                <div class="dash-kpi-sub">Retur &amp; penyesuaian kas · tunggu ACC</div>
             </div>
         </div>
-        <div class="col-xl-4 col-md-12">
-            <div class="dash-card h-100">
-                <h6 class="mb-0 fw-bold" style="color: var(--dash-text);">Produksi</h6>
-                <p class="small text-muted mb-2">Batch per bulan</p>
-                <div id="chartExecProduction" class="dash-exec-chart"></div>
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Confirmation Log</div>
+                <div class="dash-kpi-value" id="kpi_confirmation">0</div>
+                <div class="dash-kpi-sub">SO / PO / Produksi menunggu ACC</div>
             </div>
         </div>
-        <div class="col-xl-4 col-md-12">
-            <div class="dash-card h-100">
-                <h6 class="mb-0 fw-bold" style="color: var(--dash-text);">Pembelian</h6>
-                <p class="small text-muted mb-2">Jumlah PO per bulan</p>
-                <div id="chartExecPurchase" class="dash-exec-chart"></div>
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Revision Log</div>
+                <div class="dash-kpi-value text-danger" id="kpi_revision">0</div>
+                <div class="dash-kpi-sub">Ditolak · perlu perbaikan</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Inventory Value</div>
+                <div class="dash-kpi-value" id="kpi_inventory_value">Rp 0</div>
+                <div class="dash-kpi-sub" id="kpi_inventory_split">Produk Rp 0 · Bahan Rp 0</div>
             </div>
         </div>
     </div>
 
-    @if ($showBahan)
-       
-        <div class="dash-toolbar">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-4 col-sm-6">
-                    <label class="form-label small text-muted mb-1">Rentang grafik</label>
-                    <select class="form-select" id="dash_months">
-                        <option value="6">6 bulan</option>
-                        <option value="12" selected>12 bulan</option>
-                        <option value="18">18 bulan</option>
-                        <option value="24">24 bulan</option>
-                    </select>
-                </div>
-                <div class="col-md-8 col-sm-12 d-flex flex-wrap gap-2 align-items-end justify-content-md-end">
-                    <button type="button" class="btn btn-dash-primary" id="dash_apply">
-                        <i class="fe fe-refresh-cw me-1"></i> Terapkan
-                    </button>
-                    <a href="{{ url('reportBahanBaku') }}" class="btn btn-outline-primary rounded-3">
-                        <i class="fe fe-list me-1"></i> Laporan detail
-                    </a>
-                    <a href="{{ url('stockAlertSupplies') }}" class="btn btn-outline-warning rounded-3">
-                        <i class="fe fe-alert-triangle me-1"></i> Peringatan stok
-                    </a>
-                </div>
+    <div class="row g-3 mb-3">
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Sales Growth %</div>
+                <div class="dash-kpi-value" id="kpi_sales_growth">0%</div>
+                <div class="dash-kpi-sub" id="kpi_sales_growth_sub">Output pengiriman vs periode sebelumnya (rentang sama)</div>
             </div>
         </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Inventory Turnover</div>
+                <div class="dash-kpi-value" id="kpi_turnover">0</div>
+                <div class="dash-kpi-sub" id="kpi_turnover_sub">Keluar stok (log) vs stok sekarang · annualized · sesuai filter</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Days Inventory Outstanding</div>
+                <div class="dash-kpi-value" id="kpi_dio">0 hari</div>
+                <div class="dash-kpi-sub" id="kpi_dio_sub">Dari turnover annualized · sesuai filter</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="dash-card dash-card-fill">
+                <div class="dash-kpi-title">Return Rate %</div>
+                <div class="dash-kpi-value" id="kpi_return_rate">0%</div>
+                <div class="dash-kpi-sub" id="kpi_return_split">Barang jadi: retur÷pengiriman · Bahan: retur pembelian÷qty PO · sesuai filter</div>
+            </div>
+        </div>
+    </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-lg-4 col-md-6">
-                <div class="dash-kpi">
-                    <h6>Qty net bulan ini</h6>
-                    <div class="value" id="kpi_this_net">—</div>
-                    <div class="sub" id="kpi_mom_net">MoM: —</div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="dash-kpi">
-                    <h6>Transaksi bulan ini</h6>
-                    <div class="value" id="kpi_this_txn">—</div>
-                    <div class="sub" id="kpi_mom_txn">MoM: —</div>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="dash-kpi">
-                    <h6>Bahan di bawah alert</h6>
-                    <div class="value" id="kpi_low_stock">—</div>
-                    <div class="sub">Stok agregat &lt; batas alert</div>
+    <h6 class="dash-section-title">Detail Changelog &amp; log persetujuan</h6>
+    <p class="dash-muted-note small mb-2">
+        <strong>Changelog</strong>: data dari <em>Retur Produk</em> dan <em>Kas Sales</em> status menunggu ACC (bukan SO/PO baru).
+        <strong>Confirmation</strong>: pengiriman, pembelian, produksi yang harus dikonfirmasi — link ke halaman detail untuk ACC.
+        <strong>Revision</strong>: transaksi ditolak — buka halaman yang sama untuk perbaiki / input ulang.
+        Permintaan ubah nominal / hapus pembelian khusus ke changelog bisa ditambah nanti lewat modul terpisah jika diperlukan.
+    </p>
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="dash-card dash-card-fill">
+                <h6 class="mb-2">Changelog — menunggu ACC Direktur</h6>
+                <div class="table-responsive dash-scroll">
+                    <table class="table table-sm dash-table dash-approval-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-nowrap">Modul</th>
+                                <th class="text-nowrap">Ref</th>
+                                <th>Perubahan / status</th>
+                                <th class="text-end text-nowrap">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_changelog_body">
+                            <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+        <div class="col-lg-4">
+            <div class="dash-card dash-card-fill">
+                <h6 class="mb-2">Confirmation Log</h6>
+                <div class="table-responsive dash-scroll">
+                    <table class="table table-sm dash-table dash-approval-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-nowrap">Modul</th>
+                                <th class="text-nowrap">Ref</th>
+                                <th>Perlu ACC</th>
+                                <th class="text-end text-nowrap">Buka</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_confirmation_body">
+                            <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="dash-card dash-card-fill">
+                <h6 class="mb-2">Revision Log</h6>
+                <div class="table-responsive dash-scroll">
+                    <table class="table table-sm dash-table dash-approval-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Modul</th>
+                                <th>Ref</th>
+                                <th>Alasan</th>
+                                <th class="text-end">Buka</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_revision_body">
+                            <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <div class="row g-3">
-            <div class="col-xl-8">
-                <div class="dash-card">
-                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
-                        <div>
-                            <h5 class="mb-0">Pemakaian per bulan</h5>
-                            <span class="badge-dash mt-2 d-inline-block">Qty net + transaksi</span>
-                        </div>
-                        <span class="text-muted small" id="dash_range_label"></span>
-                    </div>
-                    <div id="chartPemakaianBahan"></div>
-                    <p class="dash-disclaimer mb-0" id="dash_disclaimer"></p>
+    <h6 class="dash-section-title">Grafik & Top Product Pengiriman</h6>
+    <div class="row g-3 mb-3">
+        <div class="col-xl-8">
+            <div class="dash-card dash-card-fill">
+                <h6 class="mb-1">Grafik output pengiriman</h6>
+                <div class="dash-muted-note mb-2" id="dash_chart_caption">Qty pengiriman &amp; retur per potongan waktu; garis pertumbuhan % antar potongan mengikuti filter.</div>
+                <div id="dash_main_chart"></div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="dash-card mb-3">
+                <h6 class="mb-1" id="dash_top_yearly_title">Top 5 · reset tahun (YTD)</h6>
+                <div class="dash-muted-note small mb-2" id="dash_top_yearly_sub">—</div>
+                <div class="table-responsive dash-scroll">
+                    <table class="table table-sm dash-table dash-top5-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Produk</th>
+                                <th class="text-end">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_top_yearly">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Memuat...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="col-xl-4">
-                <div class="dash-card h-100 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                        <h5 class="mb-0">Top pengiriman</h5>
-                    </div>
-                    <span class="text-muted small mb-2 d-block" id="dash_top_sales_range">—</span>
-                    <div class="table-responsive flex-grow-1">
-                        <table class="table table-sm table-hover table-top-materials mb-0">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Produk / varian</th>
-                                    <th class="text-end">Qty</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dash_top_sales_body">
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted py-3">Memuat…</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <a href="{{ url('salesOrder') }}" class="btn btn-sm btn-outline-primary rounded-3 mt-2">Pengiriman</a>
+            <div class="dash-card">
+                <h6 class="mb-1" id="dash_top_accum_title">Top 5 · akumulasi</h6>
+                <div class="dash-muted-note small mb-2" id="dash_top_accum_sub">—</div>
+                <div class="table-responsive dash-scroll">
+                    <table class="table table-sm dash-table dash-top5-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Produk</th>
+                                <th class="text-end">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_top_accum">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Memuat...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="row g-3 mt-1">
-            <div class="col-md-6">
-                <div class="dash-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Top pemakaian kemasan &amp; wadah</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover table-top-materials mb-0">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Nama</th>
-                                    <th class="text-end">Net qty</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dash_top_body_kemasan">
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted py-3">Memuat…</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="dash-card h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Top pemakaian bahan di luar kemasan</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover table-top-materials mb-0">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Nama</th>
-                                    <th class="text-end">Net qty</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dash_top_body_bahan">
-                                <tr>
-                                    <td colspan="3" class="text-center text-muted py-3">Memuat…</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+    <h6 class="dash-section-title">Stock Aging & Warning</h6>
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="dash-card dash-card-fill">
+                <h6 class="mb-2">Stock Aging</h6>
+                <p class="dash-muted-note small mb-2 mb-xl-3">Umur dari lapisan FIFO stok yang belum keluar (sampai tanggal akhir filter dashboard). Klik <strong>Lihat</strong> untuk rincian barang jadi &amp; bahan per kelompok umur.</p>
+                <div class="table-responsive dash-scroll">
+                    <table class="table table-sm dash-table dash-stock-aging-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-nowrap">Umur Stok</th>
+                                <th>Status</th>
+                                <th class="text-end text-nowrap">Qty</th>
+                                <th class="text-end text-nowrap">Nilai</th>
+                                <th class="text-nowrap">Rincian</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_stock_aging_body">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Memuat...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+    </div>
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="dash-card dash-card-fill">
+                <h6 class="mb-2">Warning - Overstock Alert</h6>
+                <ul class="mb-0 small" id="dash_overstock_list">
+                    <li class="text-muted">Memuat...</li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="dash-card dash-card-fill">
+                <h6 class="mb-2">Warning - Recommended Stok Produksi Hari Ini</h6>
+                <p class="dash-muted-note small mb-2" id="dash_recommended_note"></p>
+                <div class="table-responsive dash-scroll">
+                    <table class="table table-sm dash-table dash-reco-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Produk</th>
+                                <th class="text-end text-nowrap">Rekomendasi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_recommended_body">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">Memuat…</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <div class="row g-3 mt-1" id="dash_procurement_section">
-            <div class="col-12">
-                <div class="dash-card">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                        <div>
-                            <h5 class="mb-0">Estimasi pembelian bahan (produksi)</h5>
-                        </div>
-                        <span class="badge bg-light text-dark border" id="dash_procurement_next_badge">—</span>
-                    </div>
+    <div class="modal fade" id="dashAgingDetailModal" tabindex="-1" aria-labelledby="dashAgingDetailTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6" id="dashAgingDetailTitle">Detail stok</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
-            </div>
-            <div class="col-12">
-                <div class="dash-card">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                        <h5 class="mb-0">Estimasi — pemakaian kemasan &amp; wadah</h5>
-                    </div>
+                <div class="modal-body pt-2">
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover table-top-materials mb-0" title="Format angka Indonesia: titik (.) = ribuan, koma (,) = desimal. Contoh 1.750 = seribu tujuh ratus lima puluh, bukan satu koma tujuh lima.">
-                            <thead>
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>#</th>
-                                    <th>Bahan</th>
-                                    <th class="text-end">Total rentang</th>
-                                    <th class="text-end">Rata/bln</th>
-                                    <th class="text-end">Est. bln depan</th>
-                                    <th class="text-end">Stok agregat</th>
-                                    <th class="text-end">Kurang (indikatif)</th>
+                                    <th>Jenis</th>
+                                    <th>Item</th>
+                                    <th class="text-end text-nowrap">Qty</th>
+                                    <th class="text-end text-nowrap">Nilai</th>
+                                    <th class="text-end text-nowrap">Umur (hari)</th>
                                 </tr>
                             </thead>
-                            <tbody id="dash_procurement_body_kemasan">
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted py-3">Memuat…</td>
-                                </tr>
-                            </tbody>
+                            <tbody id="dash_aging_detail_body"></tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-            <div class="col-12">
-                <div class="dash-card">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                        <h5 class="mb-0">Estimasi — pemakaian bahan di luar kemasan</h5>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover table-top-materials mb-0" title="Format angka Indonesia: titik (.) = ribuan, koma (,) = desimal. Contoh 1.750 = seribu tujuh ratus lima puluh, bukan satu koma tujuh lima.">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Bahan</th>
-                                    <th class="text-end">Total rentang</th>
-                                    <th class="text-end">Rata/bln</th>
-                                    <th class="text-end">Est. bln depan</th>
-                                    <th class="text-end">Stok agregat</th>
-                                    <th class="text-end">Kurang (indikatif)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dash_procurement_body_bahan">
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted py-3">Memuat…</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p class="dash-disclaimer mb-0 mt-2" id="dash_procurement_disclaimer"></p>
                 </div>
             </div>
         </div>
-    @endif
+    </div>
 </div>

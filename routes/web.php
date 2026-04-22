@@ -407,6 +407,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
 
     Route::get('/getDashboardExecutiveWidgets', [ReportController::class, 'getDashboardExecutiveWidgets'])->name('getDashboardExecutiveWidgets');
+    Route::get('/getDashboardOverview', [ReportController::class, 'getDashboardOverview'])->name('getDashboardOverview');
 
     Route::middleware('check.access:Pengelolaan Bahan Mentah|view')->group(function () {
         Route::get('/reportBahanBaku', [ReportController::class, 'reportBahanBaku'])->name('reportBahanBaku');

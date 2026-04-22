@@ -174,11 +174,43 @@
 
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
+                openProductionFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load kategori:", err);
             }
         });
+    }
+
+    /** Dari dashboard: /production?production_id=123 — buka modal detail batch tersebut */
+    function openProductionFromDashboardLink() {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var pid = params.get("production_id");
+            if (!pid || !table) {
+                return;
+            }
+            var opened = false;
+            table.rows().every(function () {
+                var d = this.data();
+                if (String(d.production_id) === String(pid)) {
+                    $(this.node()).find(".btn_view").first().trigger("click");
+                    opened = true;
+                    return false;
+                }
+            });
+            if (opened) {
+                params.delete("production_id");
+                var q = params.toString();
+                window.history.replaceState(
+                    {},
+                    "",
+                    window.location.pathname + (q ? "?" + q : "")
+                );
+            }
+        } catch (err) {
+            console.warn("openProductionFromDashboardLink", err);
+        }
     }
 
     $(document).on("change","#date_production, #status",function(){

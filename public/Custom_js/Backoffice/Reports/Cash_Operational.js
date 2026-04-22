@@ -12,6 +12,10 @@
     let todayStr = yyyy + '-' + mm + '-' + dd;
 
     $(document).ready(function(){
+        var params = new URLSearchParams(window.location.search);
+        if (params.get("cs_id")) {
+            $("#cashType").val("sales");
+        }
         $('#cashType').trigger('change');
     });
 
@@ -942,11 +946,46 @@
                 }, 100);
 
                 feather.replace(); // Biar icon feather muncul lagi
+                openCashSalesFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load kategori:", err);
             }
         });
+    }
+
+    /** Dari dashboard: /operationalCash?cs_id= — pilih tab Sales dan buka modal aktivitas tersebut */
+    function openCashSalesFromDashboardLink() {
+        try {
+            if (type !== "sales" || !table) {
+                return;
+            }
+            var params = new URLSearchParams(window.location.search);
+            var csId = params.get("cs_id");
+            if (!csId) {
+                return;
+            }
+            var opened = false;
+            table.rows().every(function () {
+                var d = this.data();
+                if (String(d.cs_id) === String(csId)) {
+                    $(this.node()).find(".btn_view_sales").first().trigger("click");
+                    opened = true;
+                    return false;
+                }
+            });
+            if (opened) {
+                params.delete("cs_id");
+                var q = params.toString();
+                window.history.replaceState(
+                    {},
+                    "",
+                    window.location.pathname + (q ? "?" + q : "")
+                );
+            }
+        } catch (err) {
+            console.warn("openCashSalesFromDashboardLink", err);
+        }
     }
 
     function format(detailData) {

@@ -20,8 +20,5 @@
 @endsection
 
 @section('custom_js')
-    @if ($aksesHome->firstWhere('name', 'Pengelolaan Bahan Mentah'))
-        <script src="{{ asset('Custom_js/Backoffice/Reports/DashboardPemakaianBahan.js') }}?v=13"></script>
-    @endif
-    <script src="{{ asset('Custom_js/Backoffice/Dashboard/Dashboard-Admin.js') }}?v=9"></script>
+    <script src="{{ asset('Custom_js/Backoffice/Dashboard/Dashboard-Admin.js') }}?v=17"></script>
 @endsection
