@@ -1,58 +1,135 @@
 <style>
     .dash-home {
-        background: #f3f6fb;
-        border: 1px solid #e4ebf5;
-        border-radius: 16px;
-        padding: 1rem 1rem 1.1rem;
+        --dash-surface: #ffffff;
+        --dash-canvas: #f1f5f9;
+        --dash-border: rgba(15, 23, 42, 0.08);
+        --dash-text: #0f172a;
+        --dash-muted: #64748b;
+        --dash-accent: #1d4ed8;
+        --dash-radius: 12px;
+        --dash-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.06);
+
+        background: var(--dash-canvas);
+        border: 1px solid var(--dash-border);
+        border-radius: var(--dash-radius);
+        padding: 1.25rem 1.35rem 1.5rem;
         overflow-x: hidden;
     }
 
-    .dash-section-title {
-        margin: 0 0 0.55rem 0;
-        font-size: 0.93rem;
-        font-weight: 700;
-        color: #0f172a;
+    .dash-toolbar {
+        background: var(--dash-surface);
+        border: 1px solid var(--dash-border);
+        border-radius: var(--dash-radius);
+        box-shadow: var(--dash-shadow);
+        padding: 0.9rem 1.1rem;
+        margin-bottom: 1.35rem;
+    }
+
+    .dash-toolbar-period {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--dash-text);
         letter-spacing: 0.01em;
     }
 
+    .dash-toolbar-hint {
+        font-size: 0.75rem;
+        color: var(--dash-muted);
+        line-height: 1.45;
+        max-width: 920px;
+    }
+
+    .dash-section {
+        margin-bottom: 1.35rem;
+    }
+
+    .dash-section-head {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        margin-bottom: 0.85rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--dash-border);
+    }
+
+    .dash-section-head::before {
+        content: "";
+        width: 4px;
+        height: 1.1rem;
+        border-radius: 2px;
+        background: var(--dash-accent);
+        flex-shrink: 0;
+    }
+
+    .dash-section-title {
+        margin: 0;
+        font-size: 0.9375rem;
+        font-weight: 700;
+        color: var(--dash-text);
+        letter-spacing: -0.01em;
+    }
+
     .dash-card {
-        background: #fff;
-        border: 1px solid #e8edf6;
-        border-radius: 14px;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
-        padding: 0.95rem;
+        background: var(--dash-surface);
+        border: 1px solid var(--dash-border);
+        border-radius: var(--dash-radius);
+        box-shadow: var(--dash-shadow);
+        padding: 1.1rem 1.15rem;
         min-width: 0;
         overflow: hidden;
     }
 
-    /* h-100 pada kartu: hanya kolom dengan satu kartu — hindari tumpang tindih jika satu kolom berisi dua+ kartu */
     .dash-card.dash-card-fill {
         height: 100%;
     }
 
-    .dash-kpi-title {
-        font-size: 0.78rem;
-        color: #64748b;
-        text-transform: uppercase;
+    .dash-card-title {
+        font-size: 0.8125rem;
         font-weight: 700;
+        color: var(--dash-text);
+        margin: 0 0 0.65rem 0;
+        letter-spacing: -0.01em;
+    }
+
+    .dash-card-title-sub {
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: var(--dash-text);
+        margin: 0 0 0.35rem 0;
+    }
+
+    .dash-kpi-title {
+        font-size: 0.6875rem;
+        color: var(--dash-muted);
+        text-transform: uppercase;
+        font-weight: 600;
+        letter-spacing: 0.06em;
         line-height: 1.35;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.35rem;
     }
 
     .dash-kpi-value {
-        font-size: 1.45rem;
-        font-weight: 800;
-        color: #1e3a8a;
+        font-size: 1.375rem;
+        font-weight: 700;
+        color: #1e40af;
         line-height: 1.2;
+        letter-spacing: -0.02em;
         overflow-wrap: anywhere;
     }
 
     .dash-kpi-sub {
-        font-size: 0.82rem;
-        color: #64748b;
-        line-height: 1.35;
+        font-size: 0.75rem;
+        color: var(--dash-muted);
+        line-height: 1.4;
         overflow-wrap: anywhere;
-        margin-top: 0.2rem;
+        margin-top: 0.35rem;
+    }
+
+    .dash-table-wrap {
+        margin: 0 -0.15rem;
+        border-radius: 8px;
+        border: 1px solid var(--dash-border);
+        overflow: hidden;
     }
 
     .dash-table {
@@ -60,17 +137,39 @@
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
+        margin-bottom: 0;
     }
 
     .dash-table thead th {
-        background: #eef3ff !important;
-        font-size: 0.77rem;
+        background: #f8fafc !important;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #475569 !important;
+        border-bottom: 1px solid var(--dash-border) !important;
+        padding: 0.55rem 0.65rem !important;
+    }
+
+    .dash-table tbody td {
+        font-size: 0.8125rem;
         color: #334155;
+        padding: 0.55rem 0.65rem !important;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        vertical-align: middle;
+    }
+
+    .dash-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-table-hover tbody tr:hover td {
+        background-color: #f8fafc;
     }
 
     .dash-table td,
     .dash-table th {
-        vertical-align: top;
+        vertical-align: middle;
     }
 
     /* Log persetujuan: jangan remuk kolom — scroll horizontal di dalam kartu */
@@ -153,33 +252,76 @@
     }
 
     .dash-bahan-alert-table tr.dash-bahan-row-critical td {
-        background-color: #fee2e2 !important;
+        background-color: #fef2f2 !important;
+        box-shadow: inset 3px 0 0 #dc2626;
     }
 
     .dash-bahan-alert-table tr.dash-bahan-row-warn td {
-        background-color: #fef9c3 !important;
+        background-color: #fffbeb !important;
+        box-shadow: inset 3px 0 0 #d97706;
     }
 
     .dash-bahan-alert-table td {
         vertical-align: middle;
     }
 
+    .dash-bahan-toolbar {
+        border-bottom: 1px solid var(--dash-border);
+        padding-bottom: 0.85rem;
+        margin-bottom: 0.85rem;
+    }
+
+    .dash-bahan-legend {
+        font-size: 0.75rem;
+        color: var(--dash-muted);
+        line-height: 1.45;
+        margin-top: 0.45rem;
+        max-width: 48rem;
+    }
+
+    .dash-badge-pill {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        padding: 0.28em 0.65em;
+        vertical-align: middle;
+    }
+
+    .dash-chart-caption {
+        font-size: 0.75rem;
+        color: var(--dash-muted);
+        line-height: 1.45;
+    }
+
+    .dash-prose-note {
+        font-size: 0.75rem;
+        color: var(--dash-muted);
+        line-height: 1.55;
+        max-width: 960px;
+    }
+
+    .dash-modal-table thead th {
+        font-size: 0.6875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
     #dash_overstock_list {
-        padding-left: 1rem;
         margin-bottom: 0;
-        max-height: 190px;
+        max-height: 220px;
         overflow: auto;
     }
 
     #dash_overstock_list li {
-        margin-bottom: 0.35rem;
-        line-height: 1.35;
+        padding: 0.5rem 0;
+        line-height: 1.45;
         overflow-wrap: anywhere;
         word-break: break-word;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        color: #334155;
     }
 
     #dash_overstock_list li:last-child {
-        margin-bottom: 0;
+        border-bottom: none;
     }
 
     .dash-reco-table {
@@ -212,17 +354,27 @@
     }
 
     .dash-muted-note {
-        color: #64748b;
-        font-size: 0.78rem;
+        color: var(--dash-muted);
+        font-size: 0.75rem;
+        line-height: 1.45;
+    }
+
+    #dashBahanToast {
+        border: 1px solid var(--dash-border) !important;
+        box-shadow: var(--dash-shadow) !important;
+    }
+
+    #dashBahanToast .toast-body {
+        color: var(--dash-text);
     }
 
     @media (max-width: 991.98px) {
         .dash-home {
-            padding: 0.8rem;
+            padding: 1rem;
         }
 
         .dash-kpi-value {
-            font-size: 1.2rem;
+            font-size: 1.15rem;
         }
 
         #dash_filter_label {
@@ -233,28 +385,42 @@
         .dash-scroll {
             max-height: none;
         }
+
+        .dash-toolbar-period {
+            display: block;
+            margin-top: 0.35rem;
+        }
     }
 </style>
 
 <div class="dash-home">
-    <div class="row g-2 mb-3">
-        <div class="col-md-3">
-            <select id="dash_filter_period" class="form-select form-select-sm">
-                <option value="week">Minggu</option>
-                <option value="month" selected>Bulan</option>
-                <option value="year">Tahun</option>
-            </select>
+    <div class="dash-toolbar">
+        <div class="row g-2 align-items-center">
+            <div class="col-sm-auto">
+                <label class="form-label small text-muted mb-0 d-block">Periode</label>
+                <select id="dash_filter_period" class="form-select form-select-sm" style="min-width: 9.5rem;">
+                    <option value="week">Minggu</option>
+                    <option value="month" selected>Bulan</option>
+                    <option value="year">Tahun</option>
+                </select>
+            </div>
+            <div class="col-sm-auto align-self-end">
+                <button type="button" class="btn btn-primary btn-sm px-3" id="dash_refresh_btn">
+                    <i class="fe fe-refresh-cw me-1"></i>Terapkan
+                </button>
+            </div>
+            <div class="col text-md-end align-self-end pt-2 pt-sm-0">
+                <span class="dash-toolbar-period" id="dash_filter_label">—</span>
+            </div>
         </div>
-        <div class="col-md-3">
-            <button class="btn btn-primary btn-sm" id="dash_refresh_btn">
-                <i class="fe fe-refresh-cw me-1"></i>Terapkan
-            </button>
-        </div>
-        <div class="col-md-6 text-md-end text-muted small align-self-center" id="dash_filter_label">-</div>
+        <p class="dash-toolbar-hint mb-0 mt-2 pt-2 border-top" id="dash_filter_hint" style="border-color: rgba(15,23,42,.08) !important;">Memuat penjelasan filter…</p>
     </div>
-    <p class="dash-muted-note small mb-3 mb-md-4" id="dash_filter_hint">Memuat penjelasan filter…</p>
 
-    <h6 class="dash-section-title">Ringkasan Changelog & KPI</h6>
+    <div class="dash-section">
+        <div class="dash-section-head">
+            <h2 class="dash-section-title">Ringkasan changelog &amp; KPI</h2>
+        </div>
+    </div>
     <div class="row g-3 mb-3">
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
@@ -317,19 +483,23 @@
         </div>
     </div>
 
-    <h6 class="dash-section-title">Detail Changelog &amp; log persetujuan</h6>
-    <p class="dash-muted-note small mb-2">
-        <strong>Changelog</strong>: data dari <em>Retur Produk</em> dan <em>Kas Sales</em> status menunggu ACC (bukan SO/PO baru).
-        <strong>Confirmation</strong>: pengiriman, pembelian, produksi yang harus dikonfirmasi — link ke halaman detail untuk ACC.
-        <strong>Revision</strong>: transaksi ditolak — buka halaman yang sama untuk perbaiki / input ulang.
-        Permintaan ubah nominal / hapus pembelian khusus ke changelog bisa ditambah nanti lewat modul terpisah jika diperlukan.
-    </p>
-    <div class="row g-3 mb-3">
+    <div class="dash-section">
+        <div class="dash-section-head">
+            <h2 class="dash-section-title">Changelog &amp; log persetujuan</h2>
+        </div>
+        <p class="dash-prose-note mb-3">
+            <strong>Changelog</strong>: <em>Retur Produk</em> &amp; <em>Kas Sales</em> menunggu ACC.
+            <strong>Confirmation</strong>: SO / PO / Produksi perlu konfirmasi.
+            <strong>Revision</strong>: transaksi ditolak — perbaiki di halaman yang sama.
+        </p>
+    </div>
+    <div class="row g-3 mb-3 mt-3">
         <div class="col-lg-4">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-2">Changelog — menunggu ACC Direktur</h6>
+                <h3 class="dash-card-title">Changelog — tunggu ACC Direktur</h3>
                 <div class="table-responsive dash-scroll">
-                    <table class="table table-sm dash-table dash-approval-table mb-0">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
                         <thead>
                             <tr>
                                 <th class="text-nowrap">Modul</th>
@@ -342,14 +512,16 @@
                             <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-2">Confirmation Log</h6>
+                <h3 class="dash-card-title">Confirmation log</h3>
                 <div class="table-responsive dash-scroll">
-                    <table class="table table-sm dash-table dash-approval-table mb-0">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
                         <thead>
                             <tr>
                                 <th class="text-nowrap">Modul</th>
@@ -362,46 +534,55 @@
                             <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-4">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-2">Revision Log</h6>
+                <h3 class="dash-card-title">Revision log</h3>
                 <div class="table-responsive dash-scroll">
-                    <table class="table table-sm dash-table dash-approval-table mb-0">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
                         <thead>
                             <tr>
-                                <th>Modul</th>
-                                <th>Ref</th>
+                                <th class="text-nowrap">Modul</th>
+                                <th class="text-nowrap">Ref</th>
                                 <th>Alasan</th>
-                                <th class="text-end">Buka</th>
+                                <th class="text-end text-nowrap">Buka</th>
                             </tr>
                         </thead>
                         <tbody id="dash_revision_body">
                             <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <h6 class="dash-section-title">Grafik & Top Product Pengiriman</h6>
-    <div class="row g-3 mb-3">
+    <div class="dash-section">
+        <div class="dash-section-head">
+            <h2 class="dash-section-title">Grafik &amp; top produk pengiriman</h2>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-3 mt-3">
         <div class="col-xl-8">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-1">Grafik output pengiriman</h6>
-                <div class="dash-muted-note mb-2" id="dash_chart_caption">Qty pengiriman &amp; retur per potongan waktu; garis pertumbuhan % antar potongan mengikuti filter.</div>
+                <h3 class="dash-card-title-sub">Output pengiriman</h3>
+                <p class="dash-chart-caption mb-3" id="dash_chart_caption">Qty pengiriman &amp; retur per potongan waktu; garis pertumbuhan % mengikuti filter.</p>
                 <div id="dash_main_chart"></div>
             </div>
         </div>
         <div class="col-xl-4">
             <div class="dash-card mb-3">
-                <h6 class="mb-1" id="dash_top_yearly_title">Top 5 · reset tahun (YTD)</h6>
-                <div class="dash-muted-note small mb-2" id="dash_top_yearly_sub">—</div>
+                <h3 class="dash-card-title-sub" id="dash_top_yearly_title">Top 5 · reset tahun (YTD)</h3>
+                <p class="dash-muted-note mb-2" id="dash_top_yearly_sub">—</p>
                 <div class="table-responsive dash-scroll">
-                    <table class="table table-sm dash-table dash-top5-table mb-0">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -415,13 +596,15 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
             <div class="dash-card">
-                <h6 class="mb-1" id="dash_top_accum_title">Top 5 · akumulasi</h6>
-                <div class="dash-muted-note small mb-2" id="dash_top_accum_sub">—</div>
+                <h3 class="dash-card-title-sub" id="dash_top_accum_title">Top 5 · akumulasi</h3>
+                <p class="dash-muted-note mb-2" id="dash_top_accum_sub">—</p>
                 <div class="table-responsive dash-scroll">
-                    <table class="table table-sm dash-table dash-top5-table mb-0">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -435,19 +618,25 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <h6 class="dash-section-title">Stock Aging & Warning</h6>
-    <div class="row g-3">
+    <div class="dash-section mt-3">
+        <div class="dash-section-head">
+            <h2 class="dash-section-title">Stock aging &amp; peringatan</h2>
+        </div>
+    </div>
+    <div class="row g-3 mt-3">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-2">Stock Aging</h6>
-                <p class="dash-muted-note small mb-2 mb-xl-3">Umur dari lapisan FIFO stok yang belum keluar (sampai tanggal akhir filter dashboard). Klik <strong>Lihat</strong> untuk rincian barang jadi &amp; bahan per kelompok umur.</p>
+                <h3 class="dash-card-title">Stock aging (FIFO)</h3>
+                <p class="dash-muted-note mb-3">Umur lapisan stok belum keluar (sampai akhir periode filter). Gunakan <strong>Lihat</strong> untuk rincian barang jadi &amp; bahan per kelompok.</p>
                 <div class="table-responsive dash-scroll">
-                    <table class="table table-sm dash-table dash-stock-aging-table mb-0">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-stock-aging-table mb-0">
                         <thead>
                             <tr>
                                 <th class="text-nowrap">Umur Stok</th>
@@ -463,33 +652,38 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-3 mt-3">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
-                    <div>
-                        <h6 class="mb-1">Stock Alert — Bahan mentah</h6>
-                        <p class="dash-muted-note small mb-0">
-                            <span class="badge bg-danger" id="dash_bahan_badge_crit">0 habis</span>
-                            <span class="badge bg-warning text-dark ms-1" id="dash_bahan_badge_warn">0 mendekati batas</span>
-                            Merah = stok habis (semua satuan 0). Kuning = stok default unit ≤ batas alert (waktunya order). Produk jadi tidak ditampilkan di sini.
+                <div class="dash-bahan-toolbar d-flex flex-wrap align-items-start justify-content-between gap-3">
+                    <div class="flex-grow-1" style="min-width: 220px;">
+                        <h3 class="dash-card-title mb-2">Stock alert — bahan mentah</h3>
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="badge rounded-pill bg-danger dash-badge-pill" id="dash_bahan_badge_crit">0 habis</span>
+                            <span class="badge rounded-pill bg-warning text-dark dash-badge-pill" id="dash_bahan_badge_warn">0 mendekati batas</span>
+                        </div>
+                        <p class="dash-bahan-legend mb-0">
+                            <strong class="text-dark">Habis</strong>: semua satuan 0.
+                            <strong class="text-dark">Perlu order</strong>: stok satuan default ≤ batas alert. Barang jadi tidak ditampilkan.
                         </p>
                     </div>
-                    <div class="d-flex flex-wrap gap-1 align-items-center">
-                        <button type="button" class="btn btn-outline-secondary btn-sm py-1" id="dash_bahan_notif_perm" title="Izinkan notifikasi browser saat ada alert">
-                            <i class="fe fe-bell"></i> Notifikasi
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="dash_bahan_notif_perm" title="Izinkan notifikasi browser">
+                            <i class="fe fe-bell"></i><span class="d-none d-sm-inline ms-1">Notifikasi</span>
                         </button>
-                        <a class="btn btn-primary btn-sm py-1" id="dash_bahan_link_alert" href="{{ url('stockAlertSupplies') }}">Peringatan lengkap</a>
-                        <a class="btn btn-outline-primary btn-sm py-1" id="dash_bahan_link_po" href="{{ url('purchaseOrder') }}">Purchase Order</a>
+                        <a class="btn btn-primary btn-sm" id="dash_bahan_link_alert" href="{{ url('stockAlertSupplies') }}">Halaman peringatan</a>
+                        <a class="btn btn-outline-primary btn-sm" id="dash_bahan_link_po" href="{{ url('purchaseOrder') }}">Purchase order</a>
                     </div>
                 </div>
                 <div class="table-responsive dash-scroll-tall">
-                    <table class="table table-sm dash-table mb-0 dash-bahan-alert-table">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover mb-0 dash-bahan-alert-table">
                         <thead>
                             <tr>
                                 <th class="text-nowrap">Status</th>
@@ -505,26 +699,28 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-3 mt-3">
         <div class="col-lg-6">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-2">Overstock (aging &gt; 90 hari)</h6>
-                <ul class="mb-0 small" id="dash_overstock_list">
+                <h3 class="dash-card-title">Overstock (aging &gt; 90 hari)</h3>
+                <ul class="mb-0 small list-unstyled" id="dash_overstock_list" style="font-size: 0.8125rem;">
                     <li class="text-muted">Memuat...</li>
                 </ul>
             </div>
         </div>
         <div class="col-lg-6">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-2">Warning - Recommended Stok Produksi Hari Ini</h6>
-                <p class="dash-muted-note small mb-2" id="dash_recommended_note"></p>
+                <h3 class="dash-card-title">Rekomendasi stok produksi</h3>
+                <p class="dash-muted-note mb-2" id="dash_recommended_note"></p>
                 <div class="table-responsive dash-scroll">
-                    <table class="table table-sm dash-table dash-reco-table mb-0">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-reco-table mb-0">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -538,15 +734,16 @@
                             </tr>
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 10800">
-        <div id="dashBahanToast" class="toast align-items-center border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="dashBahanToast" class="toast align-items-center bg-white" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
-                <div class="toast-body small" id="dashBahanToastBody"></div>
+                <div class="toast-body small py-3" id="dashBahanToastBody"></div>
                 <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Tutup"></button>
             </div>
         </div>
@@ -554,14 +751,14 @@
 
     <div class="modal fade" id="dashAgingDetailModal" tabindex="-1" aria-labelledby="dashAgingDetailTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header py-2">
-                    <h5 class="modal-title fs-6" id="dashAgingDetailTitle">Detail stok</h5>
+            <div class="modal-content border-0 shadow" style="border-radius: 12px;">
+                <div class="modal-header border-bottom py-3 px-3">
+                    <h5 class="modal-title fw-semibold" style="font-size: 1rem;" id="dashAgingDetailTitle">Detail stok</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
-                <div class="modal-body pt-2">
+                <div class="modal-body px-3 pb-3 pt-2">
                     <div class="table-responsive">
-                        <table class="table table-sm table-bordered mb-0">
+                        <table class="table table-sm table-bordered mb-0 dash-modal-table">
                             <thead class="table-light">
                                 <tr>
                                     <th>Jenis</th>

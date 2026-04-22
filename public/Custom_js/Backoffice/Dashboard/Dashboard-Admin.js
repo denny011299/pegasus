@@ -106,7 +106,7 @@
                     '</td><td class="text-end">' +
                     fmtRp(r.value) +
                     '</td><td class="dash-aging-actions">' +
-                    '<button type="button" class="btn btn-sm btn-outline-primary py-0 dash-aging-detail-btn" data-aging-bucket="' +
+                    '<button type="button" class="btn btn-sm btn-outline-secondary dash-aging-detail-btn" data-aging-bucket="' +
                     bEsc +
                     '" data-aging-status="' +
                     sEsc +
@@ -140,7 +140,7 @@
                     escHtml(r.what_changed || r.summary || "") +
                     '">' +
                     escHtml(r.what_changed || r.summary || "-") +
-                    '</span></td><td class="dash-col-actions"><a class="btn btn-sm btn-outline-primary py-1" href="' +
+                    '</span></td><td class="dash-col-actions"><a class="btn btn-sm btn-primary" href="' +
                     url.replace(/"/g, "&quot;") +
                     '">' +
                     label +
@@ -214,7 +214,10 @@
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
             var rowClass = r.level === "critical" ? "dash-bahan-row-critical" : "dash-bahan-row-warn";
-            var badgeClass = r.level === "critical" ? "badge bg-danger" : "badge bg-warning text-dark";
+            var badgeClass =
+                r.level === "critical"
+                    ? "badge rounded-pill bg-danger dash-badge-pill"
+                    : "badge rounded-pill bg-warning text-dark dash-badge-pill";
             var stLabel = r.level === "critical" ? "Habis" : "Perlu order";
             var alertTxt =
                 r.alert_qty > 0
