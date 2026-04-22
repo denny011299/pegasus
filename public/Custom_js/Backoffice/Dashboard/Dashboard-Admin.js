@@ -2,6 +2,8 @@
     var mainChart = null;
     var dashAgingDetailByBucket = {};
     var lastBahanPack = null;
+    /** @type {'all'|'critical'|'warn'} */
+    var bahanTableFilter = "all";
 
     function fmtNum(n) {
         if (n === null || n === undefined || isNaN(n)) return "0";
@@ -188,27 +190,61 @@
         t.show();
     }
 
-    function renderBahanStockAlerts(pack) {
-        lastBahanPack = pack || null;
+    function getBahanRowsForTable() {
+        var pack = lastBahanPack;
         var rows = (pack && pack.rows) || [];
-        var urls = (pack && pack.urls) || {};
-        if (urls.stock_alert_supplies) {
-            $("#dash_bahan_link_alert").attr("href", urls.stock_alert_supplies);
+        if (bahanTableFilter === "critical") {
+            return rows.filter(function (r) {
+                return r.level === "critical";
+            });
         }
-        if (urls.purchase_order) {
-            $("#dash_bahan_link_po").attr("href", urls.purchase_order);
+        if (bahanTableFilter === "warn") {
+            return rows.filter(function (r) {
+                return r.level === "warn";
+            });
         }
-        var crit = pack ? pack.count_critical || 0 : 0;
-        var warn = pack ? pack.count_warn || 0 : 0;
-        $("#dash_bahan_badge_crit").text(crit + " habis");
-        $("#dash_bahan_badge_warn").text(warn + " mendekati batas");
+        return rows;
+    }
+
+    function updateBahanFilterBadgesActive() {
+        $("#dash_bahan_badge_crit").toggleClass("dash-bahan-badge-active", bahanTableFilter === "critical");
+        $("#dash_bahan_badge_warn").toggleClass("dash-bahan-badge-active", bahanTableFilter === "warn");
+    }
+
+    function updateBahanFilterHint() {
+        var $h = $("#dash_bahan_filter_hint");
+        if (!$h.length) return;
+        if (bahanTableFilter === "all") {
+            $h.text(
+                "Klik badge merah/kuning untuk menyaring tabel. Klik badge yang sama lagi untuk tampilkan semua."
+            );
+        } else if (bahanTableFilter === "critical") {
+            $h.text("Menampilkan hanya bahan habis. Klik badge merah lagi untuk kembali ke semua.");
+        } else {
+            $h.text("Menampilkan hanya bahan mendekati batas. Klik badge kuning lagi untuk kembali ke semua.");
+        }
+    }
+
+    function renderBahanTableBody() {
         var $tb = $("#dash_bahan_alert_body");
         if (!$tb.length) return;
+        var allRows = (lastBahanPack && lastBahanPack.rows) || [];
+        var rows = getBahanRowsForTable();
         $tb.empty();
-        if (!rows.length) {
+        if (!allRows.length) {
             $tb.append(
                 '<tr><td colspan="5" class="text-center text-muted">Semua bahan di atas batas alert (atau belum di-set batas di master bahan).</td></tr>'
             );
+            return;
+        }
+        if (!rows.length) {
+            var msg =
+                bahanTableFilter === "critical"
+                    ? "Tidak ada bahan habis stok."
+                    : bahanTableFilter === "warn"
+                      ? "Tidak ada bahan mendekati batas."
+                      : "Tidak ada data.";
+            $tb.append('<tr><td colspan="5" class="text-center text-muted">' + escHtml(msg) + "</td></tr>");
             return;
         }
         for (var i = 0; i < rows.length; i++) {
@@ -243,6 +279,25 @@
                     "</td></tr>"
             );
         }
+    }
+
+    function renderBahanStockAlerts(pack) {
+        lastBahanPack = pack || null;
+        bahanTableFilter = "all";
+        var urls = (pack && pack.urls) || {};
+        if (urls.stock_alert_supplies) {
+            $("#dash_bahan_link_alert").attr("href", urls.stock_alert_supplies);
+        }
+        if (urls.purchase_order) {
+            $("#dash_bahan_link_po").attr("href", urls.purchase_order);
+        }
+        var crit = pack ? pack.count_critical || 0 : 0;
+        var warn = pack ? pack.count_warn || 0 : 0;
+        $("#dash_bahan_badge_crit").text(crit + " habis").prop("disabled", crit === 0);
+        $("#dash_bahan_badge_warn").text(warn + " mendekati batas").prop("disabled", warn === 0);
+        updateBahanFilterBadgesActive();
+        updateBahanFilterHint();
+        renderBahanTableBody();
     }
 
     function renderRecommendedRows(rows) {
@@ -490,6 +545,19 @@
                     tryBrowserNotifyBahan(lastBahanPack);
                 }
             });
+        });
+        $(document).on("click", ".dash-bahan-filter-btn", function () {
+            if ($(this).prop("disabled")) return;
+            var mode = String($(this).data("bahan-filter") || "");
+            if (mode !== "critical" && mode !== "warn") return;
+            if (bahanTableFilter === mode) {
+                bahanTableFilter = "all";
+            } else {
+                bahanTableFilter = mode;
+            }
+            updateBahanFilterBadgesActive();
+            updateBahanFilterHint();
+            renderBahanTableBody();
         });
     });
 })();

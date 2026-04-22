@@ -125,11 +125,33 @@
         margin-top: 0.35rem;
     }
 
+    /* Satu zona scroll saja (bukan table-responsive + dash-scroll — itu bikin scroll-x “nyangkut”).
+       Lebar mengikuti isi tabel agar scroll horizontal benar. */
     .dash-table-wrap {
-        margin: 0 -0.15rem;
+        width: max-content;
+        min-width: 100%;
+        box-sizing: border-box;
         border-radius: 8px;
         border: 1px solid var(--dash-border);
-        overflow: hidden;
+        overflow: visible;
+    }
+
+    .dash-scroll {
+        max-height: 245px;
+        overflow-x: auto;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
+    }
+
+    .dash-scroll-tall {
+        max-height: 340px;
+        overflow-x: auto;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
     }
 
     .dash-table {
@@ -172,9 +194,9 @@
         vertical-align: middle;
     }
 
-    /* Log persetujuan: jangan remuk kolom — scroll horizontal di dalam kartu */
+    /* Log: min-width moderat — scroll hanya saat kolom benar-benar sempit */
     .dash-approval-table {
-        min-width: 640px;
+        min-width: 520px;
     }
 
     .dash-approval-table thead th {
@@ -241,16 +263,6 @@
         text-align: center;
     }
 
-    .dash-scroll {
-        max-height: 245px;
-        overflow: auto;
-    }
-
-    .dash-scroll-tall {
-        max-height: 340px;
-        overflow: auto;
-    }
-
     .dash-bahan-alert-table tr.dash-bahan-row-critical td {
         background-color: #fef2f2 !important;
         box-shadow: inset 3px 0 0 #dc2626;
@@ -284,6 +296,34 @@
         font-weight: 600;
         padding: 0.28em 0.65em;
         vertical-align: middle;
+    }
+
+    .dash-bahan-filter-btn {
+        line-height: 1.25;
+        transition: box-shadow 0.15s ease, transform 0.12s ease;
+    }
+
+    .dash-bahan-filter-btn:hover:not(:disabled) {
+        filter: brightness(1.05);
+    }
+
+    .dash-bahan-filter-btn:focus {
+        box-shadow: 0 0 0 0.2rem rgba(29, 78, 216, 0.25);
+    }
+
+    .dash-bahan-filter-btn.dash-bahan-badge-active {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1d4ed8;
+        transform: scale(1.02);
+    }
+
+    .dash-bahan-filter-btn.btn-warning.dash-bahan-badge-active {
+        box-shadow: 0 0 0 2px #fff, 0 0 0 4px #d97706;
+    }
+
+    .dash-bahan-filter-hint {
+        font-size: 0.6875rem;
+        color: var(--dash-muted);
+        margin-top: 0.35rem;
     }
 
     .dash-chart-caption {
@@ -497,7 +537,7 @@
         <div class="col-lg-4">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Changelog — tunggu ACC Direktur</h3>
-                <div class="table-responsive dash-scroll">
+                <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
                         <thead>
@@ -519,7 +559,7 @@
         <div class="col-lg-4">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Confirmation log</h3>
-                <div class="table-responsive dash-scroll">
+                <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
                         <thead>
@@ -541,7 +581,7 @@
         <div class="col-lg-4">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Revision log</h3>
-                <div class="table-responsive dash-scroll">
+                <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
                         <thead>
@@ -580,7 +620,7 @@
             <div class="dash-card mb-3">
                 <h3 class="dash-card-title-sub" id="dash_top_yearly_title">Top 5 · reset tahun (YTD)</h3>
                 <p class="dash-muted-note mb-2" id="dash_top_yearly_sub">—</p>
-                <div class="table-responsive dash-scroll">
+                <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
                         <thead>
@@ -602,7 +642,7 @@
             <div class="dash-card">
                 <h3 class="dash-card-title-sub" id="dash_top_accum_title">Top 5 · akumulasi</h3>
                 <p class="dash-muted-note mb-2" id="dash_top_accum_sub">—</p>
-                <div class="table-responsive dash-scroll">
+                <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
                         <thead>
@@ -634,7 +674,7 @@
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Stock aging (FIFO)</h3>
                 <p class="dash-muted-note mb-3">Umur lapisan stok belum keluar (sampai akhir periode filter). Gunakan <strong>Lihat</strong> untuk rincian barang jadi &amp; bahan per kelompok.</p>
-                <div class="table-responsive dash-scroll">
+                <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-stock-aging-table mb-0">
                         <thead>
@@ -665,10 +705,15 @@
                     <div class="flex-grow-1" style="min-width: 220px;">
                         <h3 class="dash-card-title mb-2">Stock alert — bahan mentah</h3>
                         <div class="d-flex flex-wrap align-items-center gap-2">
-                            <span class="badge rounded-pill bg-danger dash-badge-pill" id="dash_bahan_badge_crit">0 habis</span>
-                            <span class="badge rounded-pill bg-warning text-dark dash-badge-pill" id="dash_bahan_badge_warn">0 mendekati batas</span>
+                            <button type="button" class="btn btn-sm rounded-pill bg-danger text-white border-0 dash-badge-pill dash-bahan-filter-btn" id="dash_bahan_badge_crit" data-bahan-filter="critical" title="Tampilkan hanya bahan habis stok">
+                                0 habis
+                            </button>
+                            <button type="button" class="btn btn-sm rounded-pill bg-warning text-dark border-0 dash-badge-pill dash-bahan-filter-btn" id="dash_bahan_badge_warn" data-bahan-filter="warn" title="Tampilkan hanya bahan mendekati batas">
+                                0 mendekati batas
+                            </button>
                         </div>
-                        <p class="dash-bahan-legend mb-0">
+                        <p class="dash-bahan-filter-hint mb-0" id="dash_bahan_filter_hint"></p>
+                        <p class="dash-bahan-legend mb-0 mt-1">
                             <strong class="text-dark">Habis</strong>: semua satuan 0.
                             <strong class="text-dark">Perlu order</strong>: stok satuan default ≤ batas alert. Barang jadi tidak ditampilkan.
                         </p>
@@ -681,7 +726,7 @@
                         <a class="btn btn-outline-primary btn-sm" id="dash_bahan_link_po" href="{{ url('purchaseOrder') }}">Purchase order</a>
                     </div>
                 </div>
-                <div class="table-responsive dash-scroll-tall">
+                <div class="dash-scroll-tall">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover mb-0 dash-bahan-alert-table">
                         <thead>
@@ -718,7 +763,7 @@
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Rekomendasi stok produksi</h3>
                 <p class="dash-muted-note mb-2" id="dash_recommended_note"></p>
-                <div class="table-responsive dash-scroll">
+                <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-reco-table mb-0">
                         <thead>
