@@ -25,14 +25,14 @@
                 },
             },
             columns: [
-                { data: "supplier_name" },
-                { data: "supplier_code" },
-                { data: "supplier_phone" },
-                { data: "city_name" },
-                { data: "pay" },
-                { data: "created" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "supplier_name", width: "15%" },
+                { data: "supplier_code", width: "12%" },
+                { data: "supplier_phone", width: "13%" },
+                { data: "city_name", width: "12%" },
+                { data: "pay", width: "13%" },
+                { data: "created", width: "15%" },
+                { data: "created_by_name", defaultContent: "-", width: "15%" },
+                { data: "action", class: "d-flex align-items-center", width: "15%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

@@ -16,15 +16,15 @@
             cursor: pointer;
         }
 
-        #tableVariant{
+        #tableVariant {
             width: 100% !important;
+            min-width: 800px;
         }
 
         #tableVariant td {
             white-space: normal !important;
             word-wrap: break-word;
         }
-
         #tableVariant td:last-child {
             white-space: nowrap !important;
         }
@@ -63,7 +63,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Variasi</th>
-                                            <th style="width: 40%">Nilai</th>
+                                            <th>Nilai</th>
                                             <th>Dibuat Pada</th>
                                             <th>Dibuat Oleh</th>
                                             {{-- <th>Diapprove Oleh</th> --}}

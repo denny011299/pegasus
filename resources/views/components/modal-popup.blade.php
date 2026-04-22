@@ -372,7 +372,7 @@
                                 <div class="col-lg-6">
                                     <div class="input-block mb-3">
                                         <label class="form-label">Jenis Retur<span class="text-danger">*</span></label>
-                                        <select class="select" id="tipe_return">
+                                        <select class="form-select" id="tipe_return">
                                             <option value="1" selected>Retur ke Supplier / Rusak Gudang</option>
                                             <option value="2">Pengembalian Armada</option>
                                         </select>
@@ -381,7 +381,7 @@
                                 <div class="col-lg-3">
                                     <div class="input-block mb-3">
                                         <label class="form-label">Tipe<span class="text-danger">*</span></label>
-                                        <select class="select" id="pi_type">
+                                        <select class="form-select" id="pi_type">
                                             
                                         </select>
                                     </div>
@@ -425,15 +425,17 @@
                                     </div>
                                 </div>
                                 <div class="col-12 py-3 mb-3">
-                                    <table class="table table-center" id="tableProduct" style="min-height: 15vh">
-                                        <thead>
-                                            <th id="header_name">Nama Produk</th>
-                                            <th>Qty</th>
-                                            <th>Satuan</th>
-                                            <th class="no-sort text-center">Aksi</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-center" id="tableProduct" style="min-height: 15vh">
+                                            <thead>
+                                                <th id="header_name">Nama Produk</th>
+                                                <th>Qty</th>
+                                                <th>Satuan</th>
+                                                <th class="no-sort text-center">Aksi</th>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                                 <div class="col-12 px-2 mb-3">
                                         <div class="row input_table g-3 align-items-end">
@@ -592,20 +594,20 @@
                                             placeholder="Input Nama Bahan Mentah">
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-12 col-lg-4">
                                     <div class="input-block mb-3" id="row-satuan">
                                         <label>Satuan<span class="text-danger">*</span></label>
                                         <select id="supplies_unit" class="form-select fill"></select>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-6 col-lg-4">
                                     <div class="input-block mb-3">
                                         <label>Default Unit<span class="text-danger">*</span></label>
                                         <select class="form-select fill select2" id="unit_id">
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-6 col-lg-4">
                                     <div class="input-block mb-3">
                                         <label>Stock Alert<span class="text-danger">*</span></label>
                                         <div class="input-group mb-3">
@@ -622,10 +624,10 @@
                                 </div>
                                 <hr>
                                 <div class="row mb-3">
-                                    <div class="col-8">
+                                    <div class="col-lg-8 col-md-6 col-4">
                                         <label>Variasi Bahan</label>
                                     </div>
-                                    <div class="col-4 text-end">
+                                    <div class="col-lg-4 col-md-6 col-8 text-end">
                                         <div class="row">
                                             <div class="col-9">
                                                 <select name="" id="supplies_variant" class="form-select select2">
@@ -638,7 +640,7 @@
                                     </div>
                                 </div>
                                 <div class="table-responsive">
-                                    <table class="table">
+                                    <table class="table" id="productVariantTable">
                                         <thead>
                                             <tr>
                                                 <td>Supplier<span class="text-danger"  style="width:23%">*</span></td>
@@ -657,14 +659,14 @@
                                 <hr>
                                 <label class="mb-3">Atur Relasi</label>
                                 <div class="row">
-                                    <div class="col-lg-3 col-5">
+                                    <div class="col-lg-4 col-5">
                                         <select name="" id="relasi1" class="form-select"></select>
                                     </div>
                                     <div class="col-lg-1 col-2"> <h6 class="text-center pt-2"> - </h6> </div>
-                                    <div class="col-lg-3 col-5">
+                                    <div class="col-lg-4 col-5">
                                         <select name="" id="relasi2" class="form-select"></select>
                                     </div>
-                                    <div class="col-lg-3 col-12">
+                                    <div class="col-lg-3 col-12 text-end mx-0">
                                         <div class="d-flex justify-content-end mt-3 mt-lg-0">
                                             <button class="btn btn-primary btn-sm" type="button" id="btnAddRowRelasi">Tambah Row Relasi</button>
                                         </div>
@@ -2774,30 +2776,30 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row mb-3">
-                                <div class="col-lg-4 col-md-6 mb-2">
+                                <div class="col-lg-4 col-6 mb-2">
                                     <p class="text-muted">Nama Supplier</p>
                                     <p class="text-black" id="supplier_name"></p>
                                 </div>
-                                <div class="col-lg-4 col-md-6 mb-2">
+                                <div class="col-lg-4 col-6 mb-2">
                                     <p class="text-muted">No. Telp</p>
                                     <p class="text-black" id="supplier_phone"></p>
                                 </div>
-                                <div class="col-lg-4 col-md-6 mb-2">
+                                <div class="col-lg-4 col-6 mb-2">
                                     <p class="text-muted">Alamat</p>
                                     <p class="text-black" id="supplier_address"></p>
                                 </div>
-                                <div class="col-lg-4 col-md-6 mb-2">
+                                <div class="col-lg-4 col-6 mb-2">
                                     <p class="text-muted">Keterangan</p>
                                     <p class="text-black" id="supplier_notes"></p>
                                 </div>
-                                <div class="col-lg-4 col-md-6 mb-2">
+                                <div class="col-lg-4 col-6 mb-2">
                                     <p class="text-muted">Total Hutang</p>
                                     <p class="text-black" id="supplier_payment"></p>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-12 pe-0 pt-3 row">
-                                    <div class="col-lg-3 col-md-12">
+                                    <div class="col-lg-3 col-6">
                                         <div class="input-block mb-3">
                                             <label>Dari</label>
                                             <div>
@@ -2805,7 +2807,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-lg-3 col-md-12">
+                                    <div class="col-lg-3 col-6">
                                         <div class="input-block mb-3">
                                             <label>Sampai</label>
                                             <div>
@@ -2826,7 +2828,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-lg-2 col-md-12 pt-4 pe-0 text-end">
+                                    <div class="col-lg-2 col-md-12 pt-lg-4 pt-2 pe-0 text-end mb-lg-0 mb-3">
                                         <a class="btn btn-outline-secondary btn-clear">
                                             Clear
                                         </a>

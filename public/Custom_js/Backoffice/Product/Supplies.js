@@ -74,6 +74,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -87,10 +88,10 @@
             columns: [
                 { data: "supplies_name", width: "25%" },
                 { data: "variant_values", width: "25%" },
-                { data: "unit_values", width: "15%" },
+                { data: "unit_values", width: "12%" },
                 { data: "desc", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "text-center align-middle" },
+                { data: "created_by_name", defaultContent: "-", width: "10%" },
+                { data: "action", class: "text-center align-middle", width: "13%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

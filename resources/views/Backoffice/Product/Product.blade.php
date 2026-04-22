@@ -4,13 +4,13 @@
     <style>
         #tableProduct {
             width: 100% !important;
+            min-width: 800px;
         }
 
         #tableProduct td {
             white-space: normal !important;
             word-wrap: break-word;
         }
-
         #tableProduct td:last-child {
             white-space: nowrap !important;
         }

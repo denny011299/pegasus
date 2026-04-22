@@ -31,10 +31,10 @@
                 },
             },
             columns: [
-                { data: "category_name" },
-                { data: "category_date" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "category_name", width: "30vw" },
+                { data: "category_date", width: "20vw" },
+                { data: "created_by_name", defaultContent: "-", width: "30vw" },
+                { data: "action", class: "text-center align-middle", width: "10vw" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

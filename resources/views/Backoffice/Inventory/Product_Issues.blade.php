@@ -9,13 +9,20 @@
         padding-top: 0px !important;
         margin-top: 10px !important;
     }
-    #tableReturn, #tableDamage {
+
+    #add-product-issues .form-select {
         width: 100% !important;
+        max-width: 100% !important;
+        display: block;
     }
-    #tableReturn td, #tableDamage td {
-        white-space: normal !important;
-        word-wrap: break-word;
+
+    /* Jika browser masih memaksa melebar karena teks opsi yang panjang */
+    #add-product-issues select option {
+        width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
+
     #add-product-issues .select2-container {
         width: 100% !important;
     }
@@ -24,6 +31,21 @@
         padding-right: 0 !important;
     }
     
+    #tableReturn, #tableDamage {
+        width: 100% !important;
+        min-width: 800px;
+    }
+    #tableReturn td, #tableDamage td {
+        white-space: normal !important;
+        word-wrap: break-word;
+    }
+    #tableReturn td:last-child, #tableDamage td:last-child {
+        white-space: nowrap !important;
+    }
+    #tableReturn td:last-child a, #tableDamage td:last-child a {
+        display: inline-flex !important;
+        align-items: center;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">

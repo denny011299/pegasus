@@ -4,11 +4,18 @@
     <style>
         #tableStockAlertLow, #tableStockAlertOut {
             width: 100% !important;
+            min-width: 800px;
         }
-
         #tableStockAlertLow td, #tableStockAlertOut td {
             white-space: normal !important;
             word-wrap: break-word;
+        }
+        #tableStockAlertLow td:last-child, #tableStockAlertOut td:last-child {
+            white-space: nowrap !important;
+        }
+        #tableStockAlertLow td:last-child a, #tableStockAlertOut td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
         }
     </style>
 @endsection

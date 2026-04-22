@@ -60,7 +60,7 @@
                                 </div>
                                 <div class="form-group-item">
                                     <div class="row">
-                                        <div class="col-md-12">
+                                        <div class="col-12">
                                             <div class="billing-btn mb-2">
                                                 <h5 class="form-title">Alamat Supplier</h5>
                                             </div>
@@ -69,21 +69,19 @@
                                                 <input type="text" class="form-control fill" id="supplier_address" placeholder="Masukkan Alamat">
                                             </div>
                                             <div class="row">
-                                                <div class="col-lg-4 col-md-12">
+                                                <div class="col-lg-4 col-md-6 col-12">
                                                     <div class="input-block mb-3" id="row-province">
                                                         <label>Provinsi <span class="text-danger">*</span></label>
                                                         <select class="form-select " id="state_id"></select>
                                                     </div>
                                                    
                                                 </div>
-                                                <div class="col-lg-4 col-md-12">
+                                                <div class="col-lg-4 col-md-6 col-12">
                                                     <div class="input-block mb-3" id="row-city">
                                                         <label>Kota <span class="text-danger">*</span></label>
                                                         <select class="form-select " id="city_id"></select>
                                                     </div>
-                                                   
                                                 </div>
-                                               
                                             </div>
                                         </div>
                                     </div>
@@ -91,33 +89,33 @@
                                 <div class="form-group-customer customer-additional-form">
                                     <div class="row">
                                         <h5 class="form-title">Detail Bank</h5>
-                                        <div class="col-lg-4 col-md-12 col-sm-12">
+                                        <div class="col-lg-4 col-md-6 col-12">
                                             <div class="input-block mb-3">
                                                 <label>Nama Bank <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="supplier_bank" placeholder="Masukkan Nama Bank">
                                             </div>
                                         </div>
-                                        <div class="col-lg-4 col-md-12 col-sm-12">
+                                        <div class="col-lg-4 col-md-6 col-12">
                                             <div class="input-block mb-3">
                                                 <label>Nama Pemilik Rekening <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="supplier_account_name"
                                                     placeholder="Masukkan Nama Pemilik Rekening">
                                             </div>
                                         </div>
-                                        <div class="col-lg-4 col-md-12 col-sm-12">
+                                        <div class="col-lg-4 col-md-6 col-12">
                                             <div class="input-block mb-3">
                                                 <label>Nomor Rekening <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill include-nol" id="supplier_account_number"
                                                     placeholder="Masukkan Nomor Rekening">
                                             </div>
                                         </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
+                                        <div class="col-lg-4 col-md-6 col-12">
                                             <div class="input-block mb-3" id="row-bank_kode">
                                                 <label>Bank Account <span class="text-danger">*</span></label>
                                                 <select class="form-select fill" id="bank_kode"></select>
                                             </div>
                                         </div>
-                                        <div class="col-lg-4 col-md-12 col-sm-12">
+                                        <div class="col-lg-4 col-md-6 col-12">
                                             <div class="input-block">
                                                 <label for="">Term of Payment (TOP)<span class="text-danger">*</span></label>
                                                 <div class="input-group mb-3">

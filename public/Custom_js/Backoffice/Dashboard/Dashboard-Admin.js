@@ -471,7 +471,7 @@
                 );
                 $("#kpi_turnover").text(fmtNum(k.inventory_turnover));
                 $("#kpi_turnover_sub").text(
-                    "Keluar stok (log) vs stok sekarang, annualized · " + (f.label || "")
+                    "Keluar stok vs stok sekarang, annualized · " + (f.label || "")
                 );
                 var dio = k.dio_days;
                 $("#kpi_dio").text(
@@ -479,12 +479,12 @@
                 );
                 $("#kpi_dio_sub").text("Dari turnover · " + (f.label || ""));
                 $("#kpi_return_rate").text(fmtNum(k.return_rate_product_pct || 0) + "%");
-                $("#kpi_return_split").text(
-                    "Barang jadi " +
+                $("#kpi_return_split").html(
+                    "Produk " +
                         fmtNum(k.return_rate_product_pct || 0) +
-                        "% (retur÷pengiriman) · Bahan " +
+                        "% · Bahan " +
                         fmtNum(k.return_rate_bahan_pct || 0) +
-                        "% (retur÷PO) · " +
+                        "% <br>" +
                         (f.label || "")
                 );
 

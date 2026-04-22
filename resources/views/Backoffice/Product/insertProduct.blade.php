@@ -163,28 +163,30 @@
                 <div class="modal-body">
                     <div class="container-fluid">
                         <div class="row">
-                            <div class="col-3">
+                            <div class="col-lg-4 col-md-3 col-12">
                                 <select name="" id="relasi1" class="form-select"></select>
                             </div>
-                            <div class="col-1"> <h6 class="text-center pt-2"> - </h6> </div>
-                            <div class="col-3">
+                            <div class="col-lg-1 col-md-1 col-12"> <h6 class="text-center pt-2"> - </h6> </div>
+                            <div class="col-lg-4 col-md-3 col-12">
                                 <select name="" id="relasi2" class="form-select"></select>
                             </div>
-                            <div class="col-3">
-                                <button class="btn btn-primary w-100 btn-sm" id="btnAddRowRelasi">Tambah Row Relasi</button>
+                            <div class="col-lg-3 col-md-5 col-12 mt-md-0 mt-3">
+                                <button class="btn btn-primary w-100 btn-sm" id="btnAddRowRelasi">Tambah Relasi</button>
                             </div>
                         </div>
-                        <table class="table table-bordered mb-2 mt-4">
-                            <thead>
-                                <tr>
-                                    <td>Name Unit 1<span class="text-danger">*</span></td>
-                                    <td>Name Unit 2<span class="text-danger">*</span></td>
-                                    <td>Aksi</td>
-                                </tr>
-                            </thead>
-                            <tbody class="tbRelasi" id="tbRelasi">
-                            </tbody>
-                        </table>
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-2 mt-4">
+                                <thead>
+                                    <tr>
+                                        <td>Name Unit 1<span class="text-danger">*</span></td>
+                                        <td>Name Unit 2<span class="text-danger">*</span></td>
+                                        <td>Aksi</td>
+                                    </tr>
+                                </thead>
+                                <tbody class="tbRelasi" id="tbRelasi">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

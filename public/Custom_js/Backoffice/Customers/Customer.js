@@ -28,13 +28,13 @@
                 },
             },
             columns: [
-                { data: "customer_notes" },
-                { data: "customer_pic" },
-                { data: "customer_pic_phone" },
-                { data: "saldo" },
-                { data: "created" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "customer_notes", width: "15%" },
+                { data: "customer_pic", width: "15%" },
+                { data: "customer_pic_phone", width: "15%" },
+                { data: "saldo", width: "15%" },
+                { data: "created", width: "12%" },
+                { data: "created_by_name", defaultContent: "-", width: "15%" },
+                { data: "action", class: "d-flex align-items-center", width: "13%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

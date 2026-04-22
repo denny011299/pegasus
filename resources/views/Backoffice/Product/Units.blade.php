@@ -1,5 +1,26 @@
 <?php $page = 'units'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        #tableUnits {
+            width: 100% !important;
+            min-width: 800px;
+        }
+
+        #tableUnits td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+        #tableUnits td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableUnits td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

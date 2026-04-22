@@ -78,7 +78,6 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
-            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -111,7 +110,6 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
-            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

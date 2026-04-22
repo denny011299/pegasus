@@ -26,6 +26,24 @@
             padding: 10px 8px;
             vertical-align: middle;
         }
+
+        #tableSupplier {
+            width: 100% !important;
+            min-width: 800px;
+        }
+
+        #tableSupplier td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+        #tableSupplier td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableSupplier td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
     </style>
 @endsection
 @section('content')

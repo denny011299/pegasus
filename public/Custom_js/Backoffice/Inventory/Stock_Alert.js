@@ -12,6 +12,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -23,10 +24,10 @@
                 },
             },
             columns: [
-                { data: "product_name_text", width: "25%" },
+                { data: "product_name_text", width: "15%" },
                 { data: "product_category", width: "10%" },
                 { data: "product_variant_sku", width: "15%" },
-                { data: "product_variant_stock_text", width: "15%" },
+                { data: "product_variant_stock_text", width: "25%" },
                 { data: "product_alert_text", width: "15%" },
                 { data: "minim_order", width: "15%" },
             ],
@@ -54,10 +55,10 @@
             },
             autoWidth: false,
             columns: [
-                { data: "product_name_text", width: "25%" },
+                { data: "product_name_text", width: "15%" },
                 { data: "product_category", width: "10%" },
                 { data: "product_variant_sku", width: "15%" },
-                { data: "product_variant_stock_text", width: "15%" },
+                { data: "product_variant_stock_text", width: "25%" },
                 { data: "product_alert_text", width: "15%" },
                 { data: "minim_order", width: "15%" },
             ],

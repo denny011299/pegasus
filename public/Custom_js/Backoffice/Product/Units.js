@@ -20,6 +20,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -31,11 +32,11 @@
                 },
             },
             columns: [
-                { data: "unit_name" },
-                { data: "unit_short_name" },
-                { data: "unit_date" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "unit_name", width: "20%" },
+                { data: "unit_short_name", width: "20%" },
+                { data: "unit_date", width: "23%" },
+                { data: "created_by_name", defaultContent: "-", width: "24%" },
+                { data: "action", class: "text-center align-middle", width: "13%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

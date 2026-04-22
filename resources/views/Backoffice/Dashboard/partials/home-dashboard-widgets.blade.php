@@ -47,7 +47,6 @@
         display: flex;
         align-items: center;
         gap: 0.65rem;
-        margin-bottom: 0.85rem;
         padding-bottom: 0.5rem;
         border-bottom: 1px solid var(--dash-border);
     }
@@ -453,7 +452,7 @@
                 <span class="dash-toolbar-period" id="dash_filter_label">—</span>
             </div>
         </div>
-        <p class="dash-toolbar-hint mb-0 mt-2 pt-2 border-top" id="dash_filter_hint" style="border-color: rgba(15,23,42,.08) !important;">Memuat penjelasan filter…</p>
+        {{-- <p class="dash-toolbar-hint mb-0 mt-2 pt-2 border-top" id="dash_filter_hint" style="border-color: rgba(15,23,42,.08) !important;">Memuat penjelasan filter…</p> --}}
     </div>
 
     <div class="dash-section">
@@ -492,48 +491,48 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-3">
+    <div class="row g-3 mb-5">
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
                 <div class="dash-kpi-title">Sales Growth %</div>
                 <div class="dash-kpi-value" id="kpi_sales_growth">0%</div>
-                <div class="dash-kpi-sub" id="kpi_sales_growth_sub">Output pengiriman vs periode sebelumnya (rentang sama)</div>
+                <div class="dash-kpi-sub" id="kpi_sales_growth_sub">Output pengiriman vs periode sebelumnya</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
                 <div class="dash-kpi-title">Inventory Turnover</div>
                 <div class="dash-kpi-value" id="kpi_turnover">0</div>
-                <div class="dash-kpi-sub" id="kpi_turnover_sub">Keluar stok (log) vs stok sekarang · annualized · sesuai filter</div>
+                <div class="dash-kpi-sub" id="kpi_turnover_sub">Keluar stok vs stok sekarang, annualized · sesuai filter</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
                 <div class="dash-kpi-title">Days Inventory Outstanding</div>
                 <div class="dash-kpi-value" id="kpi_dio">0 hari</div>
-                <div class="dash-kpi-sub" id="kpi_dio_sub">Dari turnover annualized · sesuai filter</div>
+                <div class="dash-kpi-sub" id="kpi_dio_sub">Dari turnover annualized<br>sesuai filter</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
                 <div class="dash-kpi-title">Return Rate %</div>
                 <div class="dash-kpi-value" id="kpi_return_rate">0%</div>
-                <div class="dash-kpi-sub" id="kpi_return_split">Barang jadi: retur÷pengiriman · Bahan: retur pembelian÷qty PO · sesuai filter</div>
+                <div class="dash-kpi-sub" id="kpi_return_split">Produk: 0% · Bahan: 0%<br>sesuai filter</div>
             </div>
         </div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section mt-3">
         <div class="dash-section-head">
             <h2 class="dash-section-title">Changelog &amp; log persetujuan</h2>
         </div>
-        <p class="dash-prose-note mb-3">
+        {{-- <p class="dash-prose-note">
             <strong>Changelog</strong>: <em>Retur Produk</em> &amp; <em>Kas Sales</em> menunggu ACC.
             <strong>Confirmation</strong>: SO / PO / Produksi perlu konfirmasi.
-            <strong>Revision</strong>: transaksi ditolak — perbaiki di halaman yang sama.
-        </p>
+            <strong>Revision</strong>: transaksi ditolak & perlu diperbaiki.
+        </p> --}}
     </div>
-    <div class="row g-3 mb-3 mt-3">
+    <div class="row g-3 mb-5">
         <div class="col-lg-4">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Changelog — tunggu ACC Direktur</h3>
@@ -608,7 +607,7 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-3 mt-3">
+    <div class="row g-3 mb-5">
         <div class="col-xl-8">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title-sub">Output pengiriman</h3>
@@ -669,11 +668,11 @@
             <h2 class="dash-section-title">Stock aging &amp; peringatan</h2>
         </div>
     </div>
-    <div class="row g-3 mt-3">
+    <div class="row g-3">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Stock aging (FIFO)</h3>
-                <p class="dash-muted-note mb-3">Umur lapisan stok belum keluar (sampai akhir periode filter). Gunakan <strong>Lihat</strong> untuk rincian barang jadi &amp; bahan per kelompok.</p>
+                {{-- <p class="dash-muted-note mb-3">Umur lapisan stok belum keluar (sampai akhir periode filter). Gunakan <strong>Lihat</strong> untuk rincian barang jadi &amp; bahan per kelompok.</p> --}}
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-stock-aging-table mb-0">
@@ -713,10 +712,10 @@
                             </button>
                         </div>
                         <p class="dash-bahan-filter-hint mb-0" id="dash_bahan_filter_hint"></p>
-                        <p class="dash-bahan-legend mb-0 mt-1">
+                        {{-- <p class="dash-bahan-legend mb-0 mt-1">
                             <strong class="text-dark">Habis</strong>: semua satuan 0.
                             <strong class="text-dark">Perlu order</strong>: stok satuan default ≤ batas alert. Barang jadi tidak ditampilkan.
-                        </p>
+                        </p> --}}
                     </div>
                     <div class="d-flex flex-wrap gap-2 align-items-center">
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="dash_bahan_notif_perm" title="Izinkan notifikasi browser">

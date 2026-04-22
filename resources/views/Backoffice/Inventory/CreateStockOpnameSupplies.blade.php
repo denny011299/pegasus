@@ -75,13 +75,13 @@
                                         <select name="" id="penanggung-jawab" class="form-select fill"></select>
                                     </div>
                                 </div>
-                                <div class="col-md-4 col-sm-12">
+                                <div class="col-md-4 col-sm-12 mt-md-0 mt-2">
                                     <div class="input-blocks">
                                         <label>Tanggal<span class="text-danger">*</span></label>
                                         <input type="date" class="form-control fill" id="tanggal">
                                     </div>
                                 </div>
-                                <div class="col-md-4 col-sm-12">
+                                <div class="col-md-4 col-sm-12 mt-md-0 mt-2">
                                     <div class="input-blocks">
                                         <label>Status<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="status" disabled>

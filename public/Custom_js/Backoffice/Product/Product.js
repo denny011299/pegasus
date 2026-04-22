@@ -9,7 +9,6 @@
     function inisialisasi() {
         table = $('#tableProduct').DataTable({
             responsive: true,
-            scrollX: true,
             autoWidth: false,
             bFilter: true,
             sDom: 'fBtlpi',
@@ -30,8 +29,8 @@
                 { data: "product_category", width: '10%' },
                 { data: "unit_values", width: '10%' },
                 { data: "variant_values", width: '50%' },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "text-center align-middle" },
+                { data: "created_by_name", defaultContent: "-", width: "12%" },
+                { data: "action", class: "text-center align-middle", width: "13%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

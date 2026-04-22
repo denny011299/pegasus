@@ -20,6 +20,7 @@
 			"bFilter": true,
 			"sDom": 'fBtlpi',  
 			"ordering": true,
+            "autoWidth": false,
 			"language": {
 				search: ' ',
 				sLengthMenu: '_MENU_',
@@ -31,12 +32,12 @@
 				},
 			 },
             columns: [
-                { data: "variant_name", width: "15%"},
+                { data: "variant_name", width: "12%"},
                 { data: "variant_values", width: "45%"},
                 { data: "variant_date", width: "15%" },
                 { data: "created_by_name", defaultContent: "-", width: "15%" },
                 // { data: "acc_by_name", defaultContent: "-" },
-                { data: "action",class:"text-center align-middle", },
+                { data: "action",class:"text-center align-middle", width: "13%" },
             ],
 			initComplete: (settings, json)=>{
 				$('.dataTables_filter').appendTo('#tableSearch');
