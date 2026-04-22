@@ -147,6 +147,23 @@
         overflow: auto;
     }
 
+    .dash-scroll-tall {
+        max-height: 340px;
+        overflow: auto;
+    }
+
+    .dash-bahan-alert-table tr.dash-bahan-row-critical td {
+        background-color: #fee2e2 !important;
+    }
+
+    .dash-bahan-alert-table tr.dash-bahan-row-warn td {
+        background-color: #fef9c3 !important;
+    }
+
+    .dash-bahan-alert-table td {
+        vertical-align: middle;
+    }
+
     #dash_overstock_list {
         padding-left: 1rem;
         margin-bottom: 0;
@@ -450,10 +467,53 @@
             </div>
         </div>
     </div>
+
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="dash-card dash-card-fill">
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-2">
+                    <div>
+                        <h6 class="mb-1">Stock Alert — Bahan mentah</h6>
+                        <p class="dash-muted-note small mb-0">
+                            <span class="badge bg-danger" id="dash_bahan_badge_crit">0 habis</span>
+                            <span class="badge bg-warning text-dark ms-1" id="dash_bahan_badge_warn">0 mendekati batas</span>
+                            Merah = stok habis (semua satuan 0). Kuning = stok default unit ≤ batas alert (waktunya order). Produk jadi tidak ditampilkan di sini.
+                        </p>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1 align-items-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm py-1" id="dash_bahan_notif_perm" title="Izinkan notifikasi browser saat ada alert">
+                            <i class="fe fe-bell"></i> Notifikasi
+                        </button>
+                        <a class="btn btn-primary btn-sm py-1" id="dash_bahan_link_alert" href="{{ url('stockAlertSupplies') }}">Peringatan lengkap</a>
+                        <a class="btn btn-outline-primary btn-sm py-1" id="dash_bahan_link_po" href="{{ url('purchaseOrder') }}">Purchase Order</a>
+                    </div>
+                </div>
+                <div class="table-responsive dash-scroll-tall">
+                    <table class="table table-sm dash-table mb-0 dash-bahan-alert-table">
+                        <thead>
+                            <tr>
+                                <th class="text-nowrap">Status</th>
+                                <th>Bahan</th>
+                                <th>Stok</th>
+                                <th class="text-end text-nowrap">Batas min.</th>
+                                <th>Catatan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_bahan_alert_body">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">Memuat…</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-3">
         <div class="col-lg-6">
             <div class="dash-card dash-card-fill">
-                <h6 class="mb-2">Warning - Overstock Alert</h6>
+                <h6 class="mb-2">Overstock (aging &gt; 90 hari)</h6>
                 <ul class="mb-0 small" id="dash_overstock_list">
                     <li class="text-muted">Memuat...</li>
                 </ul>
@@ -479,6 +539,15 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 10800">
+        <div id="dashBahanToast" class="toast align-items-center border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body small" id="dashBahanToastBody"></div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Tutup"></button>
             </div>
         </div>
     </div>

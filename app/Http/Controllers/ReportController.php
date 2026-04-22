@@ -28,7 +28,9 @@ use App\Models\ProductVariant;
 use App\Models\ReturnSupplies;
 use App\Models\Supplies;
 use App\Models\Staff;
+use App\Models\StockAlertSupplies;
 use App\Models\Supplier;
+use App\Models\Unit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -1425,6 +1427,7 @@ class ReportController extends Controller
         );
         $topProducts = $this->dashboardTopProducts($start, $end);
         $warnings = $this->dashboardWarnings($agingRows, $start, $end);
+        $bahanStockAlerts = $this->dashboardBahanStockAlerts();
         $chart = $this->dashboardChartSeries($period, $start, $end);
 
         return response()->json([
@@ -1453,8 +1456,127 @@ class ReportController extends Controller
             'stock_aging' => $aging,
             'stock_aging_detail' => $agingDetailByBucket,
             'warnings' => $warnings,
+            'bahan_stock_alerts' => $bahanStockAlerts,
             'chart' => $chart,
         ]);
+    }
+
+    /**
+     * Peringatan stok bahan mentah (sama rule dengan halaman Stock Alert Supplies): habis = merah; di/bawah batas alert = kuning.
+     */
+    private function dashboardBahanStockAlerts(): array
+    {
+        $raw = (new StockAlertSupplies())->getStockAlertSupplies(['mode' => 1]);
+        $rows = [];
+        foreach ($raw as $value) {
+            $stockList = $value->stock ?? collect();
+            if ($stockList instanceof \Illuminate\Support\Collection) {
+                $stockArr = $stockList->values()->all();
+            } else {
+                $stockArr = is_array($stockList) ? $stockList : iterator_to_array($stockList);
+            }
+            $defUid = (int) ($value->supplies_default_unit ?? 0);
+            $defIdx = -1;
+            foreach ($stockArr as $idx => $element) {
+                if ((int) ($element->unit_id ?? 0) === $defUid) {
+                    $defIdx = $idx;
+                    break;
+                }
+            }
+            if ($defIdx > 0) {
+                $tmp = $stockArr[0];
+                $stockArr[0] = $stockArr[$defIdx];
+                $stockArr[$defIdx] = $tmp;
+            }
+
+            $habis = 1;
+            foreach ($stockArr as $element) {
+                if ((float) ($element->ss_stock ?? 0) > 0) {
+                    $habis = -1;
+                    break;
+                }
+            }
+            $firstStock = isset($stockArr[0]) ? (float) ($stockArr[0]->ss_stock ?? 0) : 0.0;
+            $alert = (float) ($value->supplies_alert ?? 0);
+            $isOut = ($habis === 1);
+            $isLow = ($habis === -1 && $alert > 0 && $firstStock <= $alert);
+            if (! $isOut && ! $isLow) {
+                continue;
+            }
+            $level = $isOut ? 'critical' : 'warn';
+
+            $stockText = '-';
+            if (count($stockArr) > 0) {
+                $parts = [];
+                foreach ($stockArr as $element) {
+                    $parts[] = $this->fmtQtyShort((float) ($element->ss_stock ?? 0)).' '.trim((string) ($element->unit_name ?? ''));
+                }
+                $stockText = implode(', ', $parts);
+            }
+            $u = Unit::find($value->supplies_default_unit);
+            $defUnit = $u ? (string) $u->unit_name : '';
+            $unitsCount = $value->units instanceof \Illuminate\Support\Collection ? $value->units->count() : count($value->units ?? []);
+            $saran = 'Rinci di halaman peringatan';
+            if ($unitsCount <= 1 && $alert > 0 && ! $isOut) {
+                $need = max(0, (int) ceil($alert - $firstStock));
+                $saran = $need > 0 ? 'Est. kurang ~'.$need.' '.$defUnit : '—';
+            } elseif ($isOut) {
+                $saran = 'Order segera';
+            }
+
+            $rows[] = [
+                'supplies_id' => (int) $value->supplies_id,
+                'name' => (string) ($value->supplies_name ?? '-'),
+                'stock_text' => $stockText,
+                'alert_qty' => round($alert, 2),
+                'alert_unit' => $defUnit,
+                'saran' => $saran,
+                'level' => $level,
+                '_sort' => $isOut ? 0 : 1,
+            ];
+        }
+
+        usort($rows, function ($a, $b) {
+            if ($a['_sort'] !== $b['_sort']) {
+                return $a['_sort'] <=> $b['_sort'];
+            }
+
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        $countCritical = 0;
+        $countWarn = 0;
+        foreach ($rows as $r) {
+            if ($r['level'] === 'critical') {
+                $countCritical++;
+            } else {
+                $countWarn++;
+            }
+        }
+
+        foreach ($rows as &$r) {
+            unset($r['_sort']);
+        }
+        unset($r);
+
+        return [
+            'rows' => array_values(array_slice($rows, 0, 35)),
+            'count_critical' => $countCritical,
+            'count_warn' => $countWarn,
+            'urls' => [
+                'stock_alert_supplies' => url('stockAlertSupplies'),
+                'purchase_order' => url('purchaseOrder'),
+            ],
+        ];
+    }
+
+    private function fmtQtyShort(float $q): string
+    {
+        if (abs($q - round($q)) < 0.000001) {
+            return (string) (int) round($q);
+        }
+
+        return rtrim(rtrim(number_format($q, 2, '.', ''), '0'), '.');
     }
 
     private function dashboardPeriodRange(string $period, \Carbon\Carbon $base): array

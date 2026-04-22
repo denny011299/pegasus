@@ -20,5 +20,5 @@
 @endsection
 
 @section('custom_js')
-    <script src="{{ asset('Custom_js/Backoffice/Dashboard/Dashboard-Admin.js') }}?v=17"></script>
+    <script src="{{ asset('Custom_js/Backoffice/Dashboard/Dashboard-Admin.js') }}?v=19"></script>
 @endsection
