@@ -1560,7 +1560,8 @@ class ReportController extends Controller
         unset($r);
 
         return [
-            'rows' => array_values(array_slice($rows, 0, 35)),
+            // Jangan potong data di backend agar filter badge (habis/mendekati) selalu sinkron dengan jumlah badge.
+            'rows' => array_values($rows),
             'count_critical' => $countCritical,
             'count_warn' => $countWarn,
             'urls' => [
