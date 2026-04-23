@@ -13,6 +13,14 @@
         #addProduction .select2-container {
             width: 100% !important;
         }
+        #tableProduction td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableProduction td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
     </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">

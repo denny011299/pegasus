@@ -16,7 +16,8 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
-        deferRender: true,
+            deferRender: true,
+            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -34,7 +35,7 @@
                 { data: "created_by_name", defaultContent: "-" },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", defaultContent: "-" },
-                { data: "action", defaultContent: "-", class: "d-flex align-items-center" },
+                { data: "action", defaultContent: "-", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

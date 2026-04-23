@@ -1,5 +1,17 @@
 <?php $page = 'stock_opname'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        #tableStockOpname td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableStockOpname td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

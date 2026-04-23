@@ -26,20 +26,31 @@
             <!-- /Search Filter -->
 
             <!-- Table -->
-            <div class="row" style="margin-top: -4vh">
+            <div class="row">
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
-                            <div class="row total mt-3">
-                                <div class="col-6"></div>
-                                <div class="col-6">
-                                    <div class="card p-3">
-                                        <div class="row">
-                                            <div class="col-6 fw-bold text-center p-0">
-                                                <i class="fa fa-list-alt"></i> Jumlah Invoice : <span id="totalInvoice">0</span>
+                            <div class="row total mt-3 justify-content-end">
+                                <div class="col-12 col-md-6">
+                                    <div class="card p-3 shadow-sm">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fa fa-list-alt me-2 text-muted"></i>
+                                                    <div class="lh-1">
+                                                        <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.7rem;">Jumlah Invoice</small>
+                                                        <span class="fw-bold" id="totalInvoice">0</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="col-6 fw-bold text-center p-0">
-                                                <i class="fe fe-dollar-sign"></i> Total Hutang : <span id="totalHutang">Rp 0</span>
+                                            <div class="col-6 border-start ps-3">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fe fe-dollar-sign me-2 text-primary"></i>
+                                                    <div class="lh-1">
+                                                        <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.7rem;">Total Hutang</small>
+                                                        <span class="fw-bold text-nowrap" id="totalHutang">Rp 0</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

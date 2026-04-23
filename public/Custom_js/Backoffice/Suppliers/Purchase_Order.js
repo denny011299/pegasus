@@ -186,6 +186,7 @@
             ordering: false,
             searching: true,
             autoWidth: false,
+            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

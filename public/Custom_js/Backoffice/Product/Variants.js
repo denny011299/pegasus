@@ -21,6 +21,7 @@
 			"sDom": 'fBtlpi',  
 			"ordering": true,
             "autoWidth": false,
+            scrollX: true,
 			"language": {
 				search: ' ',
 				sLengthMenu: '_MENU_',

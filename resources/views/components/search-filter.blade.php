@@ -496,52 +496,27 @@
 
 @if(Route::is(['payReceive']))
 <!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
-    <div class="row">
-        {{-- 
-        <div class="col-12 col-md-6">
-
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <!-- Rentang Tanggal -->
-                    <div class="col-md">
-                        <label class="form-label mb-1">Search No Tanda terima</label>
-                        <input type="text" class="form-control" id="filter_po" placeholder="No.PO">
-                    </div>
-                    
-                    <!-- Supplier -->
-                    <div class="col-md">
-                        <label class="form-label mb-1">Search Supplier</label>
-                        <select class="form-select" id="filter_supplier"></select>
-                    </div>
-                    
-                </div>
-            </div>
-        </div>--}}
-        
-        <div class="col-8 col-md-8 mb-4 pe-0">
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <!-- Supplier -->
-                    <div class="col-lg-4 col-md-6 col-sm-12 row-supplier">
-                        <label class="form-label mb-1">Filter</label>
-                         <div class="input-block mb-3">
-                            <label>Bank Account</label>
+<div class="container mt-3 px-0">
+    <div class="row g-3">
+        <div class="col-12 col-lg-8">
+            <div class="card p-3 h-100">
+                <h6 class="card-title border-bottom pb-2 mb-3">Filter Pencarian</h6>
+                <div class="row g-3 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <div class="input-block">
+                            <label class="form-label mb-1">Bank Account</label>
                             <select class="form-select fill" id="bank_kode"></select>
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-6" style="padding-top: 0.8vh">
-                        <label class="form-label mb-1">  </label>
-                         <div class="input-block mb-3">
-                            <label>Supplier</label>
-                            <select class="form-select fill" id="supplier">
-                            </select>
+                    <div class="col-12 col-md-4">
+                        <div class="input-block">
+                            <label class="form-label mb-1">Supplier</label>
+                            <select class="form-select fill" id="supplier"></select>
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label mb-1">  </label>
-                         <div class="input-block mb-3">
-                            <label>Status</label>
+                    <div class="col-12 col-md-4">
+                        <div class="input-block">
+                            <label class="form-label mb-1">Status</label>
                             <select class="form-select fill" id="status">
                                 <option value="" selected>Semua</option>
                                 <option value="1">Belum Terbayar</option>
@@ -551,43 +526,49 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-6 col-md-4">
                         <div class="input-block">
-                            <label>Dari</label>
-                            <div>
-                                <input type="date" class="form-control" id="start_date">
-                            </div>
+                            <label class="form-label mb-1">Dari</label>
+                            <input type="date" class="form-control" id="start_date">
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-6 col-md-4">
                         <div class="input-block">
-                            <label>Sampai</label>
-                            <div>
-                                <input type="date" class="form-control" id="end_date">
-                            </div>
+                            <label class="form-label mb-1">Sampai</label>
+                            <input type="date" class="form-control" id="end_date">
                         </div>
                     </div>
-                    <div class="col-lg-4 col-md-12 col-sm-12 pt-4 text-end">
-                        <a class="btn btn-outline-secondary btn-clear">
-                            Clear
-                        </a>
+                    <div class="col-12 col-md-4 text-end">
+                        <button class="btn btn-outline-secondary btn-clear w-100 w-md-auto">
+                            Clear Filter
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-4 col-md- mb-4 pe-0">
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-4">
-                        <label class="form-label my-1">Print Hutang</label>
-                        <button class="btn btn-outline-info btn-print">Print <i class="fa fa-file"></i></button>
+
+        <div class="col-12 col-lg-4">
+            <div class="card p-3 h-100">
+                <h6 class="card-title border-bottom pb-2 mb-3">Aksi & Ringkasan</h6>
+                <div class="row g-3">
+                    <div class="col-6 col-lg-12">
+                        <label class="form-label d-block mb-1">Laporan</label>
+                        <button class="btn btn-outline-info btn-print w-100 mt-lg-0 mt-3">
+                            Print Hutang <i class="fa fa-file ms-1"></i>
+                        </button>
                     </div>
-                    <div class="col-8 text-end">
-                        <label class="form-label mb-1">Tanda Terima</label>
-                         <div class="input-block mb-3">
-                            <label id="jumlah_terpilih" class="jumlah_terpilih" style="cursor:pointer">0 Selected</label> <i  class="fe fe-refresh-ccw ms-2 jumlah_terpilih"  style="cursor:pointer"></i><br>
-                            <button class="btn btn-primary btn-create">Buat Tanda Terima</button>
+                    <div class="col-6 col-lg-12 text-end text-lg-start">
+                        <div class="d-flex justify-content-lg-start justify-content-end gap-2 align-items-center mb-2">
+                            <label class="form-label mb-1">Tanda Terima</label>
+                            <div>
+                                <span id="jumlah_terpilih" class="badge bg-light text-dark p-2 border cursor-pointer">
+                                    0 Selected <i class="fe fe-refresh-ccw ms-1"></i>
+                                </span>
+                            </div>
                         </div>
+                        <button class="btn btn-primary btn-create w-100">
+                            Buat Tanda Terima
+                        </button>
                     </div>
                 </div>
             </div>

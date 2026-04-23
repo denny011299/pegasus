@@ -2,6 +2,24 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
+        .qtySummary-wrapper .input-group {
+            flex-wrap: nowrap;
+            min-width: 120px;
+            max-width: 160px;
+        }
+
+        .qtySummary-wrapper .input-group .form-control {
+            min-width: 60px;
+            width: 70px;
+            flex-shrink: 0;
+        }
+
+        .qtySummary-wrapper .input-group-text {
+            min-width: 40px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
         .child-wrapper {
             margin-left: 60px; 
             max-width: 80%;
@@ -101,7 +119,7 @@
                                     <div class="accordion-body">
                                         
                                         <div class="row g-3">
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-6 col-md-4">
                                                 <div class="input-block">
                                                     <label>Nama Supplier</label>
                                                     <select id="po_supplier" class="form-control fill" disabled >
@@ -109,32 +127,32 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-6 col-md-4">
                                                 <div class="input-block">
                                                     <label>Nomor PO</label>
                                                     <input type="text" class="form-control fill" value="{{ $data['po_number'] }}" id="po_number" disabled>
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-6 col-md-4">
                                                 <div class="input-block">
                                                     <label>Nomor Invoice</label>
                                                     <input type="text" class="form-control fill" value="{{ $data['poi_code'] }}" id="po_number" disabled>
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-6 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Tanggal PO</label>
                                                     <input type="text" class="form-control fill" id="po_date" disabled>
                                                 </div>
                                             </div>
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-6 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Jatuh Tempo</label>
                                                     <input type="text" class="form-control fill" id="poi_due" disabled>
                                                 </div>
                                             </div>
 
-                                            <div class="col-12 col-md-4">
+                                            <div class="col-6 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Status</label>
                                                     <select id="po_status" class="form-control fill" disabled>
@@ -258,13 +276,18 @@
                                         </div>
 
                                         <div class="row pt-3">
-                                            <div class="col-4">
-                                            </div>
-                                            <div class="col-8 text-end">
-                                                <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
-                                                <button class="btn btn-success save-terima" style="display: none">Terima</button>
-                                                <button type="button" class="btn btn-info text-light    " id="btn-lihat-bukti">Lihat Bukti Foto</button>
-                                                <button class="btn btn-primary save-qty">Simpan Perubahan</button>
+                                            <div class="col-md-4 col-12"></div>
+                                            <div class="col-md-8 col-12">
+                                                <div class="d-flex flex-wrap justify-content-end gap-2">
+                                                    <div class="d-flex gap-2 justify-content-end w-sm-100">
+                                                        <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
+                                                        <button class="btn btn-success save-terima" style="display: none">Terima</button>
+                                                    </div>
+                                                    <div class="d-flex gap-2 justify-content-end w-sm-100 mt-2 mt-md-0">
+                                                        <button type="button" class="btn btn-info text-light" id="btn-lihat-bukti">Lihat Bukti Foto</button>
+                                                        <button class="btn btn-primary save-qty">Simpan Perubahan</button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -65,6 +65,7 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
             autoWidth: false,
+            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -79,9 +80,9 @@
                 { data: "product_sku", width: '10%' },
                 { data: "product_name", width: "20%" },
                 { data: "supplies", width: '35%' },
-                { data: "unit_text", width: '12%' },
-                { data: "created_by_name", defaultContent: "-", width: '13%' },
-                { data: "action", class: "text-center align-middle" },
+                { data: "unit_text", width: '10%' },
+                { data: "created_by_name", defaultContent: "-", width: '12%' },
+                { data: "action", class: "text-center align-middle", width: "13" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

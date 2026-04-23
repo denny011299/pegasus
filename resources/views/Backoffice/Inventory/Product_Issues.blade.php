@@ -58,7 +58,7 @@
                         @endslot
                 @endcomponent
             <!-- /Page Header -->
-             <ul class="nav nav-pills navtab-bg">
+             <ul class="nav nav-pills navtab-bg mt-md-0 mt-3">
                     <li class="nav-item nav-jenis" tipe="1" >
                         <a href="#return" data-bs-toggle="tab" class="nav-link active"style="border-radius: 10px">
                             Dikembalikan

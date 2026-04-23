@@ -182,29 +182,37 @@
                 </div>
                 <form action="#">
                     <div class="modal-body">
-                        <p class="text-center">Konfirmasi Pembayaran Semua Invoice Harap unggah Bukti Transfer Bank atau Slip Pembayaran yang valid sebagai syarat konfirmasi pelunasan semua invoice terkait.</p>
-                        <div class="profile-picture mt-3">
-                            <div class="upload-profile">
-                                <div class="profile-img">
-                                    <img id="preview_image" class="avatar" style="min-height: 200px;width:100%;border-radius:0px"
+                        <p class="text-center text-muted small px-3">
+                            Konfirmasi Pembayaran Semua Invoice Harap unggah Bukti Transfer Bank atau Slip Pembayaran yang valid sebagai syarat konfirmasi pelunasan semua invoice terkait.
+                        </p>
+
+                        <div class="upload-section mt-4 px-3">
+                            <div class="d-flex flex-column flex-lg-row align-items-center justify-content-center">
+                                
+                                <div class="profile-img mb-3 mb-lg-0">
+                                    <img id="preview_image" class="img-thumbnail" 
+                                        style="width: 200px; height: 200px; object-fit: cover; border-radius: 12px;"
                                         src="{{ asset('no_img.png') }}"
-                                        alt="profile-img">
+                                        alt="bukti-transaksi">
                                 </div>
-                                <div class="add-profile ms-3">
-                                    <h5>Unggah Foto Bukti Transaksi</h5>
-                                    <span id="file_name">xx.jpg</span>
+
+                                <div class="text-center text-lg-start ms-lg-4">
+                                    <h5 class="mb-1">Unggah Foto Bukti Transaksi</h5>
+                                    <p class="text-muted small mb-3" id="file_name">xx.jpg</p>
+                                    <div class="img-upload">
+                                        <label class="btn btn-primary px-5 shadow-sm">
+                                            Unggah <input type="file" class="d-none input-gambar"
+                                            accept="image/png, image/jpeg" id="image">
+                                        </label>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="img-upload">
-                                <label class="btn btn-upload">
-                                    Unggah <input type="file" class="form-control  input-gambar"
-                                    accept="image/png, image/jpeg" id="image">
-                                </label>
+
                             </div>
                         </div>
-                        <div class="mb-3 px-3">
-                            <label>Keterangan<span class="text-danger">*</span></label>
-                            <textarea class="form-control fill" cols="30" rows="2" id="keterangan" placeholder="Masukkan keterangan"></textarea>
+
+                        <div class="mt-4 px-3">
+                            <label class="form-label fw-bold">Keterangan<span class="text-danger">*</span></label>
+                            <textarea class="form-control" rows="3" id="keterangan" placeholder="Masukkan keterangan tambahan..."></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -512,20 +520,28 @@
                                     </div>
                                 </div> --}}
                                 <div class="col-12 py-3 mb-3">
-                                    <table class="table table-center" id="tableProduct" style="min-height: 15vh">
-                                        <thead style="display: table; width: 100%; table-layout: fixed;">
-                                            <th style="width: 55%;">Nama Produk</th>
-                                            <th class="text-center" style="width: 15%;">Qty</th>
-                                            <th style="width: 15%;">Satuan</th>
-                                            <th class="no-sort text-center" style="width: 15%;">Aksi</th>
-                                        </thead>
-                                        <tbody style="display: block; overflow-y: auto; max-height: 300px;"></tbody>
-                                        <tfoot class="dos" style="display: table; width: 100%; table-layout: fixed; border-top: 1px solid rgb(185, 185, 185);">
-                                            <td class="fw-bold text-black text-end" style="width: 55%;">Total Dos:</td>
-                                            <td class="fw-bold text-black text-end" style="width: 15%;"><span id="total_dos">0</span> Dos</td>
-                                            <td colspan="2" style="width: 30%;"></td>
-                                        </tfoot>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-center custom-table-scroll" id="tableProduct">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 50%;">Nama Produk</th>
+                                                    <th class="text-center" style="width: 15%;">Qty</th>
+                                                    <th style="width: 20%;">Satuan</th>
+                                                    <th class="no-sort text-center" style="width: 15%;">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                </tbody>
+                                            <tfoot class="dos">
+                                                <tr>
+                                                    <td class="fw-bold text-black text-end">Total Dos:</td>
+                                                    <td class="fw-bold text-black text-center"><span id="total_dos">0</span></td>
+                                                    <td class="fw-bold text-black">Dos</td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
                                 </div>
                                 <div class="col-12 px-2">
                                     <div class="row input_table g-3 align-items-end">
@@ -1171,7 +1187,7 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-lg-6">
+                                <div class="col-md-6 col-12">
                                     <div class="input-block mb-3">
                                         <label>Tanggal<span class="text-danger">*</span></label>
                                         <div class="input-group">
@@ -1195,7 +1211,7 @@
                                         <input type="hidden" name="" id="bukti">
                                     </div>
                                 </div> --}}
-                                <div class="col-lg-6">
+                                <div class="col-md-6 col-12">
                                     <div class="input-block mb-3">
                                         <label class="form-label">Keterangan<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="rs_notes" placeholder="Tambahkan Catatan">
@@ -2402,55 +2418,62 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-7">
+                                <div class="col-12 col-md-7 col-lg-7">
                                     <div class="input-block mb-3">
                                         <label>Produk<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="product_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-5">
+
+                                <div class="col-12 col-md-5 col-lg-5">
                                     <div class="input-block mb-3">
                                         <label>Qty Produksi<span class="text-danger">*</span></label>
-                                        
                                         <div class="input-group">
-                                            <input type="text" class="form-control fill number-only" id="bom_qty" placeholder="Qty Produksi">
-                                            <select class="form-select w-25 fill" id="unit_id">
-                                            </select>
+                                            <input type="text" class="form-control fill number-only" id="bom_qty" placeholder="Qty">
+                                            <select class="form-select w-25 fill" id="unit_id"></select>
                                         </div>
                                     </div>
                                 </div>
+
                                 <div class="col-12 py-3 mb-3">
-                                    <table class="table table-center" id="tableSupply" style="min-height: 15vh">
-                                        <thead>
-                                            <th>Nama Bahan</th>
-                                            <th>Qty</th>
-                                            <th>Satuan</th>
-                                            <th class="no-sort text-center">Aksi</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-center" id="tableSupply" style="min-height: 15vh">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama Bahan</th>
+                                                    <th>Qty</th>
+                                                    <th>Satuan</th>
+                                                    <th class="no-sort text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                                <div class="col-4">
+
+                                <div class="col-12 col-md-12 col-lg-4">
                                     <div class="input-block mb-3">
                                         <label>Nama Bahan<span class="text-danger">*</span></label>
                                         <select class="form-select fill_supply" id="supplies_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-3">
+
+                                <div class="col-6 col-md-6 col-lg-3">
                                     <div class="input-block mb-3">
                                         <label>Qty<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill_supply number-only" id="bom_detail_qty" placeholder="Qty Bahan">
+                                        <input type="text" class="form-control fill_supply number-only" id="bom_detail_qty" placeholder="Qty">
                                     </div>
                                 </div>
-                                
-                                <div class="col-4">
+
+                                <div class="col-6 col-md-6 col-lg-4">
                                     <div class="input-block mb-3">
-                                        <label>Nama Satuan<span class="text-danger">*</span></label>
+                                        <label>Satuan<span class="text-danger">*</span></label>
                                         <select class="form-select fill_supply" id="unit_supplies_id"></select>
                                     </div>
                                 </div>
-                                <div class="col-1 pt-4">
-                                    <a class="btn btn-primary btn-add-supply">+</a>
+
+                                <div class="col-12 col-md-12 col-lg-1 pt-4">
+                                    <a class="btn btn-primary btn-add-supply w-100">+</a>
                                 </div>
                             </div>
                         </div>

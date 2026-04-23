@@ -90,7 +90,7 @@
                 { data: "created_by_name", defaultContent: "-" },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "cancel_requested_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -337,17 +337,16 @@
         e.forEach((element, index) => {
             console.log(element);
             $('#tableProduct tbody').append(`
-                <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}"
-                style="display: table; width: 100%; table-layout: fixed;">
-                    <td style="width: 56%;">${element.product_name}</td>
-                    <td class="text-center" style="width: 15%;">${element.pd_qty}</td>
-                    <td style="width: 15%;">${element.unit_name}</td>
-                    <td class="text-center align-middle" style="width: 14%;">
-                        <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
-                                <i class="fe fe-trash-2"></i>
+                <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
+                    <td>${element.product_name}</td>
+                    <td class="text-center">${element.pd_qty}</td>
+                    <td>${element.unit_name}</td>
+                    <td class="text-center align-middle">
+                        <a class="p-2 btn-action-icon btn_delete_row_pr" href="javascript:void(0);">
+                            <i class="fe fe-trash-2"></i>
                         </a>
                     </td>
-                </tr>    
+                </tr>
             `)
             modeBahan = 1;
             if (mode != 3) getBom(element.bom_id, index);

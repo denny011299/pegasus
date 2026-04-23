@@ -4,11 +4,18 @@
     <style>
         #tableStockAlertLow, #tableStockAlertOut {
             width: 100% !important;
+            min-width: 900px;
         }
-
         #tableStockAlertLow td, #tableStockAlertOut td {
             white-space: normal !important;
             word-wrap: break-word;
+        }
+        #tableStockAlertLow td:last-child, #tableStockAlertOut td:last-child {
+            white-space: nowrap !important;
+        }
+        #tableStockAlertLow td:last-child a, #tableStockAlertOut td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
         }
     </style>
 @endsection
@@ -18,20 +25,20 @@
         <div class="content container-fluid">
 
             <!-- Page Header -->
-            <div class="d-flex justify-content-between m-0 p-0">
+            <div class="d-flex flex-wrap justify-content-between m-0 p-0 mb-3">
                 @component('components.page-header')
-                        @slot('title')
-                            Peringatan Stok Bahan Mentah
-                        @endslot
+                    @slot('title')
+                        Peringatan Stok Bahan Mentah
+                    @endslot
                 @endcomponent
-                <ul class="nav nav-pills navtab-bg">
+                <ul class="nav nav-pills navtab-bg d-flex flex-nowrap mb-md-0 mb-3" style="z-index: 10; position: relative;">
                     <li class="nav-item">
-                        <a href="#low" data-bs-toggle="tab" class="nav-link active" style="border-radius: 10px">
+                        <a href="#low" data-bs-toggle="tab" class="nav-link active text-nowrap" style="border-radius: 10px">
                             Stok Rendah <span class="badge text-bg-danger" id="total_low">0</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#out" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
+                        <a href="#out" data-bs-toggle="tab" class="nav-link text-nowrap" style="border-radius: 10px">
                             Stok Habis <span class="badge text-bg-danger" id="total_out">0</span>
                         </a>
                     </li>

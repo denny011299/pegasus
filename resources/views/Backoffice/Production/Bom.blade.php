@@ -7,6 +7,7 @@
         }
         #tableBom {
             width: 100% !important;
+            min-width: 1000px;
         }
 
         #tableBom td {
