@@ -1,4 +1,5 @@
     var mode=1;
+    var canDeliveryApproval = false;
     var tablePr, tableDn, tableInv, tablePrModal;
     let detail_delivery = []
 
@@ -24,6 +25,10 @@
     // autocompleteStaff("#sdo_receiver",null);
     autocompleteCustomer("#so_customer",null);
     $(document).ready(function(){
+        canDeliveryApproval = hasAccessAction("Pengiriman", "others");
+        if (!canDeliveryApproval) {
+            $('.row-acc').hide();
+        }
         inisialisasi();
         refresh();
         refreshSummary();
@@ -520,6 +525,10 @@
     })
    
     $(document).on('click', '.btn-approve', function(){
+        if (!canDeliveryApproval) {
+            notifikasi('error', "Akses Ditolak", "Anda tidak memiliki hak ACC pengiriman.");
+            return false;
+        }
         LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         var url ="/accSoDelivery";
@@ -574,6 +583,10 @@
     })
    
     $(document).on('click', '.btn-decline', function(){
+        if (!canDeliveryApproval) {
+            notifikasi('error', "Akses Ditolak", "Anda tidak memiliki hak ACC pengiriman.");
+            return false;
+        }
         LoadingButton(this);
         $('.is-invalid').removeClass('is-invalid');
         var url ="/declineSoDelivery";
@@ -655,11 +668,17 @@
         refreshTableProduct(data.items);
         if(data.status == 1){
             $('.btn-save-delivery').show();
-            $('.row-acc').show();
+            if (canDeliveryApproval) {
+                $('.row-acc').show();
+            } else {
+                $('.row-acc').hide();
+            }
         }
         else if(data.status == 0 || data.status == 2){
             $('.btn-save-delivery').hide();
+            $('.row-acc').hide();
         }
+        if (!canDeliveryApproval) $('.row-acc').hide();
         $('.btn-save-delivery').html('Simpan perubahan');
         $('#add_sales_delivery').modal("show");
         $('#add_sales_delivery').attr("sdo_id", data.sdo_id);
