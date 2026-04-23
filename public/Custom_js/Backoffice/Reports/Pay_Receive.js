@@ -55,7 +55,7 @@
                 { data: "supplier_name" },
                 { data: "poi_total_text" },
                 { data: "status_text" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

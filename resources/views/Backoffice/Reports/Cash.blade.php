@@ -49,20 +49,21 @@
 
         #tableCash {
             width: 100% !important;
-            min-width: 900px;
+            min-width: 1000px !important;
         }
 
-        #tableCash td, #tableCash th {
-            white-space: nowrap; /* jangan wrap, biar scroll horizontal yang kerja */
-            vertical-align: middle;
-            padding: 8px 10px;
+        #table td {
+            white-space: normal !important;
+            word-wrap: break-word;
         }
 
-        /* Khusus deskripsi boleh wrap */
-        #tableCash td:nth-child(3),
-        #tableCash th:nth-child(3) {
-            white-space: normal;
-            min-width: 150px;
+        #table td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #table td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
         }
     </style>
 @endsection
@@ -110,7 +111,7 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="3" class="text-end fw-bold">Total : </td>
+                                            <td colspan="3" class="text-end fw-bold" style="text-align: right !important">Total : </td>
                                             <td class="debits text-success"></td>
                                             <td class="credits1 text-danger"></td>
                                             <td class="credits2 text-danger"></td>
@@ -119,9 +120,9 @@
                                         <tr>
                                             <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
-                                            <td colspan="2"></td>
                                             <td class="fw-bold text-end">Total Setoran : </td>
                                             <td class="fw-bold text-end setor pe-4">Rp 0</td>
+                                            <td colspan="2"></td>
                                         </tr>
                                     </tfoot>
                                 </table>

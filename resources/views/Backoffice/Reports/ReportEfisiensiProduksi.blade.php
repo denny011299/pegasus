@@ -13,6 +13,16 @@
             z-index: 2;
         }
 
+        #tableReportEfisiensi {
+            width: 100% !important;
+            min-width: 800px;
+        }
+
+        #tableReportEfisiensi td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+
         #efisiensi-kpi-summary .card {
             border: 1px solid #e8ecf1;
         }

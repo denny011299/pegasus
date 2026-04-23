@@ -5,6 +5,25 @@
         .page-header {
             margin-bottom: 0;
         }
+
+        #tablePayables {
+            width: 100% !important;
+            min-width: 1000px;
+        }
+
+        #tablePayables td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+
+        #tablePayables td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tablePayables td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
     </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">

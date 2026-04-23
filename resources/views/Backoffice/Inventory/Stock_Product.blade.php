@@ -31,6 +31,7 @@
 
         #tableStock {
             width: 100% !important;
+            min-width: 800px !important;
         }
 
         #tableStock td {

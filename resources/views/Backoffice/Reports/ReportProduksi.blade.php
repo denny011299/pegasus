@@ -33,6 +33,16 @@
             top: 0;
             z-index: 2;
         }
+
+        #tableReportProduction {
+            width: 100% !important;
+            min-width: 1000px;
+        }
+
+        #tableReportProduction td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
     </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">

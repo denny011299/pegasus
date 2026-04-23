@@ -21,6 +21,7 @@ function inisialisasi() {
         ordering: true,
         searching: false,
         autoWidth: false,
+        scrollX: true,
         language: {
             search: ' ',
             sLengthMenu: '_MENU_',

@@ -1,5 +1,27 @@
 <?php $page = 'bank'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        #tableBank {
+            width: 100% !important;
+            min-width: 800px;
+        }
+
+        #tableBank td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+
+        #tableBank td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableBank td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

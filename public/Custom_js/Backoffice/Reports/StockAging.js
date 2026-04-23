@@ -17,6 +17,7 @@ function inisialisasi() {
         ordering: true,
         order: [[4, "desc"]],
         searching: false,
+        scrollX: true,
         language: {
             search: " ",
             sLengthMenu: "_MENU_",

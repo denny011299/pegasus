@@ -1607,16 +1607,17 @@
                                             placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
-                                <div class="row input-block mb-3">
-                                    <label>Tipe<span class="text-danger">*</span></label>
-                                    <div class="col-4">
+                                <div class="row input-block mb-3 pe-0">
+                                    <div class="col-md-4 col-12 pe-0">
+                                        <label>Tipe<span class="text-danger">*</span></label>
                                         <select class="form-select" id="cash_select">
                                             <option value="debit" checked>Masuk</option>
                                             <option value="credit1">Keluar</option>
                                             <option value="credit2">Keluar 1</option>
                                         </select>
                                     </div>
-                                    <div class="col-8">
+                                    <div class="col-md-8 col-12 mt-md-0 mt-3 pe-0">
+                                        <label>Jumlah Nominal<span class="text-danger">*</span></label>
                                         <div class="input-group fix-nominal">
                                             <span class="input-group-text">Rp.</span>
                                             <input type="text" name="" id="cash_nominal" class="form-control fill number-only nominal_only" placeholder="Contoh 10000">
@@ -1802,116 +1803,132 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-6 mb-4">
+                                <div class="col-12 col-md-6 mb-3">
                                     <div class="input-block">
-                                        <label>Jenis Aktivitas</label>
+                                        <label class="fw-bold">Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input">
                                             <option value="saldo" selected>Manajemen Saldo Kas</option>
                                             <option value="operasional">Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-6 mb-4"></div>
-                                <div class="row p-0 m-0" id="inputModal">
-                                    <div class="col-6 saldo_kas">
-                                        <div class="input-block mb-3">
-                                            <label>Aksi Dana<span class="text-danger">*</span></label>
-                                            <select class="form-select fill" id="oc_transaksi">
-                                                <option value=1>Pengajuan</option>
-                                                <option value=2>Pengembalian</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-12 col-lg-6 operasional">
-                                        <div class="input-block mb-3">
-                                            <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="oc_date"></input>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="input-block mb-3" id="row-cash">
-                                            <label>Nama Staff<span class="text-danger">*</span></label>
-                                            <select class="form-select fill" id="staff_id"></select>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 saldo_kas">
-                                        <div class="input-block mb-3">
-                                            <label>Nominal<span class="text-danger">*</span></label>
-                                            <div class="input-group fix-nominal">
-                                                <span class="input-group-text">Rp </span>
-                                                <input class="form-control fill number-only nominal_only saldos" id="oc_nominal" placeholder="Contoh: 10.000"></input>
+                                
+                                <div class="col-md-6 d-none d-md-block mb-3"></div>
+
+                                <div class="col-12">
+                                    <div class="row g-2" id="inputModal">
+                                        
+                                        <div class="col-12 col-md-6 saldo_kas">
+                                            <div class="input-block mb-3">
+                                                <label>Aksi Dana<span class="text-danger">*</span></label>
+                                                <select class="form-select fill" id="oc_transaksi">
+                                                    <option value="1">Pengajuan</option>
+                                                    <option value="2">Pengembalian</option>
+                                                </select>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="col-6 operasional">
-                                        <label class="form-label d-flex">
-                                            Bukti Foto<span class="text-danger">*</span> 
-                                            <span id="check_foto" style="display: none" class="ms-2">
-                                                <div class="d-flex g-3">
-                                                    <i class="fa fa-check-circle text-success mt-1"></i>
-                                                    <p class="text-muted ms-1">gambar terunggah</p>
-                                                </div>
-                                            </span>
-                                        </label>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
-                                        <input type="hidden" name="" id="bukti">
-                                    </div>
-                                    <div class="col-6 saldo_kas">
-                                        <div class="input-block mb-3">
-                                            <label>Keterangan<span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control fill saldos" id="oc_notes" placeholder="Contoh: Untuk kas harian">
+
+                                        <div class="col-12 col-md-6 operasional">
+                                            <div class="input-block mb-3">
+                                                <label>Tanggal<span class="text-danger">*</span></label>
+                                                <input type="date" class="form-control fill" id="oc_date">
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="col-12 operasional mt-3">
-                                        <h5 class="form-title mb-2 text-black">Detail</h5>
-                                    </div>
-                                    <div class="col-12 px-2 mb-3 operasional">
-                                        <div class="row input_table g-3 align-items-end px-1">
-                                            <div class="col-12 col-lg-6 add">
-                                                <div class="input-block mb-3" id="row-product">
-                                                    <label>Nama Pencatatan<span class="text-danger">*</span></label>
-                                                    <input type="text" class="form-control fill_catatan" id="cad_notes" placeholder="Contoh: Makan Siang">
+
+                                        <div class="col-12 col-md-6">
+                                            <div class="input-block mb-3" id="row-cash">
+                                                <label>Nama Staff<span class="text-danger">*</span></label>
+                                                <select class="form-select fill" id="staff_id"></select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 col-md-6 saldo_kas">
+                                            <div class="input-block mb-3">
+                                                <label>Nominal<span class="text-danger">*</span></label>
+                                                <div class="input-group fix-nominal">
+                                                    <span class="input-group-text">Rp </span>
+                                                    <input class="form-control fill number-only nominal_only saldos" id="oc_nominal" placeholder="Contoh: 10.000">
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-lg-5 add">
-                                                <div class="input-block mb-3">
-                                                    <label>Nominal<span class="text-danger">*</span></label>
-                                                    <div class="input-group fix-nominal">
-                                                        <span class="input-group-text">Rp </span>
-                                                        <input class="form-control fill_catatan number-only nominal_only" id="cad_nominal" placeholder="Contoh: 10.000"></input>
+                                        </div>
+
+                                        <div class="col-12 col-md-6 operasional">
+                                            <div class="input-block mb-3">
+                                                <label class="form-label d-flex align-items-center">
+                                                    Bukti Foto<span class="text-danger">*</span> 
+                                                    <span id="check_foto" style="display: none" class="ms-2">
+                                                        <small class="text-success"><i class="fa fa-check-circle"></i> terunggah</small>
+                                                    </span>
+                                                </label>
+                                                <div class="d-grid d-md-block gap-2">
+                                                    <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti">Foto Bukti</button>
+                                                    <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
+                                                </div>
+                                                <input type="hidden" id="bukti">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 col-md-6 saldo_kas">
+                                            <div class="input-block mb-3">
+                                                <label>Keterangan<span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill saldos" id="oc_notes" placeholder="Contoh: Untuk kas harian">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-12 operasional mt-2">
+                                            <h5 class="form-title mb-2 text-black pb-2">Detail Pengeluaran</h5>
+                                        </div>
+
+                                        <div class="col-12 operasional mb-3">
+                                            <div class="row g-2 align-items-end p-2 rounded">
+                                                <div class="col-12 col-lg-6">
+                                                    <div class="input-block">
+                                                        <label class="small">Nama Pencatatan<span class="text-danger">*</span></label>
+                                                        <input type="text" class="form-control fill_catatan" id="cad_notes" placeholder="Contoh: Makan Siang">
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-12 col-md-12 col-lg-1 add">
-                                                <button type="button" class="btn btn-primary w-100 btn-add-catatan mb-3">
-                                                    +
-                                                </button>
+                                                <div class="col-12 col-lg-5">
+                                                    <div class="input-block">
+                                                        <label class="small">Nominal<span class="text-danger">*</span></label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">Rp</span>
+                                                            <input class="form-control fill_catatan number-only nominal_only" id="cad_nominal" placeholder="10.000">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 col-lg-1">
+                                                    <button type="button" class="btn btn-primary w-100 btn-add-catatan">
+                                                        <i class="fa fa-plus"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="col-12 py-3 mb-3 operasional">
-                                        <div class="table-responsive">
-                                            <table class="table table-center" id="tableDetail" style="min-height: 15vh">
-                                                <thead>
-                                                    <th>No</th>
-                                                    <th style="width: 25%">Keterangan</th>
-                                                    <th class="text-end">Nominal</th>
-                                                    <th class="no-sort text-center">Aksi</th>
-                                                </thead>
-                                                <tbody></tbody>
-                                                <tfoot>
-                                                    <tr>
-                                                        <td colspan="2" class="text-end fw-bold">Total : </td>
-                                                        <td class="total text-end fw-bold">Rp 0</td>
-                                                        <td></td>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
+
+                                        <div class="col-12 operasional">
+                                            <div class="table-responsive">
+                                                <table class="table table-center" id="tableDetail" style="min-width: 400px;">
+                                                    <thead>
+                                                        <tr>
+                                                            <th width="50">No</th>
+                                                            <th>Keterangan</th>
+                                                            <th class="text-end">Nominal</th>
+                                                            <th class="text-center">Aksi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody></tbody>
+                                                    <tfoot>
+                                                        <tr class="fw-bold">
+                                                            <td colspan="2" class="text-end">Total :</td>
+                                                            <td class="total text-end">Rp 0</td>
+                                                            <td></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </div> 
                                 </div>
-                            </div>
+                            </div> 
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1938,7 +1955,7 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-6 mb-4">
+                                <div class="col-lg-6 col-12 mb-4">
                                     <div class="input-block">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_gudang">
@@ -1947,9 +1964,9 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-6 mb-4"></div>
+                                <div class="col-lg-6 col-12 mb-lg-4 mb-0"></div>
                                 <div class="row p-0 m-0" id="inputModal">
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-lg-6 col-12 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Aksi Dana<span class="text-danger">*</span></label>
                                             <select class="form-select fill" id="oc_transaksi_gudang">
@@ -1964,13 +1981,13 @@
                                             <input type="date" class="form-control fill" id="oc_date_gudang"></input>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-12">
                                         <div class="input-block mb-3" id="row-cash">
                                             <label>Nama Pengaju<span class="text-danger">*</span></label>
                                             <select class="form-select fill" id="staff_id_gudang"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-lg-6 col-12 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Nominal<span class="text-danger">*</span></label>
                                             <div class="input-group fix-nominal">
@@ -1979,7 +1996,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-6 operasional">
+                                    <div class="col-lg-6 col-12 operasional">
                                         <label class="form-label d-flex">
                                             Bukti Foto<span class="text-danger">*</span> 
                                             <span id="check_foto_gudang" style="display: none" class="ms-2">
@@ -1989,11 +2006,13 @@
                                                 </div>
                                             </span>
                                         </label>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti-gudang">Foto Bukti</button>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-gudang" style="display: none">Lihat Bukti</button>
+                                        <div class="d-grid d-md-block gap-2">
+                                            <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti-gudang">Foto Bukti</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-gudang" style="display: none">Lihat Bukti</button>
+                                        </div>
                                         <input type="hidden" name="" id="bukti_gudang">
                                     </div>
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-lg-6 col-12 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
                                             <input type="text" class="form-control fill saldos" id="oc_notes_gudang" placeholder="Contoh: Untuk kas harian">
@@ -2016,7 +2035,7 @@
                                                     <input type="text" class="form-control fill_catatan" id="cgd_notes" placeholder="Contoh: Kas Harian">
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-lg-6 add">
+                                            <div class="col-12 col-lg-6 add">
                                                 <div class="input-block mb-3">
                                                     <label>Pilih Jumlah Nominal<span class="text-danger">*</span></label>
                                                     <select class="form-select fill_catatan" id="jenis_nominal">
@@ -2029,7 +2048,7 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-lg-5 add input_nominal">
+                                            <div class="col-12 col-lg-5 add input_nominal">
                                                 <div class="input-block mb-3">
                                                     <label>Nominal<span class="text-danger">*</span></label>
                                                     <div class="input-group fix-nominal">
@@ -2094,7 +2113,7 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-6 mb-4">
+                                <div class="col-lg-6 col-12 mb-4">
                                     <div class="input-block">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_armada">
@@ -2103,7 +2122,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-6 mb-4"></div>
+                                <div class="col-lg-6 col-12 mb-lg-4 mb-0"></div>
                                 <div class="row p-0 m-0" id="inputModal">
                                     <div class="col-12 col-lg-6 operasional">
                                         <div class="input-block mb-3">
@@ -2111,13 +2130,13 @@
                                             <input type="date" class="form-control fill" id="oc_date_armada"></input>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-12">
                                         <div class="input-block mb-3" id="row-cash">
                                             <label>Nama Armada<span class="text-danger">*</span></label>
                                             <select class="form-select fill" id="customer_id_armada"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6 foto operasional mb-3">
+                                    <div class="col-lg-6 col-12 foto operasional mb-3">
                                         <label class="form-label d-flex">
                                             Bukti Foto<span class="text-danger">*</span> 
                                             <span id="check_foto_armada" style="display: none" class="ms-2">
@@ -2127,11 +2146,13 @@
                                                 </div>
                                             </span>
                                         </label>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti-armada">Foto Bukti</button>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-armada" style="display: none">Lihat Bukti</button>
+                                        <div class="d-grid d-md-block gap-2">
+                                            <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti-armada">Foto Bukti</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-armada" style="display: none">Lihat Bukti</button>
+                                        </div>
                                         <input type="hidden" name="" id="bukti_armada">
                                     </div>
-                                    <div class="col-6 saldo_kas">
+                                    <div class="col-lg-6 col-12 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Nominal Pengembalian<span class="text-danger">*</span></label>
                                             <div class="input-group fix-nominal">
@@ -2164,13 +2185,13 @@
                                                     <input type="text" class="form-control fill_catatan" id="crd_notes" placeholder="Contoh: Makan Siang">
                                                 </div>
                                             </div> --}}
-                                            <div class="col-6">
+                                            <div class="col-lg-6 col-12">
                                                 <div class="input-block mb-3" id="row-product">
                                                     <label>Nama Pencatatan<span class="text-danger">*</span></label>
                                                     <select class="form-select fill_catatan" id="cc_id"></select>
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-lg-5 add">
+                                            <div class="col-12 col-lg-5 add">
                                                 <div class="input-block mb-3">
                                                     <label>Nominal<span class="text-danger">*</span></label>
                                                     <div class="input-group fix-nominal">
@@ -2278,8 +2299,10 @@
                                                 </div>
                                             </span>
                                         </label>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti-sales">Foto Bukti</button>
-                                        <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-sales" style="display: none">Lihat Bukti</button>
+                                        <div class="d-grid d-md-block gap-2">
+                                            <button type="button" class="btn btn-outline-primary" id="btn-foto-bukti-sales">Foto Bukti</button>
+                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti-sales" style="display: none">Lihat Bukti</button>
+                                        </div>
                                         <input type="hidden" name="" id="bukti_sales">
                                     </div>
                                     <div class="col-12 col-lg-6 saldo_kas banks">
@@ -2305,13 +2328,13 @@
                                     </div>
                                     <div class="col-12 px-2 mb-3 operasional">
                                         <div class="row input_table g-3 align-items-end px-1">
-                                            <div class="col-6">
+                                            <div class="col-lg-6 col-12">
                                                 <div class="input-block mb-3" id="row-product">
                                                     <label>Nama Pencatatan<span class="text-danger">*</span></label>
                                                     <select class="form-select fill_catatan" id="cc_id_sales"></select>
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-lg-5 add">
+                                            <div class="col-12 col-lg-5 add">
                                                 <div class="input-block mb-3">
                                                     <label>Nominal<span class="text-danger">*</span></label>
                                                     <div class="input-group fix-nominal">
@@ -2605,14 +2628,14 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-12">
+                                <div class="col-lg-6 col-12">
                                     <div class="input-block mb-3">
                                         <label>Nama Kategori<span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill" id="cc_name"
                                             placeholder="ex Makan Siang">
                                     </div>
                                 </div>
-                                <div class="col-12">
+                                <div class="col-lg-6 col-12">
                                     <div class="input-block mb-3">
                                         <label>Tipe Kategori<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="cc_type">

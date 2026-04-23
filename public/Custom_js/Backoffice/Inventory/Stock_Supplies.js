@@ -25,8 +25,8 @@
                 },
             },
             columns: [
-                { data: "supplies_name" },
-                { data: "supplies_variant_stock_text", class: "fw-bold" },
+                { data: "supplies_name", width: "75%" },
+                { data: "supplies_variant_stock_text", class: "fw-bold", width: "25%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

@@ -20,6 +20,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
+            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -34,7 +35,7 @@
                 { data: "bank_kode" },
                 { data: "bank_date" },
                 { data: "created_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

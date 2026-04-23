@@ -104,23 +104,33 @@
             <div class="row">
                 <div class="row col-12 mx-1">
                     <div class="card">
-                        <div class="card-body row">
-                            <div class="col-md-6">
-                                <div class="col-6">
-                                    <select class="form-select" id="cashType">
-                                        <option value="admin">Kas Admin</option>
-                                        <option value="gudang">Kas Gudang</option>
-                                        <option value="armada">Dompet Virtual Armada</option>
-                                        <option value="sales">Dompet Virtual Sales</option>
-                                    </select>
+                        <div class="card-body">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-12 col-md-6">
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label small fw-bold text-muted">Tipe Kas</label>
+                                        <select class="form-select shadow-sm" id="cashType">
+                                            <option value="admin">Kas Admin</option>
+                                            <option value="gudang">Kas Gudang</option>
+                                            <option value="armada">Dompet Virtual Armada</option>
+                                            <option value="sales">Dompet Virtual Sales</option>
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-6 row justify-content-end">
-                                <div class="total-summary text-end w-75">
-                                    <div class="px-3 py-2 mb-0">
-                                        <div class="row info_card">
-                                            <div class="fw-bold text-end text-black p-0">
-                                                <i class="fe fe-dollar-sign"></i> Kas Armada : <span id="totalArmada">-</span>
+
+                                <div class="col-12 col-md-6">
+                                    <div class="total-summary">
+                                        <div class="card bg-light border-0 shadow-sm mb-0">
+                                            <div class="card-body py-2 px-3">
+                                                <div class="row info_card align-items-center">
+                                                    <div class="col-12 text-center text-md-end">
+                                                        <span class="text-muted small d-block d-md-inline me-md-2">Total Saldo:</span>
+                                                        <span class="fw-bold text-black h5 mb-0">
+                                                            <i class="fe fe-dollar-sign text-primary"></i> 
+                                                            <span id="totalArmada">-</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

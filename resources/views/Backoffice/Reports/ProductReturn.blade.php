@@ -22,6 +22,16 @@
             top: 0;
             z-index: 2;
         }
+
+        #tableProduct {
+            width: 100% !important;
+            min-width: 800px;
+        }
+
+        #tableProduct td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
     </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -30,7 +40,7 @@
             <!-- Page Header -->
             @component('components.page-header')
                 @slot('title')
-                    Laporan Retur
+                    Laporan Retur Bahan
                 @endslot
             @endcomponent
             <!-- /Page Header -->

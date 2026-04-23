@@ -1,5 +1,27 @@
 <?php $page = 'categoryCash'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <style>
+        #tableCategory {
+            width: 100% !important;
+            min-width: 800px;
+        }
+
+        #tableCategory td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+
+        #tableCategory td:last-child {
+            white-space: nowrap !important;
+        }
+
+        #tableCategory td:last-child a {
+            display: inline-flex !important;
+            align-items: center;
+        }
+    </style>
+@endsection
 @section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">

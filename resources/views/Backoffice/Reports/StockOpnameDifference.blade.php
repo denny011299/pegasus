@@ -60,6 +60,16 @@
             font-weight: 600;
             letter-spacing: 0.03em;
         }
+
+        #tableSelisihOpname {
+            width: 100% !important;
+            min-width: 800px;
+        }
+
+        #tableSelisihOpname td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
     </style>
     <div class="page-wrapper">
         <div class="content container-fluid">

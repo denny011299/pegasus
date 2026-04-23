@@ -26,6 +26,16 @@
             background-color: #f8fafc;
         }
 
+        #tableStockAging {
+            width: 100% !important;
+            min-width: 1000px;
+        }
+
+        #tableStockAging td {
+            white-space: normal !important;
+            word-wrap: break-word;
+        }
+
         .aging-badge-bucket {
             font-size: 0.7rem;
             font-weight: 600;

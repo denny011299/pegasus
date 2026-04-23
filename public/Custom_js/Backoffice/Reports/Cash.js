@@ -32,6 +32,7 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
+            scrollX: true,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -48,7 +49,7 @@
                     orderable: false,
                     data: null,
                     defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "4%"
+                    width: "1%"
                 },
                 { data: "date", width: "9%"},
                 { data: "cash_description", width: "18%"},
@@ -58,7 +59,7 @@
                 { data: "created_by_name", defaultContent: "-" },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", className: "text-center", width: "18%"},
-                { data: "action", className: "d-flex align-items-center", width: "15%"},
+                { data: "action", className: "text-center align-middle", width: "15%"},
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');

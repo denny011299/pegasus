@@ -412,7 +412,7 @@
 
 @if(Route::is(['operationalCash']))
 <!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
+<div class="container mt-3 px-0">
     <div class="row">
         {{-- 
         <div class="col-12 col-md-6">
@@ -451,7 +451,7 @@
                         <label class="form-label mb-1">Staff</label>
                         <select class="form-select" id="filter_staff_id"></select>
                     </div>
-                    <div class="col-md-1 col-sm-12 pt-4 text-end">
+                    <div class="col-md-1 pt-4 text-end">
                         <a class="btn btn-outline-secondary btn-clear">
                             Clear
                         </a>
@@ -466,7 +466,7 @@
 
 @if(Route::is(['cash']))
 <!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
+<div class="container mt-3 px-0">
     <div class="row">
         <div class="col-12">
             <div class="card p-3">
@@ -551,13 +551,13 @@
             <div class="card p-3 h-100">
                 <h6 class="card-title border-bottom pb-2 mb-3">Aksi & Ringkasan</h6>
                 <div class="row g-3">
-                    <div class="col-6 col-lg-12">
+                    <div class="col-12 col-md-6 col-lg-12">
                         <label class="form-label d-block mb-1">Laporan</label>
                         <button class="btn btn-outline-info btn-print w-100 mt-lg-0 mt-3">
                             Print Hutang <i class="fa fa-file ms-1"></i>
                         </button>
                     </div>
-                    <div class="col-6 col-lg-12 text-end text-lg-start">
+                    <div class="col-12 col-md-6 col-lg-12 text-md-end text-start text-lg-start">
                         <div class="d-flex justify-content-lg-start justify-content-end gap-2 align-items-center mb-2">
                             <label class="form-label mb-1">Tanda Terima</label>
                             <div>
