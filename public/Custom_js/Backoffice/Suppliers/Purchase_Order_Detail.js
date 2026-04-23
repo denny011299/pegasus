@@ -13,6 +13,9 @@
         inisialisasi();
         refresh();
         refreshRetur();
+        if (!hasAccessAction("Tanda Terima PO", "create")) {
+            $('.btnAddDn').hide();
+        }
 
         if (data.status == 1 && data.pembayaran == 1){
             $('.retur-bahan').show();
@@ -234,14 +237,14 @@
                     
                     var pda =
                         roleIconEdit(
-                            "Pembelian",
+                            "Tanda Terima PO",
                             "me-2 btn-action-icon p-2 btn_edit_dn",
                             'data-id="' +
                                 e[i].pod_id +
                                 '" data-bs-target="#edit-sales"'
                         ) +
                         roleIconDelete(
-                            "Pembelian",
+                            "Tanda Terima PO",
                             "p-2 btn-action-icon btn_delete_dn",
                             'data-id="' +
                                 e[i].pod_id +

@@ -586,6 +586,10 @@
                                         <li><a href="{{ url('stockProduct') }}"
                                             class="{{ Request::is('stockProduct') ? 'active' : '' }}">Stok Produk</a></li>
                                     @endif
+                                    @if ($akses->firstWhere('name', 'Daftar Produk'))
+                                        <li><a href="{{ url('barcodePrint') }}"
+                                            class="{{ Request::is('barcodePrint') ? 'active' : '' }}">Cetak Barcode</a></li>
+                                    @endif
                                 </ul>
                             </li>
                         @endif

@@ -278,7 +278,6 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Pembelian|create')->group(function () {
         Route::post('/insertPurchaseOrder', [SupplierController::class, 'insertPurchaseOrder'])->name('insertPurchaseOrder');
-        Route::post('/insertPoDelivery', [SupplierController::class, 'insertPoDelivery'])->name('insertPoDelivery');
         Route::post('/insertInvoicePO', [SupplierController::class, 'insertInvoicePO'])->name('insertInvoicePO');
         Route::post('/insertReturnSupplies', [SupplierController::class, 'insertReturnSupplies'])->name('insertReturnSupplies');
     });
@@ -312,6 +311,9 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/product', [ProductController::class, 'Product'])->name('product');
         Route::get('/getProduct', [ProductController::class, 'getProduct'])->name('getProduct');
         Route::get('/getProductVariant', [ProductController::class, 'getProductVariant'])->name('getProductVariant');
+        Route::get('/barcodePrint', [ProductController::class, 'BarcodePrint'])->name('barcodePrint');
+        Route::get('/getBarcodeProducts', [ProductController::class, 'getBarcodeProducts'])->name('getBarcodeProducts');
+        Route::post('/printBarcodePdf', [ProductController::class, 'printBarcodePdf'])->name('printBarcodePdf');
     });
     Route::middleware('check.access:Daftar Produk|create')->group(function () {
         Route::get('/insertProduct', [ProductController::class, 'viewInsertProduct'])->name('viewInsertProduct');
@@ -613,6 +615,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Tanda Terima PO|create')->group(function () {
         Route::post('/insertTt', [SupplierController::class, 'insertTt'])->name('insertTt');
+        Route::post('/insertPoDelivery', [SupplierController::class, 'insertPoDelivery'])->name('insertPoDelivery');
     });
     Route::middleware('check.access:Tanda Terima PO|edit')->group(function () {
         Route::post('/updateTt', [SupplierController::class, 'updateTt'])->name('updateTt');
