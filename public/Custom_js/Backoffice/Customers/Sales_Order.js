@@ -12,20 +12,20 @@
     });
 
     function initSalesOrderProductInput() {
-        const $skuCol = $('#so_sku').closest('.col-6');
-        const $inputCol = $skuCol.next('.col-6');
+        const $skuCol = $('#so_sku').closest('.col-lg-6, .col-md-6, .col-12');
+        const $inputCol = $skuCol.next('.col-lg-6, .col-md-6, .col-12');
         if ($inputCol.length <= 0) return;
         if ($('#btn-add-product-so').length > 0) return;
 
         $inputCol.html(`
             <div class="row g-2 align-items-end">
-                <div class="col-md-3">
+                <div class="col-lg-3 col-md-5 col-5 mb-lg-0 mb-2">
                     <div class="input-block mb-0">
                         <label>Qty</label>
                         <input type="number" min="1" class="form-control" id="so_qty_input" value="1" placeholder="Qty">
                     </div>
                 </div>
-                <div class="col-md-5">
+                <div class="col-lg-5 col-md-7 col-7 mb-lg-0 mb-2">
                     <div class="input-block mb-0">
                         <label>Satuan</label>
                         <select class="form-select" id="so_unit_input">
@@ -33,8 +33,8 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-4 text-end">
-                    <button type="button" class="btn btn-sm btn-primary" id="btn-add-product-so">Tambah Produk</button>
+                <div class="col-lg-4 col-md-12 col-12 text-lg-end mb-lg-0 mb-3">
+                    <button type="button" class="btn btn-sm btn-primary w-md-auto w-100" id="btn-add-product-so">Tambah Produk</button>
                 </div>
             </div>
         `);
@@ -182,14 +182,14 @@
                 },
             },
             columns: [
-                { data: "customer_name" },
-                { data: "date" },
-                { data: "so_invoice_no", default: "-" },
+                { data: "customer_name", width: "15%" },
+                { data: "date", width: "13%" },
+                { data: "so_invoice_no", defaultContent: "-", width: "12%" },
                 // { data: "total" },
-                { data: "status_text" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "action", class: "d-flex align-items-center" },
+                { data: "status_text", width: "15%" },
+                { data: "created_by_name", defaultContent: "-", width: "15%" },
+                { data: "acc_by_name", defaultContent: "-", width: "15%" },
+                { data: "action", class: "text-center align-middle", width: "15%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -223,7 +223,7 @@
                     e[i].action = soa;
 
                     if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu Approval</span>`;
+                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Menunggu</span>`;
                     } else if (e[i].status == 2){
                         e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
                     } else if (e[i].status == 3){

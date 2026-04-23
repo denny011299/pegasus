@@ -735,20 +735,20 @@
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
-                                <div class="col-12 row">
-                                    <div class="col-4">
+                                <div class="col-12 row pe-0">
+                                    <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="so_date">
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3 " id="row-Armada">
                                             <label>Nama Armada<span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
-                                     <div class="col-4">
+                                    <div class="col-lg-4 col-md-12 col-12 pe-0">
                                         <div class="input-block mb-3">
                                             <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
                                                 <span id="check_foto" style="display: none" class="ms-2">
@@ -764,16 +764,15 @@
                                         </div>
                                     </div>
                                     {{-- 
-                                    <div class="col-4">
+                                    <div class="col-lg-4 col-md-6 col-12">
                                         <div class="input-block mb-3">
                                             <label>Nama Sales</label>
                                             <select id="sales_id" class="form-control"></select>
                                         </div>
                                     </div>--}}
                                 </div>
-                                <div class="col-12 row">
-                                    {{--
-                                    <div class="col-4">
+                                <div class="col-12 row pe-0">
+                                    {{-- <div class="col-lg-4 col-md-6 col-12">
                                         <div class="input-block">
                                             <label>Diskon</label>
                                             <div class="input-group mb-3">
@@ -783,7 +782,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-lg-4 col-md-6 col-12">
                                         <div class="input-block">
                                             <label>PPN</label>
                                             <div class="input-group mb-3">
@@ -793,7 +792,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-lg-4 col-md-12 col-12">
                                         <div class="input-block mb-3">
                                             <label>Biaya Pengiriman</label>
                                             <div class="input-group mb-3">
@@ -802,22 +801,21 @@
                                             </div>
                                         </div>
                                     </div>
-                                    {{-- <div class="col-4">
+                                    <div class="col-lg-4 col-md-6 col-12">
                                         <div class="input-block mb-3">
                                             <label>No. Invoice</label>
                                             <input id="so_invoice_no" class="form-control" value="{{ $data['so_invoice_no'] || '-' }}" disabled>
                                         </div>
-                                    </div> --}} 
-                                   
+                                    </div> --}}
                                 </div>
-                                <div class="col-12 row">
-                                    <div class="col-6">
+                                <div class="col-12 row pe-0">
+                                    <div class="col-lg-6 col-md-12 col-12 pe-0">
                                         <div class="input-block mb-3">
                                             <label>SKU</label>
                                             <select class="form-select" id="so_sku"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-md-12 col-12 pe-0">
                                         
                                     </div>
                                 </div>
@@ -838,8 +836,8 @@
                                     </table>
                                 </div>
                                 {{-- <div class="col-12 row pt-3">
-                                    <div class="col-6"></div>
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-md-6 col-12"></div>
+                                    <div class="col-lg-6 col-md-6 col-12">
                                         <div class="d-flex justify-content-between">
                                             <p>Total</p>
                                             <p id="value_total">0</p>
@@ -1023,13 +1021,13 @@
                         <div class="form-groups-item border-0 pb-0">
                             <div class="row">
                                 <div class="col-12 row">
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-md-6 col-12">
                                         <div class="input-block" id="row-pemasok">
                                             <label>Nama Pemasok<span class="text-danger">*</span></label>
                                             <select id="po_supplier" class="form-control fill"></select>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-md-6 col-12">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="po_date">
@@ -1037,7 +1035,7 @@
                                     </div>
                                 </div>
                                 <div class="col-12 row">
-                                    <div class="col-3">
+                                    <div class="col-lg-3 col-md-6 col-6">
                                         <div class="input-block">
                                             <label>Tipe Diskon</label>
                                             <select class="form-select" id="jenis_disc">
@@ -1046,7 +1044,7 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-lg-3 col-md-6 col-6">
                                         <div class="input-block">
                                             <label>Diskon</label>
                                             <div class="input-group mb-3 discount">
@@ -1056,7 +1054,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-lg-3 col-md-6 col-6">
                                         <div class="input-block">
                                             <label>PPN</label>
                                             <div class="input-group mb-3">
@@ -1066,7 +1064,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-lg-3 col-md-6 col-6">
                                         <div class="input-block mb-3">
                                             <label>Biaya Pengiriman</label>
                                             <div class="input-group mb-3">
@@ -1075,13 +1073,13 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-md-12 col-12">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
                                             <input type="text" class="form-control fill" id="po_desc" placeholder="Masukkan Keterangan">
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-lg-6 col-md-12 col-12">
                                         <div class="input-block mb-3">
                                             <label class="form-label d-flex">Foto Bukti<span class="text-danger">*</span>
                                                 <span id="check_foto" style="display: none" class="ms-2">
@@ -1097,7 +1095,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-6">
+                                <div class="col-lg-6 col-md-12 col-12">
                                     <div class="input-block mb-3">
                                         <label>SKU/Barcode Produk<span class="text-danger">*</span></label>
                                         <select class="form-select" id="po_sku">
@@ -1120,8 +1118,8 @@
                                     </table>
                                 </div>
                                 <div class="col-12 row pt-3">
-                                    <div class="col-6"></div>
-                                    <div class="col-6">
+                                    <div class="col-lg-6 col-md-6 col-12"></div>
+                                    <div class="col-lg-6 col-md-6 col-12">
                                         <div class="d-flex justify-content-between">
                                             <p>Total</p>
                                             <p id="value_total">Rp. 0</p>
