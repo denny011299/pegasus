@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class SalesOrder extends Model
@@ -120,7 +121,9 @@ class SalesOrder extends Model
         // Jika sebelumnya ditolak, update ini dianggap input ulang dan kembali ke antrean ACC.
         if ((int) ($t->status ?? 0) === 3) {
             $t->status = 1;
-            $t->acc_by = null;
+            if (Schema::hasColumn($t->getTable(), 'acc_by')) {
+                $t->acc_by = null;
+            }
         }
         $t->save();
 

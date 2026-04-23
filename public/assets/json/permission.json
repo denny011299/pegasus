@@ -27,21 +27,22 @@
 
   { "Id": 20, "Modules": "Akuntansi", "SubModules": "Bank Account" },
   { "Id": 21, "Modules": "Akuntansi", "SubModules": "Hutang" },
-  { "Id": 22, "Modules": "Akuntansi", "SubModules": "Kategori Kas" },
-  { "Id": 23, "Modules": "Akuntansi", "SubModules": "Kas Operasional" },
-  { "Id": 24, "Modules": "Akuntansi", "SubModules": "Kas" },
+  { "Id": 22, "Modules": "Akuntansi", "SubModules": "Tanda Terima PO" },
+  { "Id": 23, "Modules": "Akuntansi", "SubModules": "Kategori Kas" },
+  { "Id": 24, "Modules": "Akuntansi", "SubModules": "Kas Operasional" },
+  { "Id": 25, "Modules": "Akuntansi", "SubModules": "Kas" },
 
-  { "Id": 25, "Modules": "Laporan", "SubModules": "Pengelolaan Bahan Mentah" },
-  { "Id": 26, "Modules": "Laporan", "SubModules": "Retur Produk" },
-  { "Id": 27, "Modules": "Laporan", "SubModules": "Laporan Produksi" },
-  { "Id": 28, "Modules": "Laporan", "SubModules": "Untung & Rugi" },
-  { "Id": 29, "Modules": "Laporan", "SubModules": "Barang Masuk Keluar" },
+  { "Id": 26, "Modules": "Laporan", "SubModules": "Pengelolaan Bahan Mentah" },
+  { "Id": 27, "Modules": "Laporan", "SubModules": "Retur Produk" },
+  { "Id": 28, "Modules": "Laporan", "SubModules": "Laporan Produksi" },
+  { "Id": 29, "Modules": "Laporan", "SubModules": "Untung & Rugi" },
+  { "Id": 30, "Modules": "Laporan", "SubModules": "Barang Masuk Keluar" },
 
-  { "Id": 30, "Modules": "Manajemen Pengguna", "SubModules": "Pengguna" },
-  { "Id": 31, "Modules": "Manajemen Pengguna", "SubModules": "Peran & Perizinan" },
+  { "Id": 31, "Modules": "Manajemen Pengguna", "SubModules": "Pengguna" },
+  { "Id": 32, "Modules": "Manajemen Pengguna", "SubModules": "Peran & Perizinan" },
 
-  { "Id": 32, "Modules": "Pengaturan", "SubModules": "Profil" },
-  { "Id": 33, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
+  { "Id": 33, "Modules": "Pengaturan", "SubModules": "Profil" },
+  { "Id": 34, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
 
-  { "Id": 34, "Modules": "Laporan", "SubModules": "Laporan Stock Aging" }
+  { "Id": 35, "Modules": "Laporan", "SubModules": "Laporan Stock Aging" }
 ]

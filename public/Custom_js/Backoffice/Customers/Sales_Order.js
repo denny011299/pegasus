@@ -2,14 +2,101 @@
     var table;
     var products = [];
     var list_photo;
+    var revisionSoId = null;
+    var revisionAutoOpened = false;
     autocompleteCustomer('#so_customer', "#add_sales_order .modal-content");
     autocompleteStaffSales('#sales_id', "#add_sales_order .modal-content");
     autocompleteProductVariantOnly('#so_sku', "#add_sales_order .modal-content");
     $(document).ready(function(){
+        var query = new URLSearchParams(window.location.search);
+        var qRevId = parseInt(query.get("rev_so_id"), 10);
+        if (!isNaN(qRevId) && qRevId > 0) revisionSoId = qRevId;
         initSalesOrderProductInput();
         inisialisasi();
         refreshSalesOrder();
     });
+
+    function cleanRevisionQueryParam() {
+        if (!window.history || !window.history.replaceState) return;
+        var url = new URL(window.location.href);
+        if (!url.searchParams.has("rev_so_id")) return;
+        url.searchParams.delete("rev_so_id");
+        window.history.replaceState({}, "", url.toString());
+    }
+
+    function openSalesOrderRevisionModal(data) {
+        products = [];
+        mode = 2;
+        $('#add_sales_order .modal-title').html("Revisi Pengiriman");
+        $('#add_sales_order input').empty().val("");
+        $('#so_customer, #sales_id').empty();
+        $('#so_discount').val(0).trigger('blur');
+        $('#so_cost').val(0).trigger('blur');
+        $('#so_ppn').val(0).trigger('blur');
+        $('.form-select').not("#so_payment").empty();
+
+        $('#btn_bukti_foto').hide();
+        $('#btn-lihat-bukti').show();
+
+        var img = [];
+        try {
+            img = JSON.parse(data.so_img || "[]");
+        } catch (err) {
+            img = [];
+        }
+        list_photo = img;
+        if (img.length > 0) {
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
+            $('#check_foto').show();
+            $('#jumlahFoto').html(list_photo.length);
+        } else {
+            $('#check_foto').hide();
+        }
+
+        $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
+        if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
+        $('#so_date').val(data.so_date);
+        $('#so_invoice_no').val(data.so_invoice_no);
+        $('#so_payment').val(data.so_payment);
+        $('#bukti').val(data.so_img);
+
+        (data.items || []).forEach(e => {
+            products.push({
+                "sod_id" : e.sod_id,
+                "product_variant_id" : e.product_variant_id,
+                "product_name" : e.sod_nama,
+                "product_variant_name" : e.sod_variant,
+                "product_variant_sku" : e.sod_sku,
+                "so_qty" : e.sod_qty,
+                "product_variant_price" : e.sod_harga,
+                "so_subtotal" : e.sod_subtotal,
+                "unit_name" : e.unit_name,
+                "unit_id" : e.unit_id,
+                "pr_unit" : e.pr_unit
+            });
+        });
+        refreshTableProduct();
+
+        // Khusus alur revisi: user boleh benarkan item langsung di modal.
+        $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", false);
+        $('#btn-add-product-so').show();
+        $('.deleteRow').show();
+
+        $('#so_ppn').trigger('blur');
+        $('#so_discount').trigger('blur');
+        $('#so_cost').trigger('blur');
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html("Update Pengiriman").show();
+        $('.btn_acc, .btn_decline').hide();
+        $('#add_sales_order').modal("show");
+        $('#add_sales_order').attr("so_id", data.so_id);
+        $('#add_sales_order').attr("so_number", data.so_number);
+        $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
+    }
 
     function initSalesOrderProductInput() {
         const $skuCol = $('#so_sku').closest('.col-lg-6, .col-md-6, .col-12');
@@ -253,6 +340,21 @@
 
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
+
+                if (!revisionAutoOpened && revisionSoId) {
+                    var target = e.find(function (row) {
+                        return parseInt(row.so_id, 10) === revisionSoId;
+                    });
+                    if (target) {
+                        revisionAutoOpened = true;
+                        cleanRevisionQueryParam();
+                        if (hasAccessAction("Pengiriman", "edit")) {
+                            openSalesOrderRevisionModal(target);
+                        } else if (hasAccessAction("Pengiriman", "view")) {
+                            notifikasi('error', "Akses Ditolak", "Role ini tidak punya akses edit untuk revisi pengiriman.");
+                        }
+                    }
+                }
             },
             error: function (err) {
                 console.error("Gagal load so:", err);

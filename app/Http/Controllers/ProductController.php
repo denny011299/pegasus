@@ -17,7 +17,9 @@ use App\Models\SuppliesUnit;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -241,6 +243,97 @@ class ProductController extends Controller
             "category_id" => $req->category_id
         ]);
         return response()->json($data);
+    }
+
+    public function BarcodePrint()
+    {
+        return view('Backoffice.Product.barcode');
+    }
+
+    function getBarcodeProducts(Request $req)
+    {
+        $q = trim((string) $req->get('q', ''));
+
+        $rows = DB::table('product_variants as pv')
+            ->join('products as p', 'p.product_id', '=', 'pv.product_id')
+            ->where('pv.status', 1)
+            ->where('p.status', 1)
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('p.product_name', 'like', '%' . $q . '%')
+                        ->orWhere('pv.product_variant_name', 'like', '%' . $q . '%')
+                        ->orWhere('pv.product_variant_sku', 'like', '%' . $q . '%')
+                        ->orWhere('pv.product_variant_barcode', 'like', '%' . $q . '%');
+                });
+            })
+            ->orderBy('p.product_name')
+            ->orderBy('pv.product_variant_name')
+            ->limit(40)
+            ->get([
+                'pv.product_variant_id',
+                'p.product_name as nama_produk',
+                'pv.product_variant_name as nama_varian',
+                'pv.product_variant_sku as sku',
+                'pv.product_variant_barcode as barcode',
+                'pv.product_variant_price as harga',
+            ]);
+
+        $rows = $rows->map(function ($r) {
+            $barcode = trim((string) ($r->barcode ?? ''));
+            if ($barcode === '') {
+                $barcode = trim((string) ($r->sku ?? ''));
+            }
+            $r->barcode = $barcode;
+            return $r;
+        })->values();
+
+        return response()->json($rows);
+    }
+
+    function printBarcodePdf(Request $req)
+    {
+        $rawItems = $req->input('items_json', '[]');
+        $decoded = json_decode((string) $rawItems, true);
+        if (!is_array($decoded)) {
+            return back()->with('error', 'Data barcode tidak valid.');
+        }
+
+        $list = [];
+        foreach ($decoded as $item) {
+            $qty = (int) ($item['qty_print'] ?? 0);
+            if ($qty <= 0) {
+                continue;
+            }
+            $barcode = trim((string) ($item['barcode'] ?? ''));
+            if ($barcode === '') {
+                $barcode = trim((string) ($item['sku'] ?? ''));
+            }
+            if ($barcode === '') {
+                continue;
+            }
+            $list[] = (object) [
+                'nama_produk' => (string) ($item['nama_produk'] ?? '-'),
+                'nama_varian' => (string) ($item['nama_varian'] ?? ''),
+                'barcode' => $barcode,
+                'harga' => (float) ($item['harga'] ?? 0),
+                'qty_print' => min(500, $qty),
+            ];
+        }
+
+        if (count($list) === 0) {
+            return back()->with('error', 'Tidak ada item barcode yang dicetak.');
+        }
+
+        $showName = (int) $req->input('nama', 1) === 1 ? 1 : 0;
+        $showPrice = (int) $req->input('harga', 1) === 1 ? 1 : 0;
+
+        $pdf = Pdf::loadView('Backoffice.PDF.Barcode', [
+            'list' => $list,
+            'nama' => $showName,
+            'harga' => $showPrice,
+        ])->setPaper([0, 0, 198.43, 48.19], 'portrait');
+
+        return $pdf->stream('barcode-' . now()->format('YmdHis') . '.pdf');
     }
 
     // Supplies

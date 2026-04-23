@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class PurchaseOrder extends Model
@@ -140,7 +141,9 @@ class PurchaseOrder extends Model
         } elseif ((int) ($t->status ?? 0) === 3) {
             // PO ditolak lalu diedit ulang => kembali menunggu ACC agar keluar dari Revision log.
             $t->status = 1;
-            $t->acc_by = null;
+            if (Schema::hasColumn($t->getTable(), 'acc_by')) {
+                $t->acc_by = null;
+            }
         }
         $t->po_img      = $data["po_img"] ?? null;
         $t->save();

@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class ProductIssues extends Model
@@ -153,7 +154,18 @@ class ProductIssues extends Model
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];
         $t->tipe_return = $data["tipe_return"];
-        $t->status = $data['status'] ?? 1;
+        $incomingStatus = isset($data['status']) ? (int) $data['status'] : null;
+        if ($incomingStatus !== null && $incomingStatus !== 3) {
+            $t->status = $incomingStatus;
+        } elseif ((int) ($t->status ?? 0) === 3) {
+            // Jika sebelumnya ditolak lalu direvisi, kembalikan ke antrean ACC.
+            $t->status = 1;
+            if (Schema::hasColumn($t->getTable(), 'acc_by')) {
+                $t->acc_by = null;
+            }
+        } else {
+            $t->status = $incomingStatus ?? 1;
+        }
         if (isset($data['pi_img'])) $t->pi_img = $data["pi_img"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         // $t->pi_qty = $data["pi_qty"];   
