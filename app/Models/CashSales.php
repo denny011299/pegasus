@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class CashSales extends Model
@@ -116,7 +117,18 @@ class CashSales extends Model
         $t->cs_transaction = $data["cs_transaction"] ?? 3;
         $t->cs_aksi = $data["cs_aksi"] ?? 0;
         $t->cs_img = $data["cs_img"] ?? null;
-        $t->status = $data['status'] ?? 1;
+        $incomingStatus = isset($data['status']) ? (int) $data['status'] : null;
+        if ($incomingStatus !== null && $incomingStatus !== 3) {
+            $t->status = $incomingStatus;
+        } elseif ((int) ($t->status ?? 0) === 3) {
+            // Pengajuan yang direvisi setelah ditolak harus kembali pending ACC.
+            $t->status = 1;
+            if (Schema::hasColumn($t->getTable(), 'acc_by')) {
+                $t->acc_by = null;
+            }
+        } else {
+            $t->status = $incomingStatus ?? 1;
+        }
         $t->save();
         return $t->cs_id;
     }

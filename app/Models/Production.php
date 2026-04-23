@@ -7,6 +7,7 @@ use App\Models\Staff;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class Production extends Model
@@ -124,7 +125,9 @@ class Production extends Model
         // Produksi ditolak lalu diinput ulang => kembali ke status menunggu ACC.
         if ((int) ($t->status ?? 0) === 3) {
             $t->status = 1;
-            $t->acc_by = null;
+            if (Schema::hasColumn($t->getTable(), 'acc_by')) {
+                $t->acc_by = null;
+            }
         }
         $t->save();
         return $t->production_id;

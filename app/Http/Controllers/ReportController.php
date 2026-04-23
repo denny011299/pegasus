@@ -1835,8 +1835,8 @@ class ReportController extends Controller
                 'date' => $so->so_date ? (string) $so->so_date : '',
                 'what_changed' => 'Pengiriman ditolak — perlu perbaikan / input ulang.',
                 'summary' => 'Status ditolak',
-                'url' => url('salesOrderDetail/'.$so->so_id),
-                'url_label' => 'Perbaiki / lihat SO',
+                'url' => url('salesOrder').'?rev_so_id='.(int) $so->so_id,
+                'url_label' => 'Perbaiki SO',
             ];
         }
 
