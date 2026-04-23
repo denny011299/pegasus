@@ -142,7 +142,7 @@
                     escHtml(r.what_changed || r.summary || "") +
                     '">' +
                     escHtml(r.what_changed || r.summary || "-") +
-                    '</span></td><td class="dash-col-actions"><a class="btn btn-sm btn-primary" href="' +
+                    '</span></td><td class="dash-col-actions"><a class="btn btn-sm dash-log-btn" href="' +
                     url.replace(/"/g, "&quot;") +
                     '">' +
                     label +

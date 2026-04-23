@@ -134,7 +134,14 @@ class PurchaseOrder extends Model
         $t->po_discount = $data["po_discount"] ?? 0;
         $t->po_cost     = $data["po_cost"] ?? 0;
         $t->po_desc     = $data["po_desc"];
-        $t->status      = $data["status"] ?? $t->status;
+        $incomingStatus = isset($data["status"]) ? (int) $data["status"] : null;
+        if ($incomingStatus !== null) {
+            $t->status = $incomingStatus;
+        } elseif ((int) ($t->status ?? 0) === 3) {
+            // PO ditolak lalu diedit ulang => kembali menunggu ACC agar keluar dari Revision log.
+            $t->status = 1;
+            $t->acc_by = null;
+        }
         $t->po_img      = $data["po_img"] ?? null;
         $t->save();
 

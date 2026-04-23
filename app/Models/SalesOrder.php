@@ -117,6 +117,11 @@ class SalesOrder extends Model
         $t->so_invoice_no  = $data["so_invoice_no"];
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = null;
+        // Jika sebelumnya ditolak, update ini dianggap input ulang dan kembali ke antrean ACC.
+        if ((int) ($t->status ?? 0) === 3) {
+            $t->status = 1;
+            $t->acc_by = null;
+        }
         $t->save();
 
         return $t;

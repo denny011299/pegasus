@@ -209,7 +209,7 @@
 
     .dash-approval-table td.dash-col-actions {
         width: 1%;
-        min-width: 9.5rem;
+        min-width: 7.25rem;
         white-space: nowrap;
         vertical-align: middle;
         text-align: right;
@@ -221,6 +221,22 @@
         white-space: normal;
         text-align: center;
         line-height: 1.2;
+    }
+
+    .dash-log-btn {
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.28rem 0.62rem;
+        border: 1px solid #cbd5e1;
+        color: #1e3a8a;
+        background: #f8fafc;
+    }
+
+    .dash-log-btn:hover {
+        background: #e2e8f0;
+        border-color: #94a3b8;
+        color: #1e3a8a;
     }
 
     /* Top 5: nama produk boleh wrap; qty tetap rapat kanan */
@@ -533,7 +549,7 @@
         </p> --}}
     </div>
     <div class="row g-3 mb-5">
-        <div class="col-lg-4">
+        <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Changelog — tunggu ACC Direktur</h3>
                 <div class="dash-scroll">
@@ -555,7 +571,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
+        <div class="col-lg-6">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Confirmation log</h3>
                 <div class="dash-scroll">
@@ -577,7 +593,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-4">
+        <div class="col-lg-6">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Revision log</h3>
                 <div class="dash-scroll">

@@ -350,6 +350,7 @@
         $('#value_grand').html(`Rp ${formatRupiah(grand)}`);
     }
 
+
     function getFallbackProductNames(items) {
         if (!Array.isArray(items)) return [];
         return [...new Set(items

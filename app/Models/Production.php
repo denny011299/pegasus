@@ -121,6 +121,11 @@ class Production extends Model
         $t->production_desc = $data["production_desc"];
         $t->production_code = $data["production_code"];
         $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : 0;
+        // Produksi ditolak lalu diinput ulang => kembali ke status menunggu ACC.
+        if ((int) ($t->status ?? 0) === 3) {
+            $t->status = 1;
+            $t->acc_by = null;
+        }
         $t->save();
         return $t->production_id;
     }
