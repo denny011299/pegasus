@@ -135,8 +135,13 @@
             <!-- /Table -->
 
             <div class="text-end mt-3">
-                <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
-                <button class="btn btn-success save-terima" style="display: none">Terima</button>
+                @php
+                        $akses = collect(json_decode(Session::get('user')->role_access));
+                @endphp
+                @if ($akses->firstWhere('name', 'Stok Opname Produk') && in_array('others', $akses->firstWhere('name', 'Stok Opname Produk')->akses))
+                    <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
+                    <button class="btn btn-success save-terima" style="display: none">Terima</button>
+                @endif
                 <button class="btn btn-primary btn-save">Tambah Stok Opname</button>
             </div>
         </div>

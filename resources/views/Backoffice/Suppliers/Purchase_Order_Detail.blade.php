@@ -279,13 +279,20 @@
                                             <div class="col-md-4 col-12"></div>
                                             <div class="col-md-8 col-12">
                                                 <div class="d-flex flex-wrap justify-content-end gap-2">
+                                                    @php
+                                                            $akses = collect(json_decode(Session::get('user')->role_access));
+                                                    @endphp
                                                     <div class="d-flex gap-2 justify-content-end w-sm-100">
-                                                        <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
-                                                        <button class="btn btn-success save-terima" style="display: none">Terima</button>
+                                                        @if ($akses->firstWhere('name', 'Pembelian') && in_array('others', $akses->firstWhere('name', 'Pembelian')->akses))
+                                                            <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
+                                                            <button class="btn btn-success save-terima" style="display: none">Terima</button>
+                                                        @endif
                                                     </div>
                                                     <div class="d-flex gap-2 justify-content-end w-sm-100 mt-2 mt-md-0">
                                                         <button type="button" class="btn btn-info text-light" id="btn-lihat-bukti">Lihat Bukti Foto</button>
-                                                        <button class="btn btn-primary save-qty">Simpan Perubahan</button>
+                                                        @if ($akses->firstWhere('name', 'Pembelian') && in_array('edit', $akses->firstWhere('name', 'Pembelian')->akses))
+                                                            <button class="btn btn-primary save-qty">Simpan Perubahan</button>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>

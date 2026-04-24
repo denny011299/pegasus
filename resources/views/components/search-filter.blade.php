@@ -1,3 +1,6 @@
+@php
+        $akses = collect(json_decode(Session::get('user')->role_access));
+@endphp
 @if(Route::is(['profitLoss']))
 <!-- Filter Pencarian -->
 <div class="profit-menu card report-produksi-filter">
@@ -557,19 +560,21 @@
                             Print Hutang <i class="fa fa-file ms-1"></i>
                         </button>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-12 text-md-end text-start text-lg-start">
-                        <div class="d-flex justify-content-lg-start justify-content-end gap-2 align-items-center mb-2">
-                            <label class="form-label mb-1">Tanda Terima</label>
-                            <div>
-                                <span id="jumlah_terpilih" class="badge bg-light text-dark p-2 border cursor-pointer">
-                                    0 Selected <i class="fe fe-refresh-ccw ms-1"></i>
-                                </span>
+                    @if ($akses->firstWhere('name', 'Hutang') && in_array('others', $akses->firstWhere('name', 'Hutang')->akses))
+                        <div class="col-12 col-md-6 col-lg-12 text-md-end text-start text-lg-start">
+                            <div class="d-flex justify-content-lg-start justify-content-end gap-2 align-items-center mb-2">
+                                <label class="form-label mb-1">Tanda Terima</label>
+                                <div>
+                                    <span id="jumlah_terpilih" class="badge bg-light text-dark p-2 border cursor-pointer">
+                                        0 Selected <i class="fe fe-refresh-ccw ms-1"></i>
+                                    </span>
+                                </div>
                             </div>
+                            <button class="btn btn-primary btn-create w-100">
+                                Buat Tanda Terima
+                            </button>
                         </div>
-                        <button class="btn btn-primary btn-create w-100">
-                            Buat Tanda Terima
-                        </button>
-                    </div>
+                    @endif
                 </div>
             </div>
         </div>
