@@ -11,7 +11,9 @@
         }
 </style>
 @php
-        $akses = collect(json_decode(Session::get('user')->role_access));
+    $akses = Session::has('user') && Session::get('user')?->role_access 
+        ? collect(json_decode(Session::get('user')->role_access)) 
+        : collect();
 @endphp
 <div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-dialog-centered" role="document">

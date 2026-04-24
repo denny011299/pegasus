@@ -1,5 +1,7 @@
 @php
-        $akses = collect(json_decode(Session::get('user')->role_access));
+    $akses = Session::has('user') && Session::get('user')?->role_access 
+        ? collect(json_decode(Session::get('user')->role_access)) 
+        : collect();
 @endphp
 @if(Route::is(['profitLoss']))
 <!-- Filter Pencarian -->
