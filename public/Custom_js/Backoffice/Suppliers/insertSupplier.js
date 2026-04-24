@@ -22,7 +22,7 @@ $(document).ready(function(){
         $('#supplier_ifsc').val(data.supplier_ifsc);
         $('#supplier_top').val(data.supplier_top);
         $('#bank_kode').append(`<option value="${data.bank_id}">${data.bank_name}</option>`);
-        $('#preview_image').attr("src",public+data.supplier_image); 
+        // $('#preview_image').attr("src",public+data.supplier_image); 
     }
 })
 
@@ -93,8 +93,8 @@ $(document).on("click", ".btn-save", function () {
     for (const [key, value] of Object.entries(param)) {
         fd.append(key, value);
     }
-    fd.append('image', $('#supplier_image')[0].files[0]);
-    console.log($('#supplier_image')[0].files[0])
+    // fd.append('image', $('#supplier_image')[0].files[0]);
+    // console.log($('#supplier_image')[0].files[0])
 
     LoadingButton($(this));
     $.ajax({
