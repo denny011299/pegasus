@@ -72,8 +72,8 @@
                                         <tr>
                                             <th style="width: 15%">Nama Armada</th>
                                             <th style="width: 13%">Tanggal</th>
-                                            <th style="width: 12%">No. Invoice</th>
-                                            <th style="width: 12%">Ref Number</th>
+                                            <th style="width: 12%" class="text-center">No. Invoice</th>
+                                            <th style="width: 12%" class="text-center">Ref Number</th>
                                             <th style="width: 15%">Status</th>
                                             {{-- <th>Jumlah Total</th> --}}
                                             <th style="width: 15%">Dibuat Oleh</th>

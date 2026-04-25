@@ -369,8 +369,8 @@
             columns: [
                 { data: "customer_name", width: "15%" },
                 { data: "date", width: "13%" },
-                { data: "so_invoice_no", defaultContent: "-", width: "12%" },
-                { data: "so_ref_number", defaultContent: "-", width: "12%" },
+                { data: "so_invoice_no", defaultContent: "-", width: "12%", class: "text-center" },
+                { data: "so_ref_number", defaultContent: "-", width: "12%", class: "text-center" },
                 // { data: "total" },
                 { data: "status_text", width: "13%" },
                 { data: "created_by_name", defaultContent: "-", width: "13%" },
