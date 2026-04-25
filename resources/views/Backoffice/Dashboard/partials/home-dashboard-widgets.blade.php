@@ -107,6 +107,18 @@
         margin-bottom: 0.35rem;
     }
 
+    .dash-kpi-title .dash-info-tip {
+        margin-left: 0.25rem;
+        color: #94a3b8;
+        cursor: help;
+        font-size: 0.75rem;
+        vertical-align: baseline;
+    }
+
+    .dash-kpi-title .dash-info-tip:hover {
+        color: #1d4ed8;
+    }
+
     .dash-kpi-value {
         font-size: 1.375rem;
         font-weight: 700;
@@ -479,28 +491,36 @@
     <div class="row g-3 mb-3">
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Changelog</div>
+                <div class="dash-kpi-title">Changelog
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah permintaan perubahan (retur/penyesuaian) yang masih menunggu ACC Direktur sesuai periode."></i>
+                </div>
                 <div class="dash-kpi-value" id="kpi_changelog">0</div>
                 <div class="dash-kpi-sub">Retur &amp; penyesuaian kas · tunggu ACC</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Confirmation Log</div>
+                <div class="dash-kpi-title">Confirmation Log
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah transaksi baru (SO/PO/Produksi) yang menunggu konfirmasi/ACC pada periode aktif."></i>
+                </div>
                 <div class="dash-kpi-value" id="kpi_confirmation">0</div>
                 <div class="dash-kpi-sub">SO / PO / Produksi menunggu ACC</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Revision Log</div>
+                <div class="dash-kpi-title">Revision Log
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Jumlah transaksi berstatus ditolak (perlu perbaikan/input ulang) pada periode aktif."></i>
+                </div>
                 <div class="dash-kpi-value text-danger" id="kpi_revision">0</div>
                 <div class="dash-kpi-sub">Ditolak · perlu perbaikan</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Inventory Value</div>
+                <div class="dash-kpi-title">Inventory Value
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Rumus: Σ (Qty stok × harga/unit). Ditampilkan sebagai total nilai stok Produk + Bahan."></i>
+                </div>
                 <div class="dash-kpi-value" id="kpi_inventory_value">Rp 0</div>
                 <div class="dash-kpi-sub" id="kpi_inventory_split">Produk Rp 0 · Bahan Rp 0</div>
             </div>
@@ -510,28 +530,36 @@
     <div class="row g-3 mb-5">
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Sales Growth %</div>
+                <div class="dash-kpi-title">Sales Growth %
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Rumus: ((Qty periode ini - Qty periode sebelumnya) / Qty periode sebelumnya) × 100%."></i>
+                </div>
                 <div class="dash-kpi-value" id="kpi_sales_growth">0%</div>
                 <div class="dash-kpi-sub" id="kpi_sales_growth_sub">Output pengiriman vs periode sebelumnya</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Inventory Turnover</div>
+                <div class="dash-kpi-title">Inventory Turnover
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Rumus dashboard: (Qty keluar / stok saat ini), lalu diannualisasi: × (365 / jumlah hari periode)."></i>
+                </div>
                 <div class="dash-kpi-value" id="kpi_turnover">0</div>
                 <div class="dash-kpi-sub" id="kpi_turnover_sub">Keluar stok vs stok sekarang, annualized · sesuai filter</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Days Inventory Outstanding</div>
+                <div class="dash-kpi-title">Days Inventory Outstanding
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Rumus: DIO = 365 / Inventory Turnover (annualized). Makin kecil umumnya makin cepat perputaran stok."></i>
+                </div>
                 <div class="dash-kpi-value" id="kpi_dio">0 hari</div>
                 <div class="dash-kpi-sub" id="kpi_dio_sub">Dari turnover annualized<br>sesuai filter</div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
-                <div class="dash-kpi-title">Return Rate %</div>
+                <div class="dash-kpi-title">Return Rate %
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Rumus: (Qty retur / Qty transaksi terkait) × 100%. Ditampilkan terpisah untuk Produk dan Bahan."></i>
+                </div>
                 <div class="dash-kpi-value" id="kpi_return_rate">0%</div>
                 <div class="dash-kpi-sub" id="kpi_return_split">Produk: 0% · Bahan: 0%<br>sesuai filter</div>
             </div>
@@ -571,9 +599,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
+        <div class="col-12">
             <div class="dash-card dash-card-fill">
-                <h3 class="dash-card-title">Confirmation log</h3>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h3 class="dash-card-title mb-0">Confirmation log</h3>
+                    <select id="dash_confirmation_module_filter" class="form-select form-select-sm" style="min-width: 180px; max-width: 280px;">
+                        <option value="all">Semua modul</option>
+                    </select>
+                </div>
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
@@ -593,9 +626,14 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-6">
+        <div class="col-12">
             <div class="dash-card dash-card-fill">
-                <h3 class="dash-card-title">Revision log</h3>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h3 class="dash-card-title mb-0">Revision log</h3>
+                    <select id="dash_revision_module_filter" class="form-select form-select-sm" style="min-width: 180px; max-width: 280px;">
+                        <option value="all">Semua modul</option>
+                    </select>
+                </div>
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
@@ -623,17 +661,22 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-5">
-        <div class="col-xl-8">
+    <div class="row g-3 mb-3">
+        <div class="col-12">
             <div class="dash-card dash-card-fill">
-                <h3 class="dash-card-title-sub">Output pengiriman</h3>
-                <p class="dash-chart-caption mb-3" id="dash_chart_caption">Qty pengiriman &amp; retur per potongan waktu; garis pertumbuhan % mengikuti filter.</p>
+                <h3 class="dash-card-title-sub">Output pengiriman
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Pengiriman (qty): total qty terkirim per bucket waktu. Retur armada (qty): total qty retur per bucket. Growth%: ((Qty pengiriman bucket ini - bucket sebelumnya) / bucket sebelumnya) × 100%."></i>
+                </h3>
+                <p class="dash-chart-caption mb-3" id="dash_chart_caption">Ringkasan pengiriman per bulan: batang menunjukkan total qty pengiriman &amp; retur, garis menunjukkan growth %.</p>
                 <div id="dash_main_chart"></div>
             </div>
         </div>
-        <div class="col-xl-4">
+    </div>
+
+    <div class="row g-3 mb-5">
+        <div class="col-lg-6">
             <div class="dash-card mb-3">
-                <h3 class="dash-card-title-sub" id="dash_top_yearly_title">Top 5 · reset tahun (YTD)</h3>
+                <h3 class="dash-card-title-sub" id="dash_top_yearly_title">Top 5 pengiriman tahunan</h3>
                 <p class="dash-muted-note mb-2" id="dash_top_yearly_sub">—</p>
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
@@ -654,8 +697,10 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="col-lg-6">
             <div class="dash-card">
-                <h3 class="dash-card-title-sub" id="dash_top_accum_title">Top 5 · akumulasi</h3>
+                <h3 class="dash-card-title-sub" id="dash_top_accum_title">Top 5 pengiriman bulan ini</h3>
                 <p class="dash-muted-note mb-2" id="dash_top_accum_sub">—</p>
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
@@ -817,6 +862,24 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
                 <div class="modal-body px-3 pb-3 pt-2">
+                    <div class="row g-2 align-items-end mb-2">
+                        <div class="col-md-4">
+                            <label class="form-label small text-muted mb-1" for="dash_aging_kind_filter">Jenis</label>
+                            <select id="dash_aging_kind_filter" class="form-select form-select-sm">
+                                <option value="all">All</option>
+                                <option value="bahan">Bahan</option>
+                                <option value="product">Product</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label small text-muted mb-1" for="dash_aging_name_filter">Cari nama item (like)</label>
+                            <input type="text" id="dash_aging_name_filter" class="form-control form-control-sm" placeholder="Ketik nama item...">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted">Filter berlaku untuk data di bucket yang sedang dibuka.</small>
+                        <small class="text-muted" id="dash_aging_detail_count">0 item</small>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered mb-0 dash-modal-table">
                             <thead class="table-light">

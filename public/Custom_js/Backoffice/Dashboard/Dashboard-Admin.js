@@ -2,6 +2,13 @@
     var mainChart = null;
     var dashAgingDetailByBucket = {};
     var lastBahanPack = null;
+    var confirmationRowsAll = [];
+    var revisionRowsAll = [];
+    var confirmationFilterModule = "all";
+    var revisionFilterModule = "all";
+    var agingDetailItemsCurrent = [];
+    var agingDetailKindFilter = "all";
+    var agingDetailNameFilter = "";
     /** @type {'all'|'critical'|'warn'} */
     var bahanTableFilter = "all";
 
@@ -47,14 +54,37 @@
         }
     }
 
-    function openAgingDetailModal(bucket, statusLabel) {
-        var items = dashAgingDetailByBucket[bucket] || [];
-        $("#dashAgingDetailTitle").text("Detail stok · " + bucket + " · " + (statusLabel || ""));
+    function normalizeAgingKind(v) {
+        var txt = String(v || "").toLowerCase();
+        if (txt.indexOf("bahan") >= 0) return "bahan";
+        if (txt.indexOf("barang jadi") >= 0 || txt.indexOf("product") >= 0 || txt.indexOf("produk") >= 0) {
+            return "product";
+        }
+        return "other";
+    }
+
+    function getFilteredAgingDetailItems() {
+        var rows = agingDetailItemsCurrent || [];
+        var filtered = rows.filter(function (it) {
+            var kindOk =
+                agingDetailKindFilter === "all" ||
+                normalizeAgingKind(it.kind) === agingDetailKindFilter;
+            if (!kindOk) return false;
+            if (!agingDetailNameFilter) return true;
+            return String(it.name || "")
+                .toLowerCase()
+                .indexOf(agingDetailNameFilter) >= 0;
+        });
+        return filtered;
+    }
+
+    function renderAgingDetailTable() {
         var $bod = $("#dash_aging_detail_body");
         $bod.empty();
+        var items = getFilteredAgingDetailItems();
         if (!items.length) {
             $bod.append(
-                '<tr><td colspan="5" class="text-center text-muted">Tidak ada item di kelompok ini.</td></tr>'
+                '<tr><td colspan="5" class="text-center text-muted">Tidak ada item sesuai filter.</td></tr>'
             );
         } else {
             for (var i = 0; i < items.length; i++) {
@@ -78,6 +108,17 @@
                 );
             }
         }
+        $("#dash_aging_detail_count").text(fmtNum(items.length) + " item");
+    }
+
+    function openAgingDetailModal(bucket, statusLabel) {
+        agingDetailItemsCurrent = dashAgingDetailByBucket[bucket] || [];
+        agingDetailKindFilter = "all";
+        agingDetailNameFilter = "";
+        $("#dashAgingDetailTitle").text("Detail stok · " + bucket + " · " + (statusLabel || ""));
+        $("#dash_aging_kind_filter").val("all");
+        $("#dash_aging_name_filter").val("");
+        renderAgingDetailTable();
         var el = document.getElementById("dashAgingDetailModal");
         if (el && window.bootstrap && bootstrap.Modal) {
             bootstrap.Modal.getOrCreateInstance(el).show();
@@ -149,6 +190,57 @@
                     "</a></td></tr>"
             );
         }
+    }
+
+    function buildModuleKey(row) {
+        var v = String((row && (row.module_label || row.kind)) || "");
+        return v.trim().toLowerCase();
+    }
+
+    function getModuleFilterOptions(rows) {
+        var map = {};
+        var out = [];
+        rows = rows || [];
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i] || {};
+            var key = buildModuleKey(r);
+            if (!key || map[key]) continue;
+            map[key] = 1;
+            out.push({
+                value: key,
+                label: String(r.module_label || r.kind || "Lainnya"),
+            });
+        }
+        out.sort(function (a, b) {
+            return a.label.localeCompare(b.label, "id");
+        });
+        return out;
+    }
+
+    function renderModuleFilter(selectSelector, rows, selectedValue) {
+        var $el = $(selectSelector);
+        if (!$el.length) return;
+        var options = getModuleFilterOptions(rows);
+        $el.empty();
+        $el.append('<option value="all">Semua modul</option>');
+        for (var i = 0; i < options.length; i++) {
+            $el.append(
+                '<option value="' +
+                    escHtml(options[i].value) +
+                    '">' +
+                    escHtml(options[i].label) +
+                    "</option>"
+            );
+        }
+        $el.val(selectedValue || "all");
+    }
+
+    function filterRowsByModule(rows, moduleValue) {
+        rows = rows || [];
+        if (!moduleValue || moduleValue === "all") return rows;
+        return rows.filter(function (r) {
+            return buildModuleKey(r) === moduleValue;
+        });
     }
 
     function tryBrowserNotifyBahan(pack) {
@@ -350,13 +442,19 @@
         var growth = c.sales_growth_pct_by_bucket || [];
         var f = payload.filter || {};
         var cap =
-            "Periode: " +
+            "Ringkasan pengiriman per bulan · " +
             (f.label || "-") +
-            ". Batang: qty pengiriman & retur; garis: % pertumbuhan qty antar potongan waktu.";
+            ". Batang: total qty pengiriman & retur, garis: growth % dibanding periode sebelumnya.";
         $("#dash_chart_caption").text(cap);
 
         var opts = {
-            chart: { type: "line", height: 320, toolbar: { show: false }, zoom: { enabled: false } },
+            chart: {
+                type: "line",
+                height: 340,
+                toolbar: { show: false },
+                zoom: { enabled: false },
+                fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+            },
             series: [
                 { name: "Pengiriman (qty)", type: "column", data: c.sales_qty || [] },
                 { name: "Retur armada (qty)", type: "column", data: c.return_qty || [] },
@@ -368,12 +466,51 @@
                 },
             ],
             xaxis: { categories: c.labels || [] },
-            stroke: { curve: "smooth", width: [0, 0, 3] },
-            plotOptions: { bar: { columnWidth: "58%", borderRadius: 3 } },
+            stroke: { curve: "smooth", width: [0, 0, 4] },
+            markers: {
+                size: [0, 0, 4],
+                strokeColors: "#ffffff",
+                strokeWidth: 2,
+                hover: { sizeOffset: 2 },
+            },
+            plotOptions: {
+                bar: {
+                    columnWidth: "52%",
+                    borderRadius: 5,
+                    borderRadiusApplication: "end",
+                },
+            },
             colors: ["#2563eb", "#f97316", "#0f766e"],
             dataLabels: { enabled: false },
-            grid: { strokeDashArray: 4 },
-            legend: { position: "top", horizontalAlign: "right", fontSize: "11px" },
+            fill: {
+                type: ["gradient", "gradient", "solid"],
+                gradient: {
+                    shade: "light",
+                    type: "vertical",
+                    shadeIntensity: 0.25,
+                    gradientToColors: ["#60a5fa", "#fb923c"],
+                    inverseColors: false,
+                    opacityFrom: 0.95,
+                    opacityTo: 0.7,
+                    stops: [0, 100],
+                },
+            },
+            grid: {
+                strokeDashArray: 4,
+                borderColor: "#e2e8f0",
+                xaxis: { lines: { show: false } },
+            },
+            legend: {
+                position: "top",
+                horizontalAlign: "right",
+                fontSize: "12px",
+                markers: { radius: 12 },
+                itemMargin: { horizontal: 12, vertical: 6 },
+            },
+            states: {
+                hover: { filter: { type: "lighten", value: 0.06 } },
+                active: { filter: { type: "none", value: 0 } },
+            },
             yaxis: [
                 {
                     title: { text: "Qty" },
@@ -397,6 +534,7 @@
             tooltip: {
                 shared: true,
                 intersect: false,
+                theme: "light",
                 y: {
                     formatter: function (val, opts) {
                         if (opts.seriesIndex === 2) {
@@ -437,14 +575,22 @@
                     ch.changelog_items || [],
                     "Tidak ada changelog di periode ini."
                 );
+                confirmationRowsAll = ch.confirmation_items || [];
+                revisionRowsAll = ch.revision_items || [];
+                renderModuleFilter(
+                    "#dash_confirmation_module_filter",
+                    confirmationRowsAll,
+                    confirmationFilterModule
+                );
+                renderModuleFilter("#dash_revision_module_filter", revisionRowsAll, revisionFilterModule);
                 renderApprovalTable(
                     "#dash_confirmation_body",
-                    ch.confirmation_items || [],
+                    filterRowsByModule(confirmationRowsAll, confirmationFilterModule),
                     "Tidak ada item yang perlu konfirmasi."
                 );
                 renderApprovalTable(
                     "#dash_revision_body",
-                    ch.revision_items || [],
+                    filterRowsByModule(revisionRowsAll, revisionFilterModule),
                     "Tidak ada revisi di periode ini."
                 );
                 $("#kpi_inventory_value").text(fmtRp(data.inventory_value && data.inventory_value.total));
@@ -525,6 +671,15 @@
     }
 
     $(document).ready(function () {
+        if (window.bootstrap && bootstrap.Tooltip) {
+            var ttEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            for (var i = 0; i < ttEls.length; i++) {
+                bootstrap.Tooltip.getOrCreateInstance(ttEls[i], {
+                    container: "body",
+                    trigger: "hover focus",
+                });
+            }
+        }
         loadDashboard();
         $("#dash_refresh_btn").on("click", loadDashboard);
         $("#dash_filter_period").on("change", loadDashboard);
@@ -558,6 +713,32 @@
             updateBahanFilterBadgesActive();
             updateBahanFilterHint();
             renderBahanTableBody();
+        });
+        $("#dash_confirmation_module_filter").on("change", function () {
+            confirmationFilterModule = String($(this).val() || "all");
+            renderApprovalTable(
+                "#dash_confirmation_body",
+                filterRowsByModule(confirmationRowsAll, confirmationFilterModule),
+                "Tidak ada item yang perlu konfirmasi."
+            );
+        });
+        $("#dash_revision_module_filter").on("change", function () {
+            revisionFilterModule = String($(this).val() || "all");
+            renderApprovalTable(
+                "#dash_revision_body",
+                filterRowsByModule(revisionRowsAll, revisionFilterModule),
+                "Tidak ada revisi di periode ini."
+            );
+        });
+        $("#dash_aging_kind_filter").on("change", function () {
+            agingDetailKindFilter = String($(this).val() || "all");
+            renderAgingDetailTable();
+        });
+        $("#dash_aging_name_filter").on("input", function () {
+            agingDetailNameFilter = String($(this).val() || "")
+                .trim()
+                .toLowerCase();
+            renderAgingDetailTable();
         });
     });
 })();

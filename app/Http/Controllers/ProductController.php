@@ -11,6 +11,7 @@ use App\Models\ProductUnits;
 use App\Models\ProductVariant;
 use App\Models\ProductVariants;
 use App\Models\Supplies;
+use App\Models\DashboardChangeLog;
 use App\Models\SuppliesRelation;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesUnit;
@@ -380,6 +381,7 @@ class ProductController extends Controller
         $data = $req->all();
         $id = [];
         $id_r = [];
+        $before = Supplies::find($data["supplies_id"]);
         (new Supplies())->updateSupplies($data);
         foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
             $value['supplies_id'] = $data["supplies_id"];
@@ -397,6 +399,40 @@ class ProductController extends Controller
         SuppliesRelation::whereNotIn("sr_id", $id_r)->where('supplies_id', '=', $data["supplies_id"])->update(["status" => 0]);
         SuppliesVariant::where('supplies_id', '=', $data["supplies_id"])->whereNotIn("supplies_variant_id", $id)->update(["status" => 0]);
         (new SuppliesStock())->syncStock($data["supplies_id"]);
+        $after = Supplies::find($data["supplies_id"]);
+        $beforeName = trim((string) ($before->supplies_name ?? ''));
+        $afterName = trim((string) ($after->supplies_name ?? ($data['supplies_name'] ?? '')));
+        $changeTexts = [];
+        if ($beforeName !== '' && $afterName !== '' && strcasecmp($beforeName, $afterName) !== 0) {
+            $changeTexts[] = 'Nama: "'.$beforeName.'" -> "'.$afterName.'"';
+        }
+        $beforeAlert = (float) ($before->supplies_alert ?? 0);
+        $afterAlert = (float) ($after->supplies_alert ?? ($data['supplies_alert'] ?? 0));
+        if (abs($beforeAlert - $afterAlert) > 0.000001) {
+            $changeTexts[] = 'Batas min: '.$beforeAlert.' -> '.$afterAlert;
+        }
+        if ((int) ($before->supplies_default_unit ?? 0) !== (int) ($after->supplies_default_unit ?? ($data['supplies_default_unit'] ?? 0))) {
+            $changeTexts[] = 'Satuan default diperbarui';
+        }
+        $whatChanged = count($changeTexts) > 0
+            ? implode(' | ', $changeTexts)
+            : 'Master bahan diperbarui.';
+        $actor = session('user');
+        DashboardChangeLog::create([
+            'module_key' => 'master_bahan',
+            'module_label' => 'Master Bahan',
+            'reference' => 'BHN #'.(int) $data['supplies_id'],
+            'what_changed' => $whatChanged,
+            'summary' => $afterName !== '' ? $afterName : ($beforeName !== '' ? $beforeName : 'Bahan'),
+            'url' => url('supplies').'?supplies_id='.(int) $data['supplies_id'],
+            'url_label' => 'Buka master',
+            'created_by' => $actor ? ($actor->staff_id ?? null) : null,
+            'meta' => [
+                'supplies_id' => (int) $data['supplies_id'],
+                'before_name' => $beforeName,
+                'after_name' => $afterName,
+            ],
+        ]);
         return 1;
     }
 

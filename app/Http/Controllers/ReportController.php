@@ -1438,8 +1438,8 @@ class ReportController extends Controller
                 'label' => $start->format('d M Y') . ' - ' . $end->format('d M Y'),
                 'period_label' => $period === 'week' ? 'Minggu' : ($period === 'year' ? 'Tahun' : 'Bulan'),
                 'hint' => 'Pilih Minggu, Bulan, atau Tahun lalu Terapkan. Grafik, KPI penjualan & retur, log ACC, stock aging & rekomendasi produksi mengikuti periode tersebut. Nilai inventory = snapshot stok saat ini.',
-                'top_yearly_caption' => '1 Jan '.$end->year.' → '.$end->format('d M Y').' (reset per tahun, mengikuti filter)',
-                'top_accum_caption' => 'Akumulasi semua pengiriman s/d '.$end->format('d M Y'),
+                'top_yearly_caption' => '1 Jan '.$end->year.' → '.$end->format('d M Y'),
+                'top_accum_caption' => $end->copy()->startOfMonth()->format('d M Y').' → '.$end->format('d M Y').' (bulan ini)',
             ],
             'changelog' => $changeLog,
             'inventory_value' => $inventoryValue,
@@ -1660,6 +1660,9 @@ class ReportController extends Controller
             ->where('status', 1)
             ->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])
             ->count();
+        $changelogPending += (int) DB::table('dashboard_change_logs')
+            ->whereRaw('DATE(created_at) BETWEEN ? AND ?', [$s, $e])
+            ->count();
 
         // Revisi: ditolak — perlu input ulang
         $revision = 0;
@@ -1741,6 +1744,34 @@ class ReportController extends Controller
                 'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($cs->cs_notes ?? '') !== '') ? ' — '.(string) $cs->cs_notes : ''),
                 'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
                 'url_label' => 'Buka baris ini',
+            ];
+        }
+
+        $masterChangeRows = DB::table('dashboard_change_logs as dcl')
+            ->whereRaw('DATE(dcl.created_at) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('dcl.created_at')
+            ->limit($limit)
+            ->get([
+                'dcl.id',
+                'dcl.module_key',
+                'dcl.module_label',
+                'dcl.reference',
+                'dcl.what_changed',
+                'dcl.summary',
+                'dcl.url',
+                'dcl.url_label',
+                'dcl.created_at',
+            ]);
+        foreach ($masterChangeRows as $log) {
+            $changelog[] = [
+                'kind' => (string) ($log->module_key ?? 'master_change'),
+                'module_label' => (string) ($log->module_label ?? 'Master Data'),
+                'reference' => (string) ($log->reference ?? ('LOG #'.(int) ($log->id ?? 0))),
+                'date' => $log->created_at ? (string) $log->created_at : '',
+                'what_changed' => (string) ($log->what_changed ?? 'Perubahan data master.'),
+                'summary' => (string) ($log->summary ?? ''),
+                'url' => (string) ($log->url ?? url('dashboard')),
+                'url_label' => (string) ($log->url_label ?? 'Buka'),
             ];
         }
 
@@ -2077,14 +2108,15 @@ class ReportController extends Controller
     }
 
     /**
-     * Top 5 qty pengiriman: (1) reset tahun = 1 Jan tahun dari $end sampai akhir rentang filter;
-     * (2) akumulasi = semua SO s/d akhir rentang filter. Keduanya mengikuti tanggal akhir periode (minggu/bulan/tahun).
+     * Top 5 qty pengiriman: (1) tahunan = 1 Jan tahun dari $end sampai akhir rentang filter;
+     * (2) bulan ini = awal bulan dari $end sampai akhir rentang filter.
      *
-     * @return array{yearly: array, accumulative: array, range_yearly: array{start: string, end: string}, range_accum: array{end: string}}
+     * @return array{yearly: array, accumulative: array, range_yearly: array{start: string, end: string}, range_accum: array{start: string, end: string}}
      */
     private function dashboardTopProducts(\Carbon\Carbon $start, \Carbon\Carbon $end): array
     {
         $yearStart = $end->copy()->startOfYear()->toDateString();
+        $monthStart = $end->copy()->startOfMonth()->toDateString();
         $endDate = $end->toDateString();
 
         $build = function (?string $rangeStart, ?string $rangeEnd, bool $accumAllTime): array {
@@ -2116,9 +2148,9 @@ class ReportController extends Controller
 
         return [
             'yearly' => $build($yearStart, $endDate, false),
-            'accumulative' => $build(null, $endDate, true),
+            'accumulative' => $build($monthStart, $endDate, false),
             'range_yearly' => ['start' => $yearStart, 'end' => $endDate],
-            'range_accum' => ['end' => $endDate],
+            'range_accum' => ['start' => $monthStart, 'end' => $endDate],
         ];
     }
 
