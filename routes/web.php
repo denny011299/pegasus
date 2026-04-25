@@ -29,55 +29,59 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompleteDistrict', [AutocompleteController::class, 'autocompleteDistrict'])->name('autocompleteDistrict');
     Route::post('/autocompleteCountry', [AutocompleteController::class, 'autocompleteCountry'])->name('autocompleteCountry');
     Route::post('/autocompleteSubdistrict', [AutocompleteController::class, 'autocompleteSubdistrict'])->name('autocompleteSubdistrict');
+    Route::post('/autocompleteCategory', [AutocompleteController::class, 'autocompleteCategory'])->name('autocompleteCategory');
+    Route::post('/autocompleteUnit', [AutocompleteController::class, 'autocompleteUnit'])->name('autocompleteUnit');
+    Route::post('/autocompleteVariant', [AutocompleteController::class, 'autocompleteVariant'])->name('autocompleteVariant');
+    Route::post('/autocompleteBom', [AutocompleteController::class, 'autocompleteBom'])->name('autocompleteBom');
+    Route::post('/autocompleteProduct', [AutocompleteController::class, 'autocompleteProduct'])->name('autocompleteProduct');
+    Route::post('/autocompleteProductVariant', [AutocompleteController::class, 'autocompleteProductVariant'])->name('autocompleteProductVariant');
+    Route::post('/autocompleteProductVariants', [AutocompleteController::class, 'autocompleteProductVariants'])->name('autocompleteProductVariant');
+    Route::post('/autocompleteSupplies', [AutocompleteController::class, 'autocompleteSupplies'])->name('autocompleteSupplies');
+    Route::post('/autocompleteSuppliesVariant', [AutocompleteController::class, 'autocompleteSuppliesVariant'])->name('autocompleteSuppliesVariant');
+    Route::post('/autocompleteSuppliesVariantOnly', [AutocompleteController::class, 'autocompleteSuppliesVariantOnly'])->name('autocompleteSuppliesVariantOnly');
+    Route::post('/autocompleteCustomer', [AutocompleteController::class, 'autocompleteCustomer'])->name('autocompleteCustomer');
+    Route::post('/autocompleteSupplier', [AutocompleteController::class, 'autocompleteSupplier'])->name('autocompleteSupplier');
+    Route::post('/autocompleteStaff', [AutocompleteController::class, 'autocompleteStaff'])->name('autocompleteStaff');
+    Route::post('/autocompleteStaffSales', [AutocompleteController::class, 'autocompleteStaffSales'])->name('autocompleteStaffSales');
+    Route::post('/autocompleteCashCategory', [AutocompleteController::class, 'autocompleteCashCategory'])->name('autocompleteCashCategory');
+    Route::post('/autocompleteRole', [AutocompleteController::class, 'autocompleteRole'])->name('autocompleteRole');
+    Route::post('/autocompleteRekening', [AutocompleteController::class, 'autocompleteRekening'])->name('autocompleteRekening');
+    Route::post('/autocompletePO', [AutocompleteController::class, 'autocompletePO'])->name('autocompletePO');
+    Route::post('/autocompleteSO', [AutocompleteController::class, 'autocompleteSO'])->name('autocompleteSO');
 
     Route::middleware('check.access:Kategori|view')->group(function () {
-        Route::post('/autocompleteCategory', [AutocompleteController::class, 'autocompleteCategory'])->name('autocompleteCategory');
     });
     Route::middleware('check.access:Satuan|view')->group(function () {
-        Route::post('/autocompleteUnit', [AutocompleteController::class, 'autocompleteUnit'])->name('autocompleteUnit');
     });
     Route::middleware('check.access:Variasi|view')->group(function () {
-        Route::post('/autocompleteVariant', [AutocompleteController::class, 'autocompleteVariant'])->name('autocompleteVariant');
     });
     Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {
-        Route::post('/autocompleteBom', [AutocompleteController::class, 'autocompleteBom'])->name('autocompleteBom');
+        
     });
     Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {
-        Route::post('/autocompleteProduct', [AutocompleteController::class, 'autocompleteProduct'])->name('autocompleteProduct');
-        Route::post('/autocompleteProductVariant', [AutocompleteController::class, 'autocompleteProductVariant'])->name('autocompleteProductVariant');
-        Route::post('/autocompleteProductVariants', [AutocompleteController::class, 'autocompleteProductVariants'])->name('autocompleteProductVariant');
+        
     });
     Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {
-        Route::post('/autocompleteSupplies', [AutocompleteController::class, 'autocompleteSupplies'])->name('autocompleteSupplies');
-        Route::post('/autocompleteSuppliesVariant', [AutocompleteController::class, 'autocompleteSuppliesVariant'])->name('autocompleteSuppliesVariant');
-        Route::post('/autocompleteSuppliesVariantOnly', [AutocompleteController::class, 'autocompleteSuppliesVariantOnly'])->name('autocompleteSuppliesVariantOnly');
+        
     });
     Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {
-        Route::post('/autocompleteCustomer', [AutocompleteController::class, 'autocompleteCustomer'])->name('autocompleteCustomer');
+        
     });
     Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {
-        Route::post('/autocompleteSupplier', [AutocompleteController::class, 'autocompleteSupplier'])->name('autocompleteSupplier');
     });
     Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional,view')->group(function () {
-        Route::post('/autocompleteStaff', [AutocompleteController::class, 'autocompleteStaff'])->name('autocompleteStaff');
     });
     Route::middleware('check.access:Pengiriman|view')->group(function () {
-        Route::post('/autocompleteStaffSales', [AutocompleteController::class, 'autocompleteStaffSales'])->name('autocompleteStaffSales');
     });
     Route::middleware('check.access.any:Kategori Kas,Kas Operasional,Kas,view')->group(function () {
-        Route::post('/autocompleteCashCategory', [AutocompleteController::class, 'autocompleteCashCategory'])->name('autocompleteCashCategory');
     });
     Route::middleware('check.access:Peran & Perizinan|view')->group(function () {
-        Route::post('/autocompleteRole', [AutocompleteController::class, 'autocompleteRole'])->name('autocompleteRole');
     });
     Route::middleware('check.access.any:Bank Account,Hutang,view')->group(function () {
-        Route::post('/autocompleteRekening', [AutocompleteController::class, 'autocompleteRekening'])->name('autocompleteRekening');
     });
     Route::middleware('check.access:Pembelian|view')->group(function () {
-        Route::post('/autocompletePO', [AutocompleteController::class, 'autocompletePO'])->name('autocompletePO');
     });
     Route::middleware('check.access:Pengiriman|view')->group(function () {
-        Route::post('/autocompleteSO', [AutocompleteController::class, 'autocompleteSO'])->name('autocompleteSO');
     });
 
     Route::middleware('check.access:Kategori|view')->group(function () {
