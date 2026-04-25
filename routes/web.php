@@ -453,38 +453,42 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/generateReportStockAgingPdf', [ReportController::class, 'generateReportStockAgingPdf'])->name('generateReportStockAgingPdf');
     });
 
-    Route::middleware('check.access.any:Kas,Kas Operasional,view')->group(function () {
+    Route::middleware('check.access:Kas|view')->group(function () {
         Route::get('/cash', [ReportController::class, 'Cash'])->name('cash');
         Route::get('/getCash', [ReportController::class, 'getCash'])->name('getCash');
+        Route::get('/pettyCash', [ReportController::class, 'PettyCash'])->name('pettyCash');
+        Route::get('/getPettyCash', [ReportController::class, 'getPettyCash'])->name('getPettyCash');
+    });
+    Route::middleware('check.access:Kas Operasional|view')->group(function () {
         Route::get('/getCashAdmin', [ReportController::class, 'getCashAdmin'])->name('getCashAdmin');
         Route::get('/getCashGudang', [ReportController::class, 'getCashGudang'])->name('getCashGudang');
         Route::get('/getCashArmada', [ReportController::class, 'getCashArmada'])->name('getCashArmada');
         Route::get('/getCashSales', [ReportController::class, 'getCashSales'])->name('getCashSales');
-        Route::get('/pettyCash', [ReportController::class, 'PettyCash'])->name('pettyCash');
-        Route::get('/getPettyCash', [ReportController::class, 'getPettyCash'])->name('getPettyCash');
         Route::get('/operationalCash', [ReportController::class, 'OperationalCash'])->name('operationalCash');
     });
-    Route::middleware('check.access.any:Kas,Kas Operasional,create')->group(function () {
+    Route::middleware('check.access:Kas|create')->group(function () {
         Route::post('/insertCash', [ReportController::class, 'insertCash'])->name('insertCash');
+        Route::post('/insertPettyCash', [ReportController::class, 'insertPettyCash'])->name('insertPettyCash');
+    });
+    Route::middleware('check.access:Kas Operasional|create')->group(function () {
         Route::post('/insertCashAdmin', [ReportController::class, 'insertCashAdmin'])->name('insertCashAdmin');
         Route::post('/insertCashGudang', [ReportController::class, 'insertCashGudang'])->name('insertCashGudang');
         Route::post('/insertCashArmada', [ReportController::class, 'insertCashArmada'])->name('insertCashArmada');
         Route::post('/insertCashSales', [ReportController::class, 'insertCashSales'])->name('insertCashSales');
-        Route::post('/insertPettyCash', [ReportController::class, 'insertPettyCash'])->name('insertPettyCash');
     });
-    Route::middleware('check.access.any:Kas,Kas Operasional,edit')->group(function () {
+    Route::middleware('check.access:Kas Operasional|edit')->group(function () {
         Route::post('/updateCashAdmin', [ReportController::class, 'updateCashAdmin'])->name('updateCashAdmin');
         Route::post('/updateCashGudang', [ReportController::class, 'updateCashGudang'])->name('updateCashGudang');
         Route::post('/updateCashArmada', [ReportController::class, 'updateCashArmada'])->name('updateCashArmada');
         Route::post('/updateCashSales', [ReportController::class, 'updateCashSales'])->name('updateCashSales');
     });
-    Route::middleware('check.access.any:Kas,Kas Operasional,delete')->group(function () {
+    Route::middleware('check.access:Kas Operasional|delete')->group(function () {
         Route::post('/deleteCashAdmin', [ReportController::class, 'deleteCashAdmin'])->name('deleteCashAdmin');
         Route::post('/deleteCashGudang', [ReportController::class, 'deleteCashGudang'])->name('deleteCashGudang');
         Route::post('/deleteCashArmada', [ReportController::class, 'deleteCashArmada'])->name('deleteCashArmada');
         Route::post('/deleteCashSales', [ReportController::class, 'deleteCashSales'])->name('deleteCashSales');
     });
-    Route::middleware('check.access.any:Kas,Kas Operasional,others')->group(function () {
+    Route::middleware('check.access:Kas Operasional|others')->group(function () {
         Route::post('/acceptCashAdmin', [ReportController::class, 'acceptCashAdmin'])->name('acceptCashAdmin');
         Route::post('/declineCashAdmin', [ReportController::class, 'declineCashAdmin'])->name('declineCashAdmin');
         Route::post('/acceptCashGudang', [ReportController::class, 'acceptCashGudang'])->name('acceptCashGudang');

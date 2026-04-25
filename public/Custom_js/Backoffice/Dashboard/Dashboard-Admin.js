@@ -79,6 +79,13 @@
         return filtered;
     }
 
+    function getAgingKindBadgeClass(kind) {
+        var normalized = normalizeAgingKind(kind);
+        if (normalized === "bahan") return "dash-kind-badge dash-kind-badge-bahan";
+        if (normalized === "product") return "dash-kind-badge dash-kind-badge-product";
+        return "dash-kind-badge dash-kind-badge-other";
+    }
+
     function renderAgingDetailTable() {
         var $bod = $("#dash_aging_detail_body");
         $bod.empty();
@@ -91,19 +98,22 @@
             for (var i = 0; i < items.length; i++) {
                 var it = items[i];
                 var u = it.unit ? " " + escHtml(it.unit) : "";
+                var kindText = escHtml(it.kind || "-");
                 $bod.append(
-                    "<tr><td>" +
-                        escHtml(it.kind || "-") +
-                        '</td><td title="' +
+                    '<tr><td class="dash-aging-kind-cell"><span class="' +
+                        getAgingKindBadgeClass(it.kind) +
+                        '">' +
+                        kindText +
+                        '</span></td><td class="dash-aging-item-cell" title="' +
                         escHtml(it.name || "") +
                         '">' +
                         escHtml(it.name || "-") +
-                        '</td><td class="text-end text-nowrap">' +
+                        '</td><td class="dash-aging-qty-cell text-end text-nowrap">' +
                         fmtNum(it.qty) +
                         u +
-                        '</td><td class="text-end">' +
+                        '</td><td class="dash-aging-value-cell text-end">' +
                         fmtRp(it.value) +
-                        '</td><td class="text-end">' +
+                        '</td><td class="dash-aging-age-cell text-end">' +
                         fmtNum(it.age_days) +
                         "</td></tr>"
                 );
@@ -440,12 +450,11 @@
             mainChart = null;
         }
         var c = payload.chart || {};
-        var growth = c.sales_growth_pct_by_bucket || [];
         var f = payload.filter || {};
         var cap =
             "Ringkasan bulanan · " +
             (f.label || "-") +
-            ". Batang: total qty pengiriman & retur, garis: growth % dibanding bulan/periode sebelumnya.";
+            ". Batang: total qty pengiriman dan retur per periode.";
         $("#dash_chart_caption").text(cap);
 
         var opts = {
@@ -459,17 +468,11 @@
             series: [
                 { name: "Pengiriman (qty)", type: "column", data: c.sales_qty || [] },
                 { name: "Retur armada (qty)", type: "column", data: c.return_qty || [] },
-                {
-                    name: "Growth % vs potongan sebelumnya",
-                    type: "line",
-                    data: growth,
-                    yAxisIndex: 1,
-                },
             ],
             xaxis: { categories: c.labels || [] },
-            stroke: { curve: "smooth", width: [0, 0, 4] },
+            stroke: { curve: "smooth", width: [0, 0] },
             markers: {
-                size: [0, 0, 4],
+                size: [0, 0],
                 strokeColors: "#ffffff",
                 strokeWidth: 2,
                 hover: { sizeOffset: 2 },
@@ -481,10 +484,10 @@
                     borderRadiusApplication: "end",
                 },
             },
-            colors: ["#2563eb", "#f97316", "#0f766e"],
+            colors: ["#2563eb", "#f97316"],
             dataLabels: { enabled: false },
             fill: {
-                type: ["gradient", "gradient", "solid"],
+                type: ["gradient", "gradient"],
                 gradient: {
                     shade: "light",
                     type: "vertical",
@@ -512,36 +515,20 @@
                 hover: { filter: { type: "lighten", value: 0.06 } },
                 active: { filter: { type: "none", value: 0 } },
             },
-            yaxis: [
-                {
-                    title: { text: "Qty" },
-                    labels: {
-                        formatter: function (v) {
-                            return fmtNum(v);
-                        },
+            yaxis: {
+                title: { text: "Qty" },
+                labels: {
+                    formatter: function (v) {
+                        return fmtNum(v);
                     },
                 },
-                {
-                    opposite: true,
-                    title: { text: "Growth %" },
-                    labels: {
-                        formatter: function (v) {
-                            if (v === null || v === undefined || isNaN(v)) return "";
-                            return fmtNum(v) + "%";
-                        },
-                    },
-                },
-            ],
+            },
             tooltip: {
                 shared: true,
                 intersect: false,
                 theme: "light",
                 y: {
-                    formatter: function (val, opts) {
-                        if (opts.seriesIndex === 2) {
-                            if (val === null || val === undefined || isNaN(val)) return "—";
-                            return fmtNum(val) + "%";
-                        }
+                    formatter: function (val) {
                         return fmtNum(val);
                     },
                 },

@@ -366,10 +366,91 @@
         max-width: 960px;
     }
 
+    .dash-modal-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 10px;
+        overflow: hidden;
+        background: #fff;
+    }
+
     .dash-modal-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        background: #f8fafc;
+        color: #475569;
         font-size: 0.6875rem;
         text-transform: uppercase;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+        padding: 0.62rem 0.72rem;
+        white-space: nowrap;
+    }
+
+    .dash-modal-table tbody td {
+        padding: 0.56rem 0.72rem;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        color: #1e293b;
+        vertical-align: middle;
+    }
+
+    .dash-modal-table tbody tr:nth-child(even) td {
+        background: #fcfdff;
+    }
+
+    .dash-modal-table tbody tr:hover td {
+        background: #eef6ff;
+    }
+
+    .dash-modal-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .dash-aging-item-cell {
+        max-width: 25rem;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        font-weight: 500;
+    }
+
+    .dash-aging-qty-cell,
+    .dash-aging-value-cell,
+    .dash-aging-age-cell {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dash-kind-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 0.18rem 0.58rem;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        line-height: 1.35;
+        border: 1px solid transparent;
+        white-space: nowrap;
+    }
+
+    .dash-kind-badge-bahan {
+        color: #92400e;
+        background: #fffbeb;
+        border-color: #fcd34d;
+    }
+
+    .dash-kind-badge-product {
+        color: #1e3a8a;
+        background: #eff6ff;
+        border-color: #bfdbfe;
+    }
+
+    .dash-kind-badge-other {
+        color: #334155;
+        background: #f1f5f9;
+        border-color: #cbd5e1;
     }
 
     #dash_overstock_list {
@@ -665,9 +746,9 @@
         <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title-sub">Output pengiriman
-                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Pengiriman (qty): total qty terkirim per bucket waktu. Retur armada (qty): total qty retur per bucket. Growth%: ((Qty pengiriman bucket ini - bucket sebelumnya) / bucket sebelumnya) × 100%."></i>
+                    <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Pengiriman (qty): total qty terkirim per bucket waktu. Retur armada (qty): total qty retur per bucket."></i>
                 </h3>
-                <p class="dash-chart-caption mb-3" id="dash_chart_caption">Ringkasan bulanan: batang menunjukkan total qty pengiriman &amp; retur, garis menunjukkan growth %.</p>
+                <p class="dash-chart-caption mb-3" id="dash_chart_caption">Ringkasan bulanan: batang menunjukkan total qty pengiriman &amp; retur.</p>
                 <div id="dash_main_chart"></div>
             </div>
         </div>
@@ -861,7 +942,7 @@
                     <h5 class="modal-title fw-semibold" style="font-size: 1rem;" id="dashAgingDetailTitle">Detail stok</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup"></button>
                 </div>
-                <div class="modal-body px-3 pb-3 pt-2">
+                <div class="modal-body p-4">
                     <div class="row g-2 align-items-end mb-2">
                         <div class="col-md-4">
                             <label class="form-label small text-muted mb-1" for="dash_aging_kind_filter">Jenis</label>
@@ -876,7 +957,7 @@
                             <input type="text" id="dash_aging_name_filter" class="form-control form-control-sm" placeholder="Ketik nama item...">
                         </div>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2 my-3">
                         <small class="text-muted">Filter berlaku untuk data di bucket yang sedang dibuka.</small>
                         <small class="text-muted" id="dash_aging_detail_count">0 item</small>
                     </div>

@@ -39,7 +39,11 @@ class RoleAccess
             return true;
         }
 
-        $entry = self::collect($user)->firstWhere('name', $module);
+        $moduleNeedle = strtolower(trim($module));
+        $entry = self::collect($user)->first(function ($item) use ($moduleNeedle) {
+            $name = strtolower(trim((string) ($item->name ?? '')));
+            return $name === $moduleNeedle;
+        });
         if (!$entry) {
             return false;
         }

@@ -63,7 +63,6 @@ class ReportController extends Controller
         $fmtRp = static function (float $n): string {
             return 'Rp ' . number_format($n, 0, ',', '.');
         };
-
         $fallback = static function (string $title, string $subtitle, string $href): array {
             return [
                 'title' => $title,
@@ -1699,6 +1698,22 @@ class ReportController extends Controller
         $fmtRp = static function (float $n): string {
             return 'Rp ' . number_format($n, 0, ',', '.');
         };
+        $fmtSoReference = static function ($soNumber, $soInvoiceNo = null): string {
+            $inv = trim((string) ($soInvoiceNo ?? ''));
+            if ($inv !== '') {
+                return preg_match('/^INV/i', $inv) ? $inv : ('INV'.$inv);
+            }
+
+            $so = trim((string) ($soNumber ?? ''));
+            if ($so === '') {
+                return '-';
+            }
+            if (preg_match('/^SO(?=\d)/i', $so)) {
+                return (string) preg_replace('/^SO/i', 'INV', $so, 1);
+            }
+
+            return 'INV '.$so;
+        };
 
         $changelog = [];
 
@@ -1793,11 +1808,11 @@ class ReportController extends Controller
             $confirmation[] = [
                 'kind' => 'pengiriman',
                 'module_label' => 'Pengiriman (SO)',
-                'reference' => (string) ($so->so_number ?? '-'),
+                'reference' => $fmtSoReference($so->so_number ?? null, $so->so_invoice_no ?? null),
                 'date' => $so->so_date ? (string) $so->so_date : '',
                 'what_changed' => 'Pengiriman baru menunggu konfirmasi / ACC.',
                 'summary' => 'Total '.$fmtRp((float) ($so->so_total ?? 0)).(($so->so_invoice_no ?? '') !== '' ? ' · Inv '.(string) $so->so_invoice_no : ''),
-                'url' => url('salesOrderDetail/'.$so->so_id),
+                'url' => url('salesOrder').'?confirm_so_id='.(int) $so->so_id,
                 'url_label' => 'Lihat & ACC',
             ];
         }
@@ -1856,13 +1871,13 @@ class ReportController extends Controller
             ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])
             ->orderByDesc('created_at')
             ->limit($limit)
-            ->get(['so_id', 'so_number', 'so_date']);
+            ->get(['so_id', 'so_number', 'so_invoice_no', 'so_date']);
 
         foreach ($soRev as $so) {
             $revision[] = [
                 'kind' => 'pengiriman',
                 'module_label' => 'Pengiriman (SO)',
-                'reference' => (string) ($so->so_number ?? '-'),
+                'reference' => $fmtSoReference($so->so_number ?? null, $so->so_invoice_no ?? null),
                 'date' => $so->so_date ? (string) $so->so_date : '',
                 'what_changed' => 'Pengiriman ditolak — perlu perbaikan / input ulang.',
                 'summary' => 'Status ditolak',
@@ -2251,7 +2266,7 @@ class ReportController extends Controller
             while ($c->lte($end)) {
                 $wStart = $c->copy()->max($start);
                 $wEnd = $c->copy()->endOfWeek()->min($end);
-                $labels[] = 'W' . $wStart->format('W');
+                $labels[] = $wStart->format('d M') . ' - ' . $wEnd->format('d M');
                 $ranges[] = [$wStart->copy()->startOfDay(), $wEnd->copy()->endOfDay()];
                 $c->addWeek();
             }

@@ -4,13 +4,17 @@
     var list_photo;
     var revisionSoId = null;
     var revisionAutoOpened = false;
+    var confirmSoId = null;
+    var confirmAutoOpened = false;
     autocompleteCustomer('#so_customer', "#add_sales_order .modal-content");
     autocompleteStaffSales('#sales_id', "#add_sales_order .modal-content");
     autocompleteProductVariantOnly('#so_sku', "#add_sales_order .modal-content");
     $(document).ready(function(){
         var query = new URLSearchParams(window.location.search);
         var qRevId = parseInt(query.get("rev_so_id"), 10);
+        var qConfirmId = parseInt(query.get("confirm_so_id"), 10);
         if (!isNaN(qRevId) && qRevId > 0) revisionSoId = qRevId;
+        if (!isNaN(qConfirmId) && qConfirmId > 0) confirmSoId = qConfirmId;
         initSalesOrderProductInput();
         inisialisasi();
         refreshSalesOrder();
@@ -21,6 +25,14 @@
         var url = new URL(window.location.href);
         if (!url.searchParams.has("rev_so_id")) return;
         url.searchParams.delete("rev_so_id");
+        window.history.replaceState({}, "", url.toString());
+    }
+
+    function cleanConfirmQueryParam() {
+        if (!window.history || !window.history.replaceState) return;
+        var url = new URL(window.location.href);
+        if (!url.searchParams.has("confirm_so_id")) return;
+        url.searchParams.delete("confirm_so_id");
         window.history.replaceState({}, "", url.toString());
     }
 
@@ -352,6 +364,27 @@
                             openSalesOrderRevisionModal(target);
                         } else if (hasAccessAction("Pengiriman", "view")) {
                             notifikasi('error', "Akses Ditolak", "Role ini tidak punya akses edit untuk revisi pengiriman.");
+                        }
+                    }
+                }
+
+                if (!confirmAutoOpened && confirmSoId) {
+                    var targetConfirm = e.find(function (row) {
+                        return parseInt(row.so_id, 10) === confirmSoId;
+                    });
+                    if (targetConfirm) {
+                        confirmAutoOpened = true;
+                        cleanConfirmQueryParam();
+                        if ((parseInt(targetConfirm.status, 10) === 1) && hasAccessAction("Pengiriman", "others")) {
+                            showModalKonfirmasi(
+                                "Apakah yakin ingin Approve pengiriman ini?",
+                                "btn-accept-so"
+                            );
+                            $('#btn-accept-so').attr("so_id", targetConfirm.so_id);
+                            $('#btn-accept-so').data("fallback_products", getFallbackProductNames(targetConfirm.items || []));
+                            $('#btn-accept-so').html("Konfirmasi");
+                        } else if (hasAccessAction("Pengiriman", "view")) {
+                            notifikasi('error', "Akses Ditolak", "Role ini tidak punya akses konfirmasi pengiriman.");
                         }
                     }
                 }
