@@ -77,7 +77,9 @@ class StockOpnameDetailBahan extends Model
         })->filter();
 
         // Group by stob_id → ['stob_id_1' => [...], 'stob_id_2' => [...]]
-        return $mapped->groupBy('stob_id');
+        return $mapped->groupBy('stob_id')->map(function ($group) {
+            return $group->sortBy('stobd_id')->values();
+        });
     }
 
     /**

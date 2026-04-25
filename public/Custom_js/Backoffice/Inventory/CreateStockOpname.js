@@ -12,6 +12,11 @@
             console.log(yesterday);
             $('#tanggal').val(yesterday);
             $('#status').val('-');
+
+            if(sessionUser) {
+                let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
+                $('#penanggung-jawab').empty().append(option).attr('disabled', false).trigger('change');
+            }
         } else {
             console.log(data);
             $('#tanggal').val(data.sto_date);

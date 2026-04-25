@@ -84,7 +84,9 @@ class StockOpnameDetail extends Model
             return $temp;
         })->filter();
 
-        return $mapped->groupBy('sto_id');
+        return $mapped->groupBy('sto_id')->map(function ($group) {
+            return $group->sortBy('stod_id')->values();
+        });
     }
 
     /**

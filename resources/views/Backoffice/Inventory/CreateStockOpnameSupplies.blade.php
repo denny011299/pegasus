@@ -153,6 +153,7 @@
         var public = "{{ asset('') }}";    
         var data = @json($data);
         var mode = @json($mode);
+        var sessionUser = @json(Session::get('user'));
     </script>
     <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js')}}?v=1"></script>
 @endsection
