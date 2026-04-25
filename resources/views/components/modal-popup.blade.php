@@ -775,6 +775,14 @@
                                     </div>
                                     <div class="col-lg-4 col-md-12 col-12 pe-0">
                                         <div class="input-block mb-3">
+                                            <label>Ref Number</label>
+                                            <input id="so_ref_number" class="form-control" placeholder="Input Ref Number">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 row pe-0">
+                                    <div class="col-lg-4 col-md-12 col-12 pe-0">
+                                        <div class="input-block mb-3">
                                             <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
                                                 <span id="check_foto" style="display: none" class="ms-2">
                                                     <div class="d-flex g-3">

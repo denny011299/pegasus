@@ -18,6 +18,7 @@ class SalesOrder extends Model
             "so_number" => null,
             "so_customer" => null,
             "so_id" => null,
+            "so_ref_number" => null,
         ], $data);
 
         $result = SalesOrder::where("status", ">=", 1);
@@ -25,6 +26,8 @@ class SalesOrder extends Model
         if ($data["so_id"]) $result->where("so_id", "=", $data["so_id"]);
 
         if ($data["so_number"]) $result->where("so_number", "like", "%".$data["so_number"]."%");
+
+        if ($data["so_ref_number"]) $result->where("so_ref_number", "like", "%".$data["so_ref_number"]."%");
         
         if ($data["so_customer"]) {
             $result->where("so_customer", "like", "%".$data["so_customer"]."%");
@@ -65,6 +68,7 @@ class SalesOrder extends Model
         $t->so_cost  = 0;
         $t->so_img  = $data["so_img"];
         $t->so_invoice_no  = $this->generateInvoiceSalesOrderID();
+        $t->so_ref_number = trim((string) ($data["so_ref_number"] ?? '')) ?: null;
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = null;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
@@ -116,6 +120,7 @@ class SalesOrder extends Model
         $t->so_discount  = 0;
         $t->so_cost  = 0;
         $t->so_invoice_no  = $data["so_invoice_no"];
+        $t->so_ref_number = trim((string) ($data["so_ref_number"] ?? '')) ?: null;
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = null;
         // Jika sebelumnya ditolak, update ini dianggap input ulang dan kembali ke antrean ACC.

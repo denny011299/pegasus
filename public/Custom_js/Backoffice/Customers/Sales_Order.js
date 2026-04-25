@@ -72,6 +72,7 @@
         if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date);
         $('#so_invoice_no').val(data.so_invoice_no);
+        $('#so_ref_number').val(data.so_ref_number || "");
         $('#so_payment').val(data.so_payment);
         $('#bukti').val(data.so_img);
 
@@ -108,6 +109,91 @@
         $('#add_sales_order').attr("so_id", data.so_id);
         $('#add_sales_order').attr("so_number", data.so_number);
         $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
+        $('#add_sales_order').attr("so_ref_number", data.so_ref_number || "");
+    }
+
+    function openSalesOrderDetailModal(data) {
+        var img = [];
+        try {
+            img = JSON.parse(data.so_img || "[]");
+        } catch (err) {
+            img = [];
+        }
+
+        products = [];
+        mode = 3;
+        $('#add_sales_order .modal-title').html("Detail Pengiriman");
+        $('#add_sales_order input').empty().val("");
+        $('#so_customer, #sales_id').empty();
+        $('.form-select').not("#so_payment").empty();
+        $('#btn_bukti_foto').hide();
+        $('#btn-lihat-bukti').show();
+
+        list_photo = img;
+        if (img.length > 0) {
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
+            $('#check_foto').show();
+            $('#jumlahFoto').html(list_photo.length);
+        } else {
+            $('#check_foto').hide();
+        }
+
+        $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`).attr("disabled", true);
+        if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
+        $('#so_date').val(data.so_date).attr("disabled", true);
+        $('#so_invoice_no').val(data.so_invoice_no).attr("disabled", true);
+        $('#so_ref_number').val(data.so_ref_number || "").attr("disabled", true);
+        $('#so_payment').val(data.so_payment).attr("disabled", true);
+        $('#bukti').val(data.so_img);
+
+        (data.items || []).forEach(e => {
+            products.push({
+                "sod_id" : e.sod_id,
+                "product_variant_id" : e.product_variant_id,
+                "product_name" : e.sod_nama,
+                "product_variant_name" : e.sod_variant,
+                "product_variant_sku" : e.sod_sku,
+                "so_qty" : e.sod_qty,
+                "product_variant_price" : e.sod_harga,
+                "so_subtotal" : e.sod_subtotal,
+                "unit_name" : e.unit_name,
+                "unit_id" : e.unit_id,
+                "pr_unit" : e.pr_unit
+            });
+        });
+        refreshTableProduct();
+        $('.deleteRow').hide();
+        $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
+        $('#btn-add-product-so').hide();
+
+        if (data.status == 1) {
+            if (hasAccessAction("Pengiriman", "others")) {
+                $('.btn_acc, .btn_decline').show();
+            } else {
+                $('.btn_acc, .btn_decline').hide();
+            }
+            $('.btn_acc').attr('so_id', data.so_id);
+            $('.btn_acc').data('items', data.items);
+            $('.btn_decline').attr('so_id', data.so_id);
+            $('.btn_decline').data('items', data.items);
+        } else {
+            $('.btn_acc, .btn_decline').hide();
+        }
+
+        $('#so_ppn').trigger('blur');
+        $('#so_discount').trigger('blur');
+        $('#so_cost').trigger('blur');
+
+        $('.is-invalid').removeClass('is-invalid');
+        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman").hide();
+        $('#add_sales_order').modal("show");
+        $('#add_sales_order').attr("so_id", data.so_id);
+        $('#add_sales_order').attr("so_number", data.so_number);
+        $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
+        $('#add_sales_order').attr("so_ref_number", data.so_ref_number || "");
     }
 
     function initSalesOrderProductInput() {
@@ -284,11 +370,12 @@
                 { data: "customer_name", width: "15%" },
                 { data: "date", width: "13%" },
                 { data: "so_invoice_no", defaultContent: "-", width: "12%" },
+                { data: "so_ref_number", defaultContent: "-", width: "12%" },
                 // { data: "total" },
-                { data: "status_text", width: "15%" },
-                { data: "created_by_name", defaultContent: "-", width: "15%" },
-                { data: "acc_by_name", defaultContent: "-", width: "15%" },
-                { data: "action", class: "text-center align-middle", width: "15%" },
+                { data: "status_text", width: "13%" },
+                { data: "created_by_name", defaultContent: "-", width: "13%" },
+                { data: "acc_by_name", defaultContent: "-", width: "13%" },
+                { data: "action", class: "text-center align-middle", width: "12%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -311,6 +398,7 @@
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].so_date).format('D MMM YYYY');
+                    e[i].so_ref_number = (e[i].so_ref_number || "").trim() || "-";
                     // e[i].total = `Rp ${formatRupiah(e[i].so_total)}`;
                     var soa = "";
                     if (hasAccessAction("Pengiriman", "view")) {
@@ -375,16 +463,10 @@
                     if (targetConfirm) {
                         confirmAutoOpened = true;
                         cleanConfirmQueryParam();
-                        if ((parseInt(targetConfirm.status, 10) === 1) && hasAccessAction("Pengiriman", "others")) {
-                            showModalKonfirmasi(
-                                "Apakah yakin ingin Approve pengiriman ini?",
-                                "btn-accept-so"
-                            );
-                            $('#btn-accept-so').attr("so_id", targetConfirm.so_id);
-                            $('#btn-accept-so').data("fallback_products", getFallbackProductNames(targetConfirm.items || []));
-                            $('#btn-accept-so').html("Konfirmasi");
-                        } else if (hasAccessAction("Pengiriman", "view")) {
-                            notifikasi('error', "Akses Ditolak", "Role ini tidak punya akses konfirmasi pengiriman.");
+                        if (hasAccessAction("Pengiriman", "view")) {
+                            openSalesOrderDetailModal(targetConfirm);
+                        } else {
+                            notifikasi('error', "Akses Ditolak", "Role ini tidak punya akses lihat pengiriman.");
                         }
                     }
                 }
@@ -551,6 +633,7 @@
             sales_id: $('#sales_id').val(),
             so_date: $('#so_date').val(),
             so_invoice_no: $('#so_invoice_no').val(),
+            so_ref_number: $('#so_ref_number').val(),
             so_total: 0,
             products: JSON.stringify(products),
             
@@ -562,6 +645,7 @@
             param.so_id = $('#add_sales_order').attr("so_id");
             param.so_number = $('#add_sales_order').attr("so_number");
             param.so_invoice_no = $('#add_sales_order').attr("so_invoice_no");
+            param.so_ref_number = $('#add_sales_order').attr("so_ref_number") || "";
         }
         else{
             param.so_img = $('#bukti').val();
@@ -657,6 +741,7 @@
         // $('#so_ppn').val(data.so_ppn)
         // $('#so_cost').val(data.so_cost)
         $('#so_invoice_no').val(data.so_invoice_no)
+        $('#so_ref_number').val(data.so_ref_number || "")
         $('#so_payment').val(data.so_payment)
         $('#bukti').val(data.so_img)
         data.items.forEach(e => {
@@ -691,89 +776,12 @@
         $('#add_sales_order').attr("so_id", data.so_id);
         $('#add_sales_order').attr("so_number", data.so_number);
         $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
+        $('#add_sales_order').attr("so_ref_number", data.so_ref_number || "");
     });
 
     $(document).on("click",".btn_view",function(){
         var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        console.log(data);
-        products = [];
-        mode=3;
-        $('#add_sales_order .modal-title').html("Detail Pengiriman");
-        // reset
-        $('#add_sales_order input').empty().val("");
-        $('#so_customer, #sales_id').empty();
-        // $('#so_discount').val(0).trigger('blur');
-        // $('#so_cost').val(0).trigger('blur');
-        // $('#so_ppn').val(0).trigger('blur');
-        $('.form-select').not("#so_payment").empty();
-        
-        $('#btn_bukti_foto').hide();
-        $('#btn-lihat-bukti').show();
-        
-        var img = JSON.parse(data.so_img);
-        list_photo = img;
-        console.log(list_photo);
-        
-        $('#modalViewPhoto .modal-footer').show();
-        $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
-        $('#fotoProduksiImage').attr('index', 0);
-        $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
-        $('#check_foto').show();
-        $('#jumlahFoto').html(list_photo.length);
-
-        $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`).attr("disabled", true);
-        if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
-        $('#so_date').val(data.so_date).attr("disabled", true);
-        // $('#so_discount').val(data.so_discount)
-        // $('#so_ppn').val(data.so_ppn)
-        // $('#so_cost').val(data.so_cost)
-        $('#so_invoice_no').val(data.so_invoice_no).attr("disabled", true)
-        $('#so_payment').val(data.so_payment).attr("disabled", true)
-        $('#bukti').val(data.so_img)
-        data.items.forEach(e => {
-            var temp = {
-                "sod_id" : e.sod_id,
-                "product_variant_id" : e.product_variant_id,
-                "product_name" : e.sod_nama,
-                "product_variant_name" : e.sod_variant,
-                "product_variant_sku" : e.sod_sku,
-                "so_qty" : e.sod_qty,
-                "product_variant_price" : e.sod_harga,
-                "so_subtotal" : e.sod_subtotal,
-                "unit_name" : e.unit_name,
-                "unit_id" : e.unit_id,
-                "pr_unit" : e.pr_unit
-            };
-            products.push(temp);
-        });
-        refreshTableProduct();
-        $('.deleteRow').hide();
-        $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
-        $('#btn-add-product-so').hide();
-        if (data.status == 1){
-            if (hasAccessAction("Pengiriman", "others")){
-                $('.btn_acc, .btn_decline').show();
-            }
-            $('.btn_acc').attr('so_id', data.so_id);
-            $('.btn_acc').data('items', data.items);
-            $('.btn_decline').attr('so_id', data.so_id);
-            $('.btn_decline').data('items', data.items);
-        } else {
-            $('.btn_acc, .btn_decline').hide();
-        }
-
-        // update summary
-        $('#so_ppn').trigger('blur')
-        $('#so_discount').trigger('blur')
-        $('#so_cost').trigger('blur')
-        // updateTotal()
-
-        $('.is-invalid').removeClass('is-invalid');
-        $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman").hide();
-        $('#add_sales_order').modal("show");
-        $('#add_sales_order').attr("so_id", data.so_id);
-        $('#add_sales_order').attr("so_number", data.so_number);
-        $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
+        openSalesOrderDetailModal(data);
     });
 
     //delete
