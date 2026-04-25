@@ -107,7 +107,7 @@
         };
 
         if(mode==2){
-            url="/updateRole";
+            url="/updateRoleName";
             param.role_id = $('#add_role').attr("role_id");
         }
 

@@ -84,6 +84,11 @@ class UserController extends Controller
         $data = $req->all();
         return (new Role())->updateRole($data);
     }
+    
+    function updateRoleName(Request $req){
+        $data = $req->all();
+        return (new Role())->updateRoleName($data);
+    }
 
     function deleteRole(Request $req){
         $data = $req->all();

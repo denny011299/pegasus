@@ -49,6 +49,17 @@ class Role extends Model
         $t->save();
         return $t->role_id;
     }
+    function updateRoleName($data)
+    {
+        $data = array_merge([
+            "role_access"=>"[]"
+        ], $data);
+        $t = self::find($data["role_id"]);
+        $t->role_name = $data["role_name"];
+        // $t->role_access = $data["role_access"];
+        $t->save();
+        return $t->role_id;
+    }
 
     function deleteRole($data)
     {

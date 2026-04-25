@@ -367,6 +367,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Peran & Perizinan|edit')->group(function () {
         Route::post('/updateRole', [UserController::class, 'updateRole'])->name('updateRole');
+        Route::post('/updateRoleName', [UserController::class, 'updateRoleName'])->name('updateRoleName');
         Route::post('/updatePermission', [UserController::class, 'updatePermission'])->name('updatePermission');
     });
     Route::middleware('check.access:Peran & Perizinan|delete')->group(function () {
