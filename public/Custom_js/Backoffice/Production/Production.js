@@ -465,9 +465,9 @@
         addRow(items);
         $('#total_dos').html(data.total_dos);
         if (data.status == 1){
-            if (hasAccessActionAny("Produksi", "others")){
+            if (hasAccessAction("Produksi", "others")){
+                $('#btn-terima, #btn-tolak').show();
             }
-            $('#btn-terima, #btn-tolak').show();
             $('#btn-terima').addClass('btn_acc_produksi');
             $('#btn-tolak').addClass('btn_decline_produksi');
             $('#btn-terima').removeClass('btn_acc');
