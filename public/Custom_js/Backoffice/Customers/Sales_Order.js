@@ -718,10 +718,10 @@
         $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
         $('#btn-add-product-so').hide();
         if (data.status == 1){
-            console.log("masuk")
-            if (hasAccessActionAny("Pengiriman", "others")){
-                $('.btn_acc, .btn_decline').show();
-            }
+            console.log("masuk") 
+            $('.btn_acc, .btn_decline').show();
+            // if (hasAccessActionAny("Pengiriman", "others")){
+            // }
             $('.btn_acc').attr('so_id', data.so_id);
             $('.btn_acc').data('items', data.items);
             $('.btn_decline').attr('so_id', data.so_id);

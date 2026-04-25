@@ -466,8 +466,8 @@
         $('#total_dos').html(data.total_dos);
         if (data.status == 1){
             if (hasAccessActionAny("Produksi", "others")){
-                $('#btn-terima, #btn-tolak').show();
             }
+            $('#btn-terima, #btn-tolak').show();
             $('#btn-terima').addClass('btn_acc_produksi');
             $('#btn-tolak').addClass('btn_decline_produksi');
             $('#btn-terima').removeClass('btn_acc');
@@ -476,8 +476,8 @@
             $('#btn-tolak').attr('production_id', data.production_id);
         } else if (data.status == 4) {
             if (hasAccessActionAny("Produksi", "others")){
-                $('#btn-terima, #btn-tolak').show();
             }
+            $('#btn-terima, #btn-tolak').show();
             $('#btn-terima').addClass('btn_acc');
             $('#btn-tolak').addClass('btn_cancel');
             $('#btn-terima').removeClass('btn_acc_produksi');

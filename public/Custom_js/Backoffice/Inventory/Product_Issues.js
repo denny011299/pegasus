@@ -811,8 +811,8 @@ $(document).on("click", ".btn_view", function () {
 
     if (data.status == 1){
         if (hasAccessActionAny("Produk Bermasalah", "others")){
-            $('#btn-terima, #btn-tolak').show();
         }
+        $('#btn-terima, #btn-tolak').show();
         $('.btn_acc').attr('pi_id', data.pi_id);
         $('.btn_decline').attr('pi_id', data.pi_id);
     } else {
