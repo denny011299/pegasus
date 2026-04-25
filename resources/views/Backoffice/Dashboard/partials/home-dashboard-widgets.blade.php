@@ -667,7 +667,7 @@
                 <h3 class="dash-card-title-sub">Output pengiriman
                     <i class="fe fe-info dash-info-tip" data-bs-toggle="tooltip" data-bs-placement="top" title="Pengiriman (qty): total qty terkirim per bucket waktu. Retur armada (qty): total qty retur per bucket. Growth%: ((Qty pengiriman bucket ini - bucket sebelumnya) / bucket sebelumnya) × 100%."></i>
                 </h3>
-                <p class="dash-chart-caption mb-3" id="dash_chart_caption">Ringkasan pengiriman per bulan: batang menunjukkan total qty pengiriman &amp; retur, garis menunjukkan growth %.</p>
+                <p class="dash-chart-caption mb-3" id="dash_chart_caption">Ringkasan bulanan: batang menunjukkan total qty pengiriman &amp; retur, garis menunjukkan growth %.</p>
                 <div id="dash_main_chart"></div>
             </div>
         </div>

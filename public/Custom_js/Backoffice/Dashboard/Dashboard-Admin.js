@@ -40,6 +40,7 @@
         }
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
+            var qtyText = r.qty_text ? escHtml(r.qty_text) : fmtNum(r.qty);
             $tb.append(
                 '<tr><td class="dash-col-rank">' +
                     (i + 1) +
@@ -47,8 +48,8 @@
                     escHtml(r.name || "-") +
                     '">' +
                     escHtml(r.name || "-") +
-                    '</td><td class="dash-col-qty">' +
-                    fmtNum(r.qty) +
+                    '</td><td class="dash-col-qty text-nowrap">' +
+                    qtyText +
                     "</td></tr>"
             );
         }
@@ -442,9 +443,9 @@
         var growth = c.sales_growth_pct_by_bucket || [];
         var f = payload.filter || {};
         var cap =
-            "Ringkasan pengiriman per bulan · " +
+            "Ringkasan bulanan · " +
             (f.label || "-") +
-            ". Batang: total qty pengiriman & retur, garis: growth % dibanding periode sebelumnya.";
+            ". Batang: total qty pengiriman & retur, garis: growth % dibanding bulan/periode sebelumnya.";
         $("#dash_chart_caption").text(cap);
 
         var opts = {

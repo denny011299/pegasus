@@ -1439,7 +1439,7 @@ class ReportController extends Controller
                 'period_label' => $period === 'week' ? 'Minggu' : ($period === 'year' ? 'Tahun' : 'Bulan'),
                 'hint' => 'Pilih Minggu, Bulan, atau Tahun lalu Terapkan. Grafik, KPI penjualan & retur, log ACC, stock aging & rekomendasi produksi mengikuti periode tersebut. Nilai inventory = snapshot stok saat ini.',
                 'top_yearly_caption' => '1 Jan '.$end->year.' → '.$end->format('d M Y'),
-                'top_accum_caption' => $end->copy()->startOfMonth()->format('d M Y').' → '.$end->format('d M Y').' (bulan ini)',
+                'top_accum_caption' => 'Periode bulanan: '.$end->copy()->startOfMonth()->format('d M Y').' → '.$end->format('d M Y'),
             ],
             'changelog' => $changeLog,
             'inventory_value' => $inventoryValue,
@@ -2122,6 +2122,7 @@ class ReportController extends Controller
         $build = function (?string $rangeStart, ?string $rangeEnd, bool $accumAllTime): array {
             $q = DB::table('sales_order_details as sod')
                 ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+                ->leftJoin('units as u', 'u.unit_id', '=', 'sod.unit_id')
                 ->where('so.status', '>=', 1)
                 ->where('sod.status', '>=', 1);
             if ($accumAllTime) {
@@ -2129,17 +2130,25 @@ class ReportController extends Controller
             } else {
                 $q->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$rangeStart, $rangeEnd]);
             }
-            $rows = $q->select('sod.sod_nama', 'sod.sod_variant')
+            $rows = $q->select('sod.sod_nama', 'sod.sod_variant', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
                 ->selectRaw('SUM(sod.sod_qty) as qty')
-                ->groupBy('sod.sod_nama', 'sod.sod_variant')
+                ->groupBy('sod.sod_nama', 'sod.sod_variant', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
                 ->orderByDesc('qty')
                 ->limit(5)
                 ->get();
             $out = [];
             foreach ($rows as $r) {
+                $u = trim((string) ($r->unit_short_name ?? ''));
+                if ($u === '') {
+                    $u = trim((string) ($r->unit_name ?? ''));
+                }
                 $out[] = [
                     'name' => trim(trim((string) $r->sod_nama) . ' ' . trim((string) $r->sod_variant)),
                     'qty' => (float) ($r->qty ?? 0),
+                    'unit' => $u,
+                    'qty_text' => $u !== ''
+                        ? number_format((float) ($r->qty ?? 0), 0, ',', '.').' '.$u
+                        : number_format((float) ($r->qty ?? 0), 0, ',', '.'),
                 ];
             }
 
