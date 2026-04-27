@@ -789,16 +789,27 @@
             renderAgingDetailTable();
         });
         $(document).on("click", ".dash-queue-dismiss-btn", function () {
+            var section = String($(this).data("queue-section") || "");
+            var key = String($(this).data("queue-key") || "");
+            if (!section || !key) return;
+            var $confirmBtn = $(".btn-konfirmasi");
+            $confirmBtn.attr("data-queue-section", section);
+            $confirmBtn.attr("data-queue-key", key);
+            showModalDelete("Apakah yakin ingin menghapus item ini dari changelog?", "btn-dismiss-dashboard-queue");
+        });
+        $(document).on("click", "#btn-dismiss-dashboard-queue", function () {
             var $btn = $(this);
-            var section = String($btn.data("queue-section") || "");
-            var key = String($btn.data("queue-key") || "");
+            var section = String($btn.attr("data-queue-section") || "");
+            var key = String($btn.attr("data-queue-key") || "");
             if (!section || !key) return;
             dismissQueueItem(section, key, function (ok) {
                 if (!ok) {
                     alert("Gagal menghapus item log.");
                     return;
                 }
-                var $tr = $btn.closest("tr");
+                closeModalDelete();
+                var $rowBtn = $('.dash-queue-dismiss-btn[data-queue-section="' + section + '"][data-queue-key="' + key + '"]').first();
+                var $tr = $rowBtn.closest("tr");
                 var $tbody = $tr.closest("tbody");
                 $tr.remove();
                 if ($tbody.find("tr").length === 0) {

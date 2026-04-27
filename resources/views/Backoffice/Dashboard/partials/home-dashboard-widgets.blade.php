@@ -858,7 +858,7 @@
                             <strong class="text-dark">Habis</strong>: semua satuan 0.
                             <strong class="text-dark">Perlu order</strong>: stok satuan default ≤ batas alert. Barang jadi tidak ditampilkan.
                         </p> --}}
-                    </div>
+                    </div>  
                     <div class="d-flex flex-wrap gap-2 align-items-center">
                         <button type="button" class="btn btn-outline-secondary btn-sm" id="dash_bahan_notif_perm" title="Izinkan notifikasi browser">
                             <i class="fe fe-bell"></i><span class="d-none d-sm-inline ms-1">Notifikasi</span>
