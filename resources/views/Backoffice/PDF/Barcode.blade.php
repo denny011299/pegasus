@@ -34,12 +34,13 @@
             font-weight: bold;
             /* Font lebih kecil agar muat */
             font-size: 5pt; 
-            line-height: 1; /* Line height lebih rapat */
+            line-height: 1.05; /* Sedikit longgar supaya 2 baris tetap terbaca */
             margin-bottom: 0.2mm; /* Margin lebih kecil */
             text-align: left;
             max-width: 100%; 
             overflow: hidden;
-            white-space: nowrap;
+            white-space: normal;
+            word-break: break-word;
         }
         
         .barcode {

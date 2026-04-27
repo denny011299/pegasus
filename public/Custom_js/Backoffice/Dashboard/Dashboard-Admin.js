@@ -18,7 +18,10 @@
         var row = window.permissionList.find(function (p) {
             return String((p && p.name) || "").toLowerCase() === "dashboard widgets";
         });
-        if (!row || !Array.isArray(row.akses)) return null;
+        // Jika permission list ada tapi modul Dashboard Widgets tidak ditemukan,
+        // artinya role belum/ tidak diberi widget -> sembunyikan semua.
+        if (!row) return [];
+        if (!Array.isArray(row.akses)) return [];
         return row.akses
             .map(function (k) { return String(k || "").trim().toLowerCase(); })
             .filter(function (k) { return k !== ""; });
