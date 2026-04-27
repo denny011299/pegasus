@@ -11,6 +11,32 @@
     var agingDetailNameFilter = "";
     /** @type {'all'|'critical'|'warn'} */
     var bahanTableFilter = "all";
+    var visibleDashboardWidgets = null;
+
+    function getVisibleDashboardWidgets() {
+        if (!window.permissionList || !Array.isArray(window.permissionList)) return null;
+        var row = window.permissionList.find(function (p) {
+            return String((p && p.name) || "").toLowerCase() === "dashboard widgets";
+        });
+        if (!row || !Array.isArray(row.akses)) return null;
+        return row.akses
+            .map(function (k) { return String(k || "").trim().toLowerCase(); })
+            .filter(function (k) { return k !== ""; });
+    }
+
+    function applyDashboardWidgetVisibility() {
+        visibleDashboardWidgets = getVisibleDashboardWidgets();
+        if (!visibleDashboardWidgets || !visibleDashboardWidgets.length) return;
+        var allowed = {};
+        for (var i = 0; i < visibleDashboardWidgets.length; i++) {
+            allowed[visibleDashboardWidgets[i]] = true;
+        }
+        var blocks = document.querySelectorAll("[data-dash-widget]");
+        for (var j = 0; j < blocks.length; j++) {
+            var key = String(blocks[j].getAttribute("data-dash-widget") || "").toLowerCase();
+            blocks[j].style.display = allowed[key] ? "" : "none";
+        }
+    }
 
     function fmtNum(n) {
         if (n === null || n === undefined || isNaN(n)) return "0";
@@ -184,7 +210,13 @@
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
             var url = r.url ? String(r.url) : "#";
-            var label = escHtml(r.url_label || "Buka");
+            var section =
+                tbodySelector === "#dash_confirmation_body"
+                    ? "confirmation"
+                    : tbodySelector === "#dash_revision_body"
+                      ? "revision"
+                      : "changelog";
+            var queueKey = String(r.queue_key || "");
             $tb.append(
                 "<tr><td>" +
                     escHtml(r.module_label || "-") +
@@ -194,13 +226,40 @@
                     escHtml(r.what_changed || r.summary || "") +
                     '">' +
                     escHtml(r.what_changed || r.summary || "-") +
-                    '</span></td><td class="dash-col-actions"><a class="btn btn-sm dash-log-btn" href="' +
+                    '</span></td><td class="dash-col-actions">' +
+                    '<div class="d-inline-flex gap-1 align-items-center">' +
+                    '<a class="btn btn-sm dash-log-btn px-2" title="Buka" href="' +
                     url.replace(/"/g, "&quot;") +
-                    '">' +
-                    label +
-                    "</a></td></tr>"
+                    '"><i class="fe fe-eye"></i></a>' +
+                    '<button type="button" class="btn btn-sm dash-log-btn px-2 dash-queue-dismiss-btn" title="Hapus dari log" data-queue-section="' +
+                    escHtml(section) +
+                    '" data-queue-key="' +
+                    escHtml(queueKey) +
+                    '"><i class="fe fe-trash-2"></i></button>' +
+                    "</div></td></tr>"
             );
         }
+    }
+
+    function dismissQueueItem(section, key, done) {
+        $.ajax({
+            url: "/dismissDashboardQueueItem",
+            method: "post",
+            data: {
+                section: section,
+                key: key,
+                _token: token,
+            },
+            headers: {
+                "X-CSRF-TOKEN": token,
+            },
+            success: function () {
+                if (typeof done === "function") done(true);
+            },
+            error: function () {
+                if (typeof done === "function") done(false);
+            },
+        });
     }
 
     function buildModuleKey(row) {
@@ -659,6 +718,7 @@
     }
 
     $(document).ready(function () {
+        applyDashboardWidgetVisibility();
         if (window.bootstrap && bootstrap.Tooltip) {
             var ttEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
             for (var i = 0; i < ttEls.length; i++) {
@@ -727,6 +787,24 @@
                 .trim()
                 .toLowerCase();
             renderAgingDetailTable();
+        });
+        $(document).on("click", ".dash-queue-dismiss-btn", function () {
+            var $btn = $(this);
+            var section = String($btn.data("queue-section") || "");
+            var key = String($btn.data("queue-key") || "");
+            if (!section || !key) return;
+            dismissQueueItem(section, key, function (ok) {
+                if (!ok) {
+                    alert("Gagal menghapus item log.");
+                    return;
+                }
+                var $tr = $btn.closest("tr");
+                var $tbody = $tr.closest("tbody");
+                $tr.remove();
+                if ($tbody.find("tr").length === 0) {
+                    $tbody.append('<tr><td colspan="4" class="text-center text-muted">Tidak ada data.</td></tr>');
+                }
+            });
         });
     });
 })();

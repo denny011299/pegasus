@@ -184,8 +184,8 @@
                     <div class="row g-3 align-items-end">
                         <div class="col-lg-7 col-md-9">
                             <div class="barcode-search-wrap">
-                                <label class="barcode-form-label" for="search">Cari produk / SKU / barcode</label>
-                                <input type="text" class="form-control" placeholder="Contoh: Radiator, SKU123, 899..." id="search">
+                                <label class="barcode-form-label" for="search">Cari produk/bahan / SKU / barcode</label>
+                                <input type="text" class="form-control" placeholder="Contoh: Radiator, Sodium Sulphate, SKU123, 899..." id="search">
                                 <div class="barcode-search-icon"><i class="fas fa-search"></i></div>
                                 <div class="resultBox"></div>
                             </div>
@@ -201,7 +201,8 @@
                             <table class="table mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Produk</th>
+                                        <th>Jenis</th>
+                                        <th>Nama Item</th>
                                         <th>SKU</th>
                                         <th>Barcode</th>
                                         <th>Jml</th>

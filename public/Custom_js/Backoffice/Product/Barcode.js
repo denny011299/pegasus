@@ -27,13 +27,16 @@
         var $tb = $("#tbProduct");
         $tb.empty();
         if (!selected.length) {
-            $tb.append('<tr><td colspan="5" class="text-center text-muted">Belum ada item dipilih</td></tr>');
+            $tb.append('<tr><td colspan="6" class="text-center text-muted">Belum ada item dipilih</td></tr>');
             return;
         }
         for (var i = 0; i < selected.length; i++) {
             var row = selected[i];
             $tb.append(
                 "<tr>" +
+                    "<td>" +
+                    escHtml(row.item_type === "supplies" ? "Bahan" : "Produk") +
+                    "</td>" +
                     "<td>" +
                     escHtml(row.nama_produk + (row.nama_varian ? " " + row.nama_varian : "")) +
                     "</td>" +
@@ -59,7 +62,10 @@
     function addSelected(item) {
         var idx = -1;
         for (var i = 0; i < selected.length; i++) {
-            if (String(selected[i].product_variant_id) === String(item.product_variant_id)) {
+            if (
+                String(selected[i].item_type || "product") === String(item.item_type || "product") &&
+                String(selected[i].item_id || selected[i].product_variant_id) === String(item.item_id || item.product_variant_id)
+            ) {
                 idx = i;
                 break;
             }
@@ -68,6 +74,8 @@
             selected[idx].qty_print += 1;
         } else {
             selected.push({
+                item_type: item.item_type || "product",
+                item_id: item.item_id || item.product_variant_id,
                 product_variant_id: item.product_variant_id,
                 nama_produk: item.nama_produk || "-",
                 nama_varian: item.nama_varian || "",
@@ -95,6 +103,7 @@
                     escHtml(JSON.stringify(r)) +
                     "'>" +
                     "<div class='fw-semibold'>" +
+                    "<span class='badge bg-light text-dark me-2'>" + escHtml(r.item_type === "supplies" ? "Bahan" : "Produk") + "</span>" +
                     escHtml(title.trim()) +
                     "</div>" +
                     "<small class='text-muted'>" +
@@ -139,6 +148,8 @@
             })
             .map(function (x) {
                 return {
+                    item_type: x.item_type || "product",
+                    item_id: x.item_id || x.product_variant_id,
                     product_variant_id: x.product_variant_id,
                     nama_produk: x.nama_produk,
                     nama_varian: x.nama_varian,

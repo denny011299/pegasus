@@ -564,12 +564,12 @@
         {{-- <p class="dash-toolbar-hint mb-0 mt-2 pt-2 border-top" id="dash_filter_hint" style="border-color: rgba(15,23,42,.08) !important;">Memuat penjelasan filter…</p> --}}
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-widget="kpi_ringkasan">
         <div class="dash-section-head">
             <h2 class="dash-section-title">Ringkasan changelog &amp; KPI</h2>
         </div>
     </div>
-    <div class="row g-3 mb-3">
+    <div class="row g-3 mb-3" data-dash-widget="kpi_ringkasan">
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
                 <div class="dash-kpi-title">Changelog
@@ -608,7 +608,7 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-5">
+    <div class="row g-3 mb-5" data-dash-widget="kpi_ringkasan">
         <div class="col-lg-3 col-md-6">
             <div class="dash-card dash-card-fill">
                 <div class="dash-kpi-title">Sales Growth %
@@ -647,7 +647,7 @@
         </div>
     </div>
 
-    <div class="dash-section mt-3">
+    <div class="dash-section mt-3" data-dash-widget="approval_logs">
         <div class="dash-section-head">
             <h2 class="dash-section-title">Changelog &amp; log persetujuan</h2>
         </div>
@@ -657,7 +657,7 @@
             <strong>Revision</strong>: transaksi ditolak & perlu diperbaiki.
         </p> --}}
     </div>
-    <div class="row g-3 mb-5">
+    <div class="row g-3 mb-5" data-dash-widget="approval_logs">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Changelog — tunggu ACC Direktur</h3>
@@ -736,13 +736,13 @@
         </div>
     </div>
 
-    <div class="dash-section">
+    <div class="dash-section" data-dash-widget="delivery_chart">
         <div class="dash-section-head">
             <h2 class="dash-section-title">Grafik &amp; top produk pengiriman</h2>
         </div>
     </div>
 
-    <div class="row g-3 mb-3">
+    <div class="row g-3 mb-3" data-dash-widget="delivery_chart">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title-sub">Output pengiriman
@@ -754,7 +754,7 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-5">
+    <div class="row g-3 mb-5" data-dash-widget="delivery_chart">
         <div class="col-lg-6">
             <div class="dash-card mb-3">
                 <h3 class="dash-card-title-sub" id="dash_top_yearly_title">Top 5 pengiriman tahunan</h3>
@@ -805,12 +805,12 @@
         </div>
     </div>
 
-    <div class="dash-section mt-3">
+    <div class="dash-section mt-3" data-dash-widget="stock_aging">
         <div class="dash-section-head">
             <h2 class="dash-section-title">Stock aging &amp; peringatan</h2>
         </div>
     </div>
-    <div class="row g-3">
+    <div class="row g-3" data-dash-widget="stock_aging">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Stock aging (FIFO)</h3>
@@ -839,7 +839,7 @@
         </div>
     </div>
 
-    <div class="row g-3 mt-3">
+    <div class="row g-3 mt-3" data-dash-widget="stock_alert_bahan">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <div class="dash-bahan-toolbar d-flex flex-wrap align-items-start justify-content-between gap-3">
@@ -891,7 +891,7 @@
         </div>
     </div>
 
-    <div class="row g-3 mt-3">
+    <div class="row g-3 mt-3" data-dash-widget="overstock_rekomendasi">
         <div class="col-lg-6">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Overstock (aging &gt; 90 hari)</h3>

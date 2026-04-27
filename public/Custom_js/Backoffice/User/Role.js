@@ -1,5 +1,6 @@
     var mode=1;
     var table;
+    var selectedRoleForWidgets = null;
     $(document).ready(function(){
         inisialisasi();
         refreshRole();
@@ -67,6 +68,8 @@
                             '<a href="/permission/' +
                             e[i].role_id +
                             '" class="btn btn-greys me-2"><i class="fa fa-shield me-1"></i> Perizinan</a>';
+                        rp +=
+                            '<a href="#" class="btn btn-greys me-2 btn_dashboard_widgets"><i class="fa fa-th-large me-1"></i> Widget Dashboard</a>';
                     }
                     e[i].action =
                         rp ||
@@ -150,4 +153,82 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#add_role').modal("show");
         $('#add_role').attr("role_id", data.role_id);
+    });
+
+    function parseRoleAccess(roleAccessRaw) {
+        if (Array.isArray(roleAccessRaw)) return roleAccessRaw;
+        if (!roleAccessRaw) return [];
+        try {
+            var parsed = JSON.parse(roleAccessRaw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function getDashboardWidgetsFromAccess(roleAccessRaw) {
+        var access = parseRoleAccess(roleAccessRaw);
+        var row = access.find(function (item) {
+            return String(item && item.name ? item.name : "").toLowerCase() === "dashboard widgets";
+        });
+        var list = row && Array.isArray(row.akses) ? row.akses : [];
+        return list.map(function (v) { return String(v || "").trim(); }).filter(Boolean);
+    }
+
+    function syncDashboardCheckAll() {
+        var boxes = $(".dash-widget-checkbox");
+        var checked = $(".dash-widget-checkbox:checked");
+        $("#check_all_dash_widgets").prop("checked", boxes.length > 0 && boxes.length === checked.length);
+    }
+
+    $(document).on("click", ".btn_dashboard_widgets", function () {
+        var data = $('#tableRole').DataTable().row($(this).parents('tr')).data();
+        selectedRoleForWidgets = data;
+        $("#dash_widget_role_name").text(data.role_name || "-");
+        $(".dash-widget-checkbox").prop("checked", false);
+        var selected = getDashboardWidgetsFromAccess(data.role_access);
+        for (var i = 0; i < selected.length; i++) {
+            $('.dash-widget-checkbox[value="' + selected[i].replace(/"/g, '\\"') + '"]').prop("checked", true);
+        }
+        syncDashboardCheckAll();
+        $("#dashboard_widgets_modal").modal("show");
+    });
+
+    $(document).on("change", "#check_all_dash_widgets", function () {
+        $(".dash-widget-checkbox").prop("checked", $(this).is(":checked"));
+    });
+
+    $(document).on("change", ".dash-widget-checkbox", function () {
+        syncDashboardCheckAll();
+    });
+
+    $(document).on("click", "#btn_save_dash_widgets", function () {
+        if (!selectedRoleForWidgets) return;
+        LoadingButton(this);
+        var widgets = $(".dash-widget-checkbox:checked").map(function () {
+            return $(this).val();
+        }).get();
+        $.ajax({
+            url: "/updateDashboardWidgets",
+            method: "post",
+            data: {
+                role_id: selectedRoleForWidgets.role_id,
+                widgets: widgets,
+                _token: token
+            },
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success: function () {
+                ResetLoadingButton("#btn_save_dash_widgets", "Simpan Widget");
+                $("#dashboard_widgets_modal").modal("hide");
+                notifikasi('success', "Berhasil Update", "Berhasil update widget dashboard role");
+                refreshRole();
+            },
+            error: function (e) {
+                ResetLoadingButton("#btn_save_dash_widgets", "Simpan Widget");
+                console.log(e);
+                notifikasi('error', "Gagal Update", "Gagal update widget dashboard role");
+            }
+        });
     });

@@ -15,6 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.access' => \App\Http\Middleware\checkAccess::class,
             'check.access.any' => \App\Http\Middleware\checkAccessAny::class,
         ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\LogDashboardActivity::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -255,7 +255,7 @@ class ProductController extends Controller
     {
         $q = trim((string) $req->get('q', ''));
 
-        $rows = DB::table('product_variants as pv')
+        $productRows = DB::table('product_variants as pv')
             ->join('products as p', 'p.product_id', '=', 'pv.product_id')
             ->where('pv.status', 1)
             ->where('p.status', 1)
@@ -269,8 +269,10 @@ class ProductController extends Controller
             })
             ->orderBy('p.product_name')
             ->orderBy('pv.product_variant_name')
-            ->limit(40)
+            ->limit(25)
             ->get([
+                DB::raw("'product' as item_type"),
+                DB::raw('pv.product_variant_id as item_id'),
                 'pv.product_variant_id',
                 'p.product_name as nama_produk',
                 'pv.product_variant_name as nama_varian',
@@ -279,14 +281,40 @@ class ProductController extends Controller
                 'pv.product_variant_price as harga',
             ]);
 
-        $rows = $rows->map(function ($r) {
+        $suppliesRows = DB::table('supplies_variants as sv')
+            ->join('supplies as s', 's.supplies_id', '=', 'sv.supplies_id')
+            ->where('sv.status', 1)
+            ->where('s.status', 1)
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($sub) use ($q) {
+                    $sub->where('s.supplies_name', 'like', '%' . $q . '%')
+                        ->orWhere('sv.supplies_variant_name', 'like', '%' . $q . '%')
+                        ->orWhere('sv.supplies_variant_sku', 'like', '%' . $q . '%')
+                        ->orWhere('sv.supplies_variant_barcode', 'like', '%' . $q . '%');
+                });
+            })
+            ->orderBy('s.supplies_name')
+            ->orderBy('sv.supplies_variant_name')
+            ->limit(25)
+            ->get([
+                DB::raw("'supplies' as item_type"),
+                DB::raw('sv.supplies_variant_id as item_id'),
+                DB::raw('NULL as product_variant_id'),
+                's.supplies_name as nama_produk',
+                'sv.supplies_variant_name as nama_varian',
+                'sv.supplies_variant_sku as sku',
+                'sv.supplies_variant_barcode as barcode',
+                'sv.supplies_variant_price as harga',
+            ]);
+
+        $rows = $productRows->concat($suppliesRows)->map(function ($r) {
             $barcode = trim((string) ($r->barcode ?? ''));
             if ($barcode === '') {
                 $barcode = trim((string) ($r->sku ?? ''));
             }
             $r->barcode = $barcode;
             return $r;
-        })->values();
+        })->take(40)->values();
 
         return response()->json($rows);
     }

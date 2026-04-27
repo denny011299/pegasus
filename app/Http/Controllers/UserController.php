@@ -8,6 +8,7 @@ use App\Models\Staff;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Arr;
 
 class UserController extends Controller
 {
@@ -100,6 +101,37 @@ class UserController extends Controller
         return view('Backoffice.User.Permission')->with($param);
     }
 
+    public function dashboardWidgets($id)
+    {
+        $role = Role::findOrFail($id);
+        $accessRows = json_decode($role->role_access ?? '[]', true);
+        if (!is_array($accessRows)) {
+            $accessRows = [];
+        }
+        $dashboardRow = collect($accessRows)->first(function ($row) {
+            return strtolower(trim((string) Arr::get($row, 'name', ''))) === 'dashboard widgets';
+        });
+        $selectedWidgets = Arr::get($dashboardRow, 'akses', []);
+        if (!is_array($selectedWidgets)) {
+            $selectedWidgets = [];
+        }
+
+        $widgetOptions = [
+            'kpi_ringkasan' => 'Ringkasan changelog & KPI',
+            'approval_logs' => 'Changelog & log persetujuan',
+            'delivery_chart' => 'Grafik & top produk pengiriman',
+            'stock_aging' => 'Stock aging',
+            'stock_alert_bahan' => 'Stock alert bahan mentah',
+            'overstock_rekomendasi' => 'Overstock & rekomendasi stok produksi',
+        ];
+
+        return view('Backoffice.User.DashboardWidgets', [
+            'role' => $role,
+            'widgetOptions' => $widgetOptions,
+            'selectedWidgets' => $selectedWidgets,
+        ]);
+    }
+
     function getPermission(Request $req){
         $data =  (new Role())->getRole();
         return json_encode($data);
@@ -113,6 +145,51 @@ class UserController extends Controller
     function updatePermission(Request $req){
         $data = $req->all();
         return (new Role())->updateRole($data);
+    }
+
+    public function updateDashboardWidgets(Request $req)
+    {
+        $data = $req->validate([
+            'role_id' => ['required', 'integer'],
+            'widgets' => ['nullable', 'array'],
+            'widgets.*' => ['string'],
+        ]);
+
+        $role = Role::findOrFail((int) $data['role_id']);
+        $rawAccess = json_decode($role->role_access ?? '[]', true);
+        if (!is_array($rawAccess)) {
+            $rawAccess = [];
+        }
+
+        $filtered = collect($rawAccess)->reject(function ($row) {
+            return strtolower(trim((string) Arr::get($row, 'name', ''))) === 'dashboard widgets';
+        })->values()->all();
+
+        $selected = array_values(array_unique(array_filter($data['widgets'] ?? [], static function ($v) {
+            return is_string($v) && trim($v) !== '';
+        })));
+
+        $filtered[] = [
+            'name' => 'Dashboard Widgets',
+            'akses' => $selected,
+        ];
+
+        $role->role_access = json_encode($filtered, JSON_UNESCAPED_UNICODE);
+        $role->save();
+
+        if (Session::has('user')) {
+            $sessionUser = Session::get('user');
+            if ((int) ($sessionUser->role_id ?? 0) === (int) $role->role_id) {
+                $sessionUser->role_access = $role->role_access;
+                Session::put('user', $sessionUser);
+            }
+        }
+
+        if ($req->expectsJson() || $req->ajax()) {
+            return response()->json(['status' => true]);
+        }
+
+        return redirect('/role');
     }
 
 

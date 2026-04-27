@@ -362,6 +362,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/role', [UserController::class, 'role'])->name('role');
         Route::get('/getRole', [UserController::class, 'getRole'])->name('getRole');
         Route::get('/permission/{id}', [UserController::class, 'permission'])->name('permission');
+        Route::get('/dashboardWidgets/{id}', [UserController::class, 'dashboardWidgets'])->name('dashboardWidgets');
         Route::get('/getPermission', [UserController::class, 'getPermission'])->name('getPermission');
         Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
     });
@@ -373,6 +374,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/updateRole', [UserController::class, 'updateRole'])->name('updateRole');
         Route::post('/updateRoleName', [UserController::class, 'updateRoleName'])->name('updateRoleName');
         Route::post('/updatePermission', [UserController::class, 'updatePermission'])->name('updatePermission');
+        Route::post('/updateDashboardWidgets', [UserController::class, 'updateDashboardWidgets'])->name('updateDashboardWidgets');
     });
     Route::middleware('check.access:Peran & Perizinan|delete')->group(function () {
         Route::post('/deleteRole', [UserController::class, 'deleteRole'])->name('deleteRole');
@@ -415,6 +417,7 @@ Route::middleware(checkLogin::class)->group(function () {
 
     Route::get('/getDashboardExecutiveWidgets', [ReportController::class, 'getDashboardExecutiveWidgets'])->name('getDashboardExecutiveWidgets');
     Route::get('/getDashboardOverview', [ReportController::class, 'getDashboardOverview'])->name('getDashboardOverview');
+    Route::post('/dismissDashboardQueueItem', [ReportController::class, 'dismissDashboardQueueItem'])->name('dismissDashboardQueueItem');
 
     Route::middleware('check.access:Pengelolaan Bahan Mentah|view')->group(function () {
         Route::get('/reportBahanBaku', [ReportController::class, 'reportBahanBaku'])->name('reportBahanBaku');

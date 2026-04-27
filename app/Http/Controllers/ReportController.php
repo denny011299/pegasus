@@ -1419,9 +1419,9 @@ class ReportController extends Controller
         $changeLog = array_merge(
             $this->dashboardChangeLogCounts($start, $end),
             [
-                'changelog_items' => $queues['changelog'],
-                'confirmation_items' => $queues['confirmation'],
-                'revision_items' => $queues['revision'],
+                'changelog_items' => $this->filterDashboardQueueItems($queues['changelog'], 'changelog'),
+                'confirmation_items' => $this->filterDashboardQueueItems($queues['confirmation'], 'confirmation'),
+                'revision_items' => $this->filterDashboardQueueItems($queues['revision'], 'revision'),
             ]
         );
         $topProducts = $this->dashboardTopProducts($start, $end);
@@ -1458,6 +1458,61 @@ class ReportController extends Controller
             'bahan_stock_alerts' => $bahanStockAlerts,
             'chart' => $chart,
         ]);
+    }
+
+    public function dismissDashboardQueueItem(Request $req)
+    {
+        $section = strtolower(trim((string) $req->get('section', '')));
+        $key = trim((string) $req->get('key', ''));
+        if (!in_array($section, ['changelog', 'confirmation', 'revision'], true) || $key === '') {
+            return response()->json(['status' => false, 'message' => 'Invalid payload'], 422);
+        }
+
+        $staffId = (int) (session('user')->staff_id ?? 0);
+        if ($staffId <= 0) {
+            return response()->json(['status' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        DB::table('dashboard_queue_dismissals')->updateOrInsert(
+            [
+                'staff_id' => $staffId,
+                'queue_section' => $section,
+                'queue_key' => $key,
+            ],
+            [
+                'status' => 1,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        return response()->json(['status' => true]);
+    }
+
+    private function filterDashboardQueueItems(array $rows, string $section): array
+    {
+        $staffId = (int) (session('user')->staff_id ?? 0);
+        if ($staffId <= 0 || $rows === []) {
+            return $rows;
+        }
+
+        $dismissed = DB::table('dashboard_queue_dismissals')
+            ->where('staff_id', $staffId)
+            ->where('queue_section', strtolower($section))
+            ->where('status', 1)
+            ->pluck('queue_key')
+            ->all();
+
+        if (!$dismissed) {
+            return $rows;
+        }
+
+        $map = array_fill_keys(array_map('strval', $dismissed), true);
+
+        return array_values(array_filter($rows, static function ($r) use ($map) {
+            $k = (string) ($r['queue_key'] ?? '');
+            return $k === '' || !isset($map[$k]);
+        }));
     }
 
     /**
@@ -1729,6 +1784,7 @@ class ReportController extends Controller
             $tipeLabel = $tipe === 1 ? 'Retur ke pemasok' : ($tipe === 2 ? 'Retur dari armada' : 'Retur');
             $changelog[] = [
                 'kind' => 'retur_produk',
+                'queue_key' => 'pi:'.$pi->pi_id,
                 'module_label' => 'Retur Produk',
                 'reference' => (string) ($pi->pi_code ?? '-'),
                 'date' => $pi->pi_date ? (string) $pi->pi_date : '',
@@ -1752,6 +1808,7 @@ class ReportController extends Controller
             $staff = trim((string) ($cs->staff_name ?? ''));
             $changelog[] = [
                 'kind' => 'kas_sales',
+                'queue_key' => 'cs:'.$cs->cs_id,
                 'module_label' => 'Kas Sales (Staff)',
                 'reference' => 'CS #'.$cs->cs_id,
                 'date' => $cs->cs_date ? (string) $cs->cs_date : '',
@@ -1780,6 +1837,7 @@ class ReportController extends Controller
         foreach ($masterChangeRows as $log) {
             $changelog[] = [
                 'kind' => (string) ($log->module_key ?? 'master_change'),
+                'queue_key' => 'log:'.(int) ($log->id ?? 0),
                 'module_label' => (string) ($log->module_label ?? 'Master Data'),
                 'reference' => (string) ($log->reference ?? ('LOG #'.(int) ($log->id ?? 0))),
                 'date' => $log->created_at ? (string) $log->created_at : '',
@@ -1807,6 +1865,7 @@ class ReportController extends Controller
         foreach ($soPend as $so) {
             $confirmation[] = [
                 'kind' => 'pengiriman',
+                'queue_key' => 'so:'.$so->so_id,
                 'module_label' => 'Pengiriman (SO)',
                 'reference' => $fmtSoReference($so->so_number ?? null, $so->so_invoice_no ?? null),
                 'date' => $so->so_date ? (string) $so->so_date : '',
@@ -1827,6 +1886,7 @@ class ReportController extends Controller
         foreach ($poPend as $po) {
             $confirmation[] = [
                 'kind' => 'pembelian',
+                'queue_key' => 'po:'.$po->po_id,
                 'module_label' => 'Pembelian (PO)',
                 'reference' => (string) ($po->po_number ?? '-'),
                 'date' => $po->po_date ? (string) $po->po_date : '',
@@ -1849,6 +1909,7 @@ class ReportController extends Controller
             $stLabel = $st === 4 ? 'Menunggu pembatalan' : 'Menunggu ACC produksi';
             $confirmation[] = [
                 'kind' => 'produksi',
+                'queue_key' => 'pr:'.$pr->production_id,
                 'module_label' => 'Produksi',
                 'reference' => (string) ($pr->production_code ?? '-'),
                 'date' => $pr->production_date ? (string) $pr->production_date : '',
@@ -1876,6 +1937,7 @@ class ReportController extends Controller
         foreach ($soRev as $so) {
             $revision[] = [
                 'kind' => 'pengiriman',
+                'queue_key' => 'so:'.$so->so_id,
                 'module_label' => 'Pengiriman (SO)',
                 'reference' => $fmtSoReference($so->so_number ?? null, $so->so_invoice_no ?? null),
                 'date' => $so->so_date ? (string) $so->so_date : '',
@@ -1896,6 +1958,7 @@ class ReportController extends Controller
         foreach ($poRev as $po) {
             $revision[] = [
                 'kind' => 'pembelian',
+                'queue_key' => 'po:'.$po->po_id,
                 'module_label' => 'Pembelian (PO)',
                 'reference' => (string) ($po->po_number ?? '-'),
                 'date' => $po->po_date ? (string) $po->po_date : '',
@@ -1916,6 +1979,7 @@ class ReportController extends Controller
         foreach ($prodRev as $pr) {
             $revision[] = [
                 'kind' => 'produksi',
+                'queue_key' => 'pr:'.$pr->production_id,
                 'module_label' => 'Produksi',
                 'reference' => (string) ($pr->production_code ?? '-'),
                 'date' => $pr->production_date ? (string) $pr->production_date : '',
@@ -1938,6 +2002,7 @@ class ReportController extends Controller
             $tipeLabel = $tipe === 1 ? 'Retur ke pemasok' : ($tipe === 2 ? 'Retur dari armada' : 'Retur');
             $revision[] = [
                 'kind' => 'retur_produk',
+                'queue_key' => 'pi:'.$pi->pi_id,
                 'module_label' => 'Retur Produk',
                 'reference' => (string) ($pi->pi_code ?? '-'),
                 'date' => $pi->pi_date ? (string) $pi->pi_date : '',
@@ -1958,6 +2023,7 @@ class ReportController extends Controller
         foreach ($csRev as $cs) {
             $revision[] = [
                 'kind' => 'kas_sales',
+                'queue_key' => 'cs:'.$cs->cs_id,
                 'module_label' => 'Kas Sales (Staff)',
                 'reference' => 'CS #'.$cs->cs_id,
                 'date' => $cs->cs_date ? (string) $cs->cs_date : '',

@@ -1,9 +1,17 @@
 
     var table = $('.datatable').DataTable();
+    var preservedRoleAccessExtras = [];
     
     $(document).ready(function(){
         console.log(perm)
         $('.role_name').html(data.role_name)
+        var moduleNames = new Set();
+        $(table.rows().nodes()).each(function(){
+            moduleNames.add(String($(this).attr("module") || ""));
+        });
+        preservedRoleAccessExtras = (perm || []).filter(function(item){
+            return !moduleNames.has(String(item && item.name ? item.name : ""));
+        });
         if(perm.length>0){
             perm.forEach(item => {
                 $(table.rows().nodes()).each(function(){
@@ -81,6 +89,10 @@
         });
 
         if(perm.length<=0) valid=-1;
+
+        if (preservedRoleAccessExtras.length > 0) {
+            perm = perm.concat(preservedRoleAccessExtras);
+        }
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan pilih minimal 1 permissions yang ingin ditambahkan');
