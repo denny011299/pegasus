@@ -1515,6 +1515,28 @@ class ReportController extends Controller
         }));
     }
 
+    private function normalizeDashboardLogUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return url('dashboard');
+        }
+
+        $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+        if ($path === '') {
+            return url('dashboard');
+        }
+
+        $lower = strtolower($path);
+        foreach (['insert', 'update', 'delete', 'acc', 'accept', 'decline', 'reject'] as $prefix) {
+            if (str_starts_with($lower, $prefix)) {
+                return url('dashboard');
+            }
+        }
+
+        return $url;
+    }
+
     /**
      * Peringatan stok bahan mentah (sama rule dengan halaman Stock Alert Supplies): habis = merah; di/bawah batas alert = kuning.
      */
@@ -1835,6 +1857,7 @@ class ReportController extends Controller
                 'dcl.created_at',
             ]);
         foreach ($masterChangeRows as $log) {
+            $safeUrl = $this->normalizeDashboardLogUrl((string) ($log->url ?? ''));
             $changelog[] = [
                 'kind' => (string) ($log->module_key ?? 'master_change'),
                 'queue_key' => 'log:'.(int) ($log->id ?? 0),
@@ -1843,7 +1866,7 @@ class ReportController extends Controller
                 'date' => $log->created_at ? (string) $log->created_at : '',
                 'what_changed' => (string) ($log->what_changed ?? 'Perubahan data master.'),
                 'summary' => (string) ($log->summary ?? ''),
-                'url' => (string) ($log->url ?? url('dashboard')),
+                'url' => $safeUrl,
                 'url_label' => (string) ($log->url_label ?? 'Buka'),
             ];
         }

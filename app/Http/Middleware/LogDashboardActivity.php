@@ -34,7 +34,7 @@ class LogDashboardActivity
             'reference' => $reference,
             'what_changed' => ucfirst($action).' pada '.$moduleLabel,
             'summary' => trim(($reference ? $reference.' · ' : '').'Aksi '.$action),
-            'url' => url($request->path()),
+            'url' => $this->detectSafeUrl($request),
             'url_label' => 'Buka menu',
             'created_by' => $staffId > 0 ? $staffId : null,
             'meta' => [
@@ -135,6 +135,22 @@ class LogDashboardActivity
         }
 
         return null;
+    }
+
+    private function detectSafeUrl(Request $request): string
+    {
+        $ref = (string) $request->headers->get('referer', '');
+        if ($ref !== '') {
+            $parts = parse_url($ref);
+            $host = strtolower((string) ($parts['host'] ?? ''));
+            $currentHost = strtolower((string) $request->getHost());
+            $path = (string) ($parts['path'] ?? '');
+            if ($host !== '' && $host === $currentHost && $path !== '') {
+                return url(trim($path, '/'));
+            }
+        }
+
+        return url('dashboard');
     }
 }
 
