@@ -150,7 +150,7 @@ class LogDashboardActivity
             }
         }
 
-        return url('dashboard');
+        return url('admin');
     }
 }
 

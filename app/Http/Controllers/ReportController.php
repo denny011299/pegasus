@@ -1519,18 +1519,21 @@ class ReportController extends Controller
     {
         $url = trim($url);
         if ($url === '') {
-            return url('dashboard');
+            return url('admin');
         }
 
         $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
         if ($path === '') {
-            return url('dashboard');
+            return url('admin');
         }
 
         $lower = strtolower($path);
+        if ($lower === 'dashboard') {
+            return url('admin');
+        }
         foreach (['insert', 'update', 'delete', 'acc', 'accept', 'decline', 'reject'] as $prefix) {
             if (str_starts_with($lower, $prefix)) {
-                return url('dashboard');
+                return url('admin');
             }
         }
 

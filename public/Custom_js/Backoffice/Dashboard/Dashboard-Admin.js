@@ -26,7 +26,9 @@
 
     function applyDashboardWidgetVisibility() {
         visibleDashboardWidgets = getVisibleDashboardWidgets();
-        if (!visibleDashboardWidgets || !visibleDashboardWidgets.length) return;
+        // null = belum ada setting role -> biarkan default tampil.
+        // [] = setting ada tapi kosong -> sembunyikan semua widget.
+        if (visibleDashboardWidgets === null) return;
         var allowed = {};
         for (var i = 0; i < visibleDashboardWidgets.length; i++) {
             allowed[visibleDashboardWidgets[i]] = true;
