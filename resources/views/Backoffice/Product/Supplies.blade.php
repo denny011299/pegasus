@@ -27,12 +27,13 @@
             border-color: #dc3545!important;
         }
         .td-supplier {
-            max-width: 0;
+            width: 23%;
+            min-width: 200px;
             overflow: hidden;
         }
 
         .td-supplier .input-block,
-        #row-supplier {
+        .td-supplier #row-supplier {
             width: 100%;
             overflow: hidden;
         }
@@ -41,17 +42,66 @@
             width: 100% !important;
             max-width: 100% !important;
             min-width: 0 !important;
+            overflow: hidden !important;
         }
 
+        /* ❌ Hapus override display:flex di selection - ini penyebab × ke kiri */
         .td-supplier .select2-selection--single {
             overflow: hidden;
+            /* Jangan tambah display:flex di sini */
         }
 
         .td-supplier .select2-selection__rendered {
             overflow: hidden !important;
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
-            max-width: calc(100% - 40px) !important;
+            max-width: calc(100% - 50px) !important;
+            display: block !important; /* ✅ Paksa block bukan flex */
+        }
+
+        /* ✅ Pastikan clear button tetap di posisi default select2 */
+        .td-supplier .select2-selection__clear {
+            position: absolute !important;
+            right: 25px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+        }
+
+        .td-supplier .select2-selection--single {
+            position: relative !important;
+        }
+
+        .td-supplier .select2-container--default .select2-selection--single {
+            height: 38px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 0;
+            position: relative;
+        }
+
+        .td-supplier .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 38px !important;
+            padding-left: 8px !important;
+            padding-right: 40px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            display: block !important;
+        }
+
+        .td-supplier .select2-container--default .select2-selection--single .select2-selection__clear {
+            position: absolute !important;
+            right: 25px !important;
+            top: 35% !important;
+            transform: translateY(-50%) !important;
+            margin: 0 !important;
+            line-height: 1 !important;
+        }
+
+        .td-supplier .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 38px !important;
+            top: 0 !important;
+            right: 4px !important;
         }
 
         /* ==========================================================
@@ -75,12 +125,7 @@
             padding: 8px !important;
         }
 
-        /* Kolom Supplier & Select2 */
-        .td-supplier {
-            width: 23%;
-            min-width: 200px; /* Minimum lebar di mobile */
-        }
-
+        /* ❌ Hapus ini - penyebab × ke kiri */
         #productVariantTable .select2-container--default .select2-selection--single {
             height: 38px !important;
             padding: 5px;

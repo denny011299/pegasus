@@ -660,7 +660,7 @@
     <div class="row g-3 mb-5" data-dash-widget="approval_logs">
         <div class="col-12">
             <div class="dash-card dash-card-fill">
-                <h3 class="dash-card-title">Changelog — tunggu ACC Direktur</h3>
+                <h3 class="dash-card-title">Changelog</h3>
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">

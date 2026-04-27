@@ -111,7 +111,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Batal</button>
                     <button type="button" class="btn btn-primary" id="btn_save_dash_widgets">Simpan Widget</button>
                 </div>
             </div>

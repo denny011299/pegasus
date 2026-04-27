@@ -103,7 +103,7 @@
         $('.is-invalids').removeClass('is-invalids');
         $('#oc_transaksi').val(1);
         $('.total').html("Rp 0");
-        autocompleteStaff('#staff_id', '#add_cash_admin .modal-content');
+        autocompleteStaff('#staff_id', '#add_cash_admin .modal-body');
         $('#btn-foto-bukti').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
@@ -127,7 +127,7 @@
         $('.is-invalids').removeClass('is-invalids');
         $('#oc_transaksi_gudang').val(1);
         $('.total_gudang').html("Rp 0");
-        autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-content');
+        autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
         $('#btn-foto-bukti-gudang').show();
         $('#btn-lihat-bukti-gudang').hide();
         $('#check_foto_gudang').hide();
@@ -150,7 +150,7 @@
         $('.is-invalids').removeClass('is-invalids');
         $('#oc_transaksi_armada').val(1);
         $('.total_armada').html("Rp 0");
-        autocompleteCustomer('#customer_id_armada', '#add_cash_armada .modal-content');
+        autocompleteCustomer('#customer_id_armada', '#add_cash_armada .modal-body');
         if ($('#filter_customer_id').val()){
             let temp = $('#filter_customer_id').select2('data')[0];
             let option = new Option(temp.customer_notes, temp.customer_id, true, true);
@@ -180,14 +180,14 @@
         $('.is-invalids').removeClass('is-invalids');
         $('#oc_transaksi_sales').val(1);
         $('.total_sales').html("Rp 0");
-        autocompleteStaffSales('#staff_id_sales', '#add_cash_sales .modal-content');
+        autocompleteStaffSales('#staff_id_sales', '#add_cash_sales .modal-body');
         if ($('#filter_sales_id').val()){
             let temp = $('#filter_sales_id').select2('data')[0];
             let option = new Option(temp.staff_name, temp.staff_id, true, true);
             $(option).data('data', temp);
             $('#staff_id_sales').empty().append(option).attr('disabled',true).trigger('change');
         }
-        autocompleteRekening('#bank_account', '#add_cash_sales .modal-content');
+        autocompleteRekening('#bank_account', '#add_cash_sales .modal-body');
         $('#btn-foto-bukti-sales').show();
         $('#btn-lihat-bukti-sales').hide();
         $('#check_foto_sales').hide();
@@ -213,7 +213,7 @@
             $('#add_cash_admin .modal-title').html("Tambah Aktivitas Admin");
             $('#staff_id').empty(null).attr('disabled', false);
             $('#jenis_input').val("saldo").attr('disabled', false).trigger('change');
-            autocompleteStaff('#staff_id', '#add_cash_admin .modal-content');
+            autocompleteStaff('#staff_id', '#add_cash_admin .modal-body');
             $('.total').html("Rp 0");
 
             $('#btn-foto-bukti').show();
@@ -239,8 +239,8 @@
             $('#staff_id_gudang').empty(null).attr('disabled', false);
             $('#customer_id').empty(null);
             $('#jenis_input_gudang').val("saldo").attr('disabled', false).trigger('change');
-            autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-content');
-            autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-content');
+            autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
+            autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
             $('.total_gudang').html("Rp 0");
 
             $('#btn-foto-bukti-gudang').show();
@@ -260,8 +260,8 @@
             $('#add_cash_armada .modal-title').html("Tambah Aktivitas Armada");
             $('#customer_id_armada').empty(null).attr('disabled', false);
             $('#jenis_input_armada').val("saldo").attr('disabled', false).trigger('change');
-            autocompleteCustomer('#customer_id_armada', '#add_cash_armada .modal-content');
-            autocompleteCashCategory('#cc_id', '#add_cash_armada .modal-content');
+            autocompleteCustomer('#customer_id_armada', '#add_cash_armada .modal-body');
+            autocompleteCashCategory('#cc_id', '#add_cash_armada .modal-body');
             $('.total_armada').html("Rp 0");
             $("#oc_date_armada").val(todayStr).attr('disabled', false);
 
@@ -289,9 +289,9 @@
             $('#staff_id_sales, #bank_account, #cc_id_sales').empty(null).attr('disabled', false);
             $('#jenis_input_sales').val("saldo").attr('disabled', false).trigger('change');
             $('#aksi_sales').val(1).attr('disabled', false).trigger('change');
-            autocompleteStaffSales('#staff_id_sales', '#add_cash_sales .modal-content');
-            autocompleteCashCategory('#cc_id_sales', '#add_cash_sales .modal-content');
-            autocompleteRekening('#bank_account', '#add_cash_sales .modal-content');
+            autocompleteStaffSales('#staff_id_sales', '#add_cash_sales .modal-body');
+            autocompleteCashCategory('#cc_id_sales', '#add_cash_sales .modal-body');
+            autocompleteRekening('#bank_account', '#add_cash_sales .modal-body');
             $('.total_sales').html("Rp 0");
 
             $('#btn-foto-bukti-sales').show();

@@ -69,7 +69,7 @@
                             e[i].role_id +
                             '" class="btn btn-greys me-2"><i class="fa fa-shield me-1"></i> Perizinan</a>';
                         rp +=
-                            '<a href="#" class="btn btn-greys me-2 btn_dashboard_widgets"><i class="fa fa-th-large me-1"></i> Widget Dashboard</a>';
+                            '<a class="btn btn-greys me-2 btn_dashboard_widgets"><i class="fa fa-th-large me-1"></i> Widget Dashboard</a>';
                     }
                     e[i].action =
                         rp ||
