@@ -108,7 +108,7 @@
 
                 <div class="barcode">
                     {{-- DNS1D::getBarcodeHTML($barcode, 'C128', lebar=0.8, tinggi=20) --}}
-                    {!! DNS1D::getBarcodeHTML($barcode, 'C128', 0.88, 24) !!} 
+                    {!! DNS1D::getBarcodeHTML($barcode, 'C128', 0.70, 24) !!} 
                 </div>
 
                 <div class="NoBarcode">{{$barcode}}</div>
