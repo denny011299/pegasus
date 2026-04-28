@@ -188,7 +188,8 @@
 
 @section('custom_js')
     <script>
-        var public = "{{ asset('') }}";    
+        var public = "{{ asset('') }}"; 
+        var sessionUser = @json(Session::get('user'));   
     </script>
     <script src="{{asset('Custom_js/Backoffice/Reports/Cash_Operational.js')}}"></script>
 @endsection

@@ -104,6 +104,10 @@
         $('#oc_transaksi').val(1);
         $('.total').html("Rp 0");
         autocompleteStaff('#staff_id', '#add_cash_admin .modal-body');
+        if(sessionUser && mode == 1) {
+            let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
+            $('#staff_id').empty().append(option).attr('disabled', false).trigger('change').attr('disabled', true);
+        }
         $('#btn-foto-bukti').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
@@ -128,6 +132,10 @@
         $('#oc_transaksi_gudang').val(1);
         $('.total_gudang').html("Rp 0");
         autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
+        if(sessionUser && mode == 1) {
+            let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
+            $('#staff_id_gudang').empty().append(option).attr('disabled', false).trigger('change').attr('disabled', true);
+        }
         $('#btn-foto-bukti-gudang').show();
         $('#btn-lihat-bukti-gudang').hide();
         $('#check_foto_gudang').hide();
@@ -216,6 +224,11 @@
             autocompleteStaff('#staff_id', '#add_cash_admin .modal-body');
             $('.total').html("Rp 0");
 
+            if(sessionUser) {
+                let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
+                $('#staff_id').empty().append(option).attr('disabled', false).trigger('change').attr('disabled', true);
+            }
+
             $('#btn-foto-bukti').show();
             $('#btn-lihat-bukti').hide();
             $('#check_foto').hide();
@@ -241,6 +254,11 @@
             $('#jenis_input_gudang').val("saldo").attr('disabled', false).trigger('change');
             autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
             autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
+            
+            if(sessionUser) {
+                let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
+                $('#staff_id_gudang').empty().append(option).attr('disabled', false).trigger('change').attr('disabled', true);
+            }
             $('.total_gudang').html("Rp 0");
 
             $('#btn-foto-bukti-gudang').show();

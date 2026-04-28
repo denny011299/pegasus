@@ -13,22 +13,25 @@
             gap: 40px;               /* jarak antar kolom */
             padding: 12px 0px 12px 36px;
             border-bottom: 1px solid #eee;
+            justify-content: flex-start;
         }
 
         .child-left {
-            flex: 0 0 50%;
+            flex: 0 0 45%;
             padding-left: 0.8rem
         }
 
         .child-right {
-            flex: 0 0 34%;
+            flex: 0 0 20%;
             text-align: right;
             padding-right: 12rem;
         }
 
         .child-left-total {
-            flex: 0 0 50%;
-            padding-left: 6.8rem
+            flex: 0 0 45%;
+            padding-left: 0.8rem; /* Samakan dengan child-left agar lurus vertikal */
+            text-align: right;
+            padding-right: 20px; /* Jarak antara tulisan 'Total Akhir' dengan angka */
         }
 
         .left-row {
@@ -42,6 +45,7 @@
         }
 
         .notes {
+            flex: 1;
             max-width: 30rem;
             white-space: normal;
             word-break: break-word;

@@ -42,7 +42,7 @@ class Cash extends Model
 
         foreach ($result as $key => $value) {
             // Armada
-            if ($value->cash_type == 1 && $value->cash_tujuan == 3){
+            if (in_array($value->cash_type, [1, 2]) && $value->cash_tujuan == 3){
 
                 $pengembalianIni = CashArmada::where('cash_id', $value->cash_id)
                     ->where('customer_id', $value->person_id)
@@ -120,7 +120,7 @@ class Cash extends Model
             }
 
             // Sales
-            else if (in_array($value->cash_type, [1, 3]) && $value->cash_tujuan == 4){
+            else if (in_array($value->cash_type, [1, 2, 3]) && $value->cash_tujuan == 4){
                 $pengembalianIni = CashSales::where('cash_id', $value->cash_id)
                     ->where('staff_id', $value->person_id)
                     ->where('cs_type', 1)

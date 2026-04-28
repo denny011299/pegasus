@@ -178,11 +178,11 @@
             tr.removeClass('shown');
         } else {
             let rowData = row.data();
-            if (rowData.armada_operasional) {
+            if (rowData.armada_operasional || rowData.armada_penyerahan) {
                 row.child(formatArmada(rowData)).show();
                 tr.addClass('shown');
             }
-            else if (rowData.sales_operasional) {
+            else if (rowData.sales_operasional || rowData.sales_penyerahan) {
                 row.child(formatSales(rowData)).show();
                 tr.addClass('shown');
             }
@@ -194,14 +194,13 @@
         let operasional = rowData.armada_operasional;
         let penyerahan = rowData.armada_penyerahan;
 
-        if (!operasional || operasional.length === 0) {
+        if ((!operasional || operasional.length === 0) && (!penyerahan || penyerahan.length === 0)) {
             return `
                 <div class="p-3">
                     <em class="text-muted">Tidak ada detail operasional armada</em>
                 </div>
             `;
         }
-
         let total = 0;
         let html = `<div class="px-5">`;
 
@@ -221,44 +220,47 @@
             });
         }
 
-        operasional.forEach((d) => {
-            if (d.cr_type == 1) total += parseInt(d.cr_nominal);
-            else if (d.cr_type >= 2) total -= parseInt(d.cr_nominal);
+        if (operasional && operasional.length > 0) {
 
-            var img = JSON.parse(d.cr_img);
-            list_photo = img || null;
-
-            html += `
-                <div class="child-item">
-                    <div class="child-left">
-                        <div class="d-flex g-3">
-                            <div class="date me-3">
-                                ${moment(d.cr_date).format('D MMM YYYY')}
-                            </div>
-                            <div class="notes">
-                                ${d.cr_notes}
+            operasional.forEach((d) => {
+                if (d.cr_type == 1) total += parseInt(d.cr_nominal);
+                else if (d.cr_type >= 2) total -= parseInt(d.cr_nominal);
+    
+                var img = JSON.parse(d.cr_img);
+                list_photo = img || null;
+    
+                html += `
+                    <div class="child-item">
+                        <div class="child-left">
+                            <div class="d-flex g-3">
+                                <div class="date me-3">
+                                    ${moment(d.cr_date).format('D MMM YYYY')}
+                                </div>
+                                <div class="notes">
+                                    ${d.cr_notes}
+                                </div>
                             </div>
                         </div>
+                        <div class="child-right text-end" style="color: ${d.cr_type <= 2 ? (d.cr_type == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
+                            ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cr_nominal)}
+                        </div>
+                        <div class="d-flex">
+                            ${d.detail_armada && d.detail_armada.length > 0 ? `
+                            <a class="me-2 btn-action-icon p-2 btn-detail-armada" 
+                                data-detail='${JSON.stringify(d.detail_armada)}'
+                                data-notes='${d.cr_notes}'>
+                                <i class="fe fe-list"></i>
+                            </a>` : ''}
+                            ${d.cr_img ? `
+                            <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-armada" 
+                                data-img='${d.cr_img}'>
+                                <i class="fe fe-eye"></i>
+                            </a>` : ''}
+                        </div>
                     </div>
-                    <div class="child-right text-end" style="color: ${d.cr_type <= 2 ? (d.cr_type == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
-                        ${d.cr_type == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cr_nominal)}
-                    </div>
-                    <div class="d-flex">
-                        ${d.detail_armada && d.detail_armada.length > 0 ? `
-                        <a class="me-2 btn-action-icon p-2 btn-detail-armada" 
-                            data-detail='${JSON.stringify(d.detail_armada)}'
-                            data-notes='${d.cr_notes}'>
-                            <i class="fe fe-list"></i>
-                        </a>` : ''}
-                        ${d.cr_img ? `
-                        <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-armada" 
-                            data-img='${d.cr_img}'>
-                            <i class="fe fe-eye"></i>
-                        </a>` : ''}
-                    </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
 
         html += `
             <div class="child-item fw-semibold pt-3 border-top">
@@ -296,10 +298,10 @@
         let operasional = rowData.sales_operasional;
         let penyerahan = rowData.sales_penyerahan;
 
-        if (!operasional || operasional.length === 0) {
+        if ((!operasional || operasional.length === 0) && (!penyerahan || penyerahan.length === 0)) {
             return `
                 <div class="p-3">
-                    <em class="text-muted">Tidak ada detail operasional sales</em>
+                    <em class="text-muted">Tidak ada detail operasional armada</em>
                 </div>
             `;
         }
@@ -323,45 +325,48 @@
             });
         }
 
-        operasional.forEach((d) => {
-            if (d.cs_transaction == 1) total += parseInt(d.cs_nominal);
-            else if (d.cs_transaction >= 2) total -= parseInt(d.cs_nominal);
+        if (operasional && operasional.length > 0) {
 
-            var img = JSON.parse(d.cs_img);
-            list_photo = img || null;
-
-            html += `
-                <div class="child-item">
-                    <div class="child-left">
-                        <div class="d-flex g-3">
-                            <div class="date me-3">
-                                ${moment(d.cs_date).format('D MMM YYYY')}
+            operasional.forEach((d) => {
+                if (d.cs_transaction == 1) total += parseInt(d.cs_nominal);
+                else if (d.cs_transaction >= 2) total -= parseInt(d.cs_nominal);
+    
+                var img = JSON.parse(d.cs_img);
+                list_photo = img || null;
+    
+                html += `
+                    <div class="child-item">
+                        <div class="child-left">
+                            <div class="d-flex g-3">
+                                <div class="date me-3">
+                                    ${moment(d.cs_date).format('D MMM YYYY')}
+                                </div>
+                                <div class="notes">
+                                    ${d.cs_notes}
+                                </div>
                             </div>
-                            <div class="notes">
-                                ${d.cs_notes}
-                            </div>
+                            
                         </div>
-                        
+                        <div class="child-right text-end" style="color : ${d.cs_transaction <= 2 ? (d.cs_transaction == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
+                            ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cs_nominal)}
+                        </div>
+                        <div class="d-flex">
+                            ${d.detail_armada && d.detail_armada.length > 0 ? `
+                            <a class=" me-2 btn-action-icon p-2 btn-detail-sales" 
+                                data-detail='${JSON.stringify(d.detail_armada)}'
+                                data-notes='${d.cs_notes}'>
+                                <i class="fe fe-list"></i>
+                            </a>` : ''}
+                            ${d.cs_img ? `
+                            <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-sales" 
+                                data-img='${d.cs_img}'>
+                                <i class="fe fe-eye"></i>
+                            </a>` : ''}
+                        </div>
                     </div>
-                    <div class="child-right text-end" style="color : ${d.cs_transaction <= 2 ? (d.cs_transaction == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
-                        ${d.cs_transaction == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.cs_nominal)}
-                    </div>
-                    <div class="d-flex">
-                        ${d.detail_armada && d.detail_armada.length > 0 ? `
-                        <a class=" me-2 btn-action-icon p-2 btn-detail-sales" 
-                            data-detail='${JSON.stringify(d.detail_armada)}'
-                            data-notes='${d.cs_notes}'>
-                            <i class="fe fe-list"></i>
-                        </a>` : ''}
-                        ${d.cs_img ? `
-                        <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-sales" 
-                            data-img='${d.cs_img}'>
-                            <i class="fe fe-eye"></i>
-                        </a>` : ''}
-                    </div>
-                </div>
-            `;
-        });
+                `;
+            });
+        }
 
         html += `
             <div class="child-item fw-semibold pt-3 border-top">
