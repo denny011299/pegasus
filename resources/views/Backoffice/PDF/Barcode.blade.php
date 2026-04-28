@@ -105,7 +105,10 @@
 </head>
 <body>
     @php
-        $label_count = 0; 
+        $label_count = 0;
+        $total_labels = collect($list)->sum(function ($it) {
+            return (int) ($it->qty_print ?? 0);
+        });
     @endphp
 
     @foreach ($list as $item)
@@ -146,7 +149,7 @@
                 $label_count++; 
             @endphp
             
-            @if ($label_count % 2 == 0)
+            @if ($label_count % 2 == 0 && $label_count < $total_labels)
                 <div class="clear"></div>
                         
                 <div class="page-break"></div>
