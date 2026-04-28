@@ -226,10 +226,10 @@ $(document).on("change", "#image", function () {
 
     $(document).on("click",".btn_view_tt",function(){
         var kode = $(this).attr('kode');
-        if(kode==null||kode==""||kode=="null") {
-            notifikasi('error', "Gagal View", 'Silahkan generate tanda terima terlebih dahulu!');
-            return false;
-        }
+        // if(kode==null||kode==""||kode=="null") {
+        //     notifikasi('error', "Gagal View", 'Silahkan generate tanda terima terlebih dahulu!');
+        //     return false;
+        // }
     
     });
 
