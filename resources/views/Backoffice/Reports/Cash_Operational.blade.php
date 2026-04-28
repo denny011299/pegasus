@@ -87,11 +87,22 @@
     @php
         $isSuperAdminKas = (int) (Session::get('user')->role_id ?? 0) === -1;
         $aksesKas = collect(json_decode(Session::get('user')->role_access ?? '[]'));
-        $canKasOperasionalAll = $aksesKas->firstWhere('name', 'Kas Operasional');
-        $canKasOpAdmin = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Admin');
-        $canKasOpGudang = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Gudang');
-        $canKasOpArmada = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Armada');
-        $canKasOpSales = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Sales');
+        $hasViewKas = static function ($moduleName) use ($aksesKas): bool {
+            $needle = strtolower(trim((string) $moduleName));
+            $found = $aksesKas->first(function ($row) use ($needle) {
+                return strtolower(trim((string) ($row->name ?? ''))) === $needle;
+            });
+            if (!$found) return false;
+            $list = $found->akses ?? [];
+            if (!is_array($list)) $list = (array) $list;
+            $list = array_map(static fn ($v) => strtolower(trim((string) $v)), $list);
+            return in_array('view', $list, true);
+        };
+        $canKasOperasionalAll = $hasViewKas('Kas Operasional');
+        $canKasOpAdmin = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Admin');
+        $canKasOpGudang = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Gudang');
+        $canKasOpArmada = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Armada');
+        $canKasOpSales = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Sales');
     @endphp
     <!-- Page Wrapper -->
     <div class="page-wrapper">

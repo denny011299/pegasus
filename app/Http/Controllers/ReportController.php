@@ -34,6 +34,7 @@ use App\Models\Unit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ReportController extends Controller
 {
@@ -458,6 +459,244 @@ class ReportController extends Controller
                 ]);
             }
         }
+    }
+
+    public function ReportCashOut()
+    {
+        return view('Backoffice.Reports.Cash_Out_Report');
+    }
+
+    public function getReportCashOut(Request $req)
+    {
+        $mode = strtolower((string) $req->get('filter_mode', 'month'));
+        if (!in_array($mode, ['day', 'month', 'year'], true)) {
+            $mode = 'month';
+        }
+
+        $today = \Carbon\Carbon::today();
+        $start = $today->copy()->startOfMonth();
+        $end = $today->copy()->endOfMonth();
+        $label = $today->isoFormat('MMMM Y');
+
+        if ($mode === 'day') {
+            $picked = trim((string) $req->get('filter_day', ''));
+            $day = $picked !== '' ? \Carbon\Carbon::parse($picked) : $today->copy();
+            $start = $day->copy()->startOfDay();
+            $end = $day->copy()->endOfDay();
+            $label = $day->isoFormat('D MMMM Y');
+        } elseif ($mode === 'year') {
+            $pickedYear = (int) $req->get('filter_year', (int) $today->format('Y'));
+            if ($pickedYear < 2000 || $pickedYear > 2100) {
+                $pickedYear = (int) $today->format('Y');
+            }
+            $yearDate = \Carbon\Carbon::create($pickedYear, 1, 1);
+            $start = $yearDate->copy()->startOfYear();
+            $end = $yearDate->copy()->endOfYear();
+            $label = (string) $pickedYear;
+        } else {
+            $pickedMonth = trim((string) $req->get('filter_month', ''));
+            if (preg_match('/^\d{4}-\d{2}$/', $pickedMonth) === 1) {
+                $monthDate = \Carbon\Carbon::createFromFormat('Y-m', $pickedMonth);
+            } else {
+                $monthDate = $today->copy();
+            }
+            $start = $monthDate->copy()->startOfMonth();
+            $end = $monthDate->copy()->endOfMonth();
+            $label = $monthDate->isoFormat('MMMM Y');
+        }
+
+        $tujuanMap = [
+            1 => 'Kas Admin',
+            2 => 'Kas Gudang',
+            3 => 'Kas Armada',
+            4 => 'Kas Sales',
+        ];
+        $staffName = static function ($id): string {
+            if (!$id) return '-';
+            return Staff::find($id)->staff_name ?? '-';
+        };
+
+        $rows = [];
+        $total = 0.0;
+
+        // 1) Kas utama (hanya pengeluaran)
+        $cashCols = [
+            'cash_id',
+            'cash_date',
+            'cash_description',
+            'cash_nominal',
+            'cash_type',
+            'cash_tujuan',
+        ];
+        $cashHasCreatedBy = Schema::hasColumn('cashes', 'created_by');
+        $cashHasAccBy = Schema::hasColumn('cashes', 'acc_by');
+        if ($cashHasCreatedBy) $cashCols[] = 'created_by';
+        if ($cashHasAccBy) $cashCols[] = 'acc_by';
+
+        $mainCash = DB::table('cashes')
+            ->where('status', 2)
+            ->whereIn('cash_type', [2, 3])
+            ->whereBetween('cash_date', [$start->toDateString(), $end->toDateString()])
+            ->get($cashCols);
+
+        foreach ($mainCash as $row) {
+            $nominal = (float) ($row->cash_nominal ?? 0);
+            $total += $nominal;
+            $createdBy = ($cashHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-';
+            $accBy = ($cashHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-';
+            $rows[] = [
+                'cash_id' => 'cash-'.(int) $row->cash_id,
+                'cash_date' => (string) $row->cash_date,
+                'cash_description' => (string) ($row->cash_description ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => (int) ($row->cash_type ?? 0),
+                'cash_type_label' => (int) ($row->cash_type ?? 0) === 2 ? 'Keluar' : 'Keluar 1',
+                'cash_tujuan' => (int) ($row->cash_tujuan ?? 0),
+                'cash_tujuan_label' => $tujuanMap[(int) ($row->cash_tujuan ?? 0)] ?? 'Umum',
+                'created_by_name' => $createdBy,
+                'acc_by_name' => $accBy,
+            ];
+        }
+
+        // 2) Kas operasional Admin (cash_id=0 agar tidak double dari tabel cashes)
+        $caCols = ['ca_id', 'ca_date', 'ca_notes', 'ca_nominal', 'ca_type', 'ca_aksi'];
+        $caHasCreatedBy = Schema::hasColumn('cash_admins', 'created_by');
+        $caHasAccBy = Schema::hasColumn('cash_admins', 'acc_by');
+        if ($caHasCreatedBy) $caCols[] = 'created_by';
+        if ($caHasAccBy) $caCols[] = 'acc_by';
+        $caRows = DB::table('cash_admins')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('ca_date', [$start->toDateString(), $end->toDateString()])
+            ->get($caCols);
+        foreach ($caRows as $row) {
+            $isOut = ((int) ($row->ca_type ?? 0) === 2) || ((int) ($row->ca_type ?? 0) === 1 && (int) ($row->ca_aksi ?? 0) === 2);
+            if (!$isOut) continue;
+            $nominal = (float) ($row->ca_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'ca-'.(int) $row->ca_id,
+                'cash_date' => (string) $row->ca_date,
+                'cash_description' => (string) ($row->ca_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 1,
+                'cash_tujuan_label' => 'Kas Admin',
+                'created_by_name' => ($caHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($caHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        // 3) Kas operasional Gudang
+        $cgCols = ['cg_id', 'cg_date', 'cg_notes', 'cg_nominal', 'cg_type', 'cg_aksi'];
+        $cgHasCreatedBy = Schema::hasColumn('cash_gudangs', 'created_by');
+        $cgHasAccBy = Schema::hasColumn('cash_gudangs', 'acc_by');
+        if ($cgHasCreatedBy) $cgCols[] = 'created_by';
+        if ($cgHasAccBy) $cgCols[] = 'acc_by';
+        $cgRows = DB::table('cash_gudangs')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('cg_date', [$start->toDateString(), $end->toDateString()])
+            ->get($cgCols);
+        foreach ($cgRows as $row) {
+            $isOut = ((int) ($row->cg_type ?? 0) === 2) || ((int) ($row->cg_type ?? 0) === 1 && (int) ($row->cg_aksi ?? 0) === 2);
+            if (!$isOut) continue;
+            $nominal = (float) ($row->cg_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'cg-'.(int) $row->cg_id,
+                'cash_date' => (string) $row->cg_date,
+                'cash_description' => (string) ($row->cg_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 2,
+                'cash_tujuan_label' => 'Kas Gudang',
+                'created_by_name' => ($cgHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($cgHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        // 4) Kas operasional Armada
+        $crCols = ['cr_id', 'cr_date', 'cr_notes', 'cr_nominal', 'cr_type'];
+        $crHasCreatedBy = Schema::hasColumn('cash_armadas', 'created_by');
+        $crHasAccBy = Schema::hasColumn('cash_armadas', 'acc_by');
+        if ($crHasCreatedBy) $crCols[] = 'created_by';
+        if ($crHasAccBy) $crCols[] = 'acc_by';
+        $crRows = DB::table('cash_armadas')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('cr_date', [$start->toDateString(), $end->toDateString()])
+            ->get($crCols);
+        foreach ($crRows as $row) {
+            $isOut = (int) ($row->cr_type ?? 0) >= 2;
+            if (!$isOut) continue;
+            $nominal = (float) ($row->cr_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'cr-'.(int) $row->cr_id,
+                'cash_date' => (string) $row->cr_date,
+                'cash_description' => (string) ($row->cr_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 3,
+                'cash_tujuan_label' => 'Kas Armada',
+                'created_by_name' => ($crHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($crHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        // 5) Kas operasional Sales
+        $csCols = ['cs_id', 'cs_date', 'cs_notes', 'cs_nominal', 'cs_transaction'];
+        $csHasCreatedBy = Schema::hasColumn('cash_sales', 'created_by');
+        $csHasAccBy = Schema::hasColumn('cash_sales', 'acc_by');
+        if ($csHasCreatedBy) $csCols[] = 'created_by';
+        if ($csHasAccBy) $csCols[] = 'acc_by';
+        $csRows = DB::table('cash_sales')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('cs_date', [$start->toDateString(), $end->toDateString()])
+            ->get($csCols);
+        foreach ($csRows as $row) {
+            $isOut = (int) ($row->cs_transaction ?? 0) >= 2;
+            if (!$isOut) continue;
+            $nominal = (float) ($row->cs_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'cs-'.(int) $row->cs_id,
+                'cash_date' => (string) $row->cs_date,
+                'cash_description' => (string) ($row->cs_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 4,
+                'cash_tujuan_label' => 'Kas Sales',
+                'created_by_name' => ($csHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($csHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        usort($rows, static function ($a, $b) {
+            $da = strtotime((string) ($a['cash_date'] ?? ''));
+            $db = strtotime((string) ($b['cash_date'] ?? ''));
+            if ($da === $db) {
+                return strcmp((string) ($b['cash_id'] ?? ''), (string) ($a['cash_id'] ?? ''));
+            }
+            return $db <=> $da;
+        });
+
+        return response()->json([
+            'rows' => $rows,
+            'summary' => [
+                'period_label' => $label,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+                'total_pengeluaran' => round($total, 2),
+                'jumlah_transaksi' => count($rows),
+            ],
+        ]);
     }
 
     // Report Petty Cash

@@ -463,6 +463,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Kas|view')->group(function () {
         Route::get('/cash', [ReportController::class, 'Cash'])->name('cash');
         Route::get('/getCash', [ReportController::class, 'getCash'])->name('getCash');
+        Route::get('/reportCashOut', [ReportController::class, 'ReportCashOut'])->name('reportCashOut');
+        Route::get('/getReportCashOut', [ReportController::class, 'getReportCashOut'])->name('getReportCashOut');
         Route::get('/pettyCash', [ReportController::class, 'PettyCash'])->name('pettyCash');
         Route::get('/getPettyCash', [ReportController::class, 'getPettyCash'])->name('getPettyCash');
     });

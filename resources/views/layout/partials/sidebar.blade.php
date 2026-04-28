@@ -738,8 +738,11 @@
                         $akses->firstWhere('name', 'Untung & Rugi') ||
                         $akses->firstWhere('name', 'Barang Masuk Keluar');
                     @endphp
+                    @php
+                        $showLaporanMenu = $showLaporan || $akses->firstWhere('name', 'Kas');
+                    @endphp
 
-                    @if ($showAccounting || $showLaporan || $akses->firstWhere('name', 'Bank Account') || $akses->firstWhere('name', 'Hutang'))
+                    @if ($showAccounting || $showLaporanMenu || $akses->firstWhere('name', 'Bank Account') || $akses->firstWhere('name', 'Hutang'))
                         <li class="menu-title"><span>Akuntansi & Laporan</span></li>
                         
                         @if ($akses->firstWhere('name', 'Bank Account'))
@@ -786,7 +789,7 @@
                             </li>
                         @endif
 
-                        @if ($showLaporan)
+                        @if ($showLaporanMenu)
                             <li class="submenu">
                                 <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
                                     class="menu-arrow"></span></a>
@@ -828,6 +831,12 @@
                                         <li><a href="/reportStockAging"
                                             class="{{ Request::is('reportStockAging') ? 'active' : '' }}">
                                             Laporan Stock Aging</a></li>
+                                    @endif
+
+                                    @if ($akses->firstWhere('name', 'Kas'))
+                                        <li><a href="/reportCashOut"
+                                            class="{{ Request::is('reportCashOut') ? 'active' : '' }}">
+                                            Laporan Pengeluaran Kas</a></li>
                                     @endif
 
                                     {{-- @if ($akses->firstWhere('name', 'Untung & Rugi'))
