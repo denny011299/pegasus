@@ -41,34 +41,50 @@
             overflow: hidden;
             white-space: normal;
             word-break: break-word;
+            max-height: 2.1em; /* Maksimal 2 baris */
         }
         
         .barcode {
-            margin: 0 auto;
+            margin: 0;
             width: 100%;
-            height: auto;
-            margin-top: 0; /* Dihilangkan */
-            margin-bottom: 0; /* Dihilangkan */
+            height: 4.8mm;
+            overflow: hidden;
+            text-align: left;
+            line-height: 0;
+            margin-top: 0.1mm;
+            margin-bottom: 0.2mm;
+        }
+
+        .barcode svg,
+        .barcode img,
+        .barcode > div {
+            max-width: 100% !important;
+            width: 100% !important;
+            height: 4.8mm !important;
         }
         
         .NoBarcode {
-            font-size: 6pt; /* Font lebih kecil */
-            letter-spacing: 0.5px; /* Letter spacing dikurangi */
+            font-size: 5.5pt;
+            letter-spacing: 0.2px;
             margin: 0;
             float: left;
-            width: 100%; 
+            width: 60%;
             text-align: left;
             overflow: hidden;
+            white-space: nowrap;
+            line-height: 1;
         }
         
         .harga {
             font-weight: bold;
-            font-size: 5pt; /* Font lebih kecil */
+            font-size: 5pt;
             float: right; 
-            width: 40%; 
+            width: 40%;
             text-align: right;
             overflow: hidden;
-            margin-right: 0.40cm;
+            margin-right: 0;
+            white-space: nowrap;
+            line-height: 1;
         }
         
         .clear{
@@ -97,6 +113,12 @@
             @php
                 $barcode = str_pad($item->barcode, 12, '0', STR_PAD_LEFT); 
                 $barcode = preg_replace('/\s+/', '', $barcode); // Hapus whitespace
+                $namaProduk = trim((string)($item->nama_produk ?? ''));
+                $namaVarian = trim((string)($item->nama_varian ?? ''));
+                $namaLabel = $namaProduk;
+                if ($namaVarian !== '' && strcasecmp($namaProduk, $namaVarian) !== 0) {
+                    $namaLabel .= ' ' . $namaVarian;
+                }
                 // Tentukan style margin kanan untuk label ini
                 $margin_style = ($label_count % 2 == 0) ? 'margin-right: 4mm;' : 'margin-left: -1mm;';
             @endphp
@@ -104,12 +126,12 @@
             <div class="label" style="{{ $margin_style }}">
                 
                 @if(isset($nama) && $nama==1)
-                    <div class="nama">{{$item->nama_produk}} {{$item->nama_varian}}</div>
+                    <div class="nama">{{ $namaLabel }}</div>
                 @endif
 
                 <div class="barcode">
                     {{-- DNS1D::getBarcodeHTML($barcode, 'C128', lebar=0.8, tinggi=20) --}}
-                    {!! DNS1D::getBarcodeHTML($barcode, 'C128', 0.70, 24) !!} 
+                    {!! DNS1D::getBarcodeHTML($barcode, 'C128', 0.68, 20) !!} 
                 </div>
 
                 <div class="NoBarcode">{{$barcode}}</div>
