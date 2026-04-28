@@ -44,6 +44,11 @@
                 { data: "created_by_name" },
                 { data: "acc_by_name" },
             ],
+            initComplete: (settings, json) => {
+                $('.dataTables_filter').appendTo('#tableSearch');
+                $('.dataTables_filter').appendTo('.search-input');
+                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            },
         });
     }
 
