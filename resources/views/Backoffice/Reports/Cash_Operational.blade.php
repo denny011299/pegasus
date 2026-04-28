@@ -84,6 +84,15 @@
     </style>
 @endsection
 @section('content')
+    @php
+        $isSuperAdminKas = (int) (Session::get('user')->role_id ?? 0) === -1;
+        $aksesKas = collect(json_decode(Session::get('user')->role_access ?? '[]'));
+        $canKasOperasionalAll = $aksesKas->firstWhere('name', 'Kas Operasional');
+        $canKasOpAdmin = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Admin');
+        $canKasOpGudang = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Gudang');
+        $canKasOpArmada = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Armada');
+        $canKasOpSales = $isSuperAdminKas || $canKasOperasionalAll || $aksesKas->firstWhere('name', 'Kas Operasional Sales');
+    @endphp
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -110,10 +119,18 @@
                                     <div class="col-12 col-md-6">
                                         <label class="form-label small fw-bold text-muted">Tipe Kas</label>
                                         <select class="form-select shadow-sm" id="cashType">
-                                            <option value="admin">Kas Admin</option>
-                                            <option value="gudang">Kas Gudang</option>
-                                            <option value="armada">Dompet Virtual Armada</option>
-                                            <option value="sales">Dompet Virtual Sales</option>
+                                            @if ($canKasOpAdmin)
+                                                <option value="admin">Kas Admin</option>
+                                            @endif
+                                            @if ($canKasOpGudang)
+                                                <option value="gudang">Kas Gudang</option>
+                                            @endif
+                                            @if ($canKasOpArmada)
+                                                <option value="armada">Dompet Virtual Armada</option>
+                                            @endif
+                                            @if ($canKasOpSales)
+                                                <option value="sales">Dompet Virtual Sales</option>
+                                            @endif
                                         </select>
                                     </div>
                                 </div>

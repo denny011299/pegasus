@@ -13,8 +13,11 @@
 
     $(document).ready(function(){
         var params = new URLSearchParams(window.location.search);
-        if (params.get("cs_id")) {
+        if (params.get("cs_id") && $('#cashType option[value="sales"]').length) {
             $("#cashType").val("sales");
+        }
+        if (!$('#cashType').val()) {
+            $("#cashType").val($('#cashType option:first').val() || "");
         }
         $('#cashType').trigger('change');
     });
@@ -964,7 +967,7 @@
                 }, 100);
 
                 feather.replace(); // Biar icon feather muncul lagi
-                openCashSalesFromDashboardLink();
+                openCashFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load kategori:", err);
@@ -972,28 +975,38 @@
         });
     }
 
-    /** Dari dashboard: /operationalCash?cs_id= — pilih tab Sales dan buka modal aktivitas tersebut */
-    function openCashSalesFromDashboardLink() {
+    /** Dari dashboard: /operationalCash?[ca_id|cg_id|cr_id|cs_id]=... */
+    function openCashFromDashboardLink() {
         try {
-            if (type !== "sales" || !table) {
+            if (!table) {
                 return;
             }
             var params = new URLSearchParams(window.location.search);
-            var csId = params.get("cs_id");
-            if (!csId) {
+            var target = null;
+            if (params.get("ca_id")) target = { type: "admin", idKey: "ca_id", id: params.get("ca_id"), btn: ".btn_view_admin" };
+            else if (params.get("cg_id")) target = { type: "gudang", idKey: "cg_id", id: params.get("cg_id"), btn: ".btn_view_gudang" };
+            else if (params.get("cr_id")) target = { type: "armada", idKey: "cr_id", id: params.get("cr_id"), btn: ".btn_view_armada" };
+            else if (params.get("cs_id")) target = { type: "sales", idKey: "cs_id", id: params.get("cs_id"), btn: ".btn_view_sales" };
+
+            if (!target) return;
+            if (type !== target.type) {
+                if ($('#cashType option[value="' + target.type + '"]').length) {
+                    $('#cashType').val(target.type).trigger('change');
+                }
                 return;
             }
+
             var opened = false;
             table.rows().every(function () {
                 var d = this.data();
-                if (String(d.cs_id) === String(csId)) {
-                    $(this.node()).find(".btn_view_sales").first().trigger("click");
+                if (String(d[target.idKey]) === String(target.id)) {
+                    $(this.node()).find(target.btn).first().trigger("click");
                     opened = true;
                     return false;
                 }
             });
             if (opened) {
-                params.delete("cs_id");
+                params.delete(target.idKey);
                 var q = params.toString();
                 window.history.replaceState(
                     {},
@@ -1002,7 +1015,7 @@
                 );
             }
         } catch (err) {
-            console.warn("openCashSalesFromDashboardLink", err);
+            console.warn("openCashFromDashboardLink", err);
         }
     }
 

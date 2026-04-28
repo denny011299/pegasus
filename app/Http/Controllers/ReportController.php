@@ -1540,6 +1540,35 @@ class ReportController extends Controller
         return $url;
     }
 
+    private function fallbackDashboardLogUrlByModule(string $moduleKey): string
+    {
+        $k = strtolower(trim($moduleKey));
+        if ($k === '') {
+            return url('admin');
+        }
+
+        if (str_contains($k, 'cash')) return url('operationalCash');
+        if (str_contains($k, 'salesorder') || str_contains($k, 'so')) return url('salesOrder');
+        if (str_contains($k, 'purchaseorder') || str_contains($k, 'po')) return url('purchaseOrder');
+        if (str_contains($k, 'production')) return url('production');
+        if (str_contains($k, 'productissue')) return url('productIssue');
+        if (str_contains($k, 'supplier')) return url('supplier');
+        if (str_contains($k, 'customer')) return url('customer');
+        if (str_contains($k, 'staff') || str_contains($k, 'user')) return url('staff');
+        if (str_contains($k, 'role') || str_contains($k, 'permission')) return url('role');
+        if (str_contains($k, 'category')) return url('category');
+        if (str_contains($k, 'variant')) return url('variant');
+        if (str_contains($k, 'unit')) return url('unit');
+        if (str_contains($k, 'product')) return url('product');
+        if (str_contains($k, 'supplies') || str_contains($k, 'bahan')) return url('supplies');
+        if (str_contains($k, 'stockalertsupplies')) return url('stockAlertSupplies');
+        if (str_contains($k, 'stockalert')) return url('stockAlert');
+        if (str_contains($k, 'stockopnamebahan')) return url('stockOpnameBahan');
+        if (str_contains($k, 'stockopname')) return url('stockOpname');
+
+        return url('admin');
+    }
+
     /**
      * Peringatan stok bahan mentah (sama rule dengan halaman Stock Alert Supplies): habis = merah; di/bawah batas alert = kuning.
      */
@@ -1724,20 +1753,20 @@ class ReportController extends Controller
         $s = $start->toDateString();
         $e = $end->toDateString();
 
-        // Konfirmasi: transaksi baru (SO / PO / produksi) menunggu ACC
+        // Konfirmasi: transaksi baru menunggu ACC
         $confirmation = 0;
         $confirmation += (int) DB::table('sales_orders')->where('status', 1)->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
         $confirmation += (int) DB::table('productions')->whereIn('status', [1, 4])->whereBetween('production_date', [$s, $e])->count();
         $confirmation += (int) DB::table('purchase_orders')->where('status', 1)->whereBetween('po_date', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_admins')->where('status', 1)->whereRaw('DATE(COALESCE(ca_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_gudangs')->where('status', 1)->whereRaw('DATE(COALESCE(cg_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_armadas')->where('status', 1)->whereRaw('DATE(COALESCE(cr_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_sales')->where('status', 1)->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
 
-        // Changelog: permintaan modifikasi / mutasi khusus menunggu ACC Direktur (retur produk, penyesuaian kas sales)
+        // Changelog: permintaan modifikasi / mutasi khusus menunggu ACC Direktur
         $changelogPending = (int) DB::table('product_issues')
             ->where('status', 1)
             ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
-            ->count();
-        $changelogPending += (int) DB::table('cash_sales')
-            ->where('status', 1)
-            ->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])
             ->count();
         $changelogPending += (int) DB::table('dashboard_change_logs')
             ->whereRaw('DATE(created_at) BETWEEN ? AND ?', [$s, $e])
@@ -1820,30 +1849,6 @@ class ReportController extends Controller
             ];
         }
 
-        $csRows = DB::table('cash_sales as cs')
-            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cs.staff_id')
-            ->where('cs.status', 1)
-            ->whereRaw('DATE(COALESCE(cs.cs_date, cs.created_at)) BETWEEN ? AND ?', [$s, $e])
-            ->orderByDesc('cs.created_at')
-            ->limit($limit)
-            ->get(['cs.cs_id', 'cs.cs_nominal', 'cs.cs_notes', 'cs.cs_date', 'st.staff_name']);
-
-        foreach ($csRows as $cs) {
-            $nom = (float) ($cs->cs_nominal ?? 0);
-            $staff = trim((string) ($cs->staff_name ?? ''));
-            $changelog[] = [
-                'kind' => 'kas_sales',
-                'queue_key' => 'cs:'.$cs->cs_id,
-                'module_label' => 'Kas Sales (Staff)',
-                'reference' => 'CS #'.$cs->cs_id,
-                'date' => $cs->cs_date ? (string) $cs->cs_date : '',
-                'what_changed' => 'Penyesuaian / mutasi kas sales menunggu ACC Direktur.',
-                'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($cs->cs_notes ?? '') !== '') ? ' — '.(string) $cs->cs_notes : ''),
-                'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
-                'url_label' => 'Buka baris ini',
-            ];
-        }
-
         $masterChangeRows = DB::table('dashboard_change_logs as dcl')
             ->whereRaw('DATE(dcl.created_at) BETWEEN ? AND ?', [$s, $e])
             ->orderByDesc('dcl.created_at')
@@ -1861,6 +1866,9 @@ class ReportController extends Controller
             ]);
         foreach ($masterChangeRows as $log) {
             $safeUrl = $this->normalizeDashboardLogUrl((string) ($log->url ?? ''));
+            if ($safeUrl === url('admin')) {
+                $safeUrl = $this->fallbackDashboardLogUrlByModule((string) ($log->module_key ?? ''));
+            }
             $changelog[] = [
                 'kind' => (string) ($log->module_key ?? 'master_change'),
                 'queue_key' => 'log:'.(int) ($log->id ?? 0),
@@ -1943,6 +1951,98 @@ class ReportController extends Controller
                 'summary' => $stLabel,
                 'url' => url('production').'?production_id='.(int) $pr->production_id,
                 'url_label' => 'Buka batch ini',
+            ];
+        }
+
+        $caPend = DB::table('cash_admins as ca')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'ca.staff_id')
+            ->where('ca.status', 1)
+            ->whereRaw('DATE(COALESCE(ca.ca_date, ca.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('ca.created_at')
+            ->limit($limit)
+            ->get(['ca.ca_id', 'ca.ca_nominal', 'ca.ca_notes', 'ca.ca_date', 'st.staff_name']);
+        foreach ($caPend as $ca) {
+            $nom = (float) ($ca->ca_nominal ?? 0);
+            $staff = trim((string) ($ca->staff_name ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_admin',
+                'queue_key' => 'ca:'.$ca->ca_id,
+                'module_label' => 'Kas Operasional Admin',
+                'reference' => 'CA #'.$ca->ca_id,
+                'date' => $ca->ca_date ? (string) $ca->ca_date : '',
+                'what_changed' => 'Pengajuan kas operasional admin menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($ca->ca_notes ?? '') !== '') ? ' — '.(string) $ca->ca_notes : ''),
+                'url' => url('operationalCash').'?ca_id='.(int) $ca->ca_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $cgPend = DB::table('cash_gudangs as cg')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cg.staff_id')
+            ->where('cg.status', 1)
+            ->whereRaw('DATE(COALESCE(cg.cg_date, cg.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cg.created_at')
+            ->limit($limit)
+            ->get(['cg.cg_id', 'cg.cg_nominal', 'cg.cg_notes', 'cg.cg_date', 'st.staff_name']);
+        foreach ($cgPend as $cg) {
+            $nom = (float) ($cg->cg_nominal ?? 0);
+            $staff = trim((string) ($cg->staff_name ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_gudang',
+                'queue_key' => 'cg:'.$cg->cg_id,
+                'module_label' => 'Kas Operasional Gudang',
+                'reference' => 'CG #'.$cg->cg_id,
+                'date' => $cg->cg_date ? (string) $cg->cg_date : '',
+                'what_changed' => 'Pengajuan kas operasional gudang menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($cg->cg_notes ?? '') !== '') ? ' — '.(string) $cg->cg_notes : ''),
+                'url' => url('operationalCash').'?cg_id='.(int) $cg->cg_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $crPend = DB::table('cash_armadas as cr')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'cr.customer_id')
+            ->where('cr.status', 1)
+            ->whereRaw('DATE(COALESCE(cr.cr_date, cr.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cr.created_at')
+            ->limit($limit)
+            ->get(['cr.cr_id', 'cr.cr_nominal', 'cr.cr_notes', 'cr.cr_date', 'c.customer_notes']);
+        foreach ($crPend as $cr) {
+            $nom = (float) ($cr->cr_nominal ?? 0);
+            $armada = trim((string) ($cr->customer_notes ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_armada',
+                'queue_key' => 'cr:'.$cr->cr_id,
+                'module_label' => 'Kas Operasional Armada',
+                'reference' => 'CR #'.$cr->cr_id,
+                'date' => $cr->cr_date ? (string) $cr->cr_date : '',
+                'what_changed' => 'Pengajuan kas operasional armada menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($armada !== '' ? ' · '.$armada : '').((($cr->cr_notes ?? '') !== '') ? ' — '.(string) $cr->cr_notes : ''),
+                'url' => url('operationalCash').'?cr_id='.(int) $cr->cr_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $csPend = DB::table('cash_sales as cs')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cs.staff_id')
+            ->where('cs.status', 1)
+            ->whereRaw('DATE(COALESCE(cs.cs_date, cs.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cs.created_at')
+            ->limit($limit)
+            ->get(['cs.cs_id', 'cs.cs_nominal', 'cs.cs_notes', 'cs.cs_date', 'st.staff_name']);
+        foreach ($csPend as $cs) {
+            $nom = (float) ($cs->cs_nominal ?? 0);
+            $staff = trim((string) ($cs->staff_name ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_sales',
+                'queue_key' => 'cs:'.$cs->cs_id,
+                'module_label' => 'Kas Operasional Sales',
+                'reference' => 'CS #'.$cs->cs_id,
+                'date' => $cs->cs_date ? (string) $cs->cs_date : '',
+                'what_changed' => 'Pengajuan kas operasional sales menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($cs->cs_notes ?? '') !== '') ? ' — '.(string) $cs->cs_notes : ''),
+                'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
+                'url_label' => 'Lihat & ACC',
             ];
         }
 

@@ -712,9 +712,17 @@
 
                     {{-- Report --}}
                     @php
+                        $hasKasOperasional =
+                        $akses->firstWhere('name', 'Kas Operasional Admin') ||
+                        $akses->firstWhere('name', 'Kas Operasional Gudang') ||
+                        $akses->firstWhere('name', 'Kas Operasional Armada') ||
+                        $akses->firstWhere('name', 'Kas Operasional Sales') ||
+                        $akses->firstWhere('name', 'Kas Operasional');
+                    @endphp
+                    @php
                         $showAccounting =
                         $akses->firstWhere('name', 'Kategori Kas') ||
-                        $akses->firstWhere('name', 'Kas Operasional') ||
+                        $hasKasOperasional ||
                         // $akses->firstWhere('name', 'Kas Kecil') ||
                         $akses->firstWhere('name', 'Kas');
                     @endphp
@@ -758,7 +766,7 @@
                                         class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>    
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Kas Operasional'))
+                                    @if ($hasKasOperasional)
                                         <li><a href="{{ url('operationalCash') }}"
                                         class="{{ Request::is('operationalCash') ? 'active' : '' }}">Kas Operasional</a></li>    
                                     @endif
