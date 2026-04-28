@@ -880,7 +880,7 @@
                     @endphp
                     
                     @if ($showSetting)
-                        <li class="menu-title"><span>Pengaturan</span></li>
+                        {{-- <li class="menu-title"><span>Pengaturan</span></li>
                         <li class="submenu">
                             <a href="#"><i class="fe fe-settings"></i> <span> Pengaturan</span> <span
                                 class="menu-arrow"></span></a>
@@ -897,7 +897,7 @@
                                         Pengaturan</a></li>
                                 @endif
                             </ul>
-                        </li>
+                        </li> --}}
                     @endif
                 </ul>
             </div>

@@ -85,24 +85,22 @@
 @endsection
 @section('content')
     @php
-        $isSuperAdminKas = (int) (Session::get('user')->role_id ?? 0) === -1;
-        $aksesKas = collect(json_decode(Session::get('user')->role_access ?? '[]'));
-        $hasViewKas = static function ($moduleName) use ($aksesKas): bool {
-            $needle = strtolower(trim((string) $moduleName));
-            $found = $aksesKas->first(function ($row) use ($needle) {
-                return strtolower(trim((string) ($row->name ?? ''))) === $needle;
-            });
+        $user = Session::get('user');
+        $aksesKas = collect(json_decode($user->role_access ?? '[]'));
+
+        $check = static function ($module) use ($aksesKas) {
+            $found = $aksesKas->first(fn($row) => strtolower(trim($row->name ?? '')) === strtolower(trim($module)));
             if (!$found) return false;
-            $list = $found->akses ?? [];
-            if (!is_array($list)) $list = (array) $list;
-            $list = array_map(static fn ($v) => strtolower(trim((string) $v)), $list);
-            return in_array('view', $list, true);
+            $perms = array_map('strtolower', (array)($found->akses ?? []));
+            return in_array('view', $perms);
         };
-        $canKasOperasionalAll = $hasViewKas('Kas Operasional');
-        $canKasOpAdmin = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Admin');
-        $canKasOpGudang = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Gudang');
-        $canKasOpArmada = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Armada');
-        $canKasOpSales = $isSuperAdminKas || $canKasOperasionalAll || $hasViewKas('Kas Operasional Sales');
+
+        $isSuper = (int)($user->role_id ?? 0) === -1;
+        $all     = $check('Kas Operasional');
+        $admin   = $check('Kas Operasional Admin');
+        $gudang  = $check('Kas Operasional Gudang');
+        $armada  = $check('Kas Operasional Armada');
+        $sales   = $check('Kas Operasional Sales');
     @endphp
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -130,16 +128,16 @@
                                     <div class="col-12 col-md-6">
                                         <label class="form-label small fw-bold text-muted">Tipe Kas</label>
                                         <select class="form-select shadow-sm" id="cashType">
-                                            @if ($canKasOpAdmin)
+                                            @if ($admin)
                                                 <option value="admin">Kas Admin</option>
                                             @endif
-                                            @if ($canKasOpGudang)
+                                            @if ($gudang)
                                                 <option value="gudang">Kas Gudang</option>
                                             @endif
-                                            @if ($canKasOpArmada)
+                                            @if ($armada)
                                                 <option value="armada">Dompet Virtual Armada</option>
                                             @endif
-                                            @if ($canKasOpSales)
+                                            @if ($sales)
                                                 <option value="sales">Dompet Virtual Sales</option>
                                             @endif
                                         </select>

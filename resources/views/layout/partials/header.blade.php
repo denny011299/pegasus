@@ -102,7 +102,7 @@
             </a>
             <div class="dropdown-menu menu-drop-user">
                 <div class="profilemenu">
-                    <div class="subscription-menu">
+                    {{-- <div class="subscription-menu">
                         <ul>
                             <li>
                                 <a class="dropdown-item" href="{{ url('profiles') }}">Profile</a>
@@ -111,7 +111,7 @@
                                 <a class="dropdown-item" href="{{ url('settings') }}">Settings</a>
                             </li>
                         </ul>
-                    </div>
+                    </div> --}}
                     <div class="subscription-logout">
                         <ul>
                             <li class="pb-0">
