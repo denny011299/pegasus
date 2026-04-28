@@ -11,7 +11,40 @@
     let dd = String(today.getDate()).padStart(2, '0');
     let todayStr = yyyy + '-' + mm + '-' + dd;
 
+    function canViewCashType(type) {
+        if (window.userRoleId === -1) return true;
+        if (type === "admin") return hasAccessAction("Kas Operasional Admin", "view") || hasAccessAction("Kas Operasional", "view");
+        if (type === "gudang") return hasAccessAction("Kas Operasional Gudang", "view") || hasAccessAction("Kas Operasional", "view");
+        if (type === "armada") return hasAccessAction("Kas Operasional Armada", "view") || hasAccessAction("Kas Operasional", "view");
+        if (type === "sales") return hasAccessAction("Kas Operasional Sales", "view") || hasAccessAction("Kas Operasional", "view");
+        return false;
+    }
+
+    function sanitizeCashTypeOptions() {
+        var $cashType = $("#cashType");
+        if (!$cashType.length) return;
+
+        $cashType.find("option").each(function () {
+            var v = String($(this).val() || "");
+            if (!canViewCashType(v)) {
+                $(this).remove();
+            }
+        });
+
+        if (!$cashType.find("option").length) {
+            $cashType.append('<option value="" selected>Tidak ada akses</option>').prop("disabled", true);
+            $("#tableCash tbody").html('<tr><td colspan="10" class="text-center text-muted">Anda tidak punya akses view Kas Operasional.</td></tr>');
+            return;
+        }
+
+        if (!canViewCashType(String($cashType.val() || ""))) {
+            $cashType.val($cashType.find("option:first").val() || "");
+        }
+    }
+
     $(document).ready(function(){
+        sanitizeCashTypeOptions();
+        if ($("#cashType").is(":disabled")) return;
         var params = new URLSearchParams(window.location.search);
         if (params.get("cs_id") && $('#cashType option[value="sales"]').length) {
             $("#cashType").val("sales");
@@ -25,6 +58,11 @@
     $(document).on('change', '#cashType', function () {
         items = [];
         type = $(this).val();
+        if (!canViewCashType(String(type || ""))) {
+            $(this).val($('#cashType option:first').val() || "");
+            type = $(this).val();
+            if (!canViewCashType(String(type || ""))) return;
+        }
 
         // Setting filter
         $('#filter_staff_id').empty(null);
