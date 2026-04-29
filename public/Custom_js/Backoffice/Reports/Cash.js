@@ -154,6 +154,7 @@
                 $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
                 $('.setor').html(`Rp ${formatRupiahMinus(setor)}`);
                 table.rows.add(e).draw();
+                $('#totalAll').html(`Rp ${formatRupiahMinus(sisa)}`);
                 feather.replace(); // Biar icon feather muncul lagi
 
                 // Expand child row

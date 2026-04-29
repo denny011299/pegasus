@@ -94,6 +94,23 @@
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
+                            <div class="row total mt-1 justify-content-end">
+                                <div class="col-12 col-md-4">
+                                    <div class="card p-3 shadow-sm">
+                                        <div class="row g-2">
+                                            <div class="col-12 ps-3">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fe fe-dollar-sign me-2 text-primary"></i>
+                                                    <div class="lh-1">
+                                                        <small class="text-muted fw-bold d-block mb-1" style="font-size: 0.7rem;">Total Kas</small>
+                                                        <span class="fw-bold text-nowrap" id="totalAll">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="table-responsive">
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
