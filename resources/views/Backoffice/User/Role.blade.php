@@ -108,6 +108,15 @@
                                 <span class="ms-2">Overstock & rekomendasi stok produksi</span>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-2">
+                                <label class="checkboxs mb-0">
+                                    <input type="checkbox" class="dash-widget-checkbox" value="jatuh_tempo_hutang">
+                                    <span class="checkmarks"></span>
+                                </label>
+                                <span class="ms-2">Jatuh tempo hutang customer</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

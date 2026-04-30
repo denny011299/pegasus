@@ -235,6 +235,24 @@
         line-height: 1.2;
     }
 
+    .dash-freeze-head thead th {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #f8fafc !important;
+    }
+
+    .dash-payable-customer {
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dash-payable-amount {
+        font-weight: 600;
+    }
+
     .dash-log-btn {
         border-radius: 8px;
         font-size: 0.72rem;
@@ -734,12 +752,13 @@
                 </div>
             </div>
         </div>
-        <div class="col-12">
+        <div class="col-12" data-dash-widget="jatuh_tempo_hutang">
             <div class="dash-card dash-card-fill">
-                <h3 class="dash-card-title mb-2">Jatuh tempo hutang customer (H-2 s/d lewat jatuh tempo)</h3>
+                <h3 class="dash-card-title mb-2">Jatuh tempo hutang customer (H-7 s/d lewat jatuh tempo)</h3>
+                <p class="dash-muted-note mb-2">Menampilkan invoice belum dibayar yang sudah mendekati jatuh tempo hingga overdue untuk prioritas follow up.</p>
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
+                    <table class="table table-sm dash-table dash-table-hover dash-approval-table dash-freeze-head mb-0">
                         <thead>
                             <tr>
                                 <th class="text-nowrap">Jatuh Tempo</th>

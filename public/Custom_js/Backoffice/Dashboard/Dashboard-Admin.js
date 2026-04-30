@@ -258,20 +258,22 @@
             var r = rows[i] || {};
             var due = escHtml(r.due_text || "-");
             var badge = escHtml(r.due_badge || "-");
-            var badgeClass = "badge bg-warning text-dark";
-            if (Number(r.days_diff || 0) < 0) badgeClass = "badge bg-danger";
-            else if (Number(r.days_diff || 0) === 0) badgeClass = "badge bg-secondary";
+            var daysDiff = Number(r.days_diff || 0);
+            var badgeClass = "badge bg-info text-dark";
+            if (daysDiff < 0) badgeClass = "badge bg-danger";
+            else if (daysDiff === 0) badgeClass = "badge bg-secondary";
+            else if (daysDiff <= 2) badgeClass = "badge bg-warning text-dark";
             var dueText = '<div class="d-flex flex-column"><span class="text-nowrap">' + due + '</span><span class="' + badgeClass + ' mt-1" style="width:fit-content;">' + badge + "</span></div>";
             $tb.append(
                 "<tr><td>" +
                     dueText +
                     "</td><td>" +
                     escHtml(r.invoice || "-") +
-                    '</td><td><span class="d-inline-block" title="' +
+                    '</td><td><span class="d-inline-block dash-payable-customer" title="' +
                     escHtml(r.customer || "-") +
                     '">' +
                     escHtml(r.customer || "-") +
-                    '</span></td><td class="text-end text-nowrap">' +
+                    '</span></td><td class="text-end text-nowrap dash-payable-amount">' +
                     fmtRp(r.amount || 0) +
                     '</td><td class="text-end"><a class="btn btn-sm dash-log-btn px-2" title="Buka" href="' +
                     String(r.url || "#").replace(/"/g, "&quot;") +

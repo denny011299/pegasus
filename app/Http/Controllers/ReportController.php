@@ -1702,13 +1702,13 @@ class ReportController extends Controller
     }
 
     /**
-     * Hutang yang jatuh tempo mulai H-2 hingga overdue dan belum dibayar.
+     * Hutang yang jatuh tempo mulai H-7 hingga overdue dan belum dibayar.
      * Kondisi: pembayaran = 1 (Belum Terbayar), status PO aktif (>0), status invoice aktif (>=0).
      */
     private function dashboardPayablesDue(int $limit = 30): array
     {
         $today = \Carbon\Carbon::today();
-        $hPlus2 = $today->copy()->addDays(2);
+        $hPlus7 = $today->copy()->addDays(7);
 
         $rows = DB::table('purchase_order_detail_invoices as poi')
             ->join('purchase_orders as po', 'po.po_id', '=', 'poi.po_id')
@@ -1717,7 +1717,7 @@ class ReportController extends Controller
             ->where('po.status', '>', 0)
             ->where('po.pembayaran', 1) // belum terbayar
             ->whereNotNull('poi.poi_due')
-            ->whereDate('poi.poi_due', '<=', $hPlus2->toDateString())
+            ->whereDate('poi.poi_due', '<=', $hPlus7->toDateString())
             ->orderBy('poi.poi_due', 'asc')
             ->orderBy('poi.poi_id', 'desc')
             ->limit(max(5, min(100, $limit)))
@@ -1739,7 +1739,7 @@ class ReportController extends Controller
             }
             $diff = (int) $today->diffInDays($due, false); // >0: belum jatuh tempo, 0: hari ini, <0: overdue
             $badge = 'Jatuh tempo';
-            if ($diff === 2) $badge = 'H-2';
+            if ($diff > 1) $badge = 'H-'.$diff;
             elseif ($diff === 1) $badge = 'H-1';
             elseif ($diff === 0) $badge = 'Hari ini';
             elseif ($diff < 0) $badge = 'Lewat '.abs($diff).' hari';
