@@ -117,6 +117,11 @@ class ProductionController extends Controller
     function insertProduction(Request $req)
     {
         $data = $req->all();
+        $isRevisionResubmit = (int) ($req->input('revision_source_production_id') ?? 0) > 0;
+        if ($isRevisionResubmit) {
+            // Revisi wajib dianggap pengajuan baru di tanggal hari ini.
+            $data['production_date'] = now()->toDateString();
+        }
         $item = json_decode($req->detail, true);
         $bahan = json_decode($req->list_bahan, true);
         $cek = -1;
@@ -366,7 +371,7 @@ class ProductionController extends Controller
             (new ProductionDetails())->insertProductionDetail($value);
         }
 
-        if ($data['production_date'] != now()->toDateString()){
+        if (!$isRevisionResubmit && $data['production_date'] != now()->toDateString()){
             $req->merge(['production_id' => $p->production_id]);
             $this->accProduction($req);
         }

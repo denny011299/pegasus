@@ -5,6 +5,13 @@
     var items = [];
     var list_photo =  [];
     var list_bahan=[];
+    function getTodayStr() {
+        let today = new Date();
+        let yyyy = today.getFullYear();
+        let mm = String(today.getMonth() + 1).padStart(2, '0');
+        let dd = String(today.getDate()).padStart(2, '0');
+        return yyyy + '-' + mm + '-' + dd;
+    }
     $(document).ready(function(){
         // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
         inisialisasi();
@@ -31,13 +38,8 @@
         $('#addProduction').modal("show");
         $('.dos').hide();
         $('#btn-terima, #btn-tolak').hide();
-        
-        let today = new Date();
-        let yyyy = today.getFullYear();
-        let mm = String(today.getMonth() + 1).padStart(2, '0');
-        let dd = String(today.getDate()).padStart(2, '0');
-        let todayStr = yyyy + '-' + mm + '-' + dd;
-        $("#production_date").val(todayStr).prop('disabled', true);
+        $("#production_date").val(getTodayStr()).prop('disabled', true);
+        $('#addProduction').removeAttr("revision_source_production_id");
     })
 
     $(document).on('keyup', '#production_qty', function(){
@@ -247,7 +249,7 @@
             $('.is-invalid').removeClass('is-invalid');
             $('#unit_id').html("");
 
-            $('#production_date').val(rowData.production_date).prop('disabled', true);
+            $('#production_date').val(getTodayStr()).prop('disabled', true);
             $('#production_desc').val(rowData.production_desc || "").attr('disabled', false);
 
             rowData.items.forEach(function (e) {
@@ -272,6 +274,7 @@
             $('#btn-terima, #btn-tolak').hide();
             $('.btn-cancel').html("Batal");
             $('#addProduction').removeAttr("production_id");
+            $('#addProduction').attr("revision_source_production_id", rowData.production_id);
             $('#addProduction').modal("show");
 
             params.delete("rev_production_id");
@@ -328,6 +331,10 @@
             list_bahan: JSON.stringify(list_bahan),
             _token:token
         };
+        var revisionSourceId = $('#addProduction').attr("revision_source_production_id");
+        if (revisionSourceId) {
+            param.revision_source_production_id = revisionSourceId;
+        }
         LoadingButton($(this));
         $.ajax({
             url:url,
@@ -566,6 +573,7 @@
         $('.btn-cancel').html("Kembali");
         $('#production_date').prop('disabled', true);
         $('#addProduction').attr("production_id", data.production_id);
+        $('#addProduction').removeAttr("revision_source_production_id");
         $('#addProduction').modal("show");
     })
 
