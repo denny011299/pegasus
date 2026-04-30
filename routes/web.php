@@ -468,19 +468,19 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/pettyCash', [ReportController::class, 'PettyCash'])->name('pettyCash');
         Route::get('/getPettyCash', [ReportController::class, 'getPettyCash'])->name('getPettyCash');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,view')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,any')->group(function () {
         Route::get('/getCashAdmin', [ReportController::class, 'getCashAdmin'])->name('getCashAdmin');
     });
-    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,view')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,any')->group(function () {
         Route::get('/getCashGudang', [ReportController::class, 'getCashGudang'])->name('getCashGudang');
     });
-    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,view')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,any')->group(function () {
         Route::get('/getCashArmada', [ReportController::class, 'getCashArmada'])->name('getCashArmada');
     });
-    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,any')->group(function () {
         Route::get('/getCashSales', [ReportController::class, 'getCashSales'])->name('getCashSales');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,any')->group(function () {
         Route::get('/operationalCash', [ReportController::class, 'OperationalCash'])->name('operationalCash');
     });
     Route::middleware('check.access:Kas|create')->group(function () {

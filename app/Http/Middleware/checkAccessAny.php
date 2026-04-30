@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Parameter contoh: "Kas,Kas Operasional,view" — kemampuan (view/create/edit/delete/others) = segmen terakhir jika valid.
+ * Tambahan: akhiran "any" akan meloloskan jika user punya salah satu kemampuan pada modul.
  * Tanpa kemampuan di akhir: default view untuk semua modul di daftar.
  */
 class checkAccessAny
@@ -26,15 +27,27 @@ class checkAccessAny
         }
 
         $ability = 'view';
+        $allowAnyAbility = false;
         $last = strtolower(end($parts));
-        if (in_array($last, RoleAccess::ABILITIES, true)) {
+        if ($last === 'any') {
+            array_pop($parts);
+            $allowAnyAbility = true;
+        } elseif (in_array($last, RoleAccess::ABILITIES, true)) {
             $ability = array_pop($parts);
         }
 
         $user = Session::get('user');
         foreach ($parts as $module) {
-            if (RoleAccess::can($user, $module, $ability)) {
-                return $next($request);
+            if ($allowAnyAbility) {
+                foreach (RoleAccess::ABILITIES as $ab) {
+                    if (RoleAccess::can($user, $module, $ab)) {
+                        return $next($request);
+                    }
+                }
+            } else {
+                if (RoleAccess::can($user, $module, $ability)) {
+                    return $next($request);
+                }
             }
         }
 
