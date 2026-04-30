@@ -13,10 +13,10 @@
 
     function canViewCashType(type) {
         if (window.userRoleId === -1) return true;
-        if (type === "admin") return hasAccessAction("Kas Operasional Admin", "view") || hasAccessAction("Kas Operasional", "view");
-        if (type === "gudang") return hasAccessAction("Kas Operasional Gudang", "view") || hasAccessAction("Kas Operasional", "view");
-        if (type === "armada") return hasAccessAction("Kas Operasional Armada", "view") || hasAccessAction("Kas Operasional", "view");
-        if (type === "sales") return hasAccessAction("Kas Operasional Sales", "view") || hasAccessAction("Kas Operasional", "view");
+        if (type === "admin") return hasAccessAction("Kas Operasional Admin", "view") || hasAccessAction("Kas Admin", "view") || hasAccessAction("Kas Operasional", "view");
+        if (type === "gudang") return hasAccessAction("Kas Operasional Gudang", "view") || hasAccessAction("Kas Gudang", "view") || hasAccessAction("Kas Operasional", "view");
+        if (type === "armada") return hasAccessAction("Kas Operasional Armada", "view") || hasAccessAction("Kas Armada", "view") || hasAccessAction("Kas Operasional", "view");
+        if (type === "sales") return hasAccessAction("Kas Operasional Sales", "view") || hasAccessAction("Kas Sales", "view") || hasAccessAction("Kas Operasional", "view");
         return false;
     }
 

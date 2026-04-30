@@ -97,10 +97,10 @@
 
         $isSuper = (int)($user->role_id ?? 0) === -1;
         $all     = $check('Kas Operasional');
-        $admin   = $check('Kas Operasional Admin');
-        $gudang  = $check('Kas Operasional Gudang');
-        $armada  = $check('Kas Operasional Armada');
-        $sales   = $check('Kas Operasional Sales');
+        $admin   = $check('Kas Operasional Admin') || $check('Kas Admin');
+        $gudang  = $check('Kas Operasional Gudang') || $check('Kas Gudang');
+        $armada  = $check('Kas Operasional Armada') || $check('Kas Armada');
+        $sales   = $check('Kas Operasional Sales') || $check('Kas Sales');
     @endphp
     <!-- Page Wrapper -->
     <div class="page-wrapper">
