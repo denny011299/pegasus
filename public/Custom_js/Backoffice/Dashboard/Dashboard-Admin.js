@@ -246,6 +246,40 @@
         }
     }
 
+    function renderPayablesDueTable(rows) {
+        var $tb = $("#dash_payables_due_body");
+        if (!$tb.length) return;
+        $tb.empty();
+        if (!rows || !rows.length) {
+            $tb.append('<tr><td colspan="5" class="text-center text-muted">Tidak ada hutang mendekati / lewat jatuh tempo.</td></tr>');
+            return;
+        }
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i] || {};
+            var due = escHtml(r.due_text || "-");
+            var badge = escHtml(r.due_badge || "-");
+            var badgeClass = "badge bg-warning text-dark";
+            if (Number(r.days_diff || 0) < 0) badgeClass = "badge bg-danger";
+            else if (Number(r.days_diff || 0) === 0) badgeClass = "badge bg-secondary";
+            var dueText = '<div class="d-flex flex-column"><span class="text-nowrap">' + due + '</span><span class="' + badgeClass + ' mt-1" style="width:fit-content;">' + badge + "</span></div>";
+            $tb.append(
+                "<tr><td>" +
+                    dueText +
+                    "</td><td>" +
+                    escHtml(r.invoice || "-") +
+                    '</td><td><span class="d-inline-block" title="' +
+                    escHtml(r.customer || "-") +
+                    '">' +
+                    escHtml(r.customer || "-") +
+                    '</span></td><td class="text-end text-nowrap">' +
+                    fmtRp(r.amount || 0) +
+                    '</td><td class="text-end"><a class="btn btn-sm dash-log-btn px-2" title="Buka" href="' +
+                    String(r.url || "#").replace(/"/g, "&quot;") +
+                    '"><i class="fe fe-eye"></i></a></td></tr>'
+            );
+        }
+    }
+
     function dismissQueueItem(section, key, done) {
         $.ajax({
             url: "/dismissDashboardQueueItem",
@@ -645,6 +679,7 @@
                     filterRowsByModule(revisionRowsAll, revisionFilterModule),
                     "Tidak ada revisi di periode ini."
                 );
+                renderPayablesDueTable(data.payables_due || []);
                 $("#kpi_inventory_value").text(fmtRp(data.inventory_value && data.inventory_value.total));
                 $("#kpi_inventory_split").text(
                     "Produk " +

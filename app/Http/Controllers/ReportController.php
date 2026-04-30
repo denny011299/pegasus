@@ -1655,6 +1655,7 @@ class ReportController extends Controller
         $turnover = $this->dashboardInventoryTurnover($start, $end);
         $returnRate = $this->dashboardReturnRate($start, $end, $salesQty);
         $queues = $this->dashboardApprovalQueues($start, $end, 40);
+        $payablesDue = $this->dashboardPayablesDue();
         $changeLog = array_merge(
             $this->dashboardChangeLogCounts($start, $end),
             [
@@ -1695,8 +1696,70 @@ class ReportController extends Controller
             'stock_aging_detail' => $agingDetailByBucket,
             'warnings' => $warnings,
             'bahan_stock_alerts' => $bahanStockAlerts,
+            'payables_due' => $payablesDue,
             'chart' => $chart,
         ]);
+    }
+
+    /**
+     * Hutang yang jatuh tempo mulai H-2 hingga overdue dan belum dibayar.
+     * Kondisi: pembayaran = 1 (Belum Terbayar), status PO aktif (>0), status invoice aktif (>=0).
+     */
+    private function dashboardPayablesDue(int $limit = 30): array
+    {
+        $today = \Carbon\Carbon::today();
+        $hPlus2 = $today->copy()->addDays(2);
+
+        $rows = DB::table('purchase_order_detail_invoices as poi')
+            ->join('purchase_orders as po', 'po.po_id', '=', 'poi.po_id')
+            ->leftJoin('suppliers as s', 's.supplier_id', '=', 'po.po_supplier')
+            ->where('poi.status', '>=', 0)
+            ->where('po.status', '>', 0)
+            ->where('po.pembayaran', 1) // belum terbayar
+            ->whereNotNull('poi.poi_due')
+            ->whereDate('poi.poi_due', '<=', $hPlus2->toDateString())
+            ->orderBy('poi.poi_due', 'asc')
+            ->orderBy('poi.poi_id', 'desc')
+            ->limit(max(5, min(100, $limit)))
+            ->get([
+                'poi.poi_id',
+                'poi.po_id',
+                'poi.poi_code',
+                'poi.poi_due',
+                'poi.poi_total',
+                'po.po_number',
+                's.supplier_name',
+            ]);
+
+        $out = [];
+        foreach ($rows as $r) {
+            $due = $r->poi_due ? \Carbon\Carbon::parse($r->poi_due) : null;
+            if (!$due) {
+                continue;
+            }
+            $diff = (int) $today->diffInDays($due, false); // >0: belum jatuh tempo, 0: hari ini, <0: overdue
+            $badge = 'Jatuh tempo';
+            if ($diff === 2) $badge = 'H-2';
+            elseif ($diff === 1) $badge = 'H-1';
+            elseif ($diff === 0) $badge = 'Hari ini';
+            elseif ($diff < 0) $badge = 'Lewat '.abs($diff).' hari';
+
+            $out[] = [
+                'poi_id' => (int) ($r->poi_id ?? 0),
+                'po_id' => (int) ($r->po_id ?? 0),
+                'invoice' => (string) ($r->poi_code ?? '-'),
+                'reference' => (string) ($r->po_number ?? '-'),
+                'customer' => (string) ($r->supplier_name ?? '-'),
+                'due_date' => $due->toDateString(),
+                'due_text' => $due->format('d M Y'),
+                'days_diff' => $diff,
+                'due_badge' => $badge,
+                'amount' => (float) ($r->poi_total ?? 0),
+                'url' => url('purchaseOrderDetailHutang/'.(int) ($r->po_id ?? 0)),
+            ];
+        }
+
+        return $out;
     }
 
     public function dismissDashboardQueueItem(Request $req)

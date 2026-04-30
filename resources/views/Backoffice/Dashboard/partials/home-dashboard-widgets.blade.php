@@ -734,6 +734,29 @@
                 </div>
             </div>
         </div>
+        <div class="col-12">
+            <div class="dash-card dash-card-fill">
+                <h3 class="dash-card-title mb-2">Jatuh tempo hutang customer (H-2 s/d lewat jatuh tempo)</h3>
+                <div class="dash-scroll">
+                    <div class="dash-table-wrap">
+                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-nowrap">Jatuh Tempo</th>
+                                <th class="text-nowrap">Invoice</th>
+                                <th>Customer</th>
+                                <th class="text-end text-nowrap">Total Hutang</th>
+                                <th class="text-end text-nowrap">Buka</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash_payables_due_body">
+                            <tr><td colspan="5" class="text-center text-muted">Memuat…</td></tr>
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="dash-section" data-dash-widget="delivery_chart">
