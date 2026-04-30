@@ -144,7 +144,20 @@ class UserController extends Controller
 
     function updatePermission(Request $req){
         $data = $req->all();
-        return (new Role())->updateRole($data);
+        $updatedRoleId = (new Role())->updateRole($data);
+
+        if (Session::has('user')) {
+            $sessionUser = Session::get('user');
+            if ((int) ($sessionUser->role_id ?? 0) === (int) $updatedRoleId) {
+                $freshRole = Role::find((int) $updatedRoleId);
+                if ($freshRole) {
+                    $sessionUser->role_access = $freshRole->role_access;
+                    Session::put('user', $sessionUser);
+                }
+            }
+        }
+
+        return $updatedRoleId;
     }
 
     public function updateDashboardWidgets(Request $req)
