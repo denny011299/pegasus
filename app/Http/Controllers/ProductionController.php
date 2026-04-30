@@ -20,6 +20,7 @@ use App\Models\Unit;
 use GuzzleHttp\Psr7\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile as HttpUploadedFile;
+use Illuminate\Support\Facades\DB;
 
 use function Termwind\parse;
 
@@ -369,6 +370,23 @@ class ProductionController extends Controller
             $value['production_id'] = $p->production_id;
             $value['list_bahan'] = json_encode($bahan[$key]);
             (new ProductionDetails())->insertProductionDetail($value);
+        }
+
+        if ($isRevisionResubmit) {
+            $sourceId = (int) ($req->input('revision_source_production_id') ?? 0);
+            if ($sourceId > 0) {
+                DB::table('dashboard_queue_dismissals')->updateOrInsert(
+                    [
+                        'section' => 'revision',
+                        'queue_key' => 'pr:'.$sourceId,
+                    ],
+                    [
+                        'created_by' => session('user')->staff_id ?? null,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            }
         }
 
         if (!$isRevisionResubmit && $data['production_date'] != now()->toDateString()){
