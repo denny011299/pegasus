@@ -125,7 +125,7 @@
             columns: [
                 { data: "date",             width: "10%" },
                 { data: "pi_code",          width: "10%" },
-                { data: "ref_num_text",     width: "10%" },
+                { data: "ref_num_text",     width: "10%", defaultContent: "-" },
                 { data: "pi_notes",         width: "25%" },
                 { data: "status_text",      width: "15%", class: "text-center" },
                 { data: "created_by_name",  width: "10%", defaultContent: "-" },
@@ -339,14 +339,14 @@
                 </div>    
             `);
             autocompleteSuppliesVariantOnly("#supplies_id", "#add-product-issues .modal-content");
-            autocompletePO("#ref_num", "#add-product-issues .modal-content");
+            // autocompletePO("#ref_num", "#add-product-issues .modal-content");
             $('#pi_type').val(2);
             $('#tableProduct tr.row-supplies').remove();
             $('#tableProduct tr.row-product').remove();
             $('#tableProduct #header_name').html("Nama Bahan Mentah");
             // Untuk show ref Invoice PO
             $('.ref').show();
-            $("#ref_num").addClass("fill");
+            // $("#ref_num").addClass("fill");
         }
         else if ($(this).val() == 2) {
             $(".input_table").html(`
@@ -383,8 +383,8 @@
             $('#tableProduct tr.row-product').remove();
             $('#tableProduct #header_name').html("Nama Produk");
             // Untuk hide ref Invoice PO
-            $('.ref').hide();
-            $("#ref_num").removeClass("fill");
+            // $('.ref').hide();
+            // $("#ref_num").removeClass("fill");
         }
         loadPiType();
     })
@@ -442,7 +442,7 @@ function loadPiType() {
         param = {
             pi_date: $("#pi_date").val(),
             pi_type: $("#pi_type").val(),
-            ref_num: $("#ref_num").val(),
+            // ref_num: $("#ref_num").val(),
             pi_notes: $("#pi_notes").val(),
             tipe_return: $("#tipe_return").val(),
             photo:$('#bukti').val(),
@@ -675,7 +675,7 @@ function loadPiType() {
                     ids.forEach(element => {
                         poIds.push(element.po_id);
                     });
-                    autocompletePO('#ref_num', '#add-product-issues .modal-content', poIds);
+                    // autocompletePO('#ref_num', '#add-product-issues .modal-content', poIds);
                 }
             })
         } else {
@@ -683,7 +683,7 @@ function loadPiType() {
             ids.forEach(element => {
                 poIds.push(element.po_id);
             });
-            autocompletePO('#ref_num', '#add-product-issues .modal-content', poIds);
+            // autocompletePO('#ref_num', '#add-product-issues .modal-content', poIds);
         }
     }
 
@@ -703,7 +703,7 @@ $(document).on("click", ".btn_edit", function () {
     $("#pi_notes").val(data.pi_notes);
     $("#pi_type").empty();
     $('#tipe_return').val(data.tipe_return).trigger('change');
-    $('#ref_num').append(`<option value="${data.ref_num}">${data.supplier_name} - ${data.poi_code}</option>`);
+    // $('#ref_num').append(`<option value="${data.ref_num}">${data.supplier_name} - ${data.poi_code}</option>`);
     $('#bukti').val(data.pi_img);
     $('#tableProduct tr.row-product').remove();
     $('#tableProduct tr.row-supplies').remove();
@@ -773,11 +773,11 @@ $(document).on("click", ".btn_view", function () {
     $("#pi_type").empty().append(
         `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
     );
-    $('#ref_num').empty().append(`
-        <option value="${data.ref_num}">
-            ${data.ref_num != 0 ? data.supplier_name + ' - ' + data.poi_code : '-'}
-        </option>
-    `);
+    // $('#ref_num').empty().append(`
+    //     <option value="${data.ref_num}">
+    //         ${data.ref_num != 0 ? data.supplier_name + ' - ' + data.poi_code : '-'}
+    //     </option>
+    // `);
     $('#tableProduct tr.row-product').remove();
     items = [];
 

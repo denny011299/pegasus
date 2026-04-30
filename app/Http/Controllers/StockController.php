@@ -492,24 +492,24 @@ class StockController extends Controller
             $kurang = [];
             foreach (json_decode($data['items'], true) as $key => $value) { 
                 // Pengecekan invoice
-                if (isset($data['ref_num'])){
-                    $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
-                    $po = PurchaseOrder::find($inv->po_id);
-                    $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
+                // if (isset($data['ref_num'])){
+                //     $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
+                //     $po = PurchaseOrder::find($inv->po_id);
+                //     $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
                     
-                    $ada = -1;
-                    foreach ($pod as $key => $detail) {
-                        if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
-                            $ada = 1;
-                            if (($detail['pod_qty'] - $value['pid_qty']) < 0){
-                                array_push($kurang, $value['supplies_name']);
-                            }
-                        }
-                    }
-                    if ($ada == -1) {
-                        array_push($bermasalah, $value['supplies_name']);
-                    }
-                }
+                //     $ada = -1;
+                //     foreach ($pod as $key => $detail) {
+                //         if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
+                //             $ada = 1;
+                //             if (($detail['pod_qty'] - $value['pid_qty']) < 0){
+                //                 array_push($kurang, $value['supplies_name']);
+                //             }
+                //         }
+                //     }
+                //     if ($ada == -1) {
+                //         array_push($bermasalah, $value['supplies_name']);
+                //     }
+                // }
             }
             if (count($bermasalah) > 0) {
                 return [
@@ -533,11 +533,11 @@ class StockController extends Controller
         }
 
         // insert
-        if ($data['tipe_return'] == 1) $data['po_id'] = $po->po_id;
+        // if ($data['tipe_return'] == 1) $data['po_id'] = $po->po_id;
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;
-            if (isset($t->ref_num)) $value['ref_num'] = $t->ref_num;
+            // if (isset($t->ref_num)) $value['ref_num'] = $t->ref_num;
             (new ProductIssuesDetail())->insertProductIssuesDetail($value);
         }
     }
@@ -564,11 +564,11 @@ class StockController extends Controller
         
         $id = [];
 
-        if ($data['tipe_return'] == 1) {
-            $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
-            $po = PurchaseOrder::find($inv->po_id);
-            $data['po_id'] = $po->po_id;
-        }
+        // if ($data['tipe_return'] == 1) {
+        //     $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
+        //     $po = PurchaseOrder::find($inv->po_id);
+        //     $data['po_id'] = $po->po_id;
+        // }
         $pi = (new ProductIssues())->updateProductIssues($data);
 
         // Cek stock
@@ -596,57 +596,57 @@ class StockController extends Controller
             }
         }
         // Pengecekan invoice
-        if (isset($pi->ref_num) && $pi->ref_num > 0){
-            $bermasalah = [];
-            foreach (json_decode($data['items'], true) as $key => $value) {
-                $inv = PurchaseOrderDetailInvoice::find($pi->ref_num);
-                $po = PurchaseOrder::find($inv->po_id);
-                $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
+        // if (isset($pi->ref_num) && $pi->ref_num > 0){
+            // $bermasalah = [];
+            // foreach (json_decode($data['items'], true) as $key => $value) {
+            //     $inv = PurchaseOrderDetailInvoice::find($pi->ref_num);
+            //     $po = PurchaseOrder::find($inv->po_id);
+            //     $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
                 
-                $ada = -1;
-                foreach ($pod as $key => $detail) {
-                    if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
-                        $ada = 1;
-                        break;
-                    }
-                }
-                if ($ada == -1) {
-                    array_push($bermasalah, $value['supplies_name']);
-                }
-            }
-            if (count($bermasalah) > 0) {
-                return [
-                    "status"=>-1,
-                    "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
-                ];
-            }
+            //     $ada = -1;
+            //     foreach ($pod as $key => $detail) {
+            //         if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
+            //             $ada = 1;
+            //             break;
+            //         }
+            //     }
+            //     if ($ada == -1) {
+            //         array_push($bermasalah, $value['supplies_name']);
+            //     }
+            // }
+            // if (count($bermasalah) > 0) {
+            //     return [
+            //         "status"=>-1,
+            //         "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
+            //     ];
+            // }
 
             // Kembalikan stock semua
             $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
             if (count($getPi) > 0) {
                 foreach ($getPi as $key => $val) {
                     // Kembalikan stock invoice
-                    $total = 0;
-                    foreach ($pod as $key => $detail) {
-                        if ($val->item_id == $detail['supplies_variant_id'] && $val->unit_id == $detail['unit_id']){
-                            $detail['pod_qty'] += $val['pid_qty'];
-                            $detail['pod_subtotal'] = $detail['pod_harga'] * $detail['pod_qty'];
-                            $detail->save();
-                        }
-                        $total += $detail['pod_subtotal'];
-                    }
-                    if ($po->jenis_discount == "persen"){
-                        $total -= $total * $po->po_discount/100;
-                    } else {
-                        $total -= $po->po_discount;
-                    }
-                    $total += $total * $po->po_ppn/100;
-                    $total += $po->po_cost;
+                    // $total = 0;
+                    // foreach ($pod as $key => $detail) {
+                    //     if ($val->item_id == $detail['supplies_variant_id'] && $val->unit_id == $detail['unit_id']){
+                    //         $detail['pod_qty'] += $val['pid_qty'];
+                    //         $detail['pod_subtotal'] = $detail['pod_harga'] * $detail['pod_qty'];
+                    //         $detail->save();
+                    //     }
+                    //     $total += $detail['pod_subtotal'];
+                    // }
+                    // if ($po->jenis_discount == "persen"){
+                    //     $total -= $total * $po->po_discount/100;
+                    // } else {
+                    //     $total -= $po->po_discount;
+                    // }
+                    // $total += $total * $po->po_ppn/100;
+                    // $total += $po->po_cost;
                     
-                    $inv->poi_total = $total;
-                    $inv->save();
-                    $po->po_total = $total;
-                    $po->save();
+                    // $inv->poi_total = $total;
+                    // $inv->save();
+                    // $po->po_total = $total;
+                    // $po->save();
 
                     // Kembalikan stock
                     $svr = SuppliesVariant::find($val->item_id);
@@ -670,7 +670,7 @@ class StockController extends Controller
                     ]);
                 }
             }
-        }
+        // }
         
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $data["pi_id"];
@@ -1083,11 +1083,13 @@ class StockController extends Controller
                 $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$value["unit_id"])->first();
                 
                 // Cek dari retur pembelian, apakah ada barang yang dibeli dari invoice ini
-                if ($pi['ref_num'] != 0){
-                    $inv = PurchaseOrderDetailInvoice::find($pi['ref_num']);
+                if ($pi['po_id'] != 0){
+                    if ($pi['ref_num'] != 0){
+                        $inv = PurchaseOrderDetailInvoice::find($pi['ref_num']);
+                    }
+                    $po = PurchaseOrder::find(!isset($inv) ? $pi['po_id'] : $inv->po_id);
+                    $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
                 }
-                $po = PurchaseOrder::find(!isset($inv) ? $pi['po_id'] : $inv->po_id);
-                $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
 
                 // pengurangan qty stok
                 $stocks = $s->ss_stock ?? 0;
@@ -1098,42 +1100,44 @@ class StockController extends Controller
                 }
 
                 // pengurangan qty invoice
-                $total = 0;
-                foreach ($pod as $key => $val) {
-                    // Kalau retur pembelian tidak perlu potong stok PO
-                    if (!isset($data['retur_pembelian'])){
-                        if ($value['item_id'] == $val['supplies_variant_id'] && $value['unit_id'] == $val['unit_id']){
-                            $val['pod_qty'] -= $value['pid_qty'];
-                            $val['pod_subtotal'] = $val['pod_harga'] * $val['pod_qty'];
-                            $val->save();
+                if ($pi['po_id'] != 0){
+                    $total = 0;
+                    foreach ($pod as $key => $val) {
+                        // Kalau retur pembelian tidak perlu potong stok PO
+                        if (!isset($data['retur_pembelian'])){
+                            if ($value['item_id'] == $val['supplies_variant_id'] && $value['unit_id'] == $val['unit_id']){
+                                $val['pod_qty'] -= $value['pid_qty'];
+                                $val['pod_subtotal'] = $val['pod_harga'] * $val['pod_qty'];
+                                $val->save();
+                            }
                         }
+                        $total += $val['pod_subtotal'];
                     }
-                    $total += $val['pod_subtotal'];
-                }
-                if ($po->jenis_discount == "persen"){
-                    $total -= $total * $po->po_discount/100;
-                } else {
-                    $total -= $po->po_discount;
-                }
-                $total += $total * $po->po_ppn/100;
-                $total += $po->po_cost;
-
-                $data_retur = ReturnSupplies::where('po_id', !isset($inv) ? $pi['po_id'] : $inv->po_id)->where('status', 1)->get();
-                $total_retur = 0;
-                if ($data_retur){
-                    foreach ($data_retur as $key => $dr) {
-                        $total_retur += $dr->rs_total;
+                    if ($po->jenis_discount == "persen"){
+                        $total -= $total * $po->po_discount/100;
+                    } else {
+                        $total -= $po->po_discount;
                     }
-                    if (isset($pi['total_retur'])) $total -= $pi['total_retur'];
-                    else $total -= $total_retur;
+                    $total += $total * $po->po_ppn/100;
+                    $total += $po->po_cost;
+    
+                    $data_retur = ReturnSupplies::where('po_id', !isset($inv) ? $pi['po_id'] : $inv->po_id)->where('status', 1)->get();
+                    $total_retur = 0;
+                    if ($data_retur){
+                        foreach ($data_retur as $key => $dr) {
+                            $total_retur += $dr->rs_total;
+                        }
+                        if (isset($pi['total_retur'])) $total -= $pi['total_retur'];
+                        else $total -= $total_retur;
+                    }
+    
+                    if (isset($inv)){
+                        $inv->poi_total = $total;
+                        $inv->save();
+                    }
+                    $po->po_total = $total;
+                    $po->save();
                 }
-
-                if (isset($inv)){
-                    $inv->poi_total = $total;
-                    $inv->save();
-                }
-                $po->po_total = $total;
-                $po->save();
 
                 $s->ss_stock = $stocks;
                 $m->save();

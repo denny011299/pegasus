@@ -431,12 +431,12 @@
                                         <input type="text" class="form-control fill" id="pi_notes" placeholder="Tambahkan Catatan">
                                     </div>
                                 </div>
-                                <div class="col-lg-6">
+                                {{-- <div class="col-lg-6">
                                     <div class="input-block mb-3 ref">
                                         <label class="form-label">Ref. PO<span class="text-danger">*</span></label>
                                         <select class="form-select fill" id="ref_num"></select>
                                     </div>
-                                </div>
+                                </div> --}}
                                 <div class="col-12 py-3 mb-3">
                                     <div class="table-responsive">
                                         <table class="table table-center" id="tableProduct" style="min-height: 15vh">
