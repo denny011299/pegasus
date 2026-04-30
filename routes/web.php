@@ -480,9 +480,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,any')->group(function () {
         Route::get('/getCashSales', [ReportController::class, 'getCashSales'])->name('getCashSales');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,any')->group(function () {
-        Route::get('/operationalCash', [ReportController::class, 'OperationalCash'])->name('operationalCash');
-    });
+    Route::get('/operationalCash', [ReportController::class, 'OperationalCash'])->name('operationalCash');
     Route::middleware('check.access:Kas|create')->group(function () {
         Route::post('/insertCash', [ReportController::class, 'insertCash'])->name('insertCash');
         Route::post('/insertPettyCash', [ReportController::class, 'insertPettyCash'])->name('insertPettyCash');
