@@ -174,6 +174,7 @@
 
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
+                openProductionRevisionFromDashboardLink();
                 openProductionFromDashboardLink();
             },
             error: function (err) {
@@ -210,6 +211,74 @@
             }
         } catch (err) {
             console.warn("openProductionFromDashboardLink", err);
+        }
+    }
+
+    /** Dari dashboard revisi: /production?rev_production_id=123 — buka modal revisi dengan data lama */
+    function openProductionRevisionFromDashboardLink() {
+        try {
+            var params = new URLSearchParams(window.location.search);
+            var pid = params.get("rev_production_id");
+            if (!pid || !table) {
+                return;
+            }
+
+            var rowData = null;
+            table.rows().every(function () {
+                var d = this.data();
+                if (String(d.production_id) === String(pid)) {
+                    rowData = d;
+                    return false;
+                }
+            });
+
+            if (!rowData) return;
+
+            mode = 1; // submit ulang sebagai pengajuan baru (pending ACC)
+            modeBahan = 1;
+            items = [];
+            list_bahan = [];
+
+            $('#addProduction .modal-title').html("Revisi Produksi");
+            $('#addProduction input').val("");
+            $('#product_id').empty();
+            $('#production_qty').val("");
+            $('#tableProduct tr.row-product').remove();
+            $('.is-invalid').removeClass('is-invalid');
+            $('#unit_id').html("");
+
+            $('#production_date').val(rowData.production_date).prop('disabled', true);
+            $('#production_desc').val(rowData.production_desc || "").attr('disabled', false);
+
+            rowData.items.forEach(function (e) {
+                var temp = {
+                    "pd_id": e.pd_id,
+                    "product_variant_id": e.product_variant_id,
+                    "product_name": e.product_name,
+                    "pd_qty": e.pd_qty,
+                    "unit_name": e.unit_name,
+                    "unit_id": e.unit_id,
+                    "bom_id": e.bom_id
+                };
+                items.push(temp);
+                list_bahan.push(e.list_bahan);
+            });
+
+            addRow(items);
+            $('#total_dos').html(rowData.total_dos || 0);
+            $('.is-invalid').removeClass('is-invalid');
+            $('.add, .btn-save, .btn_delete_row_pr').show();
+            $('.dos').show();
+            $('#btn-terima, #btn-tolak').hide();
+            $('.btn-cancel').html("Batal");
+            $('#addProduction').removeAttr("production_id");
+            $('#addProduction').modal("show");
+
+            params.delete("rev_production_id");
+            var q = params.toString();
+            window.history.replaceState({}, "", window.location.pathname + (q ? "?" + q : ""));
+        } catch (err) {
+            console.warn("openProductionRevisionFromDashboardLink", err);
         }
     }
 

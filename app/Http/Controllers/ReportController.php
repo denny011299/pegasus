@@ -2350,7 +2350,7 @@ class ReportController extends Controller
                 'date' => $pr->production_date ? (string) $pr->production_date : '',
                 'what_changed' => 'Produksi ditolak — perlu perbaikan / input ulang.',
                 'summary' => 'Status ditolak',
-                'url' => url('production').'?production_id='.(int) $pr->production_id,
+                'url' => url('production').'?rev_production_id='.(int) $pr->production_id,
                 'url_label' => 'Buka batch ditolak',
             ];
         }
