@@ -754,8 +754,8 @@
         </div>
         <div class="col-12" data-dash-widget="jatuh_tempo_hutang">
             <div class="dash-card dash-card-fill">
-                <h3 class="dash-card-title mb-2">Jatuh tempo hutang customer (H-2 s/d lewat jatuh tempo)</h3>
-                <p class="dash-muted-note mb-2">Menampilkan invoice belum dibayar dengan status: Akan jatuh tempo dalam 1-2 hari, Hari ini, atau sudah lewat jatuh tempo.</p>
+                <h3 class="dash-card-title mb-2">Jatuh tempo hutang customer</h3>
+                {{-- <p class="dash-muted-note mb-2">Menampilkan invoice belum dibayar dengan status: Akan jatuh tempo dalam 1-2 hari, Hari ini, atau sudah lewat jatuh tempo.</p> --}}
                 <div class="dash-scroll">
                     <div class="dash-table-wrap">
                     <table class="table table-sm dash-table dash-table-hover dash-approval-table dash-freeze-head mb-0">
