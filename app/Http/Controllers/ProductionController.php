@@ -375,13 +375,15 @@ class ProductionController extends Controller
         if ($isRevisionResubmit) {
             $sourceId = (int) ($req->input('revision_source_production_id') ?? 0);
             if ($sourceId > 0) {
+                $staffId = (int) (session('user')->staff_id ?? 0);
                 DB::table('dashboard_queue_dismissals')->updateOrInsert(
                     [
-                        'section' => 'revision',
+                        'staff_id' => $staffId,
+                        'queue_section' => 'revision',
                         'queue_key' => 'pr:'.$sourceId,
                     ],
                     [
-                        'created_by' => session('user')->staff_id ?? null,
+                        'status' => 1,
                         'updated_at' => now(),
                         'created_at' => now(),
                     ]
