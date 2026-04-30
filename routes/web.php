@@ -69,11 +69,11 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {
     });
-    Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional Admin,Kas Operasional Gudang,Kas Operasional Armada,Kas Operasional Sales,Kas Operasional,view')->group(function () {
+    Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {
     });
     Route::middleware('check.access:Pengiriman|view')->group(function () {
     });
-    Route::middleware('check.access.any:Kategori Kas,Kas Operasional Admin,Kas Operasional Gudang,Kas Operasional Armada,Kas Operasional Sales,Kas Operasional,Kas,view')->group(function () {
+    Route::middleware('check.access.any:Kategori Kas,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,Kas,view')->group(function () {
     });
     Route::middleware('check.access:Peran & Perizinan|view')->group(function () {
     });
