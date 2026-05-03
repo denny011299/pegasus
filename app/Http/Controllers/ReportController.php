@@ -2538,16 +2538,7 @@ class ReportController extends Controller
             '>90 hari' => ['status' => 'Dead stock', 'qty' => 0.0, 'value' => 0.0],
         ];
         foreach ($agingRows as $r) {
-            $days = (float) ($r['weighted_age_days'] ?? 0);
-            if ($days <= 30) {
-                $key = '0-30 hari';
-            } elseif ($days <= 60) {
-                $key = '31-60 hari';
-            } elseif ($days <= 90) {
-                $key = '61-90 hari';
-            } else {
-                $key = '>90 hari';
-            }
+            $key = LogStock::dashboardFourBucketKeyFromAgingRow($r);
             $map[$key]['qty'] += (float) ($r['qty'] ?? 0);
             $map[$key]['value'] += (float) ($r['stock_value'] ?? 0);
         }
@@ -2580,15 +2571,7 @@ class ReportController extends Controller
         ];
         foreach ($agingRows as $r) {
             $days = (float) ($r['weighted_age_days'] ?? 0);
-            if ($days <= 30) {
-                $key = '0-30 hari';
-            } elseif ($days <= 60) {
-                $key = '31-60 hari';
-            } elseif ($days <= 90) {
-                $key = '61-90 hari';
-            } else {
-                $key = '>90 hari';
-            }
+            $key = LogStock::dashboardFourBucketKeyFromAgingRow($r);
             $src = strtolower((string) ($r['sumber'] ?? ''));
             $kind = $src === 'bahan' ? 'Bahan mentah' : 'Barang jadi';
             $buckets[$key][] = [
@@ -2678,10 +2661,11 @@ class ReportController extends Controller
     {
         $overstock = [];
         foreach ($agingRows as $r) {
-            $days = (float) ($r['weighted_age_days'] ?? 0);
-            if ($days <= 90) {
+            $reportBucket = LogStock::stockAgingReportBucketOrFallback($r);
+            if (! in_array($reportBucket, ['91-180 hari', '>180 hari'], true)) {
                 continue;
             }
+            $days = (float) ($r['weighted_age_days'] ?? 0);
             $overstock[] = [
                 'name' => (string) ($r['item_label'] ?? '-'),
                 'age_days' => round($days, 1),

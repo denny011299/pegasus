@@ -929,6 +929,46 @@ class LogStock extends Model
     }
 
     /**
+     * Bucket per baris laporan aging (sama dengan kolom `bucket` di getStockAgingReport).
+     * Pakai field `bucket` bila ada; jangan mengklasifikasi ulang dari weighted_age_days saja
+     * karena nilai itu dibulatkan 1 desimal sehingga bisa beda dengan pembulatan internal FIFO.
+     */
+    public static function stockAgingReportBucketOrFallback(array $r): string
+    {
+        $reportBucket = trim((string) ($r['bucket'] ?? ''));
+        if ($reportBucket !== '' && $reportBucket !== '-') {
+            return $reportBucket;
+        }
+
+        return self::agingBucketFromDays((int) round((float) ($r['weighted_age_days'] ?? 0)));
+    }
+
+    /**
+     * Empat kelompok ringkasan dashboard: gabung 91–180 dan >180 menjadi ">90 hari"
+     * agar jumlahnya sama dengan menjumlahkan baris laporan aging pada tanggal yang sama.
+     */
+    public static function dashboardFourBucketKeyFromAgingRow(array $r): string
+    {
+        $reportBucket = self::stockAgingReportBucketOrFallback($r);
+        if (in_array($reportBucket, ['91-180 hari', '>180 hari'], true)) {
+            return '>90 hari';
+        }
+        if (in_array($reportBucket, ['0-30 hari', '31-60 hari', '61-90 hari'], true)) {
+            return $reportBucket;
+        }
+
+        $fallback = self::agingBucketFromDays((int) round((float) ($r['weighted_age_days'] ?? 0)));
+        if (in_array($fallback, ['91-180 hari', '>180 hari'], true)) {
+            return '>90 hari';
+        }
+        if (in_array($fallback, ['0-30 hari', '31-60 hari', '61-90 hari'], true)) {
+            return $fallback;
+        }
+
+        return '0-30 hari';
+    }
+
+    /**
      * @param  array<int, array{qty: float, date: \Carbon\Carbon, synthetic?: bool}>  $layers
      */
     private static function fifoPush(array &$layers, float $qty, \Carbon\Carbon $date): void
