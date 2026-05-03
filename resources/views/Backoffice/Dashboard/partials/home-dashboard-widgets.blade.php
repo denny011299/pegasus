@@ -566,8 +566,8 @@
                 <label class="form-label small text-muted mb-0 d-block">Periode</label>
                 <select id="dash_filter_period" class="form-select form-select-sm" style="min-width: 9.5rem;">
                     <option value="week">Minggu</option>
-                    <option value="month" selected>Bulan</option>
-                    <option value="year">Tahun</option>
+                    <option value="month">Bulan</option>
+                    <option value="year" selected>Tahun</option>
                 </select>
             </div>
             <div class="col-sm-auto align-self-end">

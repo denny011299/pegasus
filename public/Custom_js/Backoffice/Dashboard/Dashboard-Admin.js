@@ -639,7 +639,7 @@
     }
 
     function loadDashboard() {
-        var period = $("#dash_filter_period").val() || "month";
+        var period = $("#dash_filter_period").val() || "year";
         $.ajax({
             url: "/getDashboardOverview",
             method: "get",
