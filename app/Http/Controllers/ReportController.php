@@ -934,12 +934,30 @@ class ReportController extends Controller
     function acceptCashAdmin(Request $req)
     {
         $data = $req->all();
+        $q = CashAdmin::find($data['ca_id']);
+        if ($q->status != 1) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         return (new CashAdmin())->acceptCashAdmin($data);
     }
 
     function declineCashAdmin(Request $req)
     {
         $data = $req->all();
+        $q = CashAdmin::find($data['ca_id']);
+        if ($q->status != 1) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         return (new CashAdmin())->declineCashAdmin($data);
     }
 
@@ -1157,14 +1175,6 @@ class ReportController extends Controller
 
         if (isset($data['cg_id'])){
             $cg = CashGudang::find($data['cg_id']);
-            if ($cg->status != 1) {
-                $staff = Staff::find($cg->acc_by)->staff_name;
-                return response()->json([
-                    "status" => -1,
-                    "message" => "Pengajuan sudah diterima oleh " . $staff
-                ]);
-            }
-
             $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
 
             foreach ($cgd as $key => $value) {
@@ -1174,13 +1184,14 @@ class ReportController extends Controller
             }
         } else {
             $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
-            if ($cg->status != 1) {
-                $staff = Staff::find($cg->acc_by)->staff_name;
-                return response()->json([
-                    "status" => -1,
-                    "message" => "Pengajuan sudah diterima oleh " . $staff
-                ]);
-            }
+        }
+        if ($cg->status != 1) {
+            $staff = Staff::find($cg->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+            ]);
         }
         return (new CashGudang())->acceptCashGudang($data);
     }
@@ -1188,6 +1199,19 @@ class ReportController extends Controller
     function declineCashGudang(Request $req)
     {
         $data = $req->all();
+        if (isset($data['cg_id'])){
+            $cg = CashGudang::find($data['cg_id']);
+        } else {
+            $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
+        }
+        if ($cg->status != 1) {
+            $staff = Staff::find($cg->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+            ]);
+        }
         return (new CashGudang())->declineCashGudang($data);
     }
 
@@ -1384,6 +1408,16 @@ class ReportController extends Controller
         } else {
             $cr = CashArmada::where('cash_id', $data["cash_id"])->first();
         }
+        // Pengecekan ACC
+        if ($cr->status != 1) {
+            $staff = Staff::find($cr->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
         $customer = Customer::find($cr['customer_id']);
         if ($cr->cr_type == 1){
             $customer->customer_saldo += $cr['cr_nominal'];
@@ -1404,6 +1438,20 @@ class ReportController extends Controller
     function declineCashArmada(Request $req)
     {
         $data = $req->all();
+        if (isset($data['cr_id'])){
+            $cr = CashArmada::find($data['cr_id']);
+        } else {
+            $cr = CashArmada::where('cash_id', $data["cash_id"])->first();
+        }
+        // Pengecekan Acc
+        if ($cr->status != 1) {
+            $staff = Staff::find($cr->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         return (new CashArmada())->declineCashArmada($data);
     }
 
@@ -1595,6 +1643,16 @@ class ReportController extends Controller
         } else {
             $cs = CashSales::where('cash_id', $data["cash_id"])->first();
         }
+        // Pengecekan acc
+        if ($cs->status != 1) {
+            $staff = Staff::find($cs->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
         $sales = Staff::find($cs['staff_id']);
         if ($cs->cs_type == 1 && $cs->cs_aksi == 1){
             $sales->staff_saldo += $cs['cs_nominal'];
@@ -1617,6 +1675,21 @@ class ReportController extends Controller
     function declineCashSales(Request $req)
     {
         $data = $req->all();
+        if (isset($data['cs_id'])){
+            $cs = CashSales::find($data['cs_id']);
+        } else {
+            $cs = CashSales::where('cash_id', $data["cash_id"])->first();
+        }
+        // Pengecekan acc
+        if ($cs->status != 1) {
+            $staff = Staff::find($cs->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
         return (new CashSales())->declineCashSales($data);
     }
     

@@ -12,6 +12,7 @@ use App\Models\ProductRelation;
 use App\Models\ProductStock;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\Staff;
 use App\Models\Supplies;
 use App\Models\SuppliesRelation;
 use App\Models\SuppliesStock;
@@ -420,6 +421,15 @@ class ProductionController extends Controller
                 "message" => "Data produksi tidak ditemukan"
             ]);
         }
+        // pengecekan ACC
+        if ($p->status != 1) {
+            $staff = Staff::find($p->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         // Idempotent guard: hanya proses produksi yang masih menunggu approval.
         if ((int)$p->status !== 1) {
             return response()->json([
@@ -817,12 +827,32 @@ class ProductionController extends Controller
     {
         $data = $req->all();
         $data['delete_reason'] = "Tolak Produksi";
+
+        // Pengecekan ACC
+        $q = Production::find($data['production_id']);
+        if ($q->status != 1) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         (new Production())->declineProduction($data);
     }
 
     function tolakDeleteProduction(Request $req)
     {
         $data = $req->all();
+        $q = Production::find($data['production_id']);
+        if ($q->status != 4) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         (new Production())->tolakDeleteProduction($data);
     }
 
@@ -835,9 +865,21 @@ class ProductionController extends Controller
             return 1;
         }
 
+        // Pengecekan ACC
+        if ($p->status != 4) {
+            $staff = Staff::find($p->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        $produk_kurang = [];
+
         foreach ($p['items'] as $key => $value) {
             $b = Bom::find($value['bom_id']);
-            $cek = -1;
+            $cek = -1; // harus diganti diluar loop
             $stok = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
                     ->where("unit_id", "=", $value['unit_id'])
                     ->where("status", 1)
@@ -883,6 +925,11 @@ class ProductionController extends Controller
                     } 
                     else{
                         $cek = 1;
+                        // $pvr = ProductVariant::find($value['product_variant_id']);
+                        // $pr = Product::where('product_variant_id', $pvr->product_variant_id)->where('status', 1);
+                        // if (!in_array($pr['product_name'] . " " . $pvr['product_variant_name'], $produk_kurang, true)) {
+                        //     $produk_kurang[] = $pr['product_name'] . " " . $pvr['product_variant_name'];
+                        // }
                     }
                 }
             }

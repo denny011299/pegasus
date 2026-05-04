@@ -1442,7 +1442,7 @@ $(document).on("click", ".save-terima", function () {
         "Apakah yakin ingin Approve pembelian ini?",
         "btn-acc-po"
     );
-    $("#btn-acc-po").html("Konfirmasi");
+    $(".btn-konfirmasi").html("Terima");
 });
 
 $(document).on("click", "#btn-acc-po", function () {
@@ -1457,6 +1457,11 @@ $(document).on("click", "#btn-acc-po", function () {
         success: function (e) {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
+            if (e.status == -2){
+                notifikasi('error', e.header, e.message);
+                window.open('/purchaseOrder', '_self');
+                return false;
+            }
             $('#po_status').val(2).trigger('change');
             ResetLoadingButton("#btn-acc-po", "Terima");
             notifikasi(
@@ -1477,7 +1482,7 @@ $(document).on("click", "#btn-acc-po", function () {
 
     $(document).on('click', '.save-tolak', function(){
         showModalDelete("Apakah yakin ingin menolak po ini?","btn-tolak-po");
-        $("#btn-tolak-po").html("Konfirmasi");
+        $(".btn-konfirmasi").html("Tolak");
     })
 
     $(document).on("click","#btn-tolak-po",function(){
@@ -1493,6 +1498,11 @@ $(document).on("click", "#btn-acc-po", function () {
                 $('#modalDelete .modal-body').html('');
                 $(".modal").modal("hide");
                 ResetLoadingButton("#btn-tolak-po", "Tolak");
+                if (typeof e === "object"){
+                    notifikasi('error', e.header, e.message);
+                    window.open('/purchaseOrder', '_self');
+                    return false;
+                }
                 if (e == -1){
                     notifikasi(
                         "error",

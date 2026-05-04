@@ -863,6 +863,10 @@ $(document).on("click", ".btn_view", function () {
                     if (typeof e === "object"){
                         notifikasi('error', e.header, e.message);
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                        if (e.status == -2) {
+                            $('.modal').modal("hide");
+                            refreshProductIssues();
+                        }
                         return false;
                     } else {
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
@@ -902,8 +906,13 @@ $(document).on("click", ".btn_view", function () {
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                refreshProductIssues()
                 $('.modal').modal("hide");
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
+                    refreshProductIssues()
+                    return false;
+                }
+                refreshProductIssues()
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
                 
             },

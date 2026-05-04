@@ -1074,6 +1074,16 @@ class StockController extends Controller
         $data = $req->all();
         $pi = ProductIssues::find($data['pi_id']);
         $item = ProductIssuesDetail::where('pi_id', $data['pi_id'])->where('status', 1)->get();
+
+        if ($pi->status != 1) {
+            $staff = Staff::find($pi->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
         foreach ($item as $key => $value) {
             $itemId = 0;
             // Return to Supplier
@@ -1194,6 +1204,15 @@ class StockController extends Controller
 
     function declineProductIssues(Request $req){
         $data = $req->all();
+        $q = ProductIssues::find($data['pi_id']);
+        if ($q->status != 1) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         (new ProductIssues())->declineProductIssues($data);
     }
 

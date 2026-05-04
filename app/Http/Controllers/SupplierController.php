@@ -15,6 +15,7 @@ use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\PurchaseOrderReceipt;
 use App\Models\ReturnSupplies;
 use App\Models\ReturnSuppliesDetail;
+use App\Models\Staff;
 use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
@@ -543,8 +544,16 @@ class SupplierController extends Controller
 
     function accPO(Request $req) {
         $data = $req->data;
-        $pod_id = (new PurchaseOrderDelivery())->insertPoDelivery(["po_id"=>$data["po_id"],"pdo_receiver"=>"Auto Generated","status"=>2]);
         $po = PurchaseOrder::find($data['po_id']);
+        if ($po->status != 1) {
+            $staff = Staff::find($po->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+        $pod_id = (new PurchaseOrderDelivery())->insertPoDelivery(["po_id"=>$data["po_id"],"pdo_receiver"=>"Auto Generated","status"=>2]);
 
         foreach ($data['items'] as $key => $value) {
             $value['pdo_id'] = $pod_id;
@@ -580,6 +589,15 @@ class SupplierController extends Controller
     function tolakPO(Request $req) {
         $data = $req->all();
         $p = PurchaseOrder::find($data["po_id"]);
+
+        if ($p->status == -1) {
+            $staff = Staff::find($p->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
 
         //liat sebelumnya status apa
         if($p->status==2){

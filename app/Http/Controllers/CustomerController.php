@@ -13,6 +13,7 @@ use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
+use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
@@ -235,7 +236,7 @@ class CustomerController extends Controller
                 $stokFinal->save();
 
                 (new LogStock())->insertLog([
-                    'log_date' => now(), 'log_kode' => $data['so_number'], 'log_type' => 1, 'log_category' => 2, 
+                    'log_date' => now(), 'log_kode' => $data['so_invoice_no'], 'log_type' => 1, 'log_category' => 2, 
                     'log_item_id' => $variantId, 'log_notes' => "Update Pengiriman", 
                     'log_jumlah' => $qtyTotal, 'unit_id' => $unitId,
                 ]);
@@ -271,6 +272,15 @@ class CustomerController extends Controller
         $sod = SalesOrderDetail::where('so_id', $data['so_id'])
                                 ->where('status', 1)
                                 ->get();
+
+        if ($so->status != 1) {
+            $staff = Staff::find($so->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
 
         $getProductDisplayName = function ($variantId, $fallback = null) {
             $fallback = is_string($fallback) ? trim($fallback) : '';
@@ -547,6 +557,15 @@ class CustomerController extends Controller
 
     function declineSO(Request $req){
         $data = $req->all();
+        $q = SalesOrder::find($data['so_id']);
+        if ($q->status != 1) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         (new SalesOrder())->declineSO($data);
         return 1;
     }

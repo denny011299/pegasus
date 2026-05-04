@@ -844,6 +844,10 @@
                         var messageText = normalizeProductErrorMessage(e.message, fallbackNames);
                         notifikasi('error', e.header, messageText);
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                        if (e.status == -2) {
+                            $('.modal').modal("hide");
+                            refreshSalesOrder();
+                        }
                         return false;
                     } else {
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
@@ -888,8 +892,13 @@
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                refreshSalesOrder()
                 $('.modal').modal("hide");
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
+                    refreshProductIssues()
+                    return false;
+                }
+                refreshSalesOrder()
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
                 
             },

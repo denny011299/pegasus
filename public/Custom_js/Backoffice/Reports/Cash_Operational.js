@@ -2736,9 +2736,9 @@
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-
-                if (e.status == -1){
-                    notifikasi('error', "Gagal Acc", e.message);
+                $('.modal').modal("hide");
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
                     if (type=="admin") refreshCashAdmin();
                     else if (type=="gudang") refreshCashGudang();
                     else if (type=="armada") {
@@ -2761,7 +2761,6 @@
                     $('#filter_sales_id').empty(null);
                     refreshCashSales();
                 }
-                $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengajuan");
                 
             },
@@ -2824,11 +2823,25 @@
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                $('.modal').modal("hide");
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
+                    if (type=="admin") refreshCashAdmin();
+                    else if (type=="gudang") refreshCashGudang();
+                    else if (type=="armada") {
+                        $('#filter_customer_id').empty(null);
+                        refreshCashArmada();
+                    }
+                    else if (type=="sales") {
+                        $('#filter_sales_id').empty(null);
+                        refreshCashSales();
+                    }
+                    return false;
+                }
                 if (type=="admin") refreshCashAdmin();
                 else if (type=="gudang") refreshCashGudang();
                 else if (type=="armada") refreshCashArmada();
                 else if (type=="sales") refreshCashSales();
-                $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
                 
             },

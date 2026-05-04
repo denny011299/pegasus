@@ -762,8 +762,11 @@ $(document).on("click", "#btn-acc-delete-production", function () {
             $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             $(".modal").modal("hide");
-            if(e.status == -1){
-                notifikasi('error', "Stok Tidak Mencukupi", e.message);
+            if(e.status == -2){
+                notifikasi('error', e.header || "Stok Tidak Mencukupi", e.message);
+                if (e.header){
+                    refreshProduction()
+                }
                 return false;
             }
             afterInsert();
@@ -849,6 +852,10 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
                 if (e!=1){
                     if (typeof e === "object"){
                         notifikasi('error', e.header, e.message);
+                        if (e.status == -2) {
+                            $('.modal').modal("hide");
+                            refreshProduction();
+                        }
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                         return false;
                     } else {
@@ -890,8 +897,13 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                refreshProduction()
                 $('.modal').modal("hide");
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
+                    refreshProduction()
+                    return false;
+                }
+                refreshProduction()
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
                 
             },
