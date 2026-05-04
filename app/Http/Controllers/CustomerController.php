@@ -71,6 +71,33 @@ class CustomerController extends Controller
     function updateSalesOrder(Request $req){
         $data = $req->all();
 
+        $productsData = json_decode($data['products'] ?? '[]', true);
+        if (! is_array($productsData)) {
+            return 'Data produk tidak valid';
+        }
+
+        $soBefore = SalesOrder::find($data['so_id'] ?? null);
+        if (! $soBefore) {
+            return 'Sales order tidak ditemukan';
+        }
+
+        // Mutasi stok/log hanya jika SO sudah disetujui (ACC). Sebelum itu stok belum dipotong (accSO);
+        // jika revert+potong dijalankan saat status 1/3, stok ikut berubah padahal belum konfirmasi.
+        if ((int) ($soBefore->status ?? 0) !== 2) {
+            $so = (new SalesOrder())->updateSalesOrder($data);
+            $list_id_detail = [];
+            foreach ($productsData as $val) {
+                $val['so_id'] = $so->so_id;
+                $id = isset($val['sod_id'])
+                    ? (new SalesOrderDetail())->updateSalesOrderDetail($val)
+                    : (new SalesOrderDetail())->insertSalesOrderDetail($val);
+                $list_id_detail[] = $id;
+            }
+            SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
+
+            return 1;
+        }
+
         $p = [];
         $valid = 1;
         // --- TAHAP 1: REVERT STOK LAMA (PENTING: Agregasi Dulu Agar Log Tidak Double) ---
@@ -115,7 +142,6 @@ class CustomerController extends Controller
 
         // --- TAHAP 2: AGGREGASI DATA BARU (Sesuai Image 31ede1) ---
         $aggregatedProducts = [];
-        $productsData = json_decode($data['products'], true);
 
         foreach ($productsData as $value) {
             $uniqueKey = $value["product_variant_id"] . '_' . $value["unit_id"];
