@@ -520,8 +520,16 @@ class SupplierController extends Controller
 
     function accTt(Request $req){
         $data = $req->all();
-        if (isset($req->image) && $req->image != "undefined") $data["tt_image"] = (new HelperController)->insertFile($req->image, "supplier");
         $p = purchase_order_tt::find($req->tt_id);
+        if ($p->status != 1) {
+            $staff = Staff::find($p->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+        if (isset($req->image) && $req->image != "undefined") $data["tt_image"] = (new HelperController)->insertFile($req->image, "supplier");
         $p->status=2;
         $p->tt_image = $data["tt_image"];
         $p->tt_desc = $data['tt_desc'];
@@ -533,6 +541,14 @@ class SupplierController extends Controller
 
     function declineTt(Request $req){
         $p = purchase_order_tt::find($req->tt_id);
+        if ($p->status != 1) {
+            $staff = Staff::find($p->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
         $p->staffFinance_name = Session::get('user')->staff_name;
         $p->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $p->status=0;

@@ -194,6 +194,7 @@
             success:function(e){
                 if(e.status&&e.status==-1){
                     notifikasi("error","Gagal Buat Surat Terima",e.message)
+                    refreshPayReceive();
                 }
                 else if(e.status&&e.status==1){
                     notifikasi("success","Berhasil Buat Surat Terima","Surat tanda terima berhasil dibuat");

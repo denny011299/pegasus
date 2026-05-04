@@ -134,6 +134,7 @@
         fd.append('tt_id', $('#add_acc_tt').attr("tt_id"));
         fd.append('tt_desc', $('#keterangan').val());
 
+        LoadingButton(this);
         $.ajax({
             url:"/accTt",
             contentType: false,
@@ -144,13 +145,20 @@
                 "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
             },
             success:function(e){
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 $('.modal').modal("hide");
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
+                    refreshPurchaseOrder();
+                    return false;
+                }
                 refreshPurchaseOrder();
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Surat Tanda Terima");
                 
             },
             error:function(e){
                 console.log(e);
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
             }
         });
     });
@@ -237,10 +245,12 @@ $(document).on("change", "#image", function () {
         var data = $('#tableTTPurchaseOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         showModalDelete("Apakah yakin ingin tolak surat tanda terima ini?","btn-delete-supplier");
         $('#btn-delete-supplier').attr("tt_id", data.tt_id);
+        $('.btn-konfirmasi').html("Konfirmasi");
     });
 
 
     $(document).on("click","#btn-delete-supplier",function(){
+        LoadingButton(this)
         $.ajax({
             url:"/declineTt",
             data:{
@@ -249,8 +259,14 @@ $(document).on("change", "#image", function () {
             },
             method:"post",
             success:function(e){
-                refreshPurchaseOrder();
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi")
                 $('.modal').modal("hide");
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
+                    refreshPurchaseOrder()
+                    return false;
+                }
+                refreshPurchaseOrder();
                 notifikasi('success', "Berhasil Tolak", "Berhasil Totak Surat Tanda Terima ");
                 
             },
