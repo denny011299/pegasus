@@ -136,6 +136,7 @@ class CashGudang extends Model
                 "status" => 2
             ]);
         }
+        return 1;
     }
 
     function declineCashGudang($data)

@@ -2736,6 +2736,21 @@
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+
+                if (e.status == -1){
+                    notifikasi('error', "Gagal Acc", e.message);
+                    if (type=="admin") refreshCashAdmin();
+                    else if (type=="gudang") refreshCashGudang();
+                    else if (type=="armada") {
+                        $('#filter_customer_id').empty(null);
+                        refreshCashArmada();
+                    }
+                    else if (type=="sales") {
+                        $('#filter_sales_id').empty(null);
+                        refreshCashSales();
+                    }
+                    return false;
+                }
                 if (type=="admin") refreshCashAdmin();
                 else if (type=="gudang") refreshCashGudang();
                 else if (type=="armada") {

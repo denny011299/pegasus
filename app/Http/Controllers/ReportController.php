@@ -1156,12 +1156,30 @@ class ReportController extends Controller
         $data = $req->all();
 
         if (isset($data['cg_id'])){
+            $cg = CashGudang::find($data['cg_id']);
+            if ($cg->status != 1) {
+                $staff = Staff::find($cg->acc_by)->staff_name;
+                return response()->json([
+                    "status" => -1,
+                    "message" => "Pengajuan sudah diterima oleh " . $staff
+                ]);
+            }
+
             $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
 
             foreach ($cgd as $key => $value) {
                 $customer = Customer::find($value['customer_id']);
                 $customer->customer_saldo += $value['cgd_nominal'];
                 $customer->save();
+            }
+        } else {
+            $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
+            if ($cg->status != 1) {
+                $staff = Staff::find($cg->acc_by)->staff_name;
+                return response()->json([
+                    "status" => -1,
+                    "message" => "Pengajuan sudah diterima oleh " . $staff
+                ]);
             }
         }
         return (new CashGudang())->acceptCashGudang($data);
