@@ -876,60 +876,52 @@ class ProductionController extends Controller
         }
 
         $produk_kurang = [];
+        $cek = -1;
 
         foreach ($p['items'] as $key => $value) {
             $b = Bom::find($value['bom_id']);
-            $cek = -1; // harus diganti diluar loop
+            $jumlahTambah = intval($value['pd_qty']) * $b->bom_qty;
+
             $stok = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
                     ->where("unit_id", "=", $value['unit_id'])
                     ->where("status", 1)
                     ->first();
-                    
-            // Cek kalau satuan terkecil, brarti convert ke satuan terbesar dulu & kalau ada relasi
+
             $r = ProductRelation::where('pr_unit_id_2', '=', $value["unit_id"])
-                    ->where('product_variant_id', '=', $value["product_variant_id"])->where('status','=',1)->first();
-            if ($b['unit_id'] == $value['unit_id'] && $r){
-                $jumlahTambah = intval($value['pd_qty'])* $b->bom_qty;
+                    ->where('product_variant_id', '=', $value["product_variant_id"])
+                    ->where('status', '=', 1)
+                    ->first();
+
+            if ($b['unit_id'] == $value['unit_id'] && $r) {
+                $sisa   = $jumlahTambah % $r->pr_unit_value_2;
                 $tambah = floor($jumlahTambah / $r->pr_unit_value_2);
-                $sisa = $jumlahTambah%$r->pr_unit_value_2;
-                if ($stok->ps_stock - $sisa < 0) {
-                    $stok_depan = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
-                        ->where("unit_id", "=", $r->pr_unit_id_1)
-                        ->where("status", 1)
-                        ->first();   
-                    if($stok_depan->ps_stock>0&&($stok_depan->ps_stock * $r->pr_unit_value_2) - $jumlahTambah>=0){
-                        $round = 0;
-                        while ($stok->ps_stock - $sisa < 0) {
-                            $round++;
-                            $stok_depan->ps_stock -= 1;
-                            $stok->ps_stock +=$r->pr_unit_value_2;
-                            $stok->save();
-                            $stok_depan->save();
-                        }
-    
-                        (new LogStock())->insertLog([
-                            'log_date' => now(), 'log_kode' => $p->production_code,
-                            'log_type' => 1, 'log_category' => 2,
-                            'log_item_id' => $value["product_variant_id"],
-                            'log_notes' => "Konversi Ke satuan terkecil, untuk pembatalan",
-                            'log_jumlah' => $round, 'unit_id' => $r->pr_unit_id_1,
-                        ]);
-    
-                        (new LogStock())->insertLog([
-                            'log_date' => now(), 'log_kode' => $p->production_code,
-                            'log_type' => 1, 'log_category' => 1,
-                            'log_item_id' => $value["product_variant_id"],
-                            'log_notes' => "Dapat dari satuan terbesar, untuk pembatalan",
-                            'log_jumlah' => ($round * $r->pr_unit_value_2), 'unit_id' => $r->pr_unit_id_2,
-                        ]);
-                    } 
-                    else{
-                        $cek = 1;
-                        // $pvr = ProductVariant::find($value['product_variant_id']);
-                        // $pr = Product::where('product_variant_id', $pvr->product_variant_id)->where('status', 1);
-                        // if (!in_array($pr['product_name'] . " " . $pvr['product_variant_name'], $produk_kurang, true)) {
-                        //     $produk_kurang[] = $pr['product_name'] . " " . $pvr['product_variant_name'];
-                        // }
+
+                // Hitung total stok tersedia dalam satuan piece (gabung dari dos + piece)
+                $stok_depan = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
+                    ->where("unit_id", "=", $r->pr_unit_id_1)
+                    ->where("status", 1)
+                    ->first();
+
+                $totalTersedia = ($stok ? $stok->ps_stock : 0)
+                            + ($stok_depan ? $stok_depan->ps_stock * $r->pr_unit_value_2 : 0);
+
+                if ($totalTersedia < $jumlahTambah) {
+                    $cek = 1;
+                    $pvr = ProductVariant::find($value['product_variant_id']);
+                    $pr  = Product::find($pvr->product_id);
+                    if (!in_array($pr['product_name'] . " " . $pvr['product_variant_name'], $produk_kurang, true)) {
+                        $produk_kurang[] = $pr['product_name'] . " " . $pvr['product_variant_name'];
+                    }
+                }
+            } else {
+                // Tidak ada relasi — cek stok langsung
+                $totalTersedia = $stok ? $stok->ps_stock : 0;
+                if ($totalTersedia < $jumlahTambah) {
+                    $cek = 1;
+                    $pvr = ProductVariant::find($value['product_variant_id']);
+                    $pr  = Product::find($pvr->product_id);
+                    if (!in_array($pr['product_name'] . " " . $pvr['product_variant_name'], $produk_kurang, true)) {
+                        $produk_kurang[] = $pr['product_name'] . " " . $pvr['product_variant_name'];
                     }
                 }
             }
@@ -937,10 +929,11 @@ class ProductionController extends Controller
 
         if ($cek == 1) {
             return response()->json([
-                "status" => -1,
-                "message" => "Stok produk tidak mencukupi"
+                "status"  => -1,
+                "message" => "Stok produk tidak mencukupi: " . implode(', ', $produk_kurang),
             ]);
         }
+
         (new Production())->cancelProduction($data);
         (new ProductionDetails())->cancelProductionDetail($data);
 

@@ -415,7 +415,7 @@
             $('#tableProduct tbody').append(`
                 <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
                     <td>${element.product_name}</td>
-                    <td class="text-center">${element.pd_qty}</td>
+                    <td class="text-center">${formatRupiah(element.pd_qty)}</td>
                     <td>${element.unit_name}</td>
                     <td class="text-center align-middle">
                         <a class="p-2 btn-action-icon btn_delete_row_pr" href="javascript:void(0);">
@@ -539,7 +539,7 @@
         console.log(items);
         console.log(list_bahan);
         addRow(items);
-        $('#total_dos').html(data.total_dos);
+        $('#total_dos').html(formatRupiah(data.total_dos));
         if (data.status == 1){
             if (hasAccessAction("Produksi", "others")){
                 $('#btn-terima, #btn-tolak').show();
@@ -762,6 +762,10 @@ $(document).on("click", "#btn-acc-delete-production", function () {
             $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             $(".modal").modal("hide");
+            if(e.status == -1){
+                notifikasi('error', "Stok Tidak Mencukupi", e.message);
+                return false;
+            }
             if(e.status == -2){
                 notifikasi('error', e.header || "Stok Tidak Mencukupi", e.message);
                 if (e.header){

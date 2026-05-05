@@ -54,7 +54,7 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].product_variant_stock_text="";
                     e[i].stock.forEach((element,index) => {
-                            e[i].product_variant_stock_text += `${element.ps_stock} ${element.unit_name}`;
+                            e[i].product_variant_stock_text += `${formatRupiah(element.ps_stock)} ${element.unit_name}`;
                             if(index<e[i].stock.length-1)e[i].product_variant_stock_text +=", ";
                         });
                     if (e[i].product_variant_stock_text=="") e[i].product_variant_stock_text="-"

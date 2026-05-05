@@ -51,7 +51,7 @@
                 for (let i = 0; i < e.length; i++) {
                     e[i].supplies_variant_stock_text = "";
                     for (let j = 0; j < e[i].stock.length; j++) {
-                        e[i].supplies_variant_stock_text += e[i].stock[j].ss_stock + " " + e[i].stock[j].unit_short_name;
+                        e[i].supplies_variant_stock_text += formatRupiah(e[i].stock[j].ss_stock) + " " + e[i].stock[j].unit_short_name;
                         if (j < e[i].stock.length - 1) {
                             e[i].supplies_variant_stock_text += " , ";
                         }
