@@ -892,10 +892,9 @@ class LogStock extends Model
             if ($oldest === null || $ld->lt($oldest)) {
                 $oldest = $ld->copy();
             }
-            $days = $ld->diffInDays($as);
-            if ($ld->gt($as)) {
-                $days = 0;
-            }
+            // Carbon 3: diffInDays default $absolute=false (nilai bertanda/float).
+            // Umur stok harus selisih hari kalender non-negatif sampai as_of (sama perilaku Carbon 2).
+            $days = $ld->lte($as) ? (int) $ld->diffInDays($as, true) : 0;
             $q = (float) $l['qty'];
             $totalQty += $q;
             $weighted += $q * (float) $days;

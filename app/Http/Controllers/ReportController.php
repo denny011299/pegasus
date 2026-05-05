@@ -2091,14 +2091,17 @@ class ReportController extends Controller
 
     private function dashboardPeriodRange(string $period, \Carbon\Carbon $base): array
     {
+        // Periode dashboard berjalan sampai tanggal acuan saat ini (base),
+        // bukan sampai akhir minggu/bulan/tahun yang bisa jatuh di masa depan.
+        $end = $base->copy()->endOfDay();
         if ($period === 'week') {
-            return [$base->copy()->startOfWeek(), $base->copy()->endOfWeek()];
+            return [$base->copy()->startOfWeek()->startOfDay(), $end];
         }
         if ($period === 'year') {
-            return [$base->copy()->startOfYear(), $base->copy()->endOfYear()];
+            return [$base->copy()->startOfYear()->startOfDay(), $end];
         }
 
-        return [$base->copy()->startOfMonth(), $base->copy()->endOfMonth()];
+        return [$base->copy()->startOfMonth()->startOfDay(), $end];
     }
 
     private function dashboardPreviousRange(\Carbon\Carbon $start, \Carbon\Carbon $end): array
