@@ -128,6 +128,7 @@ class CashGudang extends Model
         $detail = CashGudangDetail::where('cg_id', $t->cg_id)->where('status', 1)->get();
         foreach ($detail as $key => $value) {
             (new CashArmada())->insertCashArmada([
+                "cr_date" => $t->cg_date,
                 "customer_id" => $value->customer_id,
                 "cash_id" => 0,
                 "cr_nominal" => $value->cgd_nominal,

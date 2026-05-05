@@ -371,7 +371,13 @@
                 { data: "customer_name", width: "15%" },
                 { data: "date", width: "13%" },
                 { data: "so_invoice_no", defaultContent: "-", width: "12%", class: "text-center" },
-                { data: "so_ref_number", defaultContent: "-", width: "12%", class: "text-center" },
+                { 
+                    data: "so_ref_number", 
+                    defaultContent: "-", 
+                    width: "12%", 
+                    class: "text-center",
+                    type: "ref-number" // <--- Panggil fungsi custom tadi di sini
+                },
                 // { data: "total" },
                 { data: "status_text", width: "13%" },
                 { data: "created_by_name", defaultContent: "-", width: "13%" },
@@ -385,6 +391,23 @@
             },
         });
     }
+
+    // Menambahkan logika pengurutan custom ref_number
+    $.extend($.fn.dataTable.ext.type.order, {
+        "ref-number-pre": function (d) {
+            if (d === null || d === "" || d === "-") {
+                return 'zzzzzzzz'; // Paksa "-" atau kosong ke urutan paling bawah
+            }
+            
+            // Cek apakah isinya angka murni
+            if (!isNaN(d) && !isNaN(parseFloat(d))) {
+                return '0000' + d.padStart(10, '0'); // Beri prefix agar angka di atas
+            }
+            
+            // Sisanya (huruf/kombinasi) berada di tengah
+            return '1111' + d.toLowerCase();
+        }
+    });
 
     function refreshSalesOrder() {
         $.ajax({
