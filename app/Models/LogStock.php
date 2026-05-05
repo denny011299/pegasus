@@ -883,8 +883,6 @@ class LogStock extends Model
         }
 
         $as = $asOf->copy()->startOfDay();
-        $totalQty = 0.0;
-        $weighted = 0.0;
         $oldest = null;
 
         foreach ($layers as $l) {
@@ -892,20 +890,22 @@ class LogStock extends Model
             if ($oldest === null || $ld->lt($oldest)) {
                 $oldest = $ld->copy();
             }
-            // Carbon 3: diffInDays default $absolute=false (nilai bertanda/float).
-            // Umur stok harus selisih hari kalender non-negatif sampai as_of (sama perilaku Carbon 2).
-            $days = $ld->lte($as) ? (int) $ld->diffInDays($as, true) : 0;
-            $q = (float) $l['qty'];
-            $totalQty += $q;
-            $weighted += $q * (float) $days;
         }
 
-        $wAge = $totalQty > 0.0000001 ? $weighted / $totalQty : 0.0;
+        // Rumus dasar aging:
+        // Umur stok = Tanggal hari ini(as_of) - Tanggal masuk.
+        // Karena FIFO disimulasikan, tanggal masuk yang dipakai adalah layer tertua
+        // yang masih tersisa setelah konsumsi stok keluar.
+        $ageDays = 0;
+        if ($oldest !== null && $oldest->lte($as)) {
+            $ageDays = (int) $oldest->diffInDays($as, true);
+        }
 
         return [
-            'weighted_age_days' => round($wAge, 1),
+            // Key dipertahankan untuk kompatibilitas frontend/dashboard lama.
+            'weighted_age_days' => (float) $ageDays,
             'oldest_layer_date' => $oldest ? $oldest->toDateString() : null,
-            'bucket' => self::agingBucketFromDays((int) round($wAge)),
+            'bucket' => self::agingBucketFromDays($ageDays),
         ];
     }
 
