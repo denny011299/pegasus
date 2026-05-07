@@ -550,7 +550,8 @@ class ReportController extends Controller
                 'cash_description' => (string) ($row->cash_description ?? '-'),
                 'cash_nominal' => round($nominal, 2),
                 'cash_type' => (int) ($row->cash_type ?? 0),
-                'cash_type_label' => (int) ($row->cash_type ?? 0) === 2 ? 'Keluar' : 'Keluar 1',
+                // Tipe 2 = Keluar, 3 = Keluar 1 di DB (setor ke bank); di laporan pengeluaran cukup "Keluar".
+                'cash_type_label' => 'Keluar',
                 'cash_tujuan' => (int) ($row->cash_tujuan ?? 0),
                 'cash_tujuan_label' => $tujuanMap[(int) ($row->cash_tujuan ?? 0)] ?? 'Umum',
                 'created_by_name' => $createdBy,
