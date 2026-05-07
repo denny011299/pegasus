@@ -98,5 +98,6 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/compressorjs/1.2.1/compressor.min.js"></script>
     <script src="{{asset('Custom_js/Backoffice/Suppliers/tt.js')}}?v=1"></script>
 @endsection

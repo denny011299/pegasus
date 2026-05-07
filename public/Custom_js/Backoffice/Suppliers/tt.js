@@ -3,7 +3,22 @@
     var item = [];
     var grand = 0;
     var dates = null;
+var compressedImageFile = null;
     autocompleteSupplier("#filter_supplier");
+function resetTtUploadProgress() {
+    $("#tt_upload_progress")
+        .css("width", "0%")
+        .attr("aria-valuenow", 0)
+        .text("0%");
+}
+
+function updateTtUploadProgress(percent) {
+    var p = Math.max(0, Math.min(100, Number(percent) || 0));
+    $("#tt_upload_progress")
+        .css("width", p + "%")
+        .attr("aria-valuenow", p)
+        .text(p + "%");
+}
     
     $(document).ready(function(){
         inisialisasi();
@@ -119,7 +134,7 @@
     $(document).on("click",".btn-save",function(){
         console.log($('#image')[0].files[0]);
         $('#keterangan').removeClass('is-invalid');
-        if($('#image')[0].files[0]=="undefined"||$('#image')[0].files[0]==undefined){
+        if(!compressedImageFile){
             notifikasi('error', "Gagal terima", "Upload Bukti transfer terlebih dahulu");
             return false;
         }
@@ -130,22 +145,36 @@
         }
 
         const fd = new FormData();
-        fd.append('image', $('#image')[0].files[0]);
+        fd.append('image', compressedImageFile);
         fd.append('tt_id', $('#add_acc_tt').attr("tt_id"));
         fd.append('tt_desc', $('#keterangan').val());
 
         LoadingButton(this);
+        updateTtUploadProgress(0);
         $.ajax({
             url:"/accTt",
             contentType: false,
             processData: false,
             method:"post",
             data: fd,
+            xhr: function () {
+                var xhr = $.ajaxSettings.xhr();
+                if (xhr.upload) {
+                    xhr.upload.addEventListener("progress", function (evt) {
+                        if (!evt.lengthComputable) return;
+                        var percent = Math.round((evt.loaded / evt.total) * 100);
+                        updateTtUploadProgress(percent);
+                    }, false);
+                }
+                return xhr;
+            },
             headers: {
                 "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
             },
             success:function(e){
-                ResetLoadingButton('.btn-save', "Konfirmasi");
+                updateTtUploadProgress(100);
+                setTimeout(function () { resetTtUploadProgress(); }, 700);
+                ResetLoadingButton('#add_acc_tt .btn-save', "Konfirmasi");
                 $('.modal').modal("hide");
                 if (e.status == -2){
                     notifikasi('error', e.header, e.message);
@@ -158,13 +187,17 @@
             },
             error:function(e){
                 console.log(e);
-                ResetLoadingButton('.btn-save', "Konfirmasi");
+                resetTtUploadProgress();
+                ResetLoadingButton('#add_acc_tt .btn-save', "Konfirmasi");
             }
         });
     });
     $(document).on("click",".btn_acc_tt",function(){
         $('#preview_image').attr("src",public+"no_img.png")
         $('#image').val(null);
+        compressedImageFile = null;
+        resetTtUploadProgress();
+        $("#file_name").text("xx.jpg");
         $('#keterangan').val("");
         $('#keterangan').removeClass('is-invalid');
         $('#add_acc_tt').attr("tt_id",$(this).attr('tt_id'));
@@ -220,16 +253,51 @@
 
 $(document).on("change", "#image", function () {
     let file = this.files[0];
-    if (file) {
-        // ganti preview gambar
-        let reader = new FileReader();
-        reader.onload = function (e) {
+    if (!file) {
+        compressedImageFile = null;
+        return;
+    }
+    if (typeof Compressor !== "function") {
+        compressedImageFile = file;
+        let readerFallback = new FileReader();
+        readerFallback.onload = function (e) {
             $("#preview_image").attr("src", e.target.result);
         };
-        reader.readAsDataURL(file);
-        // ganti nama file
+        readerFallback.readAsDataURL(file);
         $("#file_name").text(file.name);
+        return;
     }
+
+    new Compressor(file, {
+        quality: 0.8,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        convertSize: 500000,
+        success(result) {
+            compressedImageFile = new File(
+                [result],
+                file.name.replace(/\.(png|jpg|jpeg|webp)$/i, "") + ".jpg",
+                { type: "image/jpeg" }
+            );
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                $("#preview_image").attr("src", e.target.result);
+            };
+            reader.readAsDataURL(compressedImageFile);
+            var kb = Math.round((compressedImageFile.size || 0) / 1024);
+            $("#file_name").text(compressedImageFile.name + " (" + kb + " KB)");
+        },
+        error(err) {
+            console.error("Gagal kompres gambar:", err);
+            compressedImageFile = file;
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                $("#preview_image").attr("src", e.target.result);
+            };
+            reader.readAsDataURL(file);
+            $("#file_name").text(file.name);
+        }
+    });
 });
 
     $(document).on("click",".btn_view_tt",function(){

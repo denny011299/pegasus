@@ -210,6 +210,19 @@
                                             accept="image/png, image/jpeg" id="image">
                                         </label>
                                     </div>
+                                    <div class="progress mt-3" id="tt_upload_progress_wrap" style="height: 20px; min-width: 240px;">
+                                        <div
+                                            id="tt_upload_progress"
+                                            class="progress-bar progress-bar-striped progress-bar-animated"
+                                            role="progressbar"
+                                            style="width: 0%;"
+                                            aria-valuenow="0"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"
+                                        >
+                                            0%
+                                        </div>
+                                    </div>
                                 </div>
 
                             </div>
