@@ -717,6 +717,21 @@ class ReportController extends Controller
             ];
         }
 
+        // Hanya tampilkan transaksi dengan deskripsi awalan "Pengeluaran".
+        $rows = array_values(array_filter($rows, static function ($r) {
+            $desc = trim((string) ($r['cash_description'] ?? ''));
+            if ($desc === '') {
+                return false;
+            }
+            return preg_match('/^pengeluaran\b/i', $desc) === 1;
+        }));
+
+        // Total mengikuti data yang lolos filter tampilan.
+        $total = 0.0;
+        foreach ($rows as $r) {
+            $total += (float) ($r['cash_nominal'] ?? 0);
+        }
+
         usort($rows, static function ($a, $b) {
             $da = strtotime((string) ($a['cash_date'] ?? ''));
             $db = strtotime((string) ($b['cash_date'] ?? ''));
