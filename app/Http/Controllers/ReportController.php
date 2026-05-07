@@ -535,7 +535,7 @@ class ReportController extends Controller
 
         $mainCash = DB::table('cashes')
             ->where('status', 2)
-            ->whereIn('cash_type', [2, 3])
+            ->where('cash_type', 2)
             ->whereBetween('cash_date', [$start->toDateString(), $end->toDateString()])
             ->get($cashCols);
 
