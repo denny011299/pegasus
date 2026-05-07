@@ -2147,6 +2147,7 @@
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
             $('#oc_nominal').val(data.ca_nominal).attr('disabled', false);
             $('#oc_notes').val(data.ca_notes).attr('disabled', false);
+            $('#oc_date').val(data.ca_date).attr('disabled', false);
         }
         $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
@@ -2196,6 +2197,7 @@
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
             $('#oc_nominal').val(data.ca_nominal).attr('disabled', true);
             $('#oc_notes').val(data.ca_notes).attr('disabled', true);
+            $('#oc_date').val(data.ca_date).attr('disabled', true);
         }
         $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
@@ -2414,6 +2416,7 @@
             $('#oc_transaksi_armada').val(data.cr_aksi).attr('disabled', true);
             $('#oc_notes_armada').val(data.cr_notes).attr('disabled', false);
             $('#oc_nominal_armada').val(formatRupiahMinus(data.cr_nominal)).attr('disabled', false);
+            $('#oc_date_armada').val(data.cr_date).attr('disabled', false);
         }
 
         $('#customer_id_armada').append(`<option value="${data.customer_id}">${data.customer_notes}</option>`).attr('disabled', true);
@@ -2474,6 +2477,7 @@
             $('#jenis_input_armada').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_armada').val(data.cr_aksi).attr('disabled', true);
             $('#oc_notes_armada').val(data.cr_notes).attr('disabled', true);
+            $('#oc_date_armada').val(data.cr_date).attr('disabled', true);
             // var nominalVal = data.cr_nominal.toString();
             // var optionAda = $('#jenis_nominal option[value="' + nominalVal + '"]').length > 0;
             // if (optionAda) {

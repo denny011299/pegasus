@@ -934,7 +934,11 @@ class ReportController extends Controller
     function acceptCashAdmin(Request $req)
     {
         $data = $req->all();
-        $q = CashAdmin::find($data['ca_id']);
+        if (isset($data['ca_id'])) {
+            $q = CashAdmin::find($data['ca_id']);
+        } else {
+            $q = CashAdmin::where('cash_id', $data['cash_id'])->first();
+        }
         if ($q->status != 1) {
             $staff = Staff::find($q->acc_by)->staff_name;
             return response()->json([
@@ -949,7 +953,11 @@ class ReportController extends Controller
     function declineCashAdmin(Request $req)
     {
         $data = $req->all();
-        $q = CashAdmin::find($data['ca_id']);
+        if (isset($data['ca_id'])) {
+            $q = CashAdmin::find($data['ca_id']);
+        } else {
+            $q = CashAdmin::where('cash_id', $data['cash_id'])->first();
+        }
         if ($q->status != 1) {
             $staff = Staff::find($q->acc_by)->staff_name;
             return response()->json([
@@ -1305,7 +1313,7 @@ class ReportController extends Controller
             
             $cash_id = (new Cash())->insertCash([
                 "person_id" => $data['customer_id'],
-                "cash_date" => now(),
+                "cash_date" => $data['cr_date'] ?? now(),
                 "cash_description" => $notes,
                 "cash_nominal" => $nominal,
                 "cash_type" => $type,
@@ -1361,7 +1369,7 @@ class ReportController extends Controller
             $cash_id = (new Cash())->updateCash([
                 "cash_id" => $data['cash_id'],
                 "person_id" => $data['customer_id'],
-                "cash_date" => now(),
+                "cash_date" => $data['cr_date'] ?? now(),
                 "cash_description" => $notes,
                 "cash_nominal" => $nominal,
                 "cash_type" => $type, // debit (pengembalian kas)

@@ -37,7 +37,7 @@ class Cash extends Model
             }
         }
 
-        $result->orderBy('cash_date', 'desc')->orderBy('status', 'asc')->orderBy('created_at', 'desc');
+        $result->orderBy('status', 'asc')->orderBy('cash_date', 'desc')->orderBy('created_at', 'desc');
         $result = $result->get();
 
         foreach ($result as $key => $value) {

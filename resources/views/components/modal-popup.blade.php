@@ -2143,7 +2143,7 @@
                                 </div>
                                 <div class="col-lg-6 col-12 mb-lg-4 mb-0"></div>
                                 <div class="row p-0 m-0" id="inputModal">
-                                    <div class="col-12 col-lg-6 operasional">
+                                    <div class="col-12 col-lg-6">
                                         <div class="input-block mb-3">
                                             <label>Tanggal<span class="text-danger">*</span></label>
                                             <input type="date" class="form-control fill" id="oc_date_armada"></input>
@@ -2180,7 +2180,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-12 saldo_kas">
+                                    <div class="col-lg-6 col-12 saldo_kas">
                                         <div class="input-block mb-3">
                                             <label>Keterangan<span class="text-danger">*</span></label>
                                             <input type="text" class="form-control fill saldos" id="oc_notes_armada" placeholder="Contoh: Pengembalian kas harian">
