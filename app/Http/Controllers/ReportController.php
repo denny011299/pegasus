@@ -571,7 +571,7 @@ class ReportController extends Controller
             ->whereBetween('ca_date', [$start->toDateString(), $end->toDateString()])
             ->get($caCols);
         foreach ($caRows as $row) {
-            $isOut = ((int) ($row->ca_type ?? 0) === 2) || ((int) ($row->ca_type ?? 0) === 1 && (int) ($row->ca_aksi ?? 0) === 2);
+            $isOut = (int) ($row->ca_type ?? 0) === 2;
             if (!$isOut) continue;
             $nominal = (float) ($row->ca_nominal ?? 0);
             $total += $nominal;
@@ -601,7 +601,7 @@ class ReportController extends Controller
             ->whereBetween('cg_date', [$start->toDateString(), $end->toDateString()])
             ->get($cgCols);
         foreach ($cgRows as $row) {
-            $isOut = ((int) ($row->cg_type ?? 0) === 2) || ((int) ($row->cg_type ?? 0) === 1 && (int) ($row->cg_aksi ?? 0) === 2);
+            $isOut = (int) ($row->cg_type ?? 0) === 2;
             if (!$isOut) continue;
             $nominal = (float) ($row->cg_nominal ?? 0);
             $total += $nominal;
@@ -630,10 +630,29 @@ class ReportController extends Controller
             ->where('cash_id', 0)
             ->whereBetween('cr_date', [$start->toDateString(), $end->toDateString()])
             ->get($crCols);
+        $crKeluarById = [];
+        $crIds = collect($crRows)->pluck('cr_id')->map(fn ($x) => (int) $x)->all();
+        if (count($crIds) > 0) {
+            $crKeluarRows = DB::table('cash_armada_details')
+                ->whereIn('cr_id', $crIds)
+                ->where('status', 1)
+                ->where('crd_type', 2)
+                ->select('cr_id')
+                ->selectRaw('SUM(crd_nominal) as keluar_nominal')
+                ->groupBy('cr_id')
+                ->get();
+            foreach ($crKeluarRows as $d) {
+                $crKeluarById[(int) $d->cr_id] = (float) ($d->keluar_nominal ?? 0);
+            }
+        }
         foreach ($crRows as $row) {
-            $isOut = (int) ($row->cr_type ?? 0) >= 2;
+            // Kas operasional armada: acuan utama kategori detail (crd_type=2 => Keluar).
+            $detailOutNominal = (float) ($crKeluarById[(int) ($row->cr_id ?? 0)] ?? 0);
+            $isOut = $detailOutNominal > 0 || (int) ($row->cr_type ?? 0) === 2;
             if (!$isOut) continue;
-            $nominal = (float) ($row->cr_nominal ?? 0);
+            $nominal = $detailOutNominal > 0
+                ? $detailOutNominal
+                : (float) ($row->cr_nominal ?? 0);
             $total += $nominal;
             $rows[] = [
                 'cash_id' => 'cr-'.(int) $row->cr_id,
@@ -660,10 +679,29 @@ class ReportController extends Controller
             ->where('cash_id', 0)
             ->whereBetween('cs_date', [$start->toDateString(), $end->toDateString()])
             ->get($csCols);
+        $csKeluarById = [];
+        $csIds = collect($csRows)->pluck('cs_id')->map(fn ($x) => (int) $x)->all();
+        if (count($csIds) > 0) {
+            $csKeluarRows = DB::table('cash_sales_details')
+                ->whereIn('cs_id', $csIds)
+                ->where('status', 1)
+                ->where('csd_type', 2)
+                ->select('cs_id')
+                ->selectRaw('SUM(csd_nominal) as keluar_nominal')
+                ->groupBy('cs_id')
+                ->get();
+            foreach ($csKeluarRows as $d) {
+                $csKeluarById[(int) $d->cs_id] = (float) ($d->keluar_nominal ?? 0);
+            }
+        }
         foreach ($csRows as $row) {
-            $isOut = (int) ($row->cs_transaction ?? 0) >= 2;
+            // Kas operasional sales: acuan utama kategori detail (csd_type=2 => Keluar).
+            $detailOutNominal = (float) ($csKeluarById[(int) ($row->cs_id ?? 0)] ?? 0);
+            $isOut = $detailOutNominal > 0 || (int) ($row->cs_transaction ?? 0) === 2;
             if (!$isOut) continue;
-            $nominal = (float) ($row->cs_nominal ?? 0);
+            $nominal = $detailOutNominal > 0
+                ? $detailOutNominal
+                : (float) ($row->cs_nominal ?? 0);
             $total += $nominal;
             $rows[] = [
                 'cash_id' => 'cs-'.(int) $row->cs_id,
