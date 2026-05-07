@@ -145,7 +145,7 @@
                 "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
             },
             success:function(e){
-                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                ResetLoadingButton('.btn-save', "Konfirmasi");
                 $('.modal').modal("hide");
                 if (e.status == -2){
                     notifikasi('error', e.header, e.message);
@@ -158,7 +158,7 @@
             },
             error:function(e){
                 console.log(e);
-                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                ResetLoadingButton('.btn-save', "Konfirmasi");
             }
         });
     });
