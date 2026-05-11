@@ -286,6 +286,26 @@ class AutocompleteController extends Controller
         return response()->json(["data" => $results]);
     }
 
+    public function searchProductVariantByScan(Request $req)
+    {
+        $keyword = $req->keyword ?? null;
+        if (!$keyword) {
+            return response()->json(["data" => []]);
+        }
+
+        $p = new ProductVariant();
+        $results = $p->getProductVariant([
+            "search" => $keyword,
+        ]);
+
+        foreach ($results as $r) {
+            $r->id = $r["product_variant_id"];
+            $r->text = $r["pr_name"] . " " . $r["product_variant_name"];
+        }
+
+        return response()->json(["data" => $results]);
+    }
+
     public function autocompleteProductVariant(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;

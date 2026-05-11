@@ -225,6 +225,104 @@
         `);
     }
 
+    var soScanMode = false;
+
+    $(document).on('click', '#btn_toggle_scan_so', function () {
+        soScanMode = !soScanMode;
+        if (soScanMode) {
+            $('#so_mode_select').hide();
+            $('#so_mode_scan').show();
+            $(this).html('<i class="fa fa-list"></i> Input');
+            $(this).removeClass('btn-outline-secondary').addClass('btn-outline-primary');
+            $('#so_scan_barcode').focus();
+        } else {
+            $('#so_mode_scan').hide();
+            $('#so_mode_select').show();
+            $(this).html('<i class="fa fa-barcode"></i> Scan');
+            $(this).removeClass('btn-outline-primary').addClass('btn-outline-secondary');
+        }
+    });
+
+    function doScanAddSo() {
+        var barcode = $('#so_scan_barcode').val().trim();
+        var qty = parseInt($('#so_scan_qty').val()) || 1;
+        if (qty < 1) qty = 1;
+
+        if (!barcode) {
+            toastr.warning('', 'Masukkan barcode/SKU terlebih dahulu');
+            return;
+        }
+
+        $.ajax({
+            url: '/searchProductVariantByScan',
+            method: 'post',
+            data: {
+                keyword: barcode,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function (res) {
+                var results = res.data || [];
+                if (results.length === 0) {
+                    toastr.error('', 'Produk tidak ditemukan untuk barcode: ' + barcode);
+                    $('#so_scan_barcode').val('').focus();
+                    return;
+                }
+
+                var data = results[0];
+                var defaultUnitId = data.unit_id || (data.pr_unit && data.pr_unit.length > 0 ? data.pr_unit[0].unit_id : 0);
+                var defaultUnitName = '';
+                if (data.pr_unit && Array.isArray(data.pr_unit)) {
+                    data.pr_unit.forEach(function (u) {
+                        if (u.unit_id == defaultUnitId) defaultUnitName = u.unit_name;
+                    });
+                }
+
+                var idx = -1;
+                products.forEach(function (el, i) {
+                    if (parseInt(el.product_variant_id) === parseInt(data.product_variant_id) && parseInt(el.unit_id) === parseInt(defaultUnitId)) {
+                        idx = i;
+                    }
+                });
+
+                if (idx === -1) {
+                    products.push({
+                        product_variant_id: data.product_variant_id,
+                        product_name: data.pr_name || '-',
+                        product_variant_name: data.product_variant_name,
+                        product_variant_sku: data.product_variant_sku,
+                        product_variant_price: data.product_variant_price || 0,
+                        so_qty: qty,
+                        unit_id: defaultUnitId,
+                        unit_name: defaultUnitName,
+                        pr_unit: data.pr_unit || []
+                    });
+                } else {
+                    products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+                }
+
+                toastr.success('', 'Berhasil menambahkan: ' + (data.pr_name || '') + ' ' + data.product_variant_name + ' (x' + qty + ')');
+                refreshTableProduct();
+
+                $('#so_scan_barcode').val('').focus();
+            },
+            error: function () {
+                toastr.error('', 'Gagal mencari produk');
+                $('#so_scan_barcode').val('').focus();
+            }
+        });
+    }
+
+    $(document).on('click', '#btn_scan_add_so', function () {
+        doScanAddSo();
+    });
+
+    $(document).on('keydown', '#so_scan_barcode', function (e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            doScanAddSo();
+        }
+    });
+
     // Supaya bisa focus saat load modal
     $('#add_sales_order').on('shown.bs.modal', function () {
     });
@@ -252,6 +350,12 @@
         $('#btn_bukti_foto').show();
         $('#btn-lihat-bukti').hide();
         $('#check_foto').hide();
+        soScanMode = false;
+        $('#so_mode_scan').hide();
+        $('#so_mode_select').show();
+        $('#btn_toggle_scan_so').html('<i class="fa fa-barcode"></i> Scan').removeClass('btn-outline-primary').addClass('btn-outline-secondary');
+        $('#so_scan_barcode').val('');
+        $('#so_scan_qty').val(1);
         // $('#so_qty_input').val(""");
         $('#so_unit_input').html('<option value="" selected>Pilih Satuan</option>');
         let today = new Date();
