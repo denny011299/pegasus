@@ -1145,10 +1145,24 @@
                                 </div>
                                 <div class="col-lg-6 col-md-12 col-12">
                                     <div class="input-block mb-3">
-                                        <label>SKU/Barcode Produk<span class="text-danger">*</span></label>
-                                        <select class="form-select" id="po_sku">
-                                            <option value="" selected disabled>Pilih Supplier Terlebih Dahulu</option>
-                                        </select>
+                                        <label class="d-flex align-items-center gap-2">
+                                            SKU/Barcode Produk<span class="text-danger">*</span>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn_toggle_scan" title="Ganti mode Scan">
+                                                <i class="fa fa-barcode"></i> Scan
+                                            </button>
+                                        </label>
+                                        <div id="po_mode_select">
+                                            <select class="form-select" id="po_sku">
+                                                <option value="" selected disabled>Pilih Supplier Terlebih Dahulu</option>
+                                            </select>
+                                        </div>
+                                        <div id="po_mode_scan" style="display:none">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="po_scan_barcode" placeholder="Scan / ketik barcode...">
+                                                <input type="number" class="form-control" id="po_scan_qty" placeholder="Qty" value="1" min="1" style="max-width:80px">
+                                                <button type="button" class="btn btn-primary" id="btn_scan_add"><i class="fa fa-plus"></i></button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-12 overflow-x-auto mb-3 table-po-wrap">

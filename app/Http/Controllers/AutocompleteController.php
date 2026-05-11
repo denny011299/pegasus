@@ -271,6 +271,22 @@ class AutocompleteController extends Controller
         ));
     }
 
+    public function searchSuppliesVariantByScan(Request $req)
+    {
+        $keyword = $req->keyword ?? null;
+        if (!$keyword) {
+            return response()->json(["data" => []]);
+        }
+
+        $p = new SuppliesVariant();
+        $results = $p->getSuppliesVariant([
+            "search"      => $keyword,
+            "supplier_id" => $req->supplier_id,
+        ]);
+
+        return response()->json(["data" => $results]);
+    }
+
     public function autocompleteProductVariant(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;

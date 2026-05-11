@@ -49,8 +49,10 @@ class SuppliesVariant extends Model
             $result->where("supplies_variant_id", "=", $data["supplies_variant_id"]);
         }
         if ($data["search"]) {
-            $result->where("supplies_variant_sku", "=", $data["search"])
-                ->orWhere("supplies_variant_barcode", "=", $data["search"]);
+            $result->where(function ($q) use ($data) {
+                $q->where("supplies_variant_sku", "=", $data["search"])
+                  ->orWhere("supplies_variant_barcode", "=", $data["search"]);
+            });
         }
 
         $result->orderBy("created_at", "asc");
