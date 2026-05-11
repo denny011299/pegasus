@@ -38,7 +38,7 @@ class CashAdmin extends Model
             }
         }
 
-        $result->orderBy('status', 'asc')->orderBy('created_at', 'desc');
+        $result->orderBy('status', 'asc')->orderBy('ca_date', 'desc')->orderBy('created_at', 'desc');
 
         $result = $result->get();
 

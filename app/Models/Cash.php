@@ -80,7 +80,18 @@ class Cash extends Model
                         ->first();
                 }
 
-                if (!$penyerahanPertama) continue;
+                if (!$penyerahanPertama) {
+                    if ($pengembalianSebelumnya) {
+                        // Tidak ada penyerahan baru → operasional dihitung dari setelah pengembalian sebelumnya
+                        $batasOperasionalCrId = $pengembalianSebelumnya->cr_id;
+                    } else {
+                        continue; // Tidak ada konteks sama sekali
+                    }
+                } else {
+                    $batasOperasionalCrId = $pengembalianSebelumnya
+                        ? max($penyerahanPertama->cr_id, $pengembalianSebelumnya->cr_id)
+                        : $penyerahanPertama->cr_id;
+                }
 
                 // Penyerahan — hanya yang baru di siklus ini
                 $allPenyerahan = CashArmada::where('customer_id', $value->person_id)
@@ -95,8 +106,14 @@ class Cash extends Model
                     ->get();
 
                 // Kalau tidak ada penyerahan baru, tampilkan penyerahanPertama
-                if ($allPenyerahan->isEmpty()) {
-                    $allPenyerahan = collect([$penyerahanPertama]);
+                if ($allPenyerahan->isEmpty() && $penyerahanPertama) {
+                    // Hanya tampilkan penyerahanPertama kalau cr_id-nya
+                    // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
+                    if (!$pengembalianSebelumnya || 
+                        $penyerahanPertama->cs_id > $pengembalianSebelumnya->cs_id) {
+                        $allPenyerahan = collect([$penyerahanPertama]);
+                    }
+                    // Kalau tidak, biarkan kosong
                 }
 
                 // Semua operasional dari penyerahanPertama sampai pengembalianIni
@@ -104,7 +121,7 @@ class Cash extends Model
                     ->where('cr_aksi', 2)
                     ->where('cash_id', 0)
                     ->where('status', 2)
-                    ->where('cr_id', '>', $penyerahanPertama->cr_id)
+                    ->where('cr_id', '>', $batasOperasionalCrId)
                     ->where('cr_id', '<', $pengembalianIni->cr_id)
                     ->orderBy('cr_id', 'asc')
                     ->get();
@@ -124,14 +141,14 @@ class Cash extends Model
                 $pengembalianIni = CashSales::where('cash_id', $value->cash_id)
                     ->where('staff_id', $value->person_id)
                     ->where('cs_type', 1)
-                    ->whereIn('cs_aksi', [2, 3])
+                    ->where('cs_aksi', 3)
                     ->first();
 
                 if (!$pengembalianIni) continue;
 
                 $pengembalianSebelumnya = CashSales::where('staff_id', $value->person_id)
                     ->where('cs_type', 1)
-                    ->whereIn('cs_aksi', [2, 3])
+                    ->where('cs_aksi', 3)
                     ->where('cash_id', '!=', 0)
                     ->where('cs_id', '<', $pengembalianIni->cs_id)
                     ->where('status', 2)
@@ -150,7 +167,6 @@ class Cash extends Model
                     ->orderBy('cs_id', 'asc')
                     ->first();
 
-                // ← GANTI if (!$penyerahanPertama) continue; DENGAN INI
                 if (!$penyerahanPertama && $pengembalianSebelumnya) {
                     $penyerahanPertama = CashSales::where('staff_id', $value->person_id)
                         ->where('cs_type', 1)
@@ -162,7 +178,18 @@ class Cash extends Model
                         ->first();
                 }
 
-                if (!$penyerahanPertama) continue;
+                // ← SAMA SEPERTI ARMADA
+                if (!$penyerahanPertama) {
+                    if ($pengembalianSebelumnya) {
+                        $batasOperasionalCsId = $pengembalianSebelumnya->cs_id;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    $batasOperasionalCsId = $pengembalianSebelumnya
+                        ? max($penyerahanPertama->cs_id, $pengembalianSebelumnya->cs_id)
+                        : $penyerahanPertama->cs_id;
+                }
 
                 // Penyerahan — hanya yang baru di siklus ini
                 $allPenyerahan = CashSales::where('staff_id', $value->person_id)
@@ -177,17 +204,22 @@ class Cash extends Model
                     ->orderBy('cs_id', 'asc')
                     ->get();
 
-                // Kalau tidak ada penyerahan baru, tampilkan penyerahanPertama
-                if ($allPenyerahan->isEmpty()) {
-                    $allPenyerahan = collect([$penyerahanPertama]);
+                if ($allPenyerahan->isEmpty() && $penyerahanPertama) {
+                    // Hanya tampilkan penyerahanPertama kalau cr_id-nya
+                    // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
+                    if (!$pengembalianSebelumnya || 
+                        $penyerahanPertama->cs_id > $pengembalianSebelumnya->cs_id) {
+                        $allPenyerahan = collect([$penyerahanPertama]);
+                    }
+                    // Kalau tidak, biarkan kosong
                 }
 
-                // Semua operasional dari penyerahanPertama sampai pengembalianIni
+                // ← PAKAI $batasOperasionalCsId, bukan $penyerahanPertama->cs_id
                 $allOperasional = CashSales::where('staff_id', $value->person_id)
                     ->where('cs_type', 2)
                     ->where('cash_id', 0)
                     ->where('status', 2)
-                    ->where('cs_id', '>', $penyerahanPertama->cs_id)
+                    ->where('cs_id', '>', $batasOperasionalCsId)
                     ->where('cs_id', '<', $pengembalianIni->cs_id)
                     ->orderBy('cs_id', 'asc')
                     ->get();
@@ -200,6 +232,91 @@ class Cash extends Model
 
                 $value->sales_penyerahan  = $allPenyerahan;
                 $value->sales_operasional = $allOperasional;
+            }
+
+            // Admin
+            else if (in_array($value->cash_type, [1, 2]) && $value->cash_tujuan == 1) {
+                $pengembalianIni = CashAdmin::where('cash_id', $value->cash_id)
+                    ->where('ca_aksi', 2)
+                    ->first();
+
+                if (!$pengembalianIni) continue;
+
+                $pengembalianSebelumnya = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
+                    ->where('ca_aksi', 2)
+                    ->where('cash_id', '!=', 0)
+                    ->where('ca_id', '<', $pengembalianIni->ca_id)
+                    ->orderBy('ca_id', 'desc')
+                    ->first();
+
+                $penyerahanPertama = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
+                    ->where('ca_aksi', 1)
+                    ->where('ca_type', 1)
+                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
+                        $q->where('ca_id', '>', $pengembalianSebelumnya->ca_id);
+                    })
+                    ->where('ca_id', '<', $pengembalianIni->ca_id)
+                    ->orderBy('ca_id', 'asc')
+                    ->first();
+
+                if (!$penyerahanPertama && $pengembalianSebelumnya) {
+                    $penyerahanPertama = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
+                        ->where('ca_aksi', 1)
+                        ->where('ca_type', 1)
+                        ->where('ca_id', '<', $pengembalianSebelumnya->ca_id)
+                        ->orderBy('ca_id', 'desc')
+                        ->first();
+                }
+
+                // ← TAMBAH LOGIKA batasOperasionalCaId
+                if (!$penyerahanPertama) {
+                    if ($pengembalianSebelumnya) {
+                        $batasOperasionalCaId = $pengembalianSebelumnya->ca_id;
+                    } else {
+                        continue;
+                    }
+                } else {
+                    $batasOperasionalCaId = $pengembalianSebelumnya
+                        ? max($penyerahanPertama->ca_id, $pengembalianSebelumnya->ca_id)
+                        : $penyerahanPertama->ca_id;
+                }
+
+                $allPenyerahan = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
+                    ->where('ca_aksi', 1)
+                    ->where('ca_type', 1)
+                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
+                        $q->where('ca_id', '>', $pengembalianSebelumnya->ca_id);
+                    })
+                    ->where('ca_id', '<', $pengembalianIni->ca_id)
+                    ->orderBy('ca_id', 'asc')
+                    ->get();
+
+                if ($allPenyerahan->isEmpty() && $penyerahanPertama) {
+                    // Hanya tampilkan penyerahanPertama kalau cr_id-nya
+                    // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
+                    if (!$pengembalianSebelumnya || 
+                        $penyerahanPertama->cs_id > $pengembalianSebelumnya->cs_id) {
+                        $allPenyerahan = collect([$penyerahanPertama]);
+                    }
+                    // Kalau tidak, biarkan kosong
+                }
+
+                // ← PAKAI $batasOperasionalCaId
+                $allOperasional = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
+                    ->where('ca_type', 2)
+                    ->where('ca_id', '>', $batasOperasionalCaId)
+                    ->where('ca_id', '<', $pengembalianIni->ca_id)
+                    ->orderBy('ca_id', 'asc')
+                    ->get();
+
+                foreach ($allOperasional as $val) {
+                    $val->detail_admin = CashAdminDetail::where('ca_id', $val->ca_id)
+                        ->where('status', 1)
+                        ->get();
+                }
+
+                $value->admin_penyerahan  = $allPenyerahan;
+                $value->admin_operasional = $allOperasional;
             }
         }
 

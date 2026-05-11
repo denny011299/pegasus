@@ -39,7 +39,7 @@ class CashArmada extends Model
         }
 
         // $result->orderByRaw('FIELD(status, 2, 1, 3)')->orderBy('created_at', 'desc');
-        $result->orderBy('status', 'asc')->orderBy('created_at', 'desc');
+        $result->orderBy('status', 'asc')->orderBy('cr_date', 'desc')->orderBy('created_at', 'desc');
 
         $result = $result->get();
 
