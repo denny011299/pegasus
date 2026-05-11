@@ -229,15 +229,21 @@
 
     $(document).on('click', '#btn_toggle_scan_so', function () {
         soScanMode = !soScanMode;
+        var $skuCol = $('#so_sku').closest('.col-lg-6, .col-md-6, .col-12');
+        var $qtyUnitCol = $skuCol.next('.col-lg-6, .col-md-6, .col-12');
         if (soScanMode) {
             $('#so_mode_select').hide();
             $('#so_mode_scan').show();
+            $qtyUnitCol.hide();
+            $skuCol.removeClass('col-lg-6').addClass('col-lg-12');
             $(this).html('<i class="fa fa-list"></i> Input');
             $(this).removeClass('btn-outline-secondary').addClass('btn-outline-primary');
             $('#so_scan_barcode').focus();
         } else {
             $('#so_mode_scan').hide();
             $('#so_mode_select').show();
+            $qtyUnitCol.show();
+            $skuCol.removeClass('col-lg-12').addClass('col-lg-6');
             $(this).html('<i class="fa fa-barcode"></i> Scan');
             $(this).removeClass('btn-outline-primary').addClass('btn-outline-secondary');
         }
@@ -353,6 +359,9 @@
         soScanMode = false;
         $('#so_mode_scan').hide();
         $('#so_mode_select').show();
+        var $skuCol = $('#so_sku').closest('.col-lg-6, .col-lg-12, .col-md-6, .col-md-12, .col-12');
+        $skuCol.next('.col-lg-6, .col-md-6, .col-md-12, .col-12').show();
+        $skuCol.removeClass('col-lg-12').addClass('col-lg-6');
         $('#btn_toggle_scan_so').html('<i class="fa fa-barcode"></i> Scan').removeClass('btn-outline-primary').addClass('btn-outline-secondary');
         $('#so_scan_barcode').val('');
         $('#so_scan_qty').val(1);
