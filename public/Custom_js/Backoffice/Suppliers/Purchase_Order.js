@@ -108,18 +108,11 @@
             return;
         }
 
-        var supplierId = $('#po_supplier').val();
-        if (!supplierId) {
-            toastr.warning('', 'Pilih supplier terlebih dahulu');
-            return;
-        }
-
         $.ajax({
             url: '/searchSuppliesVariantByScan',
             method: 'post',
             data: {
                 keyword: barcode,
-                supplier_id: supplierId,
                 _token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function (res) {
@@ -131,6 +124,23 @@
                 }
 
                 var data = results[0];
+                var currentSupplierId = $('#po_supplier').val();
+
+                if (!currentSupplierId || currentSupplierId != data.supplier_id) {
+                    item = [];
+                    $('#tablePurchaseModal tbody').html("");
+                    refreshSummary();
+
+                    var newOpt = new Option(data.supplier_name, data.supplier_id, true, true);
+                    $('#po_supplier').empty().append(newOpt).trigger('change.select2');
+
+                    autocompleteSuppliesVariant('#po_sku', '#add_purchase_order .modal-content', data.supplier_id);
+
+                    if (currentSupplierId && currentSupplierId != data.supplier_id) {
+                        toastr.info('', 'Supplier diganti ke: ' + data.supplier_name);
+                    }
+                }
+
                 var cari = -1;
                 item.forEach(function (el, idx) {
                     if (data.supplies_variant_id == el.supplies_variant_id) {
@@ -152,6 +162,7 @@
             },
             error: function () {
                 toastr.error('', 'Gagal mencari produk');
+                $('#po_scan_barcode').val('').focus();
             }
         });
     }

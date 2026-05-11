@@ -280,8 +280,7 @@ class AutocompleteController extends Controller
 
         $p = new SuppliesVariant();
         $results = $p->getSuppliesVariant([
-            "search"      => $keyword,
-            "supplier_id" => $req->supplier_id,
+            "search" => $keyword,
         ]);
 
         return response()->json(["data" => $results]);
