@@ -184,6 +184,7 @@
         addInput("items_json", JSON.stringify(items));
         addInput("nama", $("#nama").is(":checked") ? "1" : "0");
         addInput("harga", $("#harga").is(":checked") ? "1" : "0");
+        addInput("paper_size", $("#paper_size").val() || "a4");
 
         document.body.appendChild(form);
         form.submit();

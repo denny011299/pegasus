@@ -355,12 +355,23 @@ class ProductController extends Controller
 
         $showName = (int) $req->input('nama', 1) === 1 ? 1 : 0;
         $showPrice = (int) $req->input('harga', 1) === 1 ? 1 : 0;
+        $paperSize = $req->input('paper_size', 'a4');
 
-        $pdf = Pdf::loadView('Backoffice.PDF.Barcode', [
-            'list' => $list,
-            'nama' => $showName,
+        $viewData = [
+            'list'  => $list,
+            'nama'  => $showName,
             'harga' => $showPrice,
-        ])->setPaper([0, 0, 198.43, 48.19], 'portrait');
+        ];
+
+        if ($paperSize === 'label') {
+            $pdf = Pdf::loadView('Backoffice.PDF.Barcode', $viewData)
+                ->setPaper([0, 0, 198.43, 48.19], 'portrait');
+        } else {
+            $viewData['paper_size'] = $paperSize;
+            $paper = $paperSize === 'a5' ? 'a5' : 'a4';
+            $pdf = Pdf::loadView('Backoffice.PDF.BarcodeSheet', $viewData)
+                ->setPaper($paper, 'portrait');
+        }
 
         return $pdf->stream('barcode-' . now()->format('YmdHis') . '.pdf');
     }

@@ -215,6 +215,16 @@
                     </div>
                     <div class="barcode-actions">
                         <div class="barcode-switch-group">
+                            <div class="barcode-switch" style="min-width:140px">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <p style="font-size:.79rem;margin:0;color:#334155;font-weight:600">Ukuran Kertas</p>
+                                </div>
+                                <select class="form-select form-select-sm mt-1" id="paper_size">
+                                    <option value="a4" selected>A4</option>
+                                    <option value="a5">A5</option>
+                                    <option value="label">Label (70x17mm)</option>
+                                </select>
+                            </div>
                             <div class="barcode-switch">
                                 <div class="search-toggle-list d-flex justify-content-between align-items-center">
                                     <p>Tampilkan Nama Produk</p>
