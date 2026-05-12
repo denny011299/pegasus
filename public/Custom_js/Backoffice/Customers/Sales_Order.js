@@ -95,7 +95,8 @@
 
         // Khusus alur revisi: user boleh benarkan item langsung di modal.
         $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", false);
-        $('#btn-add-product-so').show();
+        $('#so_scan_barcode, #so_scan_qty').attr("disabled", false);
+        $('#btn-add-product-so, #btn_scan_add_so, #btn_toggle_scan_so').show();
         $('.deleteRow').show();
 
         $('#so_ppn').trigger('blur');
@@ -167,7 +168,8 @@
         refreshTableProduct();
         $('.deleteRow').hide();
         $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
-        $('#btn-add-product-so').hide();
+        $('#so_scan_barcode, #so_scan_qty').attr("disabled", true);
+        $('#btn-add-product-so, #btn_scan_add_so, #btn_toggle_scan_so').hide();
 
         if (data.status == 1) {
             if (hasAccessAction("Pengiriman", "others")) {
@@ -347,7 +349,8 @@
         $('#so_ppn').val(0).trigger('blur');
         $('.form-select').not("#so_payment").empty().attr("disabled", false);
         $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", false);
-        $('#btn-add-product-so').show();
+        $('#so_scan_barcode, #so_scan_qty').attr("disabled", false);
+        $('#btn-add-product-so, #btn_scan_add_so, #btn_toggle_scan_so').show();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman").show();
         $('#add_sales_order').modal("show");
@@ -899,7 +902,8 @@
         });
         refreshTableProduct();
         $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);
-        $('#btn-add-product-so').hide();
+        $('#so_scan_barcode, #so_scan_qty').attr("disabled", true);
+        $('#btn-add-product-so, #btn_scan_add_so, #btn_toggle_scan_so').hide();
 
         // update summary
         $('#so_ppn').trigger('blur')
