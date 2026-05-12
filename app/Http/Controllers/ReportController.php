@@ -2251,6 +2251,18 @@ class ReportController extends Controller
             ->where('status', 3)
             ->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])
             ->count();
+        $revision += (int) DB::table('cash_admins')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(ca_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('cash_gudangs')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(cg_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('cash_armadas')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(cr_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
 
         return [
             'changelog_pending' => $changelogPending,
@@ -2623,6 +2635,78 @@ class ReportController extends Controller
                 'summary' => 'Ditolak',
                 'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
                 'url_label' => 'Perbaiki kas sales',
+            ];
+        }
+
+        $caRev = DB::table('cash_admins as ca')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'ca.staff_id')
+            ->where('ca.status', 3)
+            ->whereRaw('DATE(COALESCE(ca.ca_date, ca.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('ca.created_at')
+            ->limit($limit)
+            ->get(['ca.ca_id', 'ca.ca_nominal', 'ca.ca_notes', 'ca.ca_date', 'st.staff_name']);
+
+        foreach ($caRev as $ca) {
+            $nom = (float) ($ca->ca_nominal ?? 0);
+            $staff = trim((string) ($ca->staff_name ?? ''));
+            $revision[] = [
+                'kind' => 'kas_admin',
+                'queue_key' => 'ca:'.$ca->ca_id,
+                'module_label' => 'Pengembalian Kas Besar (Admin)',
+                'reference' => 'CA #'.$ca->ca_id,
+                'date' => $ca->ca_date ? (string) $ca->ca_date : '',
+                'what_changed' => 'Pengembalian kas admin ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : ''),
+                'url' => url('operationalCash').'?ca_id='.(int) $ca->ca_id,
+                'url_label' => 'Perbaiki kas admin',
+            ];
+        }
+
+        $cgRev = DB::table('cash_gudangs as cg')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cg.staff_id')
+            ->where('cg.status', 3)
+            ->whereRaw('DATE(COALESCE(cg.cg_date, cg.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cg.created_at')
+            ->limit($limit)
+            ->get(['cg.cg_id', 'cg.cg_nominal', 'cg.cg_notes', 'cg.cg_date', 'st.staff_name']);
+
+        foreach ($cgRev as $cg) {
+            $nom = (float) ($cg->cg_nominal ?? 0);
+            $staff = trim((string) ($cg->staff_name ?? ''));
+            $revision[] = [
+                'kind' => 'kas_gudang',
+                'queue_key' => 'cg:'.$cg->cg_id,
+                'module_label' => 'Pengembalian Kas Besar (Gudang)',
+                'reference' => 'CG #'.$cg->cg_id,
+                'date' => $cg->cg_date ? (string) $cg->cg_date : '',
+                'what_changed' => 'Pengembalian kas gudang ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : ''),
+                'url' => url('operationalCash').'?cg_id='.(int) $cg->cg_id,
+                'url_label' => 'Perbaiki kas gudang',
+            ];
+        }
+
+        $crRev = DB::table('cash_armadas as cr')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'cr.customer_id')
+            ->where('cr.status', 3)
+            ->whereRaw('DATE(COALESCE(cr.cr_date, cr.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cr.created_at')
+            ->limit($limit)
+            ->get(['cr.cr_id', 'cr.cr_nominal', 'cr.cr_notes', 'cr.cr_date', 'c.customer_notes']);
+
+        foreach ($crRev as $cr) {
+            $nom = (float) ($cr->cr_nominal ?? 0);
+            $armada = trim((string) ($cr->customer_notes ?? ''));
+            $revision[] = [
+                'kind' => 'kas_armada',
+                'queue_key' => 'cr:'.$cr->cr_id,
+                'module_label' => 'Pengembalian Kas Besar (Armada)',
+                'reference' => 'CR #'.$cr->cr_id,
+                'date' => $cr->cr_date ? (string) $cr->cr_date : '',
+                'what_changed' => 'Pengembalian kas armada ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => $fmtRp($nom).($armada !== '' ? ' · '.$armada : ''),
+                'url' => url('operationalCash').'?cr_id='.(int) $cr->cr_id,
+                'url_label' => 'Perbaiki kas armada',
             ];
         }
 
