@@ -36,7 +36,7 @@ class CashGudang extends Model
             }
         }
 
-        $result->orderBy('status', 'asc')->orderBy('created_at', 'desc');
+        $result->orderBy('status', 'asc')->orderBy('cg_date', 'desc')->orderBy('created_at', 'desc');
 
         $result = $result->get();
 

@@ -187,6 +187,10 @@
                 row.child(formatSales(rowData)).show();
                 tr.addClass('shown');
             }
+            else if (rowData.admin_operasional || rowData.admin_penyerahan) {
+                row.child(formatAdmin(rowData)).show();
+                tr.addClass('shown');
+            }
         }
     });
 
@@ -302,7 +306,7 @@
         if ((!operasional || operasional.length === 0) && (!penyerahan || penyerahan.length === 0)) {
             return `
                 <div class="p-3">
-                    <em class="text-muted">Tidak ada detail operasional armada</em>
+                    <em class="text-muted">Tidak ada detail operasional sales</em>
                 </div>
             `;
         }
@@ -379,6 +383,93 @@
         html += `</div>`;
         return html;
     }
+    function formatAdmin(rowData) {
+        console.log(rowData)
+        let operasional = rowData.admin_operasional;
+        let penyerahan = rowData.admin_penyerahan;
+
+        if ((!operasional || operasional.length === 0) && (!penyerahan || penyerahan.length === 0)) {
+            return `
+                <div class="p-3">
+                    <em class="text-muted">Tidak ada detail operasional admin</em>
+                </div>
+            `;
+        }
+
+        let total = 0;
+        let html = `<div class="px-5">`;
+
+        if (penyerahan && penyerahan.length > 0) {
+            penyerahan.forEach((p) => {
+                console.log(p)
+                total += parseInt(p.ca_nominal);
+                html += `
+                    <div class="child-item">
+                        <div class="child-left d-flex g-3">
+                            <div class="date me-3">${moment(p.ca_date).format('D MMM YYYY')}</div>
+                            <div class="notes">${p.ca_notes}</div>
+                        </div>
+                        <div class="child-right text-end text-success">+ Rp ${formatRupiahMinus(p.ca_nominal)}</div>
+                    </div>
+                `;
+            });
+        }
+
+        if (operasional && operasional.length > 0) {
+            operasional.forEach((d) => {
+                total -= parseInt(d.ca_nominal);
+
+                // ← wrap dengan try-catch
+                let list_photo = null;
+                try {
+                    list_photo = d.ca_img ? JSON.parse(d.ca_img) : null;
+                } catch(e) {
+                    list_photo = d.ca_img; // kalau bukan JSON, pakai langsung
+                }
+
+                html += `
+                    <div class="child-item">
+                        <div class="child-left">
+                            <div class="d-flex g-3">
+                                <div class="date me-3">
+                                    ${moment(d.ca_date).format('D MMM YYYY')}
+                                </div>
+                                <div class="notes">
+                                    ${d.ca_notes}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="child-right text-end" style="color : ${d.ca_transaction <= 2 ? (d.ca_transaction == 1 ? '#22cc62' : '#ff0000') : '#e8bd10'}">
+                            ${d.ca_transaction == 1 ? '+' : '-'} Rp ${formatRupiahMinus(d.ca_nominal)}
+                        </div>
+                        <div class="d-flex">
+                            ${d.detail_admin && d.detail_admin.length > 0 ? `
+                            <a class="me-2 btn-action-icon p-2 btn-detail-admin" 
+                                data-detail='${JSON.stringify(d.detail_admin)}'
+                                data-notes='${d.ca_notes}'>
+                                <i class="fe fe-list"></i>
+                            </a>` : ''}
+                            ${d.ca_img ? `
+                            <a class="me-2 btn-action-icon p-2 btn-lihat-bukti-admin" 
+                                data-img='${d.ca_img}'>
+                                <i class="fe fe-eye"></i>
+                            </a>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        html += `
+            <div class="child-item fw-semibold pt-3 border-top">
+                <div class="child-left-total">Total Akhir</div>
+                <div class="child-right text-end ${total > 0 ? 'text-success' : 'text-danger'}">${total > 0 ? '+' : '-'}Rp ${formatRupiahMinus(total)}</div>
+            </div>
+        `;
+
+        html += `</div>`;
+        return html;
+    }
 
     $(document).on('click', '.btn-detail-sales', function () {
         var detail = JSON.parse($(this).attr('data-detail'));
@@ -392,6 +483,27 @@
                 <tr>
                     <td>${item.csd_notes ?? '-'}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(item.csd_nominal)}</td>
+                </tr>
+            `;
+        });
+
+        $('#modal-detail-sales .modal-title').text(notes ?? 'Detail Operasional');
+        $('#detail-sales-body').html(rows);
+        $('#detail-sales-total').html(`Rp ${formatRupiahMinus(total)}`);
+        $('#modal-detail-sales').modal('show');
+    });
+    $(document).on('click', '.btn-detail-admin', function () {
+        var detail = JSON.parse($(this).attr('data-detail'));
+        var notes  = $(this).attr('data-notes');
+        let rows = '';
+        let total = 0;
+
+        detail.forEach(item => {
+            total += parseInt(item.cad_nominal);
+            rows += `
+                <tr>
+                    <td>${item.cad_notes ?? '-'}</td>
+                    <td class="text-end">Rp ${formatRupiahMinus(item.cad_nominal)}</td>
                 </tr>
             `;
         });
@@ -636,6 +748,23 @@
         $('#fotoProduksiImage').attr('src', public + "kas_admin/sales/" + list_photo[0]);
         $('#fotoProduksiImage').attr('index', 0);
         $('#btn_download_photo').attr('href', public + "kas_admin/sales/" + list_photo[0]);
+        $('#jumlahFoto').html(list_photo.length);
+        $('.btn-prev, .btn-next').show();
+        $('#modalViewPhoto').modal("show");
+    });
+    $(document).on("click", ".btn-lihat-bukti-admin", function () {
+        var imgRaw = $(this).attr('data-img');
+        
+        try {
+            list_photo = JSON.parse(imgRaw);
+        } catch(e) {
+            list_photo = [imgRaw];
+        }
+
+        if (!list_photo || list_photo.length === 0) return;
+        $('#fotoProduksiImage').attr('src', public + "kas_admin/admin/" + list_photo[0]);
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', public + "kas_admin/admin/" + list_photo[0]);
         $('#jumlahFoto').html(list_photo.length);
         $('.btn-prev, .btn-next').show();
         $('#modalViewPhoto').modal("show");

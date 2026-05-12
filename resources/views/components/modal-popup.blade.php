@@ -867,10 +867,23 @@
                                                 <select class="form-select" id="so_sku"></select>
                                             </div>
                                             <div id="so_mode_scan" style="display:none">
-                                                <div class="input-group">
-                                                    <input type="text" class="form-control" id="so_scan_barcode" placeholder="Scan / ketik barcode...">
-                                                    <input type="number" class="form-control" id="so_scan_qty" placeholder="Qty" value="1" min="1" style="max-width:80px">
-                                                    <button type="button" class="btn btn-primary" id="btn_scan_add_so"><i class="fa fa-plus"></i></button>
+                                                <div class="input-group mb-3" style="max-width: 600px;"> <input type="text" 
+                                                        class="form-control" 
+                                                        id="so_scan_barcode" 
+                                                        placeholder="Scan / ketik barcode..." 
+                                                        style="flex: 0 0 50%;"> <input type="number" 
+                                                        class="form-control" 
+                                                        id="so_scan_qty" 
+                                                        placeholder="Qty" 
+                                                        value="1" 
+                                                        min="1" 
+                                                        style="max-width:80px">
+                                                    
+                                                    <button type="button" 
+                                                            class="btn btn-primary" 
+                                                            id="btn_scan_add_so">
+                                                        <i class="fa fa-plus"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
