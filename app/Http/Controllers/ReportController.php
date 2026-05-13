@@ -2242,7 +2242,11 @@ class ReportController extends Controller
         $revision = 0;
         $revision += (int) DB::table('sales_orders')->where('status', 3)->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
         $revision += (int) DB::table('productions')->where('status', 3)->whereBetween('production_date', [$s, $e])->count();
-        $revision += (int) DB::table('purchase_orders')->where('status', 3)->whereBetween('po_date', [$s, $e])->count();
+        // Tolak PO mengubah baris (updated_at); jangan filter hanya po_date agar revisi tetap muncul di periode penolakan.
+        $revision += (int) DB::table('purchase_orders')
+            ->where('status', -1)
+            ->whereRaw('DATE(COALESCE(updated_at, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
         $revision += (int) DB::table('product_issues')
             ->where('status', 3)
             ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
@@ -2553,20 +2557,22 @@ class ReportController extends Controller
         }
 
         $poRev = DB::table('purchase_orders')
-            ->where('status', 3)
-            ->whereBetween('po_date', [$s, $e])
+            ->where('status', -1)
+            ->whereRaw('DATE(COALESCE(updated_at, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
             ->limit($limit)
-            ->get(['po_id', 'po_number', 'po_date']);
+            ->get(['po_id', 'po_number', 'po_date', 'updated_at', 'created_at']);
 
         foreach ($poRev as $po) {
+            $rejAt = $po->updated_at ?? $po->created_at ?? null;
             $revision[] = [
                 'kind' => 'pembelian',
                 'queue_key' => 'po:'.$po->po_id,
                 'module_label' => 'Pembelian (PO)',
                 'reference' => (string) ($po->po_number ?? '-'),
-                'date' => $po->po_date ? (string) $po->po_date : '',
-                'what_changed' => 'PO ditolak — perlu perbaikan / input ulang.',
+                'date' => $rejAt ? (string) \Carbon\Carbon::parse($rejAt)->toDateString() : ($po->po_date ? (string) $po->po_date : ''),
+                'what_changed' => 'Pengajuan pembelian ditolak — perbaiki lalu ajukan ulang.',
                 'summary' => 'Status ditolak',
                 'url' => url('purchaseOrderDetail/'.$po->po_id),
                 'url_label' => 'Perbaiki / lihat PO',
@@ -2652,10 +2658,10 @@ class ReportController extends Controller
             $revision[] = [
                 'kind' => 'kas_admin',
                 'queue_key' => 'ca:'.$ca->ca_id,
-                'module_label' => 'Pengembalian Kas Besar (Admin)',
+                'module_label' => 'Kas Admin (Staff)',
                 'reference' => 'CA #'.$ca->ca_id,
                 'date' => $ca->ca_date ? (string) $ca->ca_date : '',
-                'what_changed' => 'Pengembalian kas admin ditolak — perbaiki lalu ajukan ulang.',
+                'what_changed' => 'Penyesuaian kas admin ditolak — perbaiki lalu ajukan ulang.',
                 'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : ''),
                 'url' => url('operationalCash').'?ca_id='.(int) $ca->ca_id,
                 'url_label' => 'Perbaiki kas admin',
@@ -2676,10 +2682,10 @@ class ReportController extends Controller
             $revision[] = [
                 'kind' => 'kas_gudang',
                 'queue_key' => 'cg:'.$cg->cg_id,
-                'module_label' => 'Pengembalian Kas Besar (Gudang)',
+                'module_label' => 'Kas Gudang (Staff)',
                 'reference' => 'CG #'.$cg->cg_id,
                 'date' => $cg->cg_date ? (string) $cg->cg_date : '',
-                'what_changed' => 'Pengembalian kas gudang ditolak — perbaiki lalu ajukan ulang.',
+                'what_changed' => 'Penyesuaian kas gudang ditolak — perbaiki lalu ajukan ulang.',
                 'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : ''),
                 'url' => url('operationalCash').'?cg_id='.(int) $cg->cg_id,
                 'url_label' => 'Perbaiki kas gudang',
@@ -2700,10 +2706,10 @@ class ReportController extends Controller
             $revision[] = [
                 'kind' => 'kas_armada',
                 'queue_key' => 'cr:'.$cr->cr_id,
-                'module_label' => 'Pengembalian Kas Besar (Armada)',
+                'module_label' => 'Kas Armada (Armada)',
                 'reference' => 'CR #'.$cr->cr_id,
                 'date' => $cr->cr_date ? (string) $cr->cr_date : '',
-                'what_changed' => 'Pengembalian kas armada ditolak — perbaiki lalu ajukan ulang.',
+                'what_changed' => 'Penyesuaian kas armada ditolak — perbaiki lalu ajukan ulang.',
                 'summary' => $fmtRp($nom).($armada !== '' ? ' · '.$armada : ''),
                 'url' => url('operationalCash').'?cr_id='.(int) $cr->cr_id,
                 'url_label' => 'Perbaiki kas armada',

@@ -138,7 +138,7 @@ class PurchaseOrder extends Model
         $incomingStatus = isset($data["status"]) ? (int) $data["status"] : null;
         if ($incomingStatus !== null) {
             $t->status = $incomingStatus;
-        } elseif ((int) ($t->status ?? 0) === 3) {
+        } elseif (in_array((int) ($t->status ?? 0), [3, -1], true)) {
             // PO ditolak lalu diedit ulang => kembali menunggu ACC agar keluar dari Revision log.
             $t->status = 1;
             if (Schema::hasColumn($t->getTable(), 'acc_by')) {
