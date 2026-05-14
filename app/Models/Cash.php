@@ -110,7 +110,7 @@ class Cash extends Model
                     // Hanya tampilkan penyerahanPertama kalau cr_id-nya
                     // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
                     if (!$pengembalianSebelumnya || 
-                        $penyerahanPertama->cs_id > $pengembalianSebelumnya->cs_id) {
+                        $penyerahanPertama->cr_id > $pengembalianSebelumnya->cr_id) {
                         $allPenyerahan = collect([$penyerahanPertama]);
                     }
                     // Kalau tidak, biarkan kosong
@@ -295,7 +295,7 @@ class Cash extends Model
                     // Hanya tampilkan penyerahanPertama kalau cr_id-nya
                     // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
                     if (!$pengembalianSebelumnya || 
-                        $penyerahanPertama->cs_id > $pengembalianSebelumnya->cs_id) {
+                        $penyerahanPertama->ca_id > $pengembalianSebelumnya->ca_id) {
                         $allPenyerahan = collect([$penyerahanPertama]);
                     }
                     // Kalau tidak, biarkan kosong
