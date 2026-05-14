@@ -46,7 +46,13 @@
         sanitizeCashTypeOptions();
         if ($("#cashType").is(":disabled")) return;
         var params = new URLSearchParams(window.location.search);
-        if (params.get("cs_id") && $('#cashType option[value="sales"]').length) {
+        if (params.get("ca_id") && $('#cashType option[value="admin"]').length) {
+            $("#cashType").val("admin");
+        } else if (params.get("cg_id") && $('#cashType option[value="gudang"]').length) {
+            $("#cashType").val("gudang");
+        } else if (params.get("cr_id") && $('#cashType option[value="armada"]').length) {
+            $("#cashType").val("armada");
+        } else if (params.get("cs_id") && $('#cashType option[value="sales"]').length) {
             $("#cashType").val("sales");
         }
         if (!$('#cashType').val()) {
@@ -687,6 +693,7 @@
                 }, 100);
 
                 feather.replace(); // Biar icon feather muncul lagi
+                openCashFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load kategori:", err);
@@ -788,6 +795,7 @@
                         $(this).trigger('click');
                     });
                 }, 100);
+                openCashFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load kategori:", err);
@@ -901,6 +909,7 @@
                 }, 100);
 
                 feather.replace(); // Biar icon feather muncul lagi
+                openCashFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load kategori:", err);
@@ -1013,7 +1022,7 @@
         });
     }
 
-    /** Dari dashboard: /operationalCash?[ca_id|cg_id|cr_id|cs_id]=... */
+    /** Dari dashboard: /operationalCash?[ca_id|cg_id|cr_id|cs_id]=... — pakai tombol view yang sama seperti klik manual (termasuk pindah halaman DataTables jika perlu). */
     function openCashFromDashboardLink() {
         try {
             if (!table) {
@@ -1034,16 +1043,7 @@
                 return;
             }
 
-            var opened = false;
-            table.rows().every(function () {
-                var d = this.data();
-                if (String(d[target.idKey]) === String(target.id)) {
-                    $(this.node()).find(target.btn).first().trigger("click");
-                    opened = true;
-                    return false;
-                }
-            });
-            if (opened) {
+            var stripParamFromUrl = function () {
                 params.delete(target.idKey);
                 var q = params.toString();
                 window.history.replaceState(
@@ -1051,7 +1051,53 @@
                     "",
                     window.location.pathname + (q ? "?" + q : "")
                 );
+            };
+
+            var tryClickView = function () {
+                var indexes = table.rows({ order: "current", search: "applied" }).indexes().toArray();
+                var j;
+                for (j = 0; j < indexes.length; j++) {
+                    var r = table.row(indexes[j]);
+                    var d = r.data();
+                    if (!d || String(d[target.idKey]) !== String(target.id)) continue;
+                    var node = r.node();
+                    if (!node) continue;
+                    var $btn = $(node).find(target.btn).first();
+                    if (!$btn.length) continue;
+                    $btn.trigger("click");
+                    stripParamFromUrl();
+                    return true;
+                }
+                return false;
+            };
+
+            var displayOrder = table.rows({ order: "current", search: "applied" }).indexes().toArray();
+            var dtIndex = null;
+            for (var i = 0; i < displayOrder.length; i++) {
+                var rd = table.row(displayOrder[i]).data();
+                if (rd && String(rd[target.idKey]) === String(target.id)) {
+                    dtIndex = displayOrder[i];
+                    break;
+                }
             }
+            if (dtIndex === null) {
+                return;
+            }
+
+            var pageInfo = table.page.info();
+            var pos = displayOrder.indexOf(dtIndex);
+            if (pos < 0) return;
+            var pageLen = pageInfo.length || 10;
+            var targetPage = Math.floor(pos / pageLen);
+            if (targetPage !== pageInfo.page) {
+                table.one("draw", function () {
+                    tryClickView();
+                });
+                table.page(targetPage).draw(false);
+                return;
+            }
+
+            tryClickView();
         } catch (err) {
             console.warn("openCashFromDashboardLink", err);
         }
