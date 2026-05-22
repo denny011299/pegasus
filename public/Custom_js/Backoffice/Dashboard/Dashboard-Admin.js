@@ -259,9 +259,9 @@
             var due = escHtml(r.due_text || "-");
             var badge = escHtml(r.due_badge || "-");
             var daysDiff = Number(r.days_diff || 0);
-            var badgeClass = "badge bg-info text-dark";
+            var badgeClass = "badge bg-warning text-dark";
             if (daysDiff < 0) badgeClass = "badge bg-danger";
-            else if (daysDiff === 0) badgeClass = "badge bg-secondary";
+            else if (daysDiff === 0) badgeClass = "badge bg-warning";
             else if (daysDiff <= 2) badgeClass = "badge bg-warning text-dark";
             var dueText = '<div class="d-flex flex-column"><span class="text-nowrap">' + due + '</span><span class="' + badgeClass + ' mt-1" style="width:fit-content;">' + badge + "</span></div>";
             $tb.append(

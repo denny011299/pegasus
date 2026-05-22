@@ -1870,7 +1870,7 @@ class ReportController extends Controller
     private function dashboardPayablesDue(int $limit = 30): array
     {
         $today = \Carbon\Carbon::today();
-        $hPlus2 = $today->copy()->addDays(2);
+        $hPlus2 = $today->copy()->addDays(7);
 
         $rows = DB::table('purchase_order_detail_invoices as poi')
             ->join('purchase_orders as po', 'po.po_id', '=', 'poi.po_id')
