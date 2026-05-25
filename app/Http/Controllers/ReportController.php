@@ -506,6 +506,7 @@ class ReportController extends Controller
         }
 
         $tujuanMap = [
+            0 => 'Kas Besar',
             1 => 'Kas Admin',
             2 => 'Kas Gudang',
             3 => 'Kas Armada',
@@ -519,7 +520,7 @@ class ReportController extends Controller
         $rows = [];
         $total = 0.0;
 
-        // 1) Kas utama (hanya pengeluaran)
+        // 1) Kas besar dari cashes (hanya baris umum yang benar-benar pengeluaran)
         $cashCols = [
             'cash_id',
             'cash_date',
@@ -535,7 +536,9 @@ class ReportController extends Controller
 
         $mainCash = DB::table('cashes')
             ->where('status', 2)
-            ->where('cash_type', 2)
+            ->where('person_id', 0)
+            ->where('cash_tujuan', 0)
+            ->whereIn('cash_type', [2, 3])
             ->whereBetween('cash_date', [$start->toDateString(), $end->toDateString()])
             ->get($cashCols);
 
