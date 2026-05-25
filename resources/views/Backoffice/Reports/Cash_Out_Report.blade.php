@@ -79,7 +79,7 @@
                                     <th>Tanggal</th>
                                     <th>Deskripsi</th>
                                     <th>Tipe</th>
-                                    <th>Tujuan</th>
+                                    <th>Asal</th>
                                     <th class="text-end">Nominal</th>
                                     <th>Dibuat Oleh</th>
                                     <th>Di-ACC Oleh</th>
