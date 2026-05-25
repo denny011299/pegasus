@@ -549,6 +549,7 @@ class ReportController extends Controller
             $accBy = ($cashHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-';
             $rows[] = [
                 'cash_id' => 'cash-'.(int) $row->cash_id,
+                'report_source' => 'kas_besar',
                 'cash_date' => (string) $row->cash_date,
                 'cash_description' => (string) ($row->cash_description ?? '-'),
                 'cash_nominal' => round($nominal, 2),
@@ -580,6 +581,7 @@ class ReportController extends Controller
             $total += $nominal;
             $rows[] = [
                 'cash_id' => 'ca-'.(int) $row->ca_id,
+                'report_source' => 'kas_admin',
                 'cash_date' => (string) $row->ca_date,
                 'cash_description' => (string) ($row->ca_notes ?? '-'),
                 'cash_nominal' => round($nominal, 2),
@@ -610,6 +612,7 @@ class ReportController extends Controller
             $total += $nominal;
             $rows[] = [
                 'cash_id' => 'cg-'.(int) $row->cg_id,
+                'report_source' => 'kas_gudang',
                 'cash_date' => (string) $row->cg_date,
                 'cash_description' => (string) ($row->cg_notes ?? '-'),
                 'cash_nominal' => round($nominal, 2),
@@ -659,6 +662,7 @@ class ReportController extends Controller
             $total += $nominal;
             $rows[] = [
                 'cash_id' => 'cr-'.(int) $row->cr_id,
+                'report_source' => 'kas_armada',
                 'cash_date' => (string) $row->cr_date,
                 'cash_description' => (string) ($row->cr_notes ?? '-'),
                 'cash_nominal' => round($nominal, 2),
@@ -708,6 +712,7 @@ class ReportController extends Controller
             $total += $nominal;
             $rows[] = [
                 'cash_id' => 'cs-'.(int) $row->cs_id,
+                'report_source' => 'kas_sales',
                 'cash_date' => (string) $row->cs_date,
                 'cash_description' => (string) ($row->cs_notes ?? '-'),
                 'cash_nominal' => round($nominal, 2),
@@ -720,8 +725,12 @@ class ReportController extends Controller
             ];
         }
 
-        // Hanya tampilkan transaksi dengan deskripsi awalan "Pengeluaran".
+        // Flow lama tetap memakai filter deskripsi "Pengeluaran", tetapi kas besar
+        // ditambahkan sebagai sumber independen dan tidak boleh tersaring aturan lama.
         $rows = array_values(array_filter($rows, static function ($r) {
+            if (($r['report_source'] ?? '') === 'kas_besar') {
+                return true;
+            }
             $desc = trim((string) ($r['cash_description'] ?? ''));
             if ($desc === '') {
                 return false;
