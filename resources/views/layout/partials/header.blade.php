@@ -62,7 +62,7 @@
     <!-- Header Menu -->
     <ul class="nav nav-tabs user-menu">
         <li class="nav-item dropdown-heads">
-            <a class="nav-link fotoProduksi" href="#" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Foto Bukti Produksi">
+            <a class="nav-link fotoProduksi" href="" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Foto Bukti Produksi">
                 <i class="fe fe-camera"></i>
             </a>
         </li>
@@ -83,7 +83,7 @@
             </a>
         </li>
         <li class="nav-item dropdown-heads ">
-            <a href="/pettyCash" class="nav-link" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kas Kecil">
+            <a href="/operationalCash" class="nav-link" style="width: 2rem; height: 2rem" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Kas Operasional">
                 <i class="fe fe-dollar-sign"></i>
             </a>
         </li>
