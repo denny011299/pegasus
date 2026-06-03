@@ -269,7 +269,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
        //munculin modal delete
     function showModalDelete(text, button_id) {
-        //button id ini, id button ketika dikofrimasi delete
+        if ($('#modalDelete .modal-body').is(':empty')) {
+            $('#modalDelete .modal-body').html('<p id="text-delete" style="font-size:10pt"></p>');
+        }
+        
         $("#text-delete").html(text);
         $(".btn-konfirmasi").attr("id", button_id);
         $('#modalDelete').modal("show");
