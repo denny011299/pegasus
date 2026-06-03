@@ -1494,30 +1494,21 @@ $(document).on("click", "#btn-acc-po", function () {
                 _token:token
             },
             method:"post",
-            success:function(e){
+            success: function(e) {
                 $('#modalDelete .modal-body').html('');
                 $(".modal").modal("hide");
                 ResetLoadingButton("#btn-tolak-po", "Tolak");
-                if (typeof e === "object"){
+
+                if (typeof e === "object") {
                     notifikasi('error', e.header, e.message);
-                    window.open('/purchaseOrder', '_self');
                     return false;
                 }
-                if (e == -1){
-                    notifikasi(
-                        "error",
-                        "Gagal Tolak",
-                        "Stok tidak mencukupi!"
-                    );
-                }
+
+                if (e != 1) return false;
+
                 $('#po_status').val(-1).trigger('change');
-                notifikasi(
-                    "success",
-                    "Berhasil Tolak",
-                    "Berhasil tolak PO"
-                );
+                notifikasi("success", "Berhasil Tolak", "Berhasil tolak PO");
                 window.open('/purchaseOrder', '_self');
-                
             },
             error:function(e){
                 ResetLoadingButton("#btn-tolak-po", "Tolak");
