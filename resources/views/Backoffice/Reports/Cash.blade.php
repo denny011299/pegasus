@@ -123,6 +123,7 @@
                                             <th style="width: 12%" class="text-end">Keluar 1</th>
                                             <th>Dibuat Oleh</th>
                                             <th>Diapprove/Ditolak Oleh</th>
+                                            <th>Diperbarui Pada</th>
                                             <th style="width: 18%">Status</th>
                                             <th style="width: 15%">Aksi</th>
                                         </tr>
@@ -136,14 +137,14 @@
                                             <td class="debits text-success"></td>
                                             <td class="credits1 text-danger"></td>
                                             <td class="credits2 text-danger"></td>
-                                            <td colspan="4"></td>
+                                            <td colspan="5"></td>
                                         </tr>
                                         <tr>
                                             <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
                                             <td class="fw-bold text-end">Total Setoran : </td>
                                             <td class="fw-bold text-end setor pe-4">Rp 0</td>
-                                            <td colspan="2"></td>
+                                            <td colspan="3"></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -163,5 +164,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Cash.js')}}?v=1"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/Cash.js')}}?v=2"></script>
 @endsection

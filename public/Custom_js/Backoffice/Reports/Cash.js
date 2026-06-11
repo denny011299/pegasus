@@ -58,6 +58,7 @@
                 { data: "credit_text2", className: "text-end", width: "12%"},
                 { data: "created_by_name", defaultContent: "-" },
                 { data: "acc_by_name", defaultContent: "-" },
+                { data: "updated_at_text", defaultContent: "-" },
                 { data: "status_text", className: "text-center", width: "18%"},
                 { data: "action", className: "text-center align-middle", width: "15%"},
             ],
@@ -86,6 +87,7 @@
                 var credits2 = 0;
                 var sisa = 0;
                 var setor = 0;
+                var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].cash_date).format('D MMM YYYY');
                     if (e[i].cash_type == 1) {
@@ -124,6 +126,17 @@
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
                     e[i].credit_text1 =`<label class='text-danger'>${e[i].credit1}</label>`
                     e[i].credit_text2 =`<label class='text-danger'>${e[i].credit2}</label>`
+
+                    if (
+                        e[i].updated_at &&
+                        e[i].created_at &&
+                        moment(e[i].created_at).format('YYYY-MM-DD HH:mm:ss') !== moment(e[i].updated_at).format('YYYY-MM-DD HH:mm:ss')
+                    ) {
+                        var updatedAt = moment(e[i].updated_at);
+                        e[i].updated_at_text = updatedAt.format('DD') + ' ' + bulan[updatedAt.month()] + ' ' + updatedAt.format('YYYY, HH:mm');
+                    } else {
+                        e[i].updated_at_text = '-';
+                    }
 
                     if (e[i].status == 1){
                         e[i].status_text = `<span class="badge bg-warning" style="font-size: 11px">Menunggu Konfirmasi</span>`;
