@@ -1,20 +1,6 @@
     var mode=1;
     var tableLow, tableOut;
 
-    function buildProductStockText(item) {
-        var stockText = "";
-        if (item.stock && item.stock.length) {
-            item.stock.forEach(function (element, index) {
-                stockText += element.ps_stock + " " + element.unit_name;
-                if (index < item.stock.length - 1) stockText += ", ";
-            });
-        }
-        if (!stockText) {
-            stockText = "0 " + (item.product_unit || "-");
-        }
-        return stockText;
-    }
-
     function calcMinimOrderTwoUnits(stockItems, relation, alertQty, alertUnitId, stockQtyKey) {
         if (!relation || !relation.length) {
             return null;
@@ -80,7 +66,6 @@
                 { data: "product_name_text", width: "25%" },
                 { data: "product_category", width: "10%" },
                 { data: "product_variant_sku", width: "15%" },
-                { data: "product_variant_stock_text", width: "20%" },
                 { data: "product_alert_text", width: "15%" },
                 { data: "minim_order", width: "15%" },
             ],
@@ -111,7 +96,6 @@
                 { data: "product_name_text", width: "25%" },
                 { data: "product_category", width: "10%" },
                 { data: "product_variant_sku", width: "15%" },
-                { data: "product_variant_stock_text", width: "20%" },
                 { data: "product_alert_text", width: "15%" },
                 { data: "minim_order", width: "15%" },
             ],
@@ -139,7 +123,6 @@
                 e.forEach((item,index) => {
                     var def = -1;
                     item.product_name_text = item.product_name + " " + item.product_variant_name;
-                    item.product_variant_stock_text = buildProductStockText(item);
                     item.product_alert_text = item.product_variant_alert+" " +item.product_unit;
                     
                     var habis = 1;

@@ -1,20 +1,6 @@
     var mode=1;
     var tableLow, tableOut;
 
-    function buildSuppliesStockText(item) {
-        var stockText = "";
-        if (item.stock && item.stock.length) {
-            item.stock.forEach(function (element, index) {
-                stockText += element.ss_stock + " " + element.unit_name;
-                if (index < item.stock.length - 1) stockText += ", ";
-            });
-        }
-        if (!stockText) {
-            stockText = "0 " + (item.default_unit || "-");
-        }
-        return stockText;
-    }
-
     function calcMinimOrderTwoUnits(stockItems, relation, alertQty, alertUnitId, stockQtyKey) {
         if (!relation || !relation.length) {
             return null;
@@ -77,7 +63,6 @@
             },
             columns: [
                 { data: "supplies_name", width: "35%" },
-                { data: "supplies_variant_stock_text", width: "20%" },
                 { data: "supplies_alert_text", width: "20%" },
                 { data: "minim_order", width: "20%" },
             ],
@@ -106,7 +91,6 @@
             autoWidth: false,
             columns: [
                 { data: "supplies_name", width: "35%" },
-                { data: "supplies_variant_stock_text", width: "20%" },
                 { data: "supplies_alert_text", width: "20%" },
                 { data: "minim_order", width: "20%" },
             ],
@@ -133,7 +117,6 @@
                 console.log("data");
                 e.forEach((item,index) => {
                     var def = -1;
-                    item.supplies_variant_stock_text = buildSuppliesStockText(item);
                     item.supplies_alert_text = item.supplies_alert+" " +item.default_unit;
                     
                     var habis = 1;

@@ -65,7 +65,6 @@
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
-                                                    <th>Jumlah Saat Ini</th>
                                                     <th>Qty Peringatan</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
@@ -84,7 +83,6 @@
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
-                                                    <th>Jumlah Saat Ini</th>
                                                     <th>Qty Peringatan</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
@@ -111,5 +109,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=3"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=4"></script>
 @endsection
