@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UnitStockSorter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
 
@@ -17,6 +18,7 @@ class SuppliesStock extends Model
         $data = array_merge([
             "supplies_id" => null,
             "supplies_unit" => null,
+            "relations" => null,
         ], $data);
 
         $result = self::where('status', '=', 1);
@@ -32,6 +34,11 @@ class SuppliesStock extends Model
             $value->unit_name = $u->unit_name;
             $value->unit_short_name = $u->unit_short_name;
         }
+
+        if (! empty($data['relations'])) {
+            $result = UnitStockSorter::sort($result, $data['relations']);
+        }
+
         return $result;
     }
 

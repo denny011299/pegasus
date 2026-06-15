@@ -63,7 +63,7 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
-                                                    <th>Stok</th>
+                                                    <th>Jumlah Saat Ini</th>
                                                     <th>Qty Peringatan</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
@@ -80,7 +80,7 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
-                                                    <th>Stok</th>
+                                                    <th>Jumlah Saat Ini</th>
                                                     <th>Qty Peringatan</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
@@ -107,5 +107,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert_Supplies.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert_Supplies.js')}}?v=3"></script>
 @endsection

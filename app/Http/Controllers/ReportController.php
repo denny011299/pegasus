@@ -2059,27 +2059,17 @@ class ReportController extends Controller
                 $stockArr = is_array($stockList) ? $stockList : iterator_to_array($stockList);
             }
             $defUid = (int) ($value->supplies_default_unit ?? 0);
-            $defIdx = -1;
-            foreach ($stockArr as $idx => $element) {
-                if ((int) ($element->unit_id ?? 0) === $defUid) {
-                    $defIdx = $idx;
-                    break;
-                }
-            }
-            if ($defIdx > 0) {
-                $tmp = $stockArr[0];
-                $stockArr[0] = $stockArr[$defIdx];
-                $stockArr[$defIdx] = $tmp;
-            }
 
             $habis = 1;
+            $firstStock = 0.0;
             foreach ($stockArr as $element) {
                 if ((float) ($element->ss_stock ?? 0) > 0) {
                     $habis = -1;
-                    break;
+                }
+                if ((int) ($element->unit_id ?? 0) === $defUid) {
+                    $firstStock = (float) ($element->ss_stock ?? 0);
                 }
             }
-            $firstStock = isset($stockArr[0]) ? (float) ($stockArr[0]->ss_stock ?? 0) : 0.0;
             $alert = (float) ($value->supplies_alert ?? 0);
             $isOut = ($habis === 1);
             $isLow = ($habis === -1 && $alert > 0 && $firstStock <= $alert);
@@ -2088,7 +2078,9 @@ class ReportController extends Controller
             }
             $level = $isOut ? 'critical' : 'warn';
 
-            $stockText = '-';
+            $u = Unit::find($value->supplies_default_unit);
+            $defUnit = $u ? (string) $u->unit_name : '';
+            $stockText = '0 '.trim($defUnit !== '' ? $defUnit : '-');
             if (count($stockArr) > 0) {
                 $parts = [];
                 foreach ($stockArr as $element) {
@@ -2096,8 +2088,6 @@ class ReportController extends Controller
                 }
                 $stockText = implode(', ', $parts);
             }
-            $u = Unit::find($value->supplies_default_unit);
-            $defUnit = $u ? (string) $u->unit_name : '';
             $unitsCount = $value->units instanceof \Illuminate\Support\Collection ? $value->units->count() : count($value->units ?? []);
             $saran = 'Rinci di halaman peringatan';
             if ($unitsCount <= 1 && $alert > 0 && ! $isOut) {

@@ -1242,7 +1242,10 @@ class StockController extends Controller
     {
         $data = (new ProductVariant())->getProductVariant();
         foreach ($data as $key => $value) {
-            $value->stock = (new ProductStock())->getProductStock(["product_variant_id" => $value->product_variant_id]);
+            $value->stock = (new ProductStock())->getProductStock([
+                "product_variant_id" => $value->product_variant_id,
+                "relations" => $value->relasi,
+            ]);
         }
         return response()->json($data);
     }

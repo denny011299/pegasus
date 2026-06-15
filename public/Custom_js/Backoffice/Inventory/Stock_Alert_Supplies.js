@@ -1,5 +1,57 @@
     var mode=1;
     var tableLow, tableOut;
+
+    function buildSuppliesStockText(item) {
+        var stockText = "";
+        if (item.stock && item.stock.length) {
+            item.stock.forEach(function (element, index) {
+                stockText += element.ss_stock + " " + element.unit_name;
+                if (index < item.stock.length - 1) stockText += ", ";
+            });
+        }
+        if (!stockText) {
+            stockText = "0 " + (item.default_unit || "-");
+        }
+        return stockText;
+    }
+
+    function calcMinimOrderTwoUnits(stockItems, relation, alertQty, alertUnitId, stockQtyKey) {
+        if (!relation || !relation.length) {
+            return null;
+        }
+        var rel = relation[0];
+        var factor = parseFloat(rel.sr_value_2 || rel.pr_unit_value_2) || 1;
+        var parentId = parseInt(rel.pr_unit_id_1, 10);
+        var childId = parseInt(rel.pr_unit_id_2, 10);
+        var parentName = rel.pr_unit_name_1 || "";
+        var childName = rel.pr_unit_name_2 || "";
+
+        var stockParent = 0;
+        var stockChild = 0;
+        (stockItems || []).forEach(function (s) {
+            var uid = parseInt(s.unit_id, 10);
+            var qty = parseFloat(s[stockQtyKey]) || 0;
+            if (uid === parentId) {
+                stockParent = qty;
+                parentName = s.unit_name || s.unit_short_name || parentName;
+            } else if (uid === childId) {
+                stockChild = qty;
+                childName = s.unit_name || s.unit_short_name || childName;
+            }
+        });
+
+        alertQty = parseFloat(alertQty) || 0;
+        alertUnitId = parseInt(alertUnitId, 10);
+
+        var totalStockSmallest = stockParent * factor + stockChild;
+        var totalAlertSmallest = alertUnitId === childId ? alertQty : alertQty * factor;
+        var needed = Math.max(0, totalAlertSmallest - totalStockSmallest);
+        var neededParent = Math.floor(needed / factor);
+        var neededChild = needed % factor;
+
+        return neededParent + " " + parentName + ", " + neededChild + " " + childName;
+    }
+
     $(document).ready(function(){
         inisialisasi();
         refreshStockAlert();
@@ -81,33 +133,25 @@
                 console.log("data");
                 e.forEach((item,index) => {
                     var def = -1;
+                    item.supplies_variant_stock_text = buildSuppliesStockText(item);
                     item.supplies_alert_text = item.supplies_alert+" " +item.default_unit;
                     
                     var habis = 1;
-                    var def = -1;
-                    item.supplies_variant_stock_text = "";
-
-                    item.stock.forEach((element, index) => {
-                        item.supplies_variant_stock_text += `${element.ss_stock} ${element.unit_name}`;
-                        if (index < item.stock.length - 1) item.supplies_variant_stock_text += " , ";
-                        
-                        if (item.unit_id == element.unit_id) {
-                            def = index;
-                        }
-
-                        if (element.ss_stock > 0) {
-                            habis = -1;
-                        }
-                    });
-
-                    if (item.stock.length === 0) {
-                        item.supplies_variant_stock_text = "-";
+                    if (item.stock && item.stock.length) {
+                        item.stock.forEach((element, index) => {
+                            if (item.supplies_default_unit == element.unit_id) {
+                                def = index;
+                            }
+                            if (element.ss_stock > 0) {
+                                habis = -1;
+                            }
+                        });
                     }
 
                     item.habis = habis;
 
                     // tukar default variant ke index 0
-                    if (def > 0) {
+                    if (def > 0 && item.stock && item.stock.length) {
                         let tmp = item.stock[0];
                         item.stock[0] = item.stock[def];
                         item.stock[def] = tmp;
@@ -136,7 +180,15 @@
 
                     let stocks = item.stock?.[0]?.ss_stock || 0;
                     let unit_name = item.default_unit || item?.stock[0]?.unit_short_name;
-                    if (item.units.length <= 1) {
+                    if (item.units.length === 2 && item.relation && item.relation.length === 1) {
+                        item.minim_order = calcMinimOrderTwoUnits(
+                            item.stock,
+                            item.relation,
+                            item.supplies_alert,
+                            item.supplies_default_unit,
+                            "ss_stock"
+                        );
+                    } else if (item.units.length <= 1) {
                         // Logika untuk supplies dengan 1 unit
                         let needed = Math.max(0, item.supplies_alert - stocks);
                         item.minim_order = needed + " " + unit_name;

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Staff;
+use App\Support\UnitStockSorter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
 
@@ -41,7 +42,8 @@ class Supplies extends Model
             // dd($value->units);
             $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
             $value->stock = (new SuppliesStock())->getProductStock([
-                "supplies_id" => $value->supplies_id
+                "supplies_id" => $value->supplies_id,
+                "relations" => $value->supplies_relasi,
             ]);
             $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }
@@ -186,7 +188,10 @@ class Supplies extends Model
 
             $value->supplies_relasi = $relationsBySupply->get($sid, collect());
 
-            $stockForSupply = $stocksBySupply->get($sid, collect())->values();
+            $stockForSupply = UnitStockSorter::sort(
+                $stocksBySupply->get($sid, collect())->values(),
+                $relationsBySupply->get($sid, collect())
+            );
 
             $value->sup_variant = $variantsBySupply->get($sid, collect())->map(function ($variant) use ($suppliesById, $supplierMap, $unitsMap, $stockForSupply, $decodeUnit) {
                 $clone = clone $variant;

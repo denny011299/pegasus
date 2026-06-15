@@ -33,12 +33,13 @@ class StockAlertSupplies extends Model
         foreach ($result as $key => $value) {
             $value->supplies_unit = json_decode($value->supplies_unit);
             $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
+            $value->relation = (new SuppliesRelation())->getSuppliesRelation(["supplies_id"=>$value->supplies_id]);
             $value->stock = (new SuppliesStock())->getProductStock([
-                "supplies_id" => $value->supplies_id
+                "supplies_id" => $value->supplies_id,
+                "relations" => $value->relation,
             ]);
             $u = Unit::find($value->supplies_default_unit);
-            $value->default_unit = $u->unit_name;
-            $value->relation = (new SuppliesRelation())->getSuppliesRelation(["supplies_id"=>$value->supplies_id]);
+            $value->default_unit = $u ? $u->unit_name : '-';
         }
         
         return $result;

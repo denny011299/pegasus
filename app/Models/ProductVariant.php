@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
+use App\Support\UnitStockSorter;
 
 class ProductVariant extends Model
 {
@@ -79,7 +80,10 @@ class ProductVariant extends Model
             $variant->category_id = $p->category_id;
             $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit,true))->get();
             $variant->relasi = (new ProductRelation())->getProductRelation(['product_variant_id' =>$variant->product_variant_id]);
-            $variant->stock = (new ProductStock())->getProductStock(["product_variant_id"=>$variant->product_variant_id]);
+            $variant->stock = (new ProductStock())->getProductStock([
+                "product_variant_id" => $variant->product_variant_id,
+                "relations" => $variant->relasi,
+            ]);
             
             // Get nama unit default
 
@@ -207,7 +211,10 @@ class ProductVariant extends Model
             $clone->category_id = $p->category_id;
             $clone->pr_unit = $prUnitCol;
             $clone->relasi = $relationsGrouped->get($clone->product_variant_id, collect());
-            $clone->stock = $stocksGrouped->get($clone->product_variant_id, collect());
+            $clone->stock = UnitStockSorter::sort(
+                $stocksGrouped->get($clone->product_variant_id, collect()),
+                $relationsGrouped->get($clone->product_variant_id, collect())
+            );
 
             $s = $clone->stock->firstWhere('unit_id', $clone->unit_id);
             if (! $s) {
