@@ -616,66 +616,41 @@ class SupplierController extends Controller
         }
 
         //liat sebelumnya status apa
-        if ($p->status == 2) {
-            $b = PurchaseOrderDetail::where('po_id', '=', $data["po_id"])->get();
-            
-            // ─── Simulasi cek dulu ────────────────────────────────────────────
-            $bahanKurang = [];
-            foreach ($b as $value) {
+        if($p->status==2){
+            $b = PurchaseOrderDetail::where('po_id','=',$data["po_id"])->get();;
+            foreach ($b as $key => $value) {
                 $sv = SuppliesVariant::find($value->supplies_variant_id);
-                $s  = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
-                        ->where("unit_id", "=", $value->unit_id)
-                        ->where("status", "=", 1)
-                        ->first();
+                $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+                    ->where("unit_id", "=", $value->unit_id)
+                    ->where("status", "=", 1)
+                    ->first();
 
-                if (!$s || ($s->ss_stock - $value->pod_qty) < 0) {
-                    $sup = Supplies::find($sv->supplies_id);
-                    $bahanKurang[] = $sv->supplies_variant_name;
-                }
-            }
-
-            if (!empty($bahanKurang)) {
-                return response()->json([
-                    'status'  => -1,
-                    'header'  => 'Stok Tidak Cukup',
-                    'message' => 'Bahan berikut stoknya tidak mencukupi: ' . implode(', ', $bahanKurang),
-                ]);
-            }
-
-            // ─── Semua cukup, baru eksekusi ───────────────────────────────────
-            foreach ($b as $value) {
-                $sv = SuppliesVariant::find($value->supplies_variant_id);
-                $s  = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
-                        ->where("unit_id", "=", $value->unit_id)
-                        ->where("status", "=", 1)
-                        ->first();
-
+                if (($s->ss_stock - $value->pod_qty) < 0) return -1;
                 $s->ss_stock -= $value->pod_qty;
                 $s->save();
 
                 $sup = Supplier::find($sv->supplier_id);
+                // Catat Log
                 (new LogStock())->insertLog([
-                    'log_date'     => now(),
-                    'log_kode'     => $p->po_number,
-                    'log_type'     => 2,
+                    'log_date' => now(),
+                    'log_kode'    => $p->po_number,
+                    'log_type'    => 2,
                     'log_category' => 2,
-                    'log_item_id'  => $sv->supplies_id,
-                    'log_notes'    => "Pembatalan pembelian bahan mentah " . $sup->supplier_name,
-                    'log_jumlah'   => $value->pod_qty,
-                    'unit_id'      => $value->unit_id,
+                    'log_item_id' => $sv->supplies_id,
+                    'log_notes'  => "Pembatalan pembelian bahan mentah " . $sup->supplier_name,
+                    'log_jumlah' => $value->pod_qty,
+                    'unit_id'    => $value->unit_id,
                 ]);
             }
         }
 
-        $p->status = -1;
+        $p->status = -1; // Tolak
         $p->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
-        $p->save();
+        $p->save(); 
 
-        purchase_order_tt::where('tt_id', '=', $p->tt_id)->update(["status" => 0]);
-        PurchaseOrderDelivery::where('po_id', '=', $data["po_id"])->update(["status" => 0]);
-        PurchaseOrderDetailInvoice::where('po_id', '=', $data["po_id"])->update(["status" => 0]);
-
-        return 1;
+        purchase_order_tt::where('tt_id','=',$p->tt_id)->update(["status"=>0]);
+        PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->update(["status"=>0]);
+        PurchaseOrderDetailInvoice::where('po_id','=',$data["po_id"])->update(["status"=>0]);
     }
 
     function getReturnSupplies(Request $req){
@@ -856,4 +831,3 @@ class SupplierController extends Controller
         return 1;
     }
 }
-
