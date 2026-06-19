@@ -139,12 +139,18 @@
         if ($(this).val() == "saldo") {
             $('.saldo_kas').show();
             $('.operasional').hide();
+            $('#row-add-catatan-admin').hide();
         } else if ($(this).val() == "operasional") {
             $('.saldo_kas').hide();
             $('.operasional').show();
+            if (mode === 3) {
+                $('#row-add-catatan-admin').hide();
+            } else {
+                $('#row-add-catatan-admin').show();
+            }
         }
         $('#add_cash_admin input').val("");
-        $("#oc_date").val(todayStr).attr('disabled', false);
+        $("#oc_date").val(todayStr).attr('disabled', true);
         $('#staff_id').empty(null);
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
@@ -258,7 +264,7 @@
             $('#add_cash_admin input').val("").attr('disabled', false);
             $('#jenis_input, #staff_id, #oc_transaksi').attr('disabled', false);
             $('#oc_transaksi').val(1).attr('disabled', false).trigger('change');
-            $("#oc_date").val(todayStr).attr('disabled', false);
+            $("#oc_date").val(todayStr).attr('disabled', true);
 
             $('#row-cash').html(`
                 <label>Nama Pengaju<span class="text-danger">*</span></label>
@@ -2193,15 +2199,20 @@
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
             $('#oc_nominal').val(data.ca_nominal).attr('disabled', false);
             $('#oc_notes').val(data.ca_notes).attr('disabled', false);
-            $('#oc_date').val(data.ca_date).attr('disabled', false);
+            $('#oc_date').val(data.ca_date).attr('disabled', true);
         }
         $('#staff_id').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
 
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
+        $('.input_table, .btn_delete_row').show();
+        if (data.detail?.length) {
+            $('#row-add-catatan-admin').show();
+        } else {
+            $('#row-add-catatan-admin').hide();
+        }
         $('.btn-save-admin').html('Update Aktivitas').show();
         $('.cancel-btn').html('Batal');
-        $('.input_table, .btn_delete_row').show();
         $('#add_cash_admin').modal("show");
         $('#add_cash_admin').attr("ca_id", data.ca_id);
     })
@@ -2250,6 +2261,7 @@
         $('.is-invalid').removeClass('is-invalid');
         $('.is-invalids').removeClass('is-invalids');
         $('.input_table, .btn-save-admin, .btn_delete_row').hide();
+        $('#row-add-catatan-admin').hide();
         $('.cancel-btn').html('Kembali');
         $('#add_cash_admin').modal("show");
         $('#add_cash_admin').attr("ca_id", data.ca_id);

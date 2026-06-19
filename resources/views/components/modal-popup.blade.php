@@ -1952,7 +1952,7 @@
                                             <h5 class="form-title mb-2 text-black pb-2">Detail Pengeluaran</h5>
                                         </div>
 
-                                        <div class="col-12 operasional mb-3">
+                                        <div class="col-12 operasional mb-3" id="row-add-catatan-admin">
                                             <div class="row g-2 align-items-end p-2 rounded">
                                                 <div class="col-12 col-lg-6">
                                                     <div class="input-block">
