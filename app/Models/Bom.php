@@ -53,6 +53,7 @@ class Bom extends Model
             $value->product_variant_sku = $v->product_variant_sku;
             $value->unit_name = Unit::find($value->unit_id)->unit_short_name;
             $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit, true))->get();
+            $value->relasi = (new ProductRelation())->getProductRelation(['product_variant_id' => $value->product_id]);
             $value->items = (new BomDetail())->getBomDetail(['bom_id' => $value->bom_id]);
             $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
         }

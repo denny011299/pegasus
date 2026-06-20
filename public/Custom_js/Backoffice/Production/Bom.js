@@ -38,7 +38,7 @@
             });
         }
         $('#bom_qty').val(1);
-        $('#bom_qty').prop('disabled', true);
+        $('#bom_qty').prop('disabled', false);
     });
     
     $(document).on('click','.btnAdd',function(){
@@ -49,7 +49,8 @@
         $('#unit_id').empty();
         $('#unit_supplies_id').empty();
         $('#product_id').empty();
-        $('#bom_qty, #unit_id').prop('disabled', true);
+        $('#bom_qty').val("").prop('disabled', true);
+        $('#unit_id').prop('disabled', true);
         $('#product_id').prop('disabled', false);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
@@ -220,7 +221,8 @@
         $('#unit_id').empty();
         $('#product_id').empty();
         $('#bom_qty').val(1);
-        $('#bom_qty, #unit_id, #product_id').prop('disabled', true);
+        $('#unit_id, #product_id').prop('disabled', true);
+        $('#bom_qty').prop('disabled', false);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
 

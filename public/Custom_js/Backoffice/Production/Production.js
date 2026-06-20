@@ -12,6 +12,29 @@
         let dd = String(today.getDate()).padStart(2, '0');
         return yyyy + '-' + mm + '-' + dd;
     }
+
+    function convertQtyToSmallestUnit(qty, unitId, productData) {
+        var multiplier = 1;
+        var relations = productData.relasi || [];
+        relations.forEach(function (relation) {
+            if (parseInt(relation.pr_unit_id_2) !== parseInt(unitId)) {
+                multiplier *= parseInt(relation.pr_unit_value_2);
+            }
+        });
+        return qty * multiplier;
+    }
+
+    function cekQtyKelipatanResep(pdQty, unitId, bomData) {
+        if (!bomData || !bomData.bom_qty) {
+            return { valid: true };
+        }
+        var pdSmallest = convertQtyToSmallestUnit(pdQty, unitId, bomData);
+        var bomSmallest = convertQtyToSmallestUnit(parseInt(bomData.bom_qty), parseInt(bomData.unit_id), bomData);
+        if (bomSmallest <= 0) {
+            bomSmallest = parseInt(bomData.bom_qty);
+        }
+        return { valid: pdSmallest % bomSmallest === 0 };
+    }
     $(document).ready(function(){
         // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
         inisialisasi();
@@ -49,7 +72,7 @@
         if(qty==""||qty==null||isNaN(qty)){
             qty=0;
         }
-        $('#production_total').val(qty*data.bom_qty);
+        $('#production_total').val(qty);
     });
 
     $(document).on('change', '#product_id', function(){
@@ -450,6 +473,17 @@
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
             return false;
         }
+        var tempBom = $('#product_id').select2("data")[0];
+        var qtyKelipatan = cekQtyKelipatanResep(
+            parseInt($('#production_qty').val()),
+            parseInt($('#unit_id').val()),
+            tempBom
+        );
+        if (!qtyKelipatan.valid) {
+            notifikasi('error', 'Qty Tidak Valid', 'Qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+            return false;
+        }
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
@@ -465,6 +499,23 @@
                 idx = 1;
             }
         });
+
+        if(idx==1){
+            var mergedItem = items.find(function (element) {
+                return element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val();
+            });
+            var qtyKelipatanGabung = cekQtyKelipatanResep(
+                mergedItem.pd_qty,
+                mergedItem.unit_id,
+                tempBom
+            );
+            if (!qtyKelipatanGabung.valid) {
+                mergedItem.pd_qty -= parseInt($('#production_qty').val());
+                notifikasi('error', 'Qty Tidak Valid', 'Total qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+                return false;
+            }
+        }
 
         if(idx==-1){
             var data  = {
