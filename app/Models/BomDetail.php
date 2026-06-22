@@ -36,7 +36,23 @@ class BomDetail extends Model
             if (isset($s->supplies_name)) $value->supplies_name = $s->supplies_name;
 
             $v = Unit::find($value->unit_id);
-            $value->unit_name = $v->unit_name;
+            $value->current_unit_id = $value->unit_id;
+            $value->current_unit_name = $v
+                ? ($v->unit_name ?? $v->unit_short_name ?? '-')
+                : '-';
+            $value->unit_name = $value->current_unit_name;
+
+            if ($s) {
+                $unitIds = json_decode($s->supplies_unit, true) ?: [];
+                $value->active_units = Unit::whereIn('unit_id', $unitIds)
+                    ->where('status', 1)
+                    ->get(['unit_id', 'unit_name', 'unit_short_name', 'status'])
+                    ->values();
+                $value->units = $value->active_units;
+            } else {
+                $value->active_units = collect();
+                $value->units = collect();
+            }
         }
 
         return $result;

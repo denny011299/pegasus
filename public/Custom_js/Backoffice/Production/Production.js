@@ -35,6 +35,30 @@
         }
         return { valid: pdSmallest % bomSmallest === 0 };
     }
+
+    function validateBomActiveUnits(bomData) {
+        if (!bomData || !Array.isArray(bomData.items)) {
+            return { valid: true, invalid: [] };
+        }
+
+        var invalid = [];
+        bomData.items.forEach(function (detail) {
+            var activeUnits = detail.active_units || detail.units || [];
+            var unitId = detail.unit_id;
+            var isActive = activeUnits.some(function (unit) {
+                return parseInt(unit.unit_id, 10) === parseInt(unitId, 10);
+            });
+
+            if (!isActive) {
+                var label = (detail.supplies_name || '-') + ' (' + (detail.current_unit_name || detail.unit_name || '-') + ')';
+                if (invalid.indexOf(label) === -1) {
+                    invalid.push(label);
+                }
+            }
+        });
+
+        return { valid: invalid.length === 0, invalid: invalid };
+    }
     $(document).ready(function(){
         // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
         inisialisasi();
@@ -474,6 +498,16 @@
             return false;
         }
         var tempBom = $('#product_id').select2("data")[0];
+        var satuanResep = validateBomActiveUnits(tempBom);
+        if (!satuanResep.valid) {
+            notifikasi(
+                'error',
+                'Satuan Resep Tidak Aktif',
+                'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: ' + satuanResep.invalid.join(', ')
+            );
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+            return false;
+        }
         var qtyKelipatan = cekQtyKelipatanResep(
             parseInt($('#production_qty').val()),
             parseInt($('#unit_id').val()),

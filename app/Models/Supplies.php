@@ -39,8 +39,9 @@ class Supplies extends Model
             $value->supplies_relasi = (new SuppliesRelation())->getSuppliesRelation([
                 "supplies_id" => $value->supplies_id
             ]);
-            // dd($value->units);
-            $value->units = Unit::whereIn('unit_id', $value->supplies_unit)->get();
+            $value->units = Unit::whereIn('unit_id', $value->supplies_unit)
+                ->where('status', 1)
+                ->get(['unit_id', 'unit_name', 'unit_short_name', 'status']);
             $value->stock = (new SuppliesStock())->getProductStock([
                 "supplies_id" => $value->supplies_id,
                 "relations" => $value->supplies_relasi,
@@ -257,5 +258,25 @@ class Supplies extends Model
 
         SuppliesVariant::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
         SuppliesStock::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
+    }
+
+    public function getActiveUnitsForSupplies(int $suppliesId)
+    {
+        $supplies = self::find($suppliesId);
+        if (!$supplies) {
+            return collect();
+        }
+
+        $unitIds = json_decode($supplies->supplies_unit, true) ?: [];
+
+        return Unit::whereIn('unit_id', $unitIds)
+            ->where('status', 1)
+            ->get(['unit_id', 'unit_name', 'unit_short_name', 'status']);
+    }
+
+    public function isSuppliesUnitActive(int $suppliesId, int $unitId): bool
+    {
+        return $this->getActiveUnitsForSupplies($suppliesId)
+            ->contains(fn ($unit) => (int) $unit->unit_id === (int) $unitId);
     }
 }

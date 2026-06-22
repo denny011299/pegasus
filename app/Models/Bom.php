@@ -20,6 +20,7 @@ class Bom extends Model
             "bom_id" => null,
             "search" => null,
             "product_id" => null,
+            "supplies_id" => null,
         ], $data);
 
         $result = Bom::where('boms.status', '=', 1)
@@ -29,6 +30,14 @@ class Bom extends Model
 
         if ($data["product_id"]) $result->where('boms.product_id', '=', $data["product_id"]);
         if ($data["bom_id"]) $result->where('boms.bom_id', '=', $data["bom_id"]);
+        if ($data["supplies_id"]) {
+            $result->whereIn('boms.bom_id', function ($query) use ($data) {
+                $query->select('bom_id')
+                    ->from('bom_details')
+                    ->where('supplies_id', '=', $data["supplies_id"])
+                    ->where('status', '=', 1);
+            });
+        }
 
         if ($data['search']) {
             $s = $data['search'];

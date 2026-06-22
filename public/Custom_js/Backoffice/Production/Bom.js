@@ -1,5 +1,7 @@
     autocompleteSupplies('#supplies_id', '#add_bom .modal-content');
     autocompleteProductVariantOnly('#product_id', '#add_bom .modal-content');
+    autocompleteProductVariantOnly('#filter_product_id');
+    autocompleteSupplies('#filter_supplies_id');
 
     var mode=1;
     var table;
@@ -14,7 +16,7 @@
         console.log(data);
         $('#unit_supplies_id').empty();
         
-        data.units.forEach(element => {
+        getActiveSuppliesUnits(data.units).forEach(element => {
             console.log(element);
             
             $('#unit_supplies_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
@@ -67,6 +69,7 @@
             ordering: true,
             autoWidth: false,
             scrollX: true,
+            searching: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -97,6 +100,10 @@
         $.ajax({
             url: "/getBom",
             method: "get",
+            data: {
+                product_id: $('#filter_product_id').val(),
+                supplies_id: $('#filter_supplies_id').val(),
+            },
             success: function (e) {
                 if (!Array.isArray(e)) {
                     e = e.original || [];
@@ -135,6 +142,16 @@
             }
         });
     }
+
+    $(document).on('change', '#filter_product_id, #filter_supplies_id', function () {
+        refreshBom();
+    });
+
+    $(document).on('click', '.btn-clear', function () {
+        $('#filter_product_id').empty();
+        $('#filter_supplies_id').empty();
+        refreshBom();
+    });
 
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
@@ -229,17 +246,21 @@
         $('#product_id').append(`<option value="${data.product_id}">${data.product_name}</option>`);
         $('#bom_qty').val(data.bom_qty);
         data.details.forEach(e => {
-            var data  = {
+            var rowData  = {
                 "bom_detail_id": e.bom_detail_id,
                 "supplies_id": e.supplies_id,
                 "supplies_name": e.supplies_name,
                 "bom_detail_qty": e.bom_detail_qty,
-                "unit_name": e.unit_name,
-                "unit_id": e.unit_id,
+                "unit_name": e.current_unit_name || e.unit_name,
+                "unit_id": e.current_unit_id || e.unit_id,
+                "current_unit_id": e.current_unit_id || e.unit_id,
+                "current_unit_name": e.current_unit_name || e.unit_name,
+                "active_units": e.active_units || e.units || [],
+                "units": e.active_units || e.units || [],
             };
-            bahan.push(data);
-            addRow(data)
+            bahan.push(rowData);
         });
+        addRow();
 
         $('#unit_id').empty();
         data.pr_unit.forEach(element => {
@@ -277,12 +298,17 @@
         });
 
         if(idx==-1){
+            var activeUnits = getActiveSuppliesUnits(temp.units);
             var data  = {
                 "supplies_id": temp.supplies_id,
                 "supplies_name": temp.supplies_name,
                 "bom_detail_qty": parseInt($('#bom_detail_qty').val()),
                 "unit_name": $('#unit_supplies_id option:selected').text(),
                 "unit_id": $('#unit_supplies_id').val(),
+                "current_unit_id": $('#unit_supplies_id').val(),
+                "current_unit_name": $('#unit_supplies_id option:selected').text(),
+                "active_units": activeUnits,
+                "units": activeUnits,
             };
             bahan.push(data);
         }
@@ -293,31 +319,110 @@
         $('#bom_detail_qty').val("");
     })
     
+    function getActiveSuppliesUnits(units) {
+        return normalizeSuppliesUnits(units).filter(function (unit) {
+            return unit.status === undefined || unit.status === null || parseInt(unit.status, 10) === 1;
+        });
+    }
+
+    function normalizeSuppliesUnits(units) {
+        if (!Array.isArray(units)) {
+            return [];
+        }
+        return units.map(function (unit) {
+            return {
+                unit_id: unit.unit_id,
+                unit_name: unit.unit_name || unit.unit_short_name || '',
+                unit_short_name: unit.unit_short_name || unit.unit_name || '',
+                status: unit.status,
+            };
+        });
+    }
+
+    function isUnitInActiveList(unitId, activeUnits) {
+        return activeUnits.some(function (unit) {
+            return String(unit.unit_id) === String(unitId);
+        });
+    }
+
+    function buildUnitSelect(item, index) {
+        var activeUnits = getActiveSuppliesUnits(item.active_units || item.units || []);
+        var currentUnitId = item.current_unit_id || item.unit_id;
+        var currentUnitName = item.current_unit_name || item.unit_name || '-';
+        var currentInActive = isUnitInActiveList(currentUnitId, activeUnits);
+        var selectedUnitId = item.unit_id || currentUnitId;
+
+        var options = activeUnits.map(function (unit) {
+            var selected = String(unit.unit_id) === String(selectedUnitId) ? 'selected' : '';
+            var label = unit.unit_name || unit.unit_short_name || unit.unit_id;
+            return `<option value="${unit.unit_id}" ${selected}>${label}</option>`;
+        }).join('');
+
+        var placeholder = '';
+        var selectClass = 'form-select form-select-sm bom-row-unit';
+        if (!currentInActive && activeUnits.length > 0) {
+            placeholder = '<option value="">Pilih satuan aktif</option>';
+        } else {
+            selectClass += ' fill';
+        }
+
+        return `
+            <div class="d-flex flex-column gap-1">
+                <small class="text-muted">Saat ini: <span class="text-dark fw-medium">${currentUnitName}</span></small>
+                <select class="${selectClass}" data-index="${index}">
+                    ${placeholder}
+                    ${options}
+                </select>
+            </div>
+        `;
+    }
+
     function addRow() {
-        $('#tableSupply tr.row-supply').html(" ");
-        bahan.forEach(e => {
+        $('#tableSupply tbody').html("");
+        bahan.forEach(function (e, index) {
             $('#tableSupply tbody').append(`
-                <tr class="row-supply" data-id="${e.supplies_id}">
+                <tr class="row-supply" data-id="${e.supplies_id}" data-unit-id="${e.unit_id}" data-index="${index}">
                     <td>${e.supplies_name}</td>
                     <td>${e.bom_detail_qty}</td>
-                    <td>${e.unit_name}</td>
+                    <td>${buildUnitSelect(e, index)}</td>
                     <td class="text-center d-flex align-items-center">
-                        <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
+                        <a class="p-2 btn-action-icon btn_delete_row mx-auto" href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
                         </a>
                     </td>
                 </tr>    
             `);
         });
-         
+        feather.replace();
     }
+
+    $(document).on('change', '.bom-row-unit', function () {
+        var index = parseInt($(this).data('index'), 10);
+        if (isNaN(index) || !bahan[index]) {
+            return;
+        }
+        var selectedValue = $(this).val();
+        if (!selectedValue) {
+            return;
+        }
+        bahan[index].unit_id = selectedValue;
+        bahan[index].unit_name = $(this).find('option:selected').text().trim();
+        $(this).closest('tr').attr('data-unit-id', bahan[index].unit_id);
+    });
 
     $(document).on("click",".btn_delete_row",function(){
         let row = $(this).closest("tr");
-        let supplyId = row.data("id");
-        bahan = bahan.filter(e => e.supplies_id != supplyId);
-        console.log(bahan)
-        row.remove();
+        let index = row.data("index");
+        if (index !== undefined && index !== "") {
+            bahan.splice(parseInt(index, 10), 1);
+        } else {
+            let supplyId = row.data("id");
+            let unitId = row.data("unit-id");
+            bahan = bahan.filter(function (e) {
+                return !(String(e.supplies_id) === String(supplyId) && String(e.unit_id) === String(unitId));
+            });
+        }
+        addRow();
     });
 
     //delete

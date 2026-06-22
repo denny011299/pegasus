@@ -34,7 +34,9 @@ class ProductionController extends Controller
     function getBom(Request $req)
     {
         $bomList = (new Bom())->getBom([
-            "bom_id" => $req->bom_id
+            "bom_id" => $req->bom_id,
+            "product_id" => $req->product_id,
+            "supplies_id" => $req->supplies_id,
         ]);
         foreach ($bomList as $bom) {
             $details = (new BomDetail())->getBomDetail([
@@ -129,6 +131,36 @@ class ProductionController extends Controller
         $produk_tanpa_relasi = [];
         $produk_qty_tidak_kelipatan = [];
         $simulasiHasil = [];
+
+        $bahan_satuan_tidak_aktif = $this->validateProductionBomActiveUnits($item);
+        if (count($bahan_satuan_tidak_aktif) > 0) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Insert',
+                'message' => 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: '
+                    . implode(', ', $bahan_satuan_tidak_aktif),
+            ]);
+        }
+
+        $bahan_bukan_satuan_terkecil = $this->validateBomSuppliesSmallestUnit($item);
+        if (count($bahan_bukan_satuan_terkecil) > 0) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Insert',
+                'message' => 'Satuan bahan mentah pada resep bukan satuan terkecil sesuai relasi. Perbarui resep terlebih dahulu: '
+                    . implode(', ', $bahan_bukan_satuan_terkecil),
+            ]);
+        }
+
+        $bom_satuan_produk_bukan_terkecil = $this->validateBomProductSmallestUnit($item);
+        if (count($bom_satuan_produk_bukan_terkecil) > 0) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Insert',
+                'message' => 'Satuan produk pada resep bukan satuan terkecil sesuai relasi produk. Perbarui resep terlebih dahulu: '
+                    . implode(', ', $bom_satuan_produk_bukan_terkecil),
+            ]);
+        }
 
         foreach ($item as $value) {
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
@@ -486,6 +518,16 @@ class ProductionController extends Controller
         $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();
         $produk_tanpa_relasi = [];
         $bahan_kurang = []; // ← ditambahkan untuk menangkap bahan yang ternyata kurang saat eksekusi
+
+        $bahan_satuan_tidak_aktif = $this->validateProductionBomActiveUnits($item->toArray());
+        if (count($bahan_satuan_tidak_aktif) > 0) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal ACC',
+                'message' => 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: '
+                    . implode(', ', $bahan_satuan_tidak_aktif),
+            ]);
+        }
 
         $insertProductLogOnce = function($payload) use ($p) {
             $exists = LogStock::where('log_kode', '=', $p->production_code)
@@ -1423,5 +1465,146 @@ class ProductionController extends Controller
         }
 
         return 0;
+    }
+
+    /**
+     * Validasi bahwa satuan produk yang digunakan di resep (boms.unit_id) adalah
+     * satuan terkecil berdasarkan ProductRelation.
+     *
+     * Satuan terkecil produk = unit yang TIDAK muncul sebagai pr_unit_id_1
+     * di product_relations (tidak ada satuan yang lebih kecil di bawahnya).
+     *
+     * @param  array $productionItems  Array item dari request detail produksi
+     * @return array  Daftar label "nama produk (satuan bom)" yang bukan satuan terkecil
+     */
+    private function validateBomProductSmallestUnit(array $productionItems): array
+    {
+        $invalid = [];
+
+        foreach ($productionItems as $value) {
+            $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
+            if (!$bom) {
+                continue;
+            }
+
+            $bomUnitId         = (int) $bom->unit_id;
+            $productVariantId  = (int) $value['product_variant_id'];
+
+            // Satuan terkecil produk = tidak ada ProductRelation yang memakai unit ini sebagai pr_unit_id_1
+            $isNotSmallest = ProductRelation::where('product_variant_id', $productVariantId)
+                ->where('pr_unit_id_1', $bomUnitId)
+                ->where('status', 1)
+                ->exists();
+
+            if (!$isNotSmallest) {
+                // Sudah satuan terkecil — aman
+                continue;
+            }
+
+            // bom.unit_id masih bisa dikonversi ke satuan yang lebih kecil → bukan terkecil
+            $pv      = ProductVariant::find($productVariantId);
+            $unit    = Unit::find($bomUnitId);
+            $prName  = $pv ? Product::find($pv->product_id) : null;
+            $namaProduk = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+            if ($namaProduk === '') {
+                $namaProduk = $pv->product_variant_name ?? '-';
+            }
+            $unitLabel = $unit->unit_short_name ?? $unit->unit_name ?? '-';
+            $label = "{$namaProduk} ({$unitLabel})";
+
+            if (!in_array($label, $invalid, true)) {
+                $invalid[] = $label;
+            }
+        }
+
+        return $invalid;
+    }
+
+    /**
+     * Validasi bahwa setiap satuan bahan mentah di resep (bom_details) adalah
+     * satuan terkecil sesuai relasi supplies.
+     *
+     * Satuan terkecil didefinisikan sebagai unit yang TIDAK memiliki relasi
+     * keluar (tidak ada baris supplies_relations dengan su_id_1 == unit_id),
+     * sehingga tidak bisa dikonversi ke satuan yang lebih kecil lagi.
+     *
+     * @param  array $productionItems  Array item dari request detail produksi
+     * @return array  Daftar label "nama bahan (satuan)" yang bukan satuan terkecil
+     */
+    private function validateBomSuppliesSmallestUnit(array $productionItems): array
+    {
+        $invalid = [];
+
+        foreach ($productionItems as $value) {
+            $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
+            if (!$bom) {
+                continue;
+            }
+
+            foreach ($bom['items'] as $bd) {
+                $unitId     = (int) $bd['unit_id'];
+                $suppliesId = (int) $bd['supplies_id'];
+
+                // Satuan terkecil = unit yang tidak memiliki relasi turun (su_id_1 == unit_id)
+                $hasDownwardRelation = SuppliesRelation::where('supplies_id', $suppliesId)
+                    ->where('su_id_1', $unitId)
+                    ->where('status', 1)
+                    ->exists();
+
+                if (!$hasDownwardRelation) {
+                    // Unit ini sudah satuan terkecil — tidak perlu divalidasi
+                    continue;
+                }
+
+                // Unit masih punya relasi ke bawah → bukan satuan terkecil
+                $supplies = Supplies::find($suppliesId);
+                $unit     = Unit::find($unitId);
+                $label    = trim(
+                    ($supplies->supplies_name ?? '-')
+                    . ' ('
+                    . ($unit->unit_short_name ?? $unit->unit_name ?? '-')
+                    . ')'
+                );
+
+                if (!in_array($label, $invalid, true)) {
+                    $invalid[] = $label;
+                }
+            }
+        }
+
+        return $invalid;
+    }
+
+    private function validateProductionBomActiveUnits(array $productionItems): array
+    {
+        $invalid = [];
+
+        foreach ($productionItems as $value) {
+            $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
+            if (!$bom) {
+                continue;
+            }
+
+            foreach ($bom['items'] as $bd) {
+                if ((new Supplies())->isSuppliesUnitActive((int) $bd['supplies_id'], (int) $bd['unit_id'])) {
+                    continue;
+                }
+
+                $supplies = Supplies::find($bd['supplies_id']);
+                $unit = Unit::find($bd['unit_id']);
+                $label = trim(
+                    ($supplies->supplies_name ?? '-')
+                    . ' ('
+                    . ($unit->unit_short_name ?? $unit->unit_name ?? '-')
+                    . ')'
+                );
+
+                if (!in_array($label, $invalid, true)) {
+                    $invalid[] = $label;
+                }
+            }
+        }
+
+        return $invalid;
     }
 }
