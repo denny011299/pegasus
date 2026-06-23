@@ -413,9 +413,12 @@ function insertData() {
         },
         success:function(e){      
             toastr.success('', 'Berhasil Tambah Stock Opname');
+            ResetLoadingButton('.btn-save', 'Tambah Stok Opname')
             window.location.href="/stockOpnameBahan";
         },
         error:function(e){
+            toastr.success('', 'Terjadi Kesalahan Saat Tambah Stok Opname');
+            ResetLoadingButton('.btn-save', 'Tambah Stok Opname')
             console.log(e);
         }
     });
