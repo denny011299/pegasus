@@ -1504,6 +1504,11 @@ $(document).on("click", "#btn-acc-po", function () {
                     return false;
                 }
 
+                if (e == -1) {
+                    notifikasi('error', 'Gagal Tolak', 'Stok bahan tidak mencukupi untuk dibatalkan. Pastikan stok masih tersedia sebelum menolak PO ini.');
+                    return false;
+                }
+
                 if (e != 1) return false;
 
                 $('#po_status').val(-1).trigger('change');

@@ -651,6 +651,8 @@ class SupplierController extends Controller
         purchase_order_tt::where('tt_id','=',$p->tt_id)->update(["status"=>0]);
         PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->update(["status"=>0]);
         PurchaseOrderDetailInvoice::where('po_id','=',$data["po_id"])->update(["status"=>0]);
+
+        return 1;
     }
 
     function getReturnSupplies(Request $req){
