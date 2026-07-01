@@ -113,6 +113,10 @@
         $('#production_qty').trigger('keyup');
     })
 
+    $(document).on('click', '#product_id', function() {
+        autocompleteBom('#product_id', '#addProduction .modal-content')
+    })
+
     function inisialisasi() {
         table = $('#tableProduction').DataTable({
             bFilter: true,
@@ -506,6 +510,11 @@
                 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: ' + satuanResep.invalid.join(', ')
             );
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+
+            $('#product_id').empty();
+            $('#unit_id').empty();
+            $('#unit_id').append("<option selected>Pilih Satuan</option>");
+            $('#production_qty').val("");
             return false;
         }
         var qtyKelipatan = cekQtyKelipatanResep(
