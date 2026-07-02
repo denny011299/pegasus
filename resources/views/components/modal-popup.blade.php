@@ -1,4 +1,4 @@
-<!--- modal Delete -->
+﻿<!--- modal Delete -->
 <style>
     #video.rot90 { transform: rotate(90deg); }
     #video.rot180 { transform: rotate(180deg); }
@@ -15,7 +15,7 @@
         ? collect(json_decode(Session::get('user')->role_access)) 
         : collect();
 @endphp
-<div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog">
+<div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-body p-0">
@@ -40,7 +40,7 @@
       </div>
     </div>
   </div>
-<div class="modal fade" id="modalViewPhoto" tabindex="-1" role="dialog">
+<div class="modal fade" id="modalViewPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-body">
@@ -97,7 +97,7 @@
 
 @if (Route::is(['category']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_category" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_category" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -136,7 +136,7 @@
 
 @if (Route::is(['bank']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_bank" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_bank" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -175,7 +175,7 @@
 
 @if (Route::is(['tt']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_acc_tt" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_acc_tt" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -243,7 +243,7 @@
             </div>
         </div>
     </div>
-    <div class="modal modal-lg custom-modal fade" id="view_tt" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="view_tt" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -272,7 +272,7 @@
 
 @if (Route::is(['unit']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_unit" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_unit" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -318,7 +318,7 @@
 
 @if (Route::is(['variant']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_variant" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_variant" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -364,7 +364,7 @@
 
 @if (Route::is(['productIssue']))
     <!-- Add coupons -->
-    <div class="modal fade" id="add-product-issues">
+    <div class="modal fade" id="add-product-issues" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content p-3">
                 <div class="modal-header border-0 pb-0">
@@ -490,7 +490,7 @@
     <!-- /Add Coupons -->
 @endif
 @if (Route::is(['production']))
-    <div class="modal modal-lg custom-modal fade" id="addProduction" aria-modal="true" role="dialog" tabindex="-1">
+    <div class="modal modal-lg custom-modal fade" id="addProduction" aria-modal="true" role="dialog" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content ">
                 <div class="modal-header border-0 pb-0">
@@ -611,7 +611,7 @@
 @endif
 @if (Route::is(['supplies']))
     <!-- modal -->
-    <div class="modal modal-xl custom-modal fade" id="add_supplies" role="dialog">
+    <div class="modal modal-xl custom-modal fade" id="add_supplies" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -759,7 +759,7 @@
 
 @if (Route::is(['salesOrder']))
     <!-- modal -->
-    <div class="modal modal-xl custom-modal fade" id="add_sales_order" role="dialog">
+    <div class="modal modal-xl custom-modal fade" id="add_sales_order" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -954,7 +954,7 @@
 
 @if (Route::is(['salesOrderDetail']))
     <!-- modal -->
-    <div class="modal modal-xl custom-modal fade" id="add_sales_delivery" role="dialog">
+    <div class="modal modal-xl custom-modal fade" id="add_sales_delivery" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1027,7 +1027,7 @@
     </div>
 
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_sales_invoice" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_sales_invoice" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1082,7 +1082,7 @@
 
 @if (Route::is(['purchaseOrder']))
     <!-- modal -->
-    <div class="modal modal-xl custom-modal fade" id="add_purchase_order" role="dialog">
+    <div class="modal modal-xl custom-modal fade" id="add_purchase_order" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1246,7 +1246,7 @@
     </div>
 @endif
 @if (Route::is(['purchaseOrderDetail']))
-    <div class="modal fade" id="add-retur">
+    <div class="modal fade" id="add-retur" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content p-3">
                 <div class="modal-header border-0 pb-0">
@@ -1360,7 +1360,7 @@
     </div>
 
     <!-- modal: Tambah Delivery Notes -->
-    <div class="modal fade custom-modal" id="add_purchase_delivery" role="dialog" tabindex="-1" aria-hidden="true">
+    <div class="modal fade custom-modal" id="add_purchase_delivery" role="dialog" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1437,7 +1437,7 @@
     </div>
 
     <!-- modal: Tambah Faktur Pembelian -->
-    <div class="modal fade custom-modal" id="add_purchase_invoice" role="dialog" tabindex="-1" aria-hidden="true">
+    <div class="modal fade custom-modal" id="add_purchase_invoice" role="dialog" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1493,7 +1493,7 @@
 
 @if (Route::is(['staff']))
     <!-- Hapus User Modal -->
-    <div class="modal custom-modal fade" id="delete_modal" role="dialog">
+    <div class="modal custom-modal fade" id="delete_modal" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-body">
@@ -1521,7 +1521,7 @@
 
     
     <!-- Tambah User -->
-    <div class="modal custom-modal modal-lg fade" id="add_user" role="dialog">
+    <div class="modal custom-modal modal-lg fade" id="add_user" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1653,7 +1653,7 @@
 
 @if (Route::is(['cash']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_cash" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_cash" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1721,7 +1721,7 @@
         </div>
     </div>
 
-    <div class="modal modal-lg custom-modal fade" id="modal-detail-sales" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="modal-detail-sales" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1767,7 +1767,7 @@
 
 @if (Route::is(['pettyCash']))
     <!-- modal -->
-    <div class="modal modal-xl custom-modal fade" id="add_petty_cash" role="dialog">
+    <div class="modal modal-xl custom-modal fade" id="add_petty_cash" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -1862,7 +1862,7 @@
 
 @if (Route::is(['operationalCash']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_cash_admin" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_cash_admin" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2014,7 +2014,7 @@
             </div>
         </div>
     </div>
-    <div class="modal modal-lg custom-modal fade" id="add_cash_gudang" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_cash_gudang" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2172,7 +2172,7 @@
             </div>
         </div>
     </div>
-    <div class="modal modal-lg custom-modal fade" id="add_cash_armada" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_cash_armada" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2315,7 +2315,7 @@
             </div>
         </div>
     </div>
-    <div class="modal modal-lg custom-modal fade" id="add_cash_sales" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_cash_sales" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2462,7 +2462,7 @@
 
 @if (Route::is(['role']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_role" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_role" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2500,7 +2500,7 @@
 
 @if (Route::is(['bom']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_bom" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_bom" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2588,7 +2588,7 @@
 
 @if (Route::is(['area']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_area" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_area" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2634,7 +2634,7 @@
 
 @if (Route::is(['purchaseOrderDetail']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="modalTerima" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="modalTerima" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2687,7 +2687,7 @@
 
 @if (Route::is(['cashCategory']))
     <!-- modal -->
-    <div class="modal modal-lg custom-modal fade" id="add_cash_category" role="dialog">
+    <div class="modal modal-lg custom-modal fade" id="add_cash_category" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
@@ -2737,7 +2737,7 @@
 
 @if (Route::is(['stockProduct']))
     <!-- Add coupons -->
-    <div class="modal fade" id="add_stock_product">
+    <div class="modal fade" id="add_stock_product" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content p-3">
                 <div class="modal-header border-0 pb-0">
@@ -2808,7 +2808,7 @@
 
 @if (Route::is(['stockSupplies']))
     <!-- Add coupons -->
-    <div class="modal fade" id="add_stock_supplies">
+    <div class="modal fade" id="add_stock_supplies" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content p-3">
                 <div class="modal-header border-0 pb-0">
@@ -2879,7 +2879,7 @@
 
 @if (Route::is(['supplier']))
     <!-- Add coupons -->
-    <div class="modal fade" id="view_supplier">
+    <div class="modal fade" id="view_supplier" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content p-3">
                 <div class="modal-header border-0 pb-0">

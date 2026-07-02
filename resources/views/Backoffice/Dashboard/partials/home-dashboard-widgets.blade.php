@@ -977,7 +977,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="dashAgingDetailModal" tabindex="-1" aria-labelledby="dashAgingDetailTitle" aria-hidden="true">
+    <div class="modal fade" id="dashAgingDetailModal" tabindex="-1" aria-labelledby="dashAgingDetailTitle" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content border-0 shadow" style="border-radius: 12px;">
                 <div class="modal-header border-bottom py-3 px-3">
