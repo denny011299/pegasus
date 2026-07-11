@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
@@ -25,8 +26,10 @@ class PurchaseOrder extends Model
             "pembayaran" => null,
             "status" => null,
             "ids" => null,
-            "search" => null
+            "search" => null,
+            "with_items" => false,
         ], $data);
+        $data['with_items'] = filter_var($data['with_items'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $result = PurchaseOrder::where("purchase_orders.status", ">=", -1)->where("purchase_orders.status", '!=', 0);
 
@@ -86,18 +89,53 @@ class PurchaseOrder extends Model
         }
         $result = $result->get();
 
-        foreach ($result as $key => $value) {
-            $value->po_supplier_name = Supplier::find($value->po_supplier)->supplier_name;
-            $inv = PurchaseOrderDetailInvoice::where('po_id', $value->po_id)->first();
-            $value->poi_due = $inv->poi_due ?? "-";
-            $value->poi_code = $inv->poi_code ?? "-";
-            $value->poi_id = $inv->poi_id ?? "";
-            // kalau ada relasi ke tabel customer atau detail bisa ditambahkan disini
-            // contoh:
-            // $value->customer_name = Customer::find($value->po_customer)->customer_name ?? "-";
-            $value->items = (new PurchaseOrderDetail())->getPurchaseOrderDetail(["po_id" => $value->po_id]);
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+        if ($result->isEmpty()) {
+            return $result;
+        }
+
+        $poIds = $result->pluck('po_id')->all();
+        $supplierIds = $result->pluck('po_supplier')->filter()->unique()->values()->all();
+        $suppliers = $supplierIds !== []
+            ? Supplier::whereIn('supplier_id', $supplierIds)->get()->keyBy('supplier_id')
+            : collect();
+
+        $staffNames = BatchLookup::staffNames(
+            $result->pluck('created_by')->merge($result->pluck('acc_by'))
+        );
+
+        $invoices = PurchaseOrderDetailInvoice::whereIn('po_id', $poIds)
+            ->get()
+            ->groupBy('po_id')
+            ->map->first();
+
+        $detailsByPoId = collect();
+        if ($data['with_items']) {
+            $detailQuery = PurchaseOrderDetail::where('status', '=', 1);
+            if ($data['po_id']) {
+                $detailQuery->where('po_id', '=', $data['po_id']);
+            } else {
+                $detailQuery->whereIn('po_id', $poIds);
+            }
+            $detailsByPoId = (new PurchaseOrderDetail())
+                ->enrichDetailsCollection($detailQuery->orderBy('created_at', 'asc')->get())
+                ->groupBy('po_id');
+        }
+
+        foreach ($result as $value) {
+            $value->po_supplier_name = $suppliers->get($value->po_supplier)?->supplier_name ?? null;
+            $inv = $invoices->get($value->po_id);
+            $value->poi_due = $inv->poi_due ?? '-';
+            $value->poi_code = $inv->poi_code ?? '-';
+            $value->poi_id = $inv->poi_id ?? '';
+            $value->items = $data['with_items']
+                ? ($detailsByPoId->get($value->po_id) ?? collect())->values()->all()
+                : [];
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
+            $value->acc_by_name = $value->acc_by
+                ? ($staffNames->get((int) $value->acc_by) ?? '-')
+                : '-';
         }
 
         return $result;

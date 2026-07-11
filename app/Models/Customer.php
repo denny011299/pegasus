@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
@@ -29,22 +30,12 @@ class Customer extends Model
         if($data["customer_id"]) $result->where('customer_id','=',$data["customer_id"]);
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
-        
-        foreach ($result as $key => $value) {
-            // $a = Area::find($value->area_id);
-            // $value->area_name = $a->area_name;
 
-            // $u = Cities::find($value->city_id);
-            // $value->city_name = $u->city_name;
-
-            // $v = Provinces::find($value->state_id);
-            // $value->state_name = $v->prov_name;
-
-            // $v = District::find($value->district_id);
-            // $value->district_name = $v->name;
-
-            // $value->staff_name = Staff::find($value->sales_id)->staff_name ?? "-";
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+        $staffNames = BatchLookup::staffNames($result->pluck('created_by'));
+        foreach ($result as $value) {
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
         }
         
         return $result;

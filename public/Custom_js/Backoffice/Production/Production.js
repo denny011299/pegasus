@@ -36,28 +36,136 @@
         return { valid: pdSmallest % bomSmallest === 0 };
     }
 
+    function getBomDetailRows(bomData) {
+        if (!bomData) {
+            return [];
+        }
+        var details = bomData.details || bomData.items || [];
+        return Array.isArray(details) ? details : [];
+    }
+
+    function bomDetailHasActiveUnits(bomData) {
+        return getBomDetailRows(bomData).some(function (detail) {
+            var activeUnits = detail.active_units || detail.units || [];
+            return Array.isArray(activeUnits) && activeUnits.length > 0;
+        });
+    }
+
+    function loadBomForValidation(bomId, callback) {
+        $.ajax({
+            url: "/getBom",
+            method: "get",
+            data: { bom_id: bomId, with_details: 1 },
+            success: function (response) {
+                callback(response && response[0] ? response[0] : null);
+            },
+            error: function () {
+                callback(null);
+            }
+        });
+    }
+
     function validateBomActiveUnits(bomData) {
-        if (!bomData || !Array.isArray(bomData.items)) {
+        var details = getBomDetailRows(bomData);
+        if (details.length === 0) {
             return { valid: true, invalid: [] };
         }
 
         var invalid = [];
-        bomData.items.forEach(function (detail) {
+        var hasUnitData = false;
+
+        details.forEach(function (detail) {
             var activeUnits = detail.active_units || detail.units || [];
+            if (!Array.isArray(activeUnits) || activeUnits.length === 0) {
+                return;
+            }
+
+            hasUnitData = true;
             var unitId = detail.unit_id;
             var isActive = activeUnits.some(function (unit) {
                 return parseInt(unit.unit_id, 10) === parseInt(unitId, 10);
             });
 
             if (!isActive) {
-                var label = (detail.supplies_name || '-') + ' (' + (detail.current_unit_name || detail.unit_name || '-') + ')';
+                var label = (detail.supplies_name || '-')
+                    + ' (' + (detail.current_unit_name || detail.unit_name || '-') + ')';
                 if (invalid.indexOf(label) === -1) {
                     invalid.push(label);
                 }
             }
         });
 
+        // Data autocomplete belum punya active_units — validasi dibiarkan ke backend.
+        if (!hasUnitData) {
+            return { valid: true, invalid: [] };
+        }
+
         return { valid: invalid.length === 0, invalid: invalid };
+    }
+
+    function continueAddProduct(tempBom) {
+        var satuanResep = validateBomActiveUnits(tempBom);
+        if (!satuanResep.valid) {
+            notifikasi(
+                'error',
+                'Satuan Resep Tidak Aktif',
+                'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: ' + satuanResep.invalid.join(', ')
+            );
+            return false;
+        }
+        var qtyKelipatan = cekQtyKelipatanResep(
+            parseInt($('#production_qty').val()),
+            parseInt($('#unit_id').val()),
+            tempBom
+        );
+        if (!qtyKelipatan.valid) {
+            notifikasi('error', 'Qty Tidak Valid', 'Qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
+            return false;
+        }
+
+        var temp = $('#product_id').select2("data")[0];
+        var idx = -1;
+        items.forEach(function (element) {
+            if (element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val()) {
+                element.pd_qty += parseInt($('#production_qty').val());
+                idx = 1;
+            }
+        });
+
+        if (idx == 1) {
+            var mergedItem = items.find(function (element) {
+                return element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val();
+            });
+            var qtyKelipatanGabung = cekQtyKelipatanResep(
+                mergedItem.pd_qty,
+                mergedItem.unit_id,
+                tempBom
+            );
+            if (!qtyKelipatanGabung.valid) {
+                mergedItem.pd_qty -= parseInt($('#production_qty').val());
+                notifikasi('error', 'Qty Tidak Valid', 'Total qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
+                return false;
+            }
+        }
+
+        if (idx == -1) {
+            var data = {
+                "product_variant_id": temp.product_variant_id,
+                "product_name": temp.product_name,
+                "pd_qty": parseInt($('#production_qty').val()),
+                "unit_name": $('#unit_id option:selected').text(),
+                "unit_id": parseInt($('#unit_id').val()),
+                "bom_id": temp.bom_id
+            };
+            items.push(data);
+        }
+        addRow(items);
+
+        $('#product_id').empty();
+        $('#unit_id').empty();
+        $('#unit_id').append("<option selected>Pilih Satuan</option>");
+        $('#production_qty').val("");
+        return true;
     }
     $(document).ready(function(){
         // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
@@ -498,85 +606,28 @@
             valid=-1;
             $('#production_qty').addClass('is-invalid');
             notifikasi('error', "Qty Tidak Valid", 'Qty produksi harus lebih dari 0');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-            return false;
-        }
-        var tempBom = $('#product_id').select2("data")[0];
-        var satuanResep = validateBomActiveUnits(tempBom);
-        if (!satuanResep.valid) {
-            notifikasi(
-                'error',
-                'Satuan Resep Tidak Aktif',
-                'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: ' + satuanResep.invalid.join(', ')
-            );
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
-
-            $('#product_id').empty();
-            $('#unit_id').empty();
-            $('#unit_id').append("<option selected>Pilih Satuan</option>");
-            $('#production_qty').val("");
-            return false;
-        }
-        var qtyKelipatan = cekQtyKelipatanResep(
-            parseInt($('#production_qty').val()),
-            parseInt($('#unit_id').val()),
-            tempBom
-        );
-        if (!qtyKelipatan.valid) {
-            notifikasi('error', 'Qty Tidak Valid', 'Qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
             return false;
         }
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
             return false;
-        };
-        var temp = $('#product_id').select2("data")[0];
-        var idx = -1;
-        console.log(temp);
-        items.forEach(element => {
-            console.log(element);
-            if (element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val()) {
-                element.pd_qty += parseInt($('#production_qty').val());
-                idx = 1;
+        }
+
+        var tempBom = $('#product_id').select2("data")[0];
+        if (bomDetailHasActiveUnits(tempBom)) {
+            continueAddProduct(tempBom);
+            return;
+        }
+
+        LoadingButton('.btn-add-product');
+        loadBomForValidation(tempBom.bom_id, function (fullBom) {
+            ResetLoadingButton('.btn-add-product', '+');
+            if (!fullBom) {
+                notifikasi('error', 'Gagal Memuat Resep', 'Tidak dapat memuat detail resep. Silakan coba lagi.');
+                return;
             }
+            continueAddProduct(fullBom);
         });
-
-        if(idx==1){
-            var mergedItem = items.find(function (element) {
-                return element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val();
-            });
-            var qtyKelipatanGabung = cekQtyKelipatanResep(
-                mergedItem.pd_qty,
-                mergedItem.unit_id,
-                tempBom
-            );
-            if (!qtyKelipatanGabung.valid) {
-                mergedItem.pd_qty -= parseInt($('#production_qty').val());
-                notifikasi('error', 'Qty Tidak Valid', 'Total qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
-                return false;
-            }
-        }
-
-        if(idx==-1){
-            var data  = {
-                "product_variant_id": temp.product_variant_id,
-                "product_name": temp.product_name,
-                "pd_qty": parseInt($('#production_qty').val()),
-                "unit_name": $('#unit_id option:selected').text(),
-                "unit_id": parseInt($('#unit_id').val()),
-                "bom_id": temp.bom_id
-            };
-            items.push(data);
-        }
-        addRow(items);
-
-        $('#product_id').empty();
-        $('#unit_id').empty();
-        $('#unit_id').append("<option selected>Pilih Satuan</option>");
-        $('#production_qty').val("");
     })
 
     $(document).on("click",".btn_delete_row_pr",function(){

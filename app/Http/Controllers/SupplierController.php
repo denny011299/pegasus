@@ -41,12 +41,12 @@ class SupplierController extends Controller
 
     function PurchaseOrderDetail($id)
     {
-        $param["data"] = (new PurchaseOrder())->getPurchaseOrder(["po_id" => $id])[0];
+        $param["data"] = (new PurchaseOrder())->getPurchaseOrder(["po_id" => $id, "with_items" => true])[0];
         return view('Backoffice.Suppliers.Purchase_Order_Detail')->with($param);
     }
     function PurchaseOrderDetailHutang($id)
     {
-        $param["data"] = (new PurchaseOrder())->getPurchaseOrder(["po_id" => $id, "hutang" => 1])[0];
+        $param["data"] = (new PurchaseOrder())->getPurchaseOrder(["po_id" => $id, "hutang" => 1, "with_items" => true])[0];
         return view('Backoffice.Suppliers.Purchase_Order_Detail')->with($param);
     }
 

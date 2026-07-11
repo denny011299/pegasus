@@ -38,15 +38,40 @@ class PurchaseOrderDetail extends Model
         $result->orderBy("created_at", "asc");
         $result = $result->get();
 
-        foreach ($result as $key => $value) {
-            $value->po_number = PurchaseOrder::find($value->po_id)->first();
-            // relasi ke SuppliesVariant
-            $value->supplies_variant = SuppliesVariant::find($value->supplies_variant_id);
-            $u = Unit::find($value->unit_id);
-            $value->unit_name = $u ? $u->unit_short_name : null;
+        return $this->enrichDetailsCollection($result);
+    }
+
+    public function enrichDetailsCollection($details)
+    {
+        $details = collect($details);
+        if ($details->isEmpty()) {
+            return $details;
         }
 
-        return $result;
+        $poIds = $details->pluck('po_id')->filter()->unique()->values()->all();
+        $purchaseOrders = $poIds !== []
+            ? PurchaseOrder::whereIn('po_id', $poIds)->get()->keyBy('po_id')
+            : collect();
+
+        $variantIds = $details->pluck('supplies_variant_id')->filter()->unique()->values()->all();
+        $variants = $variantIds !== []
+            ? SuppliesVariant::whereIn('supplies_variant_id', $variantIds)->get()->keyBy('supplies_variant_id')
+            : collect();
+
+        $unitIds = $details->pluck('unit_id')->filter()->unique()->values()->all();
+        $units = $unitIds !== []
+            ? Unit::whereIn('unit_id', $unitIds)->get()->keyBy('unit_id')
+            : collect();
+
+        foreach ($details as $value) {
+            $po = $purchaseOrders->get($value->po_id);
+            $value->po_number = $po ? $po->first() : null;
+            $value->supplies_variant = $variants->get($value->supplies_variant_id);
+            $unit = $units->get($value->unit_id);
+            $value->unit_name = $unit ? $unit->unit_short_name : null;
+        }
+
+        return $details;
     }
 
     function insertPurchaseOrderDetail($data)

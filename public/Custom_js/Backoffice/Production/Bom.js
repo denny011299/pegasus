@@ -226,11 +226,8 @@
         refreshBom();
     }
 
-    //edit
-    $(document).on("click",".btn_edit",function(){
+    function openBomEditModal(data) {
         bahan = [];
-        var data = $('#tableBom').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        console.log(data);
         mode=2;
         $('#add_bom .modal-title').html("Update Resep Bahan Mentah");
         $('#add_bom input').empty().val("");
@@ -245,7 +242,7 @@
 
         $('#product_id').append(`<option value="${data.product_id}">${data.product_name}</option>`);
         $('#bom_qty').val(data.bom_qty);
-        data.details.forEach(e => {
+        (data.details || []).forEach(e => {
             var rowData  = {
                 "bom_detail_id": e.bom_detail_id,
                 "supplies_id": e.supplies_id,
@@ -263,7 +260,7 @@
         addRow();
 
         $('#unit_id').empty();
-        data.pr_unit.forEach(element => {
+        (data.pr_unit || []).forEach(element => {
             var active = "";
             if(element.unit_id == data.unit_id) active = "selected";
             $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_short_name}</option>`);
@@ -271,6 +268,28 @@
         $('.btn-save').html('Update Resep');
         $('#add_bom').modal("show");
         $('#add_bom').attr("bom_id", data.bom_id);
+    }
+
+    //edit
+    $(document).on("click",".btn_edit",function(){
+        var row = $('#tableBom').DataTable().row($(this).parents('tr')).data();
+        $.ajax({
+            url: '/getBom',
+            method: 'get',
+            data: { bom_id: row.bom_id, with_details: 1 },
+            success: function (resp) {
+                var rows = Array.isArray(resp) ? resp : (resp.original || []);
+                if (rows.length) {
+                    openBomEditModal(rows[0]);
+                } else {
+                    notifikasi('error', 'Gagal', 'Data resep tidak ditemukan.');
+                }
+            },
+            error: function (err) {
+                console.error('Gagal load detail BOM:', err);
+                notifikasi('error', 'Gagal', 'Gagal memuat detail resep.');
+            }
+        });
     });
     $(document).on('click', '.btn-add-supply', function(){
         $('.is-invalid').removeClass('is-invalid');

@@ -3,6 +3,7 @@
     <div class="sidebar" id="sidebar">
         <div class="sidebar-inner slimscroll">
             <div id="sidebar-menu" class="sidebar-menu">
+                @if (false){{-- menu template Kanakku (horizontal), tidak dipakai layout vertical --}}
                 <nav class="greedys sidebar-horizantal">
                     <ul class="list-inline-item list-unstyled links">
                         <li class="menu-title"><span>Main</span></li>
@@ -502,11 +503,12 @@
                     </ul>
                     <!-- /Settings -->
                 </nav>
+                @endif
                 <ul class="sidebar-vertical">
                     <!-- Main -->
-                    @php
-                            $akses = collect(json_decode(Session::get('user')->role_access));
-                    @endphp
+    @php
+        $akses = collect(json_decode(Session::get('user')->role_access ?? '[]'));
+    @endphp
                     <li class="menu-title"><span>Menu Utama</span></li>
                     <li class="submenu">
                         <li>

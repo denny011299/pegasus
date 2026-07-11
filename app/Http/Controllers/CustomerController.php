@@ -25,7 +25,7 @@ class CustomerController extends Controller
     }
 
     public function SalesOrderDetail($id){
-        $param["data"] = (new SalesOrder())->getSalesOrder(["so_id" => $id])[0];
+        $param["data"] = (new SalesOrder())->getSalesOrder(["so_id" => $id, "with_items" => true])[0];
         return view('Backoffice.Customers.Sales_Order_Detail')->with($param);
     }
     

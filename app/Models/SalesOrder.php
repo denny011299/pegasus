@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
@@ -19,7 +20,12 @@ class SalesOrder extends Model
             "so_customer" => null,
             "so_id" => null,
             "so_ref_number" => null,
+            "with_items" => false,
         ], $data);
+        $data['with_items'] = filter_var($data['with_items'], FILTER_VALIDATE_BOOLEAN);
+        if ($data['so_id']) {
+            $data['with_items'] = true;
+        }
 
         $result = SalesOrder::where("status", ">=", 1);
 
@@ -34,20 +40,63 @@ class SalesOrder extends Model
         }
 
         $result->orderBy('status', 'asc')->orderBy("created_at", "desc");
-        $result= $result->get();
+        $result = $result->get();
+
+        if ($result->isEmpty()) {
+            return $result;
+        }
+
         $hasCreatedBy = Schema::hasColumn($this->getTable(), 'created_by');
         $hasAccBy = Schema::hasColumn($this->getTable(), 'acc_by');
-        foreach ($result as $key => $value) {
-            $value->customer_name = Customer::find($value->so_customer)->customer_notes ?? "-";
-            $value->items = (new SalesOrderDetail())->getSalesOrderDetail(["so_id"=>$value->so_id]);
-            $value->staff_name = Staff::find($value->so_cashier)->staff_name ?? "-";
+
+        $customerIds = $result->pluck('so_customer')->filter()->unique()->values()->all();
+        $customers = $customerIds !== []
+            ? Customer::whereIn('customer_id', $customerIds)->get()->keyBy('customer_id')
+            : collect();
+
+        $staffIdSet = [];
+        foreach ($result as $row) {
+            if ($row->so_cashier) {
+                $staffIdSet[(int) $row->so_cashier] = true;
+            }
+            if ($hasCreatedBy && ($row->created_by ?? null)) {
+                $staffIdSet[(int) $row->created_by] = true;
+            }
+            if ($hasAccBy && ($row->acc_by ?? null)) {
+                $staffIdSet[(int) $row->acc_by] = true;
+            }
+        }
+        $staffNames = BatchLookup::staffNames(array_keys($staffIdSet));
+
+        $detailsBySoId = collect();
+        if ($data['with_items']) {
+            $detailQuery = SalesOrderDetail::where('status', '=', 1);
+            if ($data['so_id']) {
+                $detailQuery->where('so_id', '=', $data['so_id']);
+            } else {
+                $detailQuery->whereIn('so_id', $result->pluck('so_id')->all());
+            }
+            $detailsBySoId = (new SalesOrderDetail())
+                ->enrichDetailsCollection($detailQuery->orderBy('created_at', 'asc')->get())
+                ->groupBy('so_id');
+        }
+
+        foreach ($result as $value) {
+            $value->customer_name = $customers->get($value->so_customer)?->customer_notes ?? '-';
+            $value->items = $data['with_items']
+                ? ($detailsBySoId->get($value->so_id) ?? collect())->values()->all()
+                : [];
+            $value->staff_name = $value->so_cashier
+                ? ($staffNames->get((int) $value->so_cashier) ?? '-')
+                : '-';
             $value->created_by_name = $hasCreatedBy && ($value->created_by ?? null)
-                ? (Staff::find($value->created_by)->staff_name ?? '-')
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
                 : '-';
             $value->acc_by_name = $hasAccBy && ($value->acc_by ?? null)
-                ? (Staff::find($value->acc_by)->staff_name ?? '-')
+                ? ($staffNames->get((int) $value->acc_by) ?? '-')
                 : '-';
         }
+
         return $result;
     }
 
