@@ -1,4 +1,4 @@
-﻿<!--- modal Delete -->
+<!--- modal Delete -->
 <style>
     #video.rot90 { transform: rotate(90deg); }
     #video.rot180 { transform: rotate(180deg); }
@@ -2528,6 +2528,7 @@
                                             <input type="text" class="form-control fill number-only" id="bom_qty" placeholder="Qty">
                                             <select class="form-select w-25 fill" id="unit_id"></select>
                                         </div>
+                                        <div id="product_unit_info" class="mt-1" style="display:none; font-size:0.82rem; line-height:1.4;"></div>
                                     </div>
                                 </div>
 
@@ -2565,6 +2566,7 @@
                                     <div class="input-block mb-3">
                                         <label>Satuan<span class="text-danger">*</span></label>
                                         <select class="form-select fill_supply" id="unit_supplies_id"></select>
+                                        <div id="supplies_unit_info" class="mt-1" style="display:none; font-size:0.82rem; line-height:1.4;"></div>
                                     </div>
                                 </div>
 

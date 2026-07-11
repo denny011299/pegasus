@@ -15,12 +15,13 @@
         var data = $(this).select2("data")[0];
         console.log(data);
         $('#unit_supplies_id').empty();
-        
+
         getActiveSuppliesUnits(data.units).forEach(element => {
             console.log(element);
-            
             $('#unit_supplies_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`);
         });
+
+        renderSuppliesUnitInfo(data.supplies_relasi, getActiveSuppliesUnits(data.units), data.supplies_default_unit);
     });
 
     $(document).on('change','#product_id',function(){
@@ -31,7 +32,7 @@
             $('#unit_id').append(`<option value="${data.unit_id}" selected>${data.product_unit}</option>`);
             $('#unit_id').prop('disabled', true);
         } else {
-            // Ambil satuan terkecil
+            // Ambil satuan terkecil (elemen terakhir dari relasi)
             data.relasi.forEach((element, index) => {
                 if (index == data.relasi.length - 1){
                     $('#unit_id').append(`<option value="${element.pr_unit_id_2}" selected>${element.pr_unit_name_2}</option>`);
@@ -39,6 +40,7 @@
                 }
             });
         }
+        renderProductUnitInfo(data.relasi, data.product_unit);
         $('#bom_qty').val(1);
         $('#bom_qty').prop('disabled', false);
     });
@@ -57,6 +59,9 @@
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html('Tambah Resep');
+        // Reset info satuan
+        $('#product_unit_info').hide().html('');
+        $('#supplies_unit_info').hide().html('');
         $('#add_bom').modal("show");
         bahan = [];
     });
@@ -242,6 +247,9 @@
         $('#bom_qty').prop('disabled', false);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
+        // Reset info satuan
+        $('#product_unit_info').hide().html('');
+        $('#supplies_unit_info').hide().html('');
 
         $('#product_id').append(`<option value="${data.product_id}">${data.product_name}</option>`);
         $('#bom_qty').val(data.bom_qty);
@@ -257,6 +265,8 @@
                 "current_unit_name": e.current_unit_name || e.unit_name,
                 "active_units": e.active_units || e.units || [],
                 "units": e.active_units || e.units || [],
+                "supplies_relasi": e.supplies_relasi || [],
+                "supplies_default_unit": e.supplies_default_unit || null,
             };
             bahan.push(rowData);
         });
@@ -268,10 +278,67 @@
             if(element.unit_id == data.unit_id) active = "selected";
             $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_short_name}</option>`);
         });
+
+        // Tampilkan info satuan produk
+        renderProductUnitInfo(data.relasi, data.unit_name);
+
         $('.btn-save').html('Update Resep');
         $('#add_bom').modal("show");
         $('#add_bom').attr("bom_id", data.bom_id);
     });
+
+    function renderProductUnitInfo(relasi, currentUnit) {
+        var $el = $('#product_unit_info');
+        if (!relasi || relasi.length === 0) {
+            $el.html(
+                `<span class="text-muted">Saat ini: <strong class="text-dark">${currentUnit || '-'}</strong></span>
+                 &nbsp;|&nbsp;
+                 <span class="text-muted">Default: <strong class="text-dark">${currentUnit || '-'}</strong></span>`
+            ).show();
+        } else {
+            var smallest = relasi[relasi.length - 1];
+            var smallestName = smallest.pr_unit_name_2 || smallest.pr_unit_id_2 || '-';
+            $el.html(
+                `<span class="text-muted">Saat ini: <strong class="text-dark">${currentUnit || '-'}</strong></span>
+                 &nbsp;|&nbsp;
+                 <span class="text-muted">Terkecil: <strong class="text-dark">${smallestName}</strong></span>`
+            ).show();
+        }
+    }
+
+    function renderSuppliesUnitInfo(suppliesRelasi, activeUnits, defaultUnitId) {
+        var $el = $('#supplies_unit_info');
+        var units = activeUnits || [];
+        var activeRelasi = (suppliesRelasi || []).filter(function(r) {
+            return r.status === undefined || r.status === null || parseInt(r.status, 10) === 1;
+        });
+
+        if (activeRelasi.length > 0) {
+            // Cari satuan terkecil: unit yang tidak muncul sebagai pr_unit_id_1
+            var unitId1List = activeRelasi.map(function(r) { return String(r.pr_unit_id_1 || r.su_id_1 || ''); });
+            var allUnitIds  = units.map(function(u) { return String(u.unit_id); });
+            var candidates  = allUnitIds.filter(function(uid) { return !unitId1List.includes(uid); });
+            var smallestName = '-';
+            if (candidates.length > 0) {
+                var found = units.find(function(u) { return String(u.unit_id) === candidates[0]; });
+                if (found) smallestName = found.unit_name || found.unit_short_name || '-';
+            }
+            $el.html(
+                `<span class="text-muted">Terkecil: <strong class="text-dark">${smallestName}</strong></span>`
+            ).show();
+        } else {
+            var defaultUnit = '-';
+            if (defaultUnitId) {
+                var defFound = units.find(function(u) { return String(u.unit_id) === String(defaultUnitId); });
+                if (defFound) defaultUnit = defFound.unit_name || defFound.unit_short_name || '-';
+            } else if (units.length > 0) {
+                defaultUnit = units[0].unit_name || units[0].unit_short_name || '-';
+            }
+            $el.html(
+                `<span class="text-muted">Default: <strong class="text-dark">${defaultUnit}</strong></span>`
+            ).show();
+        }
+    }
     $(document).on('click', '.btn-add-supply', function(){
         $('.is-invalid').removeClass('is-invalid');
         var valid=1;
@@ -309,6 +376,8 @@
                 "current_unit_name": $('#unit_supplies_id option:selected').text(),
                 "active_units": activeUnits,
                 "units": activeUnits,
+                "supplies_relasi": temp.supplies_relasi || [],
+                "supplies_default_unit": temp.supplies_default_unit || null,
             };
             bahan.push(data);
         }
@@ -366,9 +435,37 @@
             selectClass += ' fill';
         }
 
+        // Hitung info satuan terkecil / default
+        var suppliesRelasi = item.supplies_relasi || [];
+        var activeRelasi = suppliesRelasi.filter(function(r) {
+            return r.status === undefined || r.status === null || parseInt(r.status, 10) === 1;
+        });
+        var extraInfoHtml = '';
+        if (activeRelasi.length > 0) {
+            var unitId1List = activeRelasi.map(function(r) { return String(r.pr_unit_id_1 || r.su_id_1 || ''); });
+            var allUnitIds  = activeUnits.map(function(u) { return String(u.unit_id); });
+            var candidates  = allUnitIds.filter(function(uid) { return !unitId1List.includes(uid); });
+            var smallestName = '-';
+            if (candidates.length > 0) {
+                var found = activeUnits.find(function(u) { return String(u.unit_id) === candidates[0]; });
+                if (found) smallestName = found.unit_name || found.unit_short_name || '-';
+            }
+            extraInfoHtml = `&nbsp;|&nbsp;<span class="text-muted">Terkecil: <span class="text-dark fw-medium">${smallestName}</span></span>`;
+        } else {
+            var defaultUnit = '-';
+            var defId = item.supplies_default_unit;
+            if (defId) {
+                var defFound = activeUnits.find(function(u) { return String(u.unit_id) === String(defId); });
+                if (defFound) defaultUnit = defFound.unit_name || defFound.unit_short_name || '-';
+            } else if (activeUnits.length > 0) {
+                defaultUnit = activeUnits[0].unit_name || activeUnits[0].unit_short_name || '-';
+            }
+            extraInfoHtml = `&nbsp;|&nbsp;<span class="text-muted">Default: <span class="text-dark fw-medium">${defaultUnit}</span></span>`;
+        }
+
         return `
             <div class="d-flex flex-column gap-1">
-                <small class="text-muted">Saat ini: <span class="text-dark fw-medium">${currentUnitName}</span></small>
+                <small class="text-muted">Saat ini: <span class="text-dark fw-medium">${currentUnitName}</span>${extraInfoHtml}</small>
                 <select class="${selectClass}" data-index="${index}">
                     ${placeholder}
                     ${options}

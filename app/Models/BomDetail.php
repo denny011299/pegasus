@@ -49,9 +49,15 @@ class BomDetail extends Model
                     ->get(['unit_id', 'unit_name', 'unit_short_name', 'status'])
                     ->values();
                 $value->units = $value->active_units;
+                $value->supplies_relasi = (new SuppliesRelation())->getSuppliesRelation([
+                    'supplies_id' => $value->supplies_id,
+                ]);
+                $value->supplies_default_unit = $s->supplies_default_unit;
             } else {
                 $value->active_units = collect();
                 $value->units = collect();
+                $value->supplies_relasi = collect();
+                $value->supplies_default_unit = null;
             }
         }
 
