@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
@@ -35,15 +36,50 @@ class Product extends Model
         }
 
         $result->orderBy("created_at", "asc");
-        $result= $result->get();
-        foreach ($result as $key => $value) {
-            $value->product_unit = json_decode($value->product_unit);
-            $value->pr_unit = Unit::whereIn('unit_id', $value->product_unit)->get();
-            $value->pr_variant = (new ProductVariant())->getProductVariant(['product_id'=>$value->product_id]);
-            //$value->pr_relasi = (new ProductRelation())->getProductRelation(['product_id'=>$value->product_id]);
-            $value->product_category = Category::find($value->category_id)->category_name ?? "-";
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+        $result = $result->get();
+
+        if ($result->isEmpty()) {
+            return $result;
         }
+
+        $categoryIds = $result->pluck('category_id')->filter()->unique()->values()->all();
+        $categories = $categoryIds !== []
+            ? Category::whereIn('category_id', $categoryIds)->pluck('category_name', 'category_id')
+            : collect();
+
+        $staffNames = BatchLookup::staffNames($result->pluck('created_by'));
+
+        $productIds = $result->pluck('product_id')->all();
+        $variantsByProduct = ProductVariant::where('status', '=', 1)
+            ->whereIn('product_id', $productIds)
+            ->orderBy('created_at', 'asc')
+            ->get()
+            ->groupBy('product_id');
+
+        $unitIdSet = [];
+        foreach ($result as $product) {
+            foreach ((array) (json_decode($product->product_unit, true) ?: []) as $unitId) {
+                $unitIdSet[(int) $unitId] = true;
+            }
+        }
+        $unitsMap = $unitIdSet !== []
+            ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
+            : collect();
+
+        foreach ($result as $value) {
+            $value->product_unit = json_decode($value->product_unit);
+            $unitIds = (array) ($value->product_unit ?: []);
+            $value->pr_unit = collect($unitIds)
+                ->map(fn ($id) => $unitsMap->get((int) $id))
+                ->filter()
+                ->values();
+            $value->pr_variant = ($variantsByProduct->get($value->product_id) ?? collect())->values();
+            $value->product_category = $categories->get($value->category_id) ?? '-';
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
+        }
+
         return $result;
     }
 

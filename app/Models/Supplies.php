@@ -28,27 +28,15 @@ class Supplies extends Model
         $result->orderBy('created_at', 'asc');
 
         $result = $result->get();
-        foreach ($result as $key => $value) {
-            $value->sup_variant = (new SuppliesVariant())->getSuppliesVariant([
-                "supplies_id" => $value->supplies_id
-            ]);
-            if ($value->supplies_supplier) {
-                $value->supplier =  Supplier::whereIn('supplier_id', json_decode($value->supplies_supplier, true))->get();
-            }
-            $value->supplies_unit = json_decode($value->supplies_unit);
-            $value->supplies_relasi = (new SuppliesRelation())->getSuppliesRelation([
-                "supplies_id" => $value->supplies_id
-            ]);
-            $value->units = Unit::whereIn('unit_id', $value->supplies_unit)
-                ->where('status', 1)
-                ->get(['unit_id', 'unit_name', 'unit_short_name', 'status']);
-            $value->stock = (new SuppliesStock())->getProductStock([
-                "supplies_id" => $value->supplies_id,
-                "relations" => $value->supplies_relasi,
-            ]);
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+        if ($result->isEmpty()) {
+            return $result;
         }
-        return $result;
+
+        $bulk = $this->getSuppliesBulk($result->pluck('supplies_id')->all());
+
+        return $result->map(function ($row) use ($bulk) {
+            return $bulk->get($row->supplies_id) ?? $row;
+        });
     }
 
     // Khusus untuk stock opname bahan — isi field sama seperti getSupplies(), tapi query digabung (tanpa N+1).

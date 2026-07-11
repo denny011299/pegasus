@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\StockAlert;
+use App\Models\ProductVariant;
 use App\Support\RoleAccess;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Session;
@@ -32,13 +32,18 @@ class AppServiceProvider extends ServiceProvider
             return RoleAccess::canAny(Session::get('user'), $modules, strtolower($ability));
         });
 
-        View::composer('*', function ($view) {
-            $s = (new StockAlert())->getStockAlert();
-            if (count($s) > 0) {
-                $view->with(
-                    'hasStockAlert',
-                    true
-                );
+        // $hasStockAlert hanya dipakai di header, jadi composer cukup di view itu
+        // (bukan '*') dan cukup cek keberadaan baris tanpa loop detail per-variant.
+        View::composer('layout.partials.header', function ($view) {
+            static $hasStockAlert = null;
+            if ($hasStockAlert === null) {
+                $hasStockAlert = ProductVariant::where('product_variants.status', '=', 1)
+                    ->join('products as p', 'p.product_id', '=', 'product_variants.product_id')
+                    ->where('p.status', '=', 1)
+                    ->exists();
+            }
+            if ($hasStockAlert) {
+                $view->with('hasStockAlert', true);
             }
         });
     }

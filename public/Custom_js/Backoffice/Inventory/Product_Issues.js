@@ -433,7 +433,7 @@ function loadPiType() {
             return false;
         }
 
-        if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+        if (typeof hasPhotoInputValue === "function" ? !hasPhotoInputValue($('#bukti').val()) : !$('#bukti').val()){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk");
             return false;
@@ -748,9 +748,9 @@ $(document).on("click", ".btn_edit", function () {
     $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
     $('#btn-foto-bukti').show();
-    $('#btn-lihat-bukti').show();
-    $('#check_foto').show();
-    imageValue(data.pi_img);
+    var hasImage = imageValue(data.pi_img);
+    $('#btn-lihat-bukti').toggle(hasImage);
+    $('#check_foto').toggle(hasImage);
     $('#add-product-issues .modal-title').html("Update Produk Bermasalah");
     $("#add-product-issues").modal("show");
     $("#add-product-issues").attr("pi_id", data.pi_id);
@@ -823,14 +823,10 @@ $(document).on("click", ".btn_view", function () {
     $('.add, .btn-save, .btn_delete_row_pr, .btn_delete_row_sp').hide();
     $('.is-invalid').removeClass('is-invalid');
     $('.cancel-btn').html(mode == 3?"Kembali" : "Batal");
-    $('#check_foto').show();
     $('#btn-foto-bukti').hide();
-    $('#btn-lihat-bukti').show();
-    imageValue(data.pi_img);
-   
-    $('#fotoProduksiImage').attr('src', public+"issue/"+data.pi_img);
-    $('#fotoProduksiImage').attr('index', 0);
-    $('#btn_download_photo').attr('href', public+"issue/"+data.pi_img);
+    var hasImage = imageValue(data.pi_img);
+    $('#btn-lihat-bukti').toggle(hasImage);
+    $('#check_foto').toggle(hasImage);
 
     $('#add-product-issues .modal-title').html("Detail Produk Bermasalah");
     $("#add-product-issues").modal("show");
@@ -924,11 +920,28 @@ $(document).on("click", ".btn_view", function () {
     })
 
 function imageValue(image){
-    $('#fotoProduksiImage').attr('src', public+"issue/"+image);
+    var photos = typeof parsePhotoInputValue === "function"
+        ? parsePhotoInputValue(image)
+        : (image ? [image] : []);
+
+    if (photos.length <= 0) {
+        $('#fotoProduksiImage').attr('src', '');
+        $('#fotoProduksiImage').attr('index', 0);
+        $('#btn_download_photo').attr('href', '#');
+        return false;
+    }
+
+    $('#fotoProduksiImage').attr('src', public+"issue/"+photos[0]);
     $('#fotoProduksiImage').attr('index', 0);
+    $('#btn_download_photo').attr('href', public+"issue/"+photos[0]);
+    return true;
 }
 
 $(document).on("click", "#btn-lihat-bukti", function () {
+    if (!$('#fotoProduksiImage').attr('src')) {
+        notifikasi('error', 'Gagal View', 'Bukti foto belum tersedia.');
+        return;
+    }
     $("#add-product-issues").modal("hide");
     $('.btn-prev,.btn-next').hide();
     $('#modalViewPhoto').modal("show");
@@ -1002,6 +1015,7 @@ $(document).on('click', '#btn-foto-bukti', function() {
     photoData = "";
     modeCamera=2;
     inputFile ="#bukti";
+    cameraReturnModal = "#add-product-issues";
     $("#video").removeClass("rot90 rot180 rot270");
     $("#preview-box").hide();
     $("#camera").show();
@@ -1013,7 +1027,7 @@ $(document).on('click', '#btn-foto-bukti', function() {
 });
 
 $(document).on('click', '#uploadBtn', function(){
-    if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
+    if (typeof hasPhotoInputValue === "function" ? hasPhotoInputValue($('#bukti').val()) : $('#bukti').val()) {
         $('#check_foto').show();
     } else {
         $('#check_foto').hide();

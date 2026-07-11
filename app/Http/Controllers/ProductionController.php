@@ -33,18 +33,14 @@ class ProductionController extends Controller
 
     function getBom(Request $req)
     {
-        $bomList = (new Bom())->getBom([
+        $withDetails = filter_var($req->with_details ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        return response()->json((new Bom())->getBom([
             "bom_id" => $req->bom_id,
             "product_id" => $req->product_id,
             "supplies_id" => $req->supplies_id,
-        ]);
-        foreach ($bomList as $bom) {
-            $details = (new BomDetail())->getBomDetail([
-                "bom_id" => $bom->bom_id
-            ]);
-            $bom->details = $details;
-        }
-        return response()->json($bomList);
+            "with_details" => $withDetails,
+        ]));
     }
 
     function insertBom(Request $req)
@@ -273,7 +269,7 @@ class ProductionController extends Controller
                 (int) $value['product_variant_id']
             );
 
-            foreach ($bom['items'] as $bd) {
+            foreach ($this->getBomDetailRows($bom) as $bd) {
                 $id = $bd['supplies_id'];
 
                 // ─────────────────────────────────────────────────────────
@@ -613,7 +609,7 @@ class ProductionController extends Controller
                 (int) $value['product_variant_id']
             );
 
-            foreach ($bom['items'] as $bd) {
+            foreach ($this->getBomDetailRows($bom) as $bd) {
                 $id = $bd['supplies_id'];
                 $namaBahan      = Supplies::find($id)->supplies_name;
                 $isKemasanBesar = preg_match('/dos|pack/i', $namaBahan);
@@ -1468,6 +1464,23 @@ class ProductionController extends Controller
     }
 
     /**
+     * @return array<int, mixed>
+     */
+    private function getBomDetailRows($bom): array
+    {
+        if (!$bom) {
+            return [];
+        }
+
+        $details = $bom['details'] ?? $bom['items'] ?? [];
+        if ($details instanceof \Illuminate\Support\Collection) {
+            return $details->all();
+        }
+
+        return is_array($details) ? $details : [];
+    }
+
+    /**
      * Validasi bahwa satuan produk yang digunakan di resep (boms.unit_id) adalah
      * satuan terkecil berdasarkan ProductRelation.
      *
@@ -1541,7 +1554,7 @@ class ProductionController extends Controller
                 continue;
             }
 
-            foreach ($bom['items'] as $bd) {
+            foreach ($this->getBomDetailRows($bom) as $bd) {
                 $unitId     = (int) $bd['unit_id'];
                 $suppliesId = (int) $bd['supplies_id'];
 
@@ -1585,7 +1598,7 @@ class ProductionController extends Controller
                 continue;
             }
 
-            foreach ($bom['items'] as $bd) {
+            foreach ($this->getBomDetailRows($bom) as $bd) {
                 if ((new Supplies())->isSuppliesUnitActive((int) $bd['supplies_id'], (int) $bd['unit_id'])) {
                     continue;
                 }

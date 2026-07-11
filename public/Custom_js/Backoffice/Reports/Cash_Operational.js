@@ -5,6 +5,13 @@
     var sisa_kas = 0;
     var dates = null;
 
+    function updateCashOperationalFooter(debits, credits) {
+        var sisa = (parseInt(debits, 10) || 0) - (parseInt(credits, 10) || 0);
+        $('#tableCash tfoot .debits').html(`Rp ${formatRupiahMinus(debits)}`);
+        $('#tableCash tfoot .credits').html(`(Rp ${formatRupiahMinus(credits)})`);
+        $('#tableCash tfoot .sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
+    }
+
     let today = new Date();
     let yyyy = today.getFullYear();
     let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -685,10 +692,8 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw();
-                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
-                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
+                table.rows.add(e).draw(false);
+                updateCashOperationalFooter(debits, credits);
                 sisa_kas = data['sisa_kas'];
 
                 // Expand child row
@@ -787,12 +792,10 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw();
+                table.rows.add(e).draw(false);
                 feather.replace(); // Biar icon feather muncul lagi
 
-                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
-                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
+                updateCashOperationalFooter(debits, credits);
                 sisa_kas = data['sisa_kas'];
 
                 // Expand child row
@@ -896,16 +899,12 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw();
+                table.rows.add(e).draw(false);
                 
-                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
+                updateCashOperationalFooter(debits, credits);
                 // $('#totalSeluruh').html(`Rp ${formatRupiahMinus(totalAll)}`);
                 if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiahMinus(data['customer_saldo'])}`);
                 else $('#totalArmada').html('-');
-                console.log(sisa);
-                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
-                // $('.sisa').html(`Rp ${formatRupiahMinus(data['sisa_kas'])}`);
 
                 // Expand child row
                 setTimeout(function () {
@@ -1002,15 +1001,12 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw();
+                table.rows.add(e).draw(false);
                 
-                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
-                $('.credits').html(`(Rp ${formatRupiahMinus(credits)})`);
+                updateCashOperationalFooter(debits, credits);
                 // $('#totalSeluruh').html(`Rp ${formatRupiahMinus(totalAll)}`);
                 if ($('#filter_sales_id').val() != null) $('#totalSales').html(`Rp ${formatRupiahMinus(data['staff_saldo'])}`);
                 else $('#totalSales').html('-');
-                $('.sisa').html(`Rp ${formatRupiahMinus(debits-credits)}`);
-                // $('.sisa').html(`Rp ${formatRupiahMinus(data['sisa_kas'])}`);
 
                 // Expand child row
                 setTimeout(function () {
@@ -2954,6 +2950,7 @@
         photoData = "";
         modeCamera=2;
         inputFile ="#bukti";
+        cameraReturnModal = "#add_cash_admin";
         $("#video").removeClass("rot90 rot180 rot270");
         $("#preview-box").hide();
         $("#camera").show();
@@ -2969,6 +2966,7 @@
         photoData = "";
         modeCamera=2;
         inputFile ="#bukti_gudang";
+        cameraReturnModal = "#add_cash_gudang";
         $("#video").removeClass("rot90 rot180 rot270");
         $("#preview-box").hide();
         $("#camera").show();
@@ -2983,6 +2981,7 @@
         photoData = "";
         modeCamera=3;
         inputFile ="#bukti_armada";
+        cameraReturnModal = "#add_cash_armada";
         $("#video").removeClass("rot90 rot180 rot270");
         $("#preview-box").hide();
         $("#camera").show();
@@ -2997,6 +2996,7 @@
         photoData = "";
         modeCamera=3;
         inputFile ="#bukti_sales";
+        cameraReturnModal = "#add_cash_sales";
         $("#video").removeClass("rot90 rot180 rot270");
         $("#preview-box").hide();
         $("#camera").show();
@@ -3008,7 +3008,7 @@
 
     $(document).on('click', '#uploadBtn', function(){
         if (type == "admin") {
-            if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
+            if (typeof hasPhotoInputValue === "function" ? hasPhotoInputValue($('#bukti').val()) : $('#bukti').val()) {
                 $('#check_foto').show();
             } else {
                 $('#check_foto').hide();
@@ -3016,7 +3016,7 @@
             $("#add_cash_admin").modal("show");
         }
         else if (type == "gudang") {
-            if ($('#bukti_gudang').val() != "" || $('#bukti_gudang').val() != "null" || $('#bukti_gudang').val() != null) {
+            if (typeof hasPhotoInputValue === "function" ? hasPhotoInputValue($('#bukti_gudang').val()) : $('#bukti_gudang').val()) {
                 $('#check_foto_gudang').show();
             } else {
                 $('#check_foto_gudang').hide();
@@ -3024,7 +3024,7 @@
             $("#add_cash_gudang").modal("show");
         }
         else if (type == "armada") {
-            if ($('#bukti_armada').val() != "" || $('#bukti_armada').val() != "null" || $('#bukti_armada').val() != null) {
+            if (typeof hasPhotoInputValue === "function" ? hasPhotoInputValue($('#bukti_armada').val()) : $('#bukti_armada').val()) {
                 $('#check_foto_armada').show();
             } else {
                 $('#check_foto_armada').hide();
@@ -3032,7 +3032,7 @@
             $("#add_cash_armada").modal("show");
         }
         else if (type == "sales") {
-            if ($('#bukti_sales').val() != "" || $('#bukti_sales').val() != "null" || $('#bukti_sales').val() != null) {
+            if (typeof hasPhotoInputValue === "function" ? hasPhotoInputValue($('#bukti_sales').val()) : $('#bukti_sales').val()) {
                 $('#check_foto_sales').show();
             } else {
                 $('#check_foto_sales').hide();

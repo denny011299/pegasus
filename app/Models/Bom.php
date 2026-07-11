@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
@@ -21,7 +22,12 @@ class Bom extends Model
             "search" => null,
             "product_id" => null,
             "supplies_id" => null,
+            "with_details" => false,
         ], $data);
+        $data['with_details'] = filter_var($data['with_details'], FILTER_VALIDATE_BOOLEAN);
+        if ($data['bom_id']) {
+            $data['with_details'] = true;
+        }
 
         $result = Bom::where('boms.status', '=', 1)
           ->join('product_variants', 'product_variants.product_variant_id', '=', 'boms.product_id')
@@ -51,20 +57,64 @@ class Bom extends Model
 
         $result = $result->get();
 
-        foreach ($result as $key => $value) {
-            $v = ProductVariant::find($value->product_id);
-            $value->product_sku = $v->product_variant_sku;
-            $value->product_variant_id = $v->product_variant_id;
-            $u = Product::find($v->product_id);
-            $value->default_unit = $u->unit_id;
-            $value->default_unit_name = Unit::find($u->unit_id)->unit_short_name;
-            $value->product_name =  $u->product_name . " " . $v->product_variant_name;
-            $value->product_variant_sku = $v->product_variant_sku;
-            $value->unit_name = Unit::find($value->unit_id)->unit_short_name;
-            $value->pr_unit = Unit::whereIn('unit_id', json_decode($u->product_unit, true))->get();
-            $value->relasi = (new ProductRelation())->getProductRelation(['product_variant_id' => $value->product_id]);
-            $value->items = (new BomDetail())->getBomDetail(['bom_id' => $value->bom_id]);
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+        if ($result->isEmpty()) {
+            return $result;
+        }
+
+        $variantIds = $result->pluck('product_id')->filter()->unique()->values()->all();
+        $variants = ProductVariant::whereIn('product_variant_id', $variantIds)->get()->keyBy('product_variant_id');
+        $products = Product::whereIn(
+            'product_id',
+            $variants->pluck('product_id')->filter()->unique()->values()->all()
+        )->get()->keyBy('product_id');
+
+        $unitIdSet = [];
+        foreach ($result as $row) {
+            if ($row->unit_id) {
+                $unitIdSet[(int) $row->unit_id] = true;
+            }
+        }
+        foreach ($products as $product) {
+            foreach ((array) (json_decode($product->product_unit, true) ?: []) as $unitId) {
+                $unitIdSet[(int) $unitId] = true;
+            }
+        }
+        $unitsMap = $unitIdSet !== []
+            ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
+            : collect();
+
+        $staffNames = BatchLookup::staffNames($result->pluck('created_by'));
+
+        $detailsByBom = $data['with_details']
+            ? (new BomDetail())->getDetailBulk($result->pluck('bom_id')->all(), true)
+            : (new BomDetail())->getDetailBulk($result->pluck('bom_id')->all(), false);
+
+        foreach ($result as $value) {
+            $v = $variants->get($value->product_id);
+            $u = $v ? $products->get($v->product_id) : null;
+            $value->product_sku = $v ? $v->product_variant_sku : '-';
+            $value->product_variant_id = $v ? $v->product_variant_id : null;
+            $value->default_unit = $u ? $u->unit_id : null;
+            $defaultUnit = $u ? $unitsMap->get($u->unit_id) : null;
+            $value->default_unit_name = $defaultUnit ? $defaultUnit->unit_short_name : '-';
+            $value->product_name = $v && $u
+                ? trim($u->product_name . ' ' . $v->product_variant_name)
+                : '-';
+            $value->product_variant_sku = $v ? $v->product_variant_sku : '-';
+            $bomUnit = $unitsMap->get($value->unit_id);
+            $value->unit_name = $bomUnit ? $bomUnit->unit_short_name : '-';
+            $unitIds = $u ? (json_decode($u->product_unit, true) ?: []) : [];
+            $value->pr_unit = collect($unitIds)
+                ->map(fn ($id) => $unitsMap->get((int) $id))
+                ->filter()
+                ->values();
+            $value->relasi = [];
+            $details = ($detailsByBom->get($value->bom_id) ?? collect())->values();
+            $value->details = $details;
+            $value->items = $details;
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
         }
 
         return $result;

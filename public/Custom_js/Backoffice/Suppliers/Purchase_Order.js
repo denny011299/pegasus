@@ -456,7 +456,7 @@
             return false;
         };
 
-        if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+        if (typeof hasPhotoInputValue === "function" ? !hasPhotoInputValue($('#bukti').val()) : !$('#bukti').val()){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Penjualan" : "Update Penjualan");
             return false;
@@ -611,6 +611,7 @@ $(document).on('click', '#btn-foto-bukti', function() {
     photoData = "";
     modeCamera=4;
     inputFile ="#bukti";
+    cameraReturnModal = "#add_purchase_order";
     $("#video").removeClass("rot90 rot180 rot270");
     $("#preview-box").hide();
     $("#camera").show();
@@ -622,7 +623,7 @@ $(document).on('click', '#btn-foto-bukti', function() {
 });
 
 $(document).on('click', '#uploadBtn', function(){
-    if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
+    if (typeof hasPhotoInputValue === "function" ? hasPhotoInputValue($('#bukti').val()) : $('#bukti').val()) {
         $('#check_foto').show();
     } else {
         $('#check_foto').hide();

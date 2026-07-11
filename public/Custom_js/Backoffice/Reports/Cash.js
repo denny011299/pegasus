@@ -70,6 +70,15 @@
         });
     }
 
+    function updateCashFooterTotals(debits, credits1, credits2, sisa, setor) {
+        $('#tableCash tfoot .debits').html(`Rp ${formatRupiahMinus(debits)}`);
+        $('#tableCash tfoot .credits1').html(`(Rp ${formatRupiahMinus(credits1)})`);
+        $('#tableCash tfoot .credits2').html(`(Rp ${formatRupiahMinus(credits2)})`);
+        $('#tableCash tfoot .sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
+        $('#tableCash tfoot .setor').html(`Rp ${formatRupiahMinus(setor)}`);
+        $('#totalAll').html(`Rp ${formatRupiahMinus(sisa)}`);
+    }
+
     function refreshCash() {
         $.ajax({
             url: "/getCash",
@@ -95,8 +104,8 @@
                         e[i].credit1 = "Rp " + 0;
                         e[i].credit2 = "Rp " + 0;
                         if (e[i].status == 2) {
-                            debits += e[i].cash_nominal;
-                            sisa += e[i].cash_nominal;
+                            debits += parseInt(e[i].cash_nominal, 10) || 0;
+                            sisa += parseInt(e[i].cash_nominal, 10) || 0;
                         }
                     }
                     else if (e[i].cash_type == 2) {
@@ -104,8 +113,8 @@
                         e[i].debit = "Rp " + 0;
                         e[i].credit2 = "Rp " + 0;
                         if (e[i].status == 2) {
-                            credits1 += e[i].cash_nominal;
-                            sisa -= e[i].cash_nominal;
+                            credits1 += parseInt(e[i].cash_nominal, 10) || 0;
+                            sisa -= parseInt(e[i].cash_nominal, 10) || 0;
                         }
                     }
                     else if (e[i].cash_type == 3) {
@@ -116,11 +125,11 @@
                         // Kalau ini sales dan ada keluar 1, jangan dihitung (setor ke bank)
                         if (e[i].status == 2) {
                             if (e[i].cash_tujuan != 4) {
-                                sisa -= e[i].cash_nominal;
+                                sisa -= parseInt(e[i].cash_nominal, 10) || 0;
                             } else {
-                                setor += e[i].cash_nominal;
+                                setor += parseInt(e[i].cash_nominal, 10) || 0;
                             }
-                            credits2 += e[i].cash_nominal;
+                            credits2 += parseInt(e[i].cash_nominal, 10) || 0;
                         }
                     }
                     e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
@@ -161,13 +170,8 @@
                             '"><i class="fe fe-x"></i></a></div>';
                     }
                 }
-                $('.debits').html(`Rp ${formatRupiahMinus(debits)}`);
-                $('.credits1').html(`(Rp ${formatRupiahMinus(credits1)})`);
-                $('.credits2').html(`(Rp ${formatRupiahMinus(credits2)})`);
-                $('.sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
-                $('.setor').html(`Rp ${formatRupiahMinus(setor)}`);
-                table.rows.add(e).draw();
-                $('#totalAll').html(`Rp ${formatRupiahMinus(sisa)}`);
+                table.rows.add(e).draw(false);
+                updateCashFooterTotals(debits, credits1, credits2, sisa, setor);
                 feather.replace(); // Biar icon feather muncul lagi
 
                 // Expand child row

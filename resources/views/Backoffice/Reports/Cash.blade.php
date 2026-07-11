@@ -164,5 +164,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Cash.js')}}?v=2"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/Cash.js')}}?v=3"></script>
 @endsection

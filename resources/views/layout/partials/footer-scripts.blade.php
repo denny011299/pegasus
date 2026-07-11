@@ -1,16 +1,14 @@
 <!-- jQuery -->
 <script src="{{ URL::asset('/assets/js/jquery-3.7.1.min.js') }}"></script>
 
-{{-- Select2 --}}
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 <!-- Bootstrap Core JS -->
 <script src="{{ URL::asset('/assets/js/bootstrap.bundle.min.js') }}"></script>
+@if (Route::is(['variant']))
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-tagsinput/0.8.0/bootstrap-tagsinput.min.js"></script>
+@endif
 
 <!-- Feather Icon JS -->
 <script src="{{ URL::asset('/assets/js/feather.min.js') }}"></script>
-<script src="{{ URL::asset('/assets/js/jspdf.min.js') }}"></script>
 
 <!-- Slimscroll JS -->
 <script src="{{ URL::asset('/assets/plugins/slimscroll/jquery.slimscroll.min.js') }}"></script>
@@ -18,10 +16,18 @@
 @if (!Route::is(['companies']))
     <!-- Datatable JS -->
     <script src="{{ URL::asset('/assets/plugins/datatables/datatables.min.js') }}"></script>
+    <script>
+        if ($.fn.dataTable) {
+            $.extend(true, $.fn.dataTable.defaults, {
+                deferRender: true,
+                processing: true
+            });
+        }
+    </script>
 @endif
 
 <!-- select Js -->
-<script src="{{ URL::asset('/assets/plugins/select2/js/select2.min.js') }}"></script>
+<script src="{{ URL::asset('/assets/plugins/select2/js/select2.full.js') }}"></script>
 
 @if (Route::is(['chart-apex', 'dashboard', 'dashboard-admin', 'index-five', 'index-four', 'index-three', 'index-two', 'index', '/']) || request()->routeIs(['index', 'dashboard-admin']))
     <!-- apexChart JS -->
@@ -218,12 +224,9 @@
     <script src="{{ URL::asset('/assets/plugins/intltelinput/js/intlTelInput.js')}}"></script>
 @endif
 
-<script src="{{ URL::asset('/assets/js/html2canvas.min.js') }}"></script>
-
 @if (!Route::is(['index-two', 'index-three', 'index-four', 'index-five']))
     <!-- Theme Settings JS -->
     <script src="{{ URL::asset('/assets/js/theme-settings.js') }}"></script>
-    <script src="{{ URL::asset('/assets/js/greedynav.js') }}"></script>
 @endif
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Custom JS -->
@@ -259,7 +262,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
     }
-      feather.replace();
+      requestAnimationFrame(function () { feather.replace(); });
     function notifikasi(simbol,title,deskripsi) {
         Swal.fire({
             icon: simbol,
@@ -298,6 +301,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         $('#modalKonfirmasi').modal("hide");
     }
 
+    $(document).on('click', '#btn-kembali-photo', function () {
+        $('#modalViewPhoto').modal('hide');
+    });
+
     $(document).on("input", ".number-only", function() {
         $(this).val($(this).val().replace(/[^0-9]/g, ''));
         if ($(this).val()[0] === '0'&&$(this).val().length>1) {
@@ -307,7 +314,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
     $(document).on("keyup", ".nominal_only", function() {
         $(this).val(formatRupiah(convertToAngka($(this).val())));
-        console.log($(this).val());
     });
 
     $(document).on("input", ".include-nol", function () {
@@ -365,11 +371,15 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         let formatted = formatRupiahMinus(convertToAngkaMinus(val));
         
         $(this).val(formatted);
-        console.log($(this).val());
     });
 
     function formatRupiahMinus(angka, prefix) {
-        if (isNaN(angka) || angka === "") return "";
+        if (angka === null || angka === undefined || angka === "") {
+            angka = 0;
+        } else {
+            angka = Number(angka);
+        }
+        if (isNaN(angka)) angka = 0;
 
         let isNegative = angka < 0;
         angka = Math.abs(angka).toString();
@@ -406,7 +416,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
     function ResetLoadingButton(id, text = null) {
         $(id).html(`${text? text : 'Save Changes'}`).prop("disabled", false);
-        console.log("success");
     }
     
     function autocompleteCity(id, modalParent = null,prov_id=null) {
@@ -1055,7 +1064,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                      };
                  },
                  processResults: function processResults(data) {
-                     console.log(data);
                      return {
                          results: $.map(data.data, function(item) {
                              return item;
@@ -1089,7 +1097,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                      };
                  },
                  processResults: function processResults(data) {
-                     console.log(data);
                      return {
                          results: $.map(data.data, function(item) {
                              return item;
@@ -1122,7 +1129,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                      };
                  },
                  processResults: function processResults(data) {
-                     console.log(data);
                      return {
                          results: $.map(data.data, function(item) {
                              return item;
@@ -1156,7 +1162,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                      };
                  },
                  processResults: function processResults(data) {
-                     console.log(data);
                      return {
                          results: $.map(data.data, function(item) {
                              return item;
@@ -1189,7 +1194,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                      };
                  },
                  processResults: function processResults(data) {
-                     console.log(data);
                      return {
                          results: $.map(data.data, function(item) {
                              return item;
@@ -1212,19 +1216,105 @@ let photoData = "";
 let currentStream = null;
 var modeCamera = 1;//1= upload, 2 = savefile
 var inputFile = null;
+var cameraReturnModal = null;
+
+function parsePhotoInputValue(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (value === null || value === undefined) return [];
+
+    var raw = String(value).trim();
+    if (raw === "" || raw === "null" || raw === "undefined") return [];
+
+    try {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        if (typeof parsed === "string" && parsed.trim() !== "") return [parsed];
+        return [];
+    } catch (err) {
+        return [raw];
+    }
+}
+
+function hasPhotoInputValue(value) {
+    return parsePhotoInputValue(value).length > 0;
+}
+
+function appendPhotoToInput(selector, photo) {
+    var photos = parsePhotoInputValue($(selector).val());
+    if (photo) photos.push(photo);
+    $(selector).val(JSON.stringify(photos));
+    return photos;
+}
+
+function showCameraReturnModal(defaultSelector) {
+    var selector = cameraReturnModal || defaultSelector;
+    if (selector) $(selector).modal("show");
+    cameraReturnModal = null;
+}
+
+function stopCameraStream() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(function (t) { t.stop(); });
+        currentStream = null;
+    }
+    var video = document.getElementById("video");
+    if (video) video.srcObject = null;
+}
+
+function resetCameraModalUi() {
+    photoData = "";
+    camRotation = 0;
+    rotationAngle = 0;
+    $("#video").removeClass("rot90 rot180 rot270");
+    $("#preview-box").hide();
+    $("#camera").show();
+    $("#previewImage").attr("src", "");
+}
+
+function getCameraReturnModalSelector() {
+    if (cameraReturnModal) return cameraReturnModal;
+    if (modeCamera == 3) return "#add_sales_order";
+    if (modeCamera == 4) return "#add_purchase_order";
+    if (modeCamera == 2) return "#add-product-issues";
+    return null;
+}
+
+function closeCameraModal() {
+    stopCameraStream();
+    resetCameraModalUi();
+    $('#modalPhoto').modal('hide');
+    var returnModal = getCameraReturnModalSelector();
+    if (returnModal) {
+        showCameraReturnModal(returnModal);
+    }
+}
+
+$(document).on('click', '#btn-kembali-camera', function () {
+    closeCameraModal();
+});
+
 // =========================
 // START CAMERA FUNCTION
 // =========================
 function startCamera() {
     let video = document.getElementById("video");
+    if (!video) {
+        console.warn("Element video kamera tidak ditemukan.");
+        return Promise.resolve(false);
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        notifikasi("error", "Gagal Kamera", "Browser/perangkat tidak mendukung akses kamera.");
+        return Promise.resolve(false);
+    }
 
     // Stop camera old stream
     if (currentStream) {
         currentStream.getTracks().forEach(t => t.stop());
     }
 
-    navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: "environment" } }
+    return navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } }
     }).catch(() => {
         return navigator.mediaDevices.getUserMedia({
             video: true
@@ -1235,7 +1325,9 @@ function startCamera() {
         video.srcObject = stream;
     })
     .catch(function(err) {
-        alert("Tidak bisa akses kamera: " + err);
+        console.error("Tidak bisa akses kamera:", err);
+        notifikasi("error", "Gagal Kamera", "Tidak bisa akses kamera. Pastikan izin kamera aktif.");
+        return false;
     });
 }
 
@@ -1323,6 +1415,11 @@ $(document).on("click", "#retakeBtn", function () {
 // UPLOAD
 // =========================
 $(document).on("click", "#uploadBtn", function () {
+    if (modeCamera != 1 && !photoData) {
+        notifikasi("error", "Gagal Upload", "Ambil foto terlebih dahulu.");
+        return;
+    }
+
     if(modeCamera==1){
         $.ajax({
             url: "/uploadPhotoProduksi",
@@ -1334,9 +1431,7 @@ $(document).on("click", "#uploadBtn", function () {
             },
             success: function (response) {
                 notifikasi("success", "Sukses", "Foto berhasil diupload");
-                $('#modalPhoto').modal('hide');
-
-                if (currentStream) currentStream.getTracks().forEach(t => t.stop());
+                closeCameraModal();
             },
             error: function () {
                 notifikasi("error", "Gagal", "Foto gagal diupload");
@@ -1344,22 +1439,24 @@ $(document).on("click", "#uploadBtn", function () {
         });
     }
     else if(modeCamera==3){
-        var ipt = JSON.parse($(inputFile).val()||"[]");
-        ipt.push(photoData);
-        $(inputFile).val(JSON.stringify(ipt));
-        $("#add_sales_order").modal("show");
+        appendPhotoToInput(inputFile, photoData);
+        stopCameraStream();
+        resetCameraModalUi();
+        showCameraReturnModal("#add_sales_order");
         $('#modalPhoto').modal('hide');
     }
     else if(modeCamera==4){
-        var ipt = JSON.parse($(inputFile).val()||"[]");
-        ipt.push(photoData);
-        $(inputFile).val(JSON.stringify(ipt));
-        $("#add_purchase_order").modal("show");
+        appendPhotoToInput(inputFile, photoData);
+        stopCameraStream();
+        resetCameraModalUi();
+        showCameraReturnModal("#add_purchase_order");
         $('#modalPhoto').modal('hide');
     }
     else{
-        $(inputFile).val(photoData);
-        $("#add-product-issues").modal("show");
+        if (inputFile) $(inputFile).val(photoData);
+        stopCameraStream();
+        resetCameraModalUi();
+        showCameraReturnModal("#add-product-issues");
         $('#modalPhoto').modal('hide');
     }
 

@@ -1,9 +1,6 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
 
-    {{-- Select2 --}}
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
     <!-- Font family -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -16,19 +13,91 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/feather/feather.css') }}">
 
     <style>
-        .select2-selection__clear {
-            padding: 0.6rem 1.2rem 0 0 !important;
+        /* Tombol clear (x) select2 single — vertikal center */
+        .select2-container--default .select2-selection--single {
+            position: relative;
+            display: flex !important;
+            align-items: center !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            display: flex !important;
+            align-items: center !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            height: 100% !important;
+            line-height: normal !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            padding-right: 2.75rem !important;
+            padding-left: 15px !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__clear {
+            position: absolute !important;
+            right: 28px !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            height: auto !important;
+            transform: none !important;
+            float: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            line-height: 1 !important;
+            font-size: 1rem;
+            z-index: 1;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            top: 0 !important;
+            bottom: 0 !important;
+            height: auto !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow b {
+            position: static !important;
+            margin: 0 !important;
+            transform: rotate(45deg) !important;
+        }
+
+        .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+            margin: 0 !important;
         }
 
         /* Select2 Multiple - Chip */
+        .select2-container--default .select2-selection--multiple {
+            position: relative;
+            min-height: 38px !important;
+            border: 1px solid #ccc !important;
+            border-radius: 4px !important;
+            padding: 2px 28px 2px 4px !important;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+        }
+
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: #082a58 !important;
             color: #fff !important;
             border: none !important;
             border-radius: 0.4rem !important;
             padding: 2px 8px !important;
-            margin-top: 4px !important;
-            display: flex !important;
+            margin: 3px 4px 3px 0 !important;
+            float: left !important;
+            display: inline-flex !important;
             align-items: center !important;
         }
 
@@ -36,7 +105,8 @@
         .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
             color: #fff !important;
             font-weight: 500 !important;
-            padding-left: 1rem !important;
+            padding: 0 !important;
+            margin-left: 4px !important;
         }
 
         /* Tombol hapus di chip */
@@ -46,20 +116,25 @@
             color: #fff !important;
             cursor: pointer !important;
             font-size: 14px !important;
-            margin-right: 4px !important;
-            padding: 0.3rem 0 0 0.5rem !important;
+            margin: 0 !important;
+            padding: 0 2px 0 0 !important;
             line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-        }
-
-        .select2-container--default .select2-selection--single {
-            max-width: 100% !important;
-            box-sizing: border-box !important;
+        /* Clear all (x) pada select2 multiple */
+        .select2-container--default .select2-selection--multiple .select2-selection__clear {
+            position: absolute !important;
+            right: 8px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            float: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            font-size: 1.1rem;
         }
 
         .select2-container {
@@ -67,44 +142,18 @@
             box-sizing: border-box !important;
         }
 
-        /* Tombol clear select2 unit */
-        button.select2-selection__clear[aria-describedby*="unit-container"] {
-            padding: 0.1rem 0 0.8rem !important;
-        }
-
-        /* Biar tinggi select2 multiple lebih konsisten */
-        .select2-container .select2-selection--multiple {
-            min-height: 38px !important;
-            border: 1px solid #ccc !important;
-            border-radius: 4px !important;
-            padding: 2px !important;
-        }
-
-        /* Container rendered → supaya chip & input sejajar */
-        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            align-items: center !important;
-            padding: 2px 4px !important;
-            overflow: visible !important; /* jangan hidden, biar chip wrap */
-        }
-
-        /* Inline search wrapper → biar search ikut fleksibel */
         .select2-container--default .select2-selection--multiple .select2-search--inline {
-            flex: 1 !important;
+            float: left !important;
+            margin-top: 3px !important;
         }
 
         /* Input search tetap inline */
         .select2-container .select2-selection--multiple .select2-search--inline .select2-search__field {
-            height: 20px !important;
-            margin: 2px 0 !important;
-            padding: 2px !important;
-            min-width: 50px !important;
+            height: 28px !important;
+            margin: 0 !important;
+            padding: 0 4px !important;
+            min-width: 5em !important;
             box-sizing: border-box !important;
-        }
-
-        .select2 .select2-container .select2-container--default .select2-container--below .select2-container--focus .select2-container--open{
-            height: 40px !important;
         }
 
     </style>
@@ -163,7 +212,7 @@
     @endif
 
     <!-- Select2 CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/plugins/select2/css/select2.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/plugins/select2/css/select2.css') }}">
 
     @if (Route::is(['calendar']))
         <!-- Full Calander CSS -->

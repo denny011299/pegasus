@@ -30,6 +30,9 @@ class StockOpname extends Model
             'staff_id' => null,
             'category_id' => null,
             'sto_id' => null,
+            // List tidak butuh detail item (JS hanya pakai kolom header).
+            // Set true hanya jika pemanggil benar-benar butuh $value->item.
+            'with_items' => false,
         ], $data);
 
         $result = self::where('status', '>=', 1);
@@ -69,12 +72,19 @@ class StockOpname extends Model
                 ->toArray();
         }
 
-        $stoIds = $result->pluck('sto_id')->unique()->filter()->values()->all();
-        $detailsGrouped = StockOpnameDetail::getDetailBulk($stoIds);
+        $detailsGrouped = collect();
+        if ($data['with_items']) {
+            $stoIds = $result->pluck('sto_id')->unique()->filter()->values()->all();
+            $detailsGrouped = StockOpnameDetail::getDetailBulk($stoIds);
+        }
 
         foreach ($result as $value) {
             $value->staff_name = $staffMap[$value->staff_id] ?? '-';
-            $value->item = $detailsGrouped->get($value->sto_id, collect())->values();
+            if ($data['with_items']) {
+                $value->item = $detailsGrouped->get($value->sto_id, collect())->values();
+            } else {
+                $value->item = [];
+            }
             $staffMain = $value->staff_name ?? '-';
             $value->created_by_name = $value->created_by
                 ? ($staffMap[$value->created_by] ?? $staffMain)

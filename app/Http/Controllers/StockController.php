@@ -83,9 +83,13 @@ class StockController extends Controller
             ]);
         }
 
-        $sto = (new StockOpname())->getStockOpname(['sto_id' => $id])->first();
+        $sto = (new StockOpname())->getStockOpname(['sto_id' => $id, 'with_items' => true])->first();
+        if (!$sto) {
+            abort(404);
+        }
+
         $items = [];
-        foreach ($sto->item as $detail) {
+        foreach ($sto->item ?? [] as $detail) {
             $units = [];
 
             foreach ($detail->stock as $s) {
@@ -143,7 +147,7 @@ class StockController extends Controller
 
     function getDetailStockOpname(Request $req)
     {
-        $data = (new StockOpnameDetail())->getDetailStockOpname();
+        $data = StockOpnameDetail::getDetail($req->all());
         return response()->json($data);
     }
 
@@ -281,8 +285,12 @@ class StockController extends Controller
     public function DetailStockOpnameBahan($id)
     {
         if ($id != -1) {
-            $param["data"] = (new StockOpnameBahan())->getStockOpnameBahan(["stob_id" => $id])[0];
-            $param["mode"] = 2;
+            $rows = (new StockOpnameBahan())->getStockOpnameBahan(['stob_id' => $id, 'with_items' => true]);
+            if ($rows->isEmpty()) {
+                abort(404);
+            }
+            $param['data'] = $rows[0];
+            $param['mode'] = 2;
         } else {
             $param["data"] = [];
             $param["mode"] = 1;
@@ -292,7 +300,7 @@ class StockController extends Controller
 
     function getDetailStockOpnameBahan(Request $req)
     {
-        $data = (new StockOpnameDetailBahan())->getDetailStockOpname();
+        $data = StockOpnameDetailBahan::getDetail($req->all());
         return response()->json($data);
     }
 

@@ -33,6 +33,7 @@ use App\Models\Supplier;
 use App\Models\Unit;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -1814,14 +1815,20 @@ class ReportController extends Controller
         [$start, $end] = $this->dashboardPeriodRange($period, $base);
         [$prevStart, $prevEnd] = $this->dashboardPreviousRange($start, $end);
 
+        $asOfKey = $end->toDateString();
+        $agingRows = Cache::remember(
+            'dashboard_stock_aging:' . $asOfKey,
+            now()->addMinutes(10),
+            fn () => (new LogStock())->getStockAgingReport([
+                'type' => 'all',
+                'as_of' => $asOfKey,
+            ])
+        );
+
         $salesQty = $this->sumSalesQty($start, $end);
         $salesQtyPrev = $this->sumSalesQty($prevStart, $prevEnd);
         $salesGrowth = $salesQtyPrev > 0 ? round((($salesQty - $salesQtyPrev) / $salesQtyPrev) * 100, 2) : null;
 
-        $agingRows = (new LogStock())->getStockAgingReport([
-            'type' => 'all',
-            'as_of' => $end->toDateString(),
-        ]);
         $aging = $this->buildAgingSummary($agingRows);
         $agingDetailByBucket = $this->buildAgingDetailByBucket($agingRows);
 
@@ -1840,7 +1847,11 @@ class ReportController extends Controller
         );
         $topProducts = $this->dashboardTopProducts($start, $end);
         $warnings = $this->dashboardWarnings($agingRows, $start, $end);
-        $bahanStockAlerts = $this->dashboardBahanStockAlerts();
+        $bahanStockAlerts = Cache::remember(
+            'dashboard_bahan_stock_alerts',
+            now()->addMinutes(5),
+            fn () => $this->dashboardBahanStockAlerts()
+        );
         $chart = $this->dashboardChartSeries($period, $start, $end);
 
         return response()->json([
@@ -2050,6 +2061,16 @@ class ReportController extends Controller
     private function dashboardBahanStockAlerts(): array
     {
         $raw = (new StockAlertSupplies())->getStockAlertSupplies(['mode' => 1]);
+        $unitIdSet = [];
+        foreach ($raw as $value) {
+            if ($value->supplies_default_unit) {
+                $unitIdSet[(int) $value->supplies_default_unit] = true;
+            }
+        }
+        $unitsMap = $unitIdSet !== []
+            ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
+            : collect();
+
         $rows = [];
         foreach ($raw as $value) {
             $stockList = $value->stock ?? collect();
@@ -2078,7 +2099,7 @@ class ReportController extends Controller
             }
             $level = $isOut ? 'critical' : 'warn';
 
-            $u = Unit::find($value->supplies_default_unit);
+            $u = $unitsMap->get((int) $value->supplies_default_unit);
             $defUnit = $u ? (string) $u->unit_name : '';
             $stockText = '0 '.trim($defUnit !== '' ? $defUnit : '-');
             if (count($stockArr) > 0) {
@@ -3006,19 +3027,45 @@ class ReportController extends Controller
             }
         }
 
+        $rangeStart = $start->toDateString();
+        $rangeEnd = $end->toDateString();
+
+        $salesByDate = DB::table('sales_order_details as sod')
+            ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+            ->where('so.status', '>=', 1)
+            ->where('sod.status', '>=', 1)
+            ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$rangeStart, $rangeEnd])
+            ->selectRaw('DATE(COALESCE(so.so_date, so.created_at)) as d, SUM(sod.sod_qty) as qty')
+            ->groupBy('d')
+            ->pluck('qty', 'd');
+
+        $returByDate = DB::table('product_issues_details as pid')
+            ->join('product_issues as pi', 'pi.pi_id', '=', 'pid.pi_id')
+            ->where('pi.tipe_return', 2)
+            ->where('pi.status', 2)
+            ->where('pid.status', '>=', 1)
+            ->whereBetween('pi.pi_date', [$rangeStart, $rangeEnd])
+            ->selectRaw('DATE(pi.pi_date) as d, SUM(pid.pid_qty) as qty')
+            ->groupBy('d')
+            ->pluck('qty', 'd');
+
+        $sumQtyInRange = static function ($byDate, \Carbon\Carbon $from, \Carbon\Carbon $to): float {
+            $sum = 0.0;
+            $cursor = $from->copy()->startOfDay();
+            $last = $to->copy()->startOfDay();
+            while ($cursor->lte($last)) {
+                $sum += (float) ($byDate[$cursor->toDateString()] ?? 0);
+                $cursor->addDay();
+            }
+
+            return $sum;
+        };
+
         $salesSeries = [];
         $returSeries = [];
         foreach ($ranges as $r) {
-            $sq = $this->sumSalesQty($r[0], $r[1]);
-            $rq = (float) (DB::table('product_issues_details as pid')
-                ->join('product_issues as pi', 'pi.pi_id', '=', 'pid.pi_id')
-                ->where('pi.tipe_return', 2)
-                ->where('pi.status', 2)
-                ->where('pid.status', '>=', 1)
-                ->whereBetween('pi.pi_date', [$r[0]->toDateString(), $r[1]->toDateString()])
-                ->sum('pid.pid_qty') ?? 0);
-            $salesSeries[] = round($sq, 2);
-            $returSeries[] = round($rq, 2);
+            $salesSeries[] = round($sumQtyInRange($salesByDate, $r[0], $r[1]), 2);
+            $returSeries[] = round($sumQtyInRange($returByDate, $r[0], $r[1]), 2);
         }
 
         $growthPct = [];

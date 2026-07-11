@@ -27,17 +27,59 @@ class SalesOrderDetail extends Model
         }
         
         $result->orderBy("created_at", "asc");
-        $result= $result->get();
-        foreach ($result as $key => $value) {
-            $pv = ProductVariant::find($value->product_variant_id);
-            $p = Product::find($pv->product_id);
-            $u = Unit::find($value->unit_id);
-            $value->unit_name = $u->unit_name;
+        $result = $result->get();
 
-            $value->units = json_decode($p->product_unit);
-            $value->pr_unit = Unit::whereIn('unit_id', $value->units)->get();
+        return $this->enrichDetailsCollection($result);
+    }
+
+    public function enrichDetailsCollection($details)
+    {
+        $details = collect($details);
+        if ($details->isEmpty()) {
+            return $details;
         }
-        return $result;
+
+        $variants = ProductVariant::whereIn(
+            'product_variant_id',
+            $details->pluck('product_variant_id')->filter()->unique()->values()->all()
+        )->get()->keyBy('product_variant_id');
+
+        $products = Product::whereIn(
+            'product_id',
+            $variants->pluck('product_id')->filter()->unique()->values()->all()
+        )->get()->keyBy('product_id');
+
+        $unitIdSet = [];
+        foreach ($details as $detail) {
+            if ($detail->unit_id) {
+                $unitIdSet[(int) $detail->unit_id] = true;
+            }
+        }
+        foreach ($products as $product) {
+            foreach ((array) (json_decode($product->product_unit, true) ?: []) as $unitId) {
+                $unitIdSet[(int) $unitId] = true;
+            }
+        }
+
+        $unitsMap = $unitIdSet !== []
+            ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
+            : collect();
+
+        foreach ($details as $value) {
+            $variant = $variants->get($value->product_variant_id);
+            $product = $variant ? $products->get($variant->product_id) : null;
+            $unit = $unitsMap->get($value->unit_id);
+            $value->unit_name = $unit ? $unit->unit_name : null;
+
+            $unitIds = $product ? (json_decode($product->product_unit, true) ?: []) : [];
+            $value->units = $unitIds;
+            $value->pr_unit = collect($unitIds)
+                ->map(fn ($id) => $unitsMap->get((int) $id))
+                ->filter()
+                ->values();
+        }
+
+        return $details;
     }
 
     function insertSalesOrderDetail($data){

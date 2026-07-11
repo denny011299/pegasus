@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
@@ -44,20 +45,22 @@ class Staff extends Model
         }
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
-        
-        foreach ($result as $key => $value) {
-            // $u = Cities::find($value->city_id);
-            // $value->city_name = $u->city_name;
 
-            // $v = Provinces::find($value->state_id);
-            // $value->state_name = $v->prov_name;
+        $roleIds = $result->pluck('role_id')->filter()->unique()->values()->all();
+        $roles = $roleIds !== []
+            ? Role::whereIn('role_id', $roleIds)->get()->keyBy('role_id')
+            : collect();
 
-            $r = Role::find($value->role_id);
-            if($r){
-                $value->role_name = $r->role_name;
-                $value->role_access = $r->role_access;
+        $staffNames = BatchLookup::staffNames($result->pluck('created_by'));
+        foreach ($result as $value) {
+            $role = $roles->get($value->role_id);
+            if ($role) {
+                $value->role_name = $role->role_name;
+                $value->role_access = $role->role_access;
             }
-            $value->created_by_name = $value->created_by ? (self::find($value->created_by)->staff_name ?? '-') : '-';
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
         }
         
         return $result;

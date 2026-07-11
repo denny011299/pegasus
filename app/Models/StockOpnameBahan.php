@@ -18,6 +18,8 @@ class StockOpnameBahan extends Model
             'stob_date' => null,
             'staff_id'  => null,
             'stob_id'   => null,
+            // List tidak butuh detail item (JS hanya pakai kolom header).
+            'with_items' => false,
         ], $data);
 
         $result = self::where('status', '>=', 1);
@@ -46,12 +48,19 @@ class StockOpnameBahan extends Model
             ? Staff::whereIn('staff_id', array_keys($staffIdSet))->pluck('staff_name', 'staff_id')
             : collect();
 
-        $stobIds = $result->pluck('stob_id')->unique()->filter();
-        $detailsGrouped = StockOpnameDetailBahan::getDetailBulk($stobIds->toArray());
+        $detailsGrouped = collect();
+        if ($data['with_items']) {
+            $stobIds = $result->pluck('stob_id')->unique()->filter();
+            $detailsGrouped = StockOpnameDetailBahan::getDetailBulk($stobIds->toArray());
+        }
 
         foreach ($result as $value) {
             $value->staff_name = $staffMap[$value->staff_id] ?? '-';
-            $value->item = $detailsGrouped->get($value->stob_id, collect());
+            if ($data['with_items']) {
+                $value->item = $detailsGrouped->get($value->stob_id, collect());
+            } else {
+                $value->item = [];
+            }
             $staffMain = $value->staff_name ?? '-';
             $value->created_by_name = $value->created_by
                 ? ($staffMap[$value->created_by] ?? $staffMain)

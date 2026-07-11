@@ -36,6 +36,32 @@
         window.history.replaceState({}, "", url.toString());
     }
 
+    function loadSalesOrderWithItems(soId, onSuccess, onError) {
+        $.ajax({
+            url: '/getSalesOrder',
+            method: 'get',
+            data: { so_id: soId, with_items: 1 },
+            success: function (resp) {
+                var rows = Array.isArray(resp) ? resp : (resp.original || []);
+                if (rows.length) {
+                    onSuccess(rows[0]);
+                } else if (typeof onError === 'function') {
+                    onError();
+                } else {
+                    notifikasi('error', 'Gagal', 'Data pengiriman tidak ditemukan.');
+                }
+            },
+            error: function (err) {
+                console.error('Gagal load detail SO:', err);
+                if (typeof onError === 'function') {
+                    onError(err);
+                } else {
+                    notifikasi('error', 'Gagal', 'Gagal memuat detail pengiriman.');
+                }
+            }
+        });
+    }
+
     function openSalesOrderRevisionModal(data) {
         products = [];
         mode = 2;
@@ -50,12 +76,9 @@
         $('#btn_bukti_foto').hide();
         $('#btn-lihat-bukti').show();
 
-        var img = [];
-        try {
-            img = JSON.parse(data.so_img || "[]");
-        } catch (err) {
-            img = [];
-        }
+        var img = typeof parsePhotoInputValue === "function"
+            ? parsePhotoInputValue(data.so_img)
+            : [];
         list_photo = img;
         if (img.length > 0) {
             $('#modalViewPhoto .modal-footer').show();
@@ -65,6 +88,7 @@
             $('#check_foto').show();
             $('#jumlahFoto').html(list_photo.length);
         } else {
+            $('#btn-lihat-bukti').hide();
             $('#check_foto').hide();
         }
 
@@ -114,12 +138,9 @@
     }
 
     function openSalesOrderDetailModal(data) {
-        var img = [];
-        try {
-            img = JSON.parse(data.so_img || "[]");
-        } catch (err) {
-            img = [];
-        }
+        var img = typeof parsePhotoInputValue === "function"
+            ? parsePhotoInputValue(data.so_img)
+            : [];
 
         products = [];
         mode = 3;
@@ -139,6 +160,7 @@
             $('#check_foto').show();
             $('#jumlahFoto').html(list_photo.length);
         } else {
+            $('#btn-lihat-bukti').hide();
             $('#check_foto').hide();
         }
 
@@ -582,33 +604,27 @@
                 feather.replace(); // Biar icon feather muncul lagi
 
                 if (!revisionAutoOpened && revisionSoId) {
-                    var target = e.find(function (row) {
-                        return parseInt(row.so_id, 10) === revisionSoId;
-                    });
-                    if (target) {
-                        revisionAutoOpened = true;
+                    revisionAutoOpened = true;
+                    loadSalesOrderWithItems(revisionSoId, function (data) {
                         cleanRevisionQueryParam();
                         if (hasAccessAction("Pengiriman", "edit")) {
-                            openSalesOrderRevisionModal(target);
+                            openSalesOrderRevisionModal(data);
                         } else if (hasAccessAction("Pengiriman", "view")) {
                             notifikasi('error', "Akses Ditolak", "Role ini tidak punya akses edit untuk revisi pengiriman.");
                         }
-                    }
+                    });
                 }
 
                 if (!confirmAutoOpened && confirmSoId) {
-                    var targetConfirm = e.find(function (row) {
-                        return parseInt(row.so_id, 10) === confirmSoId;
-                    });
-                    if (targetConfirm) {
-                        confirmAutoOpened = true;
+                    confirmAutoOpened = true;
+                    loadSalesOrderWithItems(confirmSoId, function (data) {
                         cleanConfirmQueryParam();
                         if (hasAccessAction("Pengiriman", "view")) {
-                            openSalesOrderDetailModal(targetConfirm);
+                            openSalesOrderDetailModal(data);
                         } else {
                             notifikasi('error', "Akses Ditolak", "Role ini tidak punya akses lihat pengiriman.");
                         }
-                    }
+                    });
                 }
             },
             error: function (err) {
@@ -762,7 +778,7 @@
             return false;
         }
 
-        if ($('#bukti').val() == ""|| $('#bukti').val() == null || $('#bukti').val() == "null"){
+        if (typeof hasPhotoInputValue === "function" ? !hasPhotoInputValue($('#bukti').val()) : !$('#bukti').val()){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 bukti foto');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
             return false;
@@ -845,10 +861,7 @@
         refreshTableProduct();
     });
 
-    //edit
-    $(document).on("click",".btn_edit",function(){
-        var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        console.log(data);
+    function openSalesOrderEditModal(data) {
         products = [];
         mode=2;
         $('#add_sales_order .modal-title').html("Update Pengiriman");
@@ -863,28 +876,31 @@
         $('#btn_bukti_foto').hide();
         $('#btn-lihat-bukti').show();
         
-        var img = JSON.parse(data.so_img);
+        var img = typeof parsePhotoInputValue === "function"
+            ? parsePhotoInputValue(data.so_img)
+            : [];
         list_photo = img;
-        console.log(list_photo);
         
-        $('#modalViewPhoto .modal-footer').show();
-        $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
-        $('#fotoProduksiImage').attr('index', 0);
-        $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
-        $('#check_foto').show();
-        $('#jumlahFoto').html(list_photo.length);
+        if (img.length > 0) {
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"issue/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"issue/"+img[0]);
+            $('#check_foto').show();
+            $('#jumlahFoto').html(list_photo.length);
+        } else {
+            $('#btn-lihat-bukti').hide();
+            $('#check_foto').hide();
+        }
 
         $('#so_customer').append(`<option value="${data.so_customer}">${data.customer_name}</option>`);
         if(data.so_cashier) $('#sales_id').append(`<option value="${data.so_cashier}">${data.staff_name}</option>`);
         $('#so_date').val(data.so_date)
-        // $('#so_discount').val(data.so_discount)
-        // $('#so_ppn').val(data.so_ppn)
-        // $('#so_cost').val(data.so_cost)
         $('#so_invoice_no').val(data.so_invoice_no)
         $('#so_ref_number').val(data.so_ref_number || "")
         $('#so_payment').val(data.so_payment)
-        $('#bukti').val(data.so_img)
-        data.items.forEach(e => {
+        $('#bukti').val(data.so_img);
+        (data.items || []).forEach(e => {
             var temp = {
                 "sod_id" : e.sod_id,
                 "product_variant_id" : e.product_variant_id,
@@ -909,7 +925,6 @@
         $('#so_ppn').trigger('blur')
         $('#so_discount').trigger('blur')
         $('#so_cost').trigger('blur')
-        // updateTotal()
 
         $('.is-invalid').removeClass('is-invalid');
         $('.btn-save').html(mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
@@ -918,11 +933,17 @@
         $('#add_sales_order').attr("so_number", data.so_number);
         $('#add_sales_order').attr("so_invoice_no", data.so_invoice_no);
         $('#add_sales_order').attr("so_ref_number", data.so_ref_number || "");
+    }
+
+    //edit
+    $(document).on("click",".btn_edit",function(){
+        var row = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();
+        loadSalesOrderWithItems(row.so_id, openSalesOrderEditModal);
     });
 
     $(document).on("click",".btn_view",function(){
-        var data = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        openSalesOrderDetailModal(data);
+        var row = $('#tableSalesOrder').DataTable().row($(this).parents('tr')).data();
+        loadSalesOrderWithItems(row.so_id, openSalesOrderDetailModal);
     });
 
     //delete
@@ -1056,6 +1077,7 @@ $(document).on('click', '#btn_bukti_foto', function() {
     photoData = "";
     modeCamera=3;
     inputFile ="#bukti";
+    cameraReturnModal = "#add_sales_order";
     $("#video").removeClass("rot90 rot180 rot270");
     $("#preview-box").hide();
     $("#camera").show();
@@ -1066,7 +1088,7 @@ $(document).on('click', '#btn_bukti_foto', function() {
 });
 
 $(document).on('click', '#uploadBtn', function(){
-    if ($('#bukti').val() != "" || $('#bukti').val() != "null" || $('#bukti').val() != null) {
+    if (typeof hasPhotoInputValue === "function" ? hasPhotoInputValue($('#bukti').val()) : $('#bukti').val()) {
         $('#check_foto').show();
         console.log(list_photo)
         // $('#jumlahFoto').html($('#bukti').length);
@@ -1076,6 +1098,10 @@ $(document).on('click', '#uploadBtn', function(){
 })
 
 $(document).on("click", "#btn-lihat-bukti", function () {
+    if (!Array.isArray(list_photo) || list_photo.length <= 0) {
+        notifikasi('error', 'Gagal View', 'Bukti foto belum tersedia.');
+        return;
+    }
     $("#add_sales_order").modal("hide");
     $('#modalViewPhoto').modal("show");
 });
@@ -1089,7 +1115,7 @@ $(document).on('click', '.btn-prev', function(){
     var index = parseInt($('#fotoProduksiImage').attr('index'));
     console.log("index : "+index);
     
-    if(index > 0){
+    if(Array.isArray(list_photo) && index > 0){
         index -= 1;
         $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[index]);
         $('#fotoProduksiImage').attr('index', index);
@@ -1099,7 +1125,7 @@ $(document).on('click', '.btn-prev', function(){
 $(document).on('click', '.btn-next', function(){
     var index = parseInt($('#fotoProduksiImage').attr('index'));
     console.log("index : "+index);
-    if(index < list_photo.length - 1){
+    if(Array.isArray(list_photo) && index < list_photo.length - 1){
         index += 1;
         $('#fotoProduksiImage').attr('src', public+"issue/"+list_photo[index]);
         $('#fotoProduksiImage').attr('index', index);

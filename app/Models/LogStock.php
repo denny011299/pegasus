@@ -706,16 +706,15 @@ class LogStock extends Model
                 $q->where('ps.product_variant_id', (int) $data['item_id']);
             }
 
-            foreach ($q->get() as $row) {
-                $logs = DB::table('log_stocks')
-                    ->where('status', 1)
-                    ->where('log_type', 1)
-                    ->where('log_item_id', $row->product_variant_id)
-                    ->where('unit_id', $row->unit_id)
-                    ->whereRaw("COALESCE(log_notes,'') NOT LIKE ?", ['%Stock Opname%'])
-                    ->orderBy('log_date', 'asc')
-                    ->orderBy('log_id', 'asc')
-                    ->get(['log_date', 'log_category', 'log_jumlah']);
+            $productRows = $q->get();
+            $productLogsByKey = self::fetchAgingLogsGrouped(
+                1,
+                $productRows->pluck('product_variant_id')->map(fn ($id) => (int) $id)->unique()->values()->all()
+            );
+
+            foreach ($productRows as $row) {
+                $logKey = (int) $row->product_variant_id . '|' . (int) $row->unit_id;
+                $logs = $productLogsByKey[$logKey] ?? collect();
 
                 $layers = self::simulateFifoLayers($logs, (float) $row->ps_stock, $row->ps_created_at);
                 $m = self::metricsFromFifoLayers($layers, $asOf);
@@ -764,16 +763,15 @@ class LogStock extends Model
                 $q->where('ss.supplies_id', (int) $data['item_id']);
             }
 
-            foreach ($q->get() as $row) {
-                $logs = DB::table('log_stocks')
-                    ->where('status', 1)
-                    ->where('log_type', 2)
-                    ->where('log_item_id', $row->supplies_id)
-                    ->where('unit_id', $row->unit_id)
-                    ->whereRaw("COALESCE(log_notes,'') NOT LIKE ?", ['%Stock Opname%'])
-                    ->orderBy('log_date', 'asc')
-                    ->orderBy('log_id', 'asc')
-                    ->get(['log_date', 'log_category', 'log_jumlah']);
+            $bahanRows = $q->get();
+            $bahanLogsByKey = self::fetchAgingLogsGrouped(
+                2,
+                $bahanRows->pluck('supplies_id')->map(fn ($id) => (int) $id)->unique()->values()->all()
+            );
+
+            foreach ($bahanRows as $row) {
+                $logKey = (int) $row->supplies_id . '|' . (int) $row->unit_id;
+                $logs = $bahanLogsByKey[$logKey] ?? collect();
 
                 $layers = self::simulateFifoLayers($logs, (float) $row->ss_stock, $row->ss_created_at);
                 $m = self::metricsFromFifoLayers($layers, $asOf);
@@ -809,6 +807,40 @@ class LogStock extends Model
         });
 
         return $out;
+    }
+
+    /**
+     * Ambil log stok aging sekaligus (hindari N+1 per baris stok).
+     *
+     * @param  array<int>  $itemIds
+     * @return array<string, \Illuminate\Support\Collection<int, object>>
+     */
+    private static function fetchAgingLogsGrouped(int $logType, array $itemIds): array
+    {
+        $itemIds = array_values(array_unique(array_filter(array_map('intval', $itemIds))));
+        if ($itemIds === []) {
+            return [];
+        }
+
+        $grouped = [];
+        $logs = DB::table('log_stocks')
+            ->where('status', 1)
+            ->where('log_type', $logType)
+            ->whereIn('log_item_id', $itemIds)
+            ->whereRaw("COALESCE(log_notes,'') NOT LIKE ?", ['%Stock Opname%'])
+            ->orderBy('log_date', 'asc')
+            ->orderBy('log_id', 'asc')
+            ->get(['log_item_id', 'unit_id', 'log_date', 'log_category', 'log_jumlah']);
+
+        foreach ($logs as $log) {
+            $key = (int) $log->log_item_id . '|' . (int) $log->unit_id;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = collect();
+            }
+            $grouped[$key]->push($log);
+        }
+
+        return $grouped;
     }
 
     /**

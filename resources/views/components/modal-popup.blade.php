@@ -24,18 +24,19 @@
             </div>
          
         </div>
-        <div class="modal-footer ps-0 pe-0">
+        <div class="modal-footer ps-0 pe-0 d-flex flex-column align-items-center">
             
-            <div id="camera">
+            <div id="camera" class="w-100 text-center">
                 <video id="video" autoplay playsinline></video>
-                <button id="rotateCameraBtn" class="btn btn-secondary">Rotate</button>
-                <button id="captureBtn" class="btn btn-primary">Capture</button>
+                <button type="button" id="rotateCameraBtn" class="btn btn-secondary">Rotate</button>
+                <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
             </div>
-            <div id="preview-box" style="display:none;">
-                <img id="previewImage">
-                <button class="btn btn-secondary" id="retakeBtn">Retake</button>
-                <button class="btn btn-primary" id="uploadBtn">Upload</button>
+            <div id="preview-box" class="w-100 text-center" style="display:none;">
+                <img id="previewImage" alt="Preview foto">
+                <button type="button" class="btn btn-secondary" id="retakeBtn">Retake</button>
+                <button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
             </div>
+            <button type="button" class="btn btn-outline-secondary mt-2" id="btn-kembali-camera">Kembali</button>
         </div>
       </div>
     </div>
@@ -50,8 +51,9 @@
         </div>
         <div class="modal-footer ">
             <a class="btn btn-success me-3" download id="btn_download_photo">Download</a>
-            <button class="btn btn-primary me-3 btn-prev">Prev</button>
-            <button class="btn btn-primary btn-next">Next</button>
+            <button type="button" class="btn btn-primary me-3 btn-prev">Prev</button>
+            <button type="button" class="btn btn-primary me-3 btn-next">Next</button>
+            <button type="button" class="btn btn-outline-secondary" id="btn-kembali-photo">Kembali</button>
         </div>
       </div>
     </div>

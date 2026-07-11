@@ -63,8 +63,12 @@
         .td-supplier .select2-selection__clear {
             position: absolute !important;
             right: 25px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            transform: none !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         .td-supplier .select2-selection--single {
@@ -92,10 +96,14 @@
         .td-supplier .select2-container--default .select2-selection--single .select2-selection__clear {
             position: absolute !important;
             right: 25px !important;
-            top: 35% !important;
-            transform: translateY(-50%) !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            transform: none !important;
             margin: 0 !important;
             line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         .td-supplier .select2-container--default .select2-selection--single .select2-selection__arrow {

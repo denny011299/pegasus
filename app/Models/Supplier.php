@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
@@ -31,26 +32,58 @@ class Supplier extends Model
         $result->orderBy('created_at', 'asc');
         
         $result = $result->get();
-        foreach ($result as $key => $value) {
-            $u = Cities::find($value->city_id);
-            $value->city_name = $u->city_name;
 
-            $v = Provinces::find($value->state_id);
-            $value->state_name = $v->prov_name;
-
-            $b = Bank::find($value->bank_id);
-            $value->bank_name = $b->bank_kode??"-";
-
-            $total = 0;
-            $value->po = PurchaseOrder::where('po_supplier', $value->supplier_id)
-                ->where('pembayaran', 1)
-                ->where('status', 2)->get();
-            foreach ($value->po as $key => $p) {
-                $total += $p->po_total;
-            }
-            $value->payment = $total;
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
+        if ($result->isEmpty()) {
+            return $result;
         }
+
+        $cityIds = $result->pluck('city_id')->filter()->unique()->values()->all();
+        $stateIds = $result->pluck('state_id')->filter()->unique()->values()->all();
+        $bankIds = $result->pluck('bank_id')->filter()->unique()->values()->all();
+        $supplierIds = $result->pluck('supplier_id')->all();
+
+        $cities = $cityIds !== []
+            ? Cities::whereIn('city_id', $cityIds)->get()->keyBy('city_id')
+            : collect();
+        $provinces = $stateIds !== []
+            ? Provinces::whereIn('prov_id', $stateIds)->get()->keyBy('prov_id')
+            : collect();
+        $banks = $bankIds !== []
+            ? Bank::whereIn('bank_id', $bankIds)->get()->keyBy('bank_id')
+            : collect();
+
+        $payments = PurchaseOrder::whereIn('po_supplier', $supplierIds)
+            ->where('pembayaran', 1)
+            ->where('status', 2)
+            ->selectRaw('po_supplier, SUM(po_total) as payment')
+            ->groupBy('po_supplier')
+            ->pluck('payment', 'po_supplier');
+
+        $posBySupplier = PurchaseOrder::whereIn('po_supplier', $supplierIds)
+            ->where('pembayaran', 1)
+            ->where('status', 2)
+            ->get()
+            ->groupBy('po_supplier');
+
+        $staffNames = BatchLookup::staffNames($result->pluck('created_by'));
+
+        foreach ($result as $value) {
+            $city = $cities->get($value->city_id);
+            $value->city_name = $city ? $city->city_name : null;
+
+            $province = $provinces->get($value->state_id);
+            $value->state_name = $province ? $province->prov_name : null;
+
+            $bank = $banks->get($value->bank_id);
+            $value->bank_name = $bank ? $bank->bank_kode : '-';
+
+            $value->payment = (float) ($payments->get($value->supplier_id) ?? 0);
+            $value->po = $posBySupplier->get($value->supplier_id, collect())->values();
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
+        }
+
         return $result;
     }
 
