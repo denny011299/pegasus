@@ -66,7 +66,8 @@ class ProductVariant extends Model
         }
         
         $result->select('product_variants.*');
-        $result->orderBy("created_at", "asc");
+        $result->orderBy("pr.product_name", "asc");
+
         $variants = $result->get();
         
         // Menambahkan nama produk dari relasi

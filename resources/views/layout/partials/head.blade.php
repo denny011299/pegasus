@@ -13,66 +13,6 @@
     <link rel="stylesheet" href="{{ asset('assets/plugins/feather/feather.css') }}">
 
     <style>
-        /* Tombol clear (x) select2 single — vertikal center */
-        .select2-container--default .select2-selection--single {
-            position: relative;
-            display: flex !important;
-            align-items: center !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__rendered {
-            display: flex !important;
-            align-items: center !important;
-            flex: 1 1 auto !important;
-            min-width: 0 !important;
-            height: 100% !important;
-            line-height: normal !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            white-space: nowrap !important;
-            padding-right: 2.75rem !important;
-            padding-left: 15px !important;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__clear {
-            position: absolute !important;
-            right: 28px !important;
-            top: 0 !important;
-            bottom: 0 !important;
-            height: auto !important;
-            transform: none !important;
-            float: none !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            line-height: 1 !important;
-            font-size: 1rem;
-            z-index: 1;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__arrow {
-            top: 0 !important;
-            bottom: 0 !important;
-            height: auto !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-
-        .select2-container--default .select2-selection--single .select2-selection__arrow b {
-            position: static !important;
-            margin: 0 !important;
-            transform: rotate(45deg) !important;
-        }
-
-        .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
-            margin: 0 !important;
-        }
-
         /* Select2 Multiple - Chip */
         .select2-container--default .select2-selection--multiple {
             position: relative;
@@ -135,11 +75,6 @@
             padding: 0 !important;
             line-height: 1 !important;
             font-size: 1.1rem;
-        }
-
-        .select2-container {
-            max-width: 100% !important;
-            box-sizing: border-box !important;
         }
 
         .select2-container--default .select2-selection--multiple .select2-search--inline {
@@ -335,6 +270,50 @@
 
     <!-- Main CSS -->
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+
+    <style>
+        /* Select2 single — perbaikan tampilan autocomplete */
+        .select2-container {
+            width: 100% !important;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .select2-container--default .select2-selection--single {
+            position: relative;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            display: block;
+            line-height: 41px;
+            padding-left: 15px;
+            padding-right: 30px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered:has(.select2-selection__clear) {
+            padding-right: 50px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__clear {
+            position: absolute;
+            right: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            float: none;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1;
+        }
+    </style>
 
     @if (!Route::is(['index-two', 'index-three', 'index-four', 'index-five']))
         <!-- Layout JS -->

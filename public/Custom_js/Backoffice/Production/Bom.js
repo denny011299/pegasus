@@ -6,6 +6,7 @@
     var mode=1;
     var table;
     var bahan = [];
+    var activeProductData = null;
     $(document).ready(function(){
         inisialisasi();
         refreshBom();
@@ -27,23 +28,42 @@
     $(document).on('change','#product_id',function(){
         var data = $(this).select2("data")[0];
         console.log(data);
+        activeProductData = data;
         $('#unit_id').empty();
-        if (data.relasi.length == 0) {
+
+        var activeRelasi = (data.relasi || []).filter(function(r) {
+            return r.status === undefined || r.status === null || parseInt(r.status, 10) === 1;
+        });
+
+        if (activeRelasi.length === 0) {
+            // Tidak ada relasi → tampilkan unit default, locked
             $('#unit_id').append(`<option value="${data.unit_id}" selected>${data.product_unit}</option>`);
-            $('#unit_id').prop('disabled', true);
+            renderProductUnitInfo(data.relasi, data.product_unit, data.pr_unit);
         } else {
-            // Ambil satuan terkecil (elemen terakhir dari relasi)
-            data.relasi.forEach((element, index) => {
-                if (index == data.relasi.length - 1){
-                    $('#unit_id').append(`<option value="${element.pr_unit_id_2}" selected>${element.pr_unit_name_2}</option>`);
-                    $('#unit_id').prop('disabled', true);
-                }
-            });
+            // Ada relasi → hitung satuan terkecil, tampilkan satu opsi, locked
+            var unitId1List = activeRelasi.map(function(r) { return String(r.pr_unit_id_1 || ''); });
+            var allUnitIds  = (data.pr_unit || []).map(function(u) { return String(u.unit_id); });
+            var candidates  = allUnitIds.filter(function(uid) { return !unitId1List.includes(uid); });
+            var smallestName = '';
+            var smallestId = '';
+            if (candidates.length > 0) {
+                var found = (data.pr_unit || []).find(function(u) { return String(u.unit_id) === candidates[0]; });
+                if (found) { smallestId = found.unit_id; smallestName = found.unit_short_name; }
+            }
+            if (!smallestName) {
+                var last = activeRelasi[activeRelasi.length - 1];
+                smallestId = last.pr_unit_id_2;
+                smallestName = last.pr_unit_name_2;
+            }
+            $('#unit_id').append(`<option value="${smallestId}" selected>${smallestName}</option>`);
+            renderProductUnitInfo(data.relasi, smallestName, data.pr_unit);
         }
-        renderProductUnitInfo(data.relasi, data.product_unit);
+        $('#unit_id').prop('disabled', true);
         $('#bom_qty').val(1);
         $('#bom_qty').prop('disabled', false);
     });
+
+
     
     $(document).on('click','.btnAdd',function(){
         mode=1;
@@ -108,6 +128,7 @@
             data: {
                 product_id: $('#filter_product_id').val(),
                 supplies_id: $('#filter_supplies_id').val(),
+                with_details: true,
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -136,7 +157,11 @@
                     e[i].action =
                         bo ||
                         '<span class="text-muted small">—</span>';
+                    e[i].details.sort(function(a, b) {
+                        return (a.supplies_name || '').localeCompare(b.supplies_name || '', 'id', { sensitivity: 'base' });
+                    });
                     e[i].supplies = e[i].details.map(d => d.supplies_name).join(", ");
+
                 }
 
                 table.rows.add(e).draw();
@@ -234,13 +259,15 @@
     function openBomEditModal(data) {
         bahan = [];
         mode=2;
+        activeProductData = data;
         $('#add_bom .modal-title').html("Update Resep Bahan Mentah");
         $('#add_bom input').empty().val("");
         $('#supplies_id').empty();
         $('#unit_id').empty();
         $('#product_id').empty();
         $('#bom_qty').val(1);
-        $('#unit_id, #product_id').prop('disabled', true);
+        $('#product_id').prop('disabled', true);
+        $('#unit_id').prop('disabled', false);
         $('#bom_qty').prop('disabled', false);
         $('#tableSupply tr.row-supply').remove();
         $('.is-invalid').removeClass('is-invalid');
@@ -267,17 +294,53 @@
             };
             bahan.push(rowData);
         });
+        bahan.sort(function(a, b) {
+            return (a.supplies_name || '').localeCompare(b.supplies_name || '', 'id', { sensitivity: 'base' });
+        });
         addRow();
 
         $('#unit_id').empty();
-        (data.pr_unit || []).forEach(element => {
-            var active = "";
-            if(element.unit_id == data.unit_id) active = "selected";
-            $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_short_name}</option>`);
+        var activeRelasi = (data.relasi || []).filter(function(r) {
+            return r.status === undefined || r.status === null || parseInt(r.status, 10) === 1;
         });
+        if (activeRelasi.length > 0) {
+            // Ada relasi → hitung satuan terkecil
+            var unitId1List = activeRelasi.map(function(r) { return String(r.pr_unit_id_1 || ''); });
+            var allUnitIds  = (data.pr_unit || []).map(function(u) { return String(u.unit_id); });
+            var candidates  = allUnitIds.filter(function(uid) { return !unitId1List.includes(uid); });
+            var smallestId = '';
+            var smallestShort = '';
+            if (candidates.length > 0) {
+                var found = (data.pr_unit || []).find(function(u) { return String(u.unit_id) === candidates[0]; });
+                if (found) { smallestId = found.unit_id; smallestShort = found.unit_short_name; }
+            }
+            if (!smallestShort) {
+                var last = activeRelasi[activeRelasi.length - 1];
+                smallestId = last.pr_unit_id_2;
+                smallestShort = last.pr_unit_name_2;
+            }
+
+            // Jika nilai tersimpan BERBEDA dengan satuan terkecil:
+            // → tampilkan nilai lama sebagai disabled selected (terlihat di awal, tidak bisa dipilih)
+            // → lalu tambahkan satuan terkecil sebagai satu-satunya opsi yang bisa diklik
+            if (data.unit_name && String(data.unit_id) !== String(smallestId)) {
+                $('#unit_id').append(`<option value="${data.unit_id}" disabled selected>${data.unit_name}</option>`);
+                $('#unit_id').append(`<option value="${smallestId}">${smallestShort}</option>`);
+            } else {
+                // Nilai tersimpan sudah sama dengan terkecil → langsung selected
+                $('#unit_id').append(`<option value="${smallestId}" selected>${smallestShort}</option>`);
+            }
+        } else {
+            // Tidak ada relasi → tampilkan semua satuan produk
+            (data.pr_unit || []).forEach(function(element) {
+                var active = (String(element.unit_id) === String(data.unit_id)) ? "selected" : "";
+                $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_short_name}</option>`);
+            });
+        }
 
         // Tampilkan info satuan produk
-        renderProductUnitInfo(data.relasi, data.unit_name);
+        renderProductUnitInfo(data.relasi, data.unit_name, data.pr_unit);
+
 
         $('.btn-save').html('Update Resep');
         $('#add_bom').modal("show");
@@ -306,17 +369,31 @@
         });
     });
 
-    function renderProductUnitInfo(relasi, currentUnit) {
+    function renderProductUnitInfo(relasi, currentUnit, prUnits) {
         var $el = $('#product_unit_info');
-        if (!relasi || relasi.length === 0) {
+        var activeRelasi = (relasi || []).filter(function(r) {
+            return r.status === undefined || r.status === null || parseInt(r.status, 10) === 1;
+        });
+
+        if (activeRelasi.length === 0) {
             $el.html(
                 `<span class="text-muted">Saat ini: <strong class="text-dark">${currentUnit || '-'}</strong></span>
                  &nbsp;|&nbsp;
                  <span class="text-muted">Default: <strong class="text-dark">${currentUnit || '-'}</strong></span>`
             ).show();
         } else {
-            var smallest = relasi[relasi.length - 1];
-            var smallestName = smallest.pr_unit_name_2 || smallest.pr_unit_id_2 || '-';
+            // Hitung satuan terkecil secara dinamis (unit yang tidak muncul di pr_unit_id_1/su_id_1)
+            var unitId1List = activeRelasi.map(function(r) { return String(r.pr_unit_id_1 || r.su_id_1 || ''); });
+            var allUnitIds  = (prUnits || []).map(function(u) { return String(u.unit_id); });
+            var candidates  = allUnitIds.filter(function(uid) { return !unitId1List.includes(uid); });
+            var smallestName = '-';
+            if (candidates.length > 0) {
+                var found = prUnits.find(function(u) { return String(u.unit_id) === candidates[0]; });
+                if (found) smallestName = found.unit_name || found.unit_short_name || '-';
+            } else {
+                var smallest = activeRelasi[activeRelasi.length - 1];
+                smallestName = smallest.pr_unit_name_2 || smallest.pr_unit_id_2 || '-';
+            }
             $el.html(
                 `<span class="text-muted">Saat ini: <strong class="text-dark">${currentUnit || '-'}</strong></span>
                  &nbsp;|&nbsp;

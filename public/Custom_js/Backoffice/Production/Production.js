@@ -683,6 +683,9 @@
         })
         console.log(items);
         console.log(list_bahan);
+        items.sort(function(a, b) {
+            return (a.product_name || '').localeCompare(b.product_name || '', 'id', { sensitivity: 'base' });
+        });
         addRow(items);
         $('#total_dos').html(formatRupiah(data.total_dos));
         if (data.status == 1){

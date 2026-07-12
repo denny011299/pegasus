@@ -63,6 +63,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
+            order: [[1, 'asc']],
             searching: false,
             autoWidth: false,
             language: {

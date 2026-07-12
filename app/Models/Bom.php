@@ -108,7 +108,7 @@ class Bom extends Model
                 ->map(fn ($id) => $unitsMap->get((int) $id))
                 ->filter()
                 ->values();
-            $value->relasi = [];
+            $value->relasi = (new ProductRelation())->getProductRelation(['product_variant_id' => $value->product_id]);
             $details = ($detailsByBom->get($value->bom_id) ?? collect())->values();
             $value->details = $details;
             $value->items = $details;

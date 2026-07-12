@@ -599,6 +599,9 @@ function loadPiType() {
     function addRow(define) {
         if (define == 1){
             $('#tableProduct tr.row-product').html(" ");
+            items.sort(function(a, b) {
+                return (a.product_name || '').localeCompare(b.product_name || '', 'id', { sensitivity: 'base' });
+            });
             items.forEach(e => {
                 $('#tableProduct tbody').append(`
                     <tr class="row-product" data-id="${e.product_variant_id}">
@@ -617,6 +620,11 @@ function loadPiType() {
         if (define == 2){
             suppliesIds = [];
             $('#tableProduct tr.row-supplies').html(" ");
+            items.sort(function(a, b) {
+                var nameA = a.supplies_name || a.sup_name || '';
+                var nameB = b.supplies_name || b.sup_name || '';
+                return nameA.localeCompare(nameB, 'id', { sensitivity: 'base' });
+            });
             items.forEach(e => {
                 $('#tableProduct tbody').append(`
                     <tr class="row-supplies" data-id="${e.supplies_variant_id}">

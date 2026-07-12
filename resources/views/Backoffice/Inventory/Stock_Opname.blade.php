@@ -2,6 +2,10 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
+        #tableStockOpname {
+            width: 100% !important;
+        }
+
         #tableStockOpname td:last-child {
             white-space: nowrap !important;
         }

@@ -25,7 +25,7 @@ class Supplies extends Model
         if ($data["supplies_id"]) $result->where('supplies_id', '=', $data["supplies_id"]);
         if ($data["supplies_name"]) $result->where('supplies_name', 'like', '%' . $data["supplies_name"] . '%');
         if ($data["supplies_desc"]) $result->where('supplies_desc', 'like', '%' . $data["supplies_desc"] . '%');
-        $result->orderBy('created_at', 'asc');
+        $result->orderBy('supplies_name', 'asc');
 
         $result = $result->get();
         if ($result->isEmpty()) {

@@ -115,6 +115,12 @@
                 "pr_unit" : e.pr_unit
             });
         });
+        products.sort(function(a, b) {
+            var nameComp = (a.product_name || '').localeCompare(b.product_name || '', 'id', { sensitivity: 'base' });
+            if (nameComp !== 0) return nameComp;
+            return (a.product_variant_name || '').localeCompare(b.product_variant_name || '', 'id', { sensitivity: 'base' });
+        });
+
         refreshTableProduct();
 
         // Khusus alur revisi: user boleh benarkan item langsung di modal.
@@ -187,6 +193,12 @@
                 "pr_unit" : e.pr_unit
             });
         });
+        products.sort(function(a, b) {
+            var nameComp = (a.product_name || '').localeCompare(b.product_name || '', 'id', { sensitivity: 'base' });
+            if (nameComp !== 0) return nameComp;
+            return (a.product_variant_name || '').localeCompare(b.product_variant_name || '', 'id', { sensitivity: 'base' });
+        });
+
         refreshTableProduct();
         $('.deleteRow').hide();
         $('#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input').attr("disabled", true);

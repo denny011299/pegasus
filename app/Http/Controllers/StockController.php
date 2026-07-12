@@ -116,6 +116,12 @@ class StockController extends Controller
             ];
         }
 
+        usort($items, function ($a, $b) {
+            $cmp = strcasecmp($a['pr_name'] ?? '', $b['pr_name'] ?? '');
+            if ($cmp !== 0) return $cmp;
+            return strcasecmp($a['product_variant_name'] ?? '', $b['product_variant_name'] ?? '');
+        });
+
         $data = [
             'sto_id'      => $sto->sto_id,
             'sto_date'    => $sto->sto_date,
@@ -290,6 +296,12 @@ class StockController extends Controller
                 abort(404);
             }
             $param['data'] = $rows[0];
+            if (!empty($param['data']->item)) {
+                $sorted = collect($param['data']->item)
+                    ->sortBy(fn($i) => strtolower($i->supplies_name ?? ''), SORT_STRING)
+                    ->values();
+                $param['data']->item = $sorted;
+            }
             $param['mode'] = 2;
         } else {
             $param["data"] = [];

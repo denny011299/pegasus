@@ -2531,6 +2531,7 @@
                                             <select class="form-select w-25 fill" id="unit_id"></select>
                                         </div>
                                         <div id="product_unit_info" class="mt-1" style="display:none; font-size:0.82rem; line-height:1.4;"></div>
+
                                     </div>
                                 </div>
 
