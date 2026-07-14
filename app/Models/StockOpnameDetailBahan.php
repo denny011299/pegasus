@@ -27,21 +27,34 @@ class StockOpnameDetailBahan extends Model
 
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
-        foreach ($result as $key => $value) {
-            $pv = (new Supplies())->getSupplies(["supplies_id"=>$value->supplies_id]);
-            if(isset($pv[0]->supplies_id)) $pv = $pv[0];
+        if ($result->isEmpty()) {
+            return $result;
+        }
 
-            $temp = $pv;
+        // Enrich sekali via bulk (hindari N+1 getSupplies per baris).
+        $suppliesMap = (new Supplies())->getSuppliesBulk(
+            $result->pluck('supplies_id')->unique()->filter()->values()->all()
+        );
+
+        foreach ($result as $key => $value) {
+            $pv = $suppliesMap->get($value->supplies_id);
+            if (! $pv) {
+                unset($result[$key]);
+                continue;
+            }
+
+            $temp = clone $pv;
             $temp->sp_units = [];
             $temp->stobd_system = $value->stobd_system;
-            $temp->stobd_real =  $value->stobd_real;
-            $temp->stobd_selisih =  $value->stobd_selisih;
-            $temp->stobd_notes =  $value->stobd_notes;
-            $temp->stobd_id  =  $value->stobd_id ;
-            $temp->stob_id  =  $value->stob_id ;
+            $temp->stobd_real = $value->stobd_real;
+            $temp->stobd_selisih = $value->stobd_selisih;
+            $temp->stobd_notes = $value->stobd_notes;
+            $temp->stobd_id = $value->stobd_id;
+            $temp->stob_id = $value->stob_id;
             $result[$key] = $temp;
         }
-        return $result;
+
+        return $result->values();
     }
 
     public static function getDetailBulk(array $stobIds)

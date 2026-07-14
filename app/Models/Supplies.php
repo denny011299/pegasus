@@ -148,22 +148,29 @@ class Supplies extends Model
             $stk->unit_short_name = $u ? $u->unit_short_name : '-';
         }
 
-        $supplierMap = $supplierIdSet !== []
-            ? Supplier::whereIn('supplier_id', array_keys($supplierIdSet))->pluck('supplier_name', 'supplier_id')
-            : collect();
-
         $stocksBySupply = $stocks->groupBy('supplies_id');
         $relationsBySupply = $relations->groupBy('supplies_id');
         $variantsBySupply = $variants->groupBy('supplies_id');
+
+        $suppliersById = $supplierIdSet !== []
+            ? Supplier::whereIn('supplier_id', array_keys($supplierIdSet))->get()->keyBy('supplier_id')
+            : collect();
+        $supplierMap = $suppliersById->mapWithKeys(
+            fn ($s, $id) => [(int) $id => $s->supplier_name]
+        );
 
         foreach ($result as $value) {
             $sid = $value->supplies_id;
 
             $supRaw = $value->getAttributes()['supplies_supplier'] ?? null;
             if ($supRaw) {
-                // ✅ Aman untuk supplies_supplier
                 $supIds = is_array($supRaw) ? $supRaw : (json_decode($supRaw, true) ?: []);
-                $value->supplier = Supplier::whereIn('supplier_id', $supIds)->get();
+                $value->supplier = collect($supIds)
+                    ->map(fn ($id) => $suppliersById->get((int) $id))
+                    ->filter()
+                    ->values();
+            } else {
+                $value->supplier = collect();
             }
 
             // ✅ Aman untuk supplies_unit

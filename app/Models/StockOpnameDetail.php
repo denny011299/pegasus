@@ -29,20 +29,33 @@ class StockOpnameDetail extends Model
 
         $result->orderBy('created_at', 'asc');
         $result = $result->get();
-        foreach ($result as $key => $value) {
-            $pv = (new ProductVariant())->getProductVariant(["product_variant_id"=>$value->product_variant_id]);
-            if(isset($pv[0]->product_variant_id)) $pv = $pv[0];
+        if ($result->isEmpty()) {
+            return $result;
+        }
 
-            $temp = $pv;
+        // Enrich sekali via bulk (hindari N+1 getProductVariant per baris).
+        $variantMap = (new ProductVariant())->getProductVariantBulk(
+            $result->pluck('product_variant_id')->unique()->filter()->values()->all()
+        );
+
+        foreach ($result as $key => $value) {
+            $pv = $variantMap->get($value->product_variant_id);
+            if (! $pv) {
+                unset($result[$key]);
+                continue;
+            }
+
+            $temp = clone $pv;
             $temp->stod_system = $value->stod_system;
-            $temp->stod_real =  $value->stod_real;
-            $temp->stod_selisih =  $value->stod_selisih;
-            $temp->stod_notes =  $value->stod_notes;
-            $temp->stod_id  =  $value->stod_id ;
-            $temp->sto_id  =  $value->sto_id ;
+            $temp->stod_real = $value->stod_real;
+            $temp->stod_selisih = $value->stod_selisih;
+            $temp->stod_notes = $value->stod_notes;
+            $temp->stod_id = $value->stod_id;
+            $temp->sto_id = $value->sto_id;
             $result[$key] = $temp;
         }
-        return $result;
+
+        return $result->values();
     }
 
     /**

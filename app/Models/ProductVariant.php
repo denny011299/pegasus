@@ -181,9 +181,10 @@ class ProductVariant extends Model
         $prUnitsByProductId = [];
         foreach ($products as $pid => $p) {
             $uids = json_decode($p->product_unit, true) ?: [];
-            $prUnitsByProductId[$pid] = $uids !== []
-                ? Unit::whereIn('unit_id', $uids)->get()
-                : collect();
+            $prUnitsByProductId[$pid] = collect($uids)
+                ->map(fn ($uid) => $units->get((int) $uid))
+                ->filter()
+                ->values();
         }
 
         $out = collect();
@@ -217,13 +218,8 @@ class ProductVariant extends Model
                 $relationsGrouped->get($clone->product_variant_id, collect())
             );
 
-            $s = $clone->stock->firstWhere('unit_id', $clone->unit_id);
-            if (! $s) {
-                $s = ProductStock::where('product_variant_id', $clone->product_variant_id)
-                    ->where('unit_id', $clone->unit_id)
-                    ->where('status', '=', 1)
-                    ->first();
-            }
+            $s = $clone->stock->firstWhere('unit_id', (int) $clone->unit_id)
+                ?? $stocksGrouped->get($clone->product_variant_id, collect())->firstWhere('unit_id', (int) $clone->unit_id);
             $clone->ps_stock = $s ? $s->ps_stock : 0;
 
             $out->put($clone->product_variant_id, $clone);

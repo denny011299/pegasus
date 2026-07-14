@@ -521,7 +521,8 @@ class ReportController extends Controller
         $rows = [];
         $total = 0.0;
 
-        // 1) Kas besar dari cashes (hanya baris umum yang benar-benar pengeluaran)
+        // 1) Kas besar dari cashes — hanya Keluar (cash_type=2).
+        // Keluar 1 (cash_type=3) = setor ke bank, bukan pengeluaran operasional.
         $cashCols = [
             'cash_id',
             'cash_date',
@@ -539,7 +540,7 @@ class ReportController extends Controller
             ->where('status', 2)
             ->where('person_id', 0)
             ->where('cash_tujuan', 0)
-            ->whereIn('cash_type', [2, 3])
+            ->where('cash_type', 2)
             ->whereBetween('cash_date', [$start->toDateString(), $end->toDateString()])
             ->get($cashCols);
 
@@ -555,7 +556,6 @@ class ReportController extends Controller
                 'cash_description' => (string) ($row->cash_description ?? '-'),
                 'cash_nominal' => round($nominal, 2),
                 'cash_type' => (int) ($row->cash_type ?? 0),
-                // Tipe 2 = Keluar, 3 = Keluar 1 di DB (setor ke bank); di laporan pengeluaran cukup "Keluar".
                 'cash_type_label' => 'Keluar',
                 'cash_tujuan' => (int) ($row->cash_tujuan ?? 0),
                 'cash_tujuan_label' => $tujuanMap[(int) ($row->cash_tujuan ?? 0)] ?? 'Umum',
@@ -1832,11 +1832,19 @@ class ReportController extends Controller
         $aging = $this->buildAgingSummary($agingRows);
         $agingDetailByBucket = $this->buildAgingDetailByBucket($agingRows);
 
-        $inventoryValue = $this->dashboardInventoryValue();
+        $inventoryValue = Cache::remember(
+            'dashboard_inventory_value',
+            now()->addMinutes(5),
+            fn () => $this->dashboardInventoryValue()
+        );
         $turnover = $this->dashboardInventoryTurnover($start, $end);
         $returnRate = $this->dashboardReturnRate($start, $end, $salesQty);
         $queues = $this->dashboardApprovalQueues($start, $end, 40);
-        $payablesDue = $this->dashboardPayablesDue();
+        $payablesDue = Cache::remember(
+            'dashboard_payables_due',
+            now()->addMinutes(5),
+            fn () => $this->dashboardPayablesDue()
+        );
         $changeLog = array_merge(
             $this->dashboardChangeLogCounts($start, $end),
             [
