@@ -210,7 +210,23 @@
     $(document).on('change', '#product_id', function(){
         var data = $(this).select2("data")[0];
         console.log(data);
-        
+
+        // Blokir jika produk / varian sudah tidak aktif
+        if (data && (data.product_status == 0 || data.product_variant_status == 0)) {
+            var alasan = [];
+            if (data.product_status == 0)         alasan.push('produk sudah tidak aktif');
+            if (data.product_variant_status == 0) alasan.push('varian produk sudah tidak aktif');
+            notifikasi(
+                'error',
+                'Produk Tidak Aktif',
+                'Tidak dapat memilih resep ini karena ' + alasan.join(' & ') + '. Silakan hapus resep (BOM) ini di halaman Resep Bahan Mentah.'
+            );
+            // Clear pilihan agar user tidak bisa lanjut
+            $(this).val(null).trigger('change');
+            $('#unit_id').html('');
+            return;
+        }
+
         $('#unit_id').html("");
         data.pr_unit.forEach(element => {
             $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
@@ -224,6 +240,13 @@
     $(document).on('click', '#product_id', function() {
         autocompleteBom('#product_id', '#addProduction .modal-content')
     })
+
+    // Cegah Enter menutup modal secara tidak sengaja (form action="#" menyebabkan page navigation)
+    $(document).on('keydown', '#addProduction input, #addProduction select', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+        }
+    });
 
     function inisialisasi() {
         table = $('#tableProduction').DataTable({
@@ -614,6 +637,17 @@
         }
 
         var tempBom = $('#product_id').select2("data")[0];
+
+        // Guard: blokir jika produk / varian tidak aktif
+        if (tempBom && (tempBom.product_status == 0 || tempBom.product_variant_status == 0)) {
+            var alasan = [];
+            if (tempBom.product_status == 0)         alasan.push('produk sudah tidak aktif');
+            if (tempBom.product_variant_status == 0) alasan.push('varian produk sudah tidak aktif');
+            notifikasi('error', 'Produk Tidak Aktif',
+                'Tidak dapat produksi karena ' + alasan.join(' & ') + '. Silakan hapus resep (BOM) ini di halaman Resep Bahan Mentah.');
+            return false;
+        }
+
         if (bomDetailHasActiveUnits(tempBom)) {
             continueAddProduct(tempBom);
             return;

@@ -48,7 +48,7 @@
             var smallestId = '';
             if (candidates.length > 0) {
                 var found = (data.pr_unit || []).find(function(u) { return String(u.unit_id) === candidates[0]; });
-                if (found) { smallestId = found.unit_id; smallestName = found.unit_short_name; }
+                if (found) { smallestId = found.unit_id; smallestName = found.unit_name || found.unit_short_name; }
             }
             if (!smallestName) {
                 var last = activeRelasi[activeRelasi.length - 1];
@@ -312,7 +312,7 @@
             var smallestShort = '';
             if (candidates.length > 0) {
                 var found = (data.pr_unit || []).find(function(u) { return String(u.unit_id) === candidates[0]; });
-                if (found) { smallestId = found.unit_id; smallestShort = found.unit_short_name; }
+                if (found) { smallestId = found.unit_id; smallestShort = found.unit_name || found.unit_short_name; }
             }
             if (!smallestShort) {
                 var last = activeRelasi[activeRelasi.length - 1];
@@ -334,7 +334,7 @@
             // Tidak ada relasi → tampilkan semua satuan produk
             (data.pr_unit || []).forEach(function(element) {
                 var active = (String(element.unit_id) === String(data.unit_id)) ? "selected" : "";
-                $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_short_name}</option>`);
+                $('#unit_id').append(`<option value="${element.unit_id}" ${active}>${element.unit_name || element.unit_short_name}</option>`);
             });
         }
 
@@ -376,13 +376,14 @@
         });
 
         if (activeRelasi.length === 0) {
+            // Tidak ada relasi → Default = Saat ini → selalu sama → hijau
             $el.html(
-                `<span class="text-muted">Saat ini: <strong class="text-dark">${currentUnit || '-'}</strong></span>
+                `<span class="text-muted">Saat ini: <strong class="text-success">${currentUnit || '-'}</strong></span>
                  &nbsp;|&nbsp;
-                 <span class="text-muted">Default: <strong class="text-dark">${currentUnit || '-'}</strong></span>`
+                 <span class="text-muted">Default: <strong class="text-success">${currentUnit || '-'}</strong></span>`
             ).show();
         } else {
-            // Hitung satuan terkecil secara dinamis (unit yang tidak muncul di pr_unit_id_1/su_id_1)
+            // Hitung satuan terkecil secara dinamis
             var unitId1List = activeRelasi.map(function(r) { return String(r.pr_unit_id_1 || r.su_id_1 || ''); });
             var allUnitIds  = (prUnits || []).map(function(u) { return String(u.unit_id); });
             var candidates  = allUnitIds.filter(function(uid) { return !unitId1List.includes(uid); });
@@ -394,10 +395,13 @@
                 var smallest = activeRelasi[activeRelasi.length - 1];
                 smallestName = smallest.pr_unit_name_2 || smallest.pr_unit_id_2 || '-';
             }
+            // Warna: hijau jika sama, merah jika berbeda
+            var same = (currentUnit || '').trim().toLowerCase() === (smallestName || '').trim().toLowerCase();
+            var colorClass = same ? 'text-success' : 'text-danger';
             $el.html(
-                `<span class="text-muted">Saat ini: <strong class="text-dark">${currentUnit || '-'}</strong></span>
+                `<span class="text-muted">Saat ini: <strong class="${colorClass}">${currentUnit || '-'}</strong></span>
                  &nbsp;|&nbsp;
-                 <span class="text-muted">Terkecil: <strong class="text-dark">${smallestName}</strong></span>`
+                 <span class="text-muted">Terkecil: <strong class="${colorClass}">${smallestName}</strong></span>`
             ).show();
         }
     }
@@ -531,37 +535,52 @@
             selectClass += ' fill';
         }
 
-        // Hitung info satuan terkecil / default
+        // Hitung info satuan terkecil / default dan tentukan unit pembanding
         var suppliesRelasi = item.supplies_relasi || [];
         var activeRelasi = suppliesRelasi.filter(function(r) {
             return r.status === undefined || r.status === null || parseInt(r.status, 10) === 1;
         });
-        var extraInfoHtml = '';
+        var comparisonUnitId = null;
+        var comparisonLabel = '';
+        var comparisonName = '-';
+
         if (activeRelasi.length > 0) {
             var unitId1List = activeRelasi.map(function(r) { return String(r.pr_unit_id_1 || r.su_id_1 || ''); });
             var allUnitIds  = activeUnits.map(function(u) { return String(u.unit_id); });
             var candidates  = allUnitIds.filter(function(uid) { return !unitId1List.includes(uid); });
-            var smallestName = '-';
             if (candidates.length > 0) {
                 var found = activeUnits.find(function(u) { return String(u.unit_id) === candidates[0]; });
-                if (found) smallestName = found.unit_name || found.unit_short_name || '-';
+                if (found) {
+                    comparisonUnitId = String(found.unit_id);
+                    comparisonName = found.unit_name || found.unit_short_name || '-';
+                }
             }
-            extraInfoHtml = `&nbsp;|&nbsp;<span class="text-muted">Terkecil: <span class="text-dark fw-medium">${smallestName}</span></span>`;
+            comparisonLabel = 'Terkecil';
         } else {
-            var defaultUnit = '-';
             var defId = item.supplies_default_unit;
             if (defId) {
                 var defFound = activeUnits.find(function(u) { return String(u.unit_id) === String(defId); });
-                if (defFound) defaultUnit = defFound.unit_name || defFound.unit_short_name || '-';
+                if (defFound) {
+                    comparisonUnitId = String(defFound.unit_id);
+                    comparisonName = defFound.unit_name || defFound.unit_short_name || '-';
+                }
             } else if (activeUnits.length > 0) {
-                defaultUnit = activeUnits[0].unit_name || activeUnits[0].unit_short_name || '-';
+                comparisonUnitId = String(activeUnits[0].unit_id);
+                comparisonName = activeUnits[0].unit_name || activeUnits[0].unit_short_name || '-';
             }
-            extraInfoHtml = `&nbsp;|&nbsp;<span class="text-muted">Default: <span class="text-dark fw-medium">${defaultUnit}</span></span>`;
+            comparisonLabel = 'Default';
         }
+
+        // Warna: hijau jika ID satuan sama, merah jika berbeda
+        var sameUnit = comparisonUnitId !== null ? String(currentUnitId) === comparisonUnitId : true;
+        var colorClass = sameUnit ? 'text-success' : 'text-danger';
+        var extraInfoHtml = comparisonUnitId !== null
+            ? `&nbsp;|&nbsp;<span class="text-muted">${comparisonLabel}: <span class="${colorClass} fw-medium">${comparisonName}</span></span>`
+            : '';
 
         return `
             <div class="d-flex flex-column gap-1">
-                <small class="text-muted">Saat ini: <span class="text-dark fw-medium">${currentUnitName}</span>${extraInfoHtml}</small>
+                <small class="text-muted">Saat ini: <span class="${colorClass} fw-medium">${currentUnitName}</span>${extraInfoHtml}</small>
                 <select class="${selectClass}" data-index="${index}">
                     ${placeholder}
                     ${options}

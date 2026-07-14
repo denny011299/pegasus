@@ -102,7 +102,7 @@ class Bom extends Model
                 : '-';
             $value->product_variant_sku = $v ? $v->product_variant_sku : '-';
             $bomUnit = $unitsMap->get($value->unit_id);
-            $value->unit_name = $bomUnit ? $bomUnit->unit_short_name : '-';
+            $value->unit_name = $bomUnit ? ($bomUnit->unit_name ?? $bomUnit->unit_short_name ?? '-') : '-';
             $unitIds = $u ? (json_decode($u->product_unit, true) ?: []) : [];
             $value->pr_unit = collect($unitIds)
                 ->map(fn ($id) => $unitsMap->get((int) $id))
@@ -115,7 +115,11 @@ class Bom extends Model
             $value->created_by_name = $value->created_by
                 ? ($staffNames->get((int) $value->created_by) ?? '-')
                 : '-';
+            // Status produk & varian — untuk deteksi produk tidak aktif di frontend
+            $value->product_status = $u ? (int) $u->status : 0;
+            $value->product_variant_status = $v ? (int) $v->status : 0;
         }
+
 
         return $result;
     }
