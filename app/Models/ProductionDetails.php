@@ -23,7 +23,7 @@ class ProductionDetails extends Model
         else if ($data["report"]) $result = ProductionDetails::where('status', '>=', 0);
         if ($data["production_id"]) $result->where('production_id', '=', $data["production_id"]);
 
-        $result->orderBy('created_at', 'asc');
+        $result->orderBy('pd_id', 'asc');
 
         $result = $result->get();
         foreach ($result as $key => $value) {
