@@ -52,15 +52,47 @@ class Production extends Model
         $result->orderBy('production_date', 'desc')->orderByRaw('FIELD(status, 1, 4, 2, 3)')->orderBy('created_at', 'desc');
 
         $result = $result->get();
+
+        if ($result->isEmpty()) {
+            return $result;
+        }
+
+        $productionIds = $result->pluck('production_id')->all();
+        $allDetails = (new ProductionDetails())->getProductionDetail([
+            "production_ids" => $productionIds,
+            "report" => $data["report"],
+        ]);
+        $detailsByProduction = $allDetails->groupBy('production_id');
+
+        $staffIds = $result->flatMap(function ($production) {
+            return array_filter([
+                $production->production_created_by,
+                $production->acc_by,
+                $production->cancel_requested_by,
+            ]);
+        })->unique()->values()->all();
+
+        $staffMap = count($staffIds) > 0
+            ? Staff::whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id')
+            : collect();
+
+        $relationCache = [];
+
         foreach ($result as $key => $value) {
-            $value->items = (new ProductionDetails())->getProductionDetail(["production_id" => $value->production_id]);
+            $value->items = $detailsByProduction->get($value->production_id, collect())->values();
 
             $dos = 0;
             foreach ($value->items as $key => $val) {
                 if (str($val->unit_name)->upper()->contains('DOS')) {
                     $dos += $val->pd_qty;
                 } else {
-                    $pr = (new ProductRelation())->getProductRelation(['product_variant_id' => $val->product_variant_id]);
+                    $variantId = $val->product_variant_id;
+                    if (!isset($relationCache[$variantId])) {
+                        $relationCache[$variantId] = (new ProductRelation())->getProductRelation([
+                            'product_variant_id' => $variantId,
+                        ]);
+                    }
+                    $pr = $relationCache[$variantId];
 
                     $relasiDos = $pr->first(function ($rel) {
                         return str($rel->pr_unit_name_1)->upper()->contains('DOS');
@@ -73,9 +105,9 @@ class Production extends Model
                 }
             }
             $value->total_dos = $dos;
-            $value->created_by_name = $value->production_created_by ? (Staff::find($value->production_created_by)->staff_name ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
-            $value->cancel_requested_by_name = $value->cancel_requested_by ? (Staff::find($value->cancel_requested_by)->staff_name ?? '-') : '-';
+            $value->created_by_name = $value->production_created_by ? ($staffMap[$value->production_created_by] ?? '-') : '-';
+            $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
+            $value->cancel_requested_by_name = $value->cancel_requested_by ? ($staffMap[$value->cancel_requested_by] ?? '-') : '-';
 
             // Kalau misal ada yang sudah 3 hari lebih dan statusnya masih menunggu approve, maka auto ACC
             $productionDate = Carbon::parse($value->production_date);

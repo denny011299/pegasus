@@ -56,6 +56,30 @@ class Product extends Model
             ->get()
             ->groupBy('product_id');
 
+        $variantIds = $variantsByProduct->flatten()->pluck('product_variant_id')->filter()->unique()->values()->all();
+        $relationsByVariant = collect();
+        if ($variantIds !== []) {
+            $relations = ProductRelation::where('status', 1)
+                ->whereIn('product_variant_id', $variantIds)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $relUnitIds = $relations->flatMap(function ($rel) {
+                return [$rel->pr_unit_id_1, $rel->pr_unit_id_2];
+            })->unique()->filter()->values()->all();
+
+            $relUnitsMap = $relUnitIds !== []
+                ? Unit::whereIn('unit_id', $relUnitIds)->pluck('unit_short_name', 'unit_id')
+                : collect();
+
+            foreach ($relations as $rel) {
+                $rel->pr_unit_name_1 = $relUnitsMap[$rel->pr_unit_id_1] ?? '';
+                $rel->pr_unit_name_2 = $relUnitsMap[$rel->pr_unit_id_2] ?? '';
+            }
+
+            $relationsByVariant = $relations->groupBy('product_variant_id');
+        }
+
         $unitIdSet = [];
         foreach ($result as $product) {
             foreach ((array) (json_decode($product->product_unit, true) ?: []) as $unitId) {
@@ -73,7 +97,12 @@ class Product extends Model
                 ->map(fn ($id) => $unitsMap->get((int) $id))
                 ->filter()
                 ->values();
-            $value->pr_variant = ($variantsByProduct->get($value->product_id) ?? collect())->values();
+            $value->pr_variant = ($variantsByProduct->get($value->product_id) ?? collect())
+                ->map(function ($variant) use ($relationsByVariant) {
+                    $variant->relasi = $relationsByVariant->get($variant->product_variant_id, collect())->values();
+                    return $variant;
+                })
+                ->values();
             $value->product_category = $categories->get($value->category_id) ?? '-';
             $value->created_by_name = $value->created_by
                 ? ($staffNames->get((int) $value->created_by) ?? '-')

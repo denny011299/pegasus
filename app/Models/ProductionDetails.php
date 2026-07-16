@@ -16,26 +16,65 @@ class ProductionDetails extends Model
     {
         $data = array_merge([
             "production_id" => null,
+            "production_ids" => null,
             "report" => null
-        ], $data);  
+        ], $data);
 
-        if ($data["report"] == null) $result = ProductionDetails::where('status', '>=', 1);
-        else if ($data["report"]) $result = ProductionDetails::where('status', '>=', 0);
-        if ($data["production_id"]) $result->where('production_id', '=', $data["production_id"]);
+        $result = ProductionDetails::query();
 
-        $result->orderBy('pd_id', 'asc');
-
-        $result = $result->get();
-        foreach ($result as $key => $value) {
-            $u = ProductVariant::find($value->product_variant_id);
-            $value->product_variant_id = $u->product_variant_id;
-            $value->product_sku = $u->product_variant_sku;
-            $v = Product::find($u->product_id);
-            $value->product_name = $v->product_name." ".$u->product_variant_name;
-            $x = Unit::find($value->unit_id);
-            $value->unit_name = $x->unit_name;
+        if ($data["report"] == null) {
+            $result->where('status', '>=', 1);
+        } else if ($data["report"]) {
+            $result->where('status', '>=', 0);
         }
-        return $result;
+
+        if ($data["production_ids"]) {
+            $result->whereIn('production_id', $data["production_ids"]);
+        } else if ($data["production_id"]) {
+            $result->where('production_id', '=', $data["production_id"]);
+        }
+
+        $result = $result->orderBy('pd_id', 'asc')->get();
+
+        return $this->enrichDetailsCollection($result);
+    }
+
+    public function enrichDetailsCollection($details)
+    {
+        $details = collect($details);
+        if ($details->isEmpty()) {
+            return $details;
+        }
+
+        $variantIds = $details->pluck('product_variant_id')->filter()->unique()->values()->all();
+        $variants = $variantIds !== []
+            ? ProductVariant::whereIn('product_variant_id', $variantIds)->get()->keyBy('product_variant_id')
+            : collect();
+
+        $productIds = $variants->pluck('product_id')->filter()->unique()->values()->all();
+        $products = $productIds !== []
+            ? Product::whereIn('product_id', $productIds)->get()->keyBy('product_id')
+            : collect();
+
+        $unitIds = $details->pluck('unit_id')->filter()->unique()->values()->all();
+        $units = $unitIds !== []
+            ? Unit::whereIn('unit_id', $unitIds)->get()->keyBy('unit_id')
+            : collect();
+
+        foreach ($details as $value) {
+            $v = $variants->get($value->product_variant_id);
+            $p = $v ? $products->get($v->product_id) : null;
+            $unit = $units->get($value->unit_id);
+
+            $value->product_variant_id = $v ? $v->product_variant_id : $value->product_variant_id;
+            $value->product_sku = $v ? $v->product_variant_sku : '-';
+            $value->product_name = $v && $p
+                ? $p->product_name . ' ' . $v->product_variant_name
+                : '-';
+            $value->unit_name = $unit ? $unit->unit_name : '-';
+        }
+
+        return $details;
     }
 
     function insertProductionDetail($data)
