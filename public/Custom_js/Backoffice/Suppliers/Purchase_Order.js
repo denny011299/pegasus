@@ -472,14 +472,22 @@
             item[index].unit_id_select = $(this).val();
         });
 
+        var subtotal = 0;
+        item.forEach(function(it) {
+            subtotal += (it.supplies_variant_price * it.qty);
+        });
+
         var diskon = 0;
+        var diskonAmount = 0;
         if ($('#jenis_disc').val() == "persen"){
             diskon = $('#po_discount').val();
+            diskonAmount = Math.round(subtotal * (parseInt(diskon, 10) / 100));
         } else if ($('#jenis_disc').val() == "nominal"){
             diskon = convertToAngka($('#po_discount').val());
+            diskonAmount = diskon;
         }
 
-        if (diskon > grand) {
+        if (diskonAmount > subtotal) {
             notifikasi('error', "Gagal Insert", 'Diskon tidak boleh melebihi total');
             $('#po_discount').addClass('is-invalid'); 
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian");
