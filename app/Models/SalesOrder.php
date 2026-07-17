@@ -77,7 +77,7 @@ class SalesOrder extends Model
                 $detailQuery->whereIn('so_id', $result->pluck('so_id')->all());
             }
             $detailsBySoId = (new SalesOrderDetail())
-                ->enrichDetailsCollection($detailQuery->orderBy('created_at', 'asc')->get())
+                ->enrichDetailsCollection($detailQuery->orderBy('sod_id', 'asc')->get())
                 ->groupBy('so_id');
         }
 

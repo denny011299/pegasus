@@ -116,9 +116,7 @@
             });
         });
         products.sort(function(a, b) {
-            var nameComp = (a.product_name || '').localeCompare(b.product_name || '', 'id', { sensitivity: 'base' });
-            if (nameComp !== 0) return nameComp;
-            return (a.product_variant_name || '').localeCompare(b.product_variant_name || '', 'id', { sensitivity: 'base' });
+            return (a.sod_id || 0) - (b.sod_id || 0);
         });
 
         refreshTableProduct();
@@ -194,9 +192,7 @@
             });
         });
         products.sort(function(a, b) {
-            var nameComp = (a.product_name || '').localeCompare(b.product_name || '', 'id', { sensitivity: 'base' });
-            if (nameComp !== 0) return nameComp;
-            return (a.product_variant_name || '').localeCompare(b.product_variant_name || '', 'id', { sensitivity: 'base' });
+            return (a.sod_id || 0) - (b.sod_id || 0);
         });
 
         refreshTableProduct();

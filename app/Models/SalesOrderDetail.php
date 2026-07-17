@@ -26,7 +26,7 @@ class SalesOrderDetail extends Model
             $result->where("product_variant_id", "=" ,$data["product_variant_id"]);
         }
         
-        $result->orderBy("created_at", "asc");
+        $result->orderBy("sod_id", "asc");
         $result = $result->get();
 
         return $this->enrichDetailsCollection($result);
