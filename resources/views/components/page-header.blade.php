@@ -16,6 +16,22 @@
                     </li>
                     @endroleCan
                 @endif
+                @if (Route::is(['warehouse']))
+                    @roleCan('Gudang', 'create')
+                    <li>
+                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Gudang</a>
+                    </li>
+                    @endroleCan
+                @endif
+                @if (Route::is(['warehouse-type']))
+                    @roleCan('Tipe Gudang', 'create')
+                    <li>
+                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Tipe Gudang</a>
+                    </li>
+                    @endroleCan
+                @endif
                 @if (Route::is(['unit']))
                     @roleCan('Satuan', 'create')
                     <li>

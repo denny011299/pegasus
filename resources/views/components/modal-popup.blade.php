@@ -2987,3 +2987,93 @@
     </div>
     <!-- /Add Coupons -->
 @endif
+
+@if (Route::is(['warehouse']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_warehouse" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Gudang</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Nama Gudang<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="warehouse_name"
+                                            placeholder="Input Nama Gudang">
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Tipe Gudang<span class="text-danger">*</span></label>
+                                        <select class="form-select form-control fill select2" id="warehouse_type_id">
+                                            <option value="">Pilih Tipe Gudang...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Alamat Gudang</label>
+                                        <textarea class="form-control" id="warehouse_address" placeholder="Input Alamat Gudang"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Gudang</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if (Route::is(['warehouse-type']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_warehouse_type" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title  text-start mb-0">
+                        <h4 class="mb-0 modal-title">Tambah Tipe Gudang</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <div class="form-groups-item border-0 pb-0">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="input-block mb-3">
+                                        <label>Nama Tipe Gudang<span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fill" id="warehouse_type_name"
+                                            placeholder="Input Nama Tipe Gudang">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-back cancel-btn me-2">Batal</button>
+                        <button type="button"
+                            class="btn btn-primary paid-continue-btn btn-save">Tambah Tipe Gudang</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endif

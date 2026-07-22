@@ -280,4 +280,5 @@
             '><i class="fe fe-trash-2"></i></a>'
         );
     }
+
 </script>
