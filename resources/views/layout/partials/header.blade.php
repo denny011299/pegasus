@@ -22,12 +22,77 @@
         border-color: #dc3545!important;
     }
 </style>
+
+<style>
+    /* =============================================
+       PREMIUM NAVBAR DESIGN
+       ============================================= */
+    .custom-premium-header {
+        background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 100%) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15) !important;
+    }
+    .custom-premium-header .nav-item .nav-link,
+    .custom-premium-header .toggle-switch,
+    .custom-premium-header .win-maximize {
+        color: #ffffff !important;
+    }
+    .custom-premium-header .dropdown-heads a {
+        background: rgba(255, 255, 255, 0.12) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+        border-radius: 12px !important;
+        transition: all 0.25s ease;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .custom-premium-header .dropdown-heads a i,
+    .custom-premium-header .dropdown-heads a svg,
+    .custom-premium-header .dropdown-heads a .fe,
+    .custom-premium-header .dropdown-heads a .fa-solid {
+        color: #ffffff !important;
+        fill: #ffffff !important;
+    }
+    .custom-premium-header .dropdown-heads a:hover {
+        background: rgba(255, 255, 255, 0.2) !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .custom-premium-header .user-menu .user-img img {
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        padding: 2px;
+        transition: all 0.2s ease;
+        background: rgba(255,255,255,0.1);
+    }
+    .custom-premium-header .user-menu:hover .user-img img {
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: scale(1.05);
+    }
+    .custom-premium-header .user-name {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 500 !important;
+    }
+    .custom-premium-header .user-details {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+    .custom-premium-header .toggle-bars .bar-icons {
+        background-color: #ffffff !important;
+        opacity: 0.8;
+    }
+    .custom-premium-header #toggle_btn:hover .bar-icons {
+        opacity: 1;
+    }
+</style>
+
 @if (!Route::is(['index-three', 'index-four', 'index-five']))
     @if (!Route::is(['index-two']))
-        <div class="header header-one" style="background-color: #102c5c">
+        <div class="header header-one custom-premium-header">
     @endif
     @if (Route::is(['index-two']))
-        <div class="header header-two">
+        <div class="header header-two custom-premium-header">
     @endif
     @if (!Route::is(['index-two']))
         
@@ -48,7 +113,7 @@
            WAREHOUSE DROPDOWN — PREMIUM INDIGO
            ============================================= */
         .warehouse-custom-dropdown .btn-warehouse {
-            min-width: 200px;
+            min-width: 250px;
             height: 36px;
             border-radius: 10px;
             padding: 0 14px;
@@ -81,7 +146,7 @@
             border: 1px solid #dbeafe;
             background: #ffffff;
             box-shadow: 0 12px 32px rgba(37, 99, 235, 0.1), 0 2px 8px rgba(0,0,0,0.05);
-            min-width: 230px;
+            min-width: 280px;
             padding: 8px;
             margin-top: 6px !important;
         }
