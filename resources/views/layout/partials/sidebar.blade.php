@@ -1,171 +1,10 @@
 <!-- Sidebar -->
-<style>
-    /* =============================================
-       SIDEBAR — PEGASUS BLUE THEME
-       ============================================= */
-
-    .sidebar {
-        background: #ffffff !important;
-        border-right: 1px solid #e8edf5 !important;
-        box-shadow: 2px 0 16px rgba(0, 0, 0, 0.05) !important;
-    }
-    .sidebar-inner {
-        padding-bottom: 32px;
-    }
-    .sidebar-menu {
-        padding: 4px 10px 12px !important;
-    }
-
-    /* ── Section Titles ── */
-    .sidebar-menu .menu-title {
-        color: #94a3b8 !important;
-        font-size: 10px !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.1em !important;
-        text-transform: uppercase !important;
-        padding: 20px 8px 6px !important;
-        margin: 0 !important;
-        line-height: 1;
-    }
-
-    /* ── Menu Items ── */
-    .sidebar-menu li > a {
-        display: flex !important;
-        align-items: center !important;
-        border-radius: 9px !important;
-        padding: 10px 12px !important;
-        margin-bottom: 1px !important;
-        color: #4b5563 !important;
-        font-size: 13.5px !important;
-        font-weight: 500 !important;
-        text-decoration: none !important;
-        transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
-        position: relative;
-    }
-
-    /* Icons */
-    .sidebar-menu li > a > i,
-    .sidebar-menu li > a > svg {
-        flex-shrink: 0;
-        width: 18px !important;
-        min-width: 18px !important;
-        height: 18px !important;
-        font-size: 15px !important;
-        color: #9ca3af !important;
-        margin-right: 10px !important;
-        text-align: center;
-        transition: color 0.15s ease !important;
-    }
-
-    /* Arrow */
-    .sidebar-menu li > a > .menu-arrow {
-        margin-left: auto !important;
-        font-size: 11px !important;
-        color: #b0bec5 !important;
-        transition: transform 0.2s ease, color 0.15s ease;
-        flex-shrink: 0;
-    }
-
-    /* Hover */
-    .sidebar-menu li > a:hover {
-        background: #f0f6ff !important;
-        color: #1e40af !important;
-    }
-    .sidebar-menu li > a:hover > i,
-    .sidebar-menu li > a:hover > svg {
-        color: #2563eb !important;
-    }
-    .sidebar-menu li > a:hover > .menu-arrow {
-        color: #2563eb !important;
-    }
-
-    /* ── ACTIVE — pakai box-shadow inset, bukan ::before ── */
-    .sidebar-menu li > a.active {
-        background: #eff6ff !important;
-        color: #1d4ed8 !important;
-        font-weight: 600 !important;
-        /* Bar kiri biru dengan inset shadow — no ::before needed */
-        box-shadow: inset 3px 0 0 0 #2563eb !important;
-    }
-    .sidebar-menu li > a.active > i,
-    .sidebar-menu li > a.active > svg {
-        color: #2563eb !important;
-    }
-    .sidebar-menu li > a.active > .menu-arrow {
-        color: #2563eb !important;
-    }
-    /* Hapus ::before dan ::after bawaan template supaya tidak ada titik ungu/bentuk aneh */
-    .sidebar-menu li > a::before,
-    .sidebar-menu li > a::after,
-    .sidebar-menu li > a.active::before,
-    .sidebar-menu li > a.active::after {
-        display: none !important;
-        content: none !important;
-    }
-
-    /* Submenu open — rotate arrow */
-    .sidebar-menu li.submenu.active > a > .menu-arrow,
-    .sidebar-menu li.submenu > a[aria-expanded="true"] > .menu-arrow {
-        transform: rotate(90deg);
-    }
-
-    /* ── Submenu List ── */
-    .sidebar-menu .submenu > ul,
-    .sidebar-menu .submenu > div > ul {
-        border-left: 2px solid #e2e8f0 !important; /* warna lebih abu-abu soft */
-        margin: 4px 0 4px 23px !important;
-        padding: 4px 0 4px 12px !important; /* jarak lebih lega dari garis */
-        list-style: none;
-    }
-
-    /* Submenu items */
-    .sidebar-menu .submenu ul li > a {
-        padding: 8px 12px !important;
-        font-size: 13px !important;
-        color: #64748b !important;
-        font-weight: 500 !important;
-        border-radius: 6px !important; /* radius lebih kalem */
-        margin-bottom: 2px !important;
-        display: flex !important;
-        align-items: center !important;
-        box-shadow: none !important;
-        position: relative;
-    }
-    .sidebar-menu .submenu ul li > a::before,
-    .sidebar-menu .submenu ul li > a::after {
-        display: none !important;
-        content: none !important;
-    }
-    .sidebar-menu .submenu ul li > a:hover {
-        background: transparent !important;
-        color: #2563eb !important;
-    }
-    .sidebar-menu .submenu ul li > a.active {
-        background: transparent !important; /* transparan agar clean */
-        color: #2563eb !important;
-        font-weight: 700 !important; /* tebalkan teks */
-        box-shadow: none !important; /* hapus bar biru yang bikin aneh */
-    }
-    /* Tambahkan indikator bulat kecil biru untuk submenu aktif yang lebih elegan */
-    .sidebar-menu .submenu ul li > a.active::before {
-        display: block !important;
-        content: '' !important;
-        position: absolute;
-        left: -17.5px; /* pas di atas garis border-left abu-abu */
-        top: 50%;
-        transform: translateY(-50%);
-        width: 8px;
-        height: 8px;
-        background: #2563eb;
-        border-radius: 50%;
-        border: 2px solid #ffffff; /* efek cincin */
-    }
-</style>
 @if (!Route::is(['index-two', 'index-three', 'index-four', 'index-five']))
     <div class="sidebar" id="sidebar">
         <div class="sidebar-inner slimscroll">
             <div id="sidebar-menu" class="sidebar-menu">
                 @if (false){{-- menu template Kanakku (horizontal), tidak dipakai layout vertical --}}
+                <nav class="greedys sidebar-horizantal">
                     <ul class="list-inline-item list-unstyled links">
                         <li class="menu-title"><span>Main</span></li>
                         <li class="submenu">
@@ -671,10 +510,12 @@
         $akses = collect(json_decode(Session::get('user')->role_access ?? '[]'));
     @endphp
                     <li class="menu-title"><span>Menu Utama</span></li>
-                    <li>
-                        <a class="{{ Request::is('/', 'index') ? 'active' : '' }}" href="/">
-                            <i class="fe fe-home"></i> <span>Dashboard</span>
-                        </a>
+                    <li class="submenu">
+                        <li>
+                            <a class="{{ Request::is('index') ? 'active' : '' }}" href="/">
+                                <i class="fe fe-home"></i> <span>Dashboard</span>
+                            </a>
+                        </li>
                     </li>
                     <!-- /Main -->
 
@@ -684,11 +525,6 @@
                         $akses->firstWhere('name', 'Kategori') ||
                         $akses->firstWhere('name', 'Satuan') ||
                         $akses->firstWhere('name', 'Variasi');
-                    @endphp
-                    @php
-                        $showGudangMenu =
-                        $akses->firstWhere('name', 'Gudang') ||
-                        $akses->firstWhere('name', 'Tipe Gudang');
                     @endphp
                     @php
                         $showProduk =
@@ -709,7 +545,7 @@
                         $akses->firstWhere('name', 'Stok Opname Bahan Mentah');
                     @endphp
 
-                    @if ($showMaster || $showGudangMenu || $showProduk || $showBahan || $showInventory || $akses->firstWhere('name', 'Armada') || $akses->firstWhere('name', 'Pemasok'))
+                    @if ($showMaster || $showProduk || $showBahan || $showInventory || $akses->firstWhere('name', 'Armada') || $akses->firstWhere('name', 'Pemasok'))
                         <li class="menu-title"><span>Master</span></li>
                         @if ($showMaster)
                             <li class="submenu">
@@ -730,52 +566,34 @@
                                         <li><a href="{{ url('variant') }}"
                                             class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                                     @endif
-                                </ul>
-                            </li>
-                        @endif
 
-                        @if ($showGudangMenu)
-                            <li class="submenu">
-                                <a href="#"><i class="fas fa-warehouse"></i> <span> Gudang</span> <span
-                                    class="menu-arrow"></span></a>
-                                <ul style="display: none;">
-                                    @if ($akses->firstWhere('name', 'Gudang'))
-                                        <li><a href="{{ url('warehouse') }}"
-                                            class="{{ Request::is('warehouse') ? 'active' : '' }}">Daftar Gudang</a></li>
-                                    @endif
-
-                                    @if ($akses->firstWhere('name', 'Tipe Gudang'))
-                                        <li><a href="{{ url('warehouse-type') }}"
-                                            class="{{ Request::is('warehouse-type') ? 'active' : '' }}">Tipe Gudang</a></li>
-                                    @endif
+                                    {{-- <li><a href="{{ url('area') }}"
+                                            class="{{ Request::is('area') ? 'active' : '' }}">Wilayah</a></li> --}}
+                                
                                 </ul>
                             </li>
                         @endif
                     
                         @if ($showProduk)
-                            @if ($akses->firstWhere('name', 'Daftar Produk'))
-                                <li>
-                                    <a href="{{ url('product') }}" class="{{ Request::is('product') ? 'active' : '' }}">
-                                        <i class="fe fe-package"></i> <span>Daftar Produk</span>
-                                    </a>
-                                </li>
-                            @endif
+                            <li class="submenu">
+                                <a href="#"><i class="fe fe-package"></i> <span> Produk</span> <span
+                                    class="menu-arrow"></span></a>
+                                <ul style="display: none;">
+                                    @if ($akses->firstWhere('name', 'Daftar Produk'))
+                                        <li><a href="{{ url('product') }}"
+                                            class="{{ Request::is('product') ? 'active' : '' }}">Daftar Produk</a></li>
+                                    @endif
 
-                            @if ($akses->firstWhere('name', 'Stok Produk'))
-                                <li>
-                                    <a href="{{ url('stockProduct') }}" class="{{ Request::is('stockProduct') ? 'active' : '' }}">
-                                        <i class="fa fa-boxes"></i> <span>Stok Produk</span>
-                                    </a>
-                                </li>
-                            @endif
-                            
-                            @if ($akses->firstWhere('name', 'Daftar Produk'))
-                                <li>
-                                    <a href="{{ url('barcodePrint') }}" class="{{ Request::is('barcodePrint') ? 'active' : '' }}">
-                                        <i class="fa fa-barcode"></i> <span>Cetak Barcode</span>
-                                    </a>
-                                </li>
-                            @endif
+                                    @if ($akses->firstWhere('name', 'Stok Produk'))
+                                        <li><a href="{{ url('stockProduct') }}"
+                                            class="{{ Request::is('stockProduct') ? 'active' : '' }}">Stok Produk</a></li>
+                                    @endif
+                                    @if ($akses->firstWhere('name', 'Daftar Produk'))
+                                        <li><a href="{{ url('barcodePrint') }}"
+                                            class="{{ Request::is('barcodePrint') ? 'active' : '' }}">Cetak Barcode</a></li>
+                                    @endif
+                                </ul>
+                            </li>
                         @endif
                         
                         @if ($showBahan)

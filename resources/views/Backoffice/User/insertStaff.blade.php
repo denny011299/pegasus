@@ -5,39 +5,6 @@
         .invalid{
             border: 1px solid red!important;
         }
-        .is-invalids {
-            border: 1px solid red !important;
-            border-radius: 4px;
-        }
-        /* Harus lebih spesifik dari style global Select2 multiple di head.blade.php */
-        #row-warehouse .select2-container--default .select2-selection--multiple.is-invalids,
-        #row-position .select2-container--default .select2-selection--single.is-invalids,
-        .select2-container--default .select2-selection.is-invalids {
-            border: 1px solid #dc3545 !important;
-            box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.15) !important;
-        }
-        
-        /* Samakan tinggi select2 multiple dengan input lainnya (43px sesuai tema) */
-        /* Samakan styling select2 multiple dengan select2 single bawaan template (pseudo-bootstrap) */
-        .select2-container--default .select2-selection--multiple {
-            min-height: 43px !important;
-            padding-left: 10px;
-            border: 1px solid rgba(145, 158, 171, 0.32) !important;
-            border-radius: 5px !important;
-        }
-        .select2-container--default.select2-container--focus .select2-selection--multiple {
-            border-color: #ff9b44 !important; /* warna focus template */
-        }
-        /* Vertikal center placeholder teks */
-        .select2-container--default .select2-selection--multiple .select2-search__field {
-            line-height: 41px;
-            margin-top: 0px !important;
-            color: #3F4254;
-        }
-        /* Vertikal center tag (pilihan) */
-        .select2-container--default .select2-selection--multiple .select2-selection__choice {
-            margin-top: 6px;
-        }
     </style>
 @endsection
 @section('content')
@@ -100,7 +67,7 @@
                                                     placeholder="Masukkan Alamat Email">
                                             </div>
                                         </div>
-                                        <div class="col-lg-3 col-md-6 col-sm-12">
+                                        <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Nomor Telepon <span class="text-danger">*</span></label>
                                                 <input type="text" id="staff_phone" class="form-control fill include-nol"
@@ -146,33 +113,10 @@
                                                 </select>
                                             </div>
                                         </div> --}}
-                                        <div class="col-lg-3 col-md-6 col-sm-12">
+                                        <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3" id="row-position">
                                                 <label>Posisi <span class="text-danger">*</span></label>
-                                                <select class="form-select fill select2" id="staff_position">
-                                                    <option value="">Pilih Posisi</option>
-                                                    @foreach(($roles ?? []) as $role)
-                                                        <option value="{{ $role->role_id }}"
-                                                            @selected(isset($data['role_id']) && (int)$data['role_id'] === (int)$role->role_id)>
-                                                            {{ $role->role_name }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-6 col-md-12 col-sm-12">
-                                            <div class="input-block mb-3" id="row-warehouse">
-                                                <label>Akses Gudang <span class="text-danger">*</span></label>
-                                                <select class="form-select select2" id="staff_warehouses" multiple="multiple">
-                                                    @if(isset($warehouses))
-                                                        @foreach($warehouses as $wh)
-                                                            <option value="{{ $wh->id }}">{{ $wh->warehouse_name ?? $wh->name }}</option>
-                                                        @endforeach
-                                                    @endif
-                                                </select>
-                                                <div class="mt-1 text-end">
-                                                    <a href="javascript:void(0)" id="btn_select_all_warehouses" data-state="all" class="text-primary" style="font-size: 13px;"><i class="fa fa-check-square"></i> Pilih Semua Gudang</a>
-                                                </div>
+                                                <select class="form-select fill" id="staff_position"></select>
                                             </div>
                                         </div>
                                         <div class="col-lg-4 col-md-6 col-sm-12">

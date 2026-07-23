@@ -1,5 +1,5 @@
 <!-- Theme Setting -->
-<div class="settings-icon d-none">
+<div class="settings-icon">
     <span data-bs-toggle="offcanvas" data-bs-target="#theme-settings-offcanvas"
         aria-controls="theme-settings-offcanvas"><img src="{{ URL::asset('/assets/img/icons/siderbar-icon2.svg') }}"
             class="feather-five" alt="layout"></span>

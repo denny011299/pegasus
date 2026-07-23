@@ -417,14 +417,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     function ResetLoadingButton(id, text = null) {
         $(id).html(`${text? text : 'Save Changes'}`).prop("disabled", false);
     }
-
-    function setLoadingRow(table) {
-        if (!table) return;
-        table.clear().draw();
-        $(".dataTables_empty").html(
-            '<span class="spinner-border spinner-border-sm me-2 text-primary" role="status"></span> Sedang memuat data...'
-        );
-    }
     
     function autocompleteCity(id, modalParent = null,prov_id=null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
@@ -1088,32 +1080,26 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
      }
 
     function autocompleteRole(id, modalParent = null) {
-        if (!$(id).length) return;
-
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
         }
 
+        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompleteRole",
                  dataType: "json",
                  type: "post",
-                 delay: 250,
                  data: function data(params) {
                      return {
-                         "keyword": params.term || '',
-                         '_token': $('meta[name="csrf-token"]').attr('content') || (typeof token !== 'undefined' ? token : '')
+                         "keyword": params.term,
+                         '_token': $('meta[name="csrf-token"]').attr('content')
                      };
                  },
                  processResults: function processResults(data) {
-                     var rows = (data && data.data) ? data.data : [];
                      return {
-                         results: $.map(rows, function(item) {
-                             return {
-                                 id: item.id,
-                                 text: item.text
-                             };
+                         results: $.map(data.data, function(item) {
+                             return item;
                          }),
                      };
                  },
@@ -1125,42 +1111,6 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
              dropdownParent: modalParent ? $(modalParent) : "",
          });
     }
-
-    function autocompleteWarehouseType(id, modalParent = null) {
-        if ($(id).hasClass('select2-hidden-accessible')) {
-            $(id).select2('destroy');
-        }
-
-        $(id).select2({
-            ajax: {
-                url: "/autocompleteWarehouseType",
-                dataType: "json",
-                type: "get",
-                delay: 250,
-                data: function data(params) {
-                    return {
-                        "keyword": params.term
-                    };
-                },
-                processResults: function processResults(data) {
-                    return {
-                        results: $.map(data.data, function(item) {
-                            return {
-                                id: item.id,
-                                text: item.text || item.warehouse_type_name
-                            };
-                        }),
-                    };
-                },
-            },
-            placeholder: "Pilih Tipe Gudang...",
-            closeOnSelect: true,
-            allowClear: true,
-            width: "100%",
-            dropdownParent: modalParent ? $(modalParent) : "",
-        });
-    }
-
     function autocompleteRekening(id, modalParent = null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
@@ -1521,32 +1471,4 @@ function adjustModalHeight() {
         // Tinggi modal mengikuti tinggi video
         modalDialog.css("height", (video.clientHeight/4)+ "px");
 }
-
-function showDataTableLoading(tableId) {
-    var elem = tableId ? $(tableId + ' .dataTables_empty') : $('.dataTables_empty');
-    elem.html('<span class="spinner-border spinner-border-sm me-2 text-primary" role="status"></span> Sedang memuat data...');
-}
-
-$(document).ready(function() {
-    $('.warehouse-dropdown-item').on('click', function(e) {
-        e.preventDefault();
-        var warehouseId = $(this).attr('data-id');
-        if(warehouseId) {
-            $.ajax({
-                url: '/set-active-warehouse',
-                type: 'POST',
-                data: {
-                    _token: $('meta[name="csrf-token"]').attr('content'),
-                    warehouse_id: warehouseId
-                },
-                success: function(response) {
-                    window.location.reload();
-                },
-                error: function() {
-                    notifikasi('error', 'Gagal', 'Terjadi kesalahan saat mengubah gudang aktif.');
-                }
-            });
-        }
-    });
-});
 </script>

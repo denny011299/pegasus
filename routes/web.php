@@ -50,8 +50,6 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompleteRekening', [AutocompleteController::class, 'autocompleteRekening'])->name('autocompleteRekening');
     Route::post('/autocompletePO', [AutocompleteController::class, 'autocompletePO'])->name('autocompletePO');
     Route::post('/autocompleteSO', [AutocompleteController::class, 'autocompleteSO'])->name('autocompleteSO');
-    Route::get('/autocompleteWarehouseType', [AutocompleteController::class, 'autocompleteWarehouseType'])->name('autocompleteWarehouseType');
-    Route::post('/autocompleteWarehouseType', [AutocompleteController::class, 'autocompleteWarehouseType']);
 
     Route::middleware('check.access:Kategori|view')->group(function () {
     });
@@ -129,42 +127,6 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Variasi|delete')->group(function () {
         Route::post('/deleteVariant', [ProductController::class, 'deleteVariant'])->name('deleteVariant');
     });
-
-    // WAREHOUSE / GUDANG
-    Route::middleware('check.access:Gudang|view')->group(function () {
-        Route::get('/warehouse', [App\Http\Controllers\WarehouseController::class, 'Warehouse'])->name('warehouse');
-        Route::get('/getWarehouse', [App\Http\Controllers\WarehouseController::class, 'getWarehouse'])->name('getWarehouse');
-    });
-    Route::middleware('check.access:Gudang|create')->group(function () {
-        Route::post('/insertWarehouse', [App\Http\Controllers\WarehouseController::class, 'insertWarehouse'])->name('insertWarehouse');
-    });
-    Route::middleware('check.access:Gudang|edit')->group(function () {
-        Route::post('/updateWarehouse', [App\Http\Controllers\WarehouseController::class, 'updateWarehouse'])->name('updateWarehouse');
-        Route::post('/updateWarehouseStatus', [App\Http\Controllers\WarehouseController::class, 'updateWarehouseStatus'])->name('updateWarehouseStatus');
-    });
-    Route::middleware('check.access:Gudang|delete')->group(function () {
-        Route::post('/deleteWarehouse', [App\Http\Controllers\WarehouseController::class, 'deleteWarehouse'])->name('deleteWarehouse');
-    });
-
-    // WAREHOUSE TYPE / TIPE GUDANG
-    Route::middleware('check.access:Tipe Gudang|view')->group(function () {
-        Route::get('/warehouse-type', [App\Http\Controllers\WarehouseController::class, 'WarehouseType'])->name('warehouse-type');
-        Route::get('/getWarehouseType', [App\Http\Controllers\WarehouseController::class, 'getWarehouseType'])->name('getWarehouseType');
-    });
-    Route::middleware('check.access:Tipe Gudang|create')->group(function () {
-        Route::post('/insertWarehouseType', [App\Http\Controllers\WarehouseController::class, 'insertWarehouseType'])->name('insertWarehouseType');
-    });
-    Route::middleware('check.access:Tipe Gudang|edit')->group(function () {
-        Route::post('/updateWarehouseType', [App\Http\Controllers\WarehouseController::class, 'updateWarehouseType'])->name('updateWarehouseType');
-    });
-    Route::middleware('check.access:Tipe Gudang|delete')->group(function () {
-        Route::post('/deleteWarehouseType', [App\Http\Controllers\WarehouseController::class, 'deleteWarehouseType'])->name('deleteWarehouseType');
-    });
-    
-    Route::post('/setActiveWarehouse', [App\Http\Controllers\WarehouseController::class, 'setActiveWarehouse'])->name('setActiveWarehouse');
-    Route::post('/set-active-warehouse', [App\Http\Controllers\WarehouseController::class, 'setActiveWarehouse'])->name('set-active-warehouse');
-
-
 
     Route::middleware('check.access:Untung & Rugi|view')->group(function () {
         Route::get('/profitLoss', [ReportController::class, 'ProfitLoss'])->name('profitLoss');

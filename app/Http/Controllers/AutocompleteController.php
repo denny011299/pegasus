@@ -25,7 +25,6 @@ use App\Models\Supplies;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
-use App\Models\WarehouseType;
 use Illuminate\Http\Request;
 
 use function Laravel\Prompts\alert;
@@ -449,23 +448,22 @@ class AutocompleteController extends Controller
 
     public function autocompleteRole(Request $req)
     {
-        $keyword = $req->keyword ?? $req->q ?? $req->term ?? null;
+        $keyword = isset($req->keyword) ? $req->keyword : null;
 
-        $roles = (new Role())->getRole([
-            'role_name' => $keyword,
+        $p = new Role();
+        $data_city = $p->getRole([
+            "role_name" => $keyword
         ]);
 
-        // Hanya id + text agar Select2 tidak gagal parse payload besar (role_access)
-        $data = $roles->map(static function ($role) {
-            return [
-                'id' => (int) $role->role_id,
-                'text' => (string) $role->role_name,
-            ];
-        })->values()->all();
 
-        return response()->json([
-            'data' => $data,
-        ]);
+        foreach ($data_city as $r) {
+            $r->id = $r["role_id"];
+            $r->text = $r["role_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
     }
 
     public function autocompleteRekening(Request $req)
@@ -509,23 +507,5 @@ class AutocompleteController extends Controller
         echo json_encode(array(
             "data" => $data_city
         ));
-    }
-
-    public function autocompleteWarehouseType(Request $req)
-    {
-        $keyword = $req->keyword ?? $req->q ?? $req->term ?? null;
-
-        $data = (new WarehouseType())->getWarehouseType([
-            'warehouse_type_name' => $keyword,
-        ]);
-
-        foreach ($data as $r) {
-            $r->id = $r->id;
-            $r->text = $r->warehouse_type_name;
-        }
-
-        return response()->json([
-            'data' => $data,
-        ]);
     }
 }
