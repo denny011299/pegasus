@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(awk '$1>1')"
+      "Bash(awk '$1>1')",
+      "Bash(xargs -I{} sh -c 'echo \"--- {} ---\"; cat {}')",
+      "Bash(php -v)",
+      "Bash(php -r ' *)",
+      "Bash(grep -rn '::create\\($request\\\\|::create\\(request\\(\\\\|->fill\\($request\\\\|::create\\($data\\)\\\\b' app/Http/Controllers/)",
+      "Bash(xargs -I{} sh -c 'echo ==={}===; cat \"{}\"')"
     ]
   }
 }
