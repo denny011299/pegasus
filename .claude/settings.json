@@ -6,7 +6,8 @@
       "Bash(php -v)",
       "Bash(php -r ' *)",
       "Bash(grep -rn '::create\\($request\\\\|::create\\(request\\(\\\\|->fill\\($request\\\\|::create\\($data\\)\\\\b' app/Http/Controllers/)",
-      "Bash(xargs -I{} sh -c 'echo ==={}===; cat \"{}\"')"
+      "Bash(xargs -I{} sh -c 'echo ==={}===; cat \"{}\"')",
+      "Bash(echo \"exit:$?\")"
     ]
   }
 }
