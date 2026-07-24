@@ -1,0 +1,24 @@
+# Laravel / General
+vendor/
+node_modules/
+public/build/
+public/hot/
+public/storage/
+storage/framework/
+storage/logs/
+bootstrap/cache/
+.git/
+.env
+
+# Cache / Logs
+*.log
+*.sqlite
+*.sqlite3
+*.db
+.phpunit.result.cache
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

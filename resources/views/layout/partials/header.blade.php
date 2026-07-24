@@ -1,12 +1,11 @@
 <!-- Header -->
 <style>
     .search-expand {
-        width: 15rem; /* ukuran default */
-        transition: width 0.3s ease; /* animasi */
+        width: 15rem;
+        transition: width 0.3s ease;
     }
-
     .search-expand:focus {
-        width: 25rem; /* ukuran membesar saat diklik */
+        width: 25rem;
     }
     #camera, #preview-box {
         width: 100%;
@@ -25,67 +24,91 @@
 
 <style>
     /* =============================================
-       PREMIUM NAVBAR DESIGN
+       PREMIUM NAVBAR — DARK GRADIENT (Matches Sidebar)
        ============================================= */
     .custom-premium-header {
-        background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 100%) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.15) !important;
+        background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1e40af 100%) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255,255,255,0.04) !important;
+        height: 60px !important;
     }
+
+    /* Text colors */
     .custom-premium-header .nav-item .nav-link,
     .custom-premium-header .toggle-switch,
     .custom-premium-header .win-maximize {
-        color: #ffffff !important;
+        color: rgba(255,255,255,0.9) !important;
     }
+
+    /* Icon Buttons (notification, settings, etc) */
     .custom-premium-header .dropdown-heads a {
-        background: rgba(255, 255, 255, 0.12) !important;
-        border: 1px solid rgba(255, 255, 255, 0.15) !important;
-        color: #ffffff !important;
-        border-radius: 12px !important;
-        transition: all 0.25s ease;
+        background: rgba(255, 255, 255, 0.07) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
+        width: 36px !important;
+        height: 36px !important;
     }
     .custom-premium-header .dropdown-heads a i,
     .custom-premium-header .dropdown-heads a svg,
     .custom-premium-header .dropdown-heads a .fe,
     .custom-premium-header .dropdown-heads a .fa-solid {
-        color: #ffffff !important;
-        fill: #ffffff !important;
+        color: rgba(255,255,255,0.85) !important;
+        fill: rgba(255,255,255,0.85) !important;
+        font-size: 15px !important;
+        transition: transform 0.2s ease !important;
     }
     .custom-premium-header .dropdown-heads a:hover {
-        background: rgba(255, 255, 255, 0.2) !important;
-        border-color: rgba(255, 255, 255, 0.3) !important;
+        background: rgba(59, 130, 246, 0.3) !important;
+        border-color: rgba(96, 165, 250, 0.5) !important;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
     }
+    .custom-premium-header .dropdown-heads a:hover i,
+    .custom-premium-header .dropdown-heads a:hover .fe,
+    .custom-premium-header .dropdown-heads a:hover .fa-solid {
+        color: #ffffff !important;
+        transform: scale(1.1);
+    }
+
+    /* User avatar */
     .custom-premium-header .user-menu .user-img img {
-        border: 2px solid rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(96, 165, 250, 0.4);
         border-radius: 50%;
-        padding: 2px;
         transition: all 0.2s ease;
-        background: rgba(255,255,255,0.1);
     }
     .custom-premium-header .user-menu:hover .user-img img {
-        border-color: rgba(255, 255, 255, 0.5);
+        border-color: rgba(96, 165, 250, 0.8);
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.3);
         transform: scale(1.05);
     }
     .custom-premium-header .user-name {
         color: rgba(255, 255, 255, 0.95) !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
     }
     .custom-premium-header .user-details {
-        color: rgba(255, 255, 255, 0.6) !important;
+        color: rgba(148, 163, 184, 0.8) !important;
+        font-size: 11.5px !important;
     }
+
+    /* Hamburger / sidebar toggle */
     .custom-premium-header .toggle-bars .bar-icons {
-        background-color: #ffffff !important;
-        opacity: 0.8;
+        background-color: rgba(255,255,255,0.8) !important;
+        height: 2px !important;
+        border-radius: 2px;
+        transition: all 0.2s ease;
     }
     .custom-premium-header #toggle_btn:hover .bar-icons {
-        opacity: 1;
+        background-color: #ffffff !important;
+        box-shadow: 0 0 6px rgba(96,165,250,0.5);
     }
 </style>
+
+
 
 @if (!Route::is(['index-three', 'index-four', 'index-five']))
     @if (!Route::is(['index-two']))
@@ -140,7 +163,7 @@
             color: #2563eb !important;
             font-size: 13px;
         }
-        /* Dropdown Menu */
+        /* Dropdown Menu — wajib tertutup kecuali .show (cagah override CSS lain) */
         .warehouse-custom-dropdown .dropdown-menu {
             border-radius: 14px;
             border: 1px solid #dbeafe;
@@ -149,6 +172,9 @@
             min-width: 280px;
             padding: 8px;
             margin-top: 6px !important;
+        }
+        .warehouse-custom-dropdown .dropdown-menu:not(.show) {
+            display: none !important;
         }
         /* Group header */
         .warehouse-custom-dropdown .dropdown-header {
@@ -493,41 +519,99 @@
     </style>
     <div class="dropdown warehouse-custom-dropdown" style="float: left; margin-left: 45px; margin-top: 13px;">
         @php
-            $activeWh = null;
-            if(isset($warehouses)) {
+            $activeWh = $activeWarehouse ?? null;
+            if (!$activeWh && isset($warehouses)) {
                 $activeWh = collect($warehouses)->firstWhere('id', session('active_warehouse_id'));
             }
+            $isActiveMain = $activeWh && isset($activeWh->type) && (int) $activeWh->type->is_main_warehouse === 1;
+            $activeIconClass = $isActiveMain ? 'fas fa-building' : 'fas fa-store';
+            $groupedWarehouses = $warehousesGrouped ?? collect($warehouses ?? [])->groupBy(function ($wh) {
+                return strtoupper($wh->type->warehouse_type_name ?? 'DAFTAR GUDANG');
+            });
         @endphp
-        <button class="btn btn-warehouse dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        <button class="btn btn-warehouse dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false" autocomplete="off">
             <div class="d-flex align-items-center gap-2">
-                <i class="fas fa-warehouse" style="color: #6366f1;"></i>
+                <i class="{{ $activeIconClass }}" style="color: #6366f1;"></i>
                 <span>{{ $activeWh ? ($activeWh->warehouse_name ?? $activeWh->name) : 'Pilih Gudang...' }}</span>
             </div>
         </button>
         <ul class="dropdown-menu">
-            @php
-                // Mock grouped warehouses for UI, cursor will fix backend loop if needed
-                $groupedWarehouses = collect($warehouses ?? [])->groupBy(function($wh) {
-                    return strtoupper($wh->type->warehouse_type_name ?? 'DAFTAR GUDANG');
-                });
-            @endphp
-            
-            @foreach($groupedWarehouses as $type => $whs)
+            @forelse($groupedWarehouses as $type => $whs)
                 <li><h6 class="dropdown-header">{{ $type }}</h6></li>
                 @foreach($whs as $wh)
+                    @php
+                        $isMain = isset($wh->type) && (int) $wh->type->is_main_warehouse === 1;
+                        $itemIconClass = $isMain ? 'fas fa-building' : 'fas fa-store';
+                    @endphp
                     <li>
-                        <a class="dropdown-item warehouse-dropdown-item {{ session('active_warehouse_id') == $wh->id ? 'active' : '' }}" href="javascript:void(0)" data-id="{{ $wh->id }}">
-                            <i class="fas fa-warehouse"></i>
-                            {{ $wh->warehouse_name ?? $wh->name }}
+                        <a class="dropdown-item warehouse-dropdown-item {{ (string) session('active_warehouse_id') === (string) $wh->id ? 'active' : '' }}" href="javascript:void(0)" data-id="{{ $wh->id }}" data-is-main="{{ $isMain ? 1 : 0 }}">
+                            <i class="{{ $itemIconClass }}"></i>
+                            <span>{{ $wh->warehouse_name ?? $wh->name }}</span>
                         </a>
                     </li>
                 @endforeach
                 @if(!$loop->last)
                     <li><hr class="dropdown-divider"></li>
                 @endif
-            @endforeach
+            @empty
+                <li><span class="dropdown-item-text text-muted">Tidak ada gudang aktif</span></li>
+            @endforelse
         </ul>
     </div>
+    <style>
+        .warehouse-custom-dropdown .dropdown-menu {
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 8px;
+            min-width: 240px;
+            margin-top: 6px !important;
+        }
+        .warehouse-custom-dropdown .dropdown-menu:not(.show) {
+            display: none !important;
+        }
+        .warehouse-custom-dropdown .dropdown-header {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            padding: 8px 12px 4px;
+        }
+        .warehouse-dropdown-item {
+            padding: 8px 12px;
+            margin-bottom: 2px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+            color: #475569;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .warehouse-dropdown-item i {
+            font-size: 14px;
+            color: #94a3b8;
+            width: 20px;
+            text-align: center;
+            transition: color 0.2s ease;
+        }
+        .warehouse-dropdown-item:hover {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .warehouse-dropdown-item:hover i {
+            color: #64748b;
+        }
+        .warehouse-dropdown-item.active {
+            background-color: #eff6ff !important;
+            color: #1d4ed8 !important;
+            font-weight: 600;
+        }
+        .warehouse-dropdown-item.active i {
+            color: #2563eb !important;
+        }
+    </style>
     <style>
         @media (min-width: 992px) {
             .warehouse-select-container {

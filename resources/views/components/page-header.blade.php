@@ -202,6 +202,14 @@
                     </li>
                     @endroleCan
                 @endif
+                @if (Route::is(['stockTransfer']))
+                    @roleCan('Stock Transfer', 'create')
+                    <li>
+                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Stock Transfer</a>
+                    </li>
+                    @endroleCan
+                @endif
 
                 @if (Route::is(['detailStockOpname']))
                     <li>

@@ -252,7 +252,9 @@ class Supplies extends Model
         $t->save();
 
         SuppliesVariant::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
-        SuppliesStock::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
+        SuppliesStock::withoutGlobalScope('active_warehouse')
+            ->where("supplies_id", "=", $data["supplies_id"])
+            ->update(["status" => 0]);
     }
 
     public function getActiveUnitsForSupplies(int $suppliesId)

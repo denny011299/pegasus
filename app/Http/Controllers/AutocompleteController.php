@@ -25,6 +25,7 @@ use App\Models\Supplies;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
+use App\Models\Warehouse;
 use App\Models\WarehouseType;
 use Illuminate\Http\Request;
 
@@ -527,5 +528,35 @@ class AutocompleteController extends Controller
         return response()->json([
             'data' => $data,
         ]);
+    }
+
+    public function autocompleteWarehouse(Request $req)
+    {
+        $keyword = trim((string) ($req->keyword ?? $req->q ?? $req->term ?? ''));
+
+        $query = Warehouse::query()
+            ->active()
+            ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+            ->orderBy('warehouse_name');
+
+        if ($keyword !== '') {
+            $query->where('warehouse_name', 'like', '%' . $keyword . '%');
+        }
+
+        $rows = $query->limit(30)->get(['id', 'warehouse_name', 'warehouse_type_id']);
+
+        $data = $rows->map(static function ($wh) {
+            $typeName = $wh->type->warehouse_type_name ?? null;
+            return [
+                'id' => (int) $wh->id,
+                'text' => $typeName
+                    ? $wh->warehouse_name . ' (' . $typeName . ')'
+                    : $wh->warehouse_name,
+                'warehouse_name' => $wh->warehouse_name,
+                'warehouse_type_id' => (int) $wh->warehouse_type_id,
+            ];
+        })->values()->all();
+
+        return response()->json(['data' => $data]);
     }
 }

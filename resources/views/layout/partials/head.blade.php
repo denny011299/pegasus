@@ -269,7 +269,7 @@
     @endif
 
     <!-- Main CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ time() }}">
 
     <style>
         /* Select2 single — perbaikan tampilan autocomplete */
@@ -312,6 +312,66 @@
             font-weight: bold;
             cursor: pointer;
             z-index: 1;
+        }
+
+        /* Datatable Skeleton Custom Styles */
+        .dt-pending table,
+        .dt-pending .dataTables_wrapper {
+            display: none !important;
+        }
+        .dt-ready .dt-skeleton {
+            display: none !important;
+        }
+        .dt-skeleton {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        .dt-skeleton-head {
+            display: grid;
+            gap: 0;
+            background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%);
+            border-bottom: 2px solid #bfdbfe;
+            border-radius: 8px 8px 0 0;
+            padding: 16px 25px;
+            margin-bottom: 0;
+        }
+        .dt-skeleton-head span {
+            height: 12px;
+            border-radius: 6px;
+            background: rgba(30, 64, 175, 0.15);
+        }
+        .dt-skeleton-body {
+            padding: 0 25px 8px;
+        }
+        .dt-skeleton-row {
+            display: grid;
+            gap: 0;
+            align-items: center;
+            min-height: 65px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .dt-skeleton-row span {
+            background: #e2e8f0;
+            background-image: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 40%, #e2e8f0 80%);
+            background-size: 200% 100%;
+            animation: dt-shimmer 1.5s ease-in-out infinite;
+            display: inline-block;
+        }
+        .skel-icon { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; }
+        .skel-avatar { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+        .skel-badge { height: 26px; border-radius: 20px; }
+        .skel-btn { width: 32px; height: 32px; border-radius: 8px; }
+        .skel-text { height: 14px; border-radius: 6px; }
+
+        .dt-skeleton-row:nth-child(2) span { animation-delay: 0.1s; }
+        .dt-skeleton-row:nth-child(3) span { animation-delay: 0.2s; }
+        .dt-skeleton-row:nth-child(4) span { animation-delay: 0.3s; }
+        .dt-skeleton-row:nth-child(5) span { animation-delay: 0.4s; }
+
+        @keyframes dt-shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
         }
     </style>
 

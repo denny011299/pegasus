@@ -1,10 +1,9 @@
 function clearStaffFormInvalid() {
     $('.is-invalid').removeClass('is-invalid');
-    $('#row-position .select2-selection, #row-warehouse .select2-selection')
-        .removeClass('is-invalids')
-        .each(function () {
-            this.style.removeProperty('border');
-        });
+    $('#row-position .select2-selection').removeClass('is-invalids').each(function () {
+        this.style.removeProperty('border');
+    });
+    $('.warehouse-list-container').removeClass('border-danger');
 }
 
 function markSelect2Invalid($select) {
@@ -26,10 +25,11 @@ $(document).ready(function(){
         width: '100%'
     });
 
-    $('#staff_warehouses').select2({
-        placeholder: 'Pilih Gudang...',
-        allowClear: true,
-        width: '100%'
+    // Checkbox interaction: hapus border merah jika dicentang
+    $('.chk-warehouse').on('change', function() {
+        if ($('.chk-warehouse:checked').length > 0) {
+            $('.warehouse-list-container').removeClass('border-danger');
+        }
     });
 
     // Hapus border merah begitu user memilih nilai
@@ -40,14 +40,7 @@ $(document).ready(function(){
             });
         }
     });
-    $('#staff_warehouses').on('change', function () {
-        var wh = $(this).val();
-        if (wh && wh.length) {
-            $('#row-warehouse .select2-selection').removeClass('is-invalids').each(function () {
-                this.style.removeProperty('border');
-            });
-        }
-    });
+
 
     if(mode==2 || mode==='2') {
         $('.content-page-header h5').text('Update Staf');
@@ -75,7 +68,11 @@ $(document).ready(function(){
                 let selected_wh = typeof staffData.staff_warehouses === 'string'
                     ? JSON.parse(staffData.staff_warehouses)
                     : staffData.staff_warehouses;
-                $('#staff_warehouses').val(selected_wh).trigger('change');
+                if (selected_wh && Array.isArray(selected_wh)) {
+                    selected_wh.forEach(function(id) {
+                        $('#wh_' + id).prop('checked', true);
+                    });
+                }
             } catch(e) {}
         }
     }
@@ -84,19 +81,14 @@ $(document).ready(function(){
 $(document).on("click", "#btn_select_all_warehouses", function() {
     let state = $(this).attr('data-state');
     if (state !== 'clear') {
-        let allOptions = [];
-        $('#staff_warehouses option').each(function() {
-            if($(this).val()) {
-                allOptions.push($(this).val());
-            }
-        });
-        $('#staff_warehouses').val(allOptions).trigger('change');
+        $('.chk-warehouse').prop('checked', true);
         $(this).attr('data-state', 'clear');
-        $(this).html('<i class="fa fa-times"></i> Hapus Semua Gudang').removeClass('text-primary').addClass('text-danger');
+        $(this).html('<i class="fa fa-times"></i> Hapus Semua').removeClass('text-primary').addClass('text-danger');
+        $('.warehouse-list-container').removeClass('border-danger');
     } else {
-        $('#staff_warehouses').val([]).trigger('change');
+        $('.chk-warehouse').prop('checked', false);
         $(this).attr('data-state', 'all');
-        $(this).html('<i class="fa fa-check-square"></i> Pilih Semua Gudang').removeClass('text-danger').addClass('text-primary');
+        $(this).html('<i class="fa fa-check-square"></i> Pilih Semua').removeClass('text-danger').addClass('text-primary');
     }
 });
 
@@ -118,10 +110,13 @@ $(document).on("click", ".btn-save", function () {
         markSelect2Invalid($('#staff_position'));
     }
 
-    let wh = $('#staff_warehouses').val();
-    if (!wh || wh.length === 0) {
+    var staff_warehouses = [];
+    $('.chk-warehouse:checked').each(function() {
+        staff_warehouses.push($(this).val());
+    });
+    if (!staff_warehouses || !staff_warehouses.length) {
+        $('.warehouse-list-container').addClass('border-danger');
         valid = -1;
-        markSelect2Invalid($('#staff_warehouses'));
     }
 
     let pass = $('#staff_password').val();
@@ -158,7 +153,7 @@ $(document).on("click", ".btn-save", function () {
         staff_position: $("#staff_position").val(),
         staff_address: $("#staff_address").val(),
         staff_password: $("#staff_password").val(),
-        staff_warehouses: JSON.stringify($("#staff_warehouses").val()),
+        staff_warehouses: JSON.stringify(staff_warehouses),
         _token: token
     };
 

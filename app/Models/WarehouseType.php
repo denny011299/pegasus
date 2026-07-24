@@ -16,12 +16,14 @@ class WarehouseType extends Model
 
     protected $fillable = [
         'warehouse_type_name',
+        'is_main_warehouse',
         'status',
         'created_by',
     ];
 
     protected $casts = [
         'status' => 'integer',
+        'is_main_warehouse' => 'integer',
     ];
 
     public function scopeActive($query)
@@ -64,8 +66,14 @@ class WarehouseType extends Model
             return -2;
         }
 
+        $isMain = $this->parseIsMain($data);
+        if ($isMain === 1 && $this->hasOtherMain()) {
+            return -4;
+        }
+
         $row = self::create([
             'warehouse_type_name' => trim((string) $data['warehouse_type_name']),
+            'is_main_warehouse' => $isMain,
             'status' => 1,
             'created_by' => Session::get('user')->staff_id ?? null,
         ]);
@@ -80,7 +88,14 @@ class WarehouseType extends Model
         }
 
         $row = self::active()->findOrFail($data['id']);
+        $isMain = $this->parseIsMain($data);
+
+        if ($isMain === 1 && $this->hasOtherMain((int) $row->id)) {
+            return -4;
+        }
+
         $row->warehouse_type_name = trim((string) $data['warehouse_type_name']);
+        $row->is_main_warehouse = $isMain;
         $row->created_by = Session::get('user')->staff_id ?? null;
         $row->save();
 
@@ -90,6 +105,21 @@ class WarehouseType extends Model
     public function deleteWarehouseType(array $data)
     {
         $row = self::active()->findOrFail($data['id']);
+        $force = !empty($data['force']) && in_array($data['force'], [1, '1', true, 'true'], true);
+
+        $usedCount = Warehouse::query()
+            ->whereIn('status', [1, 2])
+            ->where('warehouse_type_id', $row->id)
+            ->count();
+
+        if ($usedCount > 0 && !$force) {
+            return [
+                'status' => -3,
+                'count' => $usedCount,
+                'message' => "Masih ada {$usedCount} gudang yang memakai tipe ini",
+            ];
+        }
+
         $row->status = 0;
         $row->created_by = Session::get('user')->staff_id ?? null;
         $row->save();
@@ -107,6 +137,24 @@ class WarehouseType extends Model
         return self::active()
             ->whereRaw('LOWER(warehouse_type_name) = ?', [mb_strtolower($name)])
             ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+            ->exists();
+    }
+
+    private function parseIsMain(array $data): int
+    {
+        $v = $data['is_main_warehouse'] ?? 0;
+        if (is_bool($v)) {
+            return $v ? 1 : 0;
+        }
+
+        return in_array($v, [1, '1', true, 'true', 'on', 'yes'], true) ? 1 : 0;
+    }
+
+    private function hasOtherMain(?int $exceptId = null): bool
+    {
+        return self::active()
+            ->where('is_main_warehouse', 1)
+            ->when($exceptId, fn ($q) => $q->where('id', '!=', $exceptId))
             ->exists();
     }
 }

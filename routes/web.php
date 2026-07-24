@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\checkLogin;
@@ -52,6 +53,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompleteSO', [AutocompleteController::class, 'autocompleteSO'])->name('autocompleteSO');
     Route::get('/autocompleteWarehouseType', [AutocompleteController::class, 'autocompleteWarehouseType'])->name('autocompleteWarehouseType');
     Route::post('/autocompleteWarehouseType', [AutocompleteController::class, 'autocompleteWarehouseType']);
+    Route::post('/autocompleteWarehouse', [AutocompleteController::class, 'autocompleteWarehouse'])->name('autocompleteWarehouse');
 
     Route::middleware('check.access:Kategori|view')->group(function () {
     });
@@ -194,6 +196,28 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Produk|others')->group(function () {
         Route::post('/accStockOpname', [StockController::class, 'accStockOpname'])->name('accStockOpname');
         Route::post('/tolakStockOpname', [StockController::class, 'tolakStockOpname'])->name('tolakStockOpname');
+    });
+
+    // Stock Transfer (scaffold — logic menyusul setelah UI Gemini)
+    Route::middleware('check.access:Stock Transfer|view')->group(function () {
+        Route::get('/stockTransfer', [StockTransferController::class, 'index'])->name('stockTransfer');
+        Route::get('/getStockTransfer', [StockTransferController::class, 'getStockTransfer'])->name('getStockTransfer');
+        Route::get('/getStockTransferDetail', [StockTransferController::class, 'getStockTransferDetail'])->name('getStockTransferDetail');
+        Route::get('/getTransferSourceStock', [StockTransferController::class, 'getTransferSourceStock'])->name('getTransferSourceStock');
+        Route::post('/checkTransferStock', [StockTransferController::class, 'checkTransferStock'])->name('checkTransferStock');
+    });
+    Route::middleware('check.access:Stock Transfer|create')->group(function () {
+        Route::post('/insertStockTransfer', [StockTransferController::class, 'insertStockTransfer'])->name('insertStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|edit')->group(function () {
+        Route::post('/updateStockTransfer', [StockTransferController::class, 'updateStockTransfer'])->name('updateStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|delete')->group(function () {
+        Route::post('/deleteStockTransfer', [StockTransferController::class, 'deleteStockTransfer'])->name('deleteStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|others')->group(function () {
+        Route::post('/accStockTransfer', [StockTransferController::class, 'accStockTransfer'])->name('accStockTransfer');
+        Route::post('/rejectStockTransfer', [StockTransferController::class, 'rejectStockTransfer'])->name('rejectStockTransfer');
     });
 
     Route::middleware('check.access:Stok Opname Bahan Mentah|view')->group(function () {

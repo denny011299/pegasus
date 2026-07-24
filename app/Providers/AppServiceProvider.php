@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\ProductVariant;
+use App\Models\Staff;
 use App\Models\Warehouse;
 use App\Support\RoleAccess;
 use Illuminate\Support\Facades\Blade;
@@ -38,31 +39,15 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        // Navbar: HANYA gudang yang di-assign ke staf login (pivot staff_warehouses)
-        View::composer(['layout.partials.header', 'layout.mainlayout'], function ($view) {
-            static $warehouses = null;
-            if ($warehouses === null) {
-                try {
-                    $user = Session::get('user');
-                    $warehouses = (Schema::hasTable('warehouses') && $user)
-                        ? Warehouse::availableForUser($user)
-                        : collect();
-                } catch (\Throwable $e) {
-                    $warehouses = collect();
-                }
+        // Global: $warehouses + $warehousesGrouped + $activeWarehouse untuk layout/header/sidebar
+        View::composer(['layout.partials.header', 'layout.partials.sidebar', 'layout.mainlayout'], function ($view) {
+            static $payload = null;
 
-                $activeId = Session::get('active_warehouse_id');
-                if ($activeId) {
-                    $stillAllowed = $warehouses->contains(fn ($wh) => (int) $wh->id === (int) $activeId);
-                    if (!$stillAllowed) {
-                        Session::forget('active_warehouse_id');
-                    }
-                } elseif ($warehouses->count() > 0) {
-                    // Auto-pilih jika belum ada yang terpilih
-                    Session::put('active_warehouse_id', (int) $warehouses->first()->id);
-                }
+            if ($payload === null) {
+                $payload = $this->buildWarehouseNavbarPayload();
             }
-            $view->with('warehouses', $warehouses);
+
+            $view->with($payload);
         });
 
         View::composer('layout.partials.header', function ($view) {
@@ -77,5 +62,69 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('hasStockAlert', true);
             }
         });
+    }
+
+    /**
+     * Siapkan data gudang navbar + pastikan session active_warehouse_id valid.
+     * Setelah pilih gudang → page reload → ProductStock / getStock ikut filter warehouse ini.
+     */
+    private function buildWarehouseNavbarPayload(): array
+    {
+        $empty = [
+            'warehouses' => collect(),
+            'warehousesGrouped' => collect(),
+            'activeWarehouse' => null,
+        ];
+
+        try {
+            if (! Schema::hasTable('warehouses')) {
+                return $empty;
+            }
+
+            $user = Session::get('user');
+            $warehouses = $user ? Warehouse::availableForUser($user) : collect();
+            $warehousesGrouped = Warehouse::groupByType($warehouses);
+
+            $activeId = Session::get('active_warehouse_id');
+            $activeWarehouse = null;
+
+            if ($activeId) {
+                $activeWarehouse = $warehouses->first(
+                    fn ($wh) => (int) $wh->id === (int) $activeId
+                );
+                if (! $activeWarehouse) {
+                    // Session mengarah ke gudang non-aktif / tidak di-assign → bersihkan
+                    Session::forget('active_warehouse_id');
+                    $activeId = null;
+                }
+            }
+
+            if (! $activeWarehouse && $warehouses->isNotEmpty()) {
+                $activeWarehouse = Warehouse::pickDefaultWarehouse($warehouses, $user);
+                if ($activeWarehouse) {
+                    $activeId = (int) $activeWarehouse->id;
+                    Session::put('active_warehouse_id', $activeId);
+
+                    // Persist preferensi jika belum / beda
+                    if ($user && ! empty($user->staff_id)) {
+                        $last = (int) ($user->last_active_warehouse_id ?? 0);
+                        if ($last !== $activeId) {
+                            Staff::where('staff_id', (int) $user->staff_id)
+                                ->update(['last_active_warehouse_id' => $activeId]);
+                            $user->last_active_warehouse_id = $activeId;
+                            Session::put('user', $user);
+                        }
+                    }
+                }
+            }
+
+            return [
+                'warehouses' => $warehouses,
+                'warehousesGrouped' => $warehousesGrouped,
+                'activeWarehouse' => $activeWarehouse,
+            ];
+        } catch (\Throwable $e) {
+            return $empty;
+        }
     }
 }

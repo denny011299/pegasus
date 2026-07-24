@@ -364,6 +364,401 @@
     </div>
 @endif
 
+@if (Route::is(['stockTransfer']))
+    {{--
+      GEMINI: isi modal form Stock Transfer sesuai screenshot referensi.
+      Field wajib:
+        - Pengirim (staff select2)
+        - Dari (gudang asal select2)
+        - Tanggal Pengiriman
+        - Penerima (staff select2)
+        - Ke (gudang tujuan select2)
+        - Catatan
+        - Search produk (SKU/barcode/nama) — pola FE mirip Pembelian
+        - Tabel "Produk yang di Transfer": Produk | SKU | Stok Asal | Jumlah | Aksi
+      Tombol: Batal | Simpan
+      Jangan ubah id modal #add_stock_transfer (sudah dipakai JS scaffold).
+    --}}
+    <div class="modal modal-lg custom-modal fade" id="add_stock_transfer" role="dialog"
+        data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <form action="#" id="formStockTransfer" class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+
+                {{-- ── HEADER ── --}}
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-shuffle text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold">Buat Stock Transfer</h5>
+                            <small class="text-white-50">Pindahkan stok antar gudang / toko</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                {{-- ── ROUTE PANEL ── --}}
+                <div class="border-bottom" style="background:#f8fafc; padding: 16px 24px;">
+                    <div class="row g-3 align-items-stretch">
+
+                        {{-- Card Asal --}}
+                        <div class="col-md-5">
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span style="width:28px;height:28px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="fe fe-log-out" style="font-size:13px;color:#3b82f6;"></i>
+                                    </span>
+                                    <span class="fw-semibold text-primary" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;">Dari (Asal)</span>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Pengirim</label>
+                                    <select class="form-select form-control fill select2 mt-1" id="transfer_sender_id" style="border-radius:8px;font-size:13px;">
+                                        <option value="">Pilih Staff</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang / Toko</label>
+                                    <select class="form-select form-control fill select2 mt-1" id="transfer_from_warehouse_id" style="border-radius:8px;font-size:13px;">
+                                        <option value="">Pilih toko atau gudang</option>
+                                    </select>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-calendar me-1"></i>Tanggal Pengiriman</label>
+                                    <div class="cal-icon mt-1">
+                                        <input type="text" class="form-control datetimepicker" id="transfer_date" placeholder="Pilih Tanggal" style="border-radius:8px;font-size:13px;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Arrow --}}
+                        <div class="col-md-2 d-flex align-items-center justify-content-center">
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                                <div style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                                    <i class="fe fe-arrow-right text-white" style="font-size:18px;"></i>
+                                </div>
+                                <span class="text-muted" style="font-size:10px;font-weight:600;letter-spacing:.5px;">TRANSFER</span>
+                            </div>
+                        </div>
+
+                        {{-- Card Tujuan --}}
+                        <div class="col-md-5">
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span style="width:28px;height:28px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="fe fe-log-in" style="font-size:13px;color:#22c55e;"></i>
+                                    </span>
+                                    <span class="fw-semibold" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;">Ke (Tujuan)</span>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Penerima</label>
+                                    <select class="form-select form-control fill select2 mt-1" id="transfer_receiver_id" style="border-radius:8px;font-size:13px;">
+                                        <option value="">Pilih Staff</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang / Toko</label>
+                                    <select class="form-select form-control fill select2 mt-1" id="transfer_to_warehouse_id" style="border-radius:8px;font-size:13px;">
+                                        <option value="">Pilih toko atau gudang</option>
+                                    </select>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-file-text me-1"></i>Catatan (Opsional)</label>
+                                    <textarea class="form-control mt-1" id="transfer_note" rows="2" placeholder="Masukkan catatan tambahan..." style="border-radius:8px;font-size:13px;resize:none;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Tambah Produk — full width row --}}
+                        <div class="col-12">
+                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px;">
+                                <div class="d-flex align-items-center gap-3">
+                                    <label class="text-muted mb-0 flex-shrink-0" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;"><i class="fe fe-box me-1"></i>Tambah Produk <span class="text-danger">*</span></label>
+                                    <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                        <div id="transfer_mode_select" class="flex-grow-1">
+                                            <select class="form-select form-control fill" id="transfer_sku" style="border-radius:8px;font-size:13px;">
+                                                <option value="" selected disabled>Pilih gudang asal terlebih dahulu</option>
+                                            </select>
+                                        </div>
+                                        <div id="transfer_mode_scan" style="display:none" class="flex-grow-1">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="transfer_scan_barcode" placeholder="Scan / ketik barcode..." style="font-size:13px;">
+                                                <input type="number" class="form-control" id="transfer_scan_qty" placeholder="Qty" value="1" min="1" style="max-width:70px;font-size:13px;">
+                                                <button type="button" class="btn btn-primary px-3" id="btn_scan_add_transfer"><i class="fa fa-plus"></i></button>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-light border flex-shrink-0 px-3" id="btn_toggle_scan_transfer" title="Ganti mode Scan" style="white-space:nowrap;border-radius:8px;font-size:13px;">
+                                            <i class="fa fa-barcode me-1"></i>Scan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {{-- ── PRODUCT TABLE ── --}}
+                <div class="modal-body p-0 d-flex flex-column" style="flex: 1 1 auto; overflow: hidden;">
+                    <div class="d-flex align-items-center px-4 py-2 border-bottom" style="background:#f8fafc;">
+                        <i class="fe fe-list text-primary me-2"></i>
+                        <span class="fw-semibold text-dark" style="font-size:13px;">Daftar Produk yang Akan Ditransfer</span>
+                    </div>
+                    <div class="table-responsive flex-grow-1" style="min-height:240px; overflow-y:auto;">
+                        <table class="table table-hover mb-0" id="tableTransferItems" style="font-size:13px;">
+                            <thead style="background:#f1f5f9; position:sticky; top:0; z-index:2;">
+                                <tr>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;padding:10px 16px;">Produk</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;">Varian</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;">SKU</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;">Stok Asal</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;width:110px;">Jumlah</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;width:130px;">Satuan</th>
+                                    <th class="no-sort text-center" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;width:70px;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="empty-row">
+                                    <td colspan="7" class="text-center py-5">
+                                        <div style="color:#94a3b8;">
+                                            <i class="fe fe-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>
+                                            <div class="fw-semibold" style="font-size:14px;">Belum ada produk</div>
+                                            <div style="font-size:12px;">Pilih gudang asal terlebih dahulu, lalu pilih atau scan produk</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- ── FOOTER ── --}}
+                <div class="modal-footer border-top" style="background:#f8fafc; padding:14px 24px;">
+                    <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                    <button type="button" class="btn btn-save-transfer d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Accept Stock Transfer
+         Qty di kolom Jumlah = qty DITERIMA (boleh diubah).
+         Default saat load detail = qty yang di-transfer.
+         Backend nanti: stok tujuan += qty_received.
+         Selisih vs qty kirim (kurang/lebih) → TBD (jangan auto-return ke asal).
+    -->
+    <div class="modal modal-lg custom-modal fade" id="accept_stock_transfer" role="dialog"
+        data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <form action="#" id="formAcceptStockTransfer" class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+
+                {{-- ── HEADER ── --}}
+                <div class="modal-header border-0" style="background:linear-gradient(135deg,#064e3b 0%,#059669 100%);padding:18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-check-circle text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold">Terima Stock Transfer</h5>
+                            <small class="text-white-50">Konfirmasi penerimaan barang</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                {{-- ── ROUTE INFO PANEL ── --}}
+                <div class="border-bottom" style="background:#f8fafc;padding:16px 24px;">
+                    <div class="row g-3 align-items-end">
+
+                        {{-- Info Asal --}}
+                        <div class="col-md-5">
+                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span style="width:28px;height:28px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="fe fe-log-out" style="font-size:13px;color:#3b82f6;"></i>
+                                    </span>
+                                    <span class="fw-semibold text-primary" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;">Dari (Asal)</span>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Pengirim</div>
+                                        <div class="fw-bold text-dark" style="font-size:14px;" id="lbl_accept_sender">-</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang Asal</div>
+                                        <div class="fw-bold text-dark" style="font-size:14px;" id="lbl_accept_from">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Arrow --}}
+                        <div class="col-md-2 text-center">
+                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding-bottom:8px;">
+                                <div style="width:44px;height:44px;background:linear-gradient(135deg,#059669,#10b981);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(5,150,105,.3);">
+                                    <i class="fe fe-arrow-right text-white" style="font-size:18px;"></i>
+                                </div>
+                                <span class="text-muted" style="font-size:10px;font-weight:600;letter-spacing:.5px;">TERIMA</span>
+                            </div>
+                        </div>
+
+                        {{-- Info Tujuan --}}
+                        <div class="col-md-5">
+                            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <span style="width:28px;height:28px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="fe fe-log-in" style="font-size:13px;color:#22c55e;"></i>
+                                    </span>
+                                    <span class="fw-semibold" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;">Ke (Tujuan)</span>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang Tujuan</div>
+                                        <div class="fw-bold text-dark" style="font-size:14px;" id="lbl_accept_to">-</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="text-muted" style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Tanggal</div>
+                                        <div class="fw-bold text-dark" style="font-size:14px;" id="lbl_accept_date">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Row 2: Penerima Baru + Catatan + Search --}}
+                        <div class="col-md-4">
+                            <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-user-check me-1"></i>Penerima Baru (Opsional)</label>
+                            <select class="form-select form-control fill select2 mt-1" id="accept_receiver_id" style="border-radius:8px;font-size:13px;">
+                                <option value="">Pilih Staff</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-file-text me-1"></i>Catatan Penerimaan</label>
+                            <textarea class="form-control mt-1" id="accept_note" rows="2" placeholder="Masukkan catatan..." style="border-radius:8px;font-size:13px;resize:none;"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-search me-1"></i>Cari Produk</label>
+                            <input type="text" class="form-control mt-1" id="search_accept_barcode" placeholder="Search barcode / nama produk..." style="border-radius:8px;font-size:13px;">
+                            <div style="font-size:10px;color:#94a3b8;margin-top:4px;">Jumlah = stok diterima (default qty transfer)</div>
+                        </div>
+
+                    </div>
+                </div>
+
+                {{-- ── PRODUCT TABLE ── --}}
+                <div class="modal-body p-0 d-flex flex-column" style="flex:1 1 auto;overflow:hidden;">
+                    <div class="d-flex align-items-center px-4 py-2 border-bottom" style="background:#f8fafc;">
+                        <i class="fe fe-list text-success me-2"></i>
+                        <span class="fw-semibold text-dark" style="font-size:13px;">Daftar Produk yang Diterima</span>
+                    </div>
+                    <div class="table-responsive flex-grow-1" style="min-height:240px;overflow-y:auto;">
+                        <table class="table table-hover mb-0" id="tableAcceptItems" style="font-size:13px;">
+                            <thead style="background:#f1f5f9;position:sticky;top:0;z-index:2;">
+                                <tr>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;padding:10px 16px;">Produk</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;">Varian</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;">SKU</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;width:140px;">Jumlah Diterima</th>
+                                    <th style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#64748b;width:120px;">Satuan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="empty-row">
+                                    <td colspan="5" class="text-center py-5">
+                                        <div style="color:#94a3b8;">
+                                            <i class="fe fe-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>
+                                            <div class="fw-semibold" style="font-size:14px;">Belum ada produk</div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- ── FOOTER ── --}}
+                <div class="modal-footer border-top" style="background:#f8fafc;padding:14px 24px;">
+                    <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                    <button type="button" class="btn btn-accept-transfer d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#059669,#16a34a);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:150px;height:42px;box-shadow:0 4px 12px rgba(5,150,105,.3);"><i class="fe fe-check-circle me-1"></i>Terima Transfer</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal View Stock Transfer -->
+    <div class="modal modal-lg custom-modal fade" id="view_stock_transfer" role="dialog"
+        data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <div class="form-header modal-header-title text-start mb-0">
+                        <h4 class="mb-0 modal-title">View Stock Transfer</h4>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body d-flex flex-column">
+                    <div style="flex: 0 0 auto;">
+                        <div class="bg-light p-4 rounded-3 shadow-sm mb-4 border">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-user me-1"></i> Pengirim</span>
+                                <div class="fw-bold text-dark fs-6" id="lbl_view_sender">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-arrow-up-right text-primary me-1"></i> Dari</span>
+                                <div class="fw-bold text-dark fs-6" id="lbl_view_from">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-calendar me-1"></i> Tanggal</span>
+                                <div class="fw-bold text-dark fs-6" id="lbl_view_date">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-user-check me-1"></i> Penerima</span>
+                                <div class="fw-bold text-dark fs-6" id="lbl_view_receiver">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-arrow-down-left text-success me-1"></i> Ke</span>
+                                <div class="fw-bold text-dark fs-6" id="lbl_view_to">-</div>
+                            </div>
+                            <div class="col-md-4">
+                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-file-text me-1"></i> Catatan</span>
+                                <div class="fw-bold text-dark fs-6" id="lbl_view_note">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    </div> <!-- end top section -->
+
+                    <div class="fw-bold mb-2 flex-shrink-0">Produk yang di Transfer</div>
+                    <div class="table-responsive border" style="flex: 1 1 0; min-height: 200px; overflow-y: auto; border-radius: 8px;">
+                        <table class="table table-center table-hover mb-0" id="tableViewItems">
+                            <thead class="thead-light" style="position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                                <tr>
+                                    <th>Produk</th>
+                                    <th>Varian</th>
+                                    <th>SKU</th>
+                                    <th style="width: 140px;">Jumlah Ditransfer</th>
+                                    <th style="width: 140px;">Jumlah Diterima</th>
+                                    <th style="width: 120px;">Satuan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="empty-row">
+                                    <td colspan="6" class="text-center text-muted">Belum ada produk.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
 @if (Route::is(['productIssue']))
     <!-- Add coupons -->
     <div class="modal fade" id="add-product-issues" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -2755,41 +3150,34 @@
                 <form action="#">
                     <div class="modal-body">
                         <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-lg-3 col-md-6 col-sm-12">
-                                    <div class="input-block mb-3">
-                                        <label>Dari</label>
-                                        <div>
-                                            <input type="date" class="form-control" id="start_date">
-                                        </div>
-                                    </div>
+                            <div class="d-flex align-items-end flex-wrap gap-3 mb-4 p-3 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
+                                <div style="flex: 1; min-width: 200px;">
+                                    <label class="form-label text-muted fw-semibold" style="font-size: 13px;">Periode Dari</label>
+                                    <input type="date" class="form-control form-control-sm" id="start_date">
                                 </div>
-                                <div class="col-lg-3 col-md-6 col-sm-12">
-                                    <div class="input-block mb-3">
-                                        <label>Sampai</label>
-                                        <div>
-                                            <input type="date" class="form-control" id="end_date">
-                                        </div>
-                                    </div>
+                                <div style="flex: 1; min-width: 200px;">
+                                    <label class="form-label text-muted fw-semibold" style="font-size: 13px;">Sampai Dengan</label>
+                                    <input type="date" class="form-control form-control-sm" id="end_date">
                                 </div>
-                                <div class="col-lg-3 col-md-6 col-sm-0"></div>
-                                <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
-                                    <a class="btn btn-outline-secondary btn-clear">
-                                        Clear
-                                    </a>
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-clear px-4" style="font-weight: 500; min-height: 33px;">
+                                        <i class="fa fa-refresh me-1"></i> Reset
+                                    </button>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-12 py-3 mb-3">
-                                    <div class="table-scroll overflow-x-auto">
-                                        <table class="table table-center" id="tableLog" style="min-height: 15vh">
-                                            <thead>
-                                                <th style="width:15%">Tanggal</th>
-                                                <th style="width:15%">Staff</th>
-                                                <th style="width:15%">No. Transaksi</th>
-                                                <th style="width:25%">Catatan</th>
-                                                <th style="width:15%" class="text-center">Masuk</th>
-                                                <th style="width:15%" class="text-center">Keluar</th>
+                                    <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 8px; max-height: 50vh; overflow-y: auto;">
+                                        <table class="table table-center table-hover mb-0" id="tableLog" style="min-height: 15vh;">
+                                            <thead style="background-color: #f8faff; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
+                                                <tr>
+                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;">Tanggal</th>
+                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;">Staff</th>
+                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;">No. Transaksi</th>
+                                                    <th style="width:25%; color: #475569; font-size: 13px; font-weight: 700;">Catatan</th>
+                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;" class="text-center">Masuk</th>
+                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;" class="text-center">Keluar</th>
+                                                </tr>
                                             </thead>
                                             <tbody></tbody>
                                         </table>
@@ -2798,10 +3186,10 @@
                             </div>
 
 
-                            <div class="modal-footer p-0">
-                                <button type="button" data-bs-dismiss="modal"
-                                    class="btn btn-back cancel-btn me-2">Kembali</button>
-                            </div>
+                            <div class="modal-footer p-0 mt-4 border-0">
+                                        <button type="button" data-bs-dismiss="modal"
+                                            class="btn btn-primary px-4 fw-semibold">Selesai</button>
+                                    </div>
                         </div>
                     </div>
                 </form>
@@ -2991,48 +3379,124 @@
 @if (Route::is(['warehouse']))
     <!-- modal -->
     <div class="modal modal-lg custom-modal fade" id="add_warehouse" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Gudang</h4>
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                {{-- ── HEADER ── --}}
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-box text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Gudang</h5>
+                            <small class="text-white-50">Kelola master data gudang / toko</small>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                
                 <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Nama Gudang<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="warehouse_name"
-                                            placeholder="Input Nama Gudang">
-                                    </div>
+                    <div class="modal-body p-0 bg-light d-flex flex-column">
+                        {{-- Basic Info Panel --}}
+                        <div class="p-4 border-bottom bg-white shadow-sm" style="flex: 0 0 auto;">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama Gudang <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control fill" id="warehouse_name" placeholder="Contoh: Gudang Pusat Jakarta" style="font-size:14px;border-radius:8px;height:42px;">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Tipe Gudang <span class="text-danger">*</span></label>
+                                    <select class="form-select form-control fill select2" id="warehouse_type_id" style="font-size:14px;height:42px;">
+                                        <option value="">Pilih Tipe Gudang...</option>
+                                    </select>
                                 </div>
                                 <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Tipe Gudang<span class="text-danger">*</span></label>
-                                        <select class="form-select form-control fill select2" id="warehouse_type_id">
-                                            <option value="">Pilih Tipe Gudang...</option>
-                                        </select>
-                                    </div>
+                                    <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-map-pin me-1"></i>Alamat Lengkap</label>
+                                    <textarea class="form-control" id="warehouse_address" rows="2" placeholder="Masukkan alamat lengkap gudang..." style="font-size:14px;resize:none;border-radius:8px;"></textarea>
                                 </div>
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Alamat Gudang</label>
-                                        <textarea class="form-control" id="warehouse_address" placeholder="Input Alamat Gudang"></textarea>
-                                    </div>
+                            </div>
+                        </div>
+
+                        {{-- Permissions Panel --}}
+                        <div class="p-4" style="flex: 1 1 auto; background: #f8fafc;">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                <div>
+                                    <label class="mb-0 fw-bold text-dark" style="font-size:14px;"><i class="fe fe-shield me-1 text-primary"></i> Akses Menu Sidebar</label>
+                                    <p class="text-muted mb-0 mt-1" style="font-size: 11px;">Centang menu yang diizinkan untuk diakses dari gudang ini. Kosongkan jika ingin membuka semua akses.</p>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm" style="background:#eff6ff;color:#3b82f6;border:1px solid #bfdbfe;font-weight:600;font-size:12px;border-radius:6px;padding:6px 12px;" id="btn-sidebar-menus-all">
+                                        <i class="fa fa-check-square me-1"></i> Pilih Semua
+                                    </button>
+                                    <button type="button" class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;font-weight:600;font-size:12px;border-radius:6px;padding:6px 12px;" id="btn-sidebar-menus-none">
+                                        <i class="fa fa-square-o me-1"></i> Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            @php
+                                $warehousePermissionMenus = json_decode(
+                                    file_get_contents(public_path('assets/json/permission.json')),
+                                    true
+                                ) ?: [];
+                                $warehousePermissionGrouped = collect($warehousePermissionMenus)
+                                    ->filter(fn ($p) => ($p['SubModules'] ?? '') !== 'Safety Stock')
+                                    ->groupBy('Modules');
+                            @endphp
+                            <style>
+                                .menu-masonry {
+                                    column-count: 1;
+                                    column-gap: 16px;
+                                }
+                                @media (min-width: 576px) { .menu-masonry { column-count: 2; } }
+                                .menu-card {
+                                    break-inside: avoid;
+                                    margin-bottom: 16px;
+                                    background: #ffffff;
+                                    border: 1px solid #e2e8f0;
+                                    border-radius: 8px;
+                                    padding: 12px;
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                                    transition: all 0.2s ease;
+                                }
+                                .menu-card:hover {
+                                    border-color: #cbd5e1;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+                                }
+                            </style>
+                            <div id="warehouse_sidebar_menus" class="border p-3 bg-white" style="border-radius: 12px; max-height: 280px; overflow-y: auto;">
+                                <div class="menu-masonry">
+                                    @foreach ($warehousePermissionGrouped as $module => $items)
+                                        <div class="menu-card">
+                                            <div class="form-check m-0 mb-3 d-flex align-items-center gap-2" style="border-bottom: 1px dashed #cbd5e1; padding-bottom: 8px;">
+                                                <input class="form-check-input module-check-all m-0" type="checkbox" id="mod_menu_{{ Str::slug($module) }}" style="cursor:pointer; width:16px; height:16px; margin-top:0;">
+                                                <label class="form-check-label fw-bold text-dark mb-0" for="mod_menu_{{ Str::slug($module) }}" style="font-size:13.5px; cursor:pointer;">
+                                                    {{ $module }}
+                                                </label>
+                                            </div>
+                                            <div class="d-flex flex-column gap-2 px-1">
+                                                @foreach ($items as $item)
+                                                    <div class="form-check m-0 d-flex align-items-center gap-2">
+                                                        <input class="form-check-input warehouse-sidebar-menu m-0" type="checkbox"
+                                                            value="{{ $item['SubModules'] }}"
+                                                            id="wh_menu_{{ $item['Id'] }}" style="cursor:pointer; width:14px; height:14px; margin-top:0;">
+                                                        <label class="form-check-label text-secondary mb-0" for="wh_menu_{{ $item['Id'] }}" style="font-size:12.5px; cursor:pointer;">
+                                                            {{ $item['SubModules'] }}
+                                                        </label>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Gudang</button>
+                    
+                    {{-- ── FOOTER ── --}}
+                    <div class="modal-footer border-top" style="background:#f8fafc; padding:14px 24px;">
+                        <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                        <button type="button" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan Gudang</button>
                     </div>
                 </form>
             </div>
@@ -3044,33 +3508,53 @@
     <!-- modal -->
     <div class="modal modal-lg custom-modal fade" id="add_warehouse_type" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Tipe Gudang</h4>
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                {{-- ── HEADER ── --}}
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-tag text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Tipe Gudang</h5>
+                            <small class="text-white-50">Kelola kategori / tipe gudang</small>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+
                 <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Nama Tipe Gudang<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="warehouse_type_name"
-                                            placeholder="Input Nama Tipe Gudang">
-                                    </div>
+                    <div class="modal-body p-4" style="background:#f8fafc;">
+                        {{-- Nama Tipe Gudang --}}
+                        <div class="mb-3">
+                            <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama Tipe Gudang <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control fill" id="warehouse_type_name" placeholder="Contoh: Gudang Eceran, Gudang Utama..." style="font-size:14px;border-radius:8px;height:42px;">
+                        </div>
+
+                        {{-- Toggle Gudang Utama --}}
+                        <div class="p-3" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="status-toggle mt-1" style="flex-shrink:0;">
+                                    <input type="checkbox" id="is_main_warehouse" class="check">
+                                    <label for="is_main_warehouse" class="checktoggle">checkbox</label>
+                                </div>
+                                <div>
+                                    <label class="mb-1 fw-semibold text-dark" for="is_main_warehouse" style="cursor:pointer;font-size:14px;display:block;">
+                                        <i class="fe fe-home me-1 text-primary"></i> Jadikan Gudang Utama
+                                    </label>
+                                    <p class="text-muted mb-0" style="font-size:12px;line-height:1.5;">
+                                        Aktifkan opsi ini untuk menandai sebagai gudang pusat.<br>
+                                        <span class="fw-semibold" style="color:#ef4444;"><i class="fas fa-exclamation-circle me-1"></i>Catatan: Hanya boleh ada maksimal 1 tipe gudang utama.</span>
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Tipe Gudang</button>
+
+                    {{-- ── FOOTER ── --}}
+                    <div class="modal-footer border-top" style="background:#f8fafc;padding:14px 24px;">
+                        <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                        <button type="button" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:160px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan Tipe Gudang</button>
                     </div>
                 </form>
             </div>

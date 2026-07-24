@@ -180,11 +180,6 @@
 @endif
 
 @include('layout.partials.footer-scripts')
-@yield('custom_js')
-</body>
-
-</html>
-
 <script>
     var token= "{{csrf_token()}}";
 </script>
@@ -282,3 +277,7 @@
     }
 
 </script>
+@yield('custom_js')
+</body>
+
+</html>

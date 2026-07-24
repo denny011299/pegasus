@@ -8,7 +8,8 @@ $(document).ready(function () {
 $(document).on("click", ".btnAdd", function () {
     mode = 1;
     $("#add_warehouse_type .modal-title").html("Tambah Tipe Gudang");
-    $("#add_warehouse_type input").val("");
+    $("#warehouse_type_name").val("");
+    $("#is_main_warehouse").prop("checked", false);
     $(".is-invalid").removeClass("is-invalid");
     $(".btn-save").html(mode == 1 ? "Tambah Tipe Gudang" : "Update Tipe Gudang");
     $("#add_warehouse_type").removeAttr("data-id").modal("show");
@@ -56,12 +57,11 @@ function inisialisasi() {
                 data: "warehouse_type_name",
                 className: "text-start align-middle",
                 width: "40%",
-                render: function (data, type) {
+                render: function (data, type, row) {
                     if (type !== "display") return data;
                     if (!data) return '<span class="text-muted">-</span>';
 
-                    var typeName = String(data).toUpperCase();
-                    var isUtama = typeName.includes("UTAMA") || typeName.includes("BESAR");
+                    var isUtama = parseInt(row.is_main_warehouse) === 1;
                     var iconClass = isUtama ? "fas fa-building" : "fas fa-store";
                     var iconBg = isUtama ? "#eff6ff" : "#f8fafc";
                     var iconColor = isUtama ? "#2563eb" : "#64748b";
@@ -203,6 +203,7 @@ $(document).on("click", ".btn-save", function () {
 
     param = {
         warehouse_type_name: $("#warehouse_type_name").val(),
+        is_main_warehouse: $("#is_main_warehouse").is(":checked") ? 1 : 0,
         _token: token,
     };
 
@@ -224,6 +225,15 @@ $(document).on("click", ".btn-save", function () {
             if (e == -2) {
                 notifikasi("error", "Gagal", "Nama tipe gudang sudah terdaftar!");
                 $("#warehouse_type_name").addClass("is-invalid");
+                return;
+            }
+            if (e == -4) {
+                notifikasi(
+                    "error",
+                    "Gagal",
+                    "sudah ada gudang yang menjadi gudang utama.",
+                );
+                $("#is_main_warehouse").prop("checked", false);
                 return;
             }
             afterInsert();
@@ -254,10 +264,12 @@ $(document).on("click", ".btn_edit", function () {
     var data = table.row($(this).parents("tr")).data();
     mode = 2;
     $("#add_warehouse_type .modal-title").html("Update Tipe Gudang");
-    $("#add_warehouse_type input").val("");
+    $("#warehouse_type_name").val("");
+    $("#is_main_warehouse").prop("checked", false);
     $(".is-invalid").removeClass("is-invalid");
     $(".btn-save").html(mode == 1 ? "Tambah Tipe Gudang" : "Update Tipe Gudang");
     $("#warehouse_type_name").val(data.warehouse_type_name);
+    $("#is_main_warehouse").prop("checked", data.is_main_warehouse == 1 || data.is_main_warehouse === true);
     $("#add_warehouse_type").attr("data-id", data.id).modal("show");
 });
 
@@ -268,10 +280,43 @@ $(document).on("click", ".btn_delete", function () {
 });
 
 $(document).on("click", "#btn-delete-warehouse-type", function () {
+    var id = $(this).attr("data-id");
     $.ajax({
         url: "/deleteWarehouseType",
         data: {
-            id: $("#btn-delete-warehouse-type").attr("data-id"),
+            id: id,
+            _token: token,
+        },
+        method: "post",
+        success: function (e) {
+            if (e && e.status == -3) {
+                $(".modal").modal("hide");
+                var msg =
+                    (e.message || "Masih ada gudang yang memakai tipe ini") +
+                    ". Apakah benar-benar mau menghapus tipe gudang ini?";
+                $("#modalKonfirmasi .modal-title").text("Konfirmasi Hapus Lanjutan");
+                $("#modalKonfirmasi .btn-konfirmasi").removeClass("btn-success").addClass("btn-danger");
+                showModalKonfirmasi(msg, "btn-force-delete-warehouse-type");
+                $("#btn-force-delete-warehouse-type").attr("data-id", id);
+                return;
+            }
+            $(".modal").modal("hide");
+            refreshWarehouseType();
+            notifikasi("success", "Berhasil Delete", "Berhasil hapus tipe gudang");
+        },
+        error: function (e) {
+            notifikasi("error", "Gagal", "Terjadi kesalahan saat menghapus");
+            console.log(e);
+        },
+    });
+});
+
+$(document).on("click", "#btn-force-delete-warehouse-type", function () {
+    $.ajax({
+        url: "/deleteWarehouseType",
+        data: {
+            id: $(this).attr("data-id"),
+            force: 1,
             _token: token,
         },
         method: "post",

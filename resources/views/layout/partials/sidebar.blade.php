@@ -1,46 +1,60 @@
 <!-- Sidebar -->
 <style>
     /* =============================================
-       SIDEBAR — PEGASUS BLUE THEME
+       SIDEBAR — PREMIUM DARK BLUE THEME
        ============================================= */
 
-    .sidebar {
+    /* Increase specificity to override [data-sidebar=light] body .sidebar from style.css */
+    #sidebar.sidebar, 
+    body.mini-sidebar #sidebar.sidebar, 
+    body.mini-sidebar.expand-menu #sidebar.sidebar {
         background: #ffffff !important;
-        border-right: 1px solid #e8edf5 !important;
+        border-right: 1px solid #e2e8f0 !important;
         box-shadow: 2px 0 16px rgba(0, 0, 0, 0.05) !important;
     }
     .sidebar-inner {
         padding-bottom: 32px;
     }
     .sidebar-menu {
-        padding: 4px 10px 12px !important;
+        padding: 8px 12px 16px !important;
+    }
+
+    /* ── Logo / Brand area ── */
+    .sidebar .logo-box {
+        background: transparent !important;
+        border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+        padding: 16px 20px !important;
     }
 
     /* ── Section Titles ── */
     .sidebar-menu .menu-title {
-        color: #94a3b8 !important;
+        color: #475569 !important;
         font-size: 10px !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.1em !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.12em !important;
         text-transform: uppercase !important;
-        padding: 20px 8px 6px !important;
+        padding: 18px 8px 6px !important;
         margin: 0 !important;
         line-height: 1;
+    }
+    .sidebar-menu .menu-title span {
+        color: inherit !important;
     }
 
     /* ── Menu Items ── */
     .sidebar-menu li > a {
         display: flex !important;
         align-items: center !important;
-        border-radius: 9px !important;
+        border-radius: 10px !important;
         padding: 10px 12px !important;
-        margin-bottom: 1px !important;
-        color: #4b5563 !important;
+        margin-bottom: 2px !important;
+        color: #0f172a !important;
         font-size: 13.5px !important;
-        font-weight: 500 !important;
+        font-weight: 600 !important;
         text-decoration: none !important;
-        transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         position: relative;
+        gap: 10px;
     }
 
     /* Icons */
@@ -51,25 +65,33 @@
         min-width: 18px !important;
         height: 18px !important;
         font-size: 15px !important;
-        color: #9ca3af !important;
-        margin-right: 10px !important;
+        color: #334155 !important;
         text-align: center;
-        transition: color 0.15s ease !important;
+        transition: all 0.2s ease !important;
+        margin-right: 0 !important;
+    }
+
+    /* Span text */
+    .sidebar-menu li > a > span {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     /* Arrow */
     .sidebar-menu li > a > .menu-arrow {
         margin-left: auto !important;
-        font-size: 11px !important;
-        color: #b0bec5 !important;
-        transition: transform 0.2s ease, color 0.15s ease;
+        font-size: 10px !important;
+        color: #475569 !important;
+        transition: transform 0.25s ease, color 0.2s ease;
         flex-shrink: 0;
     }
 
     /* Hover */
     .sidebar-menu li > a:hover {
-        background: #f0f6ff !important;
-        color: #1e40af !important;
+        background: #f1f5f9 !important;
+        color: #000000 !important;
     }
     .sidebar-menu li > a:hover > i,
     .sidebar-menu li > a:hover > svg {
@@ -79,13 +101,13 @@
         color: #2563eb !important;
     }
 
-    /* ── ACTIVE — pakai box-shadow inset, bukan ::before ── */
+    /* ── ACTIVE STATE — glowing pill ── */
     .sidebar-menu li > a.active {
         background: #eff6ff !important;
-        color: #1d4ed8 !important;
-        font-weight: 600 !important;
-        /* Bar kiri biru dengan inset shadow — no ::before needed */
-        box-shadow: inset 3px 0 0 0 #2563eb !important;
+        color: #1e40af !important;
+        font-weight: 800 !important;
+        box-shadow:
+            inset 3px 0 0 0 #3b82f6 !important;
     }
     .sidebar-menu li > a.active > i,
     .sidebar-menu li > a.active > svg {
@@ -94,7 +116,8 @@
     .sidebar-menu li > a.active > .menu-arrow {
         color: #2563eb !important;
     }
-    /* Hapus ::before dan ::after bawaan template supaya tidak ada titik ungu/bentuk aneh */
+
+    /* Remove default before/after decorations */
     .sidebar-menu li > a::before,
     .sidebar-menu li > a::after,
     .sidebar-menu li > a.active::before,
@@ -107,29 +130,31 @@
     .sidebar-menu li.submenu.active > a > .menu-arrow,
     .sidebar-menu li.submenu > a[aria-expanded="true"] > .menu-arrow {
         transform: rotate(90deg);
+        color: #60a5fa !important;
     }
 
     /* ── Submenu List ── */
     .sidebar-menu .submenu > ul,
     .sidebar-menu .submenu > div > ul {
-        border-left: 2px solid #e2e8f0 !important; /* warna lebih abu-abu soft */
-        margin: 4px 0 4px 23px !important;
-        padding: 4px 0 4px 12px !important; /* jarak lebih lega dari garis */
+        border-left: 2px solid #e2e8f0 !important;
+        margin: 2px 0 4px 24px !important;
+        padding: 4px 0 4px 10px !important;
         list-style: none;
     }
 
     /* Submenu items */
     .sidebar-menu .submenu ul li > a {
-        padding: 8px 12px !important;
+        padding: 8px 10px !important;
         font-size: 13px !important;
-        color: #64748b !important;
+        color: #334155 !important;
         font-weight: 500 !important;
-        border-radius: 6px !important; /* radius lebih kalem */
-        margin-bottom: 2px !important;
+        border-radius: 7px !important;
+        margin-bottom: 1px !important;
         display: flex !important;
         align-items: center !important;
         box-shadow: none !important;
         position: relative;
+        transition: all 0.15s ease !important;
     }
     .sidebar-menu .submenu ul li > a::before,
     .sidebar-menu .submenu ul li > a::after {
@@ -141,26 +166,28 @@
         color: #2563eb !important;
     }
     .sidebar-menu .submenu ul li > a.active {
-        background: transparent !important; /* transparan agar clean */
-        color: #2563eb !important;
-        font-weight: 700 !important; /* tebalkan teks */
-        box-shadow: none !important; /* hapus bar biru yang bikin aneh */
+        background: transparent !important;
+        color: #1e40af !important;
+        font-weight: 800 !important;
+        box-shadow: none !important;
     }
-    /* Tambahkan indikator bulat kecil biru untuk submenu aktif yang lebih elegan */
+
+    /* Active submenu dot indicator */
     .sidebar-menu .submenu ul li > a.active::before {
         display: block !important;
         content: '' !important;
         position: absolute;
-        left: -17.5px; /* pas di atas garis border-left abu-abu */
+        left: -15px;
         top: 50%;
         transform: translateY(-50%);
-        width: 8px;
-        height: 8px;
-        background: #2563eb;
+        width: 6px;
+        height: 6px;
+        background: #3b82f6;
         border-radius: 50%;
-        border: 2px solid #ffffff; /* efek cincin */
+        box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
     }
 </style>
+
 @if (!Route::is(['index-two', 'index-three', 'index-four', 'index-five']))
     <div class="sidebar" id="sidebar">
         <div class="sidebar-inner slimscroll">
@@ -669,6 +696,16 @@
                     <!-- Main -->
     @php
         $akses = collect(json_decode(Session::get('user')->role_access ?? '[]'));
+        $activeWh = $activeWarehouse ?? null;
+        $canShow = function (string $name) use ($akses, $activeWh): bool {
+            if (! $akses->firstWhere('name', $name)) {
+                return false;
+            }
+            if (! $activeWh) {
+                return true;
+            }
+            return $activeWh->allowsSidebarMenu($name);
+        };
     @endphp
                     <li class="menu-title"><span>Menu Utama</span></li>
                     <li>
@@ -681,52 +718,53 @@
                     <!-- Master -->
                     @php
                         $showMaster =
-                        $akses->firstWhere('name', 'Kategori') ||
-                        $akses->firstWhere('name', 'Satuan') ||
-                        $akses->firstWhere('name', 'Variasi');
+                        $canShow('Kategori') ||
+                        $canShow('Satuan') ||
+                        $canShow('Variasi');
                     @endphp
                     @php
                         $showGudangMenu =
-                        $akses->firstWhere('name', 'Gudang') ||
-                        $akses->firstWhere('name', 'Tipe Gudang');
+                        $canShow('Gudang') ||
+                        $canShow('Tipe Gudang');
                     @endphp
                     @php
                         $showProduk =
-                        $akses->firstWhere('name', 'Daftar Produk') ||
-                        $akses->firstWhere('name', 'Stok Produk');
+                        $canShow('Daftar Produk') ||
+                        $canShow('Stok Produk');
                     @endphp
                     @php
                         $showBahan =
-                        $akses->firstWhere('name', 'Daftar Bahan Mentah') ||
-                        $akses->firstWhere('name', 'Stok Bahan Mentah');
+                        $canShow('Daftar Bahan Mentah') ||
+                        $canShow('Stok Bahan Mentah');
                     @endphp
                     @php
                         $showInventory =
-                        $akses->firstWhere('name', 'Produk Bermasalah') ||
-                        $akses->firstWhere('name', 'Peringatan Stok Produk') ||
-                        $akses->firstWhere('name', 'Peringatan Stok Bahan Mentah') ||
-                        $akses->firstWhere('name', 'Stok Opname Produk') ||
-                        $akses->firstWhere('name', 'Stok Opname Bahan Mentah');
+                        $canShow('Produk Bermasalah') ||
+                        $canShow('Peringatan Stok Produk') ||
+                        $canShow('Peringatan Stok Bahan Mentah') ||
+                        $canShow('Stok Opname Produk') ||
+                        $canShow('Stok Opname Bahan Mentah') ||
+                        $canShow('Stock Transfer');
                     @endphp
 
-                    @if ($showMaster || $showGudangMenu || $showProduk || $showBahan || $showInventory || $akses->firstWhere('name', 'Armada') || $akses->firstWhere('name', 'Pemasok'))
+                    @if ($showMaster || $showGudangMenu || $showProduk || $showBahan || $showInventory || $canShow('Armada') || $canShow('Pemasok'))
                         <li class="menu-title"><span>Master</span></li>
                         @if ($showMaster)
                             <li class="submenu">
                                 <a href="#"><i class="fe fe-list"></i> <span> Master</span> <span
                                     class="menu-arrow"></span></a>
                                 <ul style="display: none;">
-                                    @if ($akses->firstWhere('name', 'Kategori'))
+                                    @if ($canShow('Kategori'))
                                         <li><a href="{{ url('category') }}"
                                             class="{{ Request::is('category') ? 'active' : '' }}">Kategori</a></li>
                                     @endif
                                     
-                                    @if ($akses->firstWhere('name', 'Satuan'))
+                                    @if ($canShow('Satuan'))
                                         <li><a href="{{ url('unit') }}"
                                             class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Variasi'))
+                                    @if ($canShow('Variasi'))
                                         <li><a href="{{ url('variant') }}"
                                             class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                                     @endif
@@ -739,12 +777,12 @@
                                 <a href="#"><i class="fas fa-warehouse"></i> <span> Gudang</span> <span
                                     class="menu-arrow"></span></a>
                                 <ul style="display: none;">
-                                    @if ($akses->firstWhere('name', 'Gudang'))
+                                    @if ($canShow('Gudang'))
                                         <li><a href="{{ url('warehouse') }}"
                                             class="{{ Request::is('warehouse') ? 'active' : '' }}">Daftar Gudang</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Tipe Gudang'))
+                                    @if ($canShow('Tipe Gudang'))
                                         <li><a href="{{ url('warehouse-type') }}"
                                             class="{{ Request::is('warehouse-type') ? 'active' : '' }}">Tipe Gudang</a></li>
                                     @endif
@@ -753,7 +791,7 @@
                         @endif
                     
                         @if ($showProduk)
-                            @if ($akses->firstWhere('name', 'Daftar Produk'))
+                            @if ($canShow('Daftar Produk'))
                                 <li>
                                     <a href="{{ url('product') }}" class="{{ Request::is('product') ? 'active' : '' }}">
                                         <i class="fe fe-package"></i> <span>Daftar Produk</span>
@@ -761,7 +799,7 @@
                                 </li>
                             @endif
 
-                            @if ($akses->firstWhere('name', 'Stok Produk'))
+                            @if ($canShow('Stok Produk'))
                                 <li>
                                     <a href="{{ url('stockProduct') }}" class="{{ Request::is('stockProduct') ? 'active' : '' }}">
                                         <i class="fa fa-boxes"></i> <span>Stok Produk</span>
@@ -769,7 +807,7 @@
                                 </li>
                             @endif
                             
-                            @if ($akses->firstWhere('name', 'Daftar Produk'))
+                            @if ($canShow('Daftar Produk'))
                                 <li>
                                     <a href="{{ url('barcodePrint') }}" class="{{ Request::is('barcodePrint') ? 'active' : '' }}">
                                         <i class="fa fa-barcode"></i> <span>Cetak Barcode</span>
@@ -783,12 +821,12 @@
                                 <a href="#"><i class="fa fa-cubes"></i> <span> Bahan Mentah</span> <span
                                     class="menu-arrow"></span></a>
                                 <ul style="display: none;">
-                                    @if ($akses->firstWhere('name', 'Daftar Bahan Mentah'))
+                                    @if ($canShow('Daftar Bahan Mentah'))
                                         <li><a href="{{ url('supplies') }}"
                                             class="{{ Request::is('supplies') ? 'active' : '' }}">Daftar Bahan Mentah</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Stok Bahan Mentah'))
+                                    @if ($canShow('Stok Bahan Mentah'))
                                         <li><a href="{{ url('stockSupplies') }}"
                                             class="{{ Request::is('stockSupplies') ? 'active' : '' }}">Stok Bahan Mentah</a></li>
                                     @endif
@@ -797,14 +835,14 @@
                         @endif
                     
                         <li class="submenu">
-                            @if ($akses->firstWhere('name', 'Armada'))
+                            @if ($canShow('Armada'))
                                 <li>
                                     <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
                                         class="fe fe-users"></i> <span>Armada</span></a>
                                 </li>   
                             @endif
 
-                            @if ($akses->firstWhere('name', 'Pemasok'))
+                            @if ($canShow('Pemasok'))
                                 <li>
                                     <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i
                                         class="fe fe-truck"></i> <span>Pemasok</span></a>
@@ -817,29 +855,33 @@
                                 <a href="#"><i class="fe fe-briefcase"></i> <span> Inventaris</span> <span
                                     class="menu-arrow"></span></a>
                                 <ul style="display: none;">
-                                    @if ($akses->firstWhere('name', 'Produk Bermasalah'))
+                                    @if ($canShow('Produk Bermasalah'))
                                         <li><a href="{{ url('productIssue') }}"
                                             class="{{ Request::is('productIssue') ? 'active' : '' }}">Produk Bermasalah</a></li>
                                     @endif
     
-                                    @if ($akses->firstWhere('name', 'Peringatan Stok Produk'))
+                                    @if ($canShow('Peringatan Stok Produk'))
                                         <li><a href="{{ url('stockAlert') }}"
                                             class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok Produk</a></li>
                                     @endif
     
-                                    @if ($akses->firstWhere('name', 'Peringatan Stok Bahan Mentah'))
+                                    @if ($canShow('Peringatan Stok Bahan Mentah'))
                                         <li><a href="{{ url('stockAlertSupplies') }}"
                                             class="{{ Request::is('stockAlertSupplies') ? 'active' : '' }}">Peringatan Stok Bahan Mentah</a></li>
                                     @endif
     
-                                    @if ($akses->firstWhere('name', 'Stok Opname Produk'))
+                                    @if ($canShow('Stok Opname Produk'))
                                         <li><a href="{{ url('stockOpname') }}"
                                             class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname Produk</a></li>
                                     @endif
     
-                                    @if ($akses->firstWhere('name', 'Stok Opname Bahan Mentah'))
+                                    @if ($canShow('Stok Opname Bahan Mentah'))
                                         <li><a href="{{ url('stockOpnameBahan') }}"
                                             class="{{ Request::is('stockOpnameBahan') ? 'active' : '' }}">Stok Opname Bahan Mentah</a></li>
+                                    @endif
+                                    @if ($canShow('Stock Transfer'))
+                                        <li><a href="{{ url('stockTransfer') }}"
+                                            class="{{ Request::is('stockTransfer') ? 'active' : '' }}">Stock Transfer</a></li>
                                     @endif
                                 </ul>
                             </li>
@@ -848,24 +890,24 @@
                     <!-- /Master -->
 
                     {{-- Ordering --}}
-                    @if ($akses->firstWhere('name', 'Pengiriman') || $akses->firstWhere('name', 'Pembelian') || $akses->firstWhere('name', 'Tanda Terima PO'))
+                    @if ($canShow('Pengiriman') || $canShow('Pembelian') || $canShow('Tanda Terima PO'))
                         <li class="menu-title"><span>Penjualan & Pembelian</span></li>
                         <li class="submenu">
-                            @if ($akses->firstWhere('name', 'Pengiriman'))
+                            @if ($canShow('Pengiriman'))
                                 <li>
                                     <a class="{{ Request::is('salesOrder') ? 'active' : '' }}" href="/salesOrder"><i
                                             class="fe fe-truck"></i> <span>Pengiriman</span></a>
                                 </li>
                             @endif
 
-                            @if ($akses->firstWhere('name', 'Pembelian'))
+                            @if ($canShow('Pembelian'))
                                 <li>
                                     <a class="{{ Request::is('purchaseOrder') ? 'active' : '' }}" href="/purchaseOrder">
                                         <i class="fe fe-dollar-sign"></i> <span>Pembelian</span></a>
                                 </li>
                             @endif
 
-                            @if ($akses->firstWhere('name', 'Tanda Terima PO'))
+                            @if ($canShow('Tanda Terima PO'))
                                 <li>
                                     <a class="{{ Request::is('tt') ? 'active' : '' }}" href="/tt">
                                         <i class="fe fe-file-text"></i> <span>Tanda Terima PO</span></a>
@@ -875,17 +917,17 @@
                     @endif
                     {{-- /Ordering --}}
 
-                    @if ($akses->firstWhere('name', 'Resep Bahan Mentah') || $akses->firstWhere('name', 'Produksi'))
+                    @if ($canShow('Resep Bahan Mentah') || $canShow('Produksi'))
                         <li class="menu-title"><span>Produksi</span></li>
                         <li class="submenu">
-                            @if ($akses->firstWhere('name', 'Resep Bahan Mentah'))
+                            @if ($canShow('Resep Bahan Mentah'))
                                 <li>
                                     <a class="{{ Request::is('bom') ? 'active' : '' }}" href="/bom"><i
                                         class="fe fe-file-text"></i> <span>Resep Bahan Mentah</span></a>
                                 </li>
                             @endif
                            
-                            @if ($akses->firstWhere('name', 'Produksi'))
+                            @if ($canShow('Produksi'))
                                 <li>
                                     <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">
                                         <i class="fa-solid fa-gear"></i> <span>Produksi</span></a>
@@ -897,46 +939,46 @@
                     {{-- Report --}}
                     @php
                         $hasKasOperasional =
-                        $akses->firstWhere('name', 'Kas Operasional Admin') ||
-                        $akses->firstWhere('name', 'Kas Operasional Gudang') ||
-                        $akses->firstWhere('name', 'Kas Operasional Armada') ||
-                        $akses->firstWhere('name', 'Kas Operasional Sales') ||
-                        $akses->firstWhere('name', 'Kas Operasional');
+                        $canShow('Kas Operasional Admin') ||
+                        $canShow('Kas Operasional Gudang') ||
+                        $canShow('Kas Operasional Armada') ||
+                        $canShow('Kas Operasional Sales') ||
+                        $canShow('Kas Operasional');
                     @endphp
                     @php
                         $showAccounting =
-                        $akses->firstWhere('name', 'Kategori Kas') ||
+                        $canShow('Kategori Kas') ||
                         $hasKasOperasional ||
-                        // $akses->firstWhere('name', 'Kas Kecil') ||
-                        $akses->firstWhere('name', 'Kas');
+                        // $canShow('Kas Kecil') ||
+                        $canShow('Kas');
                     @endphp
                     @php
                         $showLaporan =
-                        $akses->firstWhere('name', 'Pengelolaan Bahan Mentah') ||
-                        $akses->firstWhere('name', 'Retur Produk') ||
-                        $akses->firstWhere('name', 'Laporan Produksi') ||
-                        // $akses->firstWhere('name', 'Laporan Efisiensi Produksi') ||
-                        $akses->firstWhere('name', 'Laporan Stock Aging') ||
-                        $akses->firstWhere('name', 'Stok Opname Produk') ||
-                        $akses->firstWhere('name', 'Stok Opname Bahan Mentah') ||
-                        $akses->firstWhere('name', 'Untung & Rugi') ||
-                        $akses->firstWhere('name', 'Barang Masuk Keluar');
+                        $canShow('Pengelolaan Bahan Mentah') ||
+                        $canShow('Retur Produk') ||
+                        $canShow('Laporan Produksi') ||
+                        // $canShow('Laporan Efisiensi Produksi') ||
+                        $canShow('Laporan Stock Aging') ||
+                        $canShow('Stok Opname Produk') ||
+                        $canShow('Stok Opname Bahan Mentah') ||
+                        $canShow('Untung & Rugi') ||
+                        $canShow('Barang Masuk Keluar');
                     @endphp
                     @php
-                        $showLaporanMenu = $showLaporan || $akses->firstWhere('name', 'Kas');
+                        $showLaporanMenu = $showLaporan || $canShow('Kas');
                     @endphp
 
-                    @if ($showAccounting || $showLaporanMenu || $akses->firstWhere('name', 'Bank Account') || $akses->firstWhere('name', 'Hutang'))
+                    @if ($showAccounting || $showLaporanMenu || $canShow('Bank Account') || $canShow('Hutang'))
                         <li class="menu-title"><span>Akuntansi & Laporan</span></li>
                         
-                        @if ($akses->firstWhere('name', 'Bank Account'))
+                        @if ($canShow('Bank Account'))
                             <li>
                                 <a class="{{ Request::is('bank') ? 'active' : '' }}" href="/bank">
                                     <i class="bi bi-bank"></i> <span>Bank Account</span></a>
                             </li>
                         @endif
 
-                        @if ($akses->firstWhere('name', 'Hutang'))
+                        @if ($canShow('Hutang'))
                             <li>
                                 <a class="{{ Request::is('payReceive') ? 'active' : '' }}" href="/payReceive">
                                     <i class="bi bi-cash-coin"></i> <span>Hutang</span></a>
@@ -948,7 +990,7 @@
                                 <a href="#"><i class="fe fe-book"></i> <span> Akuntansi</span> <span
                                     class="menu-arrow"></span></a>
                                 <ul style="display: none;">
-                                    @if ($akses->firstWhere('name', 'Kategori Kas'))
+                                    @if ($canShow('Kategori Kas'))
                                         <li><a href="{{ url('cashCategory') }}"
                                         class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>    
                                     @endif
@@ -958,13 +1000,13 @@
                                         class="{{ Request::is('operationalCash') ? 'active' : '' }}">Kas Operasional</a></li>    
                                     @endif
 
-                                    {{-- @if ($akses->firstWhere('name', 'Kas Kecil'))
+                                    {{-- @if ($canShow('Kas Kecil'))
                                         <li><a href="{{ url('pettyCash') }}"
                                             class="{{ Request::is('pettyCash') ? 'active' : '' }}">
                                             Kas Kecil</a></li>
                                     @endif --}}
 
-                                    @if ($akses->firstWhere('name', 'Kas'))
+                                    @if ($canShow('Kas'))
                                         <li><a href="{{ url('cash') }}"
                                             class="{{ Request::is('cash') ? 'active' : '' }}">
                                             Kas</a></li>
@@ -978,13 +1020,13 @@
                                 <a href="#"><i class="fe fe-activity"></i> <span> Laporan</span> <span
                                     class="menu-arrow"></span></a>
                                 <ul style="display: none;">
-                                    @if ($akses->firstWhere('name', 'Pengelolaan Bahan Mentah'))
+                                    @if ($canShow('Pengelolaan Bahan Mentah'))
                                         <li><a href="/reportBahanBaku"
                                             class="{{ Request::is('reportBahanBaku') ? 'active' : '' }}">
                                             Pengelolaan Bahan Mentah</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Retur Produk'))
+                                    @if ($canShow('Retur Produk'))
                                         <li><a href="/ProductReturn"
                                             class="{{ Request::is('ProductReturn') ? 'active' : '' }}">
                                             Laporan Retur Bahan</a></li>
@@ -993,43 +1035,43 @@
                                             Laporan Retur Produk (Armada)</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Laporan Produksi'))
+                                    @if ($canShow('Laporan Produksi'))
                                         <li><a href="/reportProduksi"
                                             class="{{ Request::is('reportProduksi') ? 'active' : '' }}">
                                             Laporan Produksi</a></li>
                                     @endif
 
-                                    {{-- @if ($akses->firstWhere('name', 'Laporan Efisiensi Produksi') || $akses->firstWhere('name', 'Laporan Produksi'))
+                                    {{-- @if ($canShow('Laporan Efisiensi Produksi') || $canShow('Laporan Produksi'))
                                         <li><a href="/reportEfisiensiProduksi"
                                             class="{{ Request::is('reportEfisiensiProduksi') ? 'active' : '' }}">
                                             Laporan Efisiensi Produksi</a></li>
                                     @endif --}}
 
-                                    @if ($akses->firstWhere('name', 'Stok Opname Produk') || $akses->firstWhere('name', 'Stok Opname Bahan Mentah'))
+                                    @if ($canShow('Stok Opname Produk') || $canShow('Stok Opname Bahan Mentah'))
                                         <li><a href="/reportSelisihOpname"
                                             class="{{ Request::is('reportSelisihOpname') ? 'active' : '' }}">
                                             Laporan Selisih Stok Opname</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Laporan Stock Aging'))
+                                    @if ($canShow('Laporan Stock Aging'))
                                         <li><a href="/reportStockAging"
                                             class="{{ Request::is('reportStockAging') ? 'active' : '' }}">
                                             Laporan Stock Aging</a></li>
                                     @endif
 
-                                    @if ($akses->firstWhere('name', 'Kas'))
+                                    @if ($canShow('Kas'))
                                         <li><a href="/reportCashOut"
                                             class="{{ Request::is('reportCashOut') ? 'active' : '' }}">
                                             Laporan Pengeluaran Kas</a></li>
                                     @endif
 
-                                    {{-- @if ($akses->firstWhere('name', 'Untung & Rugi'))
+                                    {{-- @if ($canShow('Untung & Rugi'))
                                         <li><a href="{{ url('profitLoss') }}"
                                             class="{{ Request::is('profitLoss') ? 'active' : '' }}">
                                             Untung & Rugi</a></li>
                                     @endif --}}
 
-                                    {{-- @if ($akses->firstWhere('name', 'Barang Masuk Keluar'))
+                                    {{-- @if ($canShow('Barang Masuk Keluar'))
                                         <li><a href="{{ url('inwardOutward') }}"
                                             class="{{ Request::is('inwardOutward') ? 'active' : '' }}">
                                             Barang Masuk Keluar</a></li>
@@ -1039,16 +1081,16 @@
                         @endif
                     @endif
 
-                    @if ($akses->firstWhere('name', 'Pengguna') || $akses->firstWhere('name', 'Peran & Perizinan'))
+                    @if ($canShow('Pengguna') || $canShow('Peran & Perizinan'))
                         <li class="menu-title"><span>Manajemen Pengguna</span></li>
-                        @if ($akses->firstWhere('name', 'Pengguna'))
+                        @if ($canShow('Pengguna'))
                             <li>
                                 <a class="{{ Request::is('staff') ? 'active' : '' }}" href="/staff"><i
                                     class="fe fe-user"></i> <span>Pengguna</span></a>
                             </li>
                         @endif
 
-                        @if ($akses->firstWhere('name', 'Peran & Perizinan'))
+                        @if ($canShow('Peran & Perizinan'))
                             <li>
                                 <a class="{{ Request::is('roles-permission', 'permission') ? 'active' : '' }}"
                                     href="/role"><i class="fe fe-clipboard"></i> <span>Peran &
@@ -1059,8 +1101,8 @@
 
                     @php
                         $showSetting =
-                        $akses->firstWhere('name', 'Profil') ||
-                        $akses->firstWhere('name', 'Pengaturan');
+                        $canShow('Profil') ||
+                        $canShow('Pengaturan');
                     @endphp
                     
                     @if ($showSetting)
@@ -1069,13 +1111,13 @@
                             <a href="#"><i class="fe fe-settings"></i> <span> Pengaturan</span> <span
                                 class="menu-arrow"></span></a>
                             <ul style="display: none;">
-                                @if ($akses->firstWhere('name', 'Profil'))
+                                @if ($canShow('Profil'))
                                     <li><a href="{{ url('profiles') }}"
                                         class="{{ Request::is('profiles') ? 'active' : '' }}">
                                         Profil</a></li>
                                 @endif
 
-                                @if ($akses->firstWhere('name', 'Pengaturan'))
+                                @if ($canShow('Pengaturan'))
                                     <li><a href="{{ url('settings') }}"
                                         class="{{ Request::is('settings') ? 'active' : '' }}">
                                         Pengaturan</a></li>

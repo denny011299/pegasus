@@ -27,8 +27,12 @@ use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
+use App\Models\Unit;
+use App\Models\Warehouse;
+use App\Support\UnitStockSorter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 use function Symfony\Component\Clock\now;
 
@@ -1260,12 +1264,223 @@ class StockController extends Controller
 
     function getStock(Request $req)
     {
+        $warehouseId = $req->warehouse_id ?: Session::get('active_warehouse_id');
+        $warehouseId = $warehouseId ? (int) $warehouseId : null;
+
+        $warehouse = null;
+        $isMain = true;
+        $viewMode = 'main';
+        if ($warehouseId) {
+            $warehouse = Warehouse::query()
+                ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+                ->find($warehouseId);
+            $isMain = $warehouse
+                && $warehouse->type
+                && (int) $warehouse->type->is_main_warehouse === 1;
+            $viewMode = $isMain ? 'main' : 'retail';
+        }
+
+        // Server-side DataTables
+        if ($req->has('draw')) {
+            $draw = (int) $req->input('draw', 1);
+            $start = max(0, (int) $req->input('start', 0));
+            $length = (int) $req->input('length', 25);
+            if ($length < 1) {
+                $length = 25;
+            }
+            if ($length > 100) {
+                $length = 100;
+            }
+
+            // Tanpa gudang aktif: jangan query berat
+            if (! $warehouseId) {
+                return response()->json([
+                    'draw' => $draw,
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                    'view_mode' => $viewMode,
+                    'is_main_warehouse' => $isMain ? 1 : 0,
+                ]);
+            }
+
+            $search = trim((string) data_get($req->input('search'), 'value', ''));
+            $orderColIdx = (int) data_get($req->input('order'), '0.column', 0);
+            $orderDir = strtolower((string) data_get($req->input('order'), '0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+            if ($viewMode === 'retail') {
+                $columns = [
+                    0 => 'pr.product_name',
+                    1 => 'pr.product_name',
+                    2 => 'pr.product_name',
+                ];
+            } else {
+                $columns = [
+                    0 => 'product_variants.product_variant_sku',
+                    1 => 'pr.product_name',
+                    2 => 'product_variants.product_variant_name',
+                    3 => 'cat.category_name',
+                    4 => 'pr.product_name',
+                    5 => 'pr.product_name',
+                ];
+            }
+            $orderCol = $columns[$orderColIdx] ?? 'pr.product_name';
+
+            $base = ProductVariant::query()
+                ->from('product_variants')
+                ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
+                ->leftJoin('categories as cat', 'cat.category_id', '=', 'pr.category_id')
+                ->where('product_variants.status', 1)
+                ->where('pr.status', 1);
+
+            // Total tanpa search — query lebih ringan (tanpa category join untuk count)
+            $recordsTotal = ProductVariant::query()
+                ->from('product_variants')
+                ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
+                ->where('product_variants.status', 1)
+                ->where('pr.status', 1)
+                ->count('product_variants.product_variant_id');
+
+            if ($search !== '') {
+                $like = '%' . $search . '%';
+                $base->where(function ($q) use ($like) {
+                    $q->where('product_variants.product_variant_sku', 'like', $like)
+                        ->orWhere('pr.product_name', 'like', $like)
+                        ->orWhere('product_variants.product_variant_name', 'like', $like)
+                        ->orWhere('cat.category_name', 'like', $like);
+                });
+                $recordsFiltered = (clone $base)->count('product_variants.product_variant_id');
+            } else {
+                $recordsFiltered = $recordsTotal;
+            }
+
+            $warehouseName = $warehouse->warehouse_name ?? '-';
+
+            $rows = $base
+                ->select([
+                    'product_variants.product_variant_id',
+                    'product_variants.product_variant_sku',
+                    'product_variants.product_variant_name',
+                    'product_variants.product_id',
+                    'pr.product_name as pr_name',
+                    'cat.category_name as product_category',
+                ])
+                ->orderBy($orderCol, $orderDir)
+                ->orderBy('product_variants.product_variant_id', 'asc')
+                ->skip($start)
+                ->take($length)
+                ->get();
+
+            $variantIds = $rows->pluck('product_variant_id')->all();
+            $stocksByVariant = [];
+            $relationsByVariant = collect();
+
+            if ($variantIds !== []) {
+                // Batch stock (1 query)
+                $stockRows = ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('status', 1)
+                    ->where('warehouse_id', $warehouseId)
+                    ->whereIn('product_variant_id', $variantIds)
+                    ->get(['ps_id', 'product_variant_id', 'unit_id', 'ps_stock', 'ps_safety_stock']);
+
+                $unitIds = $stockRows->pluck('unit_id')->unique()->filter()->values()->all();
+                $units = $unitIds !== []
+                    ? Unit::whereIn('unit_id', $unitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id')
+                    : collect();
+
+                foreach ($stockRows as $stock) {
+                    $unit = $units->get($stock->unit_id);
+                    $stock->unit_name = $unit->unit_name ?? '-';
+                    $stock->unit_short_name = $unit->unit_short_name ?? '-';
+                    $stocksByVariant[$stock->product_variant_id][] = $stock;
+                }
+
+                // Batch relations (1 query) — UnitStockSorter cukup butuh unit id
+                $relationsByVariant = ProductRelation::query()
+                    ->where('status', 1)
+                    ->whereIn('product_variant_id', $variantIds)
+                    ->get(['product_variant_id', 'pr_unit_id_1', 'pr_unit_id_2'])
+                    ->groupBy('product_variant_id');
+            }
+
+            $data = [];
+            $canViewSafety = \App\Support\RoleAccess::can(Session::get('user'), 'Safety Stock', 'view')
+                || \App\Support\RoleAccess::can(Session::get('user'), 'Safety Stock', 'edit');
+            foreach ($rows as $row) {
+                $stocks = $stocksByVariant[$row->product_variant_id] ?? [];
+                $relations = $relationsByVariant->get($row->product_variant_id, collect());
+
+                if ($stocks !== [] && $relations->isNotEmpty()) {
+                    $stocks = UnitStockSorter::sort(collect($stocks), $relations)->all();
+                }
+
+                $unitsPayload = [];
+                $parts = [];
+                $safetyParts = [];
+                foreach ($stocks as $element) {
+                    $qty = (float) $element->ps_stock;
+                    $safetyQty = (float) ($element->ps_safety_stock ?? 0);
+                    $unitName = $element->unit_name ?? '-';
+                    $unitItem = [
+                        'unit_id' => (int) $element->unit_id,
+                        'unit_name' => $unitName,
+                        'unit_short_name' => $element->unit_short_name ?? $unitName,
+                        'ps_stock' => $qty,
+                        'ps_stock_text' => number_format($qty, 0, ',', '.'),
+                    ];
+                    if ($canViewSafety) {
+                        $unitItem['ps_safety_stock'] = $safetyQty;
+                        $unitItem['ps_safety_stock_text'] = number_format($safetyQty, 0, ',', '.');
+                        if ($safetyQty > 0) {
+                            $safetyParts[] = number_format($safetyQty, 0, ',', '.') . ' ' . $unitName;
+                        }
+                    }
+                    $unitsPayload[] = $unitItem;
+                    $parts[] = number_format($qty, 0, ',', '.') . ' ' . $unitName;
+                }
+
+                $rowData = [
+                    'product_variant_id' => $row->product_variant_id,
+                    'product_id' => $row->product_id,
+                    'product_variant_sku' => $row->product_variant_sku,
+                    'pr_name' => $row->pr_name,
+                    'product_variant_name' => $row->product_variant_name,
+                    'product_category' => $row->product_category ?: '-',
+                    'warehouse_id' => $warehouseId,
+                    'warehouse_name' => $warehouseName,
+                    'image_url' => null,
+                    'units' => $unitsPayload,
+                    'product_variant_stock_text' => $parts !== [] ? implode(', ', $parts) : '-',
+                ];
+                if ($canViewSafety) {
+                    $rowData['product_variant_safety_text'] = $safetyParts !== []
+                        ? implode(', ', $safetyParts)
+                        : '-';
+                }
+
+                $data[] = $rowData;
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+                'view_mode' => $viewMode,
+                'is_main_warehouse' => $isMain ? 1 : 0,
+                'can_view_safety_stock' => $canViewSafety ? 1 : 0,
+            ]);
+        }
+
+        // Legacy (non-DataTables): tetap support, filter gudang aktif
         $data = (new ProductVariant())->getProductVariant();
         foreach ($data as $key => $value) {
             $value->stock = (new ProductStock())->getProductStock([
                 "product_variant_id" => $value->product_variant_id,
+                "warehouse_id" => $warehouseId,
                 "relations" => $value->relasi,
             ]);
+            $value->warehouse_id = $warehouseId;
         }
         return response()->json($data);
     }
@@ -1278,9 +1493,150 @@ class StockController extends Controller
 
     function getStockSupplies(Request $req)
     {
-        // $data = (new SuppliesVariant())->getSuppliesVariant();
-        //$data = (new SuppliesStock())->getProductStock();
+        $warehouseId = $req->warehouse_id ?: Session::get('active_warehouse_id');
+        $warehouseId = $warehouseId ? (int) $warehouseId : null;
+
+        $warehouse = null;
+        if ($warehouseId) {
+            $warehouse = Warehouse::query()->find($warehouseId);
+        }
+
+        // Server-side DataTables
+        if ($req->has('draw')) {
+            $draw = (int) $req->input('draw', 1);
+            $start = max(0, (int) $req->input('start', 0));
+            $length = (int) $req->input('length', 25);
+            if ($length < 1) {
+                $length = 25;
+            }
+            if ($length > 100) {
+                $length = 100;
+            }
+
+            if (! $warehouseId) {
+                return response()->json([
+                    'draw' => $draw,
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                ]);
+            }
+
+            $search = trim((string) data_get($req->input('search'), 'value', ''));
+            $orderColIdx = (int) data_get($req->input('order'), '0.column', 0);
+            $orderDir = strtolower((string) data_get($req->input('order'), '0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+            $columns = [
+                0 => 'supplies.supplies_name',
+                1 => 'supplies.supplies_name',
+            ];
+            $orderCol = $columns[$orderColIdx] ?? 'supplies.supplies_name';
+
+            $base = Supplies::query()
+                ->from('supplies')
+                ->where('supplies.status', 1);
+
+            $recordsTotal = Supplies::query()
+                ->where('status', 1)
+                ->count('supplies_id');
+
+            if ($search !== '') {
+                $like = '%' . $search . '%';
+                $base->where('supplies.supplies_name', 'like', $like);
+                $recordsFiltered = (clone $base)->count('supplies.supplies_id');
+            } else {
+                $recordsFiltered = $recordsTotal;
+            }
+
+            $warehouseName = $warehouse->warehouse_name ?? '-';
+
+            $rows = $base
+                ->select([
+                    'supplies.supplies_id',
+                    'supplies.supplies_name',
+                ])
+                ->orderBy($orderCol, $orderDir)
+                ->orderBy('supplies.supplies_id', 'asc')
+                ->skip($start)
+                ->take($length)
+                ->get();
+
+            $suppliesIds = $rows->pluck('supplies_id')->all();
+            $stocksBySupply = [];
+
+            if ($suppliesIds !== []) {
+                $stockRows = SuppliesStock::withoutGlobalScope('active_warehouse')
+                    ->where('status', 1)
+                    ->where('warehouse_id', $warehouseId)
+                    ->whereIn('supplies_id', $suppliesIds)
+                    ->get(['ss_id', 'supplies_id', 'unit_id', 'ss_stock', 'warehouse_id']);
+
+                $unitIds = $stockRows->pluck('unit_id')->unique()->filter()->values()->all();
+                $units = $unitIds !== []
+                    ? Unit::whereIn('unit_id', $unitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id')
+                    : collect();
+
+                foreach ($stockRows as $stock) {
+                    $unit = $units->get($stock->unit_id);
+                    $stock->unit_name = $unit->unit_name ?? '-';
+                    $stock->unit_short_name = $unit->unit_short_name ?? '-';
+                    $stocksBySupply[$stock->supplies_id][] = $stock;
+                }
+
+                $relationsBySupply = \App\Models\SuppliesRelation::query()
+                    ->where('status', 1)
+                    ->whereIn('supplies_id', $suppliesIds)
+                    ->get(['supplies_id', 'su_id_1', 'su_id_2'])
+                    ->groupBy('supplies_id');
+            } else {
+                $relationsBySupply = collect();
+            }
+
+            $data = [];
+            foreach ($rows as $row) {
+                $stocks = $stocksBySupply[$row->supplies_id] ?? [];
+                $relations = $relationsBySupply->get($row->supplies_id, collect());
+
+                if ($stocks !== [] && $relations->isNotEmpty()) {
+                    $stocks = UnitStockSorter::sort(collect($stocks), $relations, 'su_id_1', 'su_id_2')->all();
+                }
+
+                $parts = [];
+                foreach ($stocks as $element) {
+                    $qty = (float) $element->ss_stock;
+                    $unitLabel = $element->unit_short_name ?? ($element->unit_name ?? '-');
+                    $parts[] = number_format($qty, 0, ',', '.') . ' ' . $unitLabel;
+                }
+
+                $data[] = [
+                    'supplies_id' => $row->supplies_id,
+                    'supplies_name' => $row->supplies_name,
+                    'warehouse_id' => $warehouseId,
+                    'warehouse_name' => $warehouseName,
+                    'supplies_variant_stock_text' => $parts !== [] ? implode(', ', $parts) : '-',
+                ];
+            }
+
+            return response()->json([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data,
+            ]);
+        }
+
+        // Legacy (non-DataTables): filter gudang aktif via global scope / param
         $data = (new Supplies())->getSupplies();
+        foreach ($data as $value) {
+            $value->warehouse_id = $warehouseId;
+            if (! isset($value->stock) || $value->stock === null) {
+                $value->stock = (new SuppliesStock())->getProductStock([
+                    'supplies_id' => $value->supplies_id,
+                    'warehouse_id' => $warehouseId,
+                    'relations' => $value->supplies_relasi ?? [],
+                ]);
+            }
+        }
+
         return response()->json($data);
     }
 }

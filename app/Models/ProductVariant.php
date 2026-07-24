@@ -240,6 +240,12 @@ class ProductVariant extends Model
         $t->product_variant_barcode = $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"]!="" ? $data["variant_alert"] : 0;
         $t->product_variant_stock = 0;
+        $t->safety_stock = isset($data["safety_stock"]) && $data["safety_stock"] !== ""
+            ? (int) $data["safety_stock"]
+            : 0;
+        $t->safety_unit_id = ! empty($data["safety_unit_id"])
+            ? (int) $data["safety_unit_id"]
+            : null;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->product_variant_id;
@@ -256,6 +262,8 @@ class ProductVariant extends Model
                 "variant_alert"   => $data["variant_alert"],
                 "variant_barcode" => $data["variant_barcode"] ?? "",
                 "unit_id" => $data["unit_id"] ?? 0,
+                "safety_stock" => $data["safety_stock"] ?? 0,
+                "safety_unit_id" => $data["safety_unit_id"] ?? null,
             ]);
         }
         $t->product_id = $data["product_id"];
@@ -265,6 +273,16 @@ class ProductVariant extends Model
         $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"];
         $t->unit_id = $data["unit_id"];
+        if (array_key_exists('safety_stock', $data)) {
+            $t->safety_stock = $data["safety_stock"] !== "" && $data["safety_stock"] !== null
+                ? (int) $data["safety_stock"]
+                : 0;
+        }
+        if (array_key_exists('safety_unit_id', $data)) {
+            $t->safety_unit_id = ! empty($data["safety_unit_id"])
+                ? (int) $data["safety_unit_id"]
+                : null;
+        }
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 

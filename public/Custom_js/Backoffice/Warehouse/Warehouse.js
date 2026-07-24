@@ -9,11 +9,71 @@ $(document).ready(function () {
 $(document).on("click", ".btnAdd", function () {
     mode = 1;
     $("#add_warehouse .modal-title").html("Tambah Gudang");
-    $("#add_warehouse input, #add_warehouse textarea").val("");
+    $("#add_warehouse input:not([type=checkbox]), #add_warehouse textarea").val("");
     $("#warehouse_type_id").val(null).trigger("change");
+    setWarehouseSidebarMenus(null);
     $(".is-invalid").removeClass("is-invalid");
     $(".btn-save").html(mode == 1 ? "Tambah Gudang" : "Update Gudang");
     $("#add_warehouse").removeAttr("data-id").modal("show");
+});
+
+function getWarehouseSidebarMenus() {
+    var menus = [];
+    $(".warehouse-sidebar-menu:checked").each(function () {
+        menus.push($(this).val());
+    });
+    return menus.length ? menus : null;
+}
+
+function setWarehouseSidebarMenus(menus) {
+    $(".warehouse-sidebar-menu").prop("checked", false);
+    if (!menus || !Array.isArray(menus) || !menus.length) {
+        return;
+    }
+    var set = {};
+    menus.forEach(function (m) {
+        if (m) set[String(m).toLowerCase()] = true;
+    });
+    $(".warehouse-sidebar-menu").each(function () {
+        var val = String($(this).val() || "").toLowerCase();
+        if (set[val]) $(this).prop("checked", true);
+    });
+    updateAllModuleChecks();
+}
+
+function updateAllModuleChecks() {
+    $(".module-check-all").each(function () {
+        var $container = $(this).closest(".menu-card");
+        var total = $container.find(".warehouse-sidebar-menu").length;
+        var checked = $container.find(".warehouse-sidebar-menu:checked").length;
+        $(this).prop("checked", total > 0 && total === checked);
+        $(this).prop("indeterminate", checked > 0 && checked < total);
+    });
+}
+
+$(document).on("change", ".module-check-all", function () {
+    var isChecked = $(this).is(":checked");
+    $(this).closest(".menu-card").find(".warehouse-sidebar-menu").prop("checked", isChecked);
+});
+
+$(document).on("change", ".warehouse-sidebar-menu", function () {
+    var $container = $(this).closest(".menu-card");
+    var total = $container.find(".warehouse-sidebar-menu").length;
+    var checked = $container.find(".warehouse-sidebar-menu:checked").length;
+    var $headerCheck = $container.find(".module-check-all");
+
+    $headerCheck.prop("checked", total > 0 && total === checked);
+    $headerCheck.prop("indeterminate", checked > 0 && checked < total);
+});
+
+$(document).on("click", "#btn-sidebar-menus-all", function () {
+    $(".warehouse-sidebar-menu").prop("checked", true);
+    updateAllModuleChecks();
+});
+
+$(document).on("click", "#btn-sidebar-menus-none", function () {
+    $(".warehouse-sidebar-menu").prop("checked", false);
+    updateAllModuleChecks();
 });
 
 function inisialisasi() {
@@ -61,15 +121,14 @@ function inisialisasi() {
                 width: "22%",
                 render: function (data, type, row) {
                     if (type !== "display") return data;
-                    var typeName = (row.type && row.type.warehouse_type_name
-                        ? row.type.warehouse_type_name
-                        : ""
-                    ).toUpperCase();
-                    var isUtama = typeName.includes("UTAMA") || typeName.includes("BESAR");
+                    var isUtama = row.type && parseInt(row.type.is_main_warehouse) === 1;
                     var iconClass = isUtama ? "fas fa-building" : "fas fa-store";
                     var iconBg = isUtama ? "#eff6ff" : "#f8fafc";
                     var iconColor = isUtama ? "#2563eb" : "#64748b";
                     var iconBorder = isUtama ? "#bfdbfe" : "#e2e8f0";
+                    var badgeBg = isUtama ? "#dbeafe" : "#e0f2fe";
+                    var badgeColor = isUtama ? "#1e40af" : "#0369a1";
+                    var badgeBorder = isUtama ? "#bfdbfe" : "#bae6fd";
                     return (
                         '<div style="display:flex;align-items:center;justify-content:flex-start;gap:12px;">' +
                         '<div style="width:36px;height:36px;border-radius:10px;background:' +
@@ -81,7 +140,13 @@ function inisialisasi() {
                         ';flex-shrink:0;"><i class="' +
                         iconClass +
                         '"></i></div>' +
-                        '<span style="font-weight:600;color:#1e293b;font-size:14px;">' +
+                        '<span class="badge" style="background-color:' +
+                        badgeBg +
+                        ";color:" +
+                        badgeColor +
+                        ";border:1px solid " +
+                        badgeBorder +
+                        ';padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;">' +
                         data +
                         "</span></div>"
                     );
@@ -92,11 +157,10 @@ function inisialisasi() {
                 defaultContent: "-",
                 className: "text-center align-middle",
                 width: "14%",
-                render: function (data, type) {
+                render: function (data, type, row) {
                     if (type !== "display") return data;
                     if (!data || data === "-") return '<span class="text-muted">-</span>';
-                    var typeName = String(data).toUpperCase();
-                    var isUtama = typeName.includes("UTAMA") || typeName.includes("BESAR");
+                    var isUtama = row.type && parseInt(row.type.is_main_warehouse) === 1;
                     var bg = isUtama ? "#dbeafe" : "#e0f2fe";
                     var color = isUtama ? "#1e40af" : "#0369a1";
                     var border = isUtama ? "#bfdbfe" : "#bae6fd";
@@ -263,6 +327,7 @@ $(document).on("click", ".btn-save", function () {
         warehouse_name: $("#warehouse_name").val(),
         warehouse_type_id: $("#warehouse_type_id").val(),
         warehouse_address: $("#warehouse_address").val(),
+        sidebar_menus: JSON.stringify(getWarehouseSidebarMenus()),
         _token: token,
     };
 
@@ -300,6 +365,18 @@ function afterInsert() {
     $(".modal").modal("hide");
     if (mode == 1) notifikasi("success", "Berhasil Insert", "Berhasil Tambah Gudang");
     else if (mode == 2) notifikasi("success", "Berhasil Update", "Berhasil Update Gudang");
+
+    // Sidebar tergantung sidebar_menus gudang aktif → reload supaya menu ikut berubah
+    var editedId = $("#add_warehouse").attr("data-id");
+    var activeId =
+        typeof getActiveWarehouseId === "function" ? getActiveWarehouseId() : null;
+    if (mode == 2 && editedId && activeId && String(editedId) === String(activeId)) {
+        setTimeout(function () {
+            window.location.reload();
+        }, 400);
+        return;
+    }
+
     refreshWarehouse();
 }
 
@@ -314,7 +391,7 @@ $(document).on("click", ".btn_edit", function () {
     var data = table.row($(this).parents("tr")).data();
     mode = 2;
     $("#add_warehouse .modal-title").html("Update Gudang");
-    $("#add_warehouse input, #add_warehouse textarea").val("");
+    $("#add_warehouse input:not([type=checkbox]), #add_warehouse textarea").val("");
     $("#warehouse_type_id").val(null).trigger("change");
     $(".is-invalid").removeClass("is-invalid");
     $(".btn-save").html(mode == 1 ? "Tambah Gudang" : "Update Gudang");
@@ -332,6 +409,8 @@ $(document).on("click", ".btn_edit", function () {
         $("#warehouse_type_id").append(opt).trigger("change");
     }
 
+    setWarehouseSidebarMenus(data.sidebar_menus);
+
     $("#add_warehouse").attr("data-id", data.id).modal("show");
 });
 
@@ -342,22 +421,51 @@ $(document).on("click", ".btn_delete", function () {
 });
 
 $(document).on("click", "#btn-delete-warehouse", function () {
+    var id = $(this).attr("data-id");
     $.ajax({
         url: "/deleteWarehouse",
         data: {
-            id: $("#btn-delete-warehouse").attr("data-id"),
+            id: id,
             _token: token,
         },
         method: "post",
         success: function (e) {
-            if (e == -3 || (e && e.status == -3)) {
-                notifikasi(
-                    "error",
-                    "Gagal Hapus",
-                    (e && e.message) || "Masih ada user yang di-assign ke gudang ini"
-                );
+            // Step 2: masih ada stok (ps_stock > 0)
+            if (e && e.status == -4) {
+                $(".modal").modal("hide");
+                var msg =
+                    e.message ||
+                    "Apakah anda yakin ingin menghapus gudang ini? Masih terdapat stock yang terdaftar di gudang ini";
+                $("#modalKonfirmasi .modal-title").text("Konfirmasi Hapus Lanjutan");
+                $("#modalKonfirmasi .btn-konfirmasi")
+                    .removeClass("btn-success")
+                    .addClass("btn-danger");
+                showModalKonfirmasi(msg, "btn-force-delete-warehouse");
+                $("#btn-force-delete-warehouse").attr("data-id", id);
                 return;
             }
+
+            $(".modal").modal("hide");
+            refreshWarehouse();
+            notifikasi("success", "Berhasil Delete", "Berhasil hapus gudang");
+        },
+        error: function (e) {
+            notifikasi("error", "Gagal", "Terjadi kesalahan saat menghapus");
+            console.log(e);
+        },
+    });
+});
+
+$(document).on("click", "#btn-force-delete-warehouse", function () {
+    $.ajax({
+        url: "/deleteWarehouse",
+        data: {
+            id: $(this).attr("data-id"),
+            force: 1,
+            _token: token,
+        },
+        method: "post",
+        success: function () {
             $(".modal").modal("hide");
             refreshWarehouse();
             notifikasi("success", "Berhasil Delete", "Berhasil hapus gudang");

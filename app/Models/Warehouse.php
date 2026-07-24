@@ -21,6 +21,7 @@ class Warehouse extends Model
         'warehouse_name',
         'warehouse_type_id',
         'warehouse_address',
+        'sidebar_menus',
         'status',
         'created_by',
     ];
@@ -28,6 +29,7 @@ class Warehouse extends Model
     protected $casts = [
         'status' => 'integer',
         'warehouse_type_id' => 'integer',
+        'sidebar_menus' => 'array',
     ];
 
     /** Alias agar blade/header yang pakai $wh->name tetap jalan */
@@ -38,7 +40,7 @@ class Warehouse extends Model
 
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', 1);
+        return $query->where($this->getTable() . '.status', 1);
     }
 
     public function type(): BelongsTo
@@ -68,7 +70,8 @@ class Warehouse extends Model
 
     /**
      * Gudang untuk dropdown navbar / share view.
-     * Hanya berdasarkan assign di pivot staff_warehouses (tanpa bypass role).
+     * Hanya status aktif (1) + assign di pivot staff_warehouses (tanpa bypass role).
+     * Eager-load type; urut: tipe utama → nama tipe → nama gudang (siap di-groupBy).
      */
     public static function availableForUser($user = null): Collection
     {
@@ -81,11 +84,60 @@ class Warehouse extends Model
             return collect();
         }
 
-        return self::active()
-            ->with('type')
-            ->whereIn('id', $ids)
-            ->orderBy('warehouse_name')
-            ->get(['id', 'warehouse_name', 'warehouse_type_id']);
+        return self::query()
+            ->from('warehouses')
+            ->active()
+            ->whereIn('warehouses.id', $ids)
+            ->whereHas('type', fn ($q) => $q->where('warehouse_types.status', 1))
+            ->with([
+                'type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse'),
+            ])
+            ->leftJoin('warehouse_types', 'warehouse_types.id', '=', 'warehouses.warehouse_type_id')
+            ->orderByDesc('warehouse_types.is_main_warehouse')
+            ->orderBy('warehouse_types.warehouse_type_name')
+            ->orderBy('warehouses.warehouse_name')
+            ->select([
+                'warehouses.id',
+                'warehouses.warehouse_name',
+                'warehouses.warehouse_type_id',
+                'warehouses.sidebar_menus',
+            ])
+            ->get();
+    }
+
+    /**
+     * Group gudang by tipe (untuk navbar). Key = nama tipe uppercase.
+     * Urutan grup mengikuti urutan query (tipe utama dulu).
+     */
+    public static function groupByType(Collection $warehouses): Collection
+    {
+        return $warehouses->groupBy(function ($wh) {
+            return strtoupper(trim((string) ($wh->type->warehouse_type_name ?? 'DAFTAR GUDANG')));
+        });
+    }
+
+    /**
+     * Pilih default gudang: last_active → tipe utama → first.
+     */
+    public static function pickDefaultWarehouse(Collection $warehouses, $user = null)
+    {
+        if ($warehouses->isEmpty()) {
+            return null;
+        }
+
+        $lastId = $user->last_active_warehouse_id ?? null;
+        if ($lastId) {
+            $found = $warehouses->first(fn ($wh) => (int) $wh->id === (int) $lastId);
+            if ($found) {
+                return $found;
+            }
+        }
+
+        $main = $warehouses->first(
+            fn ($wh) => (int) ($wh->type->is_main_warehouse ?? 0) === 1
+        );
+
+        return $main ?: $warehouses->first();
     }
 
     /** Semua gudang aktif (form assign staf). */
@@ -107,7 +159,7 @@ class Warehouse extends Model
         return self::query()
             ->whereIn('status', [1, 2])
             ->with([
-                'type:id,warehouse_type_name',
+                'type:id,warehouse_type_name,is_main_warehouse',
                 'creator:staff_id,staff_name',
             ])
             ->when($data['warehouse_name'], function ($q, $name) {
@@ -171,9 +223,15 @@ class Warehouse extends Model
             'warehouse_name' => trim((string) $data['warehouse_name']),
             'warehouse_type_id' => $data['warehouse_type_id'],
             'warehouse_address' => $this->normalizeAddress($data['warehouse_address'] ?? null),
+            'sidebar_menus' => $this->normalizeSidebarMenus($data['sidebar_menus'] ?? null),
             'status' => 1,
             'created_by' => Session::get('user')->staff_id ?? null,
         ]);
+
+        // Auto-generate stok 0 untuk semua produk/varian aktif di gudang baru
+        (new ProductStock())->generateStocksForWarehouse($row->id);
+        // Auto-generate stok bahan mentah 0 di gudang baru
+        (new SuppliesStock())->generateStocksForWarehouse($row->id);
 
         return $row->id;
     }
@@ -188,6 +246,9 @@ class Warehouse extends Model
         $row->warehouse_name = trim((string) $data['warehouse_name']);
         $row->warehouse_type_id = $data['warehouse_type_id'];
         $row->warehouse_address = $this->normalizeAddress($data['warehouse_address'] ?? null);
+        if (array_key_exists('sidebar_menus', $data)) {
+            $row->sidebar_menus = $this->normalizeSidebarMenus($data['sidebar_menus']);
+        }
         $row->created_by = Session::get('user')->staff_id ?? null;
         $row->save();
 
@@ -195,21 +256,130 @@ class Warehouse extends Model
     }
 
     /**
-     * Soft delete (status = 0). Tolak jika masih ada staf yang di-assign.
-     * @return int|-3  id jika sukses, -3 jika masih ada assignment
+     * null = allow all (backward compatible).
+     * non-empty array = whitelist nama SubModules.
+     *
+     * @return array<int, string>|null
+     */
+    public function allowedSidebarMenus(): ?array
+    {
+        $menus = $this->sidebar_menus;
+        if ($menus === null || $menus === []) {
+            return null;
+        }
+        if (! is_array($menus)) {
+            return null;
+        }
+
+        $clean = array_values(array_unique(array_filter(array_map(
+            static fn ($m) => is_string($m) ? trim($m) : '',
+            $menus
+        ))));
+
+        return $clean === [] ? null : $clean;
+    }
+
+    public function allowsSidebarMenu(string $name): bool
+    {
+        $allowed = $this->allowedSidebarMenus();
+        if ($allowed === null) {
+            return true;
+        }
+
+        $needle = strtolower(trim($name));
+        foreach ($allowed as $menu) {
+            if (strtolower(trim((string) $menu)) === $needle) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  mixed  $raw
+     * @return array<int, string>|null
+     */
+    protected function normalizeSidebarMenus($raw): ?array
+    {
+        if ($raw === null || $raw === '' || $raw === []) {
+            return null;
+        }
+
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [];
+        }
+
+        if (! is_array($raw)) {
+            return null;
+        }
+
+        $clean = array_values(array_unique(array_filter(array_map(
+            static fn ($m) => is_string($m) ? trim($m) : '',
+            $raw
+        ), static fn ($m) => $m !== '')));
+
+        return $clean === [] ? null : $clean;
+    }
+
+    /**
+     * Soft delete (status = 0).
+     * - Assign user ke gudang ini dihapus otomatis (bukan hard block).
+     * -4 = masih ada stok ps_stock > 0 → butuh force=1 (2-step konfirmasi).
+     *
+     * @return int|array
      */
     public function deleteWarehouse(array $data)
     {
         $row = self::query()->whereIn('status', [1, 2])->findOrFail($data['id']);
+        $force = ! empty($data['force']) && in_array($data['force'], [1, '1', true, 'true'], true);
 
-        $assignedCount = StaffWarehouse::where('warehouse_id', $row->id)->count();
-        if ($assignedCount > 0) {
-            return -3;
+        $stockWithQty = ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $row->id)
+            ->where('status', 1)
+            ->where('ps_stock', '>', 0)
+            ->count();
+
+        $suppliesStockWithQty = SuppliesStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $row->id)
+            ->where('status', 1)
+            ->where('ss_stock', '>', 0)
+            ->count();
+
+        $stockWithQty += $suppliesStockWithQty;
+
+        if ($stockWithQty > 0 && ! $force) {
+            return [
+                'status' => -4,
+                'count' => $stockWithQty,
+                'message' => 'Apakah anda yakin ingin menghapus gudang ini? Masih terdapat stock yang terdaftar di gudang ini',
+            ];
         }
+
+        // Lepas akses user ke gudang ini
+        StaffWarehouse::where('warehouse_id', $row->id)->delete();
 
         $row->status = 0;
         $row->created_by = Session::get('user')->staff_id ?? null;
         $row->save();
+
+        // Nonaktifkan baris stok gudang ini (soft)
+        ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $row->id)
+            ->where('status', 1)
+            ->update([
+                'status' => 0,
+                'updated_at' => now(),
+            ]);
+
+        SuppliesStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $row->id)
+            ->where('status', 1)
+            ->update([
+                'status' => 0,
+                'updated_at' => now(),
+            ]);
 
         Staff::where('last_active_warehouse_id', $row->id)
             ->update(['last_active_warehouse_id' => null]);

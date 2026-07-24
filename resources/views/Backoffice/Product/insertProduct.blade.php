@@ -124,12 +124,15 @@
                                             <table class="table" id="productVariantTable">
                                                 <thead>
                                                     <tr>
-                                                        <td>Nama Variasi<span class="text-danger">*</span></td>
-                                                        <td>SKU<span class="text-danger">*</span></td>
-                                                        {{-- <td>Harga<span class="text-danger">*</span></td> --}}
-                                                        <td>Barcode</td>
-                                                        <td>Peringatan Stok<span class="text-danger">*</span></td>
-                                                        <td class="text-center">Aksi</td>
+                                                        <td style="width:250px">Nama Variasi<span class="text-danger">*</span></td>
+                                                        <td style="width:150px">SKU<span class="text-danger">*</span></td>
+                                                        <td style="width:150px">Barcode</td>
+                                                        <td style="width:230px">Peringatan Stok<span class="text-danger">*</span></td>
+                                                        <td class="col-safety-stock d-none" style="width:230px">
+                                                            Safety Stock
+                                                            <div class="small text-muted fw-normal safety-stock-wh-label" style="font-size:11px;line-height:1.2"></div>
+                                                        </td>
+                                                        <td class="text-center" style="width:100px">Aksi</td>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="tbVariant">
@@ -201,8 +204,9 @@
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";
-        var mode="{{$mode}}";
-        var data=@json($data);
+        var mode = "{{ $mode }}";
+        var data = {!! json_encode($data) !!};
+        var canAccessSafetyStock = false;
     </script>
     <script src="{{asset('Custom_js/Backoffice/Product/insertProduct.js')}}?v={{time()}}"></script>
 @endsection

@@ -35,6 +35,7 @@ class WarehouseController extends Controller
             'warehouse_name',
             'warehouse_type_id',
             'warehouse_address',
+            'sidebar_menus',
         ]));
 
         return response()->json($result);
@@ -47,6 +48,7 @@ class WarehouseController extends Controller
             'warehouse_name',
             'warehouse_type_id',
             'warehouse_address',
+            'sidebar_menus',
         ]));
 
         return response()->json($result);
@@ -66,12 +68,9 @@ class WarehouseController extends Controller
     {
         $result = (new Warehouse())->deleteWarehouse($req->all());
 
-        // -3 = masih ada staf yang di-assign
-        if ($result === -3) {
-            return response()->json([
-                'status' => -3,
-                'message' => 'Masih ada user yang di-assign ke gudang ini',
-            ]);
+        // -4 = masih ada stok (butuh force=1)
+        if (is_array($result) && isset($result['status']) && (int) $result['status'] === -4) {
+            return response()->json($result);
         }
 
         return response()->json($result);
@@ -112,6 +111,10 @@ class WarehouseController extends Controller
     public function deleteWarehouseType(Request $req)
     {
         $result = (new WarehouseType())->deleteWarehouseType($req->all());
+
+        if (is_array($result) && (int) ($result['status'] ?? 0) === -3) {
+            return response()->json($result);
+        }
 
         return response()->json($result);
     }

@@ -109,6 +109,24 @@ class Product extends Model
                 : '-';
         }
 
+        // Safety stock per gudang aktif (bukan dari product_variants global)
+        $warehouseId = ProductStock::resolveWarehouseId();
+        if ($warehouseId && $variantIds !== []) {
+            $safetyMap = (new ProductStock())->getSafetyStockMapForWarehouse($warehouseId, $variantIds);
+            foreach ($result as $value) {
+                foreach ($value->pr_variant as $variant) {
+                    $vid = (int) $variant->product_variant_id;
+                    if (isset($safetyMap[$vid])) {
+                        $variant->safety_stock = $safetyMap[$vid]['safety_stock'];
+                        $variant->safety_unit_id = $safetyMap[$vid]['safety_unit_id'];
+                    } else {
+                        $variant->safety_stock = 0;
+                        $variant->safety_unit_id = null;
+                    }
+                }
+            }
+        }
+
         return $result;
     }
 

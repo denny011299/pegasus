@@ -38,6 +38,78 @@
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             margin-top: 6px;
         }
+
+        /* PREMIUM WAREHOUSE CHECKBOX SYSTEM */
+        .warehouse-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px;
+            margin-top: 10px;
+        }
+        .warehouse-card {
+            position: relative;
+        }
+        .warehouse-checkbox {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .warehouse-pill {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            height: 100%;
+        }
+        .warehouse-pill:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        .check-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: #f1f5f9;
+            color: transparent;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .check-icon i {
+            font-size: 13px;
+        }
+        .wh-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            transition: color 0.2s ease;
+            line-height: 1.3;
+        }
+        /* Active State */
+        .warehouse-checkbox:checked + .warehouse-pill {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.15);
+        }
+        .warehouse-checkbox:checked + .warehouse-pill .check-icon {
+            background: #3b82f6;
+            color: #ffffff;
+        }
+        .warehouse-checkbox:checked + .warehouse-pill .wh-name {
+            color: #1e40af;
+            font-weight: 700;
+        }
     </style>
 @endsection
 @section('content')
@@ -60,7 +132,7 @@
                         <div class="col-md-12">
                             <form action="#">
                                 <div class="form-group-item">
-                                    {{-- <h5 class="form-title">Detail Dasar</h5> --}}
+                                    <h5 class="form-title mb-3">Detail Dasar</h5>
                                     {{-- <div class="profile-picture">
                                         <div class="upload-profile">
                                             <div class="profile-img">
@@ -161,25 +233,35 @@
                                             </div>
                                         </div>
                                         <div class="col-lg-6 col-md-12 col-sm-12">
-                                            <div class="input-block mb-3" id="row-warehouse">
-                                                <label>Akses Gudang <span class="text-danger">*</span></label>
-                                                <select class="form-select select2" id="staff_warehouses" multiple="multiple">
-                                                    @if(isset($warehouses))
-                                                        @foreach($warehouses as $wh)
-                                                            <option value="{{ $wh->id }}">{{ $wh->warehouse_name ?? $wh->name }}</option>
-                                                        @endforeach
-                                                    @endif
-                                                </select>
-                                                <div class="mt-1 text-end">
-                                                    <a href="javascript:void(0)" id="btn_select_all_warehouses" data-state="all" class="text-primary" style="font-size: 13px;"><i class="fa fa-check-square"></i> Pilih Semua Gudang</a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
                                             <div class="input-block mb-3">
                                                 <label>Alamat <span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="staff_address"
                                                     placeholder="Masukkan Alamat">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group-item mt-4">
+                                    <div class="row">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <h5 class="form-title mb-0">Data Keamanan</h5>
+                                        </div>
+                                        <div class="col-lg-4 col-md-6 col-sm-12">
+                                            <div class="input-block mb-3">
+                                                <label>Username <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control fill" id="staff_username" placeholder="Masukkan Username">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4 col-md-6 col-sm-12">
+                                            <div class="input-block mb-3">
+                                                <label>Kata Sandi @if($mode != 'update')<span class="text-danger">*</span>@endif</label>
+                                                <input type="password" class="form-control fill" id="staff_password" placeholder="Masukkan Kata Sandi">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4 col-md-6 col-sm-12">
+                                            <div class="input-block mb-3">
+                                                <label>Konfirmasi Kata Sandi @if($mode != 'update')<span class="text-danger">*</span>@endif</label>
+                                                <input type="password" class="form-control fill" id="staff_confirm" placeholder="Masukkan Ulang Kata Sandi">
                                             </div>
                                         </div>
                                     </div>
@@ -222,25 +304,25 @@
                                         </div>
                                     </div>
                                 </div> --}}
-                                <div class="form-group-customer customer-additional-form">
+                                <div class="form-group-item mt-2" id="row-warehouse">
                                     <div class="row">
-                                        <h5 class="form-title">Data Keamanan</h5>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Username <span class="text-danger">*</span></label>
-                                                <input type="text" class="form-control fill" id="staff_username" placeholder="Masukkan Username">
+                                        <div class="col-md-12">
+                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                <h5 class="form-title mb-0">Akses Gudang <span class="text-danger">*</span></h5>
+                                                <a href="javascript:void(0)" id="btn_select_all_warehouses" data-state="all" class="text-primary fw-bold" style="font-size: 14px;"><i class="fa fa-check-square me-1"></i> Pilih Semua</a>
                                             </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Kata Sandi <span class="text-danger">*</span></label>
-                                                <input type="password" class="form-control fill" id="staff_password" placeholder="Masukkan Kata Sandi">
-                                            </div>
-                                        </div>
-                                        <div class="col-lg-4 col-md-6 col-sm-12">
-                                            <div class="input-block mb-3">
-                                                <label>Konfirmasi Kata Sandi <span class="text-danger">*</span></label>
-                                                <input type="password" class="form-control fill" id="staff_confirm" placeholder="Masukkan Ulang Kata Sandi">
+                                            <div class="warehouse-grid warehouse-list-container">
+                                                @if(isset($warehouses))
+                                                    @foreach($warehouses as $wh)
+                                                        <div class="warehouse-card">
+                                                            <input class="warehouse-checkbox chk-warehouse" type="checkbox" value="{{ $wh->id }}" id="wh_{{ $wh->id }}">
+                                                            <label class="warehouse-pill" for="wh_{{ $wh->id }}">
+                                                                <div class="check-icon"><i class="fa fa-check"></i></div>
+                                                                <span class="wh-name">{{ $wh->warehouse_name ?? $wh->name }}</span>
+                                                            </label>
+                                                        </div>
+                                                    @endforeach
+                                                @endif
                                             </div>
                                         </div>
                                     </div>

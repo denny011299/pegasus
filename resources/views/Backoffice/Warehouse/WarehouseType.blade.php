@@ -105,6 +105,9 @@
                     <div class="card-body">
                         <div class="table-responsive dt-pending" id="warehouse-type-table-wrap">
                             <div class="dt-skeleton" aria-hidden="true">
+                                <div style="padding: 16px 25px 16px 25px;">
+                                    <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
+                                </div>
                                 <div class="dt-skeleton-head">
                                     <span style="width:55%"></span>
                                     <span style="width:50%"></span>
@@ -118,7 +121,10 @@
                                                 <span class="skel-icon"></span>
                                                 <span class="skel-badge" style="width:50%"></span>
                                             </div>
-                                            <span class="skel-text" style="width:60%"></span>
+                                            <div style="display:flex;align-items:center;gap:6px;">
+                                                <span class="skel-avatar" style="width:16px;height:16px;"></span>
+                                                <span class="skel-text" style="width:50%"></span>
+                                            </div>
                                             <div style="display:flex;align-items:center;gap:8px;">
                                                 <span class="skel-avatar"></span>
                                                 <span class="skel-text" style="width:70%"></span>
