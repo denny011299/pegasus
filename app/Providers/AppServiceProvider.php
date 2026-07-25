@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\ProductVariant;
 use App\Support\RoleAccess;
+use App\Synchronization\Pmo\PmoClient;
+use App\Synchronization\SyncFlowRegistry;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
@@ -16,7 +18,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(PmoClient::class, function () {
+            return new PmoClient(config('synchronization.pmo', []));
+        });
+
+        $this->app->singleton(SyncFlowRegistry::class, function () {
+            return new SyncFlowRegistry(config('synchronization.flows', []));
+        });
     }
 
     /**

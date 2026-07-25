@@ -875,6 +875,15 @@
                         @endif
                     @endif
 
+                    @if ($akses->firstWhere('name', 'Sinkronisasi'))
+                        <li class="menu-title"><span>Integrasi</span></li>
+                        <li>
+                            <a class="{{ Request::is('synchronization*') ? 'active' : '' }}" href="/synchronization">
+                                <i class="fe fe-refresh-cw"></i> <span>Pusat Sinkronisasi</span>
+                            </a>
+                        </li>
+                    @endif
+
                     @php
                         $showSetting =
                         $akses->firstWhere('name', 'Profil') ||

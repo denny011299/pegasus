@@ -285,6 +285,12 @@
                     </li>
                     @endroleCanAny
                 @endif
+                @if (Route::is(['synchronizationWizard']))
+                    <li>
+                        <a class="btn btn-outline-secondary" href="/synchronization"><i class="fa fa-chevron-left me-2"
+                                aria-hidden="true"></i>Kembali ke Pusat Sinkronisasi</a>
+                    </li>
+                @endif
                 @if (Route::is(['cashCategory']))
                     @roleCan('Kategori Kas', 'create')
                     <li>
