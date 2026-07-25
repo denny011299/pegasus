@@ -9,6 +9,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SynchronizationController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\checkLogin;
 use Illuminate\Support\Facades\Route;
@@ -653,5 +654,15 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tanda Terima PO|others')->group(function () {
         Route::post('/accTt', [SupplierController::class, 'accTt'])->name('accTt');
         Route::post('/declineTt', [SupplierController::class, 'declineTt'])->name('declineTt');
+    });
+
+    // Pusat Sinkronisasi — daftar alur, wizard, dan eksekusi per langkah.
+    Route::middleware('check.access:Sinkronisasi|view')->group(function () {
+        Route::get('/synchronization', [SynchronizationController::class, 'center'])->name('synchronization');
+        Route::get('/synchronization/{flow}', [SynchronizationController::class, 'wizard'])->name('synchronizationWizard');
+        Route::get('/synchronization/{flow}/status', [SynchronizationController::class, 'status'])->name('synchronizationStatus');
+    });
+    Route::middleware('check.access:Sinkronisasi|others')->group(function () {
+        Route::post('/synchronization/{flow}/{step}/execute', [SynchronizationController::class, 'execute'])->name('synchronizationExecute');
     });
 });
