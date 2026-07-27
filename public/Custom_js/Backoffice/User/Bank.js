@@ -34,7 +34,7 @@
             columns: [
                 { data: "bank_kode" },
                 { data: "bank_date" },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {

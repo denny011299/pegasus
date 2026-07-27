@@ -91,6 +91,48 @@
             box-sizing: border-box !important;
         }
 
+        /* Global Table Styling (Aesthetic) */
+        .table-responsive {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        .table {
+            margin-bottom: 0 !important;
+        }
+
+        .table thead {
+            background: #f1f5f9 !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+
+        .table thead th, .table thead td {
+            background-color: #f1f5f9 !important;
+            color: #64748b !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: .4px !important;
+            padding: 14px 24px !important;
+            border-bottom: none !important;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .table tbody td {
+            padding: 16px 24px !important;
+            vertical-align: middle;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8fafc !important;
+        }
     </style>
 
     @if (Route::is([
@@ -372,6 +414,29 @@
         @keyframes dt-shimmer {
             0% { background-position: 100% 0; }
             100% { background-position: -100% 0; }
+        }
+
+        /* Enhanced DataTable Processing Overlay & Skeleton Styles */
+        div.dataTables_wrapper div.dataTables_processing {
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            margin-top: 0 !important;
+            margin-left: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            z-index: 1050 !important;
+        }
+
+        .dt-skeleton-overlay {
+            animation: fadeInOverlay 0.2s ease-in-out;
+        }
+
+        @keyframes fadeInOverlay {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 

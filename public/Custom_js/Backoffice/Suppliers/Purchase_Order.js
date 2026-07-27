@@ -309,7 +309,7 @@
                 { data: "po_desc",          width: "25%", defaultContent: "-" },
                 { data: "total",            width: "8%" },
                 { data: "status_po",        width: "7%" },
-                { data: "created_by_name",  width: "7%",  defaultContent: "-" },
+                { data: "created_by_name",  width: "7%",  defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name",      width: "7%",  defaultContent: "-" },
                 { data: "action",           width: "4%",  class: "text-center align-middle" },
             ],

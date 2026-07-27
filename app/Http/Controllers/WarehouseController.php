@@ -29,6 +29,23 @@ class WarehouseController extends Controller
         return response()->json($data);
     }
 
+    /** List gudang non-utama (eceran/toko), filter by is_main_warehouse=0 */
+    public function getRetailWarehouse(Request $req)
+    {
+        $data = Warehouse::query()
+            ->active()
+            ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+            ->whereHas('type', fn ($q) => $q->where('is_main_warehouse', 0))
+            ->when(
+                trim((string) ($req->warehouse_name ?? '')) !== '',
+                fn ($q) => $q->where('warehouse_name', 'like', '%' . trim($req->warehouse_name) . '%')
+            )
+            ->orderBy('warehouse_name')
+            ->get(['id', 'warehouse_name', 'warehouse_type_id', 'warehouse_address', 'status']);
+
+        return response()->json($data);
+    }
+
     public function insertWarehouse(Request $req)
     {
         $result = (new Warehouse())->insertWarehouse($req->only([

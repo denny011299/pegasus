@@ -20,7 +20,30 @@
         if ($.fn.dataTable) {
             $.extend(true, $.fn.dataTable.defaults, {
                 deferRender: true,
-                processing: true
+                processing: true,
+                autoWidth: false,
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                language: {
+                    search: " ",
+                    searchPlaceholder: "Cari data...",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    info: "_START_ - _END_ dari _TOTAL_ data",
+                    infoEmpty: "Menampilkan 0 data",
+                    infoFiltered: "(disaring dari _MAX_ data)",
+                    emptyTable: '<div class="text-center py-4 text-muted"><i class="fe fe-inbox fs-2 mb-2 d-block opacity-50"></i>Tidak ada data tersedia</div>',
+                    zeroRecords: '<div class="text-center py-4 text-muted"><i class="fe fe-search fs-2 mb-2 d-block opacity-50"></i>Data tidak ditemukan</div>',
+                    paginate: {
+                        next: '<i class="fe fe-chevron-right"></i>',
+                        previous: '<i class="fe fe-chevron-left"></i>'
+                    },
+                    processing: '<div class="dt-skeleton-overlay d-flex flex-column align-items-center justify-content-center py-4 px-3" style="background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(2px); border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">' +
+                                    '<div class="spinner-border text-primary mb-2" style="width: 2.2rem; height: 2.2rem; border-width: 0.2em;" role="status">' +
+                                        '<span class="visually-hidden">Memuat...</span>' +
+                                    '</div>' +
+                                    '<div class="fw-semibold text-secondary" style="font-size: 13px; letter-spacing: 0.3px;">Memuat data...</div>' +
+                                '</div>'
+                }
             });
         }
     </script>
@@ -253,6 +276,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         "showMethod": "fadeIn",
         "hideMethod": "fadeOut"
     }
+    
+    // Global DataTables defaults initialized above
       // Tooltip
     if ($('[data-bs-toggle="tooltip"]').length > 0) {
         var tooltipTriggerList = [].slice.call(
@@ -263,6 +288,38 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
       requestAnimationFrame(function () { feather.replace(); });
+
+    function renderCreatedByName(data) {
+        try {
+            if (data == null || data === '' || data === '-' || data === false) {
+                return '<span class="text-muted">-</span>';
+            }
+            // Guard: kadang DataTables/ajax kirim object
+            if (typeof data === 'object') {
+                data = data.name || data.text || data.staff_name || '-';
+            }
+            data = String(data);
+            if (data === '-' || data.trim() === '') {
+                return '<span class="text-muted">-</span>';
+            }
+            // Escape minimal supaya template literal aman
+            var safe = data
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+            return '<div style="display:flex;align-items:center;gap:10px;">'
+                + '<div style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;">'
+                + '<i class="fe fe-user"></i>'
+                + '</div>'
+                + '<span class="fw-semibold text-dark">' + safe + '</span>'
+                + '</div>';
+        } catch (err) {
+            console.error('renderCreatedByName error:', err);
+            return '<span class="text-muted">-</span>';
+        }
+    }
+
     function notifikasi(simbol,title,deskripsi) {
         Swal.fire({
             icon: simbol,
@@ -1203,10 +1260,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
 
-    function autocompleteWarehouse(id, modalParent = null) {
+    function autocompleteWarehouse(id, modalParent = null, opts = null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
         }
+        opts = opts || {};
 
         $(id).select2({
             ajax: {
@@ -1215,10 +1273,12 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                 type: "post",
                 delay: 250,
                 data: function data(params) {
-                    return {
+                    var payload = {
                         "keyword": params.term,
                         '_token': $('meta[name="csrf-token"]').attr('content')
                     };
+                    if (opts.retailOnly) payload.retail_only = 1;
+                    return payload;
                 },
                 processResults: function processResults(data) {
                     return {
@@ -1228,7 +1288,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
                     };
                 },
             },
-            placeholder: "Pilih toko atau gudang",
+            placeholder: opts.placeholder || "Pilih toko atau gudang",
             closeOnSelect: true,
             allowClear: true,
             width: "100%",
@@ -1393,6 +1453,8 @@ function resetCameraModalUi() {
     $("#video").removeClass("rot90 rot180 rot270");
     $("#preview-box").hide();
     $("#camera").show();
+    $("#preview-actions").attr("style", "display: none !important;");
+    $("#camera-actions").attr("style", "display: flex !important;");
     $("#previewImage").attr("src", "");
 }
 
@@ -1521,6 +1583,8 @@ $(document).on("click", "#captureBtn", function () {
 
     $("#camera").hide();
     $("#preview-box").show();
+    $("#camera-actions").attr("style", "display: none !important;");
+    $("#preview-actions").attr("style", "display: flex !important;");
 });
 
 // =========================
@@ -1529,6 +1593,8 @@ $(document).on("click", "#captureBtn", function () {
 $(document).on("click", "#retakeBtn", function () {
     $("#preview-box").hide();
     $("#camera").show();
+    $("#preview-actions").attr("style", "display: none !important;");
+    $("#camera-actions").attr("style", "display: flex !important;");
 
     camRotation = 0;
     $("#video").removeClass("rot90 rot180 rot270");

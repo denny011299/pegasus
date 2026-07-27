@@ -29,9 +29,11 @@ use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Support\RoleAccess;
 use App\Support\UnitStockSorter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 use function Symfony\Component\Clock\now;
@@ -1638,5 +1640,140 @@ class StockController extends Controller
         }
 
         return response()->json($data);
+    }
+
+    /**
+     * Set safety stock 1 satuan saja (sama pola master produk).
+     * Body: product_variant_id, warehouse_id?, unit_id, ps_safety_stock
+     */
+    public function updateProductSafetyStock(Request $req)
+    {
+        if (! RoleAccess::can(Session::get('user'), 'Safety Stock', 'edit')) {
+            return response()->json(['status' => 0, 'message' => 'Tidak punya akses edit Safety Stock'], 403);
+        }
+
+        $variantId = (int) ($req->product_variant_id ?? 0);
+        $warehouseId = (int) ($req->warehouse_id ?: Session::get('active_warehouse_id') ?? 0);
+        $unitId = (int) ($req->unit_id ?? 0);
+        $safety = max(0, (int) ($req->ps_safety_stock ?? 0));
+
+        // Backward-compat: items[{unit_id, ps_safety_stock}] → ambil item pertama
+        if ($unitId <= 0) {
+            $items = $req->items;
+            if (is_string($items)) {
+                $items = json_decode($items, true);
+            }
+            if (is_array($items) && $items !== []) {
+                $unitId = (int) ($items[0]['unit_id'] ?? 0);
+                $safety = max(0, (int) ($items[0]['ps_safety_stock'] ?? 0));
+            }
+        }
+
+        if ($variantId <= 0 || $warehouseId <= 0 || $unitId <= 0) {
+            return response()->json(['status' => 0, 'message' => 'Data tidak valid'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('warehouse_id', $warehouseId)
+                ->where('product_variant_id', $variantId)
+                ->update(['ps_safety_stock' => 0]);
+
+            $row = ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('warehouse_id', $warehouseId)
+                ->where('product_variant_id', $variantId)
+                ->where('unit_id', $unitId)
+                ->first();
+            if (! $row) {
+                throw new \RuntimeException('Satuan stok tidak ditemukan');
+            }
+            $row->ps_safety_stock = $safety;
+            $row->save();
+
+            DB::commit();
+
+            return response()->json(['status' => 1, 'message' => 'Safety stock berhasil disimpan']);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json(['status' => 0, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Pindah qty Safety → Stok Produk (kurangi ps_safety_stock, tambah ps_stock).
+     * Body: product_variant_id, warehouse_id?, items: [{unit_id, qty}]
+     */
+    public function transferSafetyToStock(Request $req)
+    {
+        if (! RoleAccess::can(Session::get('user'), 'Safety Stock', 'edit')) {
+            return response()->json(['status' => 0, 'message' => 'Tidak punya akses edit Safety Stock'], 403);
+        }
+
+        $variantId = (int) ($req->product_variant_id ?? 0);
+        $warehouseId = (int) ($req->warehouse_id ?: Session::get('active_warehouse_id') ?? 0);
+        $items = $req->items;
+        if (is_string($items)) {
+            $items = json_decode($items, true);
+        }
+        if ($variantId <= 0 || $warehouseId <= 0 || ! is_array($items) || $items === []) {
+            return response()->json(['status' => 0, 'message' => 'Data tidak valid'], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $logger = new LogStock();
+            $moved = 0;
+            foreach ($items as $item) {
+                $unitId = (int) ($item['unit_id'] ?? 0);
+                $qty = (float) ($item['qty'] ?? 0);
+                if ($unitId <= 0 || $qty <= 0) {
+                    continue;
+                }
+                $row = ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('status', 1)
+                    ->where('warehouse_id', $warehouseId)
+                    ->where('product_variant_id', $variantId)
+                    ->where('unit_id', $unitId)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $row) {
+                    throw new \RuntimeException('Stok satuan tidak ditemukan');
+                }
+                $safety = (float) ($row->ps_safety_stock ?? 0);
+                if ($qty > $safety) {
+                    throw new \RuntimeException('Qty transfer melebihi safety stock');
+                }
+                $row->ps_safety_stock = round($safety - $qty, 4);
+                $row->ps_stock = round((float) $row->ps_stock + $qty, 4);
+                $row->save();
+
+                $logger->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => 'SS' . $row->ps_id,
+                    'log_type' => 1,
+                    'log_category' => 1,
+                    'log_item_id' => $variantId,
+                    'log_notes' => 'Transfer Safety Stock ke Stok Produk',
+                    'log_jumlah' => $qty,
+                    'unit_id' => $unitId,
+                    'warehouse_id' => $warehouseId,
+                ]);
+                $moved++;
+            }
+            if ($moved === 0) {
+                throw new \RuntimeException('Tidak ada qty yang ditransfer');
+            }
+            DB::commit();
+
+            return response()->json(['status' => 1, 'message' => 'Transfer berhasil']);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json(['status' => 0, 'message' => $e->getMessage()], 500);
+        }
     }
 }

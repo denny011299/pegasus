@@ -70,6 +70,7 @@ class SalesOrderDetail extends Model
             $product = $variant ? $products->get($variant->product_id) : null;
             $unit = $unitsMap->get($value->unit_id);
             $value->unit_name = $unit ? $unit->unit_name : null;
+            $value->retail_unit = $variant ? (int) ($variant->retail_unit ?? 0) : 0;
 
             $unitIds = $product ? (json_decode($product->product_unit, true) ?: []) : [];
             $value->units = $unitIds;

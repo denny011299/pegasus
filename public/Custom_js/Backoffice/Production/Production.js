@@ -271,7 +271,7 @@
                 { data: "production_desc", width: "20%", defaultContent: "-" },
                 { data: "status_text" },
                 { data: "notes", defaultContent: "-", width: "30%"  },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "cancel_requested_by_name", defaultContent: "-" },
                 { data: "action", class: "text-center align-middle" },

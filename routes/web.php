@@ -136,6 +136,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Gudang|view')->group(function () {
         Route::get('/warehouse', [App\Http\Controllers\WarehouseController::class, 'Warehouse'])->name('warehouse');
         Route::get('/getWarehouse', [App\Http\Controllers\WarehouseController::class, 'getWarehouse'])->name('getWarehouse');
+        Route::get('/getRetailWarehouse', [App\Http\Controllers\WarehouseController::class, 'getRetailWarehouse'])->name('getRetailWarehouse');
     });
     Route::middleware('check.access:Gudang|create')->group(function () {
         Route::post('/insertWarehouse', [App\Http\Controllers\WarehouseController::class, 'insertWarehouse'])->name('insertWarehouse');
@@ -398,6 +399,10 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Produk|view')->group(function () {
         Route::get('/stockProduct', [StockController::class, 'Stock'])->name('stockProduct');
         Route::get('/getStock', [StockController::class, 'getStock'])->name('getStock');
+    });
+    Route::middleware('check.access:Safety Stock|edit')->group(function () {
+        Route::post('/updateProductSafetyStock', [StockController::class, 'updateProductSafetyStock'])->name('updateProductSafetyStock');
+        Route::post('/transferSafetyToStock', [StockController::class, 'transferSafetyToStock'])->name('transferSafetyToStock');
     });
 
     Route::middleware('check.access:Daftar Bahan Mentah|view')->group(function () {

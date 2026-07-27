@@ -451,6 +451,7 @@ class ProductUnitStock
                 'log_notes' => $log['note'],
                 'log_jumlah' => $log['qty'],
                 'unit_id' => $log['unit_id'],
+                'warehouse_id' => $warehouseId,
             ]);
         }
 
@@ -508,6 +509,7 @@ class ProductUnitStock
             'log_notes' => $logNotes,
             'log_jumlah' => $qty,
             'unit_id' => $unitId,
+            'warehouse_id' => $warehouseId,
         ]);
 
         self::clearCache();

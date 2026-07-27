@@ -32,7 +32,7 @@
                 { data: "stob_date"},
                 { data: "staff_name", defaultContent: "-" },
                 { data: "stob_code" },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", defaultContent: "-" },
                 { data: "action", defaultContent: "-", class: "text-center align-middle" },

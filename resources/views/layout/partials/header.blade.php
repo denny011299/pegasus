@@ -225,6 +225,72 @@
         }
 
         /* ============================================================
+           GLOBAL DATATABLE LOADING (PREMIUM SPINNER & OVERLAY)
+           ============================================================ */
+        div.dataTables_wrapper div.dataTables_processing {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: rgba(255, 255, 255, 0.65) !important;
+            backdrop-filter: blur(3px) !important;
+            -webkit-backdrop-filter: blur(3px) !important;
+            box-shadow: none !important;
+            z-index: 50 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transform: none !important;
+        }
+
+        .dt-premium-spinner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(37, 99, 235, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+        }
+
+        .dt-spinner-circle {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e7ff;
+            border-top: 4px solid #3b82f6;
+            border-right: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: dt-spin 0.8s ease-in-out infinite;
+        }
+
+        .dt-spinner-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+            letter-spacing: 0.5px;
+            animation: dt-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes dt-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes dt-pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        /* ============================================================
            GLASSMORPHISM DATATABLE — PREMIUM DESIGN
            ============================================================ */
 
@@ -379,7 +445,7 @@
             letter-spacing: 0.08em !important;
             border-bottom: none !important;
             border-top: none !important;
-            padding: 16px 18px !important;
+            padding: 16px 24px !important;
             vertical-align: middle !important;
             white-space: nowrap;
             text-shadow: 0 1px 1px rgba(255,255,255,0.7);
@@ -389,13 +455,21 @@
         table.dataTable thead th:last-child {
             border-radius: 0 !important;
         }
+        table.dataTable thead th:first-child,
+        table.dataTable tbody td:first-child {
+            padding-left: 32px !important;
+        }
+        table.dataTable thead th:last-child,
+        table.dataTable tbody td:last-child {
+            padding-right: 32px !important;
+        }
 
         /* 6. Body Styling */
         table.dataTable tbody td {
             background: #ffffff !important;
             color: #334155 !important;
             font-size: 13.5px;
-            padding: 14px 18px !important;
+            padding: 14px 24px !important;
             vertical-align: middle !important;
             border-top: none !important;
             border-bottom: 1px solid #f1f5f9 !important;

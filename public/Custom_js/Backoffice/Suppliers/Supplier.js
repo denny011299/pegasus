@@ -32,7 +32,7 @@
                 { data: "city_name", width: "12%" },
                 { data: "pay", width: "13%" },
                 { data: "created", width: "15%" },
-                { data: "created_by_name", defaultContent: "-", width: "15%" },
+                { data: "created_by_name", defaultContent: "-", width: "15%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "action", class: "d-flex align-items-center", width: "15%" },
             ],
             initComplete: (settings, json) => {

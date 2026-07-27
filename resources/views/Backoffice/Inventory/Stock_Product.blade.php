@@ -29,7 +29,7 @@
         }
         #tableStockRetail.dataTable tbody td {
             padding: 0 !important;
-            border-top: 2px solid #94a3b8 !important;
+            border-top: 1px solid #cbd5e1 !important;
             border-bottom: none !important;
             vertical-align: top;
         }
@@ -86,7 +86,7 @@
         .sretail-product-name {
             font-family: 'Inter', sans-serif;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 15px;
             color: #0f172a;
             letter-spacing: -0.02em;
             line-height: 1.3;
@@ -95,7 +95,7 @@
             text-overflow: ellipsis;
         }
         .sretail-product-meta {
-            font-size: 13px;
+            font-size: 14px;
             color: #64748b;
             font-weight: 500;
             margin-top: 2px;
@@ -105,16 +105,17 @@
         .sretail-list-col {
             display: flex;
             flex-direction: column;
+            width: 100%;
             padding: 8px 0;
         }
         .sretail-list-item {
             display: flex;
             align-items: center;
-            height: 38px;
-            font-size: 13.5px;
+            height: 44px;
+            font-size: 15px;
             font-weight: 600;
-            color: #4b5563;
-            border-bottom: 2px dashed #94a3b8;
+            color: #334155;
+            border-bottom: 1px dashed #cbd5e1;
             padding: 0 12px;
         }
         .sretail-list-item:last-child {
@@ -124,6 +125,7 @@
             color: #0f172a;
             font-weight: 700;
             justify-content: center;
+            font-size: 15px;
         }
         /* Log table */
         .table-scroll {
@@ -140,6 +142,67 @@
         #tableLog tbody td {
             padding: 10px 8px; vertical-align: middle;
             white-space: normal !important; word-wrap: break-word;
+        }
+
+        /* Overlay loading saat pagination / search / sort (server-side) */
+        #tableStock-wrap,
+        #tableStockRetail-wrap {
+            position: relative;
+        }
+
+        #tableStock_wrapper .dataTables_processing,
+        #tableStockRetail_wrapper .dataTables_processing {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.72) !important;
+            box-shadow: none !important;
+            z-index: 20;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        #tableStock_wrapper .dataTables_processing > div,
+        #tableStockRetail_wrapper .dataTables_processing > div {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        #tableStock-wrap.is-loading tbody,
+        #tableStockRetail-wrap.is-loading tbody {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        #tableStock tbody tr,
+        #tableStockRetail tbody tr {
+            cursor: pointer;
+        }
+        #tableStock td.cell-safety,
+        #tableStockRetail td.cell-safety {
+            background: #fafbfc;
+        }
+        #tableStock td.cell-safety:hover,
+        #tableStockRetail td.cell-safety:hover {
+            background: #eff6ff;
         }
     </style>
 @endsection

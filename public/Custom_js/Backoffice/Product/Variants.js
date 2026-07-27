@@ -36,7 +36,7 @@
                 { data: "variant_name", width: "12%"},
                 { data: "variant_values", width: "45%"},
                 { data: "variant_date", width: "15%" },
-                { data: "created_by_name", defaultContent: "-", width: "15%" },
+                { data: "created_by_name", defaultContent: "-", width: "15%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 // { data: "acc_by_name", defaultContent: "-" },
                 { data: "action",class:"text-center align-middle", width: "13%" },
             ],

@@ -1,8 +1,8 @@
 var mode = 1;
-var table;
+    var table;
 
 $(document).ready(function () {
-    inisialisasi();
+        inisialisasi();
     autocompleteWarehouseType("#warehouse_type_id", "#add_warehouse");
 });
 
@@ -74,9 +74,9 @@ $(document).on("click", "#btn-sidebar-menus-all", function () {
 $(document).on("click", "#btn-sidebar-menus-none", function () {
     $(".warehouse-sidebar-menu").prop("checked", false);
     updateAllModuleChecks();
-});
-
-function inisialisasi() {
+    });
+    
+    function inisialisasi() {
     table = $("#tableWarehouse").DataTable({
         ajax: {
             url: "/getWarehouse",
@@ -94,23 +94,22 @@ function inisialisasi() {
                 });
             },
         },
-        bFilter: true,
+            bFilter: true,
         sDom: "fBtlpi",
-        lengthMenu: [10, 25, 50, 100],
-        ordering: true,
+            lengthMenu: [10, 25, 50, 100],
+            ordering: true,
         autoWidth: false,
         scrollX: false,
-        language: {
+            language: {
             search: " ",
             sLengthMenu: "_MENU_",
-            searchPlaceholder: "Cari Gudang",
-            info: "_START_ - _END_ of _TOTAL_ items",
+                searchPlaceholder: "Cari Gudang",
+                info: "_START_ - _END_ of _TOTAL_ items",
             emptyTable: "Belum ada data gudang",
             zeroRecords: "Data tidak ditemukan",
             loadingRecords: "Sedang memuat data...",
-            processing: "Sedang memuat data...",
-            paginate: {
-                next: ' <i class=" fa fa-angle-right"></i>',
+                paginate: {
+                    next: ' <i class=" fa fa-angle-right"></i>',
                 previous: '<i class="fa fa-angle-left"></i> ',
             },
         },
@@ -305,7 +304,7 @@ function refreshWarehouse() {
 }
 
 $(document).on("click", ".btn-save", function () {
-    LoadingButton(this);
+       LoadingButton(this);
     $(".is-invalid").removeClass("is-invalid");
     var url = "/insertWarehouse";
     var valid = 1;
@@ -320,10 +319,10 @@ $(document).on("click", ".btn-save", function () {
     if (valid == -1) {
         notifikasi("error", "Gagal Insert", "Silahkan cek kembali inputan anda");
         ResetLoadingButton(".btn-save", mode == 1 ? "Tambah Gudang" : "Update Gudang");
-        return false;
+            return false;
     }
 
-    param = {
+        param = {
         warehouse_name: $("#warehouse_name").val(),
         warehouse_type_id: $("#warehouse_type_id").val(),
         warehouse_address: $("#warehouse_address").val(),
@@ -334,35 +333,35 @@ $(document).on("click", ".btn-save", function () {
     if (mode == 2) {
         url = "/updateWarehouse";
         param.id = $("#add_warehouse").attr("data-id");
-    }
+        }
 
-    LoadingButton($(this));
-    $.ajax({
+        LoadingButton($(this));
+        $.ajax({
         url: url,
-        data: param,
+            data: param,
         method: "post",
-        headers: {
+            headers: {
             "X-CSRF-TOKEN": token,
-        },
+            },
         success: function (e) {
             ResetLoadingButton(".btn-save", mode == 1 ? "Tambah Gudang" : "Update Gudang");
-            if (e == -2) {
+                if (e == -2) {
                 notifikasi("error", "Gagal", "Nama gudang sudah terdaftar!");
                 $("#warehouse_name").addClass("is-invalid");
-                return;
-            }
-            afterInsert();
-        },
+                    return;
+                }
+                afterInsert();
+            },
         error: function (e) {
             ResetLoadingButton(".btn-save", mode == 1 ? "Tambah Gudang" : "Update Gudang");
             notifikasi("error", "Gagal", "Terjadi kesalahan saat menyimpan");
-            console.log(e);
+                console.log(e);
         },
     });
-});
+    });
 
-function afterInsert() {
-    $(".modal").modal("hide");
+    function afterInsert() {
+        $(".modal").modal("hide");
     if (mode == 1) notifikasi("success", "Berhasil Insert", "Berhasil Tambah Gudang");
     else if (mode == 2) notifikasi("success", "Berhasil Update", "Berhasil Update Gudang");
 
@@ -377,8 +376,8 @@ function afterInsert() {
         return;
     }
 
-    refreshWarehouse();
-}
+        refreshWarehouse();
+    }
 
 $(document).on("keypress", "#add_warehouse input, #add_warehouse textarea", function (e) {
     if (e.which == 13) {
@@ -422,7 +421,7 @@ $(document).on("click", ".btn_delete", function () {
 
 $(document).on("click", "#btn-delete-warehouse", function () {
     var id = $(this).attr("data-id");
-    $.ajax({
+        $.ajax({
         url: "/deleteWarehouse",
         data: {
             id: id,
@@ -457,9 +456,9 @@ $(document).on("click", "#btn-delete-warehouse", function () {
 });
 
 $(document).on("click", "#btn-force-delete-warehouse", function () {
-    $.ajax({
+            $.ajax({
         url: "/deleteWarehouse",
-        data: {
+                data: {
             id: $(this).attr("data-id"),
             force: 1,
             _token: token,
@@ -522,4 +521,4 @@ $(document).on("click", "#btn-update-warehouse-status", function () {
             console.log(e);
         },
     });
-});
+    });

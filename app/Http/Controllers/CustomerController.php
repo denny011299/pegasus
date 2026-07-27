@@ -14,8 +14,10 @@ use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use App\Models\Staff;
+use App\Support\SalesOrderStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CustomerController extends Controller
@@ -30,12 +32,51 @@ class CustomerController extends Controller
     }
     
     function getSalesOrder(Request $req){
+        if ($req->has('draw')) {
+            try {
+                return response()->json((new SalesOrder())->getSalesOrderDataTable($req->all()));
+            } catch (\Throwable $e) {
+                Log::error('getSalesOrder DataTable failed: '.$e->getMessage(), [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+                return response()->json([
+                    'draw' => (int) $req->input('draw', 1),
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                    'error' => 'Gagal memuat data pengiriman',
+                ]);
+            }
+        }
         $data = (new SalesOrder())->getSalesOrder($req->all());
         return response()->json($data);
     }
 
     function insertSalesOrder(Request $req){
         $data = $req->all();
+
+        $productsData = json_decode($data['products'] ?? '[]', true);
+        if (! is_array($productsData)) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Insert',
+                'message' => 'Data produk tidak valid',
+            ]);
+        }
+        $retailErr = SalesOrderStock::validateRetailSelection($productsData, $data['retail_warehouse_id'] ?? null);
+        if ($retailErr) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang eceran wajib',
+                'message' => $retailErr,
+            ]);
+        }
+
+        $stockErr = SalesOrderStock::assertStockAvailable($productsData, $data['retail_warehouse_id'] ?? null);
+        if ($stockErr) {
+            return response()->json($stockErr);
+        }
         
         $img = [];
         foreach (json_decode($data["so_img"]) as $key => $value) {
@@ -61,7 +102,7 @@ class CustomerController extends Controller
         if ($so->so_id == -1){
             return -1;
         }
-        foreach (json_decode($data['products'],true) as $key => $value) {
+        foreach ($productsData as $key => $value) {
             $value['so_id'] = $so->so_id;
             (new SalesOrderDetail())->insertSalesOrderDetail($value);
         }
@@ -84,6 +125,18 @@ class CustomerController extends Controller
         // Mutasi stok/log hanya jika SO sudah disetujui (ACC). Sebelum itu stok belum dipotong (accSO);
         // jika revert+potong dijalankan saat status 1/3, stok ikut berubah padahal belum konfirmasi.
         if ((int) ($soBefore->status ?? 0) !== 2) {
+            $retailErr = SalesOrderStock::validateRetailSelection($productsData, $data['retail_warehouse_id'] ?? null);
+            if ($retailErr) {
+                return response()->json([
+                    'status' => 0,
+                    'header' => 'Gudang eceran wajib',
+                    'message' => $retailErr,
+                ]);
+            }
+            $stockErr = SalesOrderStock::assertStockAvailable($productsData, $data['retail_warehouse_id'] ?? null);
+            if ($stockErr) {
+                return response()->json($stockErr);
+            }
             $so = (new SalesOrder())->updateSalesOrder($data);
             $list_id_detail = [];
             foreach ($productsData as $val) {
@@ -98,185 +151,88 @@ class CustomerController extends Controller
             return 1;
         }
 
-        $p = [];
-        $valid = 1;
-        // --- TAHAP 1: REVERT STOK LAMA (PENTING: Agregasi Dulu Agar Log Tidak Double) ---
-        $currentDetails = SalesOrderDetail::where('so_id', $data['so_id'])->where('status', '>=', 1)->get();
-        $revertAgregat = [];
-
-        foreach ($currentDetails as $oldDetail) {
-            $key = $oldDetail->product_variant_id . '_' . $oldDetail->unit_id;
-            if (!isset($revertAgregat[$key])) {
-                $revertAgregat[$key] = [
-                    'pvr_id' => $oldDetail->product_variant_id,
-                    'unit_id' => $oldDetail->unit_id,
-                    'qty' => 0
-                ];
-            }
-            $revertAgregat[$key]['qty'] += $oldDetail->sod_qty;
+        $retailErr = SalesOrderStock::validateRetailSelection($productsData, $data['retail_warehouse_id'] ?? $soBefore->retail_warehouse_id);
+        if ($retailErr) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang eceran wajib',
+                'message' => $retailErr,
+            ]);
         }
 
-        // Eksekusi Revert Real ke DB & Log (Sekali per Satuan)
-        foreach ($revertAgregat as $rev) {
-            $sOld = ProductStock::where("product_variant_id", $rev['pvr_id'])
-                ->where("unit_id", $rev['unit_id'])
-                ->where("status", 1)
-                ->first();
-            
-            if($sOld) {
-                $sOld->ps_stock += $rev['qty'];
-                $sOld->save();
+        $oldRetailWh = (int) ($soBefore->retail_warehouse_id ?? 0);
+        $newRetailWh = (int) ($data['retail_warehouse_id'] ?? $oldRetailWh);
 
-                (new LogStock())->insertLog([                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
-                    'log_date' => now(), 
-                    'log_kode' => $data['so_number'], 
-                    'log_type' => 1, 
-                    'log_category' => 1,
-                    'log_item_id' => $rev['pvr_id'], 
-                    'log_notes' => "Update Pengiriman",
-                    'log_jumlah' => $rev['qty'], 
-                    'unit_id' => $rev['unit_id'],
-                ]);
-            }
+        $oldLines = [];
+        foreach (SalesOrderDetail::where('so_id', $data['so_id'])->where('status', '>=', 1)->get() as $oldDetail) {
+            $oldLines[] = [
+                'product_variant_id' => $oldDetail->product_variant_id,
+                'unit_id' => $oldDetail->unit_id,
+                'qty' => (float) $oldDetail->sod_qty,
+            ];
         }
 
-        // --- TAHAP 2: AGGREGASI DATA BARU (Sesuai Image 31ede1) ---
-        $aggregatedProducts = [];
-
+        $newLines = [];
         foreach ($productsData as $value) {
-            $uniqueKey = $value["product_variant_id"] . '_' . $value["unit_id"];
-            if (!isset($aggregatedProducts[$uniqueKey])) {
-                $aggregatedProducts[$uniqueKey] = [
-                    'variant_id' => $value["product_variant_id"],
-                    'total_butuh' => 0,
-                    'unit_id_jual' => $value["unit_id"],
-                    'details' => $value
-                ];
-            }
-            $aggregatedProducts[$uniqueKey]['total_butuh'] += (int)$value["so_qty"];
+            $newLines[] = [
+                'product_variant_id' => $value['product_variant_id'],
+                'unit_id' => $value['unit_id'],
+                'qty' => (float) ($value['so_qty'] ?? 0),
+            ];
         }
 
-        // --- TAHAP 3: VALIDASI & KONVERSI STOK OTOMATIS ---
-        $p = []; $valid = 1;
-        foreach ($aggregatedProducts as $req) {
-            $variantId = $req['variant_id'];
-            $butuhTersedia = $req['total_butuh'];
-            $unitTarget = $req['unit_id_jual'];
+        $plan = SalesOrderStock::buildPlan($newLines, $newRetailWh > 0 ? $newRetailWh : null);
+        if (! ($plan['ok'] ?? false)) {
+            return response()->json([
+                'status' => $plan['status'] ?? 0,
+                'header' => $plan['header'] ?? 'Stok tidak cukup',
+                'message' => $plan['message'] ?? 'Stok tidak mencukupi',
+                'products' => $plan['products'] ?? [],
+                'recommendations' => $plan['recommendations'] ?? [],
+            ]);
+        }
 
-            $ss = ProductStock::where('product_variant_id', $variantId)
-                ->where('status', 1)
-                ->orderBy('ps_id', 'desc')
-                ->get();
-            
-            if (count($ss) > 0) {
-                $virtualStock = []; $logSummary = []; $keyTarget = null;
-                foreach ($ss as $idx => $stok) {
-                    $virtualStock[$stok->ps_id] = [
-                        'model' => $stok, 
-                        'current' => (float)$stok->ps_stock, 
-                        'unit_id' => $stok->unit_id, 
-                        'ps_id' => $stok->ps_id
-                    ];
-                    if ($stok->unit_id == $unitTarget) { $keyTarget = $idx; }
+        try {
+            DB::transaction(function () use ($data, $productsData, $oldLines, $oldRetailWh, $plan, $soBefore) {
+                if ($oldLines !== []) {
+                    $restore = SalesOrderStock::executeRestore(
+                        $oldLines,
+                        $oldRetailWh > 0 ? $oldRetailWh : null,
+                        $data['so_number'] ?? ($soBefore->so_number ?? '-'),
+                        'Update Pengiriman (kembalikan stok)'
+                    );
+                    if (! ($restore['ok'] ?? false)) {
+                        throw new \RuntimeException($restore['message'] ?? 'Gagal kembalikan stok lama');
+                    }
                 }
 
-                if ($keyTarget === null) { $valid = -1; continue; }
-
-                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
-                    if (!isset($units[$targetKey + 1])) return false; 
-                    $stokSekarang = $units[$targetKey];
-                    $stokAtas = $units[$targetKey + 1];
-
-                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
-                        if (!$siapkanStok($targetKey + 1, $units)) return false;
-                    }
-
-                    $sr = ProductRelation::where('product_variant_id', $variantId)
-                        ->where('pr_unit_id_2', $stokSekarang->unit_id)
-                        ->where('status', 1)->first();
-
-                    if ($sr && $virtualStock[$stokAtas->ps_id]['current'] > 0) {
-                        $virtualStock[$stokAtas->ps_id]['current'] -= 1;
-                        $hasilBongkar = (float)$sr['pr_unit_value_2'];
-                        $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
-                        
-                        $baseOrder = $stokAtas->ps_id * 10; 
-                        $logSummary[$stokAtas->unit_id . '_cat2'] = [
-                            'unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
-                            'cat' => 2, 'note' => "Konversi unit dari pengiriman (Bongkar)", 'sort_order' => $baseOrder
-                        ];
-                        $logSummary[$stokSekarang->unit_id . '_cat1'] = [
-                            'unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
-                            'cat' => 1, 'note' => "Konversi unit dari pengiriman (Hasil)", 'sort_order' => $baseOrder + 1
-                        ];
-                        return true;
-                    }
-                    return false;
-                };
-
-                $idPalingBawah = $ss[$keyTarget]->ps_id;
-                $safety = 0; 
-                while ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
-                    $safety++; if ($safety > 500) break; 
-                    if (!$siapkanStok($keyTarget, $ss)) break; 
+                $deduct = SalesOrderStock::executeDeduct(
+                    $plan['plan'],
+                    $data['so_invoice_no'] ?? ($soBefore->so_invoice_no ?? '-'),
+                    'Update Pengiriman'
+                );
+                if (! ($deduct['ok'] ?? false)) {
+                    throw new \RuntimeException($deduct['message'] ?? 'Gagal potong stok');
                 }
 
-                if ($virtualStock[$idPalingBawah]['current'] >= $butuhTersedia) {
-                    // Update Database Stok Hasil Bongkar
-                    foreach ($virtualStock as $v) {
-                        $v['model']->ps_stock = (int)$v['current'];
-                        $v['model']->save();
-                    }
-                    // Simpan Log Konversi
-                    usort($logSummary, function($a, $b) { return $a['sort_order'] <=> $b['sort_order']; });
-                    foreach ($logSummary as $l) {
-                        (new LogStock())->insertLog([
-                            'log_date' => now(), 'log_kode' => "-", 'log_type' => 1, 'log_category' => $l['cat'], 
-                            'log_item_id' => $variantId, 'log_notes' => $l['note'], 'log_jumlah' => $l['jumlah'], 'unit_id' => $l['unit_id']
-                        ]);
-                    }
-                } else {
-                    $valid = -1;
-                    array_push($p, $req['details']['product_name']);
+                $so = (new SalesOrder())->updateSalesOrder($data);
+                $list_id_detail = [];
+                foreach ($productsData as $val) {
+                    $val['so_id'] = $so->so_id;
+                    $id = isset($val['sod_id'])
+                        ? (new SalesOrderDetail())->updateSalesOrderDetail($val)
+                        : (new SalesOrderDetail())->insertSalesOrderDetail($val);
+                    $list_id_detail[] = $id;
                 }
-            }
+                SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Update',
+                'message' => $e->getMessage(),
+            ]);
         }
-
-        if($valid == -1) { return implode(", ", $p); }
-
-        // --- TAHAP 4: UPDATE DATA SO & POTONG STOK FINAL ---
-        $so = (new SalesOrder())->updateSalesOrder($data);
-        $list_id_detail = [];
-
-        foreach ($aggregatedProducts as $final) {
-            $variantId = $final['variant_id'];
-            $qtyTotal = $final['total_butuh'];
-            $unitId = $final['unit_id_jual'];
-
-            // Potong Stok Real
-            $stokFinal = ProductStock::where('product_variant_id', $variantId)
-                ->where('unit_id', $unitId)->first();
-                
-            if($stokFinal) {
-                $stokFinal->ps_stock -= $qtyTotal;
-                $stokFinal->save();
-
-                (new LogStock())->insertLog([
-                    'log_date' => now(), 'log_kode' => $data['so_invoice_no'], 'log_type' => 1, 'log_category' => 2, 
-                    'log_item_id' => $variantId, 'log_notes' => "Update Pengiriman", 
-                    'log_jumlah' => $qtyTotal, 'unit_id' => $unitId,
-                ]);
-            }
-        }
-
-        // Simpan detail transaksi ke tabel SalesOrderDetail
-        foreach ($productsData as $val) {
-            $val['so_id'] = $so->so_id;
-            $id = isset($val["sod_id"]) ? (new SalesOrderDetail())->updateSalesOrderDetail($val) : (new SalesOrderDetail())->insertSalesOrderDetail($val);
-            array_push($list_id_detail, $id);
-        }
-
-        SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
 
         return 1;
     }
@@ -294,293 +250,68 @@ class CustomerController extends Controller
     {
         $data = $req->all();
 
-        $so  = SalesOrder::find($data['so_id']);
-        $sod = SalesOrderDetail::where('so_id', $data['so_id'])
-                                ->where('status', 1)
-                                ->get();
-
-        if ($so->status != 1) {
-            $staff = Staff::find($so->acc_by)->staff_name;
+        $so = SalesOrder::find($data['so_id'] ?? null);
+        if (! $so) {
             return response()->json([
-                "status" => -2,
-                "header" => "Gagal ACC",
-                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+                'status' => 0,
+                'header' => 'Gagal ACC',
+                'message' => 'Pengiriman tidak ditemukan',
             ]);
         }
 
-        $getProductDisplayName = function ($variantId, $fallback = null) {
-            $fallback = is_string($fallback) ? trim($fallback) : '';
-            if ($fallback !== '') return $fallback;
-
-            $pvr = ProductVariant::find($variantId);
-            if (!$pvr) return "-";
-
-            $pr          = Product::find($pvr['product_id']);
-            $productName = $pr ? trim((string) $pr['product_name']) : '';
-            $variantName = trim((string) $pvr['product_variant_name']);
-            $fullName    = trim($productName . " " . $variantName);
-
-            return $fullName !== '' ? $fullName : "-";
-        };
-
-        $aggregatedByVariant = [];
-        foreach ($sod as $value) {
-            $variantId = $value['product_variant_id'];
-            if (!isset($aggregatedByVariant[$variantId])) {
-                $aggregatedByVariant[$variantId] = [
-                    'variant_id' => $variantId,
-                    'kebutuhan'  => [],
-                    'details'    => $value,
-                ];
-            }
-            // Akumulasi qty per unit (kalau ada 2 baris dos misalnya)
-            $unitId = $value['unit_id'];
-            if (!isset($aggregatedByVariant[$variantId]['kebutuhan'][$unitId])) {
-                $aggregatedByVariant[$variantId]['kebutuhan'][$unitId] = 0;
-            }
-            $aggregatedByVariant[$variantId]['kebutuhan'][$unitId] += (int) $value['sod_qty'];
+        if ((int) $so->status !== 1) {
+            $staff = Staff::find($so->acc_by);
+            return response()->json([
+                'status' => -2,
+                'header' => 'Gagal ACC',
+                'message' => 'Pengajuan sudah diterima/ditolak oleh ' . ($staff->staff_name ?? '-'),
+            ]);
         }
 
-        // ─── Langkah 2: SIMULASI ─────────────────────────────────────────────────────
-        $p             = [];
-        $valid         = true;
-        $simulasiHasil = [];
-
-        foreach ($aggregatedByVariant as $variantId => $item) {
-            $val = $item['details'];
-
-            // Cek relasi produk
-            $semuaRelasi = ProductRelation::where('product_variant_id', $variantId)
-                            ->where('status', 1)
-                            ->get();
-
-            if ($semuaRelasi->isEmpty()) {
-                return response()->json([
-                    'status'  => 0,
-                    'header'  => 'Gagal Insert',
-                    'message' => 'Mohon masukkan relasi produk: '
-                                . $getProductDisplayName($variantId, $val['product_variant_name'] ?? null),
-                ]);
-            }
-
-            // ── Bangun hierarki unit dari relasi ──────────────────────────────────────
-            // ProductRelation menyimpan: pr_unit_id_2 = unit kecil, hasil bongkar dari unit besar
-            // Contoh: 1 dos (unit atas) = 12 piece (pr_unit_id_2), pr_unit_value_2 = 12
-            //
-            // Dari sini kita tahu: unit yang muncul sebagai pr_unit_id_2 = unit BAWAH
-            // unit yang tidak muncul sebagai pr_unit_id_2 = unit PALING ATAS (root)
-            //
-            // Kita build: childOf[unit_bawah] = unit_atas
-            //             relasiMap[unit_bawah] = nilai konversi
-
-            $childOf    = []; // childOf[unit_kecil] = unit_besar
-            $relasiMap  = []; // relasiMap[unit_kecil] = ['unit_atas' => x, 'nilai' => y]
-            $semuaUnit  = [];
-
-            foreach ($semuaRelasi as $rel) {
-                $unitAtas  = $rel->pr_unit_id_1 ?? null; // unit besar (dos)
-                $unitBawah = $rel->pr_unit_id_2;          // unit kecil (piece)
-                $nilai     = (float) $rel->pr_unit_value_2;
-
-                $childOf[$unitBawah]   = $unitAtas;
-                $relasiMap[$unitBawah] = ['unit_atas' => $unitAtas, 'nilai' => $nilai];
-
-                $semuaUnit[$unitBawah] = true;
-                if ($unitAtas) $semuaUnit[$unitAtas] = true;
-            }
-
-            // Cari root (unit paling atas = tidak pernah jadi unit_bawah)
-            $unitsSorted = [];
-            // Mulai dari tiap unit, telusuri ke atas untuk dapat depth
-            foreach (array_keys($semuaUnit) as $unit) {
-                $depth   = 0;
-                $current = $unit;
-                $visited = [];
-                while (isset($childOf[$current]) && !in_array($current, $visited)) {
-                    $visited[] = $current;
-                    $current   = $childOf[$current];
-                    $depth++;
-                }
-                $unitsSorted[$unit] = $depth;
-            }
-            // depth 0 = paling atas (root/dos), depth tinggi = paling bawah (piece)
-            // Kita urutkan: index 0 = paling bawah (piece), index tinggi = paling atas (dos)
-            arsort($unitsSorted); // sort by depth descending → piece dulu, dos terakhir
-            $orderedUnits = array_keys($unitsSorted); // [piece, ..., dos]
-
-            // ── Ambil stok dan susun virtualStock sesuai hierarki ────────────────────
-            $ssRaw = ProductStock::where('product_variant_id', $variantId)
-                        ->where('status', 1)
-                        ->get()
-                        ->keyBy('unit_id');
-
-            if ($ssRaw->isEmpty()) {
-                $pvr = ProductVariant::find($variantId);
-                $pr  = Product::find($pvr['product_id']);
-                $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
-                $valid = false;
-                continue;
-            }
-
-            $virtualStock = [];
-            $logSummary   = [];
-
-            foreach ($orderedUnits as $idx => $unitId) {
-                if (!isset($ssRaw[$unitId])) continue; // unit tidak punya stok row, skip
-                $stok = $ssRaw[$unitId];
-                $virtualStock[$idx] = [
-                    'model'   => $stok,
-                    'current' => (float) $stok->ps_stock,
-                    'unit_id' => $stok->unit_id,
-                    'ps_id'   => $stok->ps_id,
-                ];
-            }
-
-            // Re-index supaya index selalu 0,1,2,... tanpa gap
-            $virtualStock = array_values($virtualStock);
-
-            // ── Fungsi rekursif konversi ──────────────────────────────────────────────
-            // index 0 = unit terkecil (piece), index N = unit terbesar (dos)
-            // $targetKey+1 = unit di atasnya
-            $siapkanStok = function ($targetKey) use (
-                &$virtualStock, &$logSummary, &$siapkanStok, $variantId
-            ) {
-                if (!isset($virtualStock[$targetKey + 1])) return false;
-
-                $stokSekarang = $virtualStock[$targetKey];
-                $stokAtas     = $virtualStock[$targetKey + 1];
-
-                if ($stokAtas['current'] <= 0) {
-                    if (!$siapkanStok($targetKey + 1)) return false;
-                }
-
-                $sr = ProductRelation::where('product_variant_id', $variantId)
-                        ->where('pr_unit_id_2', $stokSekarang['unit_id'])
-                        ->where('status', 1)
-                        ->first();
-
-                if ($sr && $stokAtas['current'] > 0) {
-                    $virtualStock[$targetKey + 1]['current'] -= 1;
-                    $hasilBongkar = (float) $sr['pr_unit_value_2'];
-                    $virtualStock[$targetKey]['current'] += $hasilBongkar;
-
-                    $baseOrder = ($targetKey + 1) * 10;
-                    $logSummary[$stokAtas['unit_id'] . '_cat2'] = [
-                        'unit_id'    => $stokAtas['unit_id'],
-                        'jumlah'     => ($logSummary[$stokAtas['unit_id'] . '_cat2']['jumlah'] ?? 0) + 1,
-                        'cat'        => 2,
-                        'note'       => 'Konversi unit dari pengiriman (Bongkar)',
-                        'sort_order' => $baseOrder,
-                    ];
-                    $logSummary[$stokSekarang['unit_id'] . '_cat1'] = [
-                        'unit_id'    => $stokSekarang['unit_id'],
-                        'jumlah'     => ($logSummary[$stokSekarang['unit_id'] . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
-                        'cat'        => 1,
-                        'note'       => 'Konversi unit dari pengiriman (Hasil)',
-                        'sort_order' => $baseOrder + 1,
-                    ];
-                    return true;
-                }
-                return false;
-            };
-
-            // ── Proses tiap kebutuhan dalam SATU virtualStock ─────────────────────────
-            $cukup = true;
-            foreach ($item['kebutuhan'] as $unitIdButuh => $butuh) {
-                $targetKey = null;
-                foreach ($virtualStock as $idx => $v) {
-                    if ($v['unit_id'] == $unitIdButuh) { $targetKey = $idx; break; }
-                }
-
-                if ($targetKey === null) {
-                    $pvr = ProductVariant::find($variantId);
-                    $pr  = Product::find($pvr['product_id']);
-                    $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
-                    $cukup = false;
-                    break;
-                }
-
-                $safety = 0;
-                while ($virtualStock[$targetKey]['current'] < $butuh) {
-                    $safety++;
-                    if ($safety > 500) break;
-                    if (!$siapkanStok($targetKey)) break;
-                }
-
-                if ($virtualStock[$targetKey]['current'] < $butuh) {
-                    $pvr = ProductVariant::find($variantId);
-                    $pr  = Product::find($pvr['product_id']);
-                    $p[] = $pr['product_name'] . ' ' . $pvr['product_variant_name'];
-                    $cukup = false;
-                    break;
-                }
-
-                $virtualStock[$targetKey]['current'] -= $butuh;
-            }
-
-            if (!$cukup) {
-                $valid = false;
-                continue;
-            }
-
-            $simulasiHasil[$variantId] = [
-                'virtualStock' => $virtualStock,
-                'logSummary'   => $logSummary,
-                'variantId'    => $variantId,
+        $sod = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->get();
+        $lines = [];
+        foreach ($sod as $row) {
+            $lines[] = [
+                'product_variant_id' => $row->product_variant_id,
+                'unit_id' => $row->unit_id,
+                'qty' => (float) $row->sod_qty,
             ];
         }
 
-        // ─── Langkah 3: Jika ada produk yang tidak cukup, hentikan semuanya ──────────
-        if (!$valid) {
-            return implode(', ', $p);
-        }
-
-        // ─── Langkah 4: EKSEKUSI – semua produk lolos, baru simpan ke DB ─────────────
-        foreach ($simulasiHasil as $hasil) {
-            $virtualStock = $hasil['virtualStock'];
-            $logSummary   = $hasil['logSummary'];
-            $variantId    = $hasil['variantId'];
-
-            // Simpan semua perubahan virtualStock ke DB
-            foreach ($virtualStock as $v) {
-                $v['model']->ps_stock = (int) $v['current'];
-                $v['model']->save();
-            }
-
-            // Catat log konversi
-            usort($logSummary, fn ($a, $b) => $a['sort_order'] <=> $b['sort_order']);
-            foreach ($logSummary as $l) {
-                (new LogStock())->insertLog([
-                    'log_date'     => now(),
-                    'log_kode'     => '-',
-                    'log_type'     => 1,
-                    'log_category' => $l['cat'],
-                    'log_item_id'  => $variantId,
-                    'log_notes'    => $l['note'],
-                    'log_jumlah'   => $l['jumlah'],
-                    'unit_id'      => $l['unit_id'],
-                ]);
-            }
-        }
-
-        // Catat log pengiriman per baris SOD — tidak berubah
-        foreach ($sod as $value) {
-            (new LogStock())->insertLog([
-                'log_date'     => now(),
-                'log_kode'     => $so->so_invoice_no,
-                'log_type'     => 1,
-                'log_category' => 2,
-                'log_item_id'  => $value['product_variant_id'],
-                'log_notes'    => 'Pengiriman produk',
-                'log_jumlah'   => $value['sod_qty'],
-                'unit_id'      => $value['unit_id'],
+        $retailWh = (int) ($so->retail_warehouse_id ?? 0);
+        $plan = SalesOrderStock::buildPlan($lines, $retailWh > 0 ? $retailWh : null);
+        if (! ($plan['ok'] ?? false)) {
+            return response()->json([
+                'status' => $plan['status'] ?? 0,
+                'header' => $plan['header'] ?? 'Stok tidak cukup',
+                'message' => $plan['message'] ?? 'Stok tidak mencukupi',
+                'products' => $plan['products'] ?? [],
+                'recommendations' => $plan['recommendations'] ?? [],
             ]);
         }
 
-        (new SalesOrder())->accSO($data);
+        try {
+            DB::transaction(function () use ($plan, $so, $data) {
+                $deduct = SalesOrderStock::executeDeduct(
+                    $plan['plan'],
+                    $so->so_invoice_no ?: $so->so_number,
+                    'Pengiriman produk'
+                );
+                if (! ($deduct['ok'] ?? false)) {
+                    throw new \RuntimeException($deduct['message'] ?? 'Gagal potong stok');
+                }
+                (new SalesOrder())->accSO($data);
+            });
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal ACC',
+                'message' => $e->getMessage(),
+            ]);
+        }
+
         return 1;
     }
-
     function declineSO(Request $req){
         $data = $req->all();
         $q = SalesOrder::find($data['so_id']);

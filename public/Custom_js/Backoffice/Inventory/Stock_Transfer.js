@@ -145,13 +145,13 @@ function inisialisasi() {
                 className: "text-center",
                 render: function (data) {
                     if (data == 1) {
-                        return '<span class="badge" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;">Pending</span>';
+                        return '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>';
                     }
                     if (data == 2) {
-                        return '<span class="badge" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;">Terkirim</span>';
+                        return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Terkirim</span>';
                     }
                     if (data == 3) {
-                        return '<span class="badge" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;">Ditolak</span>';
+                        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Ditolak</span>';
                     }
                     return "-";
                 },
@@ -738,22 +738,22 @@ $(document).on("click", ".btnViewTransfer", function () {
                         : "-";
                 html +=
                     "<tr>" +
-                    "<td>" +
+                    "<td style=\"padding: 12px 24px;\">" +
                     escapeHtml(it.product_name || "-") +
                     "</td>" +
-                    "<td>" +
+                    "<td style=\"padding: 12px 24px;\">" +
                     escapeHtml(it.product_variant_name || "-") +
                     "</td>" +
-                    "<td>" +
+                    "<td style=\"padding: 12px 24px;\">" +
                     escapeHtml(it.sku || "-") +
                     "</td>" +
-                    '<td class="text-center">' +
+                    '<td class="text-center" style="padding: 12px 24px;">' +
                     qtySend +
                     "</td>" +
-                    '<td class="text-center">' +
+                    '<td class="text-center" style="padding: 12px 24px;">' +
                     qtyRecv +
                     "</td>" +
-                    "<td>" +
+                    "<td style=\"padding: 12px 24px;\">" +
                     escapeHtml(it.unit_name || it.unit_short_name || "-") +
                     "</td>" +
                     "</tr>";

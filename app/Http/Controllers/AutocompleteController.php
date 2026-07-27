@@ -543,6 +543,13 @@ class AutocompleteController extends Controller
             $query->where('warehouse_name', 'like', '%' . $keyword . '%');
         }
 
+        // Gudang eceran saja (bukan tipe utama)
+        if (filter_var($req->retail_only ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $query->whereHas('type', function ($q) {
+                $q->where('is_main_warehouse', 0);
+            });
+        }
+
         $rows = $query->limit(30)->get(['id', 'warehouse_name', 'warehouse_type_id']);
 
         $data = $rows->map(static function ($wh) {
@@ -554,6 +561,7 @@ class AutocompleteController extends Controller
                     : $wh->warehouse_name,
                 'warehouse_name' => $wh->warehouse_name,
                 'warehouse_type_id' => (int) $wh->warehouse_type_id,
+                'is_main_warehouse' => (int) ($wh->type->is_main_warehouse ?? 0),
             ];
         })->values()->all();
 

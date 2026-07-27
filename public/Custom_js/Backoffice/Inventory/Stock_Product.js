@@ -5,15 +5,22 @@
     var warehouseWarnShown = false;
     var viewMode = "main";
     var canViewSafetyStock = false;
+    var canEditSafetyStock = false;
     var stockXhr = null;
+    var safetyRow = null;
 
     function resolveSafetyStockAccess() {
         return typeof hasAccessAction === "function"
             && (hasAccessAction("Safety Stock", "view") || hasAccessAction("Safety Stock", "edit"));
     }
 
+    function resolveSafetyStockEdit() {
+        return typeof hasAccessAction === "function" && hasAccessAction("Safety Stock", "edit");
+    }
+
     $(document).ready(function () {
         canViewSafetyStock = resolveSafetyStockAccess();
+        canEditSafetyStock = resolveSafetyStockEdit();
         viewMode = (typeof getStockViewMode === "function" && getStockViewMode()) || "main";
         if (viewMode === "retail") {
             $("#tableStockRetail-wrap").show();
@@ -43,6 +50,7 @@
                 recordsFiltered: 0,
                 data: [],
             });
+            setStockTableLoading(false);
             return;
         }
         warehouseWarnShown = false;
@@ -55,6 +63,9 @@
             url: "/getStock",
             type: "GET",
             data: $.extend({}, data, { warehouse_id: warehouseId }),
+            beforeSend: function () {
+                setStockTableLoading(true);
+            },
             success: function (json) {
                 callback(json);
             },
@@ -68,7 +79,30 @@
                     data: [],
                 });
             },
+            complete: function (xhr, status) {
+                if (status === "abort") return;
+                setStockTableLoading(false);
+            },
         });
+    }
+
+    function setStockTableLoading(isLoading) {
+        var $wrap =
+            viewMode === "retail" ? $("#tableStockRetail-wrap") : $("#tableStock-wrap");
+        if (!$wrap.length) return;
+        $wrap.toggleClass("is-loading", !!isLoading);
+    }
+
+    function bindStockLoadingEvents($table) {
+        $table
+            .on("preXhr.dt", function () {
+                setStockTableLoading(true);
+            })
+            .on("xhr.dt", function () {
+                setTimeout(function () {
+                    setStockTableLoading(false);
+                }, 0);
+            });
     }
 
     function dtBaseOptions(searchPlaceholder, order) {
@@ -80,7 +114,7 @@
             bFilter: true,
             sDom: "fBtlpi",
             lengthMenu: [10, 25, 50, 100],
-            pageLength: 25,
+            pageLength: 10,
             ordering: true,
             // scrollX bikin header/body desync + lebih berat; pakai .table-responsive
             scrollX: false,
@@ -91,7 +125,6 @@
                 sLengthMenu: "_MENU_",
                 searchPlaceholder: searchPlaceholder || "Cari Produk",
                 info: "_START_ - _END_ of _TOTAL_ items",
-                processing: "Memuat data...",
                 emptyTable: "Tidak ada data stok untuk gudang ini",
                 zeroRecords: "Produk tidak ditemukan",
                 paginate: {
@@ -101,6 +134,9 @@
             },
             ajax: function (data, callback) {
                 stockAjax(data, callback);
+            },
+            drawCallback: function () {
+                setStockTableLoading(false);
             },
         };
     }
@@ -121,14 +157,207 @@
     }
 
     function bindRowClick($table) {
-        $table.find("tbody").off("click.stockRow").on("click.stockRow", "tr", function () {
+        $table.find("tbody").off("click.stockRow").on("click.stockRow", "tr", function (e) {
             if (!table) return;
             var data = table.row(this).data();
             if (!data) return;
+            if ($(e.target).closest("td.cell-safety").length) {
+                openSafetyModal(data);
+                return;
+            }
             activeId = data.product_variant_id;
             getLog(data.product_variant_id);
         });
     }
+
+    function renderSafetyLabel(text) {
+        var label = text && text !== "-" ? text : "-";
+        return (
+            '<div class="safety-cell-label d-flex align-items-center justify-content-between" style="cursor:pointer; width:120px; max-width:100%; min-height:20px; pe-1">' +
+                '<div style="text-align:left; word-break:break-word; flex-grow:1;">' + escapeHtml(label) + '</div>' +
+                '<i class="fe fe-edit-2 text-muted ms-2" style="font-size:13px; flex-shrink:0;" title="Edit Safety Stock"></i>' +
+            '</div>'
+        );
+    }
+
+    function pickSafetyUnit(units) {
+        if (!units || !units.length) return null;
+        for (var i = 0; i < units.length; i++) {
+            if (Number(units[i].ps_safety_stock) > 0) return units[i];
+        }
+        return units[0];
+    }
+
+    function openSafetyModal(row) {
+        safetyRow = row;
+        var title =
+            (row.pr_name || "-") +
+            (row.product_variant_name ? " — " + row.product_variant_name : "");
+        $("#safety_modal_subtitle").text(title);
+
+        var units = row.units || [];
+        var active = pickSafetyUnit(units);
+        if (!active) {
+            $("#table_safety_edit tbody").html(
+                '<tr><td colspan="2" class="text-muted text-center">Tidak ada satuan</td></tr>'
+            );
+            $("#table_safety_transfer tbody").html(
+                '<tr><td colspan="3" class="text-muted text-center">Tidak ada satuan</td></tr>'
+            );
+            $("#btn_save_safety, #btn_transfer_safety").prop("disabled", true);
+            $("#modal_safety_stock").modal("show");
+            return;
+        }
+
+        var safety = Math.floor(Number(active.ps_safety_stock) || 0);
+        var unitOpts = units
+            .map(function (u) {
+                return (
+                    '<option value="' +
+                    u.unit_id +
+                    '"' +
+                    (Number(u.unit_id) === Number(active.unit_id) ? " selected" : "") +
+                    ">" +
+                    escapeHtml(u.unit_name || "-") +
+                    "</option>"
+                );
+            })
+            .join("");
+
+        $("#table_safety_edit tbody").html(
+            "<tr>" +
+                "<td style=\"padding: 12px 24px;\"><select class=\"form-select form-select-sm safety-edit-unit\" " +
+                (canEditSafetyStock ? "" : "disabled") +
+                ">" +
+                unitOpts +
+                "</select></td>" +
+                "<td style=\"padding: 12px 24px;\"><input type=\"number\" min=\"0\" step=\"1\" class=\"form-control form-control-sm safety-edit-qty\" value=\"" +
+                safety +
+                "\" " +
+                (canEditSafetyStock ? "" : "disabled") +
+                "></td>" +
+                "</tr>"
+        );
+
+        $("#table_safety_transfer tbody").html(
+            '<tr data-unit-id="' +
+                active.unit_id +
+                '" data-max="' +
+                safety +
+                '">' +
+                "<td style=\"padding: 12px 24px;\">" +
+                escapeHtml(active.unit_name || "-") +
+                "</td>" +
+                '<td class="text-center fw-semibold" style="padding: 12px 24px;">' +
+                safety +
+                "</td>" +
+                "<td style=\"padding: 12px 24px;\"><input type=\"number\" min=\"0\" max=\"" +
+                safety +
+                "\" step=\"1\" class=\"form-control form-control-sm safety-transfer-qty\" value=\"0\" " +
+                (canEditSafetyStock && safety > 0 ? "" : "disabled") +
+                "></td>" +
+                "</tr>"
+        );
+
+        $("#btn_save_safety, #btn_transfer_safety").prop("disabled", !canEditSafetyStock);
+        $("#modal_safety_stock").modal("show");
+    }
+
+    function csrfToken() {
+        return $('meta[name="csrf-token"]').attr("content") || "";
+    }
+
+    $(document).on("click", "#btn_save_safety", function () {
+        if (!safetyRow || !canEditSafetyStock) return;
+        var unitId = Number($("#table_safety_edit .safety-edit-unit").val()) || 0;
+        var qty = Math.max(0, parseInt($("#table_safety_edit .safety-edit-qty").val(), 10) || 0);
+        if (unitId <= 0) return;
+        var $btn = $(this);
+        $btn.prop("disabled", true);
+        $.ajax({
+            url: "/updateProductSafetyStock",
+            method: "post",
+            data: {
+                _token: csrfToken(),
+                product_variant_id: safetyRow.product_variant_id,
+                warehouse_id: safetyRow.warehouse_id || getActiveWarehouseId(),
+                unit_id: unitId,
+                ps_safety_stock: qty,
+            },
+            success: function (res) {
+                if (res && res.status == 1) {
+                    if (typeof toastr !== "undefined") toastr.success("", res.message || "Tersimpan");
+                    $("#modal_safety_stock").modal("hide");
+                    refreshStock();
+                } else if (typeof toastr !== "undefined") {
+                    toastr.error("", (res && res.message) || "Gagal menyimpan");
+                }
+            },
+            error: function (xhr) {
+                var msg =
+                    (xhr.responseJSON && xhr.responseJSON.message) || "Gagal menyimpan";
+                if (typeof toastr !== "undefined") toastr.error("", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", !canEditSafetyStock);
+            },
+        });
+    });
+
+    $(document).on("click", "#btn_transfer_safety", function () {
+        if (!safetyRow || !canEditSafetyStock) return;
+        var items = [];
+        $("#table_safety_transfer tbody tr[data-unit-id]").each(function () {
+            var qty = Math.max(0, parseFloat($(this).find(".safety-transfer-qty").val()) || 0);
+            var max = Number($(this).data("max")) || 0;
+            if (qty <= 0) return;
+            if (qty > max) {
+                if (typeof toastr !== "undefined") {
+                    toastr.warning("", "Qty transfer melebihi safety stock");
+                }
+                items = null;
+                return false;
+            }
+            items.push({
+                unit_id: Number($(this).data("unit-id")),
+                qty: qty,
+            });
+        });
+        if (items === null) return;
+        if (!items.length) {
+            if (typeof toastr !== "undefined") toastr.warning("", "Isi qty transfer");
+            return;
+        }
+        var $btn = $(this);
+        $btn.prop("disabled", true);
+        $.ajax({
+            url: "/transferSafetyToStock",
+            method: "post",
+            data: {
+                _token: csrfToken(),
+                product_variant_id: safetyRow.product_variant_id,
+                warehouse_id: safetyRow.warehouse_id || getActiveWarehouseId(),
+                items: JSON.stringify(items),
+            },
+            success: function (res) {
+                if (res && res.status == 1) {
+                    if (typeof toastr !== "undefined") toastr.success("", res.message || "Transfer berhasil");
+                    $("#modal_safety_stock").modal("hide");
+                    refreshStock();
+                } else if (typeof toastr !== "undefined") {
+                    toastr.error("", (res && res.message) || "Gagal transfer");
+                }
+            },
+            error: function (xhr) {
+                var msg =
+                    (xhr.responseJSON && xhr.responseJSON.message) || "Gagal transfer";
+                if (typeof toastr !== "undefined") toastr.error("", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", !canEditSafetyStock);
+            },
+        });
+    });
 
     function escapeHtml(str) {
         return String(str)
@@ -156,6 +385,13 @@
                             : u.ps_safety_stock != null
                               ? String(u.ps_safety_stock)
                               : "0";
+                    var isDash = text === "0" || text === "-";
+                    return (
+                        '<div class="sretail-list-item qty-item safety-cell-label d-flex align-items-center justify-content-between" style="cursor:pointer; width:120px; max-width:100%; padding-right:12px;">' +
+                            '<div style="text-align:left; word-break:break-word; flex-grow:1;">' + (isDash ? '-' : escapeHtml(text)) + '</div>' +
+                            '<i class="fe fe-edit-2 text-muted ms-2" style="font-size:12px; flex-shrink:0;"></i>' +
+                        '</div>'
+                    );
                 }
                 var qtyCls = field === "unit" ? "" : " qty-item";
                 return (
@@ -211,7 +447,7 @@
                 data: "product_variant_name", 
                 width: canViewSafetyStock ? "16%" : "20%",
                 render: function(data) {
-                    return `<span class="text-muted fw-medium">${escapeHtml(data || "-")}</span>`;
+                    return `<span class="text-dark fw-medium">${escapeHtml(data || "-")}</span>`;
                 }
             },
             { 
@@ -248,10 +484,13 @@
             columns.push({
                 data: "product_variant_safety_text",
                 defaultContent: "-",
-                class: "fw-bold",
+                className: "fw-bold cell-safety",
                 width: "16%",
                 orderable: false,
                 searchable: false,
+                render: function (data) {
+                    return renderSafetyLabel(data || "-");
+                },
             });
         }
 
@@ -263,6 +502,7 @@
         };
 
         table = $("#tableStock").DataTable(opts);
+        bindStockLoadingEvents($("#tableStock"));
         bindRowClick($("#tableStock"));
     }
 
@@ -334,7 +574,7 @@
                 data: "units",
                 orderable: false,
                 searchable: false,
-                className: "text-center",
+                className: "text-center cell-safety",
                 width: "25%",
                 render: function (units) {
                     return renderRetailUnits(units, "safety");
@@ -350,6 +590,7 @@
         };
 
         table = $("#tableStockRetail").DataTable(opts);
+        bindStockLoadingEvents($("#tableStockRetail"));
         bindRowClick($("#tableStockRetail"));
     }
 
@@ -359,62 +600,200 @@
         }
     }
 
-    function getLog(id) {
+    var logXhr = null;
+    var logLazy = {
+        offset: 0,
+        limit: 30,
+        hasMore: true,
+        loading: false,
+    };
+
+    function resetLogLazy() {
+        logLazy.offset = 0;
+        logLazy.hasMore = true;
+        logLazy.loading = false;
+    }
+
+    function bindLogScroll() {
+        var $sc = $("#tableLogScroll");
+        if (!$sc.length) return;
+        $sc.off("scroll.logLazy").on("scroll.logLazy", function () {
+            if (!activeId || !logLazy.hasMore || logLazy.loading) return;
+            var el = this;
+            if (el.scrollTop + el.clientHeight >= el.scrollHeight - 100) {
+                getLog(activeId, true);
+            }
+        });
+    }
+
+    function maybeFillLogViewport() {
+        var el = document.getElementById("tableLogScroll");
+        if (!el || !activeId || !logLazy.hasMore || logLazy.loading) return;
+        // Konten pendek: auto-load sampai overflow / habis data
+        if (el.scrollHeight <= el.clientHeight + 20) {
+            getLog(activeId, true);
+        }
+    }
+
+    function openHistoryModalLoading() {
+        $("#tableLog tbody").html(`
+            <tr class="row-log-loading">
+                <td colspan="6" class="text-center py-5">
+                    <div class="d-flex flex-column align-items-center justify-content-center py-4" style="background: rgba(255, 255, 255, 0.9); border-radius: 8px;">
+                        <div class="spinner-border text-primary" style="width: 2.5rem; height: 2.5rem; border-width: 0.25em;" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <div class="mt-2 fw-semibold" style="color: #475569; font-size: 13px; letter-spacing: 0.3px;">Sedang memuat histori...</div>
+                    </div>
+                </td>
+            </tr>
+        `);
+        $("#add_stock_product .modal-title").html("Lihat Histori Produk");
+        bindLogScroll();
+        $("#add_stock_product").modal("show");
+    }
+
+    function renderLogRows(rows) {
+        return (rows || [])
+            .map(function (e) {
+                return `
+                    <tr class="row-log align-middle" data-id="${e.log_id}" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+                        <td style="width:15%; padding: 14px 24px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width:8px;height:8px;border-radius:50%;background-color:${e.log_category == 1 ? '#22c55e' : (e.log_category == 2 ? '#ef4444' : '#cbd5e1')}"></div>
+                                <span style="color: #64748b; font-size: 13px; font-weight: 500;">${moment(e.log_date).format("D MMM YYYY")}</span>
+                            </div>
+                            <small style="color: #94a3b8; margin-left: 16px;">${moment(e.log_date).format("HH:mm")}</small>
+                        </td>
+                        <td style="width:15%; padding: 14px 24px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-light text-secondary d-flex justify-content-center align-items-center rounded-circle" style="width: 24px; height: 24px; font-size: 10px; font-weight: bold;">
+                                    ${(e.staff_name || 'U').charAt(0).toUpperCase()}
+                                </div>
+                                <span style="font-weight: 600; color: #334155;">${e.staff_name || '-'}</span>
+                            </div>
+                        </td>
+                        <td style="width:15%; padding: 14px 24px;">
+                            <span style="background: #eff6ff; color: #3b82f6; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">
+                                ${e.log_kode || '-'}
+                            </span>
+                        </td>
+                        <td style="width:25%; padding: 14px 24px;">
+                            <span style="color: #475569; font-size: 13px;">${e.log_notes || '-'}</span>
+                        </td>
+                        <td style="width:15%; padding: 14px 24px;" class="text-center">
+                            ${e.log_category == 1 ? '<span class="badge" style="background-color: #dcfce7; color: #166534; font-size: 12px; font-weight: 600; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px;"><i class="fe fe-arrow-down-left me-1"></i>' + e.log_jumlah + ' ' + e.unit_name + '</span>' : '<span style="color: #cbd5e1;">-</span>'}
+                        </td>
+                        <td style="width:15%; padding: 14px 24px;" class="text-center">
+                            ${e.log_category == 2 ? '<span class="badge" style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 600; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px;"><i class="fe fe-arrow-up-right me-1"></i>' + e.log_jumlah + ' ' + e.unit_name + '</span>' : '<span style="color: #cbd5e1;">-</span>'}
+                        </td>
+                    </tr>
+                `;
+            })
+            .join("");
+    }
+
+    function setLogFooterLoading(show) {
+        $("#tableLog tr.row-log-more").remove();
+        if (!show) return;
+        $("#tableLog tbody").append(`
+            <tr class="row-log-more">
+                <td colspan="6" class="text-center py-3 text-muted">
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>Memuat lagi...
+                </td>
+            </tr>
+        `);
+    }
+
+    function getLog(id, append) {
         if (!id) return;
-        $.ajax({
+        activeId = id;
+        append = !!append;
+
+        if (!append) {
+            resetLogLazy();
+            openHistoryModalLoading();
+            $("#tableLogScroll").scrollTop(0);
+        }
+
+        if (logLazy.loading || (!logLazy.hasMore && append)) return;
+        logLazy.loading = true;
+
+        if (logXhr && logXhr.readyState !== 4) {
+            if (!append) logXhr.abort();
+            else {
+                logLazy.loading = false;
+                return;
+            }
+        }
+
+        if (append) setLogFooterLoading(true);
+
+        var warehouseId = typeof getActiveWarehouseId === "function" ? getActiveWarehouseId() : null;
+        var reqOffset = append ? logLazy.offset : 0;
+        logXhr = $.ajax({
             url: "/getLog",
             method: "get",
             data: {
                 log_type: 1,
                 log_item_id: id,
                 date: dates,
+                warehouse_id: warehouseId,
+                lazy: 1,
+                offset: reqOffset,
+                limit: logLazy.limit,
             },
-            success: function (e) {
-                viewHistory(e);
+            success: function (res) {
+                if (String(activeId) !== String(id)) return;
+                var rows = Array.isArray(res) ? res : res.data || [];
+                var hasMore = Array.isArray(res) ? false : !!res.has_more;
+                logLazy.hasMore = hasMore;
+                logLazy.offset = reqOffset + rows.length;
+                logLazy.loading = false;
+                setLogFooterLoading(false);
+
+                if (!append) {
+                    if (!rows.length) {
+                        $("#tableLog tbody").html(`
+                            <tr class="empty-log">
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    Produk ini belum ada riwayat perubahan stok
+                                </td>
+                            </tr>
+                        `);
+                        return;
+                    }
+                    $("#tableLog tbody").html(renderLogRows(rows));
+                    setTimeout(maybeFillLogViewport, 50);
+                    return;
+                }
+
+                if (rows.length) {
+                    $("#tableLog tbody").append(renderLogRows(rows));
+                    setTimeout(maybeFillLogViewport, 50);
+                }
             },
-            error: function (e) {
-                console.error("Gagal load:", e);
+            error: function (xhr) {
+                if (xhr.statusText === "abort") return;
+                logLazy.loading = false;
+                setLogFooterLoading(false);
+                console.error("Gagal load:", xhr);
+                if (!append) {
+                    $("#tableLog tbody").html(`
+                        <tr class="empty-log">
+                            <td colspan="6" class="text-center text-danger py-4">
+                                Gagal memuat histori
+                            </td>
+                        </tr>
+                    `);
+                }
             },
         });
     }
 
-    function viewHistory(data) {
-        $("#tableLog tr.row-log").remove();
-        $("#tableLog tr.empty-log").remove();
-        if (data.length > 0) {
-            $(".empty-log").remove();
-            var rowsHtml = data
-                .map(function (e) {
-                    return `
-                    <tr class="row-log" data-id="${e.log_id}">
-                        <td style="width:15%; color: #64748b; font-size: 13px;">${moment(e.log_date).format("D MMM YYYY, HH:mm")}</td>
-                        <td style="width:15%; font-weight: 500;">${e.staff_name}</td>
-                        <td style="width:15%; color: #3b82f6; font-family: monospace;">${e.log_kode}</td>
-                        <td style="width:25%">${e.log_notes}</td>
-                        <td style="width:15%" class="text-center">
-                            ${e.log_category == 1 ? '<span class="badge px-2 py-1" style="background-color: #dcfce7; color: #166534; font-size: 12px; font-weight: 600; border: 1px solid #bbf7d0;">+ ' + e.log_jumlah + ' ' + e.unit_name + '</span>' : '<span style="color: #cbd5e1;">-</span>'}
-                        </td>
-                        <td style="width:15%" class="text-center">
-                            ${e.log_category == 2 ? '<span class="badge px-2 py-1" style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 600; border: 1px solid #fecaca;">- ' + e.log_jumlah + ' ' + e.unit_name + '</span>' : '<span style="color: #cbd5e1;">-</span>'}
-                        </td>
-                    </tr>
-                `;
-                })
-                .join("");
-            $("#tableLog tbody").append(rowsHtml);
-        } else {
-            $("#tableLog tbody").append(`
-                <tr class="empty-log">
-                    <td colspan="6" class="text-center text-muted py-4">
-                        Produk ini belum ada riwayat perubahan stok
-                    </td>
-                </tr>
-            `);
-        }
-
-        $("#add_stock_product .modal-title").html("Lihat Histori Produk");
-        $("#add_stock_product").modal("show");
-    }
+    $(document).on("shown.bs.modal", "#add_stock_product", function () {
+        bindLogScroll();
+    });
 
     $(document).on("change", "#start_date, #end_date", function () {
         dates = [$("#start_date").val(), $("#end_date").val()];

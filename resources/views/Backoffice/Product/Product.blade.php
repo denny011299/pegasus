@@ -29,6 +29,16 @@
         #tableProduct-wrap .dataTables_scrollBody {
             width: 100% !important;
         }
+
+        /* Overlay loading saat pagination / search / sort (server-side) */
+        #tableProduct-wrap {
+            position: relative;
+        }
+
+        #tableProduct-wrap.is-loading tbody {
+            opacity: 0.45;
+            pointer-events: none;
+        }
     </style>
 @endsection
 @section('content')

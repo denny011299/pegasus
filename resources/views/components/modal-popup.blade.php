@@ -17,43 +17,79 @@
 @endphp
 <div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-body p-0">
-            <div class="container-fluid">
-                 <canvas id="canvas"  style="display:none;"></canvas>
+      <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+        <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 16px 24px;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fe fe-camera text-white" style="font-size:16px;"></i>
+                </div>
+                <h5 class="mb-0 text-white fw-bold modal-title" style="font-size: 16px; letter-spacing: 0.3px;">Ambil Foto Bukti</h5>
             </div>
-         
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btn-close-camera"></button>
         </div>
-        <div class="modal-footer ps-0 pe-0 d-flex flex-column align-items-center">
+        <div class="modal-body p-4" style="background:#f8fafc;">
+            <div class="container-fluid p-0">
+                 <canvas id="canvas" style="display:none;"></canvas>
+                 <div id="camera" class="w-100 text-center" style="background: #000; border-radius: 12px; overflow: hidden; position: relative; min-height: 240px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
+                     <video id="video" autoplay playsinline style="width: 100%; max-height: 60vh; object-fit: cover;"></video>
+                 </div>
+                 <div id="preview-box" class="w-100 text-center" style="display:none; background: #000; border-radius: 12px; overflow: hidden; position: relative; min-height: 240px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
+                     <img id="previewImage" alt="Preview foto" style="width: 100%; max-height: 60vh; object-fit: cover;">
+                 </div>
+            </div>
+        </div>
+        <div class="modal-footer px-4 py-3 border-top-0 d-flex justify-content-between" style="background:#fff;">
+            <button type="button" class="btn btn-outline-secondary" id="btn-kembali-camera" style="border-radius:8px; font-weight:600; font-size:13px;"><i class="fe fe-x me-1"></i> Batal</button>
             
-            <div id="camera" class="w-100 text-center">
-                <video id="video" autoplay playsinline></video>
-                <button type="button" id="rotateCameraBtn" class="btn btn-secondary">Rotate</button>
-                <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
+            <div class="d-flex gap-2" id="camera-actions">
+                <button type="button" id="rotateCameraBtn" class="btn btn-light" style="border-radius:8px; font-weight:600; font-size:13px; color: #475569; border: 1px solid #e2e8f0;"><i class="fe fe-refresh-cw me-1"></i> Putar</button>
+                <button type="button" id="captureBtn" class="btn btn-primary" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-aperture me-1"></i> Ambil Foto</button>
             </div>
-            <div id="preview-box" class="w-100 text-center" style="display:none;">
-                <img id="previewImage" alt="Preview foto">
-                <button type="button" class="btn btn-secondary" id="retakeBtn">Retake</button>
-                <button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
+
+            <div class="d-flex gap-2" id="preview-actions" style="display: none !important;">
+                <button type="button" class="btn btn-light" id="retakeBtn" style="border-radius:8px; font-weight:600; font-size:13px; color: #475569; border: 1px solid #e2e8f0;"><i class="fe fe-refresh-ccw me-1"></i> Ulangi</button>
+                <button type="button" class="btn btn-success" id="uploadBtn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(34,197,94,.3);"><i class="fe fe-check me-1"></i> Gunakan Foto</button>
             </div>
-            <button type="button" class="btn btn-outline-secondary mt-2" id="btn-kembali-camera">Kembali</button>
         </div>
       </div>
     </div>
   </div>
 <div class="modal fade" id="modalViewPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-body">
-            <div class="container-fluid">
-                <img src="" alt="" id="fotoProduksiImage" style="width:100%">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden;">
+        <div class="modal-header border-0 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 16px 24px;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fe fe-image text-white" style="font-size:16px;"></i>
+                </div>
+                <h5 class="modal-title text-white m-0" style="font-size:16px;font-weight:600;letter-spacing:0.3px;">Lihat Foto</h5>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btn-close-photo-header" style="opacity:0.8; box-shadow: none;"></button>
+        </div>
+        <div class="modal-body p-0" style="background: #f8fafc;">
+            <div class="d-flex align-items-center justify-content-center p-3" style="min-height: 300px; max-height: 70vh; overflow: hidden;">
+                <img src="" alt="Preview Foto" id="fotoProduksiImage" style="max-width:100%; max-height: 65vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             </div>
         </div>
-        <div class="modal-footer ">
-            <a class="btn btn-success me-3" download id="btn_download_photo">Download</a>
-            <button type="button" class="btn btn-primary me-3 btn-prev">Prev</button>
-            <button type="button" class="btn btn-primary me-3 btn-next">Next</button>
-            <button type="button" class="btn btn-outline-secondary" id="btn-kembali-photo">Kembali</button>
+        <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 1rem 1.5rem; background: #fff;">
+            <div class="w-100 d-flex justify-content-between align-items-center">
+                <div>
+                    <a class="btn p-0" download id="btn_download_photo" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; border-radius: 8px; font-weight: 500; height: 38px; width: 120px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-download me-1"></i> Download</div>
+                    </a>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn p-0" id="btn-kembali-photo" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; border-radius: 8px; font-weight: 500; height: 38px; width: 80px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100">Tutup</div>
+                    </button>
+                    <button type="button" class="btn btn-prev p-0" style="background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; border-radius: 8px; font-weight: 500; height: 38px; width: 80px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-chevron-left me-1"></i> Prev</div>
+                    </button>
+                    <button type="button" class="btn btn-next p-0" style="background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; border-radius: 8px; font-weight: 500; height: 38px; width: 80px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100">Next <i class="fe fe-chevron-right ms-1"></i></div>
+                    </button>
+                </div>
+            </div>
         </div>
       </div>
     </div>
@@ -385,7 +421,7 @@
             <form action="#" id="formStockTransfer" class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
 
                 {{-- ── HEADER ── --}}
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%); padding: 18px 24px;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
                     <div class="d-flex align-items-center gap-3">
                         <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
                             <i class="fe fe-shuffle text-white" style="font-size:18px;"></i>
@@ -399,77 +435,86 @@
                 </div>
 
                 {{-- ── ROUTE PANEL ── --}}
-                <div class="border-bottom" style="background:#f8fafc; padding: 16px 24px;">
-                    <div class="row g-3 align-items-stretch">
+                <div class="border-bottom position-relative" style="background:#f8fafc; padding: 16px 24px;">
+                    <button class="btn btn-light position-absolute" type="button" data-bs-toggle="collapse" data-bs-target="#collapseStockTransferForm" aria-expanded="true" aria-controls="collapseStockTransferForm" style="top: -18px; left: 50%; transform: translateX(-50%); border-radius: 50%; width: 36px; height: 36px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid #e2e8f0; color: #475569; z-index: 10; background: #fff; box-shadow: 0 4px 6px rgba(0,0,0,0.05);" onclick="this.querySelector('i').classList.toggle('fe-chevron-up'); this.querySelector('i').classList.toggle('fe-chevron-down');" title="Toggle Detail Gudang">
+                        <i class="fe fe-chevron-up" style="font-size: 16px;"></i>
+                    </button>
 
-                        {{-- Card Asal --}}
-                        <div class="col-md-5">
-                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
-                                <div class="d-flex align-items-center gap-2 mb-3">
-                                    <span style="width:28px;height:28px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                                        <i class="fe fe-log-out" style="font-size:13px;color:#3b82f6;"></i>
-                                    </span>
-                                    <span class="fw-semibold text-primary" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;">Dari (Asal)</span>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Pengirim</label>
-                                    <select class="form-select form-control fill select2 mt-1" id="transfer_sender_id" style="border-radius:8px;font-size:13px;">
-                                        <option value="">Pilih Staff</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang / Toko</label>
-                                    <select class="form-select form-control fill select2 mt-1" id="transfer_from_warehouse_id" style="border-radius:8px;font-size:13px;">
-                                        <option value="">Pilih toko atau gudang</option>
-                                    </select>
-                                </div>
-                                <div class="mb-0">
-                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-calendar me-1"></i>Tanggal Pengiriman</label>
-                                    <div class="cal-icon mt-1">
-                                        <input type="text" class="form-control datetimepicker" id="transfer_date" placeholder="Pilih Tanggal" style="border-radius:8px;font-size:13px;">
+                    <div class="collapse show" id="collapseStockTransferForm">
+                        <div class="row g-3 align-items-stretch mb-3">
+
+                            {{-- Card Asal --}}
+                            <div class="col-md-5">
+                                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <span style="width:28px;height:28px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                            <i class="fe fe-log-out" style="font-size:13px;color:#3b82f6;"></i>
+                                        </span>
+                                        <span class="fw-semibold text-primary" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;">Dari (Asal)</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Pengirim</label>
+                                        <select class="form-select form-control fill select2 mt-1" id="transfer_sender_id" style="border-radius:8px;font-size:13px;">
+                                            <option value="">Pilih Staff</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang / Toko</label>
+                                        <select class="form-select form-control fill select2 mt-1" id="transfer_from_warehouse_id" style="border-radius:8px;font-size:13px;">
+                                            <option value="">Pilih toko atau gudang</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-calendar me-1"></i>Tanggal Pengiriman</label>
+                                        <div class="cal-icon mt-1">
+                                            <input type="text" class="form-control datetimepicker" id="transfer_date" placeholder="Pilih Tanggal" style="border-radius:8px;font-size:13px;">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {{-- Arrow --}}
-                        <div class="col-md-2 d-flex align-items-center justify-content-center">
-                            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-                                <div style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(59,130,246,.3);">
-                                    <i class="fe fe-arrow-right text-white" style="font-size:18px;"></i>
-                                </div>
-                                <span class="text-muted" style="font-size:10px;font-weight:600;letter-spacing:.5px;">TRANSFER</span>
-                            </div>
-                        </div>
-
-                        {{-- Card Tujuan --}}
-                        <div class="col-md-5">
-                            <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
-                                <div class="d-flex align-items-center gap-2 mb-3">
-                                    <span style="width:28px;height:28px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                                        <i class="fe fe-log-in" style="font-size:13px;color:#22c55e;"></i>
-                                    </span>
-                                    <span class="fw-semibold" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;">Ke (Tujuan)</span>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Penerima</label>
-                                    <select class="form-select form-control fill select2 mt-1" id="transfer_receiver_id" style="border-radius:8px;font-size:13px;">
-                                        <option value="">Pilih Staff</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang / Toko</label>
-                                    <select class="form-select form-control fill select2 mt-1" id="transfer_to_warehouse_id" style="border-radius:8px;font-size:13px;">
-                                        <option value="">Pilih toko atau gudang</option>
-                                    </select>
-                                </div>
-                                <div class="mb-0">
-                                    <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-file-text me-1"></i>Catatan (Opsional)</label>
-                                    <textarea class="form-control mt-1" id="transfer_note" rows="2" placeholder="Masukkan catatan tambahan..." style="border-radius:8px;font-size:13px;resize:none;"></textarea>
+                            {{-- Arrow --}}
+                            <div class="col-md-2 d-flex align-items-center justify-content-center">
+                                <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+                                    <div style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                                        <i class="fe fe-arrow-right text-white" style="font-size:18px;"></i>
+                                    </div>
+                                    <span class="text-muted" style="font-size:10px;font-weight:600;letter-spacing:.5px;">TRANSFER</span>
                                 </div>
                             </div>
-                        </div>
 
+                            {{-- Card Tujuan --}}
+                            <div class="col-md-5">
+                                <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <span style="width:28px;height:28px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                            <i class="fe fe-log-in" style="font-size:13px;color:#22c55e;"></i>
+                                        </span>
+                                        <span class="fw-semibold" style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;">Ke (Tujuan)</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Penerima</label>
+                                        <select class="form-select form-control fill select2 mt-1" id="transfer_receiver_id" style="border-radius:8px;font-size:13px;">
+                                            <option value="">Pilih Staff</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang / Toko</label>
+                                        <select class="form-select form-control fill select2 mt-1" id="transfer_to_warehouse_id" style="border-radius:8px;font-size:13px;">
+                                            <option value="">Pilih toko atau gudang</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-0">
+                                        <label class="text-muted" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-file-text me-1"></i>Catatan (Opsional)</label>
+                                        <textarea class="form-control mt-1" id="transfer_note" rows="2" placeholder="Masukkan catatan tambahan..." style="border-radius:8px;font-size:13px;resize:none;"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
                         {{-- Tambah Produk — full width row --}}
                         <div class="col-12">
                             <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px;">
@@ -691,68 +736,77 @@
     <div class="modal modal-lg custom-modal fade" id="view_stock_transfer" role="dialog"
         data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title text-start mb-0">
-                        <h4 class="mb-0 modal-title">View Stock Transfer</h4>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body d-flex flex-column">
-                    <div style="flex: 0 0 auto;">
-                        <div class="bg-light p-4 rounded-3 shadow-sm mb-4 border">
-                        <div class="row g-4">
-                            <div class="col-md-4">
-                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-user me-1"></i> Pengirim</span>
-                                <div class="fw-bold text-dark fs-6" id="lbl_view_sender">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-arrow-up-right text-primary me-1"></i> Dari</span>
-                                <div class="fw-bold text-dark fs-6" id="lbl_view_from">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-calendar me-1"></i> Tanggal</span>
-                                <div class="fw-bold text-dark fs-6" id="lbl_view_date">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-user-check me-1"></i> Penerima</span>
-                                <div class="fw-bold text-dark fs-6" id="lbl_view_receiver">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-arrow-down-left text-success me-1"></i> Ke</span>
-                                <div class="fw-bold text-dark fs-6" id="lbl_view_to">-</div>
-                            </div>
-                            <div class="col-md-4">
-                                <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-file-text me-1"></i> Catatan</span>
-                                <div class="fw-bold text-dark fs-6" id="lbl_view_note">-</div>
-                            </div>
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-file-text text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">View Stock Transfer</h5>
+                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Detail data transfer stok</small>
                         </div>
                     </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 d-flex flex-column" style="flex: 1 1 auto; overflow: hidden; background:#f8fafc;">
+                    <div style="flex: 0 0 auto;">
+                        <div class="border-bottom" style="background:#fff; padding: 16px 24px;">
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-user me-1"></i> Pengirim</span>
+                                    <div class="fw-bold text-dark fs-6" id="lbl_view_sender">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-arrow-up-right text-primary me-1"></i> Dari</span>
+                                    <div class="fw-bold text-dark fs-6" id="lbl_view_from">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-calendar me-1"></i> Tanggal</span>
+                                    <div class="fw-bold text-dark fs-6" id="lbl_view_date">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-user-check me-1"></i> Penerima</span>
+                                    <div class="fw-bold text-dark fs-6" id="lbl_view_receiver">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-arrow-down-left text-success me-1"></i> Ke</span>
+                                    <div class="fw-bold text-dark fs-6" id="lbl_view_to">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span class="text-muted small text-uppercase fw-semibold d-block mb-1"><i class="fe fe-file-text me-1"></i> Catatan</span>
+                                    <div class="fw-bold text-dark fs-6" id="lbl_view_note">-</div>
+                                </div>
+                            </div>
+                        </div>
                     </div> <!-- end top section -->
 
-                    <div class="fw-bold mb-2 flex-shrink-0">Produk yang di Transfer</div>
-                    <div class="table-responsive border" style="flex: 1 1 0; min-height: 200px; overflow-y: auto; border-radius: 8px;">
-                        <table class="table table-center table-hover mb-0" id="tableViewItems">
-                            <thead class="thead-light" style="position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                    <div class="d-flex align-items-center px-4 py-2 border-bottom" style="background:#f8fafc;">
+                        <i class="fe fe-list text-primary me-2"></i>
+                        <span class="fw-semibold text-dark" style="font-size:13px;">Produk yang di Transfer</span>
+                    </div>
+                    <div class="table-responsive flex-grow-1" style="min-height: 200px; overflow-y: auto; background:#fff;">
+                        <table class="table table-center table-hover mb-0" id="tableViewItems" style="font-size:13px;">
+                            <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
                                 <tr>
-                                    <th>Produk</th>
-                                    <th>Varian</th>
-                                    <th>SKU</th>
-                                    <th style="width: 140px;">Jumlah Ditransfer</th>
-                                    <th style="width: 140px;">Jumlah Diterima</th>
-                                    <th style="width: 120px;">Satuan</th>
+                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Produk</th>
+                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Varian</th>
+                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">SKU</th>
+                                    <th style="width: 140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Jumlah Ditransfer</th>
+                                    <th style="width: 140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Jumlah Diterima</th>
+                                    <th style="width: 120px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Satuan</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="empty-row">
-                                    <td colspan="6" class="text-center text-muted">Belum ada produk.</td>
+                                    <td colspan="6" class="text-center text-muted py-4">Belum ada produk.</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn">Tutup</button>
+                <div class="modal-footer border-top" style="background:#f8fafc; padding:14px 24px;">
+                    <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Tutup</button>
                 </div>
             </div>
         </div>
@@ -1158,13 +1212,18 @@
     <!-- modal -->
     <div class="modal modal-xl custom-modal fade" id="add_sales_order" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Pengiriman</h4>
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-truck text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengiriman</h5>
+                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Pilih armada, tanggal, dan produk yang akan dikirim</small>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="#">
                     <div class="modal-body">
@@ -1173,46 +1232,51 @@
                                 <div class="col-12 row pe-0">
                                     <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3">
-                                            <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="so_date">
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Tanggal <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="so_date" style="border-radius: 8px;">
                                         </div>
                                     </div>
                                     <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3 " id="row-Armada">
-                                            <label>Nama Armada<span class="text-danger">*</span></label>
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Nama Armada <span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
                                     <div class="col-lg-4 col-md-12 col-12 pe-0">
                                         <div class="input-block mb-3">
-                                            <label>Ref Number</label>
-                                            <input id="so_ref_number" class="form-control" placeholder="Input Ref Number">
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Ref Number</label>
+                                            <input id="so_ref_number" class="form-control" placeholder="Input Ref Number" style="border-radius: 8px;">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12 row pe-0">
-                                    <div class="col-lg-4 col-md-12 col-12 pe-0">
-                                        <div class="input-block mb-3">
-                                            <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
-                                                <span id="check_foto" style="display: none" class="ms-2">
-                                                    <div class="d-flex g-3">
-                                                        <i class="fa fa-check-circle text-success mt-1"></i>
-                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
-                                                    </div>
-                                                </span>
-                                            </label>
-                                            <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
-                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
-                                            <input type="hidden" name="" id="bukti">
+                                    <div class="col-lg-8 col-md-6 col-12 pe-0">
+                                        <div class="input-block mb-3" id="row-RetailWarehouse">
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Gudang Eceran <span class="text-danger">*</span></label>
+                                            <select id="retail_warehouse_id" class="form-control"></select>
+                                            <small class="text-muted d-block mt-1" style="font-size: 11px;">Dipakai bila item pakai satuan eceran produk</small>
                                         </div>
                                     </div>
-                                    {{-- 
-                                    <div class="col-lg-4 col-md-6 col-12">
+                                    <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3">
-                                            <label>Nama Sales</label>
-                                            <select id="sales_id" class="form-control"></select>
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; display: block; margin-bottom: 8px;">Bukti Foto<span class="text-danger ms-1">*</span>
+                                                <span id="check_foto" style="display: none; align-items:center;" class="ms-2">
+                                                    <i class="fa fa-check-circle text-success mt-1"></i>
+                                                    <span class="text-muted ms-1 text-lowercase" style="font-size:11px; text-transform:none;"><span id="jumlahFoto">1</span> gambar terunggah</span>
+                                                </span>
+                                            </label>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-outline-primary w-100 p-0" id="btn_bukti_foto" type="button" style="border-radius: 8px; font-weight: 500; height: 42px;">
+                                                    <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-camera me-1"></i> Upload Foto</div>
+                                                </button>
+                                                <button type="button" class="btn btn-primary w-100 p-0" id="btn-lihat-bukti" style="display: none; border-radius: 8px; font-weight: 500; height: 42px;">
+                                                    <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-image me-1"></i> Lihat Bukti</div>
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="" id="bukti">
+                                            <small class="text-muted d-block mt-1" style="visibility: hidden; font-size: 11px;">Placeholder spacing</small>
                                         </div>
-                                    </div>--}}
+                                    </div>
                                 </div>
                                 <div class="col-12 row pe-0">
                                     {{-- <div class="col-lg-4 col-md-6 col-12">
@@ -1251,34 +1315,35 @@
                                         </div>
                                     </div> --}}
                                 </div>
-                                <div class="col-12 row pe-0">
+                                <div class="col-12 row pe-0 mb-4 align-items-end">
                                     <div class="col-lg-6 col-md-12 col-12 pe-0">
-                                        <div class="input-block mb-3">
-                                            <label class="d-flex align-items-center gap-2">
-                                                SKU
-                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn_toggle_scan_so" title="Ganti mode Scan">
-                                                    <i class="fa fa-barcode"></i> Scan
+                                        <div class="input-block mb-lg-0 mb-3">
+                                            <label class="form-label text-muted fw-semibold d-flex align-items-center gap-2" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">
+                                                Pilih Produk (SKU)
+                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 d-inline-flex align-items-center" id="btn_toggle_scan_so" title="Ganti mode Scan" style="border-radius: 4px; font-size: 10px; min-height: 20px;">
+                                                    <i class="fa fa-barcode me-1"></i> Mode Scan
                                                 </button>
                                             </label>
                                             <div id="so_mode_select">
                                                 <select class="form-select" id="so_sku"></select>
                                             </div>
                                             <div id="so_mode_scan" style="display:none">
-                                                <div class="input-group mb-3" style="max-width: 600px;"> <input type="text" 
+                                                <div class="input-group" style="border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"> 
+                                                    <input type="text" 
                                                         class="form-control" 
                                                         id="so_scan_barcode" 
                                                         placeholder="Scan / ketik barcode..." 
-                                                        style="flex: 0 0 50%;"> <input type="number" 
+                                                        style="flex: 1 1 auto; border-right: 0;"> 
+                                                    <input type="number" 
                                                         class="form-control" 
                                                         id="so_scan_qty" 
                                                         placeholder="Qty" 
                                                         value="1" 
                                                         min="1" 
-                                                        style="max-width:80px">
-                                                    
+                                                        style="max-width:90px; border-left: 1px solid #e2e8f0;">
                                                     <button type="button" 
-                                                            class="btn btn-primary" 
-                                                            id="btn_scan_add_so">
+                                                            class="btn btn-primary d-inline-flex align-items-center justify-content-center px-3" 
+                                                            id="btn_scan_add_so" title="Tambah Produk">
                                                         <i class="fa fa-plus"></i>
                                                     </button>
                                                 </div>
@@ -1286,20 +1351,25 @@
                                         </div>
                                     </div>
                                     <div class="col-lg-6 col-md-12 col-12 pe-0">
-                                        
+                                        <!-- JS will inject Qty, Satuan, and Tambah Produk here -->
                                     </div>
                                 </div>
-                                <div class="col-12 overflow-x-auto mb-3">
-                                    <table class="table table-center table-responsive">
-                                        <thead>
-                                            <th>Produk</th>
-                                            <th>Variasi</th>
-                                            <th>SKU</th>
-                                            <th class="text-center">Jumlah</th>
-                                            {{-- <th class="text-end">Harga Satuan</th>
-                                            <th class="text-end">Subtotal</th> --}}
-                                            <th class="text-center">Action</th>
-                                        </thead>
+                                <div class="col-12 mb-3">
+                                    <div class="d-flex align-items-center px-4 py-2 border-bottom" style="background:#f8fafc;">
+                                        <i class="fe fe-list text-primary me-2"></i>
+                                        <span class="fw-semibold text-dark" style="font-size:13px;">Daftar Produk</span>
+                                    </div>
+                                    <div class="table-responsive flex-grow-1" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 8px 8px;">
+                                        <table class="table table-center table-hover mb-0" id="tableSalesItems" style="font-size:13px;">
+                                            <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #e2e8f0;">
+                                                <tr>
+                                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Produk</th>
+                                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Variasi</th>
+                                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">SKU</th>
+                                                    <th class="text-center" style="width: 140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Jumlah</th>
+                                                    <th class="text-center" style="width: 100px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Action</th>
+                                                </tr>
+                                            </thead>
                                         <tbody id="tableSalesModal">
                                             
                                         </tbody>
@@ -1333,15 +1403,15 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2" style="border-radius:8px; font-size:13px; font-weight:600; color:#64748b;">Batal</button>
                         @if (in_array('others', $akses->firstWhere('name', 'Pengiriman')->akses))
-                            <button type="button" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
-                            <button type="button" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
+                            <button type="button" class="btn btn-danger me-2 btn_decline d-none align-items-center gap-2" style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
+                            <button type="button" class="btn btn-success me-2 btn_acc d-none align-items-center gap-2" style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-check"></i> Terima</button>
                         @endif
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Pengiriman</button>
+                        <button type="button" class="btn btn-primary paid-continue-btn btn-save d-inline-flex align-items-center gap-2 ms-auto" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                            <i class="fe fe-save"></i> <span id="btn_save_text">Tambah Pengiriman</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -2277,8 +2347,8 @@
                                     <div class="input-block">
                                         <label class="fw-bold">Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input">
-                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Manajemen Saldo Kas</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2429,8 +2499,8 @@
                                     <div class="input-block">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_gudang">
-                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Manajemen Saldo Kas</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2587,8 +2657,8 @@
                                     <div class="input-block">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_armada">
-                                            <option value="saldo" selected>Pengembalian Dana Langsung</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Pengembalian Dana Langsung</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2730,8 +2800,8 @@
                                     <div class="input-block mb-3">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_sales">
-                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Manajemen Saldo Kas</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -3136,61 +3206,138 @@
 @endif
 
 @if (Route::is(['stockProduct']))
-    <!-- Add coupons -->
-    <div class="modal fade" id="add_stock_product" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content p-3">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Riwayat Stok Produk</h4>
+    <div class="modal fade custom-modal" id="modal_safety_stock" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-shield text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Safety Stock</h5>
+                            <p class="text-white-50 mb-0 mt-1" id="safety_modal_subtitle" style="font-size:13px;"></p>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 d-flex flex-column" style="background:#f8fafc; flex: 1 1 auto; overflow: hidden;">
+                    
+                    {{-- Section 1: Edit Safety Stock --}}
+                    <div class="d-flex align-items-center px-4 py-3 border-bottom" style="background:#fff;">
+                        <i class="fe fe-edit-2 text-primary me-2" style="font-size: 16px;"></i>
+                        <h6 class="fw-bold mb-0 text-dark" style="font-size: 14px;">Edit Safety Stock</h6>
+                    </div>
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <table class="table table-hover table-center mb-0" id="table_safety_edit" style="font-size: 13px;">
+                            <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Satuan</th>
+                                    <th style="width:40%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Safety Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="text-end px-4 py-3 border-bottom" style="background:#fff;">
+                        <button type="button" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" id="btn_save_safety" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:160px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                            <i class="fe fe-save me-1"></i> Simpan Safety Stock
+                        </button>
+                    </div>
+
+                    {{-- Section 2: Transfer ke Stok Produk --}}
+                    <div class="d-flex flex-column px-4 py-3 border-bottom" style="background:#f8fafc;">
+                        <div class="d-flex align-items-center mb-1">
+                            <i class="fe fe-repeat text-success me-2" style="font-size: 16px;"></i>
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size: 14px;">Transfer ke Stok Produk</h6>
+                        </div>
+                        <p class="text-muted mb-0 ms-4" style="font-size:13px;">
+                            Kurangi safety stock dan tambahkan ke stok produk (per satuan).
+                        </p>
+                    </div>
+                    <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                        <table class="table table-hover table-center mb-0" id="table_safety_transfer" style="font-size: 13px;">
+                            <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Satuan</th>
+                                    <th class="text-center" style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Safety</th>
+                                    <th style="width:35%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Qty Transfer</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="text-end px-4 py-3" style="background:#fff;">
+                        <button type="button" class="btn btn-success d-inline-flex align-items-center justify-content-center gap-2" id="btn_transfer_safety" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(16,185,129,.3);">
+                            <i class="fe fe-repeat me-1"></i> Transfer
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
+                    <button type="button" class="btn btn-back cancel-btn" data-bs-dismiss="modal" style="border-radius:8px; font-size:13px; font-weight:600;">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add coupons -->
+    <div class="modal fade custom-modal" id="add_stock_product" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-clock text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Riwayat Stok Produk</h5>
+                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Lihat rekam jejak aktivitas produk</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="d-flex align-items-end flex-wrap gap-3 mb-4 p-3 rounded" style="background-color: #f8fafc; border: 1px solid #e2e8f0;">
-                                <div style="flex: 1; min-width: 200px;">
-                                    <label class="form-label text-muted fw-semibold" style="font-size: 13px;">Periode Dari</label>
-                                    <input type="date" class="form-control form-control-sm" id="start_date">
-                                </div>
-                                <div style="flex: 1; min-width: 200px;">
-                                    <label class="form-label text-muted fw-semibold" style="font-size: 13px;">Sampai Dengan</label>
-                                    <input type="date" class="form-control form-control-sm" id="end_date">
-                                </div>
-                                <div>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary btn-clear px-4" style="font-weight: 500; min-height: 33px;">
-                                        <i class="fa fa-refresh me-1"></i> Reset
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12 py-3 mb-3">
-                                    <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 8px; max-height: 50vh; overflow-y: auto;">
-                                        <table class="table table-center table-hover mb-0" id="tableLog" style="min-height: 15vh;">
-                                            <thead style="background-color: #f8faff; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10;">
-                                                <tr>
-                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;">Tanggal</th>
-                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;">Staff</th>
-                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;">No. Transaksi</th>
-                                                    <th style="width:25%; color: #475569; font-size: 13px; font-weight: 700;">Catatan</th>
-                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;" class="text-center">Masuk</th>
-                                                    <th style="width:15%; color: #475569; font-size: 13px; font-weight: 700;" class="text-center">Keluar</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody></tbody>
-                                        </table>
+                    <div class="modal-body p-0 d-flex flex-column" style="flex: 1 1 auto; overflow: hidden; background:#f8fafc;">
+                        <div class="border-0 pb-0 mb-0 w-100">
+                            <div class="px-4 py-3 border-bottom" style="background-color: #fff;">
+                                <div class="d-flex align-items-end flex-wrap gap-3">
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Periode Dari</label>
+                                        <input type="date" class="form-control form-control-sm" id="start_date" style="border-radius: 8px;">
+                                    </div>
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Sampai Dengan</label>
+                                        <input type="date" class="form-control form-control-sm" id="end_date" style="border-radius: 8px;">
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary btn-clear px-4" style="font-weight: 500; min-height: 33px; border-radius: 8px;">
+                                            <i class="fa fa-refresh me-1"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-
-
-                            <div class="modal-footer p-0 mt-4 border-0">
-                                        <button type="button" data-bs-dismiss="modal"
-                                            class="btn btn-primary px-4 fw-semibold">Selesai</button>
-                                    </div>
+                            
+                            <div class="table-responsive flex-grow-1" id="tableLogScroll" style="min-height:300px; max-height: 50vh; overflow-y:auto; background:#fff;">
+                                <table class="table table-center table-hover mb-0" id="tableLog" style="font-size:13px;">
+                                    <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                        <tr>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Tanggal</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Staff</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">No. Transaksi</th>
+                                            <th style="width:25%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Catatan</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Masuk</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Keluar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
                         </div>
+                    </div>
+                    <div class="modal-footer border-top d-flex justify-content-end align-items-center" style="background:#f8fafc; padding: 16px 24px; min-height: 70px;">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3); margin-bottom: 0;">
+                            Selesai
+                        </button>
                     </div>
                 </form>
             </div>
@@ -3202,66 +3349,62 @@
 @if (Route::is(['stockSupplies']))
     <!-- Add coupons -->
     <div class="modal fade" id="add_stock_supplies" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content p-3">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Riwayat Stok Bahan Mentah</h4>
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-clock text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Riwayat Stok Bahan Mentah</h5>
+                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Histori per gudang aktif</small>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-lg-3 col-md-6 col-sm-12">
-                                    <div class="input-block mb-3">
-                                        <label>Dari</label>
-                                        <div>
-                                            <input type="date" class="form-control" id="start_date">
-                                        </div>
+                    <div class="modal-body p-0 d-flex flex-column" style="flex: 1 1 auto; overflow: hidden; background:#f8fafc;">
+                        <div class="border-0 pb-0 mb-0 w-100">
+                            <div class="px-4 py-3 border-bottom" style="background-color: #fff;">
+                                <div class="d-flex align-items-end flex-wrap gap-3">
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Periode Dari</label>
+                                        <input type="date" class="form-control form-control-sm" id="start_date" style="border-radius: 8px;">
                                     </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 col-sm-12">
-                                    <div class="input-block mb-3">
-                                        <label>Sampai</label>
-                                        <div>
-                                            <input type="date" class="form-control" id="end_date">
-                                        </div>
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Sampai Dengan</label>
+                                        <input type="date" class="form-control form-control-sm" id="end_date" style="border-radius: 8px;">
                                     </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 col-sm-0"></div>
-                                <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
-                                    <a class="btn btn-outline-secondary btn-clear">
-                                        Clear
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12 py-3 mb-3">
-                                    <div class="table-scroll overflow-x-auto">
-                                        <table class="table table-center" id="tableLog" style="min-height: 15vh">
-                                            <thead>
-                                                <th style="width: 15%">Tanggal</th>
-                                                <th style="width: 15%">Staff</th>
-                                                <th style="width: 15%">No. Transaksi</th>
-                                                <th style="width: 25%">Catatan</th>
-                                                <th style="width: 15%" class="text-center">Masuk</th>
-                                                <th style="width: 15%" class="text-center">Keluar</th>
-                                            </thead>
-                                            <tbody></tbody>
-                                        </table>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary btn-clear px-4" style="font-weight: 500; min-height: 33px; border-radius: 8px;">
+                                            <i class="fa fa-refresh me-1"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-
-                            <div class="modal-footer p-0">
-                                <button type="button" data-bs-dismiss="modal"
-                                    class="btn btn-back cancel-btn me-2">Kembali</button>
+                            <div class="table-responsive flex-grow-1" id="tableLogScroll" style="min-height:300px; max-height: 50vh; overflow-y:auto; background:#fff;">
+                                <table class="table table-center table-hover mb-0" id="tableLog" style="font-size:13px;">
+                                    <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                        <tr>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Tanggal</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Staff</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">No. Transaksi</th>
+                                            <th style="width:25%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Catatan</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Masuk</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Keluar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
                             </div>
                         </div>
+                    </div>
+                    <div class="modal-footer border-top d-flex justify-content-end align-items-center" style="background:#f8fafc; padding: 16px 24px; min-height: 70px;">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3); margin-bottom: 0;">
+                            Selesai
+                        </button>
                     </div>
                 </form>
             </div>
@@ -3382,7 +3525,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
                 {{-- ── HEADER ── --}}
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%); padding: 18px 24px;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
                     <div class="d-flex align-items-center gap-3">
                         <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
                             <i class="fe fe-box text-white" style="font-size:18px;"></i>
@@ -3510,7 +3653,7 @@
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
                 {{-- ── HEADER ── --}}
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a5f 0%, #2d6a9f 100%); padding: 18px 24px;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
                     <div class="d-flex align-items-center gap-3">
                         <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
                             <i class="fe fe-tag text-white" style="font-size:18px;"></i>

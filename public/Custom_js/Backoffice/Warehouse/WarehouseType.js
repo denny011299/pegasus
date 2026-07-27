@@ -46,7 +46,6 @@ function inisialisasi() {
             emptyTable: "Belum ada data tipe gudang",
             zeroRecords: "Data tidak ditemukan",
             loadingRecords: "Sedang memuat data...",
-            processing: "Sedang memuat data...",
             paginate: {
                 next: ' <i class=" fa fa-angle-right"></i>',
                 previous: '<i class="fa fa-angle-left"></i> ',

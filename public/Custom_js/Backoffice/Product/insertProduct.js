@@ -48,6 +48,9 @@ $(document).ready(function() {
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
             $('.row-variant').last().find('.variant_alert').val(element.product_variant_alert);
             $('.row-variant').last().find('.variant_safety_stock').val(element.safety_stock ?? 0);
+            if (element.retail_unit) {
+                $('.row-variant').last().find('.unit_retail').val(element.retail_unit);
+            }
         });
 
         $('#product_unit').empty();
@@ -76,6 +79,9 @@ $(document).ready(function() {
             if (element.safety_unit_id) {
                 $('.unit_safety').eq(index).val(element.safety_unit_id);
             }
+            if (element.retail_unit) {
+                $('.unit_retail').eq(index).val(element.retail_unit);
+            }
         });
     }
     refreshSafetyStockAccess();
@@ -101,6 +107,7 @@ $('#unit_id').on('change', function() {
 $(document).on('click','.btnAddRow',function(){
     var units;
     var safetyUnits;
+    var retailUnits;
     if($('#product_variant').val()!=""&&$('#product_variant').val()!=null) {
         $('#tbVariant').html("")
         relasi = [];
@@ -119,6 +126,11 @@ $(document).on('click','.btnAddRow',function(){
             dataRelasi.forEach(item => {
                 safetyUnits.append(`<option value="${item.id}" >${item.text}</option>`);
             });
+            retailUnits = $('.unit_retail').last();
+            retailUnits.html('<option value="">-</option>');
+            dataRelasi.forEach(item => {
+                retailUnits.append(`<option value="${item.id}">${item.text}</option>`);
+            });
             relasi.push([]);
         });
     }
@@ -135,6 +147,11 @@ $(document).on('click','.btnAddRow',function(){
         dataRelasi.forEach(item => {
             safetyUnits.append(`<option value="${item.id}" >${item.text}</option>`);
         });
+        retailUnits = $('.unit_retail').last();
+        retailUnits.html('<option value="">-</option>');
+        dataRelasi.forEach(item => {
+            retailUnits.append(`<option value="${item.id}">${item.text}</option>`);
+        });
     }
     if (mode==2) modeRelasi=1;
 
@@ -147,28 +164,33 @@ $(document).on('click','.btnAddRow',function(){
 function addRow(names="",idx=0) {
     var safetyCellClass = canAccessSafetyStock ? "cell-safety-stock" : "cell-safety-stock d-none";
     $('#tbVariant').append(`
-        <tr class="row-variant">
-            <td><input type="text" class="form-control fill variant_name" placeholder="Masukan Nama" value="${names}"></td>
-            <td><input type="text" class="form-control fill variant_sku" placeholder="SKU"></td>
-            <td><input type="text" class="form-control variant_barcode" placeholder="Barcode"><input type="hidden" class="form-control variant_id"></td>
-            <td>
+        <tr class="row-variant align-middle" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+            <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_name" placeholder="Masukan Nama" value="${names}"></td>
+            <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_sku" placeholder="SKU"></td>
+            <td style="padding: 12px 16px;"><input type="text" class="form-control variant_barcode" placeholder="Barcode"><input type="hidden" class="form-control variant_id"></td>
+            <td style="padding: 12px 16px;">
                 <div class="input-group">
                     <input type="text" class="form-control fill variant_alert" placeholder="Qty">
                     <select class="form-select variant_alert_type fill unit_alert"></select>
                 </div>
             </td>
-            <td class="${safetyCellClass}">
+            <td style="padding: 12px 16px;">
+                <select class="form-select unit_retail">
+                    <option value="">-</option>
+                </select>
+            </td>
+            <td class="${safetyCellClass}" style="padding: 12px 16px;">
                 <div class="input-group">
                     <input type="text" class="form-control variant_safety_stock nominal-only" placeholder="Qty" value="0">
                     <select class="form-select unit_safety"></select>
                 </div>
             </td>
-            <td class="d-flex align-items-center justify-content-center">
-                <a class="p-2 btn-action-icon btn_delete_row" href="javascript:void(0);">
-                    <i data-feather="trash-2" class="feather-trash-2"></i>
+            <td class="d-flex align-items-center justify-content-center" style="padding: 12px 16px; gap: 8px;">
+                <a class="btn_edit_relasi d-inline-flex align-items-center justify-content-center" index="${$('.row-variant').length}" href="javascript:void(0);" style="width: 32px; height: 32px; background: #eff6ff; color: #3b82f6; border-radius: 8px; transition: all 0.2s ease;" title="Atur Relasi">
+                    <i data-feather="git-merge" style="width: 16px; height: 16px;"></i>
                 </a>
-                <a class="p-2 btn-action-icon btn_edit_relasi ms-2" index="${$('.row-variant').length}" href="javascript:void(0);">
-                    <i data-feather="git-merge" class="feather-git"></i>
+                <a class="btn_delete_row d-inline-flex align-items-center justify-content-center" href="javascript:void(0);" style="width: 32px; height: 32px; background: #fee2e2; color: #ef4444; border-radius: 8px; transition: all 0.2s ease;" title="Hapus Variasi">
+                    <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
                 </a>
             </td>
         </tr>
@@ -217,6 +239,7 @@ $(document).on("click",".btn-save",function(){
             variant_alert: $(this).find('.variant_alert').val(),
             product_variant_id: $(this).find('.variant_id').val(),
             unit_id: $(this).find('.unit_alert').val(),
+            retail_unit: $(this).find('.unit_retail').val() || null,
         };
         if (canAccessSafetyStock) {
             variant.safety_stock = $(this).find('.variant_safety_stock').val() || 0;
@@ -305,15 +328,16 @@ $(document).on("change","#product_unit",function(){
         if (dataRelasi.length < 1) $('#unit_id').val("");
     }
 
-    $('.unit_alert, .unit_safety').each(function() {
+    $('.unit_alert, .unit_safety, .unit_retail').each(function() {
         var units = $(this);
         var vl = units.val();
-        units.html("");
+        var isRetail = units.hasClass('unit_retail');
+        units.html(isRetail ? '<option value="">-</option>' : '');
         dataRelasi.forEach(item => {
             units.append(`<option value="${item.id}" ${vl==item.id?'selected':''}>${item.text}</option>`);
         });
         if (vl != null && vl !== "") units.val(vl);
-        else units.val(units.find('option:first').val());
+        else if (!isRetail) units.val(units.find('option:first').val());
     });
 });
 
