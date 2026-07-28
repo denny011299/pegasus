@@ -87,9 +87,22 @@ class CashSales extends Model
         ];
     }
 
+    /**
+     * Cari pembayaran berdasarkan referensi sistem eksternal.
+     *
+     * Dipakai External API untuk menjawab GET sekaligus mengenali permintaan
+     * POST yang diulang, agar tidak lahir transaksi kas ganda.
+     */
+    function findByRefPaymentId($refPaymentId)
+    {
+        return CashSales::where('ref_payment_id', '=', $refPaymentId)->first();
+    }
+
     function insertCashSales($data)
     {
         $t = new CashSales();
+        // Hanya terisi bila pembayaran datang lewat External API.
+        $t->ref_payment_id = $data["ref_payment_id"] ?? null;
         $t->cash_id = $data["cash_id"] ?? 0;
         $t->staff_id = $data["staff_id"];
         $t->bank_id = $data["bank_id"];
