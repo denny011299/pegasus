@@ -152,6 +152,17 @@ function refreshX() {
   instead of `@roleCan` — used specifically for approve/decline-style "others"-ability buttons in modal
   footers. Match whichever the surrounding block in that file already does.
 
+## External API (`/api/external/v1/**`) is a separate world
+Everything above describes the **internal** admin app. The External API platform
+(`app/ExternalApi/`, `routes/api.php`, `routes/external-api/`) intentionally does NOT follow
+those conventions: it has no session/CSRF, authenticates by API Key, validates input, and
+returns a fixed `{success, data}` / `{success, error}` envelope via
+`App\ExternalApi\Http\ApiResponse` instead of `return 1;` / `{status:-1}`. Don't "fix" it toward
+the internal style, and don't copy its style into internal endpoints.
+Before touching any `/api/external/**` endpoint, load the **`external-api-endpoint`** skill.
+Its admin pages (Integrasi → Aplikasi Eksternal / Dokumentasi / Log) *are* ordinary Blade +
+jQuery + DataTables pages and do follow everything above.
+
 ## Access control model
 - `ABILITIES = ['view','create','edit','delete','others']` — fixed closed set. `'others'` is the catch-all
   for non-CRUD actions (approve/decline/accept/reject, etc.).

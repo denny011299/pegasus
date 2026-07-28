@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\ExternalApi\ApiKeyManager;
+use App\ExternalApi\Docs\ApiDocRegistry;
+use App\ExternalApi\Logging\RequestLogger;
 use App\Models\ProductVariant;
 use App\Support\RoleAccess;
 use App\Synchronization\Pmo\PmoClient;
@@ -25,6 +28,18 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(SyncFlowRegistry::class, function () {
             return new SyncFlowRegistry(config('synchronization.flows', []));
         });
+
+        $this->app->singleton(ApiKeyManager::class, function () {
+            return new ApiKeyManager(config('externalapi.key', []));
+        });
+
+        $this->app->singleton(ApiDocRegistry::class, function () {
+            return new ApiDocRegistry(config('externalapi.docs', []));
+        });
+
+        // Singleton supaya pembacaan saklar pencatatan di tabel `settings`
+        // cukup sekali per permintaan.
+        $this->app->singleton(RequestLogger::class);
     }
 
     /**
