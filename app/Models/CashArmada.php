@@ -86,9 +86,24 @@ class CashArmada extends Model
         ];
     }
 
+    /**
+     * Cari pembayaran berdasarkan referensi sistem eksternal.
+     *
+     * Dipakai External API untuk dua hal: menjawab GET, dan mengenali
+     * permintaan POST yang diulang supaya tidak membuat transaksi ganda.
+     * Baris terhapus (status 0) sengaja ikut terbaca — kalau sebuah referensi
+     * pernah dipakai, permintaan ulang tidak boleh diam-diam membuat kas baru.
+     */
+    function findByRefPaymentId($refPaymentId)
+    {
+        return CashArmada::where('ref_payment_id', '=', $refPaymentId)->first();
+    }
+
     function insertCashArmada($data)
     {
         $t = new CashArmada();
+        // Hanya terisi bila pembayaran datang lewat External API.
+        $t->ref_payment_id = $data["ref_payment_id"] ?? null;
         $t->customer_id = $data["customer_id"];
         $t->cash_id = $data["cash_id"];
         $t->cr_date = $data['cr_date'] ?? now();
