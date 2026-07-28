@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExternalApi\V1\CashPaymentController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,4 +32,15 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('master')->name('master.')->group(function () {
     Route::get('/units', [MasterDataController::class, 'units'])->name('units');
     Route::get('/cash_categories', [MasterDataController::class, 'cashCategories'])->name('cashCategories');
+});
+
+/*
+ * Pembayaran kas (API-005).
+ *
+ * POST bersifat idempoten lewat ref_payment_id: mengirim ulang permintaan yang
+ * sama tidak membuat transaksi kas kedua.
+ */
+Route::prefix('payments')->name('payments.')->group(function () {
+    Route::post('/cash', [CashPaymentController::class, 'store'])->name('cashStore');
+    Route::get('/cash/{ref_payment_id}', [CashPaymentController::class, 'show'])->name('cashShow');
 });

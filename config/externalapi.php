@@ -141,6 +141,10 @@ return [
         // API-001 — Data Master
         \App\ExternalApi\Docs\Endpoints\V1\MasterUnitListDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterCashCategoryListDoc::class,
+
+        // API-005 — Pembayaran Kas
+        \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\CashPaymentShowDoc::class,
     ],
 
     /*
@@ -154,6 +158,7 @@ return [
     */
     'doc_groups' => [
         'master' => 'Data Master',
+        'pembayaran' => 'Pembayaran',
         'produk' => 'Produk',
         'stok' => 'Stok',
         'pesanan' => 'Pesanan',
