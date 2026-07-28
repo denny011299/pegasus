@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SynchronizationController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\checkLogin;
 use Illuminate\Support\Facades\Route;
@@ -653,5 +655,63 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tanda Terima PO|others')->group(function () {
         Route::post('/accTt', [SupplierController::class, 'accTt'])->name('accTt');
         Route::post('/declineTt', [SupplierController::class, 'declineTt'])->name('declineTt');
+    });
+
+    // Pusat Sinkronisasi — daftar alur, wizard, dan eksekusi per langkah.
+    Route::middleware('check.access:Sinkronisasi|view')->group(function () {
+        Route::get('/synchronization', [SynchronizationController::class, 'center'])->name('synchronization');
+        Route::get('/synchronization/{flow}', [SynchronizationController::class, 'wizard'])->name('synchronizationWizard');
+        Route::get('/synchronization/{flow}/status', [SynchronizationController::class, 'status'])->name('synchronizationStatus');
+    });
+    Route::middleware('check.access:Sinkronisasi|others')->group(function () {
+        Route::post('/synchronization/{flow}/{step}/execute', [SynchronizationController::class, 'execute'])->name('synchronizationExecute');
+    });
+
+    // Platform API Eksternal — halaman administrasi di modul Integrasi.
+    // Endpoint yang dipakai sistem pihak ketiga TIDAK ada di sini; jalurnya
+    // terpisah di routes/api.php + routes/external-api/ dan dijaga API Key,
+    // bukan session.
+    Route::middleware('check.access:Aplikasi Eksternal|view')->group(function () {
+        Route::get('/externalApplication', [ExternalApiController::class, 'externalApplication'])->name('externalApplication');
+        Route::get('/externalApplication/{id}', [ExternalApiController::class, 'externalApplicationDetail'])->name('externalApplicationDetail');
+        Route::get('/getExternalApplication', [ExternalApiController::class, 'getExternalApplication'])->name('getExternalApplication');
+        Route::get('/getExternalApiKey', [ExternalApiController::class, 'getExternalApiKey'])->name('getExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|create')->group(function () {
+        Route::post('/insertExternalApplication', [ExternalApiController::class, 'insertExternalApplication'])->name('insertExternalApplication');
+        Route::post('/insertExternalApiKey', [ExternalApiController::class, 'insertExternalApiKey'])->name('insertExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|edit')->group(function () {
+        Route::post('/updateExternalApplication', [ExternalApiController::class, 'updateExternalApplication'])->name('updateExternalApplication');
+        Route::post('/updateExternalApiKey', [ExternalApiController::class, 'updateExternalApiKey'])->name('updateExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|delete')->group(function () {
+        Route::post('/deleteExternalApplication', [ExternalApiController::class, 'deleteExternalApplication'])->name('deleteExternalApplication');
+        Route::post('/deleteExternalApiKey', [ExternalApiController::class, 'deleteExternalApiKey'])->name('deleteExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApplication', [ExternalApiController::class, 'toggleExternalApplication'])->name('toggleExternalApplication');
+        Route::post('/revokeExternalApiKey', [ExternalApiController::class, 'revokeExternalApiKey'])->name('revokeExternalApiKey');
+    });
+
+    // Dokumentasi dipecah per modul: /externalApiDocumentation adalah halaman
+    // Umum, dan tiap kelompok endpoint punya halamannya sendiri di bawahnya.
+    // Satu rute berparameter melayani seluruh kelompok, jadi kelompok baru
+    // tidak perlu rute tambahan.
+    Route::middleware('check.access:Dokumentasi API Eksternal|view')->group(function () {
+        Route::get('/externalApiDocumentation', [ExternalApiController::class, 'externalApiDocumentation'])->name('externalApiDocumentation');
+        Route::get('/externalApiDocumentation/{group}', [ExternalApiController::class, 'externalApiDocumentation'])->name('externalApiDocumentationGroup');
+    });
+
+    Route::middleware('check.access:Log API Eksternal|view')->group(function () {
+        Route::get('/externalApiLog', [ExternalApiController::class, 'externalApiLog'])->name('externalApiLog');
+        Route::get('/getExternalApiLog', [ExternalApiController::class, 'getExternalApiLog'])->name('getExternalApiLog');
+        Route::get('/getExternalApiLogSummary', [ExternalApiController::class, 'getExternalApiLogSummary'])->name('getExternalApiLogSummary');
+    });
+    Route::middleware('check.access:Log API Eksternal|delete')->group(function () {
+        Route::post('/deleteExternalApiLog', [ExternalApiController::class, 'deleteExternalApiLog'])->name('deleteExternalApiLog');
+    });
+    Route::middleware('check.access:Log API Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApiLogging', [ExternalApiController::class, 'toggleExternalApiLogging'])->name('toggleExternalApiLogging');
     });
 });
