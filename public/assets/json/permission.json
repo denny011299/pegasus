@@ -49,5 +49,8 @@
 
   { "Id": 38, "Modules": "Laporan", "SubModules": "Laporan Stock Aging" },
 
-  { "Id": 39, "Modules": "Integrasi", "SubModules": "Sinkronisasi" }
+  { "Id": 39, "Modules": "Integrasi", "SubModules": "Sinkronisasi" },
+  { "Id": 40, "Modules": "Integrasi", "SubModules": "Aplikasi Eksternal" },
+  { "Id": 41, "Modules": "Integrasi", "SubModules": "Dokumentasi API Eksternal" },
+  { "Id": 42, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
 ]
