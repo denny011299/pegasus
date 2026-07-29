@@ -99,9 +99,11 @@ class SuppliesVariant extends Model
         if (!$t) {
             return $this->insertSuppliesVariant([
                 "supplies_id" => $data["supplies_id"],
+                "supplier_id" => $data["supplier_id"] ?? null,
                 "supplies_variant_name" => $data["supplies_variant_name"],
                 "supplies_variant_sku" => $data["supplies_variant_sku"],
                 "supplies_variant_price" => $data["supplies_variant_price"],
+                "supplies_variant_barcode" => $data["supplies_variant_barcode"] ?? null,
             ]);
         }
         $t->supplies_id = $data["supplies_id"];
