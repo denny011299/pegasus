@@ -6,24 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('settings', function (Blueprint $table) {
-            $table->integerIncrements('setting_id');
-            $table->string('setting_name');
-            $table->longText('setting_value');
-            $table->string('setting_link')->nullable();
-            $table->integer('status')->default(1)->comment('1 = active, 0 = dead');
-            $table->timestamps();
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_0900_ai_ci');
+
+            $table->integer('setting_id', true);
+            $table->string('setting_key', 255);
+            $table->text('setting_value')->nullable();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('settings');

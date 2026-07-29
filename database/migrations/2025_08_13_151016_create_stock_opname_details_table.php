@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('stock_opname_details', function (Blueprint $table) {
-            $table->integerIncrements('stod_id');
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_unicode_ci');
+
+            $table->increments('stod_id');
             $table->integer('sto_id');
             $table->integer('product_id');
             $table->integer('product_variant_id');
@@ -20,14 +20,12 @@ return new class extends Migration
             $table->longText('stod_real')->nullable();
             $table->longText('stod_selisih')->nullable();
             $table->longText('stod_notes')->nullable();
-            $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive');
-            $table->timestamps();
+            $table->boolean('status')->default(1)->comment('1=active, 0=inactive');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('stock_opname_details');

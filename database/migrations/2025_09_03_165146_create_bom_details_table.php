@@ -6,25 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('bom_details', function (Blueprint $table) {
-            $table->integerIncrements('bom_detail_id');
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_0900_ai_ci');
+
+            $table->integer('bom_detail_id', true);
             $table->integer('bom_id');
             $table->integer('supplies_id');
             $table->integer('bom_detail_qty')->default(1);
             $table->integer('unit_id');
-            $table->tinyInteger('status')->default(1)->comment('1 = active, 0 = inactive');
-            $table->timestamps();
+            $table->boolean('status')->nullable()->default(1)->comment('1 = active, 0 = inactive');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+            $table->integer('created_by')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('bom_details');

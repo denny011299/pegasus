@@ -6,22 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('production_photos', function (Blueprint $table) {
-            $table->integerIncrements('pp_id');
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_unicode_ci');
+
+            $table->increments('pp_id');
             $table->date('pp_date');
             $table->text('pp_photo');
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('production_photos');

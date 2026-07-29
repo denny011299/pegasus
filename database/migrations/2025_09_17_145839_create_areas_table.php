@@ -6,23 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('areas', function (Blueprint $table) {
-            $table->integerIncrements('area_id');
+            $table->charset('latin1');
+            $table->collation('latin1_swedish_ci');
+
+            $table->integer('area_id', true);
             $table->string('area_code', 100);
             $table->string('area_name', 255);
-            $table->tinyInteger('status')->default(1)->comment('1 = active, 0 = inactive');
-            $table->timestamps();
+            $table->boolean('status')->nullable()->default(1)->comment('1 = active, 0 = inactive');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('areas');
