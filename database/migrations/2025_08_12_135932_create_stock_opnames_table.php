@@ -6,25 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('stock_opnames', function (Blueprint $table) {
-            $table->integerIncrements('sto_id');
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_unicode_ci');
+
+            $table->increments('sto_id');
             $table->date('sto_date');
+            $table->string('sto_code', 6);
             $table->integer('staff_id');
             $table->integer('category_id');
             $table->longText('sto_notes')->nullable();
-            $table->tinyInteger('status')->default(1)->comment('1=active, 0=inactive');
-            $table->timestamps();
+            $table->boolean('status')->default(1)->comment('1=active, 0=inactive');
+            $table->integer('created_by')->nullable()->comment('staff_id');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+            $table->integer('acc_by')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('stock_opnames');
