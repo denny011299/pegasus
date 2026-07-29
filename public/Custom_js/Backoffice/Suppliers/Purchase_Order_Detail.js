@@ -1501,6 +1501,10 @@ $(document).on("click", "#btn-acc-po", function () {
                 ResetLoadingButton("#btn-tolak-po", "Tolak");
 
                 if (typeof e === "object") {
+                    if (e.status == -1) {
+                        notifikasi('error', 'Gagal Tolak', e.message || 'Stok bahan tidak mencukupi untuk dibatalkan.');
+                        return false;
+                    }
                     notifikasi('error', e.header, e.message);
                     return false;
                 }

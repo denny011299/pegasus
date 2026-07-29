@@ -2412,7 +2412,7 @@
             success:function(e){
                 ResetLoadingButton('#btn-delete-gudang', "Delete");
                 $('.modal').modal("hide");
-                refreshCashAdmin();
+                refreshCashGudang();
                 notifikasi('success', "Berhasil Delete", "Berhasil delete pengajuan");
             },
             error:function(e){
