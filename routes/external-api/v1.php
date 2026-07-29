@@ -30,8 +30,14 @@ use Illuminate\Support\Facades\Route;
  * mengeluarkan penyaringan, pencarian, serta paginasi dari lingkupnya.
  */
 Route::prefix('master')->name('master.')->group(function () {
+    // API-001
     Route::get('/units', [MasterDataController::class, 'units'])->name('units');
     Route::get('/cash_categories', [MasterDataController::class, 'cashCategories'])->name('cashCategories');
+
+    // API-002
+    Route::get('/warehouses', [MasterDataController::class, 'warehouses'])->name('warehouses');
+    Route::get('/warehouse_types', [MasterDataController::class, 'warehouseTypes'])->name('warehouseTypes');
+    Route::get('/sales', [MasterDataController::class, 'sales'])->name('sales');
 });
 
 /*

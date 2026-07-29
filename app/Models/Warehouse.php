@@ -148,6 +148,29 @@ class Warehouse extends Model
             ->get(['id', 'warehouse_name']);
     }
 
+    /**
+     * Daftar gudang untuk External API.
+     *
+     * Memakai ulang scopeActive() dan relasi type() yang sudah ada, jadi tipe
+     * gudang diambil lewat satu kueri eager-load — bukan satu kueri per baris.
+     *
+     * Berbeda dengan getWarehouse() milik halaman admin yang menampilkan
+     * status 1 dan 2 (Aktif + Non-Aktif), di sini hanya gudang Aktif yang
+     * keluar: data master untuk pihak ketiga tidak sepatutnya memuat gudang
+     * yang sedang dinonaktifkan.
+     *
+     * id ikut diurutkan terakhir supaya urutan keluaran tetap sama di setiap
+     * permintaan meski ada created_at yang kembar.
+     */
+    public function getWarehouseForExternalApi()
+    {
+        return self::active()
+            ->with('type:id,warehouse_type_name')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get(['id', 'warehouse_name', 'warehouse_type_id', 'warehouse_address']);
+    }
+
     public function getWarehouse(array $data = [])
     {
         $data = array_merge([

@@ -5,7 +5,10 @@ namespace App\Http\Controllers\ExternalApi\V1;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\CashCategory;
+use App\Models\Staff;
 use App\Models\Unit;
+use App\Models\Warehouse;
+use App\Models\WarehouseType;
 
 /**
  * Data master untuk sistem eksternal (API-001).
@@ -64,6 +67,77 @@ class MasterDataController extends Controller
                 'cc_type' => (string) $category->cc_type,
             ])->all(),
             ['total' => $categories->count()],
+        );
+    }
+
+    /**
+     * GET /api/external/v1/master/warehouses
+     *
+     * Mengikuti kontrak API-002 (nama, tipe_nama, tipe_id, alamat) ditambah id
+     * gudang. Kontrak aslinya tidak menyebut id, padahal tanpa itu pemanggil
+     * hanya bisa membaca daftarnya dan tidak punya pegangan untuk merujuk satu
+     * gudang tertentu — nama pun bisa berubah sewaktu-waktu. Penambahan ini
+     * disetujui pemilik produk.
+     */
+    public function warehouses()
+    {
+        $warehouses = (new Warehouse())->getWarehouseForExternalApi();
+
+        return ApiResponse::success(
+            $warehouses->map(static fn ($warehouse) => [
+                'id' => (int) $warehouse->id,
+                'nama' => (string) $warehouse->warehouse_name,
+                'tipe_nama' => (string) ($warehouse->type->warehouse_type_name ?? ''),
+                'tipe_id' => (int) $warehouse->warehouse_type_id,
+                'alamat' => $warehouse->warehouse_address,
+            ])->all(),
+            ['total' => $warehouses->count()],
+        );
+    }
+
+    /**
+     * GET /api/external/v1/master/warehouse_types
+     *
+     * Kontrak API-002 menyebut hanya dua field: nama dan status. status tetap
+     * disertakan walau nilainya selalu 1, karena kontraknya memintanya.
+     */
+    public function warehouseTypes()
+    {
+        $types = (new WarehouseType())->getWarehouseTypeForExternalApi();
+
+        return ApiResponse::success(
+            $types->map(static fn ($type) => [
+                'nama' => (string) $type->warehouse_type_name,
+                'status' => (int) $type->status,
+            ])->all(),
+            ['total' => $types->count()],
+        );
+    }
+
+    /**
+     * GET /api/external/v1/master/sales
+     *
+     * Sales adalah staf yang perannya mengandung kata "sales". Spesifikasi
+     * API-002 tidak menetapkan bentuk keluaran untuk endpoint ini, jadi
+     * bentuknya diturunkan dari kolom yang ada — dan staff_id memakai nama
+     * yang sama dengan yang diminta endpoint pembayaran kas (API-005), supaya
+     * hasil endpoint ini bisa langsung dipakai di sana.
+     */
+    public function sales()
+    {
+        $sales = (new Staff())->getSalesForExternalApi();
+
+        return ApiResponse::success(
+            $sales->map(static fn ($staff) => [
+                'staff_id' => (int) $staff->staff_id,
+                'nama' => (string) $staff->staff_name,
+                'kode' => $staff->staff_code,
+                'email' => $staff->staff_email,
+                'telepon' => $staff->staff_phone,
+                'alamat' => $staff->staff_address,
+                'role' => (string) $staff->role_name,
+            ])->all(),
+            ['total' => $sales->count()],
         );
     }
 }

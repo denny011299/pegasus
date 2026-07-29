@@ -14,6 +14,46 @@ class Staff extends Model
     public $timestamps = true;
     public $incrementing = true;
 
+    /**
+     * Daftar sales untuk External API.
+     *
+     * Sales bukan tabel tersendiri, melainkan staf yang perannya bernama
+     * "sales" — karena itu penyaringan dilakukan atas NAMA peran, bukan atas
+     * role_id yang ditulis mati di kode.
+     *
+     * getStaff() sebenarnya punya penyaring role_name, tetapi tidak dipakai di
+     * sini karena dua hal:
+     *
+     * 1. Penyaring itu memanggil Role::...->first(), jadi hanya SATU peran yang
+     *    cocok yang terpakai. Selama peran yang mengandung kata "sales" hanya
+     *    satu, hasilnya kebetulan benar; begitu ada peran kedua (misalnya
+     *    "Supervisor Sales"), stafnya akan hilang diam-diam dari hasil. JOIN di
+     *    bawah memperlakukan SEMUA peran yang cocok.
+     * 2. getStaff() ikut menempelkan role_access — yaitu JSON perizinan — ke
+     *    setiap baris. Itu data internal yang tidak boleh mendekati respons API.
+     *
+     * Satu kueri JOIN, tanpa N+1, dan hanya kolom yang aman yang diambil:
+     * kata sandi, nama pengguna, dan saldo staf tidak pernah ikut terbaca.
+     */
+    function getSalesForExternalApi(string $roleNameLike = 'sales')
+    {
+        return self::query()
+            ->join('roles', 'roles.role_id', '=', 'staffs.role_id')
+            ->where('roles.role_name', 'like', '%'.$roleNameLike.'%')
+            ->where('staffs.status', '=', 1)
+            ->orderBy('staffs.created_at', 'asc')
+            ->orderBy('staffs.staff_id', 'asc')
+            ->get([
+                'staffs.staff_id',
+                'staffs.staff_name',
+                'staffs.staff_code',
+                'staffs.staff_email',
+                'staffs.staff_phone',
+                'staffs.staff_address',
+                'roles.role_name',
+            ]);
+    }
+
     function getStaff($data = [])
     {
         $data = array_merge([

@@ -142,6 +142,11 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterUnitListDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterCashCategoryListDoc::class,
 
+        // API-002 — Data Master (batch 2)
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseTypeListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesListDoc::class,
+
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentShowDoc::class,

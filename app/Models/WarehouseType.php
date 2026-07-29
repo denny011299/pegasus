@@ -41,6 +41,24 @@ class WarehouseType extends Model
         return $this->hasMany(Warehouse::class, 'warehouse_type_id');
     }
 
+    /**
+     * Daftar tipe gudang untuk External API.
+     *
+     * Aturan bisnisnya sama dengan getWarehouseType(): hanya tipe aktif
+     * (scopeActive). Bedanya, data pembuat (creator) tidak ikut diambil —
+     * nama staf internal tidak boleh keluar ke pihak ketiga.
+     *
+     * Kolom status tetap ikut karena kontrak API memintanya secara eksplisit,
+     * walaupun nilainya akan selalu 1 selama hanya baris aktif yang keluar.
+     */
+    public function getWarehouseTypeForExternalApi()
+    {
+        return self::active()
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get(['id', 'warehouse_type_name', 'status']);
+    }
+
     public function getWarehouseType(array $data = [])
     {
         $data = array_merge([
