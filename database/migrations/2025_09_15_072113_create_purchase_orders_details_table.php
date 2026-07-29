@@ -6,29 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('purchase_orders_details', function (Blueprint $table) {
-            $table->integerIncrements('pod_id');
+            $table->charset('latin1');
+            $table->collation('latin1_swedish_ci');
+
+            $table->integer('pod_id', true);
             $table->integer('po_id');
             $table->integer('supplies_variant_id');
-            $table->string('pod_nama');
-            $table->string('pod_variant')->nullable();
+            $table->string('pod_nama', 255);
+            $table->string('pod_variant', 255)->nullable();
+            $table->integer('unit_id');
             $table->string('pod_sku', 100)->nullable();
             $table->integer('pod_harga');
             $table->integer('pod_qty');
             $table->integer('pod_subtotal');
             $table->tinyInteger('status')->default(1)->comment('1 = active, 0 = inactive');
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('purchase_orders_details');

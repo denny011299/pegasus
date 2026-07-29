@@ -1,0 +1,123 @@
+[
+    {
+        "rs_id": 1,
+        "po_id": 89,
+        "pi_id": 6,
+        "rs_date": "2026-03-02",
+        "rs_notes": "POTONG TAGIHAN",
+        "rs_total": 69750,
+        "status": 1,
+        "created_at": "2026-03-02 15:59:38",
+        "updated_at": "2026-03-02 15:59:38"
+    },
+    {
+        "rs_id": 2,
+        "po_id": 92,
+        "pi_id": 7,
+        "rs_date": "2026-02-23",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 17500,
+        "status": 1,
+        "created_at": "2026-03-02 16:30:51",
+        "updated_at": "2026-03-02 16:30:51"
+    },
+    {
+        "rs_id": 3,
+        "po_id": 93,
+        "pi_id": 8,
+        "rs_date": "2026-02-24",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 20000,
+        "status": 1,
+        "created_at": "2026-03-02 16:34:26",
+        "updated_at": "2026-03-02 16:34:26"
+    },
+    {
+        "rs_id": 4,
+        "po_id": 94,
+        "pi_id": 9,
+        "rs_date": "2026-02-25",
+        "rs_notes": "Retur bocor",
+        "rs_total": 277750,
+        "status": 0,
+        "created_at": "2026-03-03 10:09:27",
+        "updated_at": "2026-03-03 10:09:49"
+    },
+    {
+        "rs_id": 5,
+        "po_id": 94,
+        "pi_id": 10,
+        "rs_date": "2026-02-25",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 279750,
+        "status": 1,
+        "created_at": "2026-03-03 10:15:53",
+        "updated_at": "2026-03-03 10:15:53"
+    },
+    {
+        "rs_id": 6,
+        "po_id": 117,
+        "pi_id": 11,
+        "rs_date": "2026-03-06",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 106000,
+        "status": 0,
+        "created_at": "2026-03-06 13:54:43",
+        "updated_at": "2026-03-06 13:55:54"
+    },
+    {
+        "rs_id": 7,
+        "po_id": 117,
+        "pi_id": 12,
+        "rs_date": "2026-03-03",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 69000,
+        "status": 1,
+        "created_at": "2026-03-06 13:56:26",
+        "updated_at": "2026-03-06 13:56:26"
+    },
+    {
+        "rs_id": 8,
+        "po_id": 119,
+        "pi_id": 13,
+        "rs_date": "2026-03-04",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 20000,
+        "status": 1,
+        "created_at": "2026-03-06 14:02:09",
+        "updated_at": "2026-03-06 14:02:09"
+    },
+    {
+        "rs_id": 9,
+        "po_id": 138,
+        "pi_id": 14,
+        "rs_date": "2026-03-10",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 98500,
+        "status": 1,
+        "created_at": "2026-03-12 13:19:30",
+        "updated_at": "2026-03-12 13:19:30"
+    },
+    {
+        "rs_id": 10,
+        "po_id": 143,
+        "pi_id": 15,
+        "rs_date": "2026-03-13",
+        "rs_notes": "RETUR BOCOR",
+        "rs_total": 187500,
+        "status": 1,
+        "created_at": "2026-03-13 15:51:43",
+        "updated_at": "2026-03-13 15:51:43"
+    },
+    {
+        "rs_id": 11,
+        "po_id": 248,
+        "pi_id": 22,
+        "rs_date": "2026-04-22",
+        "rs_notes": "Karena jtg5tr bocor",
+        "rs_total": 14000,
+        "status": 1,
+        "created_at": "2026-04-23 13:54:43",
+        "updated_at": "2026-04-23 13:54:43"
+    }
+]
