@@ -8,17 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('return_supplies', function (Blueprint $table) {
+        Schema::create('purchase_delivery_orders', function (Blueprint $table) {
             $table->charset('latin1');
             $table->collation('latin1_swedish_ci');
 
-            $table->integer('rs_id', true);
+            $table->integer('pdo_id', true);
             $table->integer('po_id');
-            $table->integer('pi_id');
-            $table->date('rs_date');
-            $table->string('rs_notes', 255)->nullable();
-            $table->integer('rs_total');
-            $table->integer('status')->default(1);
+            $table->string('pdo_number', 10);
+            $table->string('pdo_receiver', 150);
+            $table->integer('staff_id')->nullable();
+            $table->date('pdo_date');
+            $table->string('pdo_phone', 50)->nullable();
+            $table->text('pdo_desc')->nullable();
+            $table->tinyInteger('status')->nullable()->default(1);
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->timestamp('updated_at')->nullable()->useCurrent()->useCurrentOnUpdate();
         });
@@ -26,6 +28,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('return_supplies');
+        Schema::dropIfExists('purchase_delivery_orders');
     }
 };

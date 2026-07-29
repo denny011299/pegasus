@@ -6,13 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('cash_gudangs', function (Blueprint $table) {
-            $table->integerIncrements('cg_id');
+            $table->charset('latin1');
+            $table->collation('latin1_swedish_ci');
+
+            $table->integer('cg_id', true);
             $table->integer('staff_id');
             $table->integer('cash_id');
             $table->date('cg_date');
@@ -20,15 +20,15 @@ return new class extends Migration
             $table->string('cg_notes', 255);
             $table->integer('cg_type')->comment('1 = saldo, 2 = operasional');
             $table->integer('cg_aksi')->comment('1 = Pengajuan, 2 = Pengembalian');
-            $table->text('ca_img')->nullable();
+            $table->text('cg_img')->nullable();
             $table->integer('status')->default(1);
-            $table->timestamps();
+            $table->integer('created_by')->nullable()->comment('staff_id');
+            $table->integer('acc_by')->nullable()->comment('staff_id');
+            $table->timestamp('created_at')->nullable()->useCurrent();
+            $table->timestamp('updated_at')->nullable()->useCurrent()->useCurrentOnUpdate();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('cash_gudangs');

@@ -8,18 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('districts', function (Blueprint $table) {
+        Schema::create('cities', function (Blueprint $table) {
             $table->charset('utf8mb4');
             $table->collation('utf8mb4_0900_ai_ci');
 
-            $table->integer('id', true);
-            $table->integer('city_id');
-            $table->string('name', 255);
+            $table->integer('city_id')->default(0);
+            $table->string('city_name', 255);
+            $table->integer('prov_id');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('districts');
+        Schema::dropIfExists('cities');
     }
 };

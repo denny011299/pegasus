@@ -6,22 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('banks', function (Blueprint $table) {
-            $table->integerIncrements('bank_id');
-            $table->integer('bank_kode');
+            $table->charset('latin1');
+            $table->collation('latin1_swedish_ci');
+
+            $table->increments('bank_id');
+            $table->string('bank_kode', 200);
             $table->tinyInteger('status')->default(1);
-            $table->timestamps();
+            $table->integer('created_by')->nullable()->comment('staff_id');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('banks');

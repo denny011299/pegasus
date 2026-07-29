@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+<<<<<<< Updated upstream
     /**
      * Riwayat eksekusi langkah sinkronisasi.
      *
@@ -17,6 +18,15 @@ return new class extends Migration
     {
         Schema::create('sync_executions', function (Blueprint $table) {
             $table->bigIncrements('sync_execution_id');
+=======
+    public function up(): void
+    {
+        Schema::create('sync_executions', function (Blueprint $table) {
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_unicode_ci');
+
+            $table->id('sync_execution_id');
+>>>>>>> Stashed changes
             $table->string('flow_key', 100);
             $table->string('step_key', 100);
             $table->string('status', 20)->comment('not_executed, running, success, failed');
@@ -31,8 +41,15 @@ return new class extends Migration
             $table->text('message')->nullable();
             $table->json('details')->nullable()->comment('Informasi tambahan dari respons PMO');
             $table->json('errors')->nullable();
+<<<<<<< Updated upstream
             $table->integer('executed_by')->nullable();
             $table->timestamps();
+=======
+            $table->json('notices')->nullable();
+            $table->integer('executed_by')->nullable();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+>>>>>>> Stashed changes
 
             $table->index(['flow_key', 'step_key', 'sync_execution_id'], 'sync_executions_flow_step_idx');
         });

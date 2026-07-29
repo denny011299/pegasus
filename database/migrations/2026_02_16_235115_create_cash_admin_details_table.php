@@ -6,24 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('cash_admin_details', function (Blueprint $table) {
-            $table->integerIncrements('cad_id');
+            $table->charset('latin1');
+            $table->collation('latin1_swedish_ci');
+
+            $table->integer('cad_id', true);
             $table->integer('ca_id');
             $table->string('cad_notes', 255);
             $table->integer('cad_nominal');
             $table->integer('status')->default(1);
-            $table->timestamps();
+            $table->timestamp('created_at')->nullable()->useCurrent();
+            $table->timestamp('updated_at')->nullable()->useCurrent()->useCurrentOnUpdate();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('cash_admin_details');

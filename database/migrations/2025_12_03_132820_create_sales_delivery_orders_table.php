@@ -8,16 +8,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('cash_armada_details', function (Blueprint $table) {
+        Schema::create('sales_delivery_orders', function (Blueprint $table) {
             $table->charset('latin1');
             $table->collation('latin1_swedish_ci');
 
-            $table->integer('crd_id', true);
-            $table->integer('cr_id');
-            $table->string('crd_notes', 255)->nullable();
-            $table->integer('crd_nominal');
-            $table->integer('crd_type')->comment('1 = Debit, 2 = Keluar, 3 = Keluar 1');
-            $table->integer('status')->default(1);
+            $table->integer('sdo_id', true);
+            $table->integer('so_id');
+            $table->string('sdo_number', 10);
+            $table->string('sdo_receiver', 150);
+            $table->date('sdo_date');
+            $table->string('sdo_phone', 50);
+            $table->text('sdo_desc')->nullable();
+            $table->tinyInteger('status')->nullable()->default(1);
             $table->timestamp('created_at')->nullable()->useCurrent();
             $table->timestamp('updated_at')->nullable()->useCurrent()->useCurrentOnUpdate();
         });
@@ -25,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('cash_armada_details');
+        Schema::dropIfExists('sales_delivery_orders');
     }
 };

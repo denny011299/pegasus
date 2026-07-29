@@ -6,28 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('cashes', function (Blueprint $table) {
-            $table->integerIncrements('cash_id');
+            $table->charset('utf8mb4');
+            $table->collation('utf8mb4_0900_ai_ci');
+
+            $table->integer('cash_id', true);
+            $table->integer('person_id')->default(0)->comment('Customer / Staff ID');
             $table->date('cash_date');
-            $table->tinyInteger('person_id')->comment('Customer / Staff ID');
-            $table->tinyInteger('cash_type')->comment('1 = Masuk, 2 = Keluar, 3 = Keluar 1');
-            $table->tinyInteger('cash_tujuan')->comment('1 = Admin, 2 = Gudang, 3 = Armada, 4 = Sales');
+            $table->tinyInteger('cash_type')->comment('1 = debit, 2 = credit 1, 3 = credit 2');
+            $table->integer('cash_tujuan')->default(0)->comment('1 = Admin, 2 = Gudang, 3 = Armada, 4 = Sales');
             $table->string('cash_description', 255);
             $table->integer('cash_nominal');
-            $table->integer('cash_balance');
             $table->tinyInteger('status')->default(1)->comment('1 = active, 0 = inactive');
-            $table->timestamps();
+            $table->integer('created_by')->nullable()->comment('staff_id');
+            $table->integer('acc_by')->nullable()->comment('staff_id');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('cashes');
