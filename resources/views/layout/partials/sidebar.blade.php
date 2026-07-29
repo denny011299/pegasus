@@ -1095,6 +1095,51 @@
                     @endif
 
                     @php
+                        $showIntegrasi =
+                        $canShow('Sinkronisasi') ||
+                        $canShow('Aplikasi Eksternal') ||
+                        $canShow('Dokumentasi API Eksternal') ||
+                        $canShow('Log API Eksternal');
+                    @endphp
+
+                    @if ($showIntegrasi)
+                        <li class="menu-title"><span>Integrasi</span></li>
+                        @if ($canShow('Sinkronisasi'))
+                            <li>
+                                <a class="{{ Request::is('synchronization*') ? 'active' : '' }}" href="/synchronization">
+                                    <i class="fe fe-refresh-cw"></i> <span>Pusat Sinkronisasi</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        @if ($canShow('Aplikasi Eksternal'))
+                            <li>
+                                <a class="{{ Request::is('externalApplication*') ? 'active' : '' }}"
+                                    href="/externalApplication">
+                                    <i class="fe fe-box"></i> <span>Aplikasi Eksternal</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        @if ($canShow('Dokumentasi API Eksternal'))
+                            <li>
+                                <a class="{{ Request::is('externalApiDocumentation*') ? 'active' : '' }}"
+                                    href="/externalApiDocumentation">
+                                    <i class="fe fe-book-open"></i> <span>Dokumentasi API Eksternal</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        @if ($canShow('Log API Eksternal'))
+                            <li>
+                                <a class="{{ Request::is('externalApiLog*') ? 'active' : '' }}" href="/externalApiLog">
+                                    <i class="fe fe-activity"></i> <span>Log API Eksternal</span>
+                                </a>
+                            </li>
+                        @endif
+                    @endif
+
+                    @php
                         $showSetting =
                         $canShow('Profil') ||
                         $canShow('Pengaturan');
