@@ -81,6 +81,15 @@ class SalesOrder extends Model
                 ->groupBy('so_id');
         }
 
+        $hasRetailWh = Schema::hasColumn($this->getTable(), 'retail_warehouse_id');
+        $retailWhNames = collect();
+        if ($hasRetailWh) {
+            $whIds = $result->pluck('retail_warehouse_id')->filter()->unique()->values()->all();
+            if ($whIds !== []) {
+                $retailWhNames = Warehouse::whereIn('id', $whIds)->pluck('warehouse_name', 'id');
+            }
+        }
+
         foreach ($result as $value) {
             $value->customer_name = $customers->get($value->so_customer)?->customer_notes ?? '-';
             $value->items = $data['with_items']
@@ -95,9 +104,158 @@ class SalesOrder extends Model
             $value->acc_by_name = $hasAccBy && ($value->acc_by ?? null)
                 ? ($staffNames->get((int) $value->acc_by) ?? '-')
                 : '-';
+            if ($hasRetailWh) {
+                $rid = (int) ($value->retail_warehouse_id ?? 0);
+                $value->retail_warehouse_name = $rid > 0
+                    ? ($retailWhNames->get($rid) ?? '-')
+                    : null;
+            }
         }
 
         return $result;
+    }
+
+    /**
+     * Server-side DataTables untuk list Pengiriman.
+     */
+    function getSalesOrderDataTable(array $data = [])
+    {
+        $draw = (int) ($data['draw'] ?? 1);
+        $start = max(0, (int) ($data['start'] ?? 0));
+        $length = (int) ($data['length'] ?? 10);
+        if ($length < 1) {
+            $length = 10;
+        }
+        if ($length > 100) {
+            $length = 100;
+        }
+
+        $search = trim((string) data_get($data, 'search.value', ''));
+        $orderColIdx = (int) data_get($data, 'order.0.column', 4);
+        $orderDir = strtolower((string) data_get($data, 'order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
+
+        $hasCreatedBy = Schema::hasColumn($this->getTable(), 'created_by');
+        $hasAccBy = Schema::hasColumn($this->getTable(), 'acc_by');
+        $hasRetailWh = Schema::hasColumn($this->getTable(), 'retail_warehouse_id');
+
+        $columns = [
+            0 => 'c.customer_notes',
+            1 => 'sales_orders.so_date',
+            2 => 'sales_orders.so_invoice_no',
+            3 => 'sales_orders.so_ref_number',
+            4 => 'sales_orders.status',
+            5 => $hasCreatedBy ? 'creator.staff_name' : 'sales_orders.so_id',
+            6 => $hasAccBy ? 'approver.staff_name' : 'sales_orders.so_id',
+            7 => 'sales_orders.so_id',
+        ];
+        $orderCol = $columns[$orderColIdx] ?? 'sales_orders.status';
+
+        $base = SalesOrder::query()
+            ->from('sales_orders')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'sales_orders.so_customer')
+            ->where('sales_orders.status', '>=', 1);
+
+        if ($hasCreatedBy) {
+            $base->leftJoin('staffs as creator', 'creator.staff_id', '=', 'sales_orders.created_by');
+        }
+        if ($hasAccBy) {
+            $base->leftJoin('staffs as approver', 'approver.staff_id', '=', 'sales_orders.acc_by');
+        }
+
+        $recordsTotal = SalesOrder::query()
+            ->where('status', '>=', 1)
+            ->count('so_id');
+
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $base->where(function ($q) use ($like, $hasCreatedBy, $hasAccBy) {
+                $q->where('c.customer_notes', 'like', $like)
+                    ->orWhere('sales_orders.so_invoice_no', 'like', $like)
+                    ->orWhere('sales_orders.so_ref_number', 'like', $like)
+                    ->orWhere('sales_orders.so_number', 'like', $like);
+                if ($hasCreatedBy) {
+                    $q->orWhere('creator.staff_name', 'like', $like);
+                }
+                if ($hasAccBy) {
+                    $q->orWhere('approver.staff_name', 'like', $like);
+                }
+            });
+            $recordsFiltered = (clone $base)->distinct()->count('sales_orders.so_id');
+        } else {
+            $recordsFiltered = $recordsTotal;
+        }
+
+        $select = [
+            'sales_orders.so_id',
+            'sales_orders.so_number',
+            'sales_orders.so_customer',
+            'sales_orders.so_date',
+            'sales_orders.so_invoice_no',
+            'sales_orders.so_ref_number',
+            'sales_orders.so_cashier',
+            'sales_orders.status',
+            'sales_orders.created_at',
+            'c.customer_notes as customer_name',
+        ];
+        if ($hasCreatedBy) {
+            $select[] = 'sales_orders.created_by';
+            $select[] = 'creator.staff_name as created_by_name';
+        }
+        if ($hasAccBy) {
+            $select[] = 'sales_orders.acc_by';
+            $select[] = 'approver.staff_name as acc_by_name';
+        }
+        if ($hasRetailWh) {
+            $select[] = 'sales_orders.retail_warehouse_id';
+        }
+
+        $rows = (clone $base)
+            ->select($select)
+            ->orderBy($orderCol, $orderDir)
+            ->orderBy('sales_orders.created_at', 'desc')
+            ->orderBy('sales_orders.so_id', 'desc')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $retailWhNames = collect();
+        if ($hasRetailWh) {
+            $whIds = $rows->pluck('retail_warehouse_id')->filter()->unique()->values()->all();
+            if ($whIds !== []) {
+                $retailWhNames = Warehouse::whereIn('id', $whIds)->pluck('warehouse_name', 'id');
+            }
+        }
+
+        $dataOut = [];
+        foreach ($rows as $row) {
+            $item = [
+                'so_id' => (int) $row->so_id,
+                'so_number' => $row->so_number,
+                'so_customer' => $row->so_customer,
+                'customer_name' => $row->customer_name ?: '-',
+                'so_date' => $row->so_date,
+                'so_invoice_no' => $row->so_invoice_no,
+                'so_ref_number' => $row->so_ref_number,
+                'status' => (int) $row->status,
+                'created_by_name' => $hasCreatedBy ? ($row->created_by_name ?: '-') : '-',
+                'acc_by_name' => $hasAccBy ? ($row->acc_by_name ?: '-') : '-',
+            ];
+            if ($hasRetailWh) {
+                $rid = (int) ($row->retail_warehouse_id ?? 0);
+                $item['retail_warehouse_id'] = $rid > 0 ? $rid : null;
+                $item['retail_warehouse_name'] = $rid > 0
+                    ? ($retailWhNames->get($rid) ?? '-')
+                    : null;
+            }
+            $dataOut[] = $item;
+        }
+
+        return [
+            'draw' => $draw,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $dataOut,
+        ];
     }
 
     function insertSalesOrder($data){
@@ -126,6 +284,10 @@ class SalesOrder extends Model
         $t->so_ref_number = trim((string) ($data["so_ref_number"] ?? '')) ?: null;
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = null;
+        if (Schema::hasColumn($t->getTable(), 'retail_warehouse_id')) {
+            $wid = (int) ($data['retail_warehouse_id'] ?? 0);
+            $t->retail_warehouse_id = $wid > 0 ? $wid : null;
+        }
         if (Schema::hasColumn($t->getTable(), 'created_by')) {
             $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         }
@@ -180,6 +342,10 @@ class SalesOrder extends Model
         $t->so_ref_number = trim((string) ($data["so_ref_number"] ?? '')) ?: null;
         // $t->so_payment  = $data["so_payment"];
         $t->so_cashier  = null;
+        if (Schema::hasColumn($t->getTable(), 'retail_warehouse_id') && array_key_exists('retail_warehouse_id', $data)) {
+            $wid = (int) ($data['retail_warehouse_id'] ?? 0);
+            $t->retail_warehouse_id = $wid > 0 ? $wid : null;
+        }
         // Jika sebelumnya ditolak, update ini dianggap input ulang dan kembali ke antrean ACC.
         if ((int) ($t->status ?? 0) === 3) {
             $t->status = 1;

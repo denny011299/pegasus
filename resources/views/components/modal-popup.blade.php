@@ -17,43 +17,79 @@
 @endphp
 <div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-body p-0">
-            <div class="container-fluid">
-                 <canvas id="canvas"  style="display:none;"></canvas>
+      <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+        <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 16px 24px;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fe fe-camera text-white" style="font-size:16px;"></i>
+                </div>
+                <h5 class="mb-0 text-white fw-bold modal-title" style="font-size: 16px; letter-spacing: 0.3px;">Ambil Foto Bukti</h5>
             </div>
-         
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btn-close-camera"></button>
         </div>
-        <div class="modal-footer ps-0 pe-0 d-flex flex-column align-items-center">
+        <div class="modal-body p-4" style="background:#f8fafc;">
+            <div class="container-fluid p-0">
+                 <canvas id="canvas" style="display:none;"></canvas>
+                 <div id="camera" class="w-100 text-center" style="background: #000; border-radius: 12px; overflow: hidden; position: relative; min-height: 240px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
+                     <video id="video" autoplay playsinline style="width: 100%; max-height: 60vh; object-fit: cover;"></video>
+                 </div>
+                 <div id="preview-box" class="w-100 text-center" style="display:none; background: #000; border-radius: 12px; overflow: hidden; position: relative; min-height: 240px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
+                     <img id="previewImage" alt="Preview foto" style="width: 100%; max-height: 60vh; object-fit: cover;">
+                 </div>
+            </div>
+        </div>
+        <div class="modal-footer px-4 py-3 border-top-0 d-flex justify-content-between" style="background:#fff;">
+            <button type="button" class="btn btn-outline-secondary" id="btn-kembali-camera" style="border-radius:8px; font-weight:600; font-size:13px;"><i class="fe fe-x me-1"></i> Batal</button>
             
-            <div id="camera" class="w-100 text-center">
-                <video id="video" autoplay playsinline></video>
-                <button type="button" id="rotateCameraBtn" class="btn btn-secondary">Rotate</button>
-                <button type="button" id="captureBtn" class="btn btn-primary">Capture</button>
+            <div class="d-flex gap-2" id="camera-actions">
+                <button type="button" id="rotateCameraBtn" class="btn btn-light" style="border-radius:8px; font-weight:600; font-size:13px; color: #475569; border: 1px solid #e2e8f0;"><i class="fe fe-refresh-cw me-1"></i> Putar</button>
+                <button type="button" id="captureBtn" class="btn btn-primary" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-aperture me-1"></i> Ambil Foto</button>
             </div>
-            <div id="preview-box" class="w-100 text-center" style="display:none;">
-                <img id="previewImage" alt="Preview foto">
-                <button type="button" class="btn btn-secondary" id="retakeBtn">Retake</button>
-                <button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
+
+            <div class="d-flex gap-2" id="preview-actions" style="display: none !important;">
+                <button type="button" class="btn btn-light" id="retakeBtn" style="border-radius:8px; font-weight:600; font-size:13px; color: #475569; border: 1px solid #e2e8f0;"><i class="fe fe-refresh-ccw me-1"></i> Ulangi</button>
+                <button type="button" class="btn btn-success" id="uploadBtn" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(34,197,94,.3);"><i class="fe fe-check me-1"></i> Gunakan Foto</button>
             </div>
-            <button type="button" class="btn btn-outline-secondary mt-2" id="btn-kembali-camera">Kembali</button>
         </div>
       </div>
     </div>
   </div>
 <div class="modal fade" id="modalViewPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-body">
-            <div class="container-fluid">
-                <img src="" alt="" id="fotoProduksiImage" style="width:100%">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15); overflow: hidden;">
+        <div class="modal-header border-0 d-flex align-items-center justify-content-between" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 16px 24px;">
+            <div class="d-flex align-items-center gap-3">
+                <div style="width:36px;height:36px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fe fe-image text-white" style="font-size:16px;"></i>
+                </div>
+                <h5 class="modal-title text-white m-0" style="font-size:16px;font-weight:600;letter-spacing:0.3px;">Lihat Foto</h5>
+            </div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" id="btn-close-photo-header" style="opacity:0.8; box-shadow: none;"></button>
+        </div>
+        <div class="modal-body p-0" style="background: #f8fafc;">
+            <div class="d-flex align-items-center justify-content-center p-3" style="min-height: 300px; max-height: 70vh; overflow: hidden;">
+                <img src="" alt="Preview Foto" id="fotoProduksiImage" style="max-width:100%; max-height: 65vh; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             </div>
         </div>
-        <div class="modal-footer ">
-            <a class="btn btn-success me-3" download id="btn_download_photo">Download</a>
-            <button type="button" class="btn btn-primary me-3 btn-prev">Prev</button>
-            <button type="button" class="btn btn-primary me-3 btn-next">Next</button>
-            <button type="button" class="btn btn-outline-secondary" id="btn-kembali-photo">Kembali</button>
+        <div class="modal-footer" style="border-top: 1px solid #f1f5f9; padding: 1rem 1.5rem; background: #fff;">
+            <div class="w-100 d-flex justify-content-between align-items-center">
+                <div>
+                    <a class="btn p-0" download id="btn_download_photo" style="background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; border-radius: 8px; font-weight: 500; height: 38px; width: 120px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-download me-1"></i> Download</div>
+                    </a>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn p-0" id="btn-kembali-photo" style="background:#f8fafc; border:1px solid #e2e8f0; color:#475569; border-radius: 8px; font-weight: 500; height: 38px; width: 80px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100">Tutup</div>
+                    </button>
+                    <button type="button" class="btn btn-prev p-0" style="background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; border-radius: 8px; font-weight: 500; height: 38px; width: 80px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-chevron-left me-1"></i> Prev</div>
+                    </button>
+                    <button type="button" class="btn btn-next p-0" style="background:#eff6ff; border:1px solid #bfdbfe; color:#2563eb; border-radius: 8px; font-weight: 500; height: 38px; width: 80px;">
+                        <div class="d-flex align-items-center justify-content-center w-100 h-100">Next <i class="fe fe-chevron-right ms-1"></i></div>
+                    </button>
+                </div>
+            </div>
         </div>
       </div>
     </div>
@@ -363,6 +399,7 @@
         </div>
     </div>
 @endif
+
 
 @if (Route::is(['productIssue']))
     <!-- Add coupons -->
@@ -763,13 +800,18 @@
     <!-- modal -->
     <div class="modal modal-xl custom-modal fade" id="add_sales_order" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Pengiriman</h4>
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-truck text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengiriman</h5>
+                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Pilih armada, tanggal, dan produk yang akan dikirim</small>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="#">
                     <div class="modal-body">
@@ -778,46 +820,51 @@
                                 <div class="col-12 row pe-0">
                                     <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3">
-                                            <label>Tanggal<span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="so_date">
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Tanggal <span class="text-danger">*</span></label>
+                                            <input type="date" class="form-control fill" id="so_date" style="border-radius: 8px;">
                                         </div>
                                     </div>
                                     <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3 " id="row-Armada">
-                                            <label>Nama Armada<span class="text-danger">*</span></label>
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Nama Armada <span class="text-danger">*</span></label>
                                             <select id="so_customer" class="form-control fill"></select>
                                         </div>
                                     </div>
                                     <div class="col-lg-4 col-md-12 col-12 pe-0">
                                         <div class="input-block mb-3">
-                                            <label>Ref Number</label>
-                                            <input id="so_ref_number" class="form-control" placeholder="Input Ref Number">
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Ref Number</label>
+                                            <input id="so_ref_number" class="form-control" placeholder="Input Ref Number" style="border-radius: 8px;">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="col-12 row pe-0">
-                                    <div class="col-lg-4 col-md-12 col-12 pe-0">
-                                        <div class="input-block mb-3">
-                                            <label class="form-label d-flex">Bukti Foto<span class="text-danger">*</span>
-                                                <span id="check_foto" style="display: none" class="ms-2">
-                                                    <div class="d-flex g-3">
-                                                        <i class="fa fa-check-circle text-success mt-1"></i>
-                                                        <p class="text-muted ms-1"><span id="jumlahFoto">1</span> gambar terunggah</p>
-                                                    </div>
-                                                </span>
-                                            </label>
-                                            <button class="btn btn-outline-primary btn-sm" id="btn_bukti_foto" type="button">Foto Bukti</button>
-                                            <button type="button" class="btn btn-outline-primary" id="btn-lihat-bukti" style="display: none">Lihat Bukti</button>
-                                            <input type="hidden" name="" id="bukti">
+                                    <div class="col-lg-8 col-md-6 col-12 pe-0">
+                                        <div class="input-block mb-3" id="row-RetailWarehouse">
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Gudang Eceran <span class="text-danger">*</span></label>
+                                            <select id="retail_warehouse_id" class="form-control"></select>
+                                            <small class="text-muted d-block mt-1" style="font-size: 11px;">Dipakai bila item pakai satuan eceran produk</small>
                                         </div>
                                     </div>
-                                    {{-- 
-                                    <div class="col-lg-4 col-md-6 col-12">
+                                    <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3">
-                                            <label>Nama Sales</label>
-                                            <select id="sales_id" class="form-control"></select>
+                                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; display: block; margin-bottom: 8px;">Bukti Foto<span class="text-danger ms-1">*</span>
+                                                <span id="check_foto" style="display: none; align-items:center;" class="ms-2">
+                                                    <i class="fa fa-check-circle text-success mt-1"></i>
+                                                    <span class="text-muted ms-1 text-lowercase" style="font-size:11px; text-transform:none;"><span id="jumlahFoto">1</span> gambar terunggah</span>
+                                                </span>
+                                            </label>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-outline-primary w-100 p-0" id="btn_bukti_foto" type="button" style="border-radius: 8px; font-weight: 500; height: 42px;">
+                                                    <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-camera me-1"></i> Upload Foto</div>
+                                                </button>
+                                                <button type="button" class="btn btn-primary w-100 p-0" id="btn-lihat-bukti" style="display: none; border-radius: 8px; font-weight: 500; height: 42px;">
+                                                    <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-image me-1"></i> Lihat Bukti</div>
+                                                </button>
+                                            </div>
+                                            <input type="hidden" name="" id="bukti">
+                                            <small class="text-muted d-block mt-1" style="visibility: hidden; font-size: 11px;">Placeholder spacing</small>
                                         </div>
-                                    </div>--}}
+                                    </div>
                                 </div>
                                 <div class="col-12 row pe-0">
                                     {{-- <div class="col-lg-4 col-md-6 col-12">
@@ -856,34 +903,35 @@
                                         </div>
                                     </div> --}}
                                 </div>
-                                <div class="col-12 row pe-0">
+                                <div class="col-12 row pe-0 mb-4 align-items-end">
                                     <div class="col-lg-6 col-md-12 col-12 pe-0">
-                                        <div class="input-block mb-3">
-                                            <label class="d-flex align-items-center gap-2">
-                                                SKU
-                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" id="btn_toggle_scan_so" title="Ganti mode Scan">
-                                                    <i class="fa fa-barcode"></i> Scan
+                                        <div class="input-block mb-lg-0 mb-3">
+                                            <label class="form-label text-muted fw-semibold d-flex align-items-center gap-2" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">
+                                                Pilih Produk (SKU)
+                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 d-inline-flex align-items-center" id="btn_toggle_scan_so" title="Ganti mode Scan" style="border-radius: 4px; font-size: 10px; min-height: 20px;">
+                                                    <i class="fa fa-barcode me-1"></i> Mode Scan
                                                 </button>
                                             </label>
                                             <div id="so_mode_select">
                                                 <select class="form-select" id="so_sku"></select>
                                             </div>
                                             <div id="so_mode_scan" style="display:none">
-                                                <div class="input-group mb-3" style="max-width: 600px;"> <input type="text" 
+                                                <div class="input-group" style="border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"> 
+                                                    <input type="text" 
                                                         class="form-control" 
                                                         id="so_scan_barcode" 
                                                         placeholder="Scan / ketik barcode..." 
-                                                        style="flex: 0 0 50%;"> <input type="number" 
+                                                        style="flex: 1 1 auto; border-right: 0;"> 
+                                                    <input type="number" 
                                                         class="form-control" 
                                                         id="so_scan_qty" 
                                                         placeholder="Qty" 
                                                         value="1" 
                                                         min="1" 
-                                                        style="max-width:80px">
-                                                    
+                                                        style="max-width:90px; border-left: 1px solid #e2e8f0;">
                                                     <button type="button" 
-                                                            class="btn btn-primary" 
-                                                            id="btn_scan_add_so">
+                                                            class="btn btn-primary d-inline-flex align-items-center justify-content-center px-3" 
+                                                            id="btn_scan_add_so" title="Tambah Produk">
                                                         <i class="fa fa-plus"></i>
                                                     </button>
                                                 </div>
@@ -891,20 +939,25 @@
                                         </div>
                                     </div>
                                     <div class="col-lg-6 col-md-12 col-12 pe-0">
-                                        
+                                        <!-- JS will inject Qty, Satuan, and Tambah Produk here -->
                                     </div>
                                 </div>
-                                <div class="col-12 overflow-x-auto mb-3">
-                                    <table class="table table-center table-responsive">
-                                        <thead>
-                                            <th>Produk</th>
-                                            <th>Variasi</th>
-                                            <th>SKU</th>
-                                            <th class="text-center">Jumlah</th>
-                                            {{-- <th class="text-end">Harga Satuan</th>
-                                            <th class="text-end">Subtotal</th> --}}
-                                            <th class="text-center">Action</th>
-                                        </thead>
+                                <div class="col-12 mb-3">
+                                    <div class="d-flex align-items-center px-4 py-2 border-bottom" style="background:#f8fafc;">
+                                        <i class="fe fe-list text-primary me-2"></i>
+                                        <span class="fw-semibold text-dark" style="font-size:13px;">Daftar Produk</span>
+                                    </div>
+                                    <div class="table-responsive flex-grow-1" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-top: 0; border-radius: 0 0 8px 8px;">
+                                        <table class="table table-center table-hover mb-0" id="tableSalesItems" style="font-size:13px;">
+                                            <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #e2e8f0;">
+                                                <tr>
+                                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Produk</th>
+                                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Variasi</th>
+                                                    <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">SKU</th>
+                                                    <th class="text-center" style="width: 140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Jumlah</th>
+                                                    <th class="text-center" style="width: 100px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Action</th>
+                                                </tr>
+                                            </thead>
                                         <tbody id="tableSalesModal">
                                             
                                         </tbody>
@@ -938,15 +991,15 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2" style="border-radius:8px; font-size:13px; font-weight:600; color:#64748b;">Batal</button>
                         @if (in_array('others', $akses->firstWhere('name', 'Pengiriman')->akses))
-                            <button type="button" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
-                            <button type="button" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
+                            <button type="button" class="btn btn-danger me-2 btn_decline d-none align-items-center gap-2" style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
+                            <button type="button" class="btn btn-success me-2 btn_acc d-none align-items-center gap-2" style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-check"></i> Terima</button>
                         @endif
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Pengiriman</button>
+                        <button type="button" class="btn btn-primary paid-continue-btn btn-save d-inline-flex align-items-center gap-2 ms-auto" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                            <i class="fe fe-save"></i> <span id="btn_save_text">Tambah Pengiriman</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1882,8 +1935,8 @@
                                     <div class="input-block">
                                         <label class="fw-bold">Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input">
-                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Manajemen Saldo Kas</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2034,8 +2087,8 @@
                                     <div class="input-block">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_gudang">
-                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Manajemen Saldo Kas</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2192,8 +2245,8 @@
                                     <div class="input-block">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_armada">
-                                            <option value="saldo" selected>Pengembalian Dana Langsung</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Pengembalian Dana Langsung</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2335,8 +2388,8 @@
                                     <div class="input-block mb-3">
                                         <label>Jenis Aktivitas</label>
                                         <select class="form-select" id="jenis_input_sales">
-                                            <option value="saldo" selected>Manajemen Saldo Kas</option>
-                                            <option value="operasional">Aktivitas Operasional</option>
+                                            <option value="saldo">Manajemen Saldo Kas</option>
+                                            <option value="operasional" selected>Aktivitas Operasional</option>
                                         </select>
                                     </div>
                                 </div>
@@ -2814,66 +2867,62 @@
 @if (Route::is(['stockSupplies']))
     <!-- Add coupons -->
     <div class="modal fade" id="add_stock_supplies" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content p-3">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Riwayat Stok Bahan Mentah</h4>
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-clock text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Riwayat Stok Bahan Mentah</h5>
+                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Histori per gudang aktif</small>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-lg-3 col-md-6 col-sm-12">
-                                    <div class="input-block mb-3">
-                                        <label>Dari</label>
-                                        <div>
-                                            <input type="date" class="form-control" id="start_date">
-                                        </div>
+                    <div class="modal-body p-0 d-flex flex-column" style="flex: 1 1 auto; overflow: hidden; background:#f8fafc;">
+                        <div class="border-0 pb-0 mb-0 w-100">
+                            <div class="px-4 py-3 border-bottom" style="background-color: #fff;">
+                                <div class="d-flex align-items-end flex-wrap gap-3">
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Periode Dari</label>
+                                        <input type="date" class="form-control form-control-sm" id="start_date" style="border-radius: 8px;">
                                     </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 col-sm-12">
-                                    <div class="input-block mb-3">
-                                        <label>Sampai</label>
-                                        <div>
-                                            <input type="date" class="form-control" id="end_date">
-                                        </div>
+                                    <div style="flex: 1; min-width: 200px;">
+                                        <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Sampai Dengan</label>
+                                        <input type="date" class="form-control form-control-sm" id="end_date" style="border-radius: 8px;">
                                     </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 col-sm-0"></div>
-                                <div class="col-lg-3 col-md-6 col-sm-12 pt-4 text-end">
-                                    <a class="btn btn-outline-secondary btn-clear">
-                                        Clear
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12 py-3 mb-3">
-                                    <div class="table-scroll overflow-x-auto">
-                                        <table class="table table-center" id="tableLog" style="min-height: 15vh">
-                                            <thead>
-                                                <th style="width: 15%">Tanggal</th>
-                                                <th style="width: 15%">Staff</th>
-                                                <th style="width: 15%">No. Transaksi</th>
-                                                <th style="width: 25%">Catatan</th>
-                                                <th style="width: 15%" class="text-center">Masuk</th>
-                                                <th style="width: 15%" class="text-center">Keluar</th>
-                                            </thead>
-                                            <tbody></tbody>
-                                        </table>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary btn-clear px-4" style="font-weight: 500; min-height: 33px; border-radius: 8px;">
+                                            <i class="fa fa-refresh me-1"></i> Reset
+                                        </button>
                                     </div>
                                 </div>
                             </div>
 
-
-                            <div class="modal-footer p-0">
-                                <button type="button" data-bs-dismiss="modal"
-                                    class="btn btn-back cancel-btn me-2">Kembali</button>
+                            <div class="table-responsive flex-grow-1" id="tableLogScroll" style="min-height:300px; max-height: 50vh; overflow-y:auto; background:#fff;">
+                                <table class="table table-center table-hover mb-0" id="tableLog" style="font-size:13px;">
+                                    <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                        <tr>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Tanggal</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Staff</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">No. Transaksi</th>
+                                            <th style="width:25%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Catatan</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Masuk</th>
+                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Keluar</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
                             </div>
                         </div>
+                    </div>
+                    <div class="modal-footer border-top d-flex justify-content-end align-items-center" style="background:#f8fafc; padding: 16px 24px; min-height: 70px;">
+                        <button type="button" data-bs-dismiss="modal" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3); margin-bottom: 0;">
+                            Selesai
+                        </button>
                     </div>
                 </form>
             </div>
@@ -2988,241 +3037,188 @@
     <!-- /Add Coupons -->
 @endif
 
-@if (Route::is(['externalApplication']))
-    <!-- Tambah / Ubah Aplikasi Eksternal -->
-    <div class="modal modal-lg custom-modal fade" id="add_external_application" role="dialog"
-        data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Aplikasi</h4>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
-                </div>
-                <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Nama Aplikasi<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="application_name"
-                                            placeholder="Contoh: ERP Gudang">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Kode Unik</label>
-                                        <input type="text" class="form-control" id="application_code"
-                                            placeholder="Dibuat otomatis bila dikosongkan">
-                                        <small class="text-muted">Tidak bisa diubah setelah aplikasi dibuat.</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Perusahaan</label>
-                                        <input type="text" class="form-control" id="company"
-                                            placeholder="Nama perusahaan">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Status</label>
-                                        <select class="form-select" id="application_status">
-                                            <option value="active">Aktif</option>
-                                            <option value="disabled">Nonaktif</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Nama Kontak</label>
-                                        <input type="text" class="form-control" id="contact_name"
-                                            placeholder="Penanggung jawab">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Email Kontak</label>
-                                        <input type="email" class="form-control" id="contact_email"
-                                            placeholder="nama@perusahaan.com">
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Keterangan</label>
-                                        <textarea class="form-control" id="description" rows="2"
-                                            placeholder="Kegunaan integrasi ini"></textarea>
-                                    </div>
-                                </div>
-                            </div>
+@if (Route::is(['warehouse']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_warehouse" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                {{-- ── HEADER ── --}}
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-box text-white" style="font-size:18px;"></i>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button"
-                            class="btn btn-primary paid-continue-btn btn-save">Tambah Aplikasi</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <!-- /Tambah Aplikasi Eksternal -->
-@endif
-
-@if (Route::is(['externalApplicationDetail']))
-    <!-- Buat / Ubah API Key -->
-    <div class="modal modal-lg custom-modal fade" id="add_external_api_key" role="dialog" data-bs-backdrop="static"
-        data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title text-start mb-0">
-                        <h4 class="mb-0 modal-title">Buat API Key</h4>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
-                </div>
-                <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Nama Kunci<span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fill" id="key_name"
-                                            placeholder="Contoh: Production">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="input-block mb-3">
-                                        <label>Lingkungan</label>
-                                        <select class="form-select" id="environment">
-                                            <option value="production">Production</option>
-                                            <option value="staging">Staging</option>
-                                            <option value="development">Development</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="input-block mb-2">
-                                        <label class="custom_check">
-                                            <input type="checkbox" id="never_expire" checked>
-                                            <span class="checkmark"></span>
-                                        </label>
-                                        <span class="ms-1">Tidak pernah kedaluwarsa</span>
-                                    </div>
-                                </div>
-                                <div class="col-12 d-none" id="expiryWrapper">
-                                    <div class="input-block mb-3">
-                                        <label>Kedaluwarsa Pada<span class="text-danger">*</span></label>
-                                        <input type="datetime-local" class="form-control" id="expires_at">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button" class="btn btn-primary paid-continue-btn btn-save-key">Buat API
-                            Key</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    <!-- /Buat API Key -->
-
-    <!-- Kunci Baru: satu-satunya kesempatan melihat kunci -->
-    <div class="modal modal-lg custom-modal fade" id="show_external_api_key" role="dialog" data-bs-backdrop="static"
-        data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title text-start mb-0">
-                        <h4 class="mb-0 modal-title">API Key Berhasil Dibuat</h4>
-                    </div>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-warning d-flex align-items-start" role="alert">
-                        <i class="fe fe-alert-triangle me-2 mt-1"></i>
                         <div>
-                            API Key ini hanya ditampilkan sekali. Simpan di tempat yang aman sebelum menutup
-                            dialog ini. Kunci yang hilang tidak bisa dipulihkan — Anda harus mencabutnya lalu
-                            membuat kunci baru.
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Gudang</h5>
+                            <small class="text-white-50">Kelola master data gudang / toko</small>
                         </div>
                     </div>
-                    <div class="input-block mb-0">
-                        <label>API Key</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control extapi-key-value" id="generated_key" readonly>
-                            <button class="btn btn-primary btn-copy-key" type="button">
-                                <i class="fa fa-copy me-1"></i>Salin
-                            </button>
-                        </div>
-                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary btn-close-key-dialog">Saya Sudah
-                        Menyimpannya</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- /Kunci Baru -->
-@endif
-
-@if (Route::is(['externalApiLog']))
-    <!-- Pembersihan Log -->
-    <div class="modal modal-lg custom-modal fade" id="cleanup_external_api_log" role="dialog"
-        data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title text-start mb-0">
-                        <h4 class="mb-0 modal-title">Bersihkan Log</h4>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
-                </div>
+                
                 <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="input-block mb-3">
-                                        <label>Cara Pembersihan<span class="text-danger">*</span></label>
-                                        <select class="form-select" id="cleanup_strategy"></select>
-                                    </div>
+                    <div class="modal-body p-0 bg-light d-flex flex-column">
+                        {{-- Basic Info Panel --}}
+                        <div class="p-4 border-bottom bg-white shadow-sm" style="flex: 0 0 auto;">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama Gudang <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control fill" id="warehouse_name" placeholder="Contoh: Gudang Pusat Jakarta" style="font-size:14px;border-radius:8px;height:42px;">
                                 </div>
-                                <div class="col-12 d-none" id="cleanupDateWrapper">
-                                    <div class="input-block mb-3">
-                                        <label>Hapus Log Sebelum<span class="text-danger">*</span></label>
-                                        <input type="datetime-local" class="form-control" id="cleanup_before">
-                                    </div>
+                                <div class="col-md-6">
+                                    <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Tipe Gudang <span class="text-danger">*</span></label>
+                                    <select class="form-select form-control fill select2" id="warehouse_type_id" style="font-size:14px;height:42px;">
+                                        <option value="">Pilih Tipe Gudang...</option>
+                                    </select>
                                 </div>
                                 <div class="col-12">
-                                    <div class="alert alert-danger mb-0" role="alert">
-                                        <i class="fe fe-alert-octagon me-2"></i>
-                                        <span id="cleanupWarning">Log yang sudah dihapus tidak dapat
-                                            dikembalikan.</span>
-                                    </div>
+                                    <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i class="fe fe-map-pin me-1"></i>Alamat Lengkap</label>
+                                    <textarea class="form-control" id="warehouse_address" rows="2" placeholder="Masukkan alamat lengkap gudang..." style="font-size:14px;resize:none;border-radius:8px;"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Permissions Panel --}}
+                        <div class="p-4" style="flex: 1 1 auto; background: #f8fafc;">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                                <div>
+                                    <label class="mb-0 fw-bold text-dark" style="font-size:14px;"><i class="fe fe-shield me-1 text-primary"></i> Akses Menu Sidebar</label>
+                                    <p class="text-muted mb-0 mt-1" style="font-size: 11px;">Centang menu yang diizinkan untuk diakses dari gudang ini. Kosongkan jika ingin membuka semua akses.</p>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm" style="background:#eff6ff;color:#3b82f6;border:1px solid #bfdbfe;font-weight:600;font-size:12px;border-radius:6px;padding:6px 12px;" id="btn-sidebar-menus-all">
+                                        <i class="fa fa-check-square me-1"></i> Pilih Semua
+                                    </button>
+                                    <button type="button" class="btn btn-sm" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;font-weight:600;font-size:12px;border-radius:6px;padding:6px 12px;" id="btn-sidebar-menus-none">
+                                        <i class="fa fa-square-o me-1"></i> Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            @php
+                                $warehousePermissionMenus = json_decode(
+                                    file_get_contents(public_path('assets/json/permission.json')),
+                                    true
+                                ) ?: [];
+                                $warehousePermissionGrouped = collect($warehousePermissionMenus)
+                                    ->filter(fn ($p) => ($p['SubModules'] ?? '') !== 'Safety Stock')
+                                    ->groupBy('Modules');
+                            @endphp
+                            <style>
+                                .menu-masonry {
+                                    column-count: 1;
+                                    column-gap: 16px;
+                                }
+                                @media (min-width: 576px) { .menu-masonry { column-count: 2; } }
+                                .menu-card {
+                                    break-inside: avoid;
+                                    margin-bottom: 16px;
+                                    background: #ffffff;
+                                    border: 1px solid #e2e8f0;
+                                    border-radius: 8px;
+                                    padding: 12px;
+                                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                                    transition: all 0.2s ease;
+                                }
+                                .menu-card:hover {
+                                    border-color: #cbd5e1;
+                                    box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+                                }
+                            </style>
+                            <div id="warehouse_sidebar_menus" class="border p-3 bg-white" style="border-radius: 12px; max-height: 280px; overflow-y: auto;">
+                                <div class="menu-masonry">
+                                    @foreach ($warehousePermissionGrouped as $module => $items)
+                                        <div class="menu-card">
+                                            <div class="form-check m-0 mb-3 d-flex align-items-center gap-2" style="border-bottom: 1px dashed #cbd5e1; padding-bottom: 8px;">
+                                                <input class="form-check-input module-check-all m-0" type="checkbox" id="mod_menu_{{ Str::slug($module) }}" style="cursor:pointer; width:16px; height:16px; margin-top:0;">
+                                                <label class="form-check-label fw-bold text-dark mb-0" for="mod_menu_{{ Str::slug($module) }}" style="font-size:13.5px; cursor:pointer;">
+                                                    {{ $module }}
+                                                </label>
+                                            </div>
+                                            <div class="d-flex flex-column gap-2 px-1">
+                                                @foreach ($items as $item)
+                                                    <div class="form-check m-0 d-flex align-items-center gap-2">
+                                                        <input class="form-check-input warehouse-sidebar-menu m-0" type="checkbox"
+                                                            value="{{ $item['SubModules'] }}"
+                                                            id="wh_menu_{{ $item['Id'] }}" style="cursor:pointer; width:14px; height:14px; margin-top:0;">
+                                                        <label class="form-check-label text-secondary mb-0" for="wh_menu_{{ $item['Id'] }}" style="font-size:12.5px; cursor:pointer;">
+                                                            {{ $item['SubModules'] }}
+                                                        </label>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endforeach
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" data-bs-dismiss="modal"
-                            class="btn btn-back cancel-btn me-2">Batal</button>
-                        <button type="button" class="btn btn-danger btn-confirm-cleanup">Hapus Log</button>
+                    
+                    {{-- ── FOOTER ── --}}
+                    <div class="modal-footer border-top" style="background:#f8fafc; padding:14px 24px;">
+                        <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                        <button type="button" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan Gudang</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-    <!-- /Pembersihan Log -->
+@endif
+
+@if (Route::is(['warehouse-type']))
+    <!-- modal -->
+    <div class="modal modal-lg custom-modal fade" id="add_warehouse_type" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+                {{-- ── HEADER ── --}}
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-tag text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Tipe Gudang</h5>
+                            <small class="text-white-50">Kelola kategori / tipe gudang</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form action="#">
+                    <div class="modal-body p-4" style="background:#f8fafc;">
+                        {{-- Nama Tipe Gudang --}}
+                        <div class="mb-3">
+                            <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama Tipe Gudang <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control fill" id="warehouse_type_name" placeholder="Contoh: Gudang Eceran, Gudang Utama..." style="font-size:14px;border-radius:8px;height:42px;">
+                        </div>
+
+                        {{-- Toggle Gudang Utama --}}
+                        <div class="p-3" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="status-toggle mt-1" style="flex-shrink:0;">
+                                    <input type="checkbox" id="is_main_warehouse" class="check">
+                                    <label for="is_main_warehouse" class="checktoggle">checkbox</label>
+                                </div>
+                                <div>
+                                    <label class="mb-1 fw-semibold text-dark" for="is_main_warehouse" style="cursor:pointer;font-size:14px;display:block;">
+                                        <i class="fe fe-home me-1 text-primary"></i> Jadikan Gudang Utama
+                                    </label>
+                                    <p class="text-muted mb-0" style="font-size:12px;line-height:1.5;">
+                                        Aktifkan opsi ini untuk menandai sebagai gudang pusat.<br>
+                                        <span class="fw-semibold" style="color:#ef4444;"><i class="fas fa-exclamation-circle me-1"></i>Catatan: Hanya boleh ada maksimal 1 tipe gudang utama.</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ── FOOTER ── --}}
+                    <div class="modal-footer border-top" style="background:#f8fafc;padding:14px 24px;">
+                        <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                        <button type="button" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:160px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan Tipe Gudang</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endif

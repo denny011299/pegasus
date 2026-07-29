@@ -20,7 +20,30 @@
         if ($.fn.dataTable) {
             $.extend(true, $.fn.dataTable.defaults, {
                 deferRender: true,
-                processing: true
+                processing: true,
+                autoWidth: false,
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                language: {
+                    search: " ",
+                    searchPlaceholder: "Cari data...",
+                    lengthMenu: "Tampilkan _MENU_ data",
+                    info: "_START_ - _END_ dari _TOTAL_ data",
+                    infoEmpty: "Menampilkan 0 data",
+                    infoFiltered: "(disaring dari _MAX_ data)",
+                    emptyTable: '<div class="text-center py-4 text-muted"><i class="fe fe-inbox fs-2 mb-2 d-block opacity-50"></i>Tidak ada data tersedia</div>',
+                    zeroRecords: '<div class="text-center py-4 text-muted"><i class="fe fe-search fs-2 mb-2 d-block opacity-50"></i>Data tidak ditemukan</div>',
+                    paginate: {
+                        next: '<i class="fe fe-chevron-right"></i>',
+                        previous: '<i class="fe fe-chevron-left"></i>'
+                    },
+                    processing: '<div class="dt-skeleton-overlay d-flex flex-column align-items-center justify-content-center py-4 px-3" style="background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(2px); border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);">' +
+                                    '<div class="spinner-border text-primary mb-2" style="width: 2.2rem; height: 2.2rem; border-width: 0.2em;" role="status">' +
+                                        '<span class="visually-hidden">Memuat...</span>' +
+                                    '</div>' +
+                                    '<div class="fw-semibold text-secondary" style="font-size: 13px; letter-spacing: 0.3px;">Memuat data...</div>' +
+                                '</div>'
+                }
             });
         }
     </script>
@@ -253,6 +276,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         "showMethod": "fadeIn",
         "hideMethod": "fadeOut"
     }
+    
+    // Global DataTables defaults initialized above
       // Tooltip
     if ($('[data-bs-toggle="tooltip"]').length > 0) {
         var tooltipTriggerList = [].slice.call(
@@ -263,6 +288,38 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
       requestAnimationFrame(function () { feather.replace(); });
+
+    function renderCreatedByName(data) {
+        try {
+            if (data == null || data === '' || data === '-' || data === false) {
+                return '<span class="text-muted">-</span>';
+            }
+            // Guard: kadang DataTables/ajax kirim object
+            if (typeof data === 'object') {
+                data = data.name || data.text || data.staff_name || '-';
+            }
+            data = String(data);
+            if (data === '-' || data.trim() === '') {
+                return '<span class="text-muted">-</span>';
+            }
+            // Escape minimal supaya template literal aman
+            var safe = data
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+            return '<div style="display:flex;align-items:center;gap:10px;">'
+                + '<div style="width:32px;height:32px;border-radius:8px;background:#f1f5f9;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;">'
+                + '<i class="fe fe-user"></i>'
+                + '</div>'
+                + '<span class="fw-semibold text-dark">' + safe + '</span>'
+                + '</div>';
+        } catch (err) {
+            console.error('renderCreatedByName error:', err);
+            return '<span class="text-muted">-</span>';
+        }
+    }
+
     function notifikasi(simbol,title,deskripsi) {
         Swal.fire({
             icon: simbol,
@@ -406,16 +463,66 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     function LoadingButton(id) {
-        $(id).html(`
-            <div class="text-center h-100">
-                <div class="spinner-border" role="status">
-                </div>
-            </div>   
-        `).prop("disabled", true);
+        var $btn = $(id);
+        // Lock current size so button doesn't expand when text changes
+        $btn.css({ 'min-width': $btn.outerWidth() + 'px', 'height': $btn.outerHeight() + 'px' });
+        $btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>')
+            .prop("disabled", true);
     }
 
     function ResetLoadingButton(id, text = null) {
-        $(id).html(`${text? text : 'Save Changes'}`).prop("disabled", false);
+        var $btn = $(id);
+        $btn.css({ 'min-width': '', 'height': '' });
+        $btn.html(`${text ? text : 'Save Changes'}`).prop("disabled", false);
+    }
+
+    function setLoadingRow(table) {
+        if (!table) return;
+        table.clear().draw();
+        $(".dataTables_empty").html(
+            '<span class="spinner-border spinner-border-sm me-2 text-primary" role="status"></span> Sedang memuat data...'
+        );
+    }
+
+    // Gudang aktif (navbar) — dari DOM (header sudah set class active dari session)
+    var activeWarehouseId = (function () {
+        var el = document.querySelector('.warehouse-dropdown-item.active');
+        return el ? el.getAttribute('data-id') : null;
+    })();
+
+    function getActiveWarehouseEl() {
+        return document.querySelector('.warehouse-dropdown-item.active')
+            || document.querySelector('.warehouse-dropdown-item[data-id="' + (activeWarehouseId || '') + '"]');
+    }
+
+    function getActiveWarehouseId() {
+        if (activeWarehouseId !== null && activeWarehouseId !== undefined && activeWarehouseId !== '') {
+            return String(activeWarehouseId);
+        }
+        var el = getActiveWarehouseEl();
+        return el ? el.getAttribute('data-id') : null;
+    }
+
+    function getActiveWarehouseName() {
+        var name = $('.btn-warehouse span').first().text().trim();
+        if (!name || name === 'Pilih Gudang...') return null;
+        return name;
+    }
+
+    /** true = gudang utama (is_main_warehouse), false = eceran/lain, null = belum pilih */
+    function isActiveMainWarehouse() {
+        var el = getActiveWarehouseEl();
+        if (!el) return null;
+        var v = el.getAttribute('data-is-main');
+        if (v === null || v === undefined || v === '') return null;
+        return String(v) === '1';
+    }
+
+    /** 'main' | 'retail' | null */
+    function getStockViewMode() {
+        var isMain = isActiveMainWarehouse();
+        if (isMain === null) return null;
+        return isMain ? 'main' : 'retail';
     }
     
     function autocompleteCity(id, modalParent = null,prov_id=null) {
@@ -1080,26 +1187,32 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
      }
 
     function autocompleteRole(id, modalParent = null) {
+        if (!$(id).length) return;
+
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
         }
 
-        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompleteRole",
                  dataType: "json",
                  type: "post",
+                 delay: 250,
                  data: function data(params) {
                      return {
-                         "keyword": params.term,
-                         '_token': $('meta[name="csrf-token"]').attr('content')
+                         "keyword": params.term || '',
+                         '_token': $('meta[name="csrf-token"]').attr('content') || (typeof token !== 'undefined' ? token : '')
                      };
                  },
                  processResults: function processResults(data) {
+                     var rows = (data && data.data) ? data.data : [];
                      return {
-                         results: $.map(data.data, function(item) {
-                             return item;
+                         results: $.map(rows, function(item) {
+                             return {
+                                 id: item.id,
+                                 text: item.text
+                             };
                          }),
                      };
                  },
@@ -1111,6 +1224,78 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
              dropdownParent: modalParent ? $(modalParent) : "",
          });
     }
+
+    function autocompleteWarehouseType(id, modalParent = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteWarehouseType",
+                dataType: "json",
+                type: "get",
+                delay: 250,
+                data: function data(params) {
+                    return {
+                        "keyword": params.term
+                    };
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data, function(item) {
+                            return {
+                                id: item.id,
+                                text: item.text || item.warehouse_type_name
+                            };
+                        }),
+                    };
+                },
+            },
+            placeholder: "Pilih Tipe Gudang...",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
+    function autocompleteWarehouse(id, modalParent = null, opts = null) {
+        if ($(id).hasClass('select2-hidden-accessible')) {
+            $(id).select2('destroy');
+        }
+        opts = opts || {};
+
+        $(id).select2({
+            ajax: {
+                url: "/autocompleteWarehouse",
+                dataType: "json",
+                type: "post",
+                delay: 250,
+                data: function data(params) {
+                    var payload = {
+                        "keyword": params.term,
+                        '_token': $('meta[name="csrf-token"]').attr('content')
+                    };
+                    if (opts.retailOnly) payload.retail_only = 1;
+                    return payload;
+                },
+                processResults: function processResults(data) {
+                    return {
+                        results: $.map(data.data || [], function(item) {
+                            return item;
+                        }),
+                    };
+                },
+            },
+            placeholder: opts.placeholder || "Pilih toko atau gudang",
+            closeOnSelect: true,
+            allowClear: true,
+            width: "100%",
+            dropdownParent: modalParent ? $(modalParent) : "",
+        });
+    }
+
     function autocompleteRekening(id, modalParent = null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
@@ -1268,6 +1453,8 @@ function resetCameraModalUi() {
     $("#video").removeClass("rot90 rot180 rot270");
     $("#preview-box").hide();
     $("#camera").show();
+    $("#preview-actions").attr("style", "display: none !important;");
+    $("#camera-actions").attr("style", "display: flex !important;");
     $("#previewImage").attr("src", "");
 }
 
@@ -1396,6 +1583,8 @@ $(document).on("click", "#captureBtn", function () {
 
     $("#camera").hide();
     $("#preview-box").show();
+    $("#camera-actions").attr("style", "display: none !important;");
+    $("#preview-actions").attr("style", "display: flex !important;");
 });
 
 // =========================
@@ -1404,6 +1593,8 @@ $(document).on("click", "#captureBtn", function () {
 $(document).on("click", "#retakeBtn", function () {
     $("#preview-box").hide();
     $("#camera").show();
+    $("#preview-actions").attr("style", "display: none !important;");
+    $("#camera-actions").attr("style", "display: flex !important;");
 
     camRotation = 0;
     $("#video").removeClass("rot90 rot180 rot270");
@@ -1471,4 +1662,67 @@ function adjustModalHeight() {
         // Tinggi modal mengikuti tinggi video
         modalDialog.css("height", (video.clientHeight/4)+ "px");
 }
+
+function showDataTableLoading(tableId) {
+    var elem = tableId ? $(tableId + ' .dataTables_empty') : $('.dataTables_empty');
+    elem.html('<span class="spinner-border spinner-border-sm me-2 text-primary" role="status"></span> Sedang memuat data...');
+}
+
+$(document).ready(function() {
+    function closeWarehouseDropdown() {
+        var root = document.querySelector('.warehouse-custom-dropdown');
+        if (!root) return;
+        var toggle = root.querySelector('[data-bs-toggle="dropdown"]');
+        var menu = root.querySelector('.dropdown-menu');
+        if (toggle && window.bootstrap && bootstrap.Dropdown) {
+            try {
+                var inst = bootstrap.Dropdown.getInstance(toggle);
+                if (inst) inst.hide();
+            } catch (err) {}
+        }
+        if (toggle) {
+            toggle.classList.remove('show');
+            toggle.setAttribute('aria-expanded', 'false');
+        }
+        if (menu) menu.classList.remove('show');
+        root.classList.remove('show');
+        if (document.activeElement && root.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
+    }
+
+    // Chrome sering restore-focus ke tombol gudang setelah refresh → dropdown kebuka
+    closeWarehouseDropdown();
+    $(window).on('load pageshow', function () {
+        closeWarehouseDropdown();
+        setTimeout(closeWarehouseDropdown, 0);
+        setTimeout(closeWarehouseDropdown, 100);
+    });
+
+    $('.warehouse-dropdown-item').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var warehouseId = $(this).attr('data-id');
+        if(!warehouseId) return;
+
+        // Blur dulu supaya focus restoration tidak buka dropdown lagi setelah reload
+        if (document.activeElement) document.activeElement.blur();
+        closeWarehouseDropdown();
+
+        $.ajax({
+            url: '/set-active-warehouse',
+            type: 'POST',
+            data: {
+                _token: $('meta[name="csrf-token"]').attr('content'),
+                warehouse_id: warehouseId
+            },
+            success: function(response) {
+                window.location.reload();
+            },
+            error: function() {
+                notifikasi('error', 'Gagal', 'Terjadi kesalahan saat mengubah gudang aktif.');
+            }
+        });
+    });
+});
 </script>

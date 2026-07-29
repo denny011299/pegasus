@@ -25,6 +25,8 @@ use App\Models\Supplies;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
+use App\Models\Warehouse;
+use App\Models\WarehouseType;
 use Illuminate\Http\Request;
 
 use function Laravel\Prompts\alert;
@@ -448,22 +450,23 @@ class AutocompleteController extends Controller
 
     public function autocompleteRole(Request $req)
     {
-        $keyword = isset($req->keyword) ? $req->keyword : null;
+        $keyword = $req->keyword ?? $req->q ?? $req->term ?? null;
 
-        $p = new Role();
-        $data_city = $p->getRole([
-            "role_name" => $keyword
+        $roles = (new Role())->getRole([
+            'role_name' => $keyword,
         ]);
 
+        // Hanya id + text agar Select2 tidak gagal parse payload besar (role_access)
+        $data = $roles->map(static function ($role) {
+            return [
+                'id' => (int) $role->role_id,
+                'text' => (string) $role->role_name,
+            ];
+        })->values()->all();
 
-        foreach ($data_city as $r) {
-            $r->id = $r["role_id"];
-            $r->text = $r["role_name"];
-        };
-
-        echo json_encode(array(
-            "data" => $data_city
-        ));
+        return response()->json([
+            'data' => $data,
+        ]);
     }
 
     public function autocompleteRekening(Request $req)
@@ -507,5 +510,61 @@ class AutocompleteController extends Controller
         echo json_encode(array(
             "data" => $data_city
         ));
+    }
+
+    public function autocompleteWarehouseType(Request $req)
+    {
+        $keyword = $req->keyword ?? $req->q ?? $req->term ?? null;
+
+        $data = (new WarehouseType())->getWarehouseType([
+            'warehouse_type_name' => $keyword,
+        ]);
+
+        foreach ($data as $r) {
+            $r->id = $r->id;
+            $r->text = $r->warehouse_type_name;
+        }
+
+        return response()->json([
+            'data' => $data,
+        ]);
+    }
+
+    public function autocompleteWarehouse(Request $req)
+    {
+        $keyword = trim((string) ($req->keyword ?? $req->q ?? $req->term ?? ''));
+
+        $query = Warehouse::query()
+            ->active()
+            ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+            ->orderBy('warehouse_name');
+
+        if ($keyword !== '') {
+            $query->where('warehouse_name', 'like', '%' . $keyword . '%');
+        }
+
+        // Gudang eceran saja (bukan tipe utama)
+        if (filter_var($req->retail_only ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $query->whereHas('type', function ($q) {
+                $q->where('is_main_warehouse', 0);
+            });
+        }
+
+        $rows = $query->limit(30)->get(['id', 'warehouse_name', 'warehouse_type_id']);
+
+        $data = $rows->map(static function ($wh) {
+            $typeName = $wh->type->warehouse_type_name ?? null;
+            return [
+                'id' => (int) $wh->id,
+                'text' => $typeName
+                    ? $wh->warehouse_name . ' (' . $typeName . ')'
+                    : $wh->warehouse_name,
+                'warehouse_name' => $wh->warehouse_name,
+                'warehouse_type_id' => (int) $wh->warehouse_type_id,
+                'is_main_warehouse' => (int) ($wh->type->is_main_warehouse ?? 0),
+            ];
+        })->values()->all();
+
+        return response()->json(['data' => $data]);
     }
 }

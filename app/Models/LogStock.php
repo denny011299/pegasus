@@ -3,8 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Session;
 
 class LogStock extends Model
 {
@@ -20,13 +21,23 @@ class LogStock extends Model
             "log_notes"=>null,
             "log_type"=>null,
             "log_item_id"=>null,
-            "date"=>null
+            "date"=>null,
+            "warehouse_id"=>null,
+            "limit"=>200,
         ], $data);
 
         $result = LogStock::where('status', '=', 1);
         if($data['log_notes'])$result->where('log_notes','like','%'.$data["log_notes"].'%');
         if($data["log_type"])$result->where('log_type','=',$data["log_type"]);
         if($data["log_item_id"])$result->where('log_item_id','=',$data["log_item_id"]);
+
+        $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) (Session::get('active_warehouse_id') ?? 0);
+        }
+        if ($warehouseId > 0) {
+            $this->applyWarehouseFilter($result, $warehouseId);
+        }
 
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
@@ -41,23 +52,153 @@ class LogStock extends Model
         }
 
         $result->orderBy('created_at', 'desc')->orderBy('log_id', 'desc');
-       
-        $result = $result->get();
-        foreach ($result as $key => $value) {
-            $u = Unit::find($value->unit_id);
-            $value->unit_name = $u->unit_name;
-            if($value->staff_id){
-                try {
-                    $value->staff_name =Staff::find($value->staff_id)->staff_name; 
-                } catch (\Throwable $th) {
-                     $value->staff_name ="-"; 
-                }
-            }
-            else{
-                $value->staff_name ="-"; 
-            }
+
+        $lazy = filter_var($data['lazy'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $offset = max(0, (int) ($data['offset'] ?? 0));
+        $limit = (int) ($data['limit'] ?? ($lazy ? 30 : 200));
+        $limit = min(max(1, $limit), $lazy ? 100 : 500);
+
+        if ($lazy) {
+            $result->offset($offset)->limit($limit + 1);
+        } elseif ($limit > 0) {
+            $result->limit($limit);
         }
-        return $result;
+
+        $rows = $result->get();
+        $hasMore = false;
+        if ($lazy && $rows->count() > $limit) {
+            $hasMore = true;
+            $rows = $rows->take($limit)->values();
+        }
+
+        if ($rows->isEmpty()) {
+            return $lazy
+                ? ['data' => [], 'has_more' => false, 'offset' => $offset, 'limit' => $limit]
+                : $rows;
+        }
+
+        $unitIds = $rows->pluck('unit_id')->filter()->unique()->values()->all();
+        $staffIds = $rows->pluck('staff_id')->filter()->unique()->values()->all();
+        $units = $unitIds !== []
+            ? Unit::whereIn('unit_id', $unitIds)->pluck('unit_name', 'unit_id')
+            : collect();
+        $staffs = $staffIds !== []
+            ? Staff::whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id')
+            : collect();
+
+        foreach ($rows as $value) {
+            $value->unit_name = $units->get($value->unit_id) ?? '-';
+            $value->staff_name = $value->staff_id
+                ? ($staffs->get($value->staff_id) ?? '-')
+                : '-';
+        }
+
+        if ($lazy) {
+            return [
+                'data' => $rows->values(),
+                'has_more' => $hasMore,
+                'offset' => $offset,
+                'limit' => $limit,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Histori stok per gudang aktif.
+     * Stock Transfer: gudang asal → keluar/bongkar; gudang tujuan → masuk (tidak campur).
+     */
+    protected function applyWarehouseFilter($query, int $warehouseId): void
+    {
+        static $hasWarehouseCol = null;
+        if ($hasWarehouseCol === null) {
+            $hasWarehouseCol = Schema::hasColumn('log_stocks', 'warehouse_id');
+        }
+        $isMain = $this->isMainWarehouse($warehouseId);
+
+        $query->where(function ($q) use ($warehouseId, $hasWarehouseCol, $isMain) {
+            if ($hasWarehouseCol) {
+                $q->where('log_stocks.warehouse_id', $warehouseId);
+
+                // Legacy non-ST (sebelum multi-gudang) — tampil di gudang utama saja
+                if ($isMain) {
+                    $q->orWhere(function ($legacy) {
+                        $legacy->whereNull('log_stocks.warehouse_id')
+                            ->where(function ($kode) {
+                                $kode->whereNull('log_stocks.log_kode')
+                                    ->orWhere('log_stocks.log_kode', 'not like', 'ST%');
+                            });
+                    });
+                }
+
+                // Legacy ST tanpa warehouse_id
+                $q->orWhere(function ($legacy) use ($warehouseId) {
+                    $legacy->whereNull('log_stocks.warehouse_id')
+                        ->where('log_stocks.log_kode', 'like', 'ST%')
+                        ->where(function ($st) use ($warehouseId) {
+                            $this->scopeStockTransferBelongsToWarehouse($st, $warehouseId);
+                        });
+                });
+
+                return;
+            }
+
+            // Belum ada kolom warehouse_id: non-ST tetap tampil; ST difilter per gudang
+            $q->where(function ($nonSt) {
+                $nonSt->whereNull('log_stocks.log_kode')
+                    ->orWhere('log_stocks.log_kode', 'not like', 'ST%');
+            })->orWhere(function ($st) use ($warehouseId) {
+                $st->where('log_stocks.log_kode', 'like', 'ST%')
+                    ->where(function ($inner) use ($warehouseId) {
+                        $this->scopeStockTransferBelongsToWarehouse($inner, $warehouseId);
+                    });
+            });
+        });
+    }
+
+    protected function isMainWarehouse(int $warehouseId): bool
+    {
+        static $cache = [];
+        if (array_key_exists($warehouseId, $cache)) {
+            return $cache[$warehouseId];
+        }
+
+        $cache[$warehouseId] = (int) DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->where('w.id', $warehouseId)
+            ->where('wt.is_main_warehouse', 1)
+            ->limit(1)
+            ->count() > 0;
+
+        return $cache[$warehouseId];
+    }
+
+    /**
+     * ST: asal = aktif → keluar/bongkar/kembalikan; tujuan = aktif → masuk saja.
+     */
+    protected function scopeStockTransferBelongsToWarehouse($query, int $warehouseId): void
+    {
+        $query->whereExists(function ($sub) use ($warehouseId) {
+            $sub->select(DB::raw(1))
+                ->from('stock_transfers as st')
+                ->whereColumn('st.transfer_code', 'log_stocks.log_kode')
+                ->where(function ($w) use ($warehouseId) {
+                    $w->where(function ($asal) use ($warehouseId) {
+                        $asal->where('st.from_warehouse_id', $warehouseId)
+                            ->where(function ($n) {
+                                $n->where('log_stocks.log_notes', 'like', '%keluar gudang asal%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%kembalikan stok%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%bongkar%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%hasil bongkar%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%koreksi edit%');
+                            });
+                    })->orWhere(function ($tujuan) use ($warehouseId) {
+                        $tujuan->where('st.to_warehouse_id', $warehouseId)
+                            ->where('log_stocks.log_notes', 'like', '%masuk gudang tujuan%');
+                    });
+                });
+        });
     }
 
     function insertLog($data)
@@ -71,7 +212,11 @@ class LogStock extends Model
         $t->log_notes = $data["log_notes"];
         $t->log_jumlah = $data["log_jumlah"];
         $t->unit_id = $data["unit_id"];
-        $t->staff_id = Session::get('user')->staff_id;
+        $t->staff_id = Session::get('user')->staff_id ?? null;
+        if (Schema::hasColumn('log_stocks', 'warehouse_id') && array_key_exists('warehouse_id', $data)) {
+            $wid = (int) ($data['warehouse_id'] ?? 0);
+            $t->warehouse_id = $wid > 0 ? $wid : null;
+        }
         $t->save();
         return $t->log_id;
     }
