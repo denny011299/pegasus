@@ -1,0 +1,38 @@
+[
+    {
+        "external_api_key_id": 44,
+        "external_application_id": 38,
+        "key_name": "Local 1",
+        "environment": "production",
+        "key_prefix": "ext_live_2JmP6Y3waGSM",
+        "key_hash": "d1d97c1dac4e0dac14795991e964aa00bde4e8e199b0b13a67f47289fbc60813",
+        "key_last_four": "ZUOZ",
+        "key_status": "active",
+        "expires_at": null,
+        "last_used_at": null,
+        "revoked_at": null,
+        "revoked_by": null,
+        "created_by": 13,
+        "status": 0,
+        "created_at": "2026-07-29 01:55:14",
+        "updated_at": "2026-07-29 01:55:40"
+    },
+    {
+        "external_api_key_id": 45,
+        "external_application_id": 38,
+        "key_name": "Local 1",
+        "environment": "development",
+        "key_prefix": "ext_dev_W7533BQlRcEv",
+        "key_hash": "0cd9ffba1e2704771f8841a5ce4ceaf575b3f58dec336c738fd5093bdf194a5f",
+        "key_last_four": "HEXi",
+        "key_status": "active",
+        "expires_at": null,
+        "last_used_at": "2026-07-29 03:02:16",
+        "revoked_at": null,
+        "revoked_by": null,
+        "created_by": 13,
+        "status": 1,
+        "created_at": "2026-07-29 01:55:47",
+        "updated_at": "2026-07-29 03:02:16"
+    }
+]
