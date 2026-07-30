@@ -4,6 +4,7 @@ var savedValues = {};
 var stockOpnameXhr = null;
 var stockOpnameReqSeq = 0;
 var searchProdukDebounce = null;
+var canEditDraft = false;
 autocompleteCategory("#kategori", null, 1);
 
 $(document).ready(function () {
@@ -31,34 +32,72 @@ $(document).ready(function () {
     } else {
         console.log(data);
         $("#tanggal").val(data.sto_date);
-        $("#penanggung-jawab").append(
-            `<option value="${data.staff_id}">${data.staff_name}</option>`,
-        );
-        $("#kategori").append(
-            `<option value="${data.category_id}">${data.category_name}</option>`,
-        );
         $("#catatan").val(data.sto_notes);
-        $("#tanggal,#penanggung-jawab,#kategori,#catatan").prop(
-            "disabled",
+        product = data.item;
+
+        // Draft cuma boleh diedit oleh staff pembuatnya (atau super admin) —
+        // draft milik orang lain sudah difilter di server dan tidak akan
+        // pernah sampai ke sini, jadi cabang ini murni soal "punyaku sendiri
+        // atau bukan".
+        var isOwner = !!(
+            sessionUser && data.created_by == sessionUser.staff_id
+        );
+        var isSuperAdmin = window.userRoleId === -1;
+        canEditDraft = !!data.is_draft && (isOwner || isSuperAdmin);
+
+        let staffOption = new Option(
+            data.staff_name,
+            data.staff_id,
+            true,
             true,
         );
-        product = data.item;
-        renderMode2(data.item);
-        $("#tbStock input").prop("disabled", true);
-        $(".btn-save").hide();
+        $("#penanggung-jawab").empty().append(staffOption).trigger("change");
 
-        if (data.status == 1) {
-            $(".save-tolak,.save-terima").show();
-            $("#status").val("Menunggu Approval");
-        } else if (data.status == 2) {
-            $(".save-tolak,.save-terima").hide();
-            $("#status").val("Disetujui");
-        } else if (data.status == 3) {
-            $(".save-tolak,.save-terima").hide();
-            $("#status").val("Ditolak");
+        if (canEditDraft) {
+            $("#tanggal,#penanggung-jawab,#catatan").prop("disabled", false);
+            $("#status").val("Draft");
+            $(".btn-save,.save-tolak,.save-terima").hide();
+            $(".btn-save-draft,.btn-ajukan,.btn-delete-draft").show();
+
+            // Isi dulu nilai yang sudah pernah disimpan, baru muat ulang
+            // daftar produk penuh (seperti mode create) supaya draft bisa
+            // ditambah/dikurangi itemnya, tanpa kehilangan input lama.
+            seedSavedValuesFromItems(data.item);
+            refreshStockOpname();
+        } else {
+            $("#tanggal,#penanggung-jawab,#catatan").prop("disabled", true);
+            renderMode2(data.item);
+            $("#tbStock input").prop("disabled", true);
+            $(".btn-save,.btn-save-draft,.btn-ajukan,.btn-delete-draft").hide();
+
+            if (data.is_draft) {
+                // Jaga-jaga saja — seharusnya tidak pernah tercapai karena
+                // draft orang lain sudah 404 di server.
+                $("#status").val("Draft");
+            } else if (data.status == 1) {
+                $(".save-tolak,.save-terima").show();
+                $("#status").val("Menunggu Approval");
+            } else if (data.status == 2) {
+                $(".save-tolak,.save-terima").hide();
+                $("#status").val("Disetujui");
+            } else if (data.status == 3) {
+                $(".save-tolak,.save-terima").hide();
+                $("#status").val("Ditolak");
+            }
         }
     }
 });
+
+function seedSavedValuesFromItems(items) {
+    (items || []).forEach(function (item) {
+        var key = item.product_id + "_" + item.product_variant_id;
+        var stocks = {};
+        (item.units || []).forEach(function (u) {
+            stocks[u.unit_id] = u.real_qty;
+        });
+        savedValues[key] = { notes: item.stod_notes || "", stocks: stocks };
+    });
+}
 
 function loadStaff() {
     $("#penanggung-jawab").empty();
@@ -167,7 +206,7 @@ function refreshStockOpname(callback) {
                     `<tr><td colspan="6" class="text-center">Produk tidak ditemukan</td></tr>`,
                 );
             }
-            if (mode == 2) {
+            if (mode == 2 && !canEditDraft) {
                 $(".real-stock, .notes").attr("disabled", "disabled");
             }
 
@@ -282,7 +321,99 @@ $(document).on("click", ".btn-save", function () {
     clearTimeout(searchProdukDebounce);
     $("#filter_pr_name").val("");
     refreshStockOpname(function () {
-        insertData();
+        insertData({ btnSelector: ".btn-save", doneText: "Tambah Stok Opname" });
+    });
+});
+
+$(document).on("click", ".btn-save-draft", function () {
+    LoadingButton(this);
+    clearTimeout(searchProdukDebounce);
+    $("#filter_pr_name").val("");
+    refreshStockOpname(function () {
+        insertData({
+            isDraft: true,
+            keepSparse: true,
+            btnSelector: ".btn-save-draft",
+            doneText: "Simpan sebagai Draft",
+            onSuccess: function (e) {
+                toastr.success("", "Draft berhasil disimpan");
+                ResetLoadingButton(".btn-save-draft", "Simpan sebagai Draft");
+                var stoId = mode == 1 ? e && e.sto_id : data.sto_id;
+                window.location.href = stoId
+                    ? "/detailStockOpname/" + stoId
+                    : "/stockOpname";
+            },
+        });
+    });
+});
+
+$(document).on("click", ".btn-ajukan", function () {
+    LoadingButton(this);
+    clearTimeout(searchProdukDebounce);
+    $("#filter_pr_name").val("");
+    refreshStockOpname(function () {
+        insertData({
+            isDraft: true,
+            btnSelector: ".btn-ajukan",
+            doneText: "Ajukan",
+            onSuccess: function () {
+                $.ajax({
+                    url: "/submitStockOpname",
+                    data: { sto_id: data.sto_id, _token: token },
+                    method: "post",
+                    success: function (e) {
+                        if (e && e.status == -1) {
+                            notifikasi(
+                                "error",
+                                "Gagal Mengajukan",
+                                e.message || "Terjadi kesalahan",
+                            );
+                            ResetLoadingButton(".btn-ajukan", "Ajukan");
+                            return;
+                        }
+                        toastr.success("", "Berhasil mengajukan Stock Opname");
+                        window.location.href = "/stockOpname";
+                    },
+                    error: function (e) {
+                        console.log(e);
+                        ResetLoadingButton(".btn-ajukan", "Ajukan");
+                    },
+                });
+            },
+        });
+    });
+});
+
+$(document).on("click", ".btn-delete-draft", function () {
+    showModalDelete(
+        "Apakah yakin ingin menghapus draft ini?",
+        "btn-delete-draft-confirm",
+    );
+    $("#btn-delete-draft-confirm").html("Delete");
+});
+
+$(document).on("click", "#btn-delete-draft-confirm", function () {
+    LoadingButton(this);
+    $.ajax({
+        url: "/deleteStockOpname",
+        data: { sto_id: data.sto_id, _token: token },
+        method: "post",
+        success: function (e) {
+            if (e && e.status == -1) {
+                $(".modal").modal("hide");
+                notifikasi("error", "Gagal Hapus", e.message || "Terjadi kesalahan");
+                ResetLoadingButton(".btn-konfirmasi", "Delete");
+                return;
+            }
+            $("#modalDelete .modal-body").html("");
+            $(".modal").modal("hide");
+            notifikasi("success", "Berhasil Hapus", "Draft berhasil dihapus");
+            window.location.href = "/stockOpname";
+        },
+        error: function (e) {
+            console.log(e);
+            ResetLoadingButton(".btn-konfirmasi", "Delete");
+        },
     });
 });
 
@@ -299,8 +430,18 @@ function getData(id) {
     return data.items[ada];
 }
 
-function insertData() {
-    LoadingButton(".btn-save");
+function insertData(options) {
+    options = options || {};
+    var isDraft = !!options.isDraft;
+    var btnSelector = options.btnSelector || ".btn-save";
+    var doneText = options.doneText || "Tambah Stok Opname";
+    var onSuccess = options.onSuccess;
+    // Draft: hanya simpan produk yang benar-benar diisi user. Kalau tidak,
+    // seluruh katalog produk (yang cuma tampil karena pencarian kosong) ikut
+    // tersimpan dengan real_qty otomatis = stok sistem, dan saat draft dibuka
+    // lagi user akan melihat angka yang tidak pernah mereka masukkan sendiri.
+    var keepSparse = !!options.keepSparse;
+
     $(".is-invalid").removeClass("is-invalid");
     $(".invalid").removeClass("invalid");
     var url = "/insertStockOpname";
@@ -331,10 +472,7 @@ function insertData() {
             "Gagal Insert",
             "Silahkan cek kembali inputan anda",
         );
-        ResetLoadingButton(
-            ".btn-save",
-            mode == 1 ? "Tambah Stok Opname" : "Update Stok Opname",
-        );
+        ResetLoadingButton(btnSelector, doneText);
         return false;
     }
 
@@ -351,6 +489,7 @@ function insertData() {
         let systemArr = [];
         let realArr = [];
         let selisihArr = [];
+        let hasValue = false;
 
         row.find(".real-stock").each(function () {
             let input = $(this);
@@ -359,6 +498,9 @@ function insertData() {
             let unitName = input.data("unit-name");
             let systemQty = parseInt(input.data("system-qty")) || 0;
             let val = input.val();
+            if (val !== "" && val !== null && val !== undefined) {
+                hasValue = true;
+            }
             let realQty =
                 val === "" || val === null || val === undefined
                     ? -1
@@ -382,6 +524,11 @@ function insertData() {
             );
         });
 
+        // Draft: produk yang belum disentuh sama sekali tidak ikut disimpan.
+        if (keepSparse && !hasValue) {
+            return;
+        }
+
         item.units = units;
         item.stod_system = systemArr.join(", ");
         item.stod_real = realArr.join(", ");
@@ -397,13 +544,13 @@ function insertData() {
         category_id: -1,
         sto_notes: $("#catatan").val(),
         item: JSON.stringify(productSubmit),
+        is_draft: isDraft ? 1 : 0,
         _token: token,
     };
     if (mode == 2) {
         url = "/updateStockOpname";
         param.sto_id = data.sto_id;
     }
-    LoadingButton($(this));
 
     $.ajax({
         url: url,
@@ -413,13 +560,26 @@ function insertData() {
             "X-CSRF-TOKEN": token,
         },
         success: function (e) {
+            if (e && e.status == -1) {
+                notifikasi(
+                    "error",
+                    "Gagal Simpan",
+                    e.message || "Terjadi kesalahan",
+                );
+                ResetLoadingButton(btnSelector, doneText);
+                return;
+            }
+            if (typeof onSuccess === "function") {
+                onSuccess(e);
+                return;
+            }
             toastr.success("", "Berhasil Tambah Stock Opname");
-            ResetLoadingButton(".btn-save", "Tambah Stok Opname");
+            ResetLoadingButton(btnSelector, doneText);
             window.location.href = "/stockOpname";
         },
         error: function (e) {
             toastr.success("", "Terjadi Kesalahan Saat Tambah Stok Opname");
-            ResetLoadingButton(".btn-save", "Tambah Stok Opname");
+            ResetLoadingButton(btnSelector, doneText);
             console.log(e);
         },
     });

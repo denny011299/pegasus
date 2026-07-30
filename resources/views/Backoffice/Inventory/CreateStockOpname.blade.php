@@ -142,6 +142,9 @@
                     <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
                     <button class="btn btn-success save-terima" style="display: none">Terima</button>
                 @endif
+                <button class="btn btn-outline-danger btn-delete-draft" style="display: none">Hapus Draft</button>
+                <button class="btn btn-outline-primary btn-save-draft">Simpan sebagai Draft</button>
+                <button class="btn btn-success btn-ajukan" style="display: none">Ajukan</button>
                 <button class="btn btn-primary btn-save">Tambah Stok Opname</button>
             </div>
         </div>

@@ -131,6 +131,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Produk|edit')->group(function () {
         Route::post('/updateStockOpname', [StockController::class, 'updateStockOpname'])->name('updateStockOpname');
         Route::post('/updateDetailStockOpname', [StockController::class, 'updateDetailStockOpname'])->name('updateDetailStockOpname');
+        Route::post('/submitStockOpname', [StockController::class, 'submitStockOpname'])->name('submitStockOpname');
     });
     Route::middleware('check.access:Stok Opname Produk|delete')->group(function () {
         Route::post('/deleteStockOpname', [StockController::class, 'deleteStockOpname'])->name('deleteStockOpname');
