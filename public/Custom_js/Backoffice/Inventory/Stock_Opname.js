@@ -60,6 +60,12 @@
                     3: `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`,
                 };
 
+                const downloadIcon = item.is_draft ? '' : `
+                        <a href="/generateStockOpname/${item.sto_id}" class="me-2 btn-action-icon p-2 btn_download" data-bs-toggle="tooltip"
+                            data-bs-placement="bottom" title="Download Stock Opname">
+                            <i class="fe fe-file-text"></i>
+                        </a>`;
+
                 return {
                     ...item,
                     sto_date: item.sto_date ? moment(item.sto_date).format('D MMM YYYY') : '-',
@@ -67,14 +73,13 @@
                     sto_code: item.sto_code || '-',
                     created_by_name: item.created_by_name || '-',
                     acc_by_name: item.acc_by_name || '-',
-                    status_text: statusTextMap[item.status] || '-',
+                    status_text: item.is_draft
+                        ? `<span class="badge bg-warning" style="font-size: 12px">Draft</span>`
+                        : (statusTextMap[item.status] || '-'),
                     action: `
-                        <a href="/generateStockOpname/${item.sto_id}" class="me-2 btn-action-icon p-2 btn_download" data-bs-toggle="tooltip"
-                            data-bs-placement="bottom" title="Download Stock Opname">
-                            <i class="fe fe-file-text"></i>
-                        </a>
+                        ${downloadIcon}
                         <a href="/detailStockOpname/${item.sto_id}" class="me-2 btn-action-icon p-2 btn_view" data-id="${item.sto_id}"
-                            data-bs-target="#view-opname" title="Detail Stock Opname">
+                            data-bs-target="#view-opname" title="${item.is_draft ? 'Lanjutkan Draft' : 'Detail Stock Opname'}">
                             <i class="fe fe-eye"></i>
                         </a>
                     `,

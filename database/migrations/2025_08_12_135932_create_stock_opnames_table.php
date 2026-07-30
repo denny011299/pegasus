@@ -18,7 +18,7 @@ return new class extends Migration
             $table->integer('staff_id');
             $table->integer('category_id');
             $table->longText('sto_notes')->nullable();
-            $table->boolean('status')->default(1)->comment('1=active, 0=inactive');
+            $table->boolean('status')->default(1)->comment('1=Menunggu Approval, 2=Disetujui, 3=Ditolak');
             $table->integer('created_by')->nullable()->comment('staff_id');
             $table->timestamp('created_at')->nullable();
             $table->timestamp('updated_at')->nullable();

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RoleAccess;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
 
@@ -17,7 +18,12 @@ class StockOpname extends Model
         'staff_id',
         'category_id',
         'sto_notes',
-        'status'
+        'status',
+        'is_draft',
+    ];
+
+    protected $casts = [
+        'is_draft' => 'boolean',
     ];
 
     /**
@@ -37,6 +43,17 @@ class StockOpname extends Model
 
         $result = self::where('status', '>=', 1);
 
+        // Draft cuma boleh terlihat oleh staff yang membuatnya (atau super
+        // admin) — begitu diajukan (is_draft=false) baru masuk alur approval
+        // biasa dan terlihat semua orang seperti sebelumnya.
+        $user = Session::get('user');
+        if (! RoleAccess::isSuperAdmin($user)) {
+            $myStaffId = (int) ($user->staff_id ?? 0);
+            $result->where(function ($q) use ($myStaffId) {
+                $q->where('is_draft', false)->orWhere('created_by', $myStaffId);
+            });
+        }
+
         if ($data['sto_date']) {
             $result->whereDate('sto_date', $data['sto_date']);
         }
@@ -44,7 +61,7 @@ class StockOpname extends Model
         if ($data['staff_id']) {
             $result->where('staff_id', $data['staff_id']);
         }
-        
+
         if ($data['sto_id']) {
             $result->where('sto_id','=', $data['sto_id']);
         }
@@ -106,6 +123,7 @@ class StockOpname extends Model
         $t->staff_id = $data['staff_id'];
         $t->category_id = $data['category_id'];
         $t->sto_notes = $data['sto_notes'] ?? null;
+        $t->is_draft = ! empty($data['is_draft']);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
@@ -124,6 +142,9 @@ class StockOpname extends Model
         $t->staff_id = $data['staff_id'];
         $t->category_id = $data['category_id'];
         $t->sto_notes = $data['sto_notes'] ?? null;
+        if (array_key_exists('is_draft', $data)) {
+            $t->is_draft = ! empty($data['is_draft']);
+        }
         $t->save();
 
         return $t->sto_id;

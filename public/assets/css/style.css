@@ -14309,6 +14309,7 @@ body.filter-opened {
 
 .login-body {
   display: table;
+  width: 100%;
   height: 100vh;
   min-height: 100vh;
   margin: auto;
@@ -14357,11 +14358,11 @@ body.filter-opened {
   display: flex;
   justify-content: center;
   padding: 2rem;
-  width: 450px;
+  width: 100%;
 }
-@media (max-width: 320px) {
+@media (max-width: 575.98px) {
   .login-wrapper .loginbox .login-right {
-    width: 100%;
+    padding: 1.25rem;
   }
 }
 .login-wrapper .loginbox .login-right .login-right-wrap {

@@ -131,6 +131,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Produk|edit')->group(function () {
         Route::post('/updateStockOpname', [StockController::class, 'updateStockOpname'])->name('updateStockOpname');
         Route::post('/updateDetailStockOpname', [StockController::class, 'updateDetailStockOpname'])->name('updateDetailStockOpname');
+        Route::post('/submitStockOpname', [StockController::class, 'submitStockOpname'])->name('submitStockOpname');
     });
     Route::middleware('check.access:Stok Opname Produk|delete')->group(function () {
         Route::post('/deleteStockOpname', [StockController::class, 'deleteStockOpname'])->name('deleteStockOpname');
@@ -155,6 +156,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Bahan Mentah|edit')->group(function () {
         Route::post('/updateStockOpnameBahan', [StockController::class, 'updateStockOpnameBahan'])->name('updateStockOpnameBahan');
         Route::post('/updateDetailStockOpnameBahan', [StockController::class, 'updateDetailStockOpnameBahan'])->name('updateDetailStockOpnameBahan');
+        Route::post('/submitStockOpnameBahan', [StockController::class, 'submitStockOpnameBahan'])->name('submitStockOpnameBahan');
     });
     Route::middleware('check.access:Stok Opname Bahan Mentah|delete')->group(function () {
         Route::post('/deleteStockOpnameBahan', [StockController::class, 'deleteStockOpnameBahan'])->name('deleteStockOpnameBahan');
