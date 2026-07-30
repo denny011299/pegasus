@@ -2799,26 +2799,14 @@
                     notifikasi('error', e.header, e.message);
                     if (type=="admin") refreshCashAdmin();
                     else if (type=="gudang") refreshCashGudang();
-                    else if (type=="armada") {
-                        $('#filter_customer_id').empty(null);
-                        refreshCashArmada();
-                    }
-                    else if (type=="sales") {
-                        $('#filter_sales_id').empty(null);
-                        refreshCashSales();
-                    }
+                    else if (type=="armada") refreshCashArmada();
+                    else if (type=="sales") refreshCashSales();
                     return false;
                 }
                 if (type=="admin") refreshCashAdmin();
                 else if (type=="gudang") refreshCashGudang();
-                else if (type=="armada") {
-                    $('#filter_customer_id').empty(null);
-                    refreshCashArmada();
-                }
-                else if (type=="sales") {
-                    $('#filter_sales_id').empty(null);
-                    refreshCashSales();
-                }
+                else if (type=="armada") refreshCashArmada();
+                else if (type=="sales") refreshCashSales();
                 notifikasi('success', "Berhasil Terima", "Berhasil Terima Pengajuan");
                 
             },
@@ -2886,14 +2874,8 @@
                     notifikasi('error', e.header, e.message);
                     if (type=="admin") refreshCashAdmin();
                     else if (type=="gudang") refreshCashGudang();
-                    else if (type=="armada") {
-                        $('#filter_customer_id').empty(null);
-                        refreshCashArmada();
-                    }
-                    else if (type=="sales") {
-                        $('#filter_sales_id').empty(null);
-                        refreshCashSales();
-                    }
+                    else if (type=="armada") refreshCashArmada();
+                    else if (type=="sales") refreshCashSales();
                     return false;
                 }
                 if (type=="admin") refreshCashAdmin();
@@ -3105,6 +3087,7 @@
         $('#end_date').val("");
         $('#filter_staff_id').empty();
         $('#filter_customer_id').empty();
+        $('#filter_sales_id').empty();
         if (type=="admin") refreshCashAdmin();
         else if (type=="gudang") refreshCashGudang();
         else if (type=="armada") refreshCashArmada();
