@@ -2,6 +2,9 @@
     var product = [];
     var productSubmit = [];
     var savedValues = {};
+    var stockOpnameXhr = null;
+    var stockOpnameReqSeq = 0;
+    var searchProdukDebounce = null;
      autocompleteCategory("#kategori",null,1);
      
     $(document).ready(function () {
@@ -62,7 +65,14 @@
             });
         });
         console.log(savedValues)
-        $.ajax({
+
+        // Batalkan request pencarian sebelumnya yang belum selesai, dan tandai
+        // request ini dengan nomor urut supaya respons yang datang belakangan
+        // (out-of-order) tidak menimpa hasil pencarian yang lebih baru.
+        if (stockOpnameXhr) stockOpnameXhr.abort();
+        var reqId = ++stockOpnameReqSeq;
+
+        stockOpnameXhr = $.ajax({
             url:"/getProductVariant",
             method:"get",
             data:{
@@ -70,9 +80,10 @@
                 _token:'{{ csrf_token() }}'
             },
             success:function(e){
+                if (reqId !== stockOpnameReqSeq) return; // respons basi, abaikan
                 product = e;
                 console.log(e);
-                
+
                 $('#tbStock').html("");
                 e.forEach((item,indexProduct) => {
                     var st = "";
@@ -114,7 +125,6 @@
                             </td>
                         </tr>
                     `);
-                    $('.real-stock').trigger("keyup");
                 });
                 // Restore value yang sudah diinput
                 $('.row-stock').each(function() {
@@ -141,6 +151,7 @@
                 if (typeof callback === 'function') callback();
             },
             error:function(e){
+                if (reqId !== stockOpnameReqSeq) return; // request lama yang dibatalkan (abort)
                 console.log(e);
             }
         });
@@ -193,7 +204,10 @@
 
     $(document).on('keyup', '#filter_pr_name', function() {
         if (mode == 1) {
-            refreshStockOpname();
+            clearTimeout(searchProdukDebounce);
+            searchProdukDebounce = setTimeout(function() {
+                refreshStockOpname();
+            }, 350);
         } else {
             let keyword = $(this).val().toLowerCase();
             let filtered = data.item.filter(item =>
@@ -232,6 +246,7 @@
 
     $(document).on("click", ".btn-save", function() {
         LoadingButton(this);
+        clearTimeout(searchProdukDebounce);
         $('#filter_pr_name').val("");
         refreshStockOpname(function() {
             insertData();
