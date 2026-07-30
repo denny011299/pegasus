@@ -11,14 +11,15 @@ autocompleteUnit("#product_unit");
 function refreshSafetyStockAccess() {
     canAccessSafetyStock = typeof hasAccessAction === "function"
         && hasAccessAction("Safety Stock", "edit");
+    var whName = typeof getActiveWarehouseName === "function" ? getActiveWarehouseName() : null;
+    var whLabel = whName
+        ? ("Gudang aktif: " + whName)
+        : "Mengikuti gudang aktif di header";
+    $(".alert-stock-wh-label").text(whLabel);
     if (canAccessSafetyStock) {
         $(".col-safety-stock").removeClass("d-none");
         $(".cell-safety-stock").removeClass("d-none");
-        var whName = typeof getActiveWarehouseName === "function" ? getActiveWarehouseName() : null;
-        var label = whName
-            ? ("Gudang aktif: " + whName)
-            : "Mengikuti gudang aktif di header";
-        $(".safety-stock-wh-label").text(label);
+        $(".safety-stock-wh-label").text(whLabel);
     } else {
         $(".col-safety-stock").addClass("d-none");
         $(".cell-safety-stock").addClass("d-none");
@@ -48,6 +49,7 @@ $(document).ready(function() {
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
             $('.row-variant').last().find('.variant_alert').val(element.product_variant_alert);
             $('.row-variant').last().find('.variant_safety_stock').val(element.safety_stock ?? 0);
+            $('.row-variant').last().find('.variant_lead_time').val(element.lead_time_days ?? 0);
             if (element.retail_unit) {
                 $('.row-variant').last().find('.unit_retail').val(element.retail_unit);
             }
@@ -185,6 +187,9 @@ function addRow(names="",idx=0) {
                     <select class="form-select unit_safety"></select>
                 </div>
             </td>
+            <td style="padding: 12px 16px;">
+                <input type="number" min="0" step="1" class="form-control variant_lead_time" placeholder="Hari" value="0">
+            </td>
             <td class="d-flex align-items-center justify-content-center" style="padding: 12px 16px; gap: 8px;">
                 <a class="btn_edit_relasi d-inline-flex align-items-center justify-content-center" index="${$('.row-variant').length}" href="javascript:void(0);" style="width: 32px; height: 32px; background: #eff6ff; color: #3b82f6; border-radius: 8px; transition: all 0.2s ease;" title="Atur Relasi">
                     <i data-feather="git-merge" style="width: 16px; height: 16px;"></i>
@@ -240,6 +245,7 @@ $(document).on("click",".btn-save",function(){
             product_variant_id: $(this).find('.variant_id').val(),
             unit_id: $(this).find('.unit_alert').val(),
             retail_unit: $(this).find('.unit_retail').val() || null,
+            lead_time_days: Math.max(0, parseInt($(this).find('.variant_lead_time').val(), 10) || 0),
         };
         if (canAccessSafetyStock) {
             variant.safety_stock = $(this).find('.variant_safety_stock').val() || 0;

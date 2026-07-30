@@ -43,7 +43,8 @@ class ProductVariant extends Model
         if ($data["search_product"]){
             $result->whereAny([
                 "pr.product_name",
-                "product_variants.product_variant_name"
+                "product_variants.product_variant_name",
+                "product_variants.product_variant_sku",
             ], "like", "%" . $data["search_product"] . "%");
         }
 
@@ -241,6 +242,7 @@ class ProductVariant extends Model
         $t->product_variant_barcode = $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"]!="" ? $data["variant_alert"] : 0;
         $t->product_variant_stock = 0;
+        $t->lead_time_days = max(0, (int) ($data["lead_time_days"] ?? 0));
         $t->safety_stock = isset($data["safety_stock"]) && $data["safety_stock"] !== ""
             ? (int) $data["safety_stock"]
             : 0;
@@ -269,6 +271,7 @@ class ProductVariant extends Model
                 "safety_stock" => $data["safety_stock"] ?? 0,
                 "safety_unit_id" => $data["safety_unit_id"] ?? null,
                 "retail_unit" => $data["retail_unit"] ?? null,
+                "lead_time_days" => $data["lead_time_days"] ?? 0,
             ]);
         }
         $t->product_id = $data["product_id"];
@@ -278,6 +281,7 @@ class ProductVariant extends Model
         $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"];
         $t->unit_id = $data["unit_id"];
+        $t->lead_time_days = max(0, (int) ($data["lead_time_days"] ?? 0));
         if (array_key_exists('safety_stock', $data)) {
             $t->safety_stock = $data["safety_stock"] !== "" && $data["safety_stock"] !== null
                 ? (int) $data["safety_stock"]

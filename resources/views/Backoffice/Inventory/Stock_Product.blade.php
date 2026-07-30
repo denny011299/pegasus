@@ -126,6 +126,21 @@
             font-weight: 700;
             justify-content: center;
             font-size: 15px;
+            width: 100%;
+        }
+        .sretail-list-item.safety-cell-label {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding-left: 16px;
+            padding-right: 16px;
+            box-sizing: border-box;
+        }
+        #tableStockRetail thead th {
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        #tableStockRetail thead th.text-center {
+            text-align: center !important;
         }
         /* Log table */
         .table-scroll {
@@ -272,29 +287,30 @@
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 30% 18% 30% 22%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 40% 15% 22% 23%;">
                                         <span style="width:50%"></span>
-                                        <span style="width:30%"></span>
-                                        <span style="width:30%; justify-self: flex-end;"></span>
-                                        <span style="width:30%; justify-self: flex-end;"></span>
+                                        <span style="width:40%"></span>
+                                        <span style="width:40%; justify-self: center;"></span>
+                                        <span style="width:40%; justify-self: center;"></span>
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 30% 18% 30% 22%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 40% 15% 22% 23%;">
                                                 <span class="skel-text" style="width:60%"></span>
-                                                <span class="skel-text" style="width:40%"></span>
-                                                <span class="skel-text" style="width:20%; justify-self: flex-end;"></span>
-                                                <span class="skel-text" style="width:20%; justify-self: flex-end;"></span>
+                                                <span class="skel-text" style="width:50%"></span>
+                                                <span class="skel-text" style="width:30%; justify-self: center;"></span>
+                                                <span class="skel-text" style="width:30%; justify-self: center;"></span>
                                             </div>
                                         @endfor
                                     </div>
                                 </div>
-                                <table class="table table-center table-hover" id="tableStockRetail">
+                                <table class="table table-hover" id="tableStockRetail">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th style="width: 35%;">Nama Barang</th>
-                                            <th style="width: 20%;">Satuan</th>
-                                            <th class="text-center" style="width: 45%;">Stok Tersedia</th>
+                                            <th style="width: 40%;">Nama Barang</th>
+                                            <th style="width: 15%;">Satuan</th>
+                                            <th class="text-center" style="width: 22%;">Stok Tersedia</th>
+                                            <th class="col-safety text-center" style="width: 23%;">Safety Stock</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

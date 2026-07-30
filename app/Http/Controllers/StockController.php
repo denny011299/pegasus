@@ -421,7 +421,14 @@ class StockController extends Controller
 
     function getStockAlert(Request $req)
     {
-        $data = (new StockAlert())->getStockAlert(["mode" => $req->mode]);
+        $warehouseId = \App\Models\ProductStock::resolveWarehouseId($req->warehouse_id ?? null);
+        if (! $warehouseId) {
+            return response()->json([]);
+        }
+        $data = (new StockAlert())->getStockAlert([
+            "mode" => $req->mode,
+            "warehouse_id" => $warehouseId,
+        ]);
         return response()->json($data);
     }
 
@@ -451,7 +458,14 @@ class StockController extends Controller
 
     function getStockAlertSupplies(Request $req)
     {
-        $data = (new StockAlertSupplies())->getStockAlertSupplies(["mode" => $req->mode]);
+        $warehouseId = \App\Models\SuppliesStock::resolveWarehouseId($req->warehouse_id ?? null);
+        if (! $warehouseId) {
+            return response()->json([]);
+        }
+        $data = (new StockAlertSupplies())->getStockAlertSupplies([
+            "mode" => $req->mode,
+            "warehouse_id" => $warehouseId,
+        ]);
         return response()->json($data);
     }
 
@@ -1379,11 +1393,25 @@ class StockController extends Controller
 
             if ($variantIds !== []) {
                 // Batch stock (1 query)
-                $stockRows = ProductStock::withoutGlobalScope('active_warehouse')
-                    ->where('status', 1)
-                    ->where('warehouse_id', $warehouseId)
-                    ->whereIn('product_variant_id', $variantIds)
-                    ->get(['ps_id', 'product_variant_id', 'unit_id', 'ps_stock', 'ps_safety_stock']);
+                $stockQuery = ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('product_stocks.status', 1)
+                    ->where('product_stocks.warehouse_id', $warehouseId)
+                    ->whereIn('product_stocks.product_variant_id', $variantIds);
+
+                // Gudang utama hanya menyimpan/menampilkan stok dalam satuan default produk.
+                if ($isMain) {
+                    $stockQuery
+                        ->join('products as stock_product', 'stock_product.product_id', '=', 'product_stocks.product_id')
+                        ->whereColumn('product_stocks.unit_id', 'stock_product.unit_id');
+                }
+
+                $stockRows = $stockQuery->get([
+                    'product_stocks.ps_id',
+                    'product_stocks.product_variant_id',
+                    'product_stocks.unit_id',
+                    'product_stocks.ps_stock',
+                    'product_stocks.ps_safety_stock',
+                ]);
 
                 $unitIds = $stockRows->pluck('unit_id')->unique()->filter()->values()->all();
                 $units = $unitIds !== []
@@ -1476,10 +1504,16 @@ class StockController extends Controller
 
         // Legacy (non-DataTables): tetap support, filter gudang aktif
         $data = (new ProductVariant())->getProductVariant();
+        $defaultUnits = $isMain
+            ? Product::query()
+                ->whereIn('product_id', $data->pluck('product_id')->filter()->unique()->all())
+                ->pluck('unit_id', 'product_id')
+            : collect();
         foreach ($data as $key => $value) {
             $value->stock = (new ProductStock())->getProductStock([
                 "product_variant_id" => $value->product_variant_id,
                 "warehouse_id" => $warehouseId,
+                "unit_id" => $isMain ? ($defaultUnits[$value->product_id] ?? null) : null,
                 "relations" => $value->relasi,
             ]);
             $value->warehouse_id = $warehouseId;

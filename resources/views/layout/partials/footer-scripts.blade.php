@@ -334,14 +334,16 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         }
         
         $("#text-delete").html(text);
-        $(".btn-konfirmasi").attr("id", button_id);
+        // Scope ke modal delete saja — jangan set id di semua .btn-konfirmasi (bikin duplikat id)
+        $('#modalKonfirmasi .btn-konfirmasi').removeAttr('id');
+        $('#modalDelete .btn-konfirmasi').attr("id", button_id);
         $('#modalDelete').modal("show");
     }
       
     function showModalKonfirmasi(text, button_id) {
-        //button id ini, id button ketika dikofrimasi delete
         $("#text-konfirmasi").html(text);
-        $(".btn-konfirmasi").attr("id", button_id);
+        $('#modalDelete .btn-konfirmasi').removeAttr('id');
+        $('#modalKonfirmasi .btn-konfirmasi').attr("id", button_id);
         $('#modalKonfirmasi').modal("show");
     }
       
@@ -1480,6 +1482,11 @@ $(document).on('click', '#btn-kembali-camera', function () {
     closeCameraModal();
 });
 
+$(document).on('click', '#btn-close-camera', function (event) {
+    event.preventDefault();
+    closeCameraModal();
+});
+
 // =========================
 // START CAMERA FUNCTION
 // =========================
@@ -1633,7 +1640,7 @@ $(document).on("click", "#uploadBtn", function () {
         appendPhotoToInput(inputFile, photoData);
         stopCameraStream();
         resetCameraModalUi();
-        showCameraReturnModal("#add_sales_order");
+        showCameraReturnModal(cameraReturnModal || "#add_sales_order");
         $('#modalPhoto').modal('hide');
     }
     else if(modeCamera==4){

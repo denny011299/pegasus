@@ -19,6 +19,7 @@ class StockTransferDetail extends Model
         'product_id',
         'product_variant_id',
         'unit_id',
+        'received_unit_id',
         'qty',
         'qty_received',
         'status',

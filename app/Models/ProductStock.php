@@ -6,6 +6,7 @@ use App\Support\UnitStockSorter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class ProductStock extends Model
@@ -22,6 +23,7 @@ class ProductStock extends Model
         'warehouse_id',
         'ps_stock',
         'ps_safety_stock',
+        'ps_alert_stock',
         'status',
         'created_by',
     ];
@@ -71,6 +73,7 @@ class ProductStock extends Model
         $data = array_merge([
             "product_id" => null,
             "product_variant_id" => null,
+            "unit_id" => null,
             "warehouse_id" => null,
             "relations" => null,
         ], $data);
@@ -85,6 +88,7 @@ class ProductStock extends Model
         }
         if ($data["product_id"]) $result->where('product_id', '=', $data["product_id"]);
         if ($data["product_variant_id"]) $result->where('product_variant_id', '=', $data["product_variant_id"]);
+        if ($data["unit_id"]) $result->where('unit_id', '=', $data["unit_id"]);
         $result->orderBy('created_at', 'asc');
 
         $result = $result->get();
@@ -110,6 +114,7 @@ class ProductStock extends Model
         $t->warehouse_id = self::resolveWarehouseId($data["warehouse_id"] ?? null) ?: null;
         $t->ps_stock = $data["ps_stock"] ?? 0;
         $t->ps_safety_stock = $data["ps_safety_stock"] ?? 0;
+        $t->ps_alert_stock = $data["ps_alert_stock"] ?? 0;
         $t->status = $data["status"] ?? 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
@@ -186,6 +191,7 @@ class ProductStock extends Model
                         'warehouse_id' => $warehouseId,
                         'ps_stock' => 0,
                         'ps_safety_stock' => 0,
+                        'ps_alert_stock' => 0,
                         'status' => 1,
                         'created_by' => $createdBy,
                         'created_at' => $now,
@@ -335,6 +341,91 @@ class ProductStock extends Model
             $map[$vid] = [
                 'safety_stock' => (int) $row->ps_safety_stock,
                 'safety_unit_id' => (int) $row->unit_id,
+            ];
+        }
+
+        return $map;
+    }
+
+    /**
+     * Set peringatan stok HANYA untuk satu gudang (master produk mengikuti gudang aktif).
+     * $variants: [[product_variant_id, alert_stock, alert_unit_id], ...]
+     */
+    public function applyAlertStockForWarehouse($productId, $warehouseId, array $variants): void
+    {
+        if (! Schema::hasColumn($this->getTable(), 'ps_alert_stock')) {
+            return;
+        }
+
+        $warehouseId = (int) $warehouseId;
+        $productId = (int) $productId;
+        if ($warehouseId <= 0 || $productId <= 0) {
+            return;
+        }
+
+        foreach ($variants as $row) {
+            $variantId = (int) ($row['product_variant_id'] ?? 0);
+            if ($variantId <= 0) {
+                continue;
+            }
+
+            $alertQty = isset($row['alert_stock']) && $row['alert_stock'] !== ''
+                ? (int) $row['alert_stock']
+                : 0;
+            $alertUnit = ! empty($row['alert_unit_id']) ? (int) $row['alert_unit_id'] : 0;
+
+            self::withoutGlobalScope('active_warehouse')
+                ->where('warehouse_id', $warehouseId)
+                ->where('product_id', $productId)
+                ->where('product_variant_id', $variantId)
+                ->where('status', 1)
+                ->update(['ps_alert_stock' => 0]);
+
+            if ($alertUnit > 0 && $alertQty >= 0) {
+                self::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', $warehouseId)
+                    ->where('product_id', $productId)
+                    ->where('product_variant_id', $variantId)
+                    ->where('unit_id', $alertUnit)
+                    ->where('status', 1)
+                    ->update(['ps_alert_stock' => $alertQty]);
+            }
+        }
+    }
+
+    /**
+     * Ambil peringatan stok per variant untuk satu gudang (untuk form master produk).
+     * @return array<int, array{alert_stock:int, alert_unit_id:int|null}>
+     */
+    public function getAlertStockMapForWarehouse($warehouseId, array $variantIds): array
+    {
+        if (! Schema::hasColumn($this->getTable(), 'ps_alert_stock')) {
+            return [];
+        }
+
+        $warehouseId = (int) $warehouseId;
+        $variantIds = array_values(array_filter(array_map('intval', $variantIds)));
+        if ($warehouseId <= 0 || $variantIds === []) {
+            return [];
+        }
+
+        $rows = self::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $warehouseId)
+            ->whereIn('product_variant_id', $variantIds)
+            ->where('status', 1)
+            ->where('ps_alert_stock', '>', 0)
+            ->orderByDesc('ps_alert_stock')
+            ->get(['product_variant_id', 'unit_id', 'ps_alert_stock']);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $vid = (int) $row->product_variant_id;
+            if (isset($map[$vid])) {
+                continue;
+            }
+            $map[$vid] = [
+                'alert_stock' => (int) $row->ps_alert_stock,
+                'alert_unit_id' => (int) $row->unit_id,
             ];
         }
 

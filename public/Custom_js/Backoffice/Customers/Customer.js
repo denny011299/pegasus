@@ -58,6 +58,7 @@
     }
 
     function refreshCustomer() {
+        $('#tableCustomer-wrap').addClass('dt-pending');
         $.ajax({
             url: "/getCustomer",
             method: "get",
@@ -93,9 +94,11 @@
                 table.rows.add(e).draw();
                 if (typeof feather !== "undefined") feather.replace();
                 if (table) table.columns.adjust();
+                $('#tableCustomer-wrap').removeClass('dt-pending');
             },
             error: function (err) {
                 console.error("Gagal load:", err);
+                $('#tableCustomer-wrap').removeClass('dt-pending');
             }
         });
     }

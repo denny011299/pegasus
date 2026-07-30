@@ -626,7 +626,7 @@
                 @endforeach
                 @if(!$loop->last)
                     <li><hr class="dropdown-divider"></li>
-                @endif
+            @endif
             @empty
                 <li><span class="dropdown-item-text text-muted">Tidak ada gudang aktif</span></li>
             @endforelse

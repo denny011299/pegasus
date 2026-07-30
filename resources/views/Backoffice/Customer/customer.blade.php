@@ -70,17 +70,17 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
-                            <div class="table-responsive" id="tableCustomer-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                            <div class="table-responsive dt-pending" id="tableCustomer-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
                                 <table class="table table-center table-hover mb-0" id="tableCustomer">
-                                    <thead>
+                                    <thead style="background:#f1f5f9; border-bottom: 1px solid #e2e8f0;">
                                         <tr>
-                                            <th>No Pol</th>
-                                            <th>Nama PIC</th>
-                                            <th>Telepon PIC</th>
-                                            <th>Saldo Armada</th>
-                                            <th>Dibuat</th>
-                                            <th>Dibuat Oleh</th>
-                                            <th class="no-sort text-center">Aksi</th>
+                                            <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">No Pol</th>
+                                            <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Nama PIC</th>
+                                            <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Telepon PIC</th>
+                                            <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Saldo Armada</th>
+                                            <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Dibuat</th>
+                                            <th style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Dibuat Oleh</th>
+                                            <th class="no-sort text-center" style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

@@ -102,6 +102,8 @@ class SuppliesVariant extends Model
                 "supplies_variant_name" => $data["supplies_variant_name"],
                 "supplies_variant_sku" => $data["supplies_variant_sku"],
                 "supplies_variant_price" => $data["supplies_variant_price"],
+                "supplies_variant_barcode" => $data["supplies_variant_barcode"] ?? "",
+                "supplier_id" => $data["supplier_id"] ?? null,
             ]);
         }
         $t->supplies_id = $data["supplies_id"];

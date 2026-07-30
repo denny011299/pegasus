@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class SalesOrderDetail extends Model
 {
@@ -64,6 +65,10 @@ class SalesOrderDetail extends Model
         $unitsMap = $unitIdSet !== []
             ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
             : collect();
+        $warehouseNames = Schema::hasColumn($this->getTable(), 'warehouse_id')
+            ? Warehouse::whereIn('id', $details->pluck('warehouse_id')->filter()->unique()->all())
+                ->pluck('warehouse_name', 'id')
+            : collect();
 
         foreach ($details as $value) {
             $variant = $variants->get($value->product_variant_id);
@@ -71,6 +76,9 @@ class SalesOrderDetail extends Model
             $unit = $unitsMap->get($value->unit_id);
             $value->unit_name = $unit ? $unit->unit_name : null;
             $value->retail_unit = $variant ? (int) ($variant->retail_unit ?? 0) : 0;
+            $value->warehouse_name = $value->warehouse_id
+                ? ($warehouseNames[$value->warehouse_id] ?? null)
+                : null;
 
             $unitIds = $product ? (json_decode($product->product_unit, true) ?: []) : [];
             $value->units = $unitIds;
@@ -91,6 +99,10 @@ class SalesOrderDetail extends Model
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
         $t->unit_id = $data["unit_id"];
+        if (Schema::hasColumn($t->getTable(), 'warehouse_id')) {
+            $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+            $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];
@@ -108,6 +120,10 @@ class SalesOrderDetail extends Model
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
         $t->unit_id = $data["unit_id"];
+        if (Schema::hasColumn($t->getTable(), 'warehouse_id')) {
+            $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+            $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema;
 
 class ProductionDetails extends Model
 {
@@ -60,6 +61,10 @@ class ProductionDetails extends Model
         $units = $unitIds !== []
             ? Unit::whereIn('unit_id', $unitIds)->get()->keyBy('unit_id')
             : collect();
+        $warehouseIds = $details->pluck('destination_warehouse_id')->filter()->unique()->values()->all();
+        $warehouses = $warehouseIds !== []
+            ? Warehouse::whereIn('id', $warehouseIds)->pluck('warehouse_name', 'id')
+            : collect();
 
         foreach ($details as $value) {
             $v = $variants->get($value->product_variant_id);
@@ -72,6 +77,11 @@ class ProductionDetails extends Model
                 ? $p->product_name . ' ' . $v->product_variant_name
                 : '-';
             $value->unit_name = $unit ? $unit->unit_name : '-';
+            $value->retail_unit = $v && $v->retail_unit ? (int) $v->retail_unit : null;
+            $value->default_unit = $p && $p->unit_id ? (int) $p->unit_id : null;
+            $value->destination_warehouse_name = $value->destination_warehouse_id
+                ? ($warehouses->get($value->destination_warehouse_id) ?? '-')
+                : null;
         }
 
         return $details;
@@ -85,6 +95,10 @@ class ProductionDetails extends Model
         $t->pd_qty = $data["pd_qty"];
         $t->bom_id = $data["bom_id"];
         $t->unit_id = $data["unit_id"];
+        if (Schema::hasColumn($t->getTable(), 'destination_warehouse_id')) {
+            $warehouseId = (int) ($data['destination_warehouse_id'] ?? 0);
+            $t->destination_warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
         $t->list_bahan = $data["list_bahan"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
@@ -99,6 +113,10 @@ class ProductionDetails extends Model
         $t->pd_qty = $data["pd_qty"];
         $t->bom_id = $data["bom_id"];
         $t->unit_id = $data["unit_id"];
+        if (Schema::hasColumn($t->getTable(), 'destination_warehouse_id')) {
+            $warehouseId = (int) ($data['destination_warehouse_id'] ?? 0);
+            $t->destination_warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
         $t->list_bahan = $data["list_bahan"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();

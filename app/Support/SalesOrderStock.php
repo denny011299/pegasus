@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Potong / kembalikan stok pengiriman (Sales Order):
- * - satuan eceran (product_variants.retail_unit) → gudang eceran (SO.retail_warehouse_id)
+ * - satuan eceran (product_variants.retail_unit) → gudang eceran per detail
+ *   (sales_order_details.warehouse_id; header lama sebagai fallback)
  * - satuan lain → gudang utama
  */
 class SalesOrderStock
@@ -73,7 +74,7 @@ class SalesOrderStock
             $isRetail = $retailUnit > 0 && $unitId === $retailUnit;
             if ($isRetail) {
                 $needsRetail = true;
-                $warehouseId = $retailId;
+                $warehouseId = (int) ($line['warehouse_id'] ?? 0) ?: $retailId;
             } else {
                 $warehouseId = $mainId;
             }
@@ -83,7 +84,19 @@ class SalesOrderStock
                     'ok' => false,
                     'status' => 0,
                     'header' => 'Gudang eceran wajib',
-                    'message' => 'Ada item satuan eceran. Pilih Gudang Eceran di form pengiriman.',
+                    'message' => 'Pilih gudang eceran pada setiap item yang memakai satuan eceran.',
+                ];
+            }
+            if ($isRetail && ! Warehouse::query()
+                ->active()
+                ->whereKey($warehouseId)
+                ->whereHas('type', fn ($q) => $q->where('is_main_warehouse', 0))
+                ->exists()) {
+                return [
+                    'ok' => false,
+                    'status' => 0,
+                    'header' => 'Gudang tidak valid',
+                    'message' => 'Gudang pada item satuan eceran harus berupa gudang eceran aktif.',
                 ];
             }
 
@@ -272,7 +285,9 @@ class SalesOrderStock
                 ? (int) (ProductVariant::where('product_variant_id', $variantId)->value('retail_unit') ?? 0)
                 : 0;
             $isRetail = $retailUnit > 0 && $unitId === $retailUnit;
-            $warehouseId = $isRetail ? $retailId : $mainId;
+            $warehouseId = $isRetail
+                ? ((int) ($line['warehouse_id'] ?? 0) ?: $retailId)
+                : $mainId;
             if ($warehouseId <= 0) {
                 continue;
             }
@@ -333,11 +348,6 @@ class SalesOrderStock
             ];
         }
 
-        // Fallback: kalau filter eceran kosong, tampilkan semua gudang yang cukup
-        if ($out === [] && $preferRetail) {
-            return self::recommendWarehouses($variantId, $unitId, $qty, $excludeWarehouseId, false);
-        }
-
         usort($out, fn ($a, $b) => $b['available'] <=> $a['available']);
 
         return $out;
@@ -380,6 +390,7 @@ class SalesOrderStock
             $lines[] = [
                 'product_variant_id' => $p['product_variant_id'] ?? 0,
                 'unit_id' => $p['unit_id'] ?? 0,
+                'warehouse_id' => $p['warehouse_id'] ?? null,
                 'qty' => (float) ($p['so_qty'] ?? $p['sod_qty'] ?? $p['qty'] ?? 0),
             ];
         }
@@ -416,8 +427,9 @@ class SalesOrderStock
                 continue;
             }
             $retailUnit = (int) (ProductVariant::where('product_variant_id', $variantId)->value('retail_unit') ?? 0);
-            if ($retailUnit > 0 && $unitId === $retailUnit && $retailId <= 0) {
-                return 'Pilih Gudang Eceran karena ada item dengan satuan eceran';
+            $lineWarehouseId = (int) ($p['warehouse_id'] ?? 0);
+            if ($retailUnit > 0 && $unitId === $retailUnit && $lineWarehouseId <= 0 && $retailId <= 0) {
+                return 'Pilih gudang eceran pada setiap item yang memakai satuan eceran';
             }
         }
 

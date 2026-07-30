@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Tabel sudah ada di DB produksi/dev (dibuat di luar migrasi / migrasi belum tercatat)
+        if (Schema::hasTable('product_issues')) {
+            return;
+        }
+
         Schema::create('product_issues', function (Blueprint $table) {
             $table->integerIncrements('pi_id');
             $table->string('pi_code', 50);

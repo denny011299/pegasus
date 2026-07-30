@@ -1,10 +1,76 @@
-    autocompleteBom('#product_id', '#addProduction .modal-content')
+    autocompleteBom('#product_id', '#addProduction')
     var mode=1; // 1 = insert; 2 = edit; 3 = view
     var modeBahan = 1;
     var table;
     var items = [];
     var list_photo =  [];
     var list_bahan=[];
+
+    function productionActiveWarehouseName() {
+        return (window.activeWarehouse && (window.activeWarehouse.name || window.activeWarehouse.warehouse_name))
+            || "Gudang utama aktif";
+    }
+
+    function syncProductionDestinationControl() {
+        var product = $('#product_id').select2("data")[0] || {};
+        var isRetail = parseInt(product.retail_unit || 0, 10) > 0
+            && parseInt($('#unit_id').val() || 0, 10) === parseInt(product.retail_unit, 10);
+        $('#production-main-warehouse-badge span').text(productionActiveWarehouseName());
+        if (isRetail) {
+            $('#production-main-warehouse-badge').hide();
+            $('#production_destination_warehouse_id').show();
+            if (typeof autocompleteWarehouse === "function") {
+                autocompleteWarehouse(
+                    '#production_destination_warehouse_id',
+                    '#addProduction',
+                    { retailOnly: true, placeholder: 'Pilih gudang eceran' }
+                );
+            }
+        } else {
+            $('#production_destination_warehouse_id').val(null).trigger('change').hide();
+            $('#production-main-warehouse-badge').show();
+        }
+    }
+
+    function resetProductionApprovalActions() {
+        $('#addProduction #btn-terima, #addProduction #btn-tolak')
+            .addClass('d-none')
+            .removeClass('btn_acc_produksi btn_decline_produksi btn_acc btn_cancel')
+            .removeAttr('production_id');
+    }
+
+    function showProductionApprovalActions(action, productionId) {
+        resetProductionApprovalActions();
+        if (!hasAccessAction("Produksi", "others")) {
+            return;
+        }
+
+        var $accept = $('#addProduction #btn-terima');
+        var $decline = $('#addProduction #btn-tolak');
+        if (action === 'production') {
+            $accept.addClass('btn_acc_produksi');
+            $decline.addClass('btn_decline_produksi');
+        } else if (action === 'cancellation') {
+            $accept.addClass('btn_acc');
+            $decline.addClass('btn_cancel');
+        } else {
+            return;
+        }
+
+        $accept.add($decline)
+            .attr('production_id', productionId)
+            .removeClass('d-none');
+    }
+
+    $('#addProduction').on('hidden.bs.modal', function () {
+        resetProductionApprovalActions();
+        if (!$('#modalBahan').hasClass('show')) {
+            $(this)
+                .removeAttr('production_id revision_source_production_id')
+                .removeData('approval-action');
+        }
+    });
+
     function getTodayStr() {
         let today = new Date();
         let yyyy = today.getFullYear();
@@ -124,9 +190,12 @@
         }
 
         var temp = $('#product_id').select2("data")[0];
+        var destinationId = parseInt($('#production_destination_warehouse_id').val() || 0, 10);
         var idx = -1;
         items.forEach(function (element) {
-            if (element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val()) {
+            if (element.product_variant_id == temp.product_variant_id
+                && element.unit_id == $('#unit_id').val()
+                && parseInt(element.destination_warehouse_id || 0, 10) === destinationId) {
                 element.pd_qty += parseInt($('#production_qty').val());
                 idx = 1;
             }
@@ -134,7 +203,9 @@
 
         if (idx == 1) {
             var mergedItem = items.find(function (element) {
-                return element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val();
+                return element.product_variant_id == temp.product_variant_id
+                    && element.unit_id == $('#unit_id').val()
+                    && parseInt(element.destination_warehouse_id || 0, 10) === destinationId;
             });
             var qtyKelipatanGabung = cekQtyKelipatanResep(
                 mergedItem.pd_qty,
@@ -149,12 +220,20 @@
         }
 
         if (idx == -1) {
+            var destinationData = $('#production_destination_warehouse_id').hasClass('select2-hidden-accessible')
+                ? ($('#production_destination_warehouse_id').select2("data")[0] || {})
+                : {};
             var data = {
                 "product_variant_id": temp.product_variant_id,
                 "product_name": temp.product_name,
                 "pd_qty": parseInt($('#production_qty').val()),
                 "unit_name": $('#unit_id option:selected').text(),
                 "unit_id": parseInt($('#unit_id').val()),
+                "retail_unit": parseInt(temp.retail_unit || 0, 10) || null,
+                "default_unit": parseInt(temp.default_unit || 0, 10) || null,
+                "destination_warehouse_id": destinationId || null,
+                "destination_warehouse_name": destinationData.text
+                    || productionActiveWarehouseName(),
                 "bom_id": temp.bom_id
             };
             items.push(data);
@@ -165,6 +244,8 @@
         $('#unit_id').empty();
         $('#unit_id').append("<option selected>Pilih Satuan</option>");
         $('#production_qty').val("");
+        $('#production_destination_warehouse_id').val(null).trigger('change');
+        syncProductionDestinationControl();
         return true;
     }
     $(document).ready(function(){
@@ -174,6 +255,7 @@
     });
 
     $(document).on('click', '.btnAdd', function(){
+        resetProductionApprovalActions();
         mode=1;
         modeBahan = 1;
         items = [];
@@ -186,13 +268,13 @@
         $('.is-invalid').removeClass('is-invalid');
         $('#unit_id').html("");
         $('#unit_id').append("<option selected>Pilih Satuan</option>");
-        $('.add, .btn-save, .btn_delete_row_pr').show();
+        $('.input_table, .add, .btn-save, .btn_delete_row_pr').show();
+        $('.btn-save').html('<i class="fe fe-save me-1"></i> Tambah Produksi');
         $('#production_desc').attr('disabled', false);
         $('.btn-save').show();
         $('.btn-cancel').html("Batal");
         $('#addProduction').modal("show");
         $('.dos').hide();
-        $('#btn-terima, #btn-tolak').hide();
         $("#production_date").val(getTodayStr()).prop('disabled', true);
         $('#addProduction').removeAttr("revision_source_production_id");
     })
@@ -237,9 +319,7 @@
         $('#production_qty').trigger('keyup');
     })
 
-    $(document).on('click', '#product_id', function() {
-        autocompleteBom('#product_id', '#addProduction .modal-content')
-    })
+    $(document).on('change', '#unit_id', syncProductionDestinationControl);
 
     // Cegah Enter menutup modal secara tidak sengaja (form action="#" menyebabkan page navigation)
     $(document).on('keydown', '#addProduction input, #addProduction select', function(e) {
@@ -272,9 +352,9 @@
                 { data: "status_text" },
                 { data: "notes", defaultContent: "-", width: "30%"  },
                 { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "cancel_requested_by_name", defaultContent: "-" },
-                { data: "action", class: "text-center align-middle" },
+                { data: "acc_by_name", defaultContent: "-", render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
+                { data: "cancel_requested_by_name", defaultContent: "-", render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
+                { data: "action", className: "text-center align-middle", width: "82px" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -285,6 +365,7 @@
     }
 
     function refreshProduction() {
+        $("#tableProduction-wrap").removeClass("dt-ready").addClass("dt-pending");
         $.ajax({
             url: "/getProduction",
             method: "get",
@@ -300,14 +381,17 @@
                 table.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].production_date).format('D MMM YYYY');
+                    e[i].date = `<div class="d-flex align-items-center gap-2"><div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;"><i class="fe fe-calendar"></i></div><span style="font-weight: 600; color: #334155; font-size: 13px;">${moment(e[i].production_date).format('DD MMM YYYY')}</span></div>`;
+                    if(e[i].production_code) {
+                        e[i].production_code = `<span style="font-family: monospace; font-size: 12px; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 4px 8px; border-radius: 6px; border: 1px solid #e0f2fe;">${e[i].production_code}</span>`;
+                    }
                     const isOldRow = moment(e[i].production_date).isBefore(
                         moment().subtract(2, "days").format("YYYY-MM-DD")
                     );
                     let prAct = "";
                     if (hasAccessAction("Produksi", "view")) {
                         prAct +=
-                            '<button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>';
+                            '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
                     }
                     if (
                         !isOldRow &&
@@ -315,15 +399,15 @@
                         hasAccessAction("Produksi", "delete")
                     ) {
                         prAct +=
-                            '<button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>';
+                            '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
                     }
                     if (isOldRow || (e[i].status != 1 && e[i].status != 2)) {
                         prAct = hasAccessAction("Produksi", "view")
-                            ? '<button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>'
+                            ? '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>'
                             : "";
                     }
                     e[i].action =
-                        prAct ||
+                        (prAct ? '<div style="display:flex;gap:6px;justify-content:center;">' + prAct + '</div>' : "") ||
                         '<span class="text-muted small">—</span>';
                     // if(e[i].status == 3){
 
@@ -346,23 +430,29 @@
                     //     `;
                     // }
                     if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Pending</span>`;
+                        e[i].status_text = `<span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-clock me-1"></i> Pending</span>`;
                     } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Berhasil</span>`;
+                        e[i].status_text = `<span class="badge" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-check-circle me-1"></i> Berhasil</span>`;
                     } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Tolak</span>`;
+                        e[i].status_text = `<span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-x-circle me-1"></i> Tolak</span>`;
                     } else if (e[i].status == 4){
-                        e[i].status_text = `<span class="badge bg-warning text-dark" style="font-size: 12px">Menunggu batal</span>`;
+                        e[i].status_text = `<span class="badge" style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-alert-circle me-1"></i> Menunggu Batal</span>`;
                     }
                 }
 
                 table.rows.add(e).draw();
                 feather.replace(); // Biar icon feather muncul lagi
+                $('[data-bs-toggle="tooltip"]').tooltip();
                 openProductionRevisionFromDashboardLink();
                 openProductionFromDashboardLink();
             },
             error: function (err) {
                 console.error("Gagal load kategori:", err);
+            },
+            complete: function () {
+                $("#tableProduction-wrap")
+                    .removeClass("dt-pending")
+                    .addClass("dt-ready");
             }
         });
     }
@@ -418,6 +508,7 @@
 
             if (!rowData) return;
 
+            resetProductionApprovalActions();
             mode = 1; // submit ulang sebagai pengajuan baru (pending ACC)
             modeBahan = 1;
             items = [];
@@ -442,6 +533,10 @@
                     "pd_qty": e.pd_qty,
                     "unit_name": e.unit_name,
                     "unit_id": e.unit_id,
+                    "retail_unit": e.retail_unit,
+                    "default_unit": e.default_unit,
+                    "destination_warehouse_id": e.destination_warehouse_id,
+                    "destination_warehouse_name": e.destination_warehouse_name,
                     "bom_id": e.bom_id
                 };
                 items.push(temp);
@@ -451,9 +546,9 @@
             addRow(items);
             $('#total_dos').html(rowData.total_dos || 0);
             $('.is-invalid').removeClass('is-invalid');
-            $('.add, .btn-save, .btn_delete_row_pr').show();
+            $('.input_table, .add, .btn-save, .btn_delete_row_pr').show();
+            $('.btn-save').html('<i class="fe fe-save me-1"></i> Simpan Revisi');
             $('.dos').show();
-            $('#btn-terima, #btn-tolak').hide();
             $('.btn-cancel').html("Batal");
             $('#addProduction').removeAttr("production_id");
             $('#addProduction').attr("revision_source_production_id", rowData.production_id);
@@ -504,6 +599,16 @@
         if (items.length == 0){
             notifikasi('error', "Gagal Insert", 'Harus ada 1 produk dipilih');
             ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+            return false;
+        }
+        var missingRetailDestination = items.some(function (item) {
+            return parseInt(item.retail_unit || 0, 10) > 0
+                && parseInt(item.unit_id || 0, 10) === parseInt(item.retail_unit, 10)
+                && !parseInt(item.destination_warehouse_id || 0, 10);
+        });
+        if (missingRetailDestination) {
+            notifikasi('error', 'Gudang Tujuan Wajib', 'Pilih gudang eceran untuk setiap hasil produksi bersatuan eceran.');
+            ResetLoadingButton('.btn-save', mode == 1 ? "Tambah Produksi" : "Update Produksi");
             return false;
         }
         param = {
@@ -594,15 +699,20 @@
         $('#tableProduct tbody').html("");
         e.forEach((element, index) => {
             console.log(element);
+
+            let btnAct = `<a class="btn_delete_row_pr d-inline-flex align-items-center justify-content-center" href="javascript:void(0);" style="width: 28px; height: 28px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; transition: all 0.2s ease;" title="Hapus Produk"><i class="fe fe-trash-2" style="font-size: 13px;"></i></a>`;
+            if(mode == 3) {
+                btnAct = `<a href="javascript:void(0);" class="btn_list_row d-inline-flex align-items-center justify-content-center" index="${index}" style="width: 28px; height: 28px; background: #f0f9ff; color: #0ea5e9; border: 1px solid #bae6fd; border-radius: 6px; transition: all 0.2s ease;" title="Lihat Daftar Bahan"><i class="fe fe-list" style="font-size: 13px;"></i></a>`;
+            }
+
             $('#tableProduct tbody').append(`
-                <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
-                    <td>${element.product_name}</td>
-                    <td class="text-center">${formatRupiah(element.pd_qty)}</td>
-                    <td>${element.unit_name}</td>
+                <tr class="row-product" data-index="${index}" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
+                    <td style="font-weight: 600; color: #334155;">${element.product_name}</td>
+                    <td class="text-center" style="font-weight: 700; color: #1e293b;">${formatRupiah(element.pd_qty)}</td>
+                    <td style="color: #64748b;">${element.unit_name}</td>
+                    <td><span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;"><i class="fe fe-map-pin me-1"></i>${element.destination_warehouse_name || productionActiveWarehouseName()}</span></td>
                     <td class="text-center align-middle">
-                        <a class="p-2 btn-action-icon btn_delete_row_pr" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
+                        ${btnAct}
                     </td>
                 </tr>
             `)
@@ -637,6 +747,13 @@
         }
 
         var tempBom = $('#product_id').select2("data")[0];
+        var isRetailOutput = parseInt(tempBom.retail_unit || 0, 10) > 0
+            && parseInt($('#unit_id').val() || 0, 10) === parseInt(tempBom.retail_unit, 10);
+        if (isRetailOutput && !parseInt($('#production_destination_warehouse_id').val() || 0, 10)) {
+            $('#production_destination_warehouse_id').next('.select2-container').find('.select2-selection').addClass('is-invalid');
+            notifikasi('error', 'Gudang Tujuan Wajib', 'Pilih gudang eceran untuk hasil produksi bersatuan eceran.');
+            return false;
+        }
 
         // Guard: blokir jika produk / varian tidak aktif
         if (tempBom && (tempBom.product_status == 0 || tempBom.product_variant_status == 0)) {
@@ -666,21 +783,18 @@
 
     $(document).on("click",".btn_delete_row_pr",function(){
         let row = $(this).closest("tr");
-        let productId = row.data("id");
-        items = items.filter(e => e.product_variant_id != productId);
-
-        let index = row.find('.btn_list_row').attr('index');
-        if (index !== undefined) {
-            list_bahan.splice(index, 1);
-        }
+        let index = parseInt(row.data("index"), 10);
+        items.splice(index, 1);
+        list_bahan.splice(index, 1);
         
         console.log(items)
-        row.remove();
+        addRow(items);
     });
 
     $(document).on('click', '.btn_view', function(){
         var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         console.log(data);
+        resetProductionApprovalActions();
         mode=3;
         modeBahan = 1;
         items = [];
@@ -705,6 +819,10 @@
                 "pd_qty": e.pd_qty,
                 "unit_name": e.unit_name,
                 "unit_id": e.unit_id,
+                "retail_unit": e.retail_unit,
+                "default_unit": e.default_unit,
+                "destination_warehouse_id": e.destination_warehouse_id,
+                "destination_warehouse_name": e.destination_warehouse_name,
                 "bom_id": e.bom_id
             };
             items.push(temp);
@@ -719,35 +837,19 @@
         console.log(list_bahan);
         addRow(items);
         $('#total_dos').html(formatRupiah(data.total_dos));
-        if (data.status == 1){
-            if (hasAccessAction("Produksi", "others")){
-                $('#btn-terima, #btn-tolak').show();
+        var approvalAction = null;
+        if (!moment(data.production_date).isBefore(moment().subtract(3, 'days').format('YYYY-MM-DD'))) {
+            if (data.status == 1) {
+                approvalAction = 'production';
+            } else if (data.status == 4) {
+                approvalAction = 'cancellation';
             }
-            $('#btn-terima').addClass('btn_acc_produksi');
-            $('#btn-tolak').addClass('btn_decline_produksi');
-            $('#btn-terima').removeClass('btn_acc');
-            $('#btn-tolak').removeClass('btn_cancel');
-            $('#btn-terima').attr('production_id', data.production_id);
-            $('#btn-tolak').attr('production_id', data.production_id);
-        } else if (data.status == 4) {
-            if (hasAccessActionAny("Produksi", "others")){
-            }
-            $('#btn-terima, #btn-tolak').show();
-            $('#btn-terima').addClass('btn_acc');
-            $('#btn-tolak').addClass('btn_cancel');
-            $('#btn-terima').removeClass('btn_acc_produksi');
-            $('#btn-tolak').removeClass('btn_decline_produksi');
-            $('#btn-terima').attr('production_id', data.production_id);
-            $('#btn-tolak').attr('production_id', data.production_id);
-        } else {
-            $('#btn-terima, #btn-tolak').hide();
         }
-        if (moment(data.production_date).isBefore(moment().subtract(3, 'days').format('YYYY-MM-DD'))) {
-            $('#btn-terima, #btn-tolak').hide();
-        }
+        $('#addProduction').data('approval-action', approvalAction);
+        showProductionApprovalActions(approvalAction, data.production_id);
         
         $('.is-invalid').removeClass('is-invalid');
-        $('.add, .btn-save, .btn_delete_row_pr').hide();
+        $('.input_table, .add, .btn-save, .btn_delete_row_pr').hide();
         $('.dos').show();
         $('.btn-cancel').html("Kembali");
         $('#production_date').prop('disabled', true);
@@ -771,6 +873,12 @@
     $(document).on('click', '.btn-close-bahan', function(){
         $('#addProduction').modal('show');
         $('#modalBahan').modal('hide');
+        if (mode === 3) {
+            showProductionApprovalActions(
+                $('#addProduction').data('approval-action'),
+                $('#addProduction').attr('production_id')
+            );
+        }
     })
 
     function getBom(id, index = null) {
@@ -814,12 +922,12 @@
                         let isDisabled = (mode == 3) ? 'disabled' : '';
                         
                         $('#tableSupplies tbody').append(`
-                            <tr class="row-bahan">
-                                <td class="text-center">
+                            <tr class="row-bahan" style="border-bottom: 1px solid #f1f5f9;">
+                                <td class="text-center" style="vertical-align: middle;">
                                     <input type="checkbox" ${isChecked ? 'checked' : ''} ${isDisabled}
-                                    class="form-check-input chk" supplies_id="${b.supplies_id}" />
+                                    class="form-check-input chk" supplies_id="${b.supplies_id}" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px;" />
                                 </td>
-                                <td>${b.supplies_name}</td>
+                                <td style="font-weight: 600; color: #475569;">${b.supplies_name}</td>
                             </tr>
                         `);
                     });
@@ -1032,7 +1140,8 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
             },
             method:"post",
             success:function(e){
-                if (e!=1){
+                var success = e === 1 || (typeof e === "object" && e.status == 1);
+                if (!success){
                     if (typeof e === "object"){
                         notifikasi('error', e.header, e.message);
                         if (e.status == -2) {
@@ -1050,7 +1159,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
                     ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                     refreshProduction();
                     $('.modal').modal("hide");
-                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Produksi");
+                    notifikasi('success', "Berhasil Terima", (e && e.message) || "Stock Transfer hasil produksi dibuat");
                 }                
             },
             error:function(e){

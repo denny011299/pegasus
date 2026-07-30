@@ -150,8 +150,15 @@
     }
 
     function ensureSafetyHeader($table, centered) {
-        if (!canViewSafetyStock) return;
-        if ($table.find("thead th.col-safety").length) return;
+        var $th = $table.find("thead th.col-safety");
+        if (!canViewSafetyStock) {
+            $th.remove();
+            return;
+        }
+        if ($th.length) {
+            if (centered) $th.addClass("text-center");
+            return;
+        }
         var cls = centered ? "col-safety text-center" : "col-safety";
         $table.find("thead tr").append('<th class="' + cls + '">Safety Stock</th>');
     }
@@ -173,9 +180,9 @@
     function renderSafetyLabel(text) {
         var label = text && text !== "-" ? text : "-";
         return (
-            '<div class="safety-cell-label d-flex align-items-center justify-content-between" style="cursor:pointer; width:120px; max-width:100%; min-height:20px; pe-1">' +
-                '<div style="text-align:left; word-break:break-word; flex-grow:1;">' + escapeHtml(label) + '</div>' +
-                '<i class="fe fe-edit-2 text-muted ms-2" style="font-size:13px; flex-shrink:0;" title="Edit Safety Stock"></i>' +
+            '<div class="safety-cell-label d-inline-flex align-items-center" style="cursor:pointer; min-height:20px;">' +
+                '<span style="font-weight:500; color:#475569; display:inline-block; width:65px; text-align:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + escapeHtml(label) + '</span>' +
+                '<i class="fe fe-edit-2 text-primary flex-shrink-0" style="font-size:13px; opacity:0.6; margin-left:4px;"></i>' +
             '</div>'
         );
     }
@@ -387,9 +394,9 @@
                               : "0";
                     var isDash = text === "0" || text === "-";
                     return (
-                        '<div class="sretail-list-item qty-item safety-cell-label d-flex align-items-center justify-content-between" style="cursor:pointer; width:120px; max-width:100%; padding-right:12px;">' +
-                            '<div style="text-align:left; word-break:break-word; flex-grow:1;">' + (isDash ? '-' : escapeHtml(text)) + '</div>' +
-                            '<i class="fe fe-edit-2 text-muted ms-2" style="font-size:12px; flex-shrink:0;"></i>' +
+                        '<div class="sretail-list-item qty-item safety-cell-label d-flex align-items-center justify-content-center" style="cursor:pointer; min-height:20px;">' +
+                            '<span style="font-weight:500; color:#475569; display:inline-block; width:44px; text-align:center;">' + (isDash ? '-' : escapeHtml(text)) + '</span>' +
+                            '<i class="fe fe-edit-2 text-primary flex-shrink-0" style="font-size:12px; opacity:0.6;"></i>' +
                         '</div>'
                     );
                 }
@@ -517,10 +524,16 @@
         var columns = [
             {
                 data: null,
-                width: canViewSafetyStock ? "35%" : "40%",
+                width: canViewSafetyStock ? "40%" : "50%",
                 orderable: true,
                 render: function (data, type, row) {
-                    if (type !== "display") return row.pr_name || "";
+                    if (type !== "display") {
+                        return (
+                            (row.pr_name || "") +
+                            " " +
+                            (row.product_variant_name || "")
+                        );
+                    }
                     var words = (row.pr_name || "P").trim().split(/\s+/);
                     var initials =
                         words.length >= 2
@@ -530,6 +543,12 @@
                     var avatarHtml = row.image_url
                         ? '<img src="' + row.image_url + '" alt="' + escapeHtml(row.pr_name || "") + '">'
                         : '<span class="sretail-avatar-initials">' + escapeHtml(initials) + "</span>";
+
+                    var variant = (row.product_variant_name || "").toString().trim();
+                    var category = (row.product_category || "").toString().trim();
+                    var metaParts = [];
+                    if (variant) metaParts.push(variant);
+                    if (category) metaParts.push(category);
 
                     return (
                         '<div class="sretail-product-cell">' +
@@ -541,7 +560,7 @@
                         escapeHtml(row.pr_name || "-") +
                         "</span>" +
                         '<span class="sretail-product-meta">' +
-                        escapeHtml(row.product_category || "-") +
+                        escapeHtml(metaParts.length ? metaParts.join(" · ") : "-") +
                         "</span>" +
                         "</div>" +
                         "</div>"
@@ -562,7 +581,7 @@
                 orderable: false,
                 searchable: false,
                 className: "text-center",
-                width: canViewSafetyStock ? "25%" : "40%",
+                width: canViewSafetyStock ? "22%" : "30%",
                 render: function (units) {
                     return renderRetailUnits(units, "stock");
                 },
@@ -575,18 +594,24 @@
                 orderable: false,
                 searchable: false,
                 className: "text-center cell-safety",
-                width: "25%",
+                width: "23%",
                 render: function (units) {
                     return renderRetailUnits(units, "safety");
                 },
             });
+        } else {
+            $("#tableStockRetail thead th.col-safety").remove();
         }
 
         var opts = dtBaseOptions("Cari barang...", [[0, "asc"]]);
         opts.columns = columns;
+        opts.autoWidth = false;
         opts.initComplete = function () {
             moveSearchFilter();
             $("#tableStockRetail-wrap").removeClass("dt-pending").addClass("dt-ready");
+            try {
+                this.api().columns.adjust();
+            } catch (e) {}
         };
 
         table = $("#tableStockRetail").DataTable(opts);

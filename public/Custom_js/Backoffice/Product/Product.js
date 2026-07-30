@@ -5,14 +5,14 @@
         inisialisasi();
     });
 
-    function setProductTableLoading(isLoading) {
-        var $wrap = $("#tableProduct-wrap");
-        if (!$wrap.length) return;
-        $wrap.toggleClass("is-loading", !!isLoading);
-    }
-
     function inisialisasi() {
-        table = $("#tableProduct").DataTable({
+        var $productTable = $("#tableProduct");
+
+        $productTable.on("processing.dt", function (event, settings, processing) {
+            $(settings.nTableWrapper).toggleClass("is-processing", processing);
+        });
+
+        table = $productTable.DataTable({
             processing: true,
             serverSide: true,
             deferRender: true,
@@ -59,29 +59,12 @@
                 var $filter = $(".dataTables_filter");
                 $filter.appendTo(".search-input");
                 $filter.find("label").prepend('<i class="fa fa-search"></i> ');
-                $("#tableProduct-wrap").removeClass("dt-pending").addClass("dt-ready");
-                // Sync lebar kolom setelah skeleton hilang
-                setTimeout(function () {
-                    if (table) table.columns.adjust();
-                }, 0);
+                this.api().columns.adjust();
             },
             drawCallback: function () {
-                setProductTableLoading(false);
-                if (table) table.columns.adjust();
+                this.api().columns.adjust();
             },
         });
-
-        // Munculkan overlay segera saat ganti page / sort / search
-        $("#tableProduct")
-            .on("preXhr.dt", function () {
-                setProductTableLoading(true);
-            })
-            .on("xhr.dt", function () {
-                // drawCallback juga reset; ini jaga-jaga kalau draw tertunda
-                setTimeout(function () {
-                    setProductTableLoading(false);
-                }, 0);
-            });
     }
 
     function refreshProduct() {

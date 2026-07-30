@@ -90,15 +90,106 @@ class ProductUnitStock
     }
 
     /**
-     * Total stok tersedia setara di $targetUnitId.
-     * Hanya hitung: stok satuan yang sama + bongkar dari satuan LEBIH BESAR (ancestor).
-     * Stok satuan lebih kecil tidak dihitung naik (contoh: 173 DOS ≠ Jerigen).
+     * Pilihan satuan kirim sesuai tipe gudang.
+     * Gudang retail menawarkan seluruh unit non-retail yang satu chain dengan retail unit,
+     * termasuk unit tanpa row stok yang dapat dibentuk melalui packing.
      */
-    public static function totalAvailable(int $warehouseId, int $productVariantId, int $targetUnitId): float
+    public static function sourceSnapshot(
+        int $warehouseId,
+        int $productVariantId,
+        bool $sourceIsMain,
+        int $defaultUnitId,
+        int $retailUnitId
+    ): array {
+        $candidateIds = $sourceIsMain
+            ? ($defaultUnitId > 0 ? [$defaultUnitId] : [])
+            : self::connectedUnitIds($productVariantId, $retailUnitId);
+
+        if (! $sourceIsMain) {
+            $candidateIds = array_values(array_filter(
+                $candidateIds,
+                fn ($id) => (int) $id !== $retailUnitId
+            ));
+        }
+
+        $stocks = self::stocks($warehouseId, $productVariantId);
+        $directByUnit = $stocks
+            ->groupBy(fn ($row) => (int) $row->unit_id)
+            ->map(fn ($rows) => (float) $rows->sum('ps_stock'));
+        $unitRows = $candidateIds === []
+            ? collect()
+            : Unit::query()
+                ->whereIn('unit_id', $candidateIds)
+                ->get(['unit_id', 'unit_name', 'unit_short_name'])
+                ->keyBy('unit_id');
+
+        $units = [];
+        foreach ($candidateIds as $unitId) {
+            $unit = $unitRows->get($unitId);
+            if (! $unit) {
+                continue;
+            }
+
+            $direct = (float) ($directByUnit->get($unitId) ?? 0);
+            $available = self::totalAvailable(
+                $warehouseId,
+                $productVariantId,
+                $unitId,
+                ! $sourceIsMain
+            );
+            $units[] = [
+                'unit_id' => (int) $unitId,
+                'unit_name' => (string) ($unit->unit_name ?: $unit->unit_short_name ?: '-'),
+                'unit_short_name' => (string) ($unit->unit_short_name ?: $unit->unit_name ?: '-'),
+                'ps_stock' => $direct,
+                'ps_stock_text' => number_format($direct, 0, ',', '.'),
+                'available_qty' => $available,
+            ];
+        }
+
+        return [
+            'stock_text' => $units === []
+                ? '0'
+                : collect($units)->map(fn ($unit) => number_format(
+                    (float) $unit['available_qty'],
+                    0,
+                    ',',
+                    '.'
+                ) . ' ' . $unit['unit_name'])->implode(', '),
+            'units' => $units,
+            'unit_order' => array_map(fn ($unit) => (int) $unit['unit_id'], $units),
+        ];
+    }
+
+    /**
+     * Total stok tersedia setara di $targetUnitId.
+     * Mode normal: unit sama + bongkar ancestor. Mode packing: gabungkan seluruh
+     * stok satu chain dan floor ke unit target.
+     */
+    public static function totalAvailable(
+        int $warehouseId,
+        int $productVariantId,
+        int $targetUnitId,
+        bool $allowPacking = false
+    ): float
     {
         $stocks = self::stocks($warehouseId, $productVariantId);
         if ($stocks->isEmpty()) {
             return 0.0;
+        }
+
+        if ($allowPacking) {
+            $stockByUnit = $stocks
+                ->groupBy(fn ($row) => (int) $row->unit_id)
+                ->map(fn ($rows) => (float) $rows->sum('ps_stock'))
+                ->all();
+
+            return (float) self::packingPlan(
+                $stockByUnit,
+                $productVariantId,
+                $targetUnitId,
+                PHP_INT_MAX
+            )['available'];
         }
 
         $total = 0.0;
@@ -180,6 +271,7 @@ class ProductUnitStock
     public static function checkItems(int $warehouseId, array $items): array
     {
         $shortages = [];
+        $packingPools = [];
 
         foreach ($items as $item) {
             $variantId = (int) ($item['product_variant_id'] ?? 0);
@@ -189,7 +281,38 @@ class ProductUnitStock
                 continue;
             }
 
-            $available = self::totalAvailable($warehouseId, $variantId, $unitId);
+            if ((bool) ($item['allow_packing'] ?? false)) {
+                if (! isset($packingPools[$variantId])) {
+                    $totalSmallest = 0.0;
+                    foreach (self::stocks($warehouseId, $variantId) as $stock) {
+                        $stockUnitId = (int) $stock->unit_id;
+                        if (! self::canConvertUnits($stockUnitId, $unitId, $variantId)) {
+                            continue;
+                        }
+                        $totalSmallest += max(0.0, (float) $stock->ps_stock)
+                            * self::toSmallestMultiplier($stockUnitId, $variantId);
+                    }
+                    $packingPools[$variantId] = [
+                        'total_smallest' => $totalSmallest,
+                        'used_smallest' => 0.0,
+                    ];
+                }
+
+                $targetMultiplier = self::toSmallestMultiplier($unitId, $variantId);
+                $remainingSmallest = max(
+                    0.0,
+                    $packingPools[$variantId]['total_smallest']
+                        - $packingPools[$variantId]['used_smallest']
+                );
+                $available = $targetMultiplier > 0
+                    ? (float) floor(($remainingSmallest + 1e-9) / $targetMultiplier)
+                    : 0.0;
+                if ($available + 1e-9 >= $qty) {
+                    $packingPools[$variantId]['used_smallest'] += $qty * $targetMultiplier;
+                }
+            } else {
+                $available = self::totalAvailable($warehouseId, $variantId, $unitId);
+            }
             if ($available + 1e-9 < $qty) {
                 $shortages[] = [
                     'product_variant_id' => $variantId,
@@ -236,6 +359,20 @@ class ProductUnitStock
         return ($qty * $fromSmallest) / $toSmallest;
     }
 
+    public static function canConvertUnits(
+        int $fromUnitId,
+        int $toUnitId,
+        int $productVariantId
+    ): bool {
+        if ($fromUnitId <= 0 || $toUnitId <= 0 || $productVariantId <= 0) {
+            return false;
+        }
+
+        return $fromUnitId === $toUnitId
+            || self::isAncestorUnit($fromUnitId, $toUnitId, $productVariantId)
+            || self::isAncestorUnit($toUnitId, $fromUnitId, $productVariantId);
+    }
+
     /**
      * Multiplier: 1 unit X = N unit terkecil (ikuti chain parent→child).
      */
@@ -263,6 +400,32 @@ class ProductUnitStock
         }
 
         return $multiplier;
+    }
+
+    /**
+     * Seluruh unit pada chain linear yang sama, terurut besar → kecil.
+     *
+     * @return array<int, int>
+     */
+    protected static function connectedUnitIds(int $productVariantId, int $anchorUnitId): array
+    {
+        if ($anchorUnitId <= 0) {
+            return [];
+        }
+
+        $ordered = self::orderedUnitIds($productVariantId);
+        if (! in_array($anchorUnitId, $ordered, true)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $ordered,
+            fn ($unitId) => self::canConvertUnits(
+                (int) $unitId,
+                $anchorUnitId,
+                $productVariantId
+            )
+        ));
     }
 
     protected static function relations(int $productVariantId): Collection
@@ -314,25 +477,34 @@ class ProductUnitStock
         int $unitId,
         float $qty,
         string $logCode,
-        string $logNotes = 'Stock Transfer - keluar'
+        string $logNotes = 'Stock Transfer - keluar',
+        bool $allowPacking = false
     ): array {
         if ($qty <= 0) {
             return ['ok' => true];
-        }
-
-        self::clearCache();
-        if (! self::canFulfill($warehouseId, $productVariantId, $unitId, $qty)) {
-            return ['ok' => false, 'message' => 'Stok tidak mencukupi'];
         }
 
         $rows = ProductStock::withoutGlobalScope('active_warehouse')
             ->where('status', 1)
             ->where('warehouse_id', $warehouseId)
             ->where('product_variant_id', $productVariantId)
+            ->lockForUpdate()
             ->get();
 
-        if ($rows->isEmpty()) {
+        if ($rows->isEmpty() && ! $allowPacking) {
             return ['ok' => false, 'message' => 'Stok tidak ditemukan'];
+        }
+
+        if ($allowPacking) {
+            return self::deductPackedQty(
+                $rows,
+                $warehouseId,
+                $productVariantId,
+                $unitId,
+                $qty,
+                $logCode,
+                $logNotes
+            );
         }
 
         /** @var array<int, \App\Models\ProductStock> $byUnit */
@@ -461,6 +633,200 @@ class ProductUnitStock
     }
 
     /**
+     * Hitung packing dalam unit terkecil, lalu susun sisa secara greedy besar → kecil.
+     *
+     * @param  array<int, float|int>  $stockByUnit
+     * @return array{ok:bool,available:int,before:array<int,float>,after:array<int,float>}
+     */
+    public static function packingPlan(
+        array $stockByUnit,
+        int $productVariantId,
+        int $targetUnitId,
+        int $requestedQty
+    ): array {
+        $unitIds = self::connectedUnitIds($productVariantId, $targetUnitId);
+        if ($unitIds === [] || ! in_array($targetUnitId, $unitIds, true)) {
+            return ['ok' => false, 'available' => 0, 'before' => [], 'after' => []];
+        }
+
+        $multipliers = [];
+        foreach ($unitIds as $unitId) {
+            $multiplier = self::toSmallestMultiplier($unitId, $productVariantId);
+            if ($multiplier <= 0) {
+                continue;
+            }
+            $multipliers[$unitId] = $multiplier;
+        }
+
+        return self::packingPlanFromMultipliers(
+            $stockByUnit,
+            $multipliers,
+            $targetUnitId,
+            $requestedQty
+        );
+    }
+
+    /**
+     * Pure calculation entry point untuk verifikasi packing tanpa akses database.
+     *
+     * @param  array<int, float|int>  $stockByUnit
+     * @param  array<int, float|int>  $multipliers  1 unit = N unit dasar
+     * @return array{ok:bool,available:int,before:array<int,float>,after:array<int,float>}
+     */
+    public static function packingPlanFromMultipliers(
+        array $stockByUnit,
+        array $multipliers,
+        int $targetUnitId,
+        int $requestedQty
+    ): array {
+        $totalSmallest = 0.0;
+        $before = [];
+        foreach ($multipliers as $unitId => $multiplier) {
+            $multiplier = (float) $multiplier;
+            if ($multiplier <= 0) {
+                continue;
+            }
+            $qty = max(0.0, (float) ($stockByUnit[$unitId] ?? 0));
+            $before[(int) $unitId] = $qty;
+            $totalSmallest += $qty * $multiplier;
+        }
+
+        $targetMultiplier = (float) ($multipliers[$targetUnitId] ?? 0);
+        if ($targetMultiplier <= 0) {
+            return ['ok' => false, 'available' => 0, 'before' => $before, 'after' => []];
+        }
+
+        $available = (int) floor(($totalSmallest + 1e-9) / $targetMultiplier);
+        if ($requestedQty > $available) {
+            return ['ok' => false, 'available' => $available, 'before' => $before, 'after' => $before];
+        }
+
+        $remaining = $totalSmallest - ($requestedQty * $targetMultiplier);
+        $after = [];
+        foreach ($multipliers as $unitId => $multiplier) {
+            $multiplier = (float) $multiplier;
+            if ($multiplier <= 0) {
+                continue;
+            }
+            $packed = (float) floor(($remaining + 1e-9) / $multiplier);
+            $after[(int) $unitId] = $packed;
+            $remaining -= $packed * $multiplier;
+        }
+
+        return ['ok' => true, 'available' => $available, 'before' => $before, 'after' => $after];
+    }
+
+    protected static function deductPackedQty(
+        Collection $rows,
+        int $warehouseId,
+        int $productVariantId,
+        int $unitId,
+        float $qty,
+        string $logCode,
+        string $logNotes
+    ): array {
+        if (abs($qty - round($qty)) > 1e-9) {
+            return ['ok' => false, 'message' => 'Qty kirim harus berupa bilangan bulat'];
+        }
+
+        $byUnitRows = $rows->groupBy(fn ($row) => (int) $row->unit_id);
+        $stockByUnit = $byUnitRows
+            ->map(fn ($unitRows) => (float) $unitRows->sum('ps_stock'))
+            ->all();
+        $plan = self::packingPlan(
+            $stockByUnit,
+            $productVariantId,
+            $unitId,
+            (int) round($qty)
+        );
+        if (! $plan['ok']) {
+            return [
+                'ok' => false,
+                'message' => 'Stok tidak cukup. Tersedia: ' . $plan['available'],
+            ];
+        }
+
+        $productId = (int) ($rows->first()?->product_id ?? 0);
+        $createdBy = Session::get('user')->staff_id ?? null;
+        $allUnitIds = array_values(array_unique(array_merge(
+            array_keys($plan['before']),
+            array_keys($plan['after']),
+            [$unitId]
+        )));
+
+        foreach ($allUnitIds as $currentUnitId) {
+            $unitRows = $byUnitRows->get($currentUnitId, collect());
+            $targetQty = round((float) ($plan['after'][$currentUnitId] ?? 0), 4);
+            $primary = $unitRows->first();
+            if (! $primary) {
+                $primary = ProductStock::withoutGlobalScope('active_warehouse')->create([
+                    'warehouse_id' => $warehouseId,
+                    'product_id' => $productId,
+                    'product_variant_id' => $productVariantId,
+                    'unit_id' => $currentUnitId,
+                    'ps_stock' => $targetQty,
+                    'status' => 1,
+                    'created_by' => $createdBy,
+                ]);
+            } else {
+                $primary->ps_stock = $targetQty;
+                $primary->save();
+                $unitRows->skip(1)->each(function ($duplicate) {
+                    $duplicate->ps_stock = 0;
+                    $duplicate->save();
+                });
+            }
+        }
+
+        $targetMultiplier = self::toSmallestMultiplier($unitId, $productVariantId);
+        $canonicalBefore = self::packingPlan(
+            $stockByUnit,
+            $productVariantId,
+            $unitId,
+            0
+        )['after'];
+        $logger = new LogStock();
+        foreach ($allUnitIds as $currentUnitId) {
+            $before = (float) ($plan['before'][$currentUnitId] ?? 0);
+            $packed = (float) ($canonicalBefore[$currentUnitId] ?? 0);
+            $delta = $packed - $before;
+            if (abs($delta) < 1e-9) {
+                continue;
+            }
+            $logger->insertLog([
+                'log_date' => now(),
+                'log_kode' => $logCode,
+                'log_type' => 1,
+                'log_category' => $delta > 0 ? 1 : 2,
+                'log_item_id' => $productVariantId,
+                'log_notes' => $delta > 0
+                    ? 'Stock Transfer - hasil packing satuan'
+                    : 'Stock Transfer - bahan packing satuan',
+                'log_jumlah' => abs($delta),
+                'unit_id' => $currentUnitId,
+                'warehouse_id' => $warehouseId,
+            ]);
+        }
+        $logger->insertLog([
+            'log_date' => now(),
+            'log_kode' => $logCode,
+            'log_type' => 1,
+            'log_category' => 2,
+            'log_item_id' => $productVariantId,
+            'log_notes' => $logNotes . ' (packing '
+                . number_format($qty * $targetMultiplier, 0, ',', '.')
+                . ' unit dasar)',
+            'log_jumlah' => $qty,
+            'unit_id' => $unitId,
+            'warehouse_id' => $warehouseId,
+        ]);
+
+        self::clearCache();
+
+        return ['ok' => true];
+    }
+
+    /**
      * Tambah stok di gudang (satuan yang sama). Buat baris stok jika belum ada.
      *
      * @return array{ok: bool, message?: string}
@@ -478,12 +844,14 @@ class ProductUnitStock
             return ['ok' => true];
         }
 
-        $row = ProductStock::withoutGlobalScope('active_warehouse')
+        $rows = ProductStock::withoutGlobalScope('active_warehouse')
             ->where('status', 1)
             ->where('warehouse_id', $warehouseId)
             ->where('product_variant_id', $productVariantId)
             ->where('unit_id', $unitId)
-            ->first();
+            ->lockForUpdate()
+            ->get();
+        $row = $rows->first();
 
         if (! $row) {
             $row = new ProductStock();
@@ -495,6 +863,12 @@ class ProductUnitStock
             $row->status = 1;
             $row->created_by = Session::get('user')->staff_id ?? null;
             $row->save();
+        } else {
+            $row->ps_stock = (float) $rows->sum('ps_stock');
+            $rows->skip(1)->each(function ($duplicate) {
+                $duplicate->ps_stock = 0;
+                $duplicate->save();
+            });
         }
 
         $row->ps_stock = round((float) $row->ps_stock + $qty, 4);

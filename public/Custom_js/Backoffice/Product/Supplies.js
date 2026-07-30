@@ -21,6 +21,7 @@
         $('#supplies_variant').empty();
         $('#unit_id').html("-");
         $('#alert').val(0);
+        $('#lead_time_days, #safety_stock').val(0);
         $('#tbVariant').html("")
         addRow();
         $('.btn-save').html(mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
@@ -193,6 +194,8 @@
             supplies_desc:$('#supplies_desc').val(),
             supplies_alert:$('#alert').val(),
             supplies_default_unit:$('#unit_id').val(),
+            lead_time_days:Math.max(0, parseInt($('#lead_time_days').val(), 10) || 0),
+            safety_stock:Math.max(0, parseInt($('#safety_stock').val(), 10) || 0),
             supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
             supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token
@@ -207,7 +210,6 @@
                 supplies_variant_price: convertToAngka($(this).find('.variant_price').val()),
                 supplies_variant_barcode: $(this).find('.variant_barcode').val(),
                 supplies_variant_id: $(this).find('.variant_id').val(),
-                
             };
             temp.push(variant);
         });
@@ -314,6 +316,8 @@
         $('#unit_id').append(`<option value="${data.supplies_unit}" selected>${data.unit_values}</option>`);
         $('#unit_id').val(data.supplies_unit).trigger('change');
         $('#alert').val(data.supplies_alert);
+        $('#lead_time_days').val(Math.max(0, parseInt(data.lead_time_days, 10) || 0));
+        $('#safety_stock').val(Math.max(0, parseInt(data.safety_stock, 10) || 0));
         $('#tbVariant').html("");
         $('#tbRelasi').html("");
 

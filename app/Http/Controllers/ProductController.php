@@ -23,6 +23,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
@@ -238,14 +239,20 @@ class ProductController extends Controller
 
         $productIds = $rows->pluck('product_id')->all();
 
+        $hasRetailUnitCol = Schema::hasColumn('product_variants', 'retail_unit');
+
         // Batch variants
         $variantsByProduct = collect();
         if ($productIds !== []) {
+            $variantCols = ['product_id', 'product_variant_id', 'product_variant_name'];
+            if ($hasRetailUnitCol) {
+                $variantCols[] = 'retail_unit';
+            }
             $variantsByProduct = ProductVariant::query()
                 ->where('status', 1)
                 ->whereIn('product_id', $productIds)
                 ->orderBy('created_at', 'asc')
-                ->get(['product_id', 'product_variant_id', 'product_variant_name'])
+                ->get($variantCols)
                 ->groupBy('product_id');
         }
 
@@ -254,6 +261,16 @@ class ProductController extends Controller
         foreach ($rows as $row) {
             foreach ((array) (json_decode($row->product_unit, true) ?: []) as $unitId) {
                 $unitIdSet[(int) $unitId] = true;
+            }
+        }
+        if ($hasRetailUnitCol && $variantsByProduct->isNotEmpty()) {
+            foreach ($variantsByProduct as $variants) {
+                foreach ($variants as $variantRow) {
+                    $retailUnitId = (int) ($variantRow->retail_unit ?? 0);
+                    if ($retailUnitId > 0) {
+                        $unitIdSet[$retailUnitId] = true;
+                    }
+                }
             }
         }
         $unitsMap = $unitIdSet !== []
@@ -276,7 +293,19 @@ class ProductController extends Controller
             }
 
             $variantNames = ($variantsByProduct->get($row->product_id) ?? collect())
-                ->pluck('product_variant_name')
+                ->map(function ($variantRow) use ($unitsMap, $hasRetailUnitCol) {
+                    $variantName = trim((string) ($variantRow->product_variant_name ?? ''));
+                    if (! $hasRetailUnitCol) {
+                        return $variantName;
+                    }
+                    $retailUnitId = (int) ($variantRow->retail_unit ?? 0);
+                    $retailUnitName = '-';
+                    if ($retailUnitId > 0) {
+                        $unit = $unitsMap->get($retailUnitId);
+                        $retailUnitName = $unit->unit_short_name ?? $unit->unit_name ?? '-';
+                    }
+                    return trim($variantName . ' [Eceran: ' . $retailUnitName . ']');
+                })
                 ->filter()
                 ->values()
                 ->all();
@@ -339,7 +368,7 @@ class ProductController extends Controller
         // }
 
         $id = (new Product())->insertProduct($data);
-        $variant = $this->sanitizeVariantSafety(json_decode($data['product_variant'], true) ?: []);
+        $variant = $this->sanitizeVariantValues(json_decode($data['product_variant'], true) ?: []);
         $safetyPayload = $this->extractSafetyPayload($variant);
         $variant = $this->stripSafetyFromVariants($variant);
         $relasi = json_decode($data['product_relasi'], true);
@@ -359,6 +388,7 @@ class ProductController extends Controller
         }
         (new ProductStock())->syncStock($id);
         $this->applySafetyForActiveWarehouse($id, $safetyPayload);
+        $this->applyAlertForActiveWarehouse($id, $variant);
         return 1;
     }
 
@@ -366,7 +396,7 @@ class ProductController extends Controller
     {
         $data = $req->all();
         $id = [];
-        $variant = $this->sanitizeVariantSafety(json_decode($data['product_variant'], true) ?: []);
+        $variant = $this->sanitizeVariantValues(json_decode($data['product_variant'], true) ?: []);
         $safetyPayload = $this->extractSafetyPayload($variant);
         $variant = $this->stripSafetyFromVariants($variant);
         (new Product())->updateProduct($data);
@@ -419,6 +449,7 @@ class ProductController extends Controller
         }
         (new ProductStock())->syncStock($data["product_id"]);
         $this->applySafetyForActiveWarehouse((int) $data["product_id"], $safetyPayload);
+        $this->applyAlertForActiveWarehouse((int) $data["product_id"], $variant);
         return 1;
     }
 
@@ -581,7 +612,7 @@ class ProductController extends Controller
 
     function insertSupplies(Request $req)
     {
-        $data = $req->all();
+        $data = $this->sanitizeSuppliesValues($req->all());
 
         // Pengecekan Unique
         $suppliesName = trim(strtolower($data['supplies_name']));
@@ -594,7 +625,7 @@ class ProductController extends Controller
         }
         
         $id = (new Supplies())->insertSupplies($data);
-        foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
+        foreach (json_decode($data['supplies_variant'], true) ?: [] as $key => $value) {
             $value['supplies_id'] = $id;
             (new SuppliesVariant())->insertSuppliesVariant($value);
         }
@@ -608,12 +639,12 @@ class ProductController extends Controller
 
     function updateSupplies(Request $req)
     {
-        $data = $req->all();
+        $data = $this->sanitizeSuppliesValues($req->all());
         $id = [];
         $id_r = [];
         $before = Supplies::find($data["supplies_id"]);
         (new Supplies())->updateSupplies($data);
-        foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
+        foreach (json_decode($data['supplies_variant'], true) ?: [] as $key => $value) {
             $value['supplies_id'] = $data["supplies_id"];
             if (!isset($value["supplies_variant_id"])) $t = (new SuppliesVariant())->insertSuppliesVariant($value);
             else $t = (new SuppliesVariant())->updateSuppliesVariant($value);
@@ -720,16 +751,27 @@ class ProductController extends Controller
     /**
      * Safety stock hanya boleh diubah oleh role yang punya akses edit.
      */
-    private function sanitizeVariantSafety(array $variants): array
+    private function sanitizeVariantValues(array $variants): array
     {
         $canEdit = RoleAccess::can(Session::get('user'), 'Safety Stock', 'edit');
         foreach ($variants as $i => $variant) {
+            $variants[$i]['lead_time_days'] = max(0, (int) ($variant['lead_time_days'] ?? 0));
             if (! $canEdit) {
                 unset($variants[$i]['safety_stock'], $variants[$i]['safety_unit_id']);
+            } elseif (array_key_exists('safety_stock', $variant)) {
+                $variants[$i]['safety_stock'] = max(0, (int) $variant['safety_stock']);
             }
         }
 
         return $variants;
+    }
+
+    private function sanitizeSuppliesValues(array $data): array
+    {
+        $data['lead_time_days'] = max(0, (int) ($data['lead_time_days'] ?? 0));
+        $data['safety_stock'] = max(0, (int) ($data['safety_stock'] ?? 0));
+
+        return $data;
     }
 
     /** Simpan payload safety terpisah (per index variant) sebelum strip dari save variant. */
@@ -774,5 +816,33 @@ class ProductController extends Controller
         }
 
         (new ProductStock())->applySafetyStockForWarehouse($productId, $warehouseId, array_values($safetyPayload));
+    }
+
+    /** Simpan peringatan stok ke product_stocks gudang aktif. */
+    private function applyAlertForActiveWarehouse(int $productId, array $variants): void
+    {
+        $warehouseId = ProductStock::resolveWarehouseId();
+        if (! $warehouseId || $variants === []) {
+            return;
+        }
+
+        $payload = [];
+        foreach ($variants as $variant) {
+            $vid = (int) ($variant['product_variant_id'] ?? 0);
+            if ($vid <= 0) {
+                continue;
+            }
+            $payload[] = [
+                'product_variant_id' => $vid,
+                'alert_stock' => $variant['variant_alert'] ?? 0,
+                'alert_unit_id' => $variant['unit_id'] ?? null,
+            ];
+        }
+
+        if ($payload === []) {
+            return;
+        }
+
+        (new ProductStock())->applyAlertStockForWarehouse($productId, $warehouseId, $payload);
     }
 }

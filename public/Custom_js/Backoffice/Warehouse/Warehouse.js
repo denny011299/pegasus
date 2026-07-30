@@ -404,6 +404,13 @@ $(document).on("click", ".btn_edit", function () {
             data.type && data.type.warehouse_type_name
                 ? data.type.warehouse_type_name
                 : "-";
+        if (
+            data.type &&
+            (data.type.is_main_warehouse == 1 ||
+                data.type.is_main_warehouse === true)
+        ) {
+            typeName += " (Gudang Utama)";
+        }
         var opt = new Option(typeName, data.warehouse_type_id, true, true);
         $("#warehouse_type_id").append(opt).trigger("change");
     }

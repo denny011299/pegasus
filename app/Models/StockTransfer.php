@@ -24,6 +24,9 @@ class StockTransfer extends Model
         'to_warehouse_id',
         'note',
         'accept_note',
+        'source_type',
+        'source_id',
+        'disposition',
         'status',
         'created_by',
         'acc_by',
@@ -52,6 +55,9 @@ class StockTransfer extends Model
         $t->from_warehouse_id = $data['from_warehouse_id'];
         $t->to_warehouse_id = $data['to_warehouse_id'];
         $t->note = $data['note'] ?? null;
+        $t->source_type = $data['source_type'] ?? null;
+        $t->source_id = $data['source_id'] ?? null;
+        $t->disposition = $data['disposition'] ?? null;
         $t->status = 1;
         $t->created_by = Session::get('user')->staff_id ?? null;
         $t->save();

@@ -9,6 +9,94 @@
         #tableStockTransfer td:last-child {
             white-space: nowrap !important;
         }
+        #add_stock_transfer #tableTransferItems .transfer-row-retail-error > td,
+        #add_stock_transfer #tableTransferItems .transfer-row-stock-error > td {
+            background: #fff1f2;
+            color: #7f1d1d;
+            border-color: #fecdd3;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-row-retail-error:hover > td,
+        #add_stock_transfer #tableTransferItems .transfer-row-stock-error:hover > td {
+            background: #ffe4e6;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-retail-unit {
+            min-width: 180px;
+            border-color: #ef4444;
+            background-color: #fff;
+            color: #7f1d1d;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-retail-error-text,
+        #add_stock_transfer #tableTransferItems .transfer-stock-error-text {
+            display: block;
+            margin-top: 5px;
+            color: #b91c1c;
+            font-size: 11px;
+            line-height: 1.3;
+        }
+        #add_stock_transfer .transfer-product-panel {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 16px;
+        }
+        #add_stock_transfer .transfer-product-grid {
+            display: grid;
+            grid-template-columns: minmax(280px, 2fr) minmax(90px, .55fr) minmax(180px, 1fr) auto;
+            gap: 10px;
+            align-items: start;
+        }
+        #add_stock_transfer .transfer-product-field label {
+            display: block;
+            margin-bottom: 5px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: .4px;
+            text-transform: uppercase;
+        }
+        #add_stock_transfer .transfer-product-field .form-control,
+        #add_stock_transfer .transfer-product-field .form-select {
+            min-height: 38px;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        #add_stock_transfer .transfer-product-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 21px;
+        }
+        #add_stock_transfer .transfer-product-actions .btn {
+            height: 38px;
+            border-radius: 8px;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        #add_stock_transfer #transfer_stock_available {
+            display: block;
+            margin-top: 4px;
+            font-size: 11px;
+        }
+        @media (max-width: 991.98px) {
+            #add_stock_transfer .transfer-product-grid {
+                grid-template-columns: minmax(0, 2fr) minmax(90px, .7fr) minmax(150px, 1fr);
+            }
+            #add_stock_transfer .transfer-product-actions {
+                grid-column: 1 / -1;
+                padding-top: 0;
+            }
+        }
+        @media (max-width: 575.98px) {
+            #add_stock_transfer .transfer-product-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            #add_stock_transfer .transfer-product-select,
+            #add_stock_transfer .transfer-product-actions {
+                grid-column: 1 / -1;
+            }
+            #add_stock_transfer .transfer-product-actions .btn:first-child {
+                flex: 1;
+            }
+        }
     </style>
 @endsection
 @section('content')
@@ -69,6 +157,7 @@
                                             <th>Dari</th>
                                             <th>Penerima</th>
                                             <th>Ke</th>
+                                            <th>ACC Kirim Oleh</th>
                                             <th>Status</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>

@@ -168,6 +168,7 @@ class CustomerController extends Controller
             $oldLines[] = [
                 'product_variant_id' => $oldDetail->product_variant_id,
                 'unit_id' => $oldDetail->unit_id,
+                'warehouse_id' => $oldDetail->warehouse_id ?? null,
                 'qty' => (float) $oldDetail->sod_qty,
             ];
         }
@@ -177,6 +178,7 @@ class CustomerController extends Controller
             $newLines[] = [
                 'product_variant_id' => $value['product_variant_id'],
                 'unit_id' => $value['unit_id'],
+                'warehouse_id' => $value['warehouse_id'] ?? null,
                 'qty' => (float) ($value['so_qty'] ?? 0),
             ];
         }
@@ -274,6 +276,7 @@ class CustomerController extends Controller
             $lines[] = [
                 'product_variant_id' => $row->product_variant_id,
                 'unit_id' => $row->unit_id,
+                'warehouse_id' => $row->warehouse_id ?? null,
                 'qty' => (float) $row->sod_qty,
             ];
         }

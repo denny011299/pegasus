@@ -743,8 +743,7 @@
                         $canShow('Peringatan Stok Produk') ||
                         $canShow('Peringatan Stok Bahan Mentah') ||
                         $canShow('Stok Opname Produk') ||
-                        $canShow('Stok Opname Bahan Mentah') ||
-                        $canShow('Stock Transfer');
+                        $canShow('Stok Opname Bahan Mentah');
                     @endphp
 
                     @if ($showMaster || $showGudangMenu || $showProduk || $showBahan || $showInventory || $canShow('Armada') || $canShow('Pemasok'))
@@ -879,10 +878,6 @@
                                         <li><a href="{{ url('stockOpnameBahan') }}"
                                             class="{{ Request::is('stockOpnameBahan') ? 'active' : '' }}">Stok Opname Bahan Mentah</a></li>
                                     @endif
-                                    @if ($canShow('Stock Transfer'))
-                                        <li><a href="{{ url('stockTransfer') }}"
-                                            class="{{ Request::is('stockTransfer') ? 'active' : '' }}">Stock Transfer</a></li>
-                                    @endif
                                 </ul>
                             </li>
                         @endif
@@ -890,7 +885,7 @@
                     <!-- /Master -->
 
                     {{-- Ordering --}}
-                    @if ($canShow('Pengiriman') || $canShow('Pembelian') || $canShow('Tanda Terima PO'))
+                    @if ($canShow('Pengiriman') || $canShow('Pembelian') || $canShow('Tanda Terima PO') || $canShow('Stock Transfer'))
                         <li class="menu-title"><span>Penjualan & Pembelian</span></li>
                         <li class="submenu">
                             @if ($canShow('Pengiriman'))
@@ -911,6 +906,13 @@
                                 <li>
                                     <a class="{{ Request::is('tt') ? 'active' : '' }}" href="/tt">
                                         <i class="fe fe-file-text"></i> <span>Tanda Terima PO</span></a>
+                                </li>
+                            @endif
+
+                            @if ($canShow('Stock Transfer'))
+                                <li>
+                                    <a class="{{ Request::is('stockTransfer') ? 'active' : '' }}" href="{{ url('stockTransfer') }}">
+                                        <i class="fe fe-shuffle"></i> <span>Stock Transfer</span></a>
                                 </li>
                             @endif
                         </li>
@@ -959,6 +961,7 @@
                         $canShow('Laporan Produksi') ||
                         // $canShow('Laporan Efisiensi Produksi') ||
                         $canShow('Laporan Stock Aging') ||
+                        $canShow('Stock Transfer') ||
                         $canShow('Stok Opname Produk') ||
                         $canShow('Stok Opname Bahan Mentah') ||
                         $canShow('Untung & Rugi') ||
@@ -1057,6 +1060,12 @@
                                         <li><a href="/reportStockAging"
                                             class="{{ Request::is('reportStockAging') ? 'active' : '' }}">
                                             Laporan Stock Aging</a></li>
+                                    @endif
+
+                                    @if ($canShow('Stock Transfer'))
+                                        <li><a href="{{ url('reportStockTransfer') }}"
+                                            class="{{ Request::is('reportStockTransfer') ? 'active' : '' }}">
+                                            Log Stock Transfer</a></li>
                                     @endif
 
                                     @if ($canShow('Kas'))

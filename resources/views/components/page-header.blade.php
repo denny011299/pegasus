@@ -66,9 +66,13 @@
                 @endif
                 @if (Route::is(['salesOrder']))
                     @roleCan('Pengiriman', 'create')
-                    <li>
+                    <li id="btn-container-pengiriman">
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pengiriman</a>
+                    </li>
+                    <li id="btn-container-pengembalian" style="display: none;">
+                        <a class="btn btn-primary" id="csr-add"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Pengembalian</a>
                     </li>
                     @endroleCan
                 @endif

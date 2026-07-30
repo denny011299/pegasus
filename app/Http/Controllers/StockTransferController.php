@@ -3,13 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductIssues;
+use App\Models\ProductIssuesDetail;
 use App\Models\ProductVariant;
 use App\Models\Staff;
 use App\Models\StockTransfer;
 use App\Models\StockTransferDetail;
+use App\Models\DashboardChangeLog;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Support\ProductUnitStock;
+use App\Support\RoleAccess;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,19 +22,238 @@ use Throwable;
 
 /**
  * Stock Transfer
- * Status: 0=deleted, 1=pending, 2=success (ACC), 3=rejected
+ * Status: 0=deleted, 1=pending, 2=kirim, 3=rejected, 4=diterima
  *
- * Create  → potong stok gudang asal (bongkar satuan atas jika perlu), status=1
- * ACC     → tambah stok gudang tujuan (qty_received), status=2
- * Delete  → kembalikan stok asal (pending saja), status=0
- * Reject  → kembalikan stok asal, status=3
- * Update  → restore item lama + potong item baru (pending saja)
+ * Create  → status=1 (Pending), stok belum dipotong (cek ketersediaan saja)
+ * Ship    → ACC gudang asal: potong stok sumber, status=2 (Kirim)
+     * ACC     → ACC gudang tujuan: konversi ke satuan target matriks, tambah stok tujuan, status=4
+ * Delete  → pending saja, status=0 (tanpa restore — stok belum dipotong)
+ * Reject  → pending saja, status=3 (tanpa restore)
+ * Update  → pending saja, ganti item (tanpa mutasi stok)
  */
 class StockTransferController extends Controller
 {
+    private const TRANSFER_LOG_MODULE_KEY = 'stock_transfer_action';
+
     public function index()
     {
         return view('Backoffice.Inventory.Stock_Transfer');
+    }
+
+    public function logsPage()
+    {
+        return view('Backoffice.Reports.ReportStockTransfer');
+    }
+
+    public function getStockTransferLogs(Request $req)
+    {
+        $limit = (int) ($req->input('length', 10));
+        if ($limit <= 0) $limit = 10;
+        $start_limit = (int) ($req->input('start', 0));
+        $search = trim((string) ($req->input('search.value', '')));
+
+        $start = trim((string) ($req->start_date ?? ''));
+        $end = trim((string) ($req->end_date ?? ''));
+
+        $query = DashboardChangeLog::query()
+            ->where('module_key', self::TRANSFER_LOG_MODULE_KEY);
+
+        if ($start !== '' && $end !== '') {
+            $query->whereBetween(DB::raw('DATE(created_at)'), [$start, $end]);
+        }
+
+        $recordsTotal = $query->count();
+
+        if ($search !== '') {
+            $query->where(function($q) use ($search) {
+                $q->where('what_changed', 'like', "%{$search}%")
+                  ->orWhere('summary', 'like', "%{$search}%")
+                  ->orWhere('reference', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsFiltered = $query->count();
+
+        $rows = $query->orderByDesc('id')
+            ->skip($start_limit)
+            ->take($limit)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return response()->json([
+                'draw' => intval($req->input('draw', 1)),
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => []
+            ]);
+        }
+
+        $staffIds = $rows->pluck('created_by')->filter()->map(fn ($id) => (int) $id)->all();
+        $warehouseIds = [];
+        $variantIds = [];
+        $unitIds = [];
+        foreach ($rows as $row) {
+            $meta = is_array($row->meta) ? $row->meta : [];
+            foreach (['before', 'after'] as $side) {
+                $snapshot = is_array($meta[$side] ?? null) ? $meta[$side] : [];
+                $header = is_array($snapshot['header'] ?? null) ? $snapshot['header'] : [];
+                foreach (['sender_id', 'receiver_id', 'acc_by'] as $key) {
+                    if (! empty($header[$key])) {
+                        $staffIds[] = (int) $header[$key];
+                    }
+                }
+                foreach (['from_warehouse_id', 'to_warehouse_id'] as $key) {
+                    if (! empty($header[$key])) {
+                        $warehouseIds[] = (int) $header[$key];
+                    }
+                }
+                foreach ((array) ($snapshot['items'] ?? []) as $item) {
+                    if (! empty($item['product_variant_id'])) {
+                        $variantIds[] = (int) $item['product_variant_id'];
+                    }
+                    if (! empty($item['unit_id'])) {
+                        $unitIds[] = (int) $item['unit_id'];
+                    }
+                    if (! empty($item['received_unit_id'])) {
+                        $unitIds[] = (int) $item['received_unit_id'];
+                    }
+                }
+            }
+        }
+
+        $staffIds = array_values(array_unique(array_filter($staffIds)));
+        $staffMap = $staffIds !== []
+            ? Staff::query()->whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id')->all()
+            : [];
+        $warehouseMap = $warehouseIds !== []
+            ? Warehouse::query()->whereIn('id', array_unique($warehouseIds))->pluck('warehouse_name', 'id')->all()
+            : [];
+        $variantMap = $variantIds !== []
+            ? ProductVariant::query()
+                ->whereIn('product_variant_id', array_unique($variantIds))
+                ->get(['product_variant_id', 'product_id', 'product_variant_name', 'product_variant_sku'])
+                ->keyBy('product_variant_id')
+            : collect();
+        $productIds = $variantMap->pluck('product_id')->filter()->unique()->all();
+        $productMap = $productIds !== []
+            ? Product::query()->whereIn('product_id', $productIds)->pluck('product_name', 'product_id')->all()
+            : [];
+        $unitMap = $unitIds !== []
+            ? Unit::query()->whereIn('unit_id', array_unique($unitIds))->get()
+                ->mapWithKeys(fn ($unit) => [
+                    $unit->unit_id => $unit->unit_short_name ?: $unit->unit_name,
+                ])->all()
+            : [];
+
+        $data = $rows->map(function ($row) use (
+            $staffMap,
+            $warehouseMap,
+            $variantMap,
+            $productMap,
+            $unitMap
+        ) {
+            $meta = is_array($row->meta) ? $row->meta : [];
+            foreach (['before', 'after'] as $side) {
+                if (is_array($meta[$side] ?? null)) {
+                    $meta[$side] = $this->enrichLogSnapshot(
+                        $meta[$side],
+                        $staffMap,
+                        $warehouseMap,
+                        $variantMap,
+                        $productMap,
+                        $unitMap
+                    );
+                }
+            }
+            $action = (string) ($meta['action'] ?? '');
+            $snapshot = is_array($meta['after'] ?? null)
+                ? $meta['after']
+                : (is_array($meta['before'] ?? null) ? $meta['before'] : []);
+            return [
+                'id' => (int) $row->id,
+                'module_key' => (string) ($row->module_key ?? ''),
+                'module_label' => (string) ($row->module_label ?? ''),
+                'reference' => (string) ($row->reference ?? ''),
+                'action' => $action,
+                'transfer_id' => (int) ($meta['transfer_id'] ?? 0),
+                'transfer_code' => (string) ($meta['transfer_code'] ?? ''),
+                'what_changed' => (string) ($row->what_changed ?? ''),
+                'summary' => (string) ($row->summary ?? ''),
+                'summary_human' => $this->humanTransferLogSummary($action, $snapshot),
+                'created_by' => $row->created_by ? (int) $row->created_by : null,
+                'created_by_name' => $row->created_by ? ($staffMap[$row->created_by] ?? '-') : '-',
+                'created_at' => (string) ($row->created_at ?? ''),
+                'meta' => $meta,
+            ];
+        })->values();
+
+        return response()->json([
+            'draw' => intval($req->input('draw', 1)),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data
+        ]);
+    }
+
+    private function enrichLogSnapshot(
+        array $snapshot,
+        array $staffMap,
+        array $warehouseMap,
+        $variantMap,
+        array $productMap,
+        array $unitMap
+    ): array {
+        $header = is_array($snapshot['header'] ?? null) ? $snapshot['header'] : [];
+        $header['sender_name'] = ! empty($header['sender_id'])
+            ? ($staffMap[$header['sender_id']] ?? '-')
+            : '-';
+        $header['receiver_name'] = ! empty($header['receiver_id'])
+            ? ($staffMap[$header['receiver_id']] ?? '-')
+            : '-';
+        $header['acc_by_name'] = ! empty($header['acc_by'])
+            ? ($staffMap[$header['acc_by']] ?? '-')
+            : '-';
+        $header['from_warehouse_name'] = ! empty($header['from_warehouse_id'])
+            ? ($warehouseMap[$header['from_warehouse_id']] ?? '-')
+            : '-';
+        $header['to_warehouse_name'] = ! empty($header['to_warehouse_id'])
+            ? ($warehouseMap[$header['to_warehouse_id']] ?? '-')
+            : '-';
+        $snapshot['header'] = $header;
+
+        $snapshot['items'] = collect((array) ($snapshot['items'] ?? []))
+            ->map(function ($item) use ($variantMap, $productMap, $unitMap) {
+                $variant = $variantMap->get((int) ($item['product_variant_id'] ?? 0));
+                $item['product_name'] = $variant
+                    ? ($productMap[$variant->product_id] ?? '-')
+                    : '-';
+                $item['variant_name'] = $variant->product_variant_name ?? '-';
+                $item['sku'] = $variant->product_variant_sku ?? '-';
+                $item['unit_name'] = $unitMap[$item['unit_id'] ?? 0] ?? '-';
+                $item['received_unit_name'] = $unitMap[$item['received_unit_id'] ?? 0] ?? '-';
+                return $item;
+            })->values()->all();
+
+        return $snapshot;
+    }
+
+    private function humanTransferLogSummary(string $action, array $snapshot): string
+    {
+        $header = is_array($snapshot['header'] ?? null) ? $snapshot['header'] : [];
+        $from = (string) ($header['from_warehouse_name'] ?? '-');
+        $to = (string) ($header['to_warehouse_name'] ?? '-');
+        $count = count((array) ($snapshot['items'] ?? []));
+        $suffix = $count > 0 ? (' • ' . $count . ' produk') : '';
+
+        return match ($action) {
+            'create' => 'Membuat Stock Transfer ke ' . $to . $suffix,
+            'update' => 'Mengubah Stock Transfer ke ' . $to . $suffix,
+            'delete' => 'Menghapus Stock Transfer dari ' . $from,
+            'ship' => 'Mengirim Stock Transfer ke ' . $to . $suffix,
+            'accept' => 'Menerima Stock Transfer dari ' . $from . $suffix,
+            'reject' => 'Menolak Stock Transfer dari ' . $from,
+            default => 'Aktivitas Stock Transfer',
+        };
     }
 
     public function getStockTransfer(Request $req)
@@ -51,9 +274,9 @@ class StockTransferController extends Controller
         }
 
         $rows = $query
-            ->orderByRaw('CASE WHEN status = 1 THEN 0 ELSE 1 END')
             ->orderByDesc('transfer_date')
             ->orderByDesc('st_id')
+            ->orderByRaw('CASE WHEN status = 1 THEN 0 WHEN status = 2 THEN 1 ELSE 2 END')
             ->get();
 
         if ($rows->isEmpty()) {
@@ -62,6 +285,7 @@ class StockTransferController extends Controller
 
         $staffIds = $rows->pluck('sender_id')
             ->merge($rows->pluck('receiver_id'))
+            ->merge($rows->pluck('acc_by'))
             ->filter()
             ->unique()
             ->values()
@@ -84,16 +308,46 @@ class StockTransferController extends Controller
         $user = Session::get('user');
         $staffId = (int) ($user->staff_id ?? 0);
         $assignedWh = $user ? Staff::assignedWarehouseIds($user) : [];
+        $canEditAccess = RoleAccess::can($user, 'Stock Transfer', 'edit');
+        $canDeleteAccess = RoleAccess::can($user, 'Stock Transfer', 'delete');
+        $canOthersAccess = RoleAccess::can($user, 'Stock Transfer', 'others');
 
-        $data = $rows->map(function ($row) use ($staffMap, $whMap, $staffId, $activeWh, $assignedWh) {
-            $canAcc = $this->canAccTransferRow(
-                (int) $row->status,
-                (int) $row->sender_id,
-                (int) $row->from_warehouse_id,
-                (int) $row->to_warehouse_id,
+        $data = $rows->map(function ($row) use (
+            $staffMap,
+            $whMap,
+            $staffId,
+            $activeWh,
+            $assignedWh,
+            $canEditAccess,
+            $canDeleteAccess,
+            $canOthersAccess
+        ) {
+            $status = (int) $row->status;
+            $fromWh = (int) $row->from_warehouse_id;
+            $toWh = (int) $row->to_warehouse_id;
+            $isProduction = $row->source_type === 'production';
+
+            $canShipByWarehouse = $this->canShipTransferRow(
+                $status,
+                $fromWh,
                 $staffId,
                 $activeWh,
                 $assignedWh
+            );
+            $canAccByWarehouse = $this->canAccTransferRow(
+                $status,
+                (int) $row->sender_id,
+                $fromWh,
+                $toWh,
+                $staffId,
+                $activeWh,
+                $assignedWh,
+                $isProduction
+            );
+            $canEditByWarehouse = $this->canEditTransferRow(
+                $status,
+                $fromWh,
+                $activeWh
             );
 
             return [
@@ -105,13 +359,25 @@ class StockTransferController extends Controller
                 'sender_name' => $staffMap[$row->sender_id] ?? '-',
                 'receiver_id' => $row->receiver_id ? (int) $row->receiver_id : null,
                 'receiver_name' => $row->receiver_id ? ($staffMap[$row->receiver_id] ?? '-') : '-',
-                'from_warehouse_id' => (int) $row->from_warehouse_id,
+                'ship_acc_by' => $row->acc_by ? (int) $row->acc_by : null,
+                'ship_acc_by_name' => $row->acc_by ? ($staffMap[$row->acc_by] ?? '-') : '-',
+                'from_warehouse_id' => $fromWh,
                 'from_warehouse_name' => $whMap[$row->from_warehouse_id] ?? '-',
-                'to_warehouse_id' => (int) $row->to_warehouse_id,
+                'to_warehouse_id' => $toWh,
                 'to_warehouse_name' => $whMap[$row->to_warehouse_id] ?? '-',
                 'note' => $row->note,
-                'status' => (int) $row->status,
-                'can_acc' => $canAcc,
+                'source_type' => $row->source_type,
+                'source_id' => $row->source_id ? (int) $row->source_id : null,
+                'disposition' => $row->disposition,
+                'status' => $status,
+                'can_ship' => $canOthersAccess && $canShipByWarehouse,
+                'can_acc' => $canOthersAccess && $canAccByWarehouse,
+                'can_edit' => ! $isProduction && $canEditAccess && $canEditByWarehouse,
+                'can_delete' => ! $isProduction && $canDeleteAccess && $canEditByWarehouse,
+                'can_reject' => $canOthersAccess
+                    && $status === 1
+                    && $activeWh === $fromWh
+                    && ($assignedWh === [] || in_array($fromWh, $assignedWh, true)),
             ];
         })->values();
 
@@ -136,7 +402,11 @@ class StockTransferController extends Controller
             ->get();
 
         $variantIds = $details->pluck('product_variant_id')->unique()->all();
-        $unitIds = $details->pluck('unit_id')->unique()->all();
+        $unitIds = $details->pluck('unit_id')
+            ->merge($details->pluck('received_unit_id'))
+            ->filter()
+            ->unique()
+            ->all();
 
         $variants = ProductVariant::query()
             ->whereIn('product_variant_id', $variantIds)
@@ -156,13 +426,49 @@ class StockTransferController extends Controller
         $fromWh = Warehouse::query()->find($header->from_warehouse_id);
         $toWh = Warehouse::query()->find($header->to_warehouse_id);
 
-        $items = $details->map(function ($d) use ($variants, $products, $units, $header) {
+        $sourceIsMain = $this->warehouseIsMain((int) $header->from_warehouse_id);
+        $destinationIsMain = $this->warehouseIsMain((int) $header->to_warehouse_id);
+
+        $items = $details->map(function ($d) use (
+            $variants,
+            $products,
+            $units,
+            $header,
+            $sourceIsMain,
+            $destinationIsMain
+        ) {
             $pv = $variants[$d->product_variant_id] ?? null;
             $pr = $products[$d->product_id] ?? null;
             $un = $units[$d->unit_id] ?? null;
-            $snap = ProductUnitStock::snapshot(
-                (int) $header->from_warehouse_id,
+            $resolution = $this->resolveTransferUnits(
+                $sourceIsMain,
+                $destinationIsMain,
+                $pv,
+                $pr,
+                (int) $d->unit_id
+            );
+            $targetUnitId = (int) ($resolution['target_unit_id'] ?? $d->unit_id);
+            $receivedUnitId = (int) ($d->received_unit_id ?: $d->unit_id);
+            $displayTargetUnitId = $d->qty_received !== null ? $receivedUnitId : $targetUnitId;
+            $targetUnit = $units[$displayTargetUnitId] ?? Unit::query()->find($displayTargetUnitId);
+            $convertedSent = ProductUnitStock::canConvertUnits(
+                (int) $d->unit_id,
+                $displayTargetUnitId,
                 (int) $d->product_variant_id
+            )
+                ? ProductUnitStock::convertQty(
+                    (float) $d->qty,
+                    (int) $d->unit_id,
+                    $displayTargetUnitId,
+                    (int) $d->product_variant_id
+                )
+                : null;
+            $snap = ProductUnitStock::sourceSnapshot(
+                (int) $header->from_warehouse_id,
+                (int) $d->product_variant_id,
+                (bool) $sourceIsMain,
+                (int) ($pr->unit_id ?? 0),
+                (int) ($pv->retail_unit ?? 0)
             );
 
             return [
@@ -175,7 +481,20 @@ class StockTransferController extends Controller
                 'unit_id' => (int) $d->unit_id,
                 'unit_name' => $un->unit_name ?? ($un->unit_short_name ?? '-'),
                 'qty' => (float) $d->qty,
-                'qty_received' => $d->qty_received !== null ? (float) $d->qty_received : (float) $d->qty,
+                'qty_received' => $d->qty_received !== null ? (float) $d->qty_received : null,
+                'received_unit_id' => $displayTargetUnitId,
+                'received_unit_name' => $targetUnit->unit_name
+                    ?? ($targetUnit->unit_short_name ?? '-'),
+                'target_unit_id' => $targetUnitId,
+                'target_unit_name' => $targetUnit->unit_name
+                    ?? ($targetUnit->unit_short_name ?? '-'),
+                'converted_sent_qty' => $convertedSent,
+                'conversion_factor' => (float) $d->qty > 0 && $convertedSent !== null
+                    ? $convertedSent / (float) $d->qty
+                    : null,
+                'selisih' => $d->qty_received !== null && $convertedSent !== null
+                    ? ((float) $d->qty_received - $convertedSent)
+                    : null,
                 'stock_text' => $snap['stock_text'] ?? '-',
                 'units' => $snap['units'] ?? [],
             ];
@@ -196,6 +515,9 @@ class StockTransferController extends Controller
             'to_warehouse_name' => $toWh->warehouse_name ?? '-',
             'note' => $header->note,
             'accept_note' => $header->accept_note,
+            'source_type' => $header->source_type,
+            'source_id' => $header->source_id ? (int) $header->source_id : null,
+            'disposition' => $header->disposition,
             'status' => (int) $header->status,
             'items' => $items,
         ]);
@@ -205,6 +527,7 @@ class StockTransferController extends Controller
     {
         $warehouseId = (int) ($req->warehouse_id ?? 0);
         $variantId = (int) ($req->product_variant_id ?? 0);
+        $toWarehouseId = (int) ($req->to_warehouse_id ?? 0);
 
         if ($warehouseId <= 0 || $variantId <= 0) {
             return response()->json([
@@ -215,8 +538,222 @@ class StockTransferController extends Controller
         }
 
         ProductUnitStock::clearCache();
+        $sourceIsMain = $this->warehouseIsMain($warehouseId);
+        $variant = ProductVariant::query()->find($variantId);
+        if ($sourceIsMain === null || ! $variant) {
+            return response()->json([
+                'stock_text' => '-',
+                'units' => [],
+                'unit_order' => [],
+                'message' => 'Gudang atau varian produk tidak ditemukan',
+            ]);
+        }
 
-        return response()->json(ProductUnitStock::snapshot($warehouseId, $variantId));
+        $retailUnitId = (int) ($variant->retail_unit ?? 0);
+        $product = Product::query()->find($variant->product_id);
+        if (! $sourceIsMain && $retailUnitId <= 0) {
+            return response()->json([
+                'stock_text' => '0',
+                'units' => [],
+                'unit_order' => [],
+                'warehouse_is_main' => false,
+                'retail_unit_id' => null,
+                'message' => 'Produk tidak dapat ditambahkan: satuan eceran belum diatur sebagai basis chain gudang eceran',
+            ]);
+        }
+
+        $snapshot = ProductUnitStock::sourceSnapshot(
+            $warehouseId,
+            $variantId,
+            $sourceIsMain,
+            (int) ($product->unit_id ?? 0),
+            $retailUnitId
+        );
+
+        // Filter lagi berdasarkan kombinasi gudang tujuan agar pilihan invalid
+        // ditolak sejak frontend, sebelum user menekan Simpan.
+        if ($toWarehouseId > 0) {
+            $destinationIsMain = $this->warehouseIsMain($toWarehouseId);
+            $units = collect((array) ($snapshot['units'] ?? []));
+            $unitErrors = [];
+
+            if ($destinationIsMain === null || ! $product) {
+                $units = collect();
+                $snapshot['message'] = 'Gudang tujuan atau produk tidak valid';
+            } else {
+                $units = $units->filter(function ($unit) use (
+                    $sourceIsMain,
+                    $destinationIsMain,
+                    $variant,
+                    $product,
+                    &$unitErrors
+                ) {
+                    $resolution = $this->resolveTransferUnits(
+                        $sourceIsMain,
+                        $destinationIsMain,
+                        $variant,
+                        $product,
+                        (int) ($unit['unit_id'] ?? 0)
+                    );
+
+                    if ($resolution['error']) {
+                        $unitErrors[] = $resolution['error'];
+                    }
+
+                    return ! $resolution['error'];
+                })->values();
+
+                if ($units->isEmpty()) {
+                    if ($retailUnitId <= 0) {
+                        $snapshot['message'] = 'Produk tidak dapat ditambahkan: satuan eceran belum diatur';
+                    } elseif (collect($unitErrors)->contains(
+                        fn ($error) => str_contains((string) $error, 'rantai konversi')
+                    )) {
+                        $snapshot['message'] = 'Produk tidak dapat ditambahkan: satuan belum memiliki relasi konversi ke satuan tujuan';
+                    } else {
+                        $snapshot['message'] = 'Produk tidak dapat ditambahkan: tidak ada satuan yang valid untuk rute gudang ini';
+                    }
+                }
+            }
+
+            $snapshot['units'] = $units->all();
+            $snapshot['unit_order'] = $units->pluck('unit_id')->map(fn ($id) => (int) $id)->all();
+            $snapshot['stock_text'] = $units->isEmpty()
+                ? '0'
+                : $units->map(fn ($unit) => number_format(
+                    (float) ($unit['available_qty'] ?? $unit['ps_stock'] ?? 0),
+                    0,
+                    ',',
+                    '.'
+                )
+                    . ' ' . ($unit['unit_name'] ?? $unit['unit_short_name'] ?? '-'))->implode(', ');
+        }
+
+        $snapshot['warehouse_is_main'] = $sourceIsMain;
+        $snapshot['retail_unit_id'] = $retailUnitId ?: null;
+        $snapshot['default_unit_id'] = (int) ($product->unit_id ?? 0) ?: null;
+
+        return response()->json($snapshot);
+    }
+
+    public function getTransferRetailUnitSetup(Request $req)
+    {
+        $this->authorizeRetailUnitSetup();
+        $variantId = (int) ($req->product_variant_id ?? 0);
+        $fromWarehouseId = (int) ($req->from_warehouse_id ?? 0);
+        $toWarehouseId = (int) ($req->to_warehouse_id ?? 0);
+        $variant = ProductVariant::query()
+            ->where('product_variant_id', $variantId)
+            ->where('status', 1)
+            ->first();
+        $sourceIsMain = $this->warehouseIsMain($fromWarehouseId);
+        $destinationIsMain = $this->warehouseIsMain($toWarehouseId);
+
+        if (! $variant || $sourceIsMain === null || $destinationIsMain === null) {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Gudang atau varian produk tidak ditemukan',
+            ], 422);
+        }
+
+        if ($destinationIsMain) {
+            return response()->json([
+                'status' => 1,
+                'requires_setup' => false,
+                'destination_is_retail' => false,
+                'retail_unit_id' => $variant?->retail_unit ? (int) $variant->retail_unit : null,
+            ]);
+        }
+
+        $retailUnitId = (int) ($variant->retail_unit ?? 0);
+        if ($retailUnitId > 0) {
+            return response()->json([
+                'status' => 1,
+                'requires_setup' => false,
+                'destination_is_retail' => true,
+                'retail_unit_id' => $retailUnitId,
+            ]);
+        }
+
+        $units = $this->validRetailUnitsForVariant($variant);
+
+        return response()->json([
+            'status' => 1,
+            'requires_setup' => true,
+            'destination_is_retail' => true,
+            'retail_unit_id' => null,
+            'units' => $units->map(fn ($unit) => [
+                'unit_id' => (int) $unit->unit_id,
+                'unit_name' => $unit->unit_name ?: ($unit->unit_short_name ?: '-'),
+                'unit_short_name' => $unit->unit_short_name ?: ($unit->unit_name ?: '-'),
+            ])->values()->all(),
+            'message' => $units->isEmpty()
+                ? 'Produk ini belum memiliki satuan produk yang valid untuk dijadikan satuan eceran'
+                : null,
+        ]);
+    }
+
+    public function saveTransferRetailUnit(Request $req)
+    {
+        $this->authorizeRetailUnitSetup();
+        $variantId = (int) ($req->product_variant_id ?? 0);
+        $unitId = (int) ($req->unit_id ?? 0);
+        $fromWarehouseId = (int) ($req->from_warehouse_id ?? 0);
+        $toWarehouseId = (int) ($req->to_warehouse_id ?? 0);
+
+        if ($this->warehouseIsMain($fromWarehouseId) === null
+            || $this->warehouseIsMain($toWarehouseId) !== false) {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Pengaturan satuan eceran hanya tersedia untuk transfer ke Gudang Eceran',
+            ], 422);
+        }
+
+        try {
+            $retailUnitId = DB::transaction(function () use ($variantId, $unitId) {
+                $variant = ProductVariant::query()
+                    ->where('product_variant_id', $variantId)
+                    ->where('status', 1)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $variant) {
+                    throw new \RuntimeException('Varian produk tidak ditemukan');
+                }
+
+                $currentRetailUnitId = (int) ($variant->retail_unit ?? 0);
+                if ($currentRetailUnitId > 0) {
+                    if ($currentRetailUnitId !== $unitId) {
+                        throw new \RuntimeException('Satuan eceran sudah diatur oleh proses lain');
+                    }
+                    return $currentRetailUnitId;
+                }
+
+                $validUnitIds = $this->validRetailUnitsForVariant($variant)
+                    ->pluck('unit_id')
+                    ->map(fn ($id) => (int) $id);
+                if ($unitId <= 0 || ! $validUnitIds->contains($unitId)) {
+                    throw new \RuntimeException('Satuan eceran tidak terdaftar pada produk ini');
+                }
+
+                $variant->retail_unit = $unitId;
+                $variant->save();
+
+                return $unitId;
+            });
+        } catch (Throwable $e) {
+            return response()->json([
+                'status' => -1,
+                'message' => $e->getMessage() ?: 'Gagal menyimpan satuan eceran',
+            ], 422);
+        }
+
+        ProductUnitStock::clearCache();
+
+        return response()->json([
+            'status' => 1,
+            'retail_unit_id' => $retailUnitId,
+            'message' => 'Satuan eceran berhasil disimpan',
+        ]);
     }
 
     public function checkTransferStock(Request $req)
@@ -237,7 +774,26 @@ class StockTransferController extends Controller
 
         ProductUnitStock::clearCache();
         $normalized = $this->normalizeItems($items);
-        $result = ProductUnitStock::checkItems($warehouseId, $normalized);
+        $toWarehouseId = (int) ($req->to_warehouse_id ?? 0);
+        $matrix = $this->validateTransferItems(
+            $warehouseId,
+            $toWarehouseId > 0 ? $toWarehouseId : null,
+            $normalized
+        );
+        if (! $matrix['ok']) {
+            return response()->json([
+                'ok' => false,
+                'shortages' => [],
+                'message' => $matrix['message'],
+                'matrix_error' => true,
+                'invalid_variant_ids' => $matrix['invalid_variant_ids'],
+            ]);
+        }
+        $sourceIsMain = $this->warehouseIsMain($warehouseId);
+        $result = ProductUnitStock::checkItems(
+            $warehouseId,
+            $this->applySourceAvailabilityMode($normalized, $sourceIsMain)
+        );
 
         if (! $result['ok']) {
             $names = array_map(fn ($s) => $s['label'], $result['shortages']);
@@ -260,9 +816,23 @@ class StockTransferController extends Controller
         if ($items === []) {
             return response()->json(['status' => -1, 'message' => 'Tambahkan minimal 1 produk']);
         }
+        $matrix = $this->validateTransferItems(
+            $payload['from_warehouse_id'],
+            $payload['to_warehouse_id'],
+            $items
+        );
+        if (! $matrix['ok']) {
+            return response()->json(['status' => -1, 'message' => $matrix['message']]);
+        }
 
         ProductUnitStock::clearCache();
-        $check = ProductUnitStock::checkItems($payload['from_warehouse_id'], $items);
+        $check = ProductUnitStock::checkItems(
+            $payload['from_warehouse_id'],
+            $this->applySourceAvailabilityMode(
+                $items,
+                $this->warehouseIsMain($payload['from_warehouse_id'])
+            )
+        );
         if (! $check['ok']) {
             $names = array_map(fn ($s) => $s['label'], $check['shortages']);
 
@@ -275,30 +845,17 @@ class StockTransferController extends Controller
         try {
             $stId = DB::transaction(function () use ($payload, $items) {
                 $stId = (new StockTransfer())->createHeader($payload);
-                $header = StockTransfer::query()->findOrFail($stId);
-                $code = $header->transfer_code;
 
                 foreach ($items as $item) {
                     $pv = ProductVariant::query()->find($item['product_variant_id']);
                     $productId = (int) ($pv->product_id ?? 0);
-
-                    $cut = ProductUnitStock::deductQty(
-                        $payload['from_warehouse_id'],
-                        $item['product_variant_id'],
-                        $item['unit_id'],
-                        $item['qty'],
-                        $code,
-                        'Stock Transfer ' . $code . ' - keluar gudang asal'
-                    );
-                    if (! $cut['ok']) {
-                        throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
-                    }
 
                     StockTransferDetail::query()->create([
                         'st_id' => $stId,
                         'product_id' => $productId,
                         'product_variant_id' => $item['product_variant_id'],
                         'unit_id' => $item['unit_id'],
+                        'received_unit_id' => null,
                         'qty' => $item['qty'],
                         'qty_received' => null,
                         'status' => 1,
@@ -314,10 +871,15 @@ class StockTransferController extends Controller
             ]);
         }
 
+        $snapshot = $this->snapshotTransfer($stId);
+        $this->logTransferAction('create', $snapshot['header'], [
+            'items_count' => count($snapshot['items']),
+        ], null, $snapshot);
+
         return response()->json([
             'status' => 1,
             'id' => $stId,
-            'message' => 'Stock transfer berhasil disimpan',
+            'message' => 'Stock transfer berhasil disimpan (Pending)',
         ]);
     }
 
@@ -327,6 +889,9 @@ class StockTransferController extends Controller
         $header = StockTransfer::query()->where('st_id', $stId)->where('status', 1)->first();
         if (! $header) {
             return response()->json(['status' => -1, 'message' => 'Data tidak ditemukan / sudah tidak pending']);
+        }
+        if ($header->source_type === 'production') {
+            return response()->json(['status' => -1, 'message' => 'Transfer hasil produksi tidak dapat diedit.']);
         }
 
         $gate = $this->assertCanEditSource($header);
@@ -343,35 +908,36 @@ class StockTransferController extends Controller
         if ($items === []) {
             return response()->json(['status' => -1, 'message' => 'Tambahkan minimal 1 produk']);
         }
+        $matrix = $this->validateTransferItems(
+            $payload['from_warehouse_id'],
+            $payload['to_warehouse_id'],
+            $items
+        );
+        if (! $matrix['ok']) {
+            return response()->json(['status' => -1, 'message' => $matrix['message']]);
+        }
 
+        $before = $this->snapshotTransfer((int) $header->st_id);
         try {
             DB::transaction(function () use ($header, $payload, $items) {
-                $code = $header->transfer_code;
                 $oldDetails = StockTransferDetail::query()
                     ->where('st_id', $header->st_id)
                     ->where('status', 1)
                     ->get();
 
-                // Kembalikan stok asal dari item lama
                 foreach ($oldDetails as $old) {
-                    $add = ProductUnitStock::addQty(
-                        (int) $header->from_warehouse_id,
-                        (int) $old->product_id,
-                        (int) $old->product_variant_id,
-                        (int) $old->unit_id,
-                        (float) $old->qty,
-                        $code,
-                        'Stock Transfer ' . $code . ' - koreksi edit (kembali)'
-                    );
-                    if (! $add['ok']) {
-                        throw new \RuntimeException($add['message'] ?? 'Gagal restore stok');
-                    }
                     $old->status = 0;
                     $old->save();
                 }
 
                 ProductUnitStock::clearCache();
-                $check = ProductUnitStock::checkItems($payload['from_warehouse_id'], $items);
+                $check = ProductUnitStock::checkItems(
+                    $payload['from_warehouse_id'],
+                    $this->applySourceAvailabilityMode(
+                        $items,
+                        $this->warehouseIsMain($payload['from_warehouse_id'])
+                    )
+                );
                 if (! $check['ok']) {
                     $names = array_map(fn ($s) => $s['label'], $check['shortages']);
                     throw new \RuntimeException('Stok tidak mencukupi: ' . implode(', ', $names));
@@ -379,7 +945,7 @@ class StockTransferController extends Controller
 
                 $header->transfer_date = $payload['transfer_date'];
                 $header->sender_id = $payload['sender_id'];
-                $header->receiver_id = $payload['receiver_id'];
+                $header->receiver_id = null;
                 $header->from_warehouse_id = $payload['from_warehouse_id'];
                 $header->to_warehouse_id = $payload['to_warehouse_id'];
                 $header->note = $payload['note'];
@@ -389,23 +955,12 @@ class StockTransferController extends Controller
                     $pv = ProductVariant::query()->find($item['product_variant_id']);
                     $productId = (int) ($pv->product_id ?? 0);
 
-                    $cut = ProductUnitStock::deductQty(
-                        $payload['from_warehouse_id'],
-                        $item['product_variant_id'],
-                        $item['unit_id'],
-                        $item['qty'],
-                        $code,
-                        'Stock Transfer ' . $code . ' - keluar gudang asal (edit)'
-                    );
-                    if (! $cut['ok']) {
-                        throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
-                    }
-
                     StockTransferDetail::query()->create([
                         'st_id' => $header->st_id,
                         'product_id' => $productId,
                         'product_variant_id' => $item['product_variant_id'],
                         'unit_id' => $item['unit_id'],
+                        'received_unit_id' => null,
                         'qty' => $item['qty'],
                         'qty_received' => null,
                         'status' => 1,
@@ -419,9 +974,15 @@ class StockTransferController extends Controller
             ]);
         }
 
+        $after = $this->snapshotTransfer((int) $header->st_id);
+        $this->logTransferAction('update', $after['header'] ?: $before['header'], [
+            'items_count_before' => count($before['items']),
+            'items_count_after' => count($after['items']),
+        ], $before, $after);
+
         return response()->json([
             'status' => 1,
-            'id' => $stId,
+            'id' => (int) $header->st_id,
             'message' => 'Stock transfer berhasil diupdate',
         ]);
     }
@@ -433,15 +994,21 @@ class StockTransferController extends Controller
         if (! $header) {
             return response()->json(['status' => -1, 'message' => 'Hanya transfer pending yang bisa dihapus']);
         }
+        if ($header->source_type === 'production') {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Transfer hasil produksi harus ditolak dengan disposisi, bukan dihapus.',
+            ]);
+        }
 
         $gate = $this->assertCanEditSource($header);
         if ($gate !== true) {
             return response()->json(['status' => -1, 'message' => $gate]);
         }
 
+        $before = $this->snapshotTransfer((int) $header->st_id);
         try {
             DB::transaction(function () use ($header) {
-                $this->restoreSourceStock($header, 'hapus');
                 $header->status = 0;
                 $header->save();
             });
@@ -452,15 +1019,128 @@ class StockTransferController extends Controller
             ]);
         }
 
-        return response()->json(['status' => 1, 'message' => 'Stock transfer dihapus, stok dikembalikan']);
+        $after = $this->snapshotTransfer((int) $header->st_id);
+        $this->logTransferAction('delete', $before['header'], [], $before, $after);
+
+        return response()->json(['status' => 1, 'message' => 'Stock transfer dihapus']);
+    }
+
+    /**
+     * ACC gudang asal: Pending → Kirim (potong stok sumber).
+     */
+    public function shipStockTransfer(Request $req)
+    {
+        $stId = (int) ($req->id ?? $req->st_id ?? 0);
+        $header = StockTransfer::query()->where('st_id', $stId)->where('status', 1)->first();
+        if (! $header) {
+            return response()->json(['status' => -1, 'message' => 'Data tidak ditemukan / sudah tidak pending']);
+        }
+
+        $gate = $this->assertCanShip($header);
+        if ($gate !== true) {
+            return response()->json(['status' => -1, 'message' => $gate]);
+        }
+
+        $user = Session::get('user');
+        $accBy = (int) ($user->staff_id ?? 0);
+
+        $before = $this->snapshotTransfer((int) $header->st_id);
+        try {
+            DB::transaction(function () use ($stId, $accBy) {
+                $lockedHeader = StockTransfer::query()
+                    ->where('st_id', $stId)
+                    ->where('status', 1)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $lockedHeader) {
+                    throw new \RuntimeException('Transfer sudah diproses');
+                }
+
+                $details = StockTransferDetail::query()
+                    ->where('st_id', $stId)
+                    ->where('status', 1)
+                    ->lockForUpdate()
+                    ->get();
+                if ($details->isEmpty()) {
+                    throw new \RuntimeException('Detail transfer kosong');
+                }
+
+                $items = $this->normalizeItems($details->map(fn ($d) => [
+                    'product_variant_id' => (int) $d->product_variant_id,
+                    'unit_id' => (int) $d->unit_id,
+                    'qty' => (float) $d->qty,
+                ])->values()->all());
+                $isProduction = $lockedHeader->source_type === 'production';
+                if (! $isProduction) {
+                    $matrix = $this->validateTransferItems(
+                        (int) $lockedHeader->from_warehouse_id,
+                        (int) $lockedHeader->to_warehouse_id,
+                        $items
+                    );
+                    if (! $matrix['ok']) {
+                        throw new \RuntimeException($matrix['message']);
+                    }
+
+                    ProductUnitStock::clearCache();
+                    $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
+                    $check = ProductUnitStock::checkItems(
+                        (int) $lockedHeader->from_warehouse_id,
+                        $this->applySourceAvailabilityMode($items, $sourceIsMain)
+                    );
+                    if (! $check['ok']) {
+                        $names = array_map(fn ($s) => $s['label'], $check['shortages']);
+                        throw new \RuntimeException('Stok tidak mencukupi: ' . implode(', ', $names));
+                    }
+
+                    $code = $lockedHeader->transfer_code;
+                    foreach ($items as $item) {
+                        $cut = ProductUnitStock::deductQty(
+                            (int) $lockedHeader->from_warehouse_id,
+                            (int) $item['product_variant_id'],
+                            (int) $item['unit_id'],
+                            (float) $item['qty'],
+                            $code,
+                            'Stock Transfer ' . $code . ' - keluar gudang asal',
+                            $sourceIsMain === false
+                        );
+                        if (! $cut['ok']) {
+                            throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
+                        }
+                    }
+                }
+
+                $lockedHeader->status = 2; // Kirim
+                if ($accBy > 0) {
+                    $lockedHeader->acc_by = $accBy;
+                }
+                $lockedHeader->save();
+            });
+        } catch (Throwable $e) {
+            return response()->json([
+                'status' => -1,
+                'message' => $e->getMessage() ?: 'Gagal kirim stock transfer',
+            ]);
+        }
+
+        $after = $this->snapshotTransfer((int) $header->st_id);
+        $this->logTransferAction('ship', $after['header'] ?: $before['header'], [
+            'items_count' => count($after['items']),
+        ], $before, $after);
+
+        return response()->json([
+            'status' => 1,
+            'message' => $header->source_type === 'production'
+                ? 'Hasil produksi dikirim tanpa memotong stok sumber.'
+                : 'Stock transfer dikirim, stok gudang asal dipotong',
+        ]);
     }
 
     public function accStockTransfer(Request $req)
     {
         $stId = (int) ($req->id ?? $req->st_id ?? 0);
-        $header = StockTransfer::query()->where('st_id', $stId)->where('status', 1)->first();
+        $header = StockTransfer::query()->where('st_id', $stId)->where('status', 2)->first();
         if (! $header) {
-            return response()->json(['status' => -1, 'message' => 'Data tidak ditemukan / sudah di-ACC']);
+            return response()->json(['status' => -1, 'message' => 'Data tidak ditemukan / belum berstatus Kirim']);
         }
 
         $gate = $this->assertCanAcc($header);
@@ -469,13 +1149,10 @@ class StockTransferController extends Controller
         }
 
         $user = Session::get('user');
-        // Penerima bisa diganti di modal; acc_by = siapa yang klik ACC
-        $receiverId = (int) ($req->receiver_id ?? $header->receiver_id ?? 0);
+        // Penerima = user yang ACC (dikunci, tidak bisa diganti dari request)
+        $receiverId = (int) ($user->staff_id ?? 0);
         if ($receiverId <= 0) {
-            $receiverId = (int) ($user->staff_id ?? 0);
-        }
-        if ($receiverId <= 0) {
-            return response()->json(['status' => -1, 'message' => 'Penerima wajib diisi']);
+            return response()->json(['status' => -1, 'message' => 'User login tidak ditemukan']);
         }
 
         $acceptNote = $req->accept_note ?? $req->note ?? null;
@@ -490,35 +1167,109 @@ class StockTransferController extends Controller
             if ($stdId <= 0) {
                 continue;
             }
-            $receivedMap[$stdId] = (float) ($item['qty_received'] ?? $item['qty'] ?? 0);
+            $receivedMap[$stdId] = (float) (
+                $item['qty_received_sent_unit']
+                ?? $item['qty_received']
+                ?? $item['qty']
+                ?? 0
+            );
         }
 
         $accBy = (int) ($user->staff_id ?? 0);
 
+        $before = $this->snapshotTransfer((int) $header->st_id);
         try {
-            DB::transaction(function () use ($header, $receiverId, $acceptNote, $receivedMap, $accBy) {
+            DB::transaction(function () use (
+                $stId,
+                $receiverId,
+                $acceptNote,
+                $receivedMap,
+                $accBy
+            ) {
+                $lockedHeader = StockTransfer::query()
+                    ->where('st_id', $stId)
+                    ->where('status', 2)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $lockedHeader) {
+                    throw new \RuntimeException('Transfer sudah diproses atau belum berstatus Kirim');
+                }
+
                 $details = StockTransferDetail::query()
-                    ->where('st_id', $header->st_id)
+                    ->where('st_id', $stId)
                     ->where('status', 1)
+                    ->lockForUpdate()
                     ->get();
 
                 if ($details->isEmpty()) {
                     throw new \RuntimeException('Detail transfer kosong');
                 }
 
-                $code = $header->transfer_code;
+                $items = $details->map(fn ($d) => [
+                    'product_variant_id' => (int) $d->product_variant_id,
+                    'unit_id' => (int) $d->unit_id,
+                    'qty' => (float) $d->qty,
+                ])->values()->all();
+                if ($lockedHeader->source_type !== 'production') {
+                    $matrix = $this->validateTransferItems(
+                        (int) $lockedHeader->from_warehouse_id,
+                        (int) $lockedHeader->to_warehouse_id,
+                        $items
+                    );
+                    if (! $matrix['ok']) {
+                        throw new \RuntimeException($matrix['message']);
+                    }
+                }
+
+                $code = $lockedHeader->transfer_code;
+                $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
+                $destinationIsMain = $this->warehouseIsMain((int) $lockedHeader->to_warehouse_id);
+                $variants = ProductVariant::query()
+                    ->whereIn('product_variant_id', $details->pluck('product_variant_id')->unique())
+                    ->get()
+                    ->keyBy('product_variant_id');
+                $products = Product::query()
+                    ->whereIn('product_id', $details->pluck('product_id')->unique())
+                    ->get()
+                    ->keyBy('product_id');
                 foreach ($details as $d) {
-                    $qtyReceived = $receivedMap[$d->std_id] ?? (float) $d->qty;
-                    if ($qtyReceived < 0) {
+                    $qtyReceivedInSentUnit = $receivedMap[$d->std_id] ?? (float) $d->qty;
+                    if ($qtyReceivedInSentUnit < 0) {
                         throw new \RuntimeException('Qty diterima tidak valid');
+                    }
+                    if ($qtyReceivedInSentUnit > (float) $d->qty) {
+                        throw new \RuntimeException(
+                            'Qty diterima tidak boleh melebihi qty kirim untuk detail #' . $d->std_id
+                        );
+                    }
+
+                    $resolution = $this->resolveTransferUnits(
+                        $sourceIsMain,
+                        $destinationIsMain,
+                        $variants->get($d->product_variant_id),
+                        $products->get($d->product_id),
+                        (int) $d->unit_id
+                    );
+                    if ($resolution['error']) {
+                        throw new \RuntimeException($resolution['error']);
+                    }
+                    $targetUnitId = (int) $resolution['target_unit_id'];
+                    $qtyReceived = ProductUnitStock::convertQty(
+                        $qtyReceivedInSentUnit,
+                        (int) $d->unit_id,
+                        $targetUnitId,
+                        (int) $d->product_variant_id
+                    );
+                    if ($qtyReceivedInSentUnit > 0 && $qtyReceived <= 0) {
+                        throw new \RuntimeException('Konversi satuan gagal untuk detail #' . $d->std_id);
                     }
 
                     if ($qtyReceived > 0) {
                         $add = ProductUnitStock::addQty(
-                            (int) $header->to_warehouse_id,
+                            (int) $lockedHeader->to_warehouse_id,
                             (int) $d->product_id,
                             (int) $d->product_variant_id,
-                            (int) $d->unit_id,
+                            $targetUnitId,
                             $qtyReceived,
                             $code,
                             'Stock Transfer ' . $code . ' - masuk gudang tujuan'
@@ -528,15 +1279,20 @@ class StockTransferController extends Controller
                         }
                     }
 
+                    $d->received_unit_id = $targetUnitId;
                     $d->qty_received = $qtyReceived;
                     $d->save();
                 }
 
-                $header->receiver_id = $receiverId;
-                $header->accept_note = $acceptNote;
-                $header->status = 2;
-                $header->acc_by = $accBy > 0 ? $accBy : $receiverId;
-                $header->save();
+                $lockedHeader->receiver_id = $receiverId;
+                $lockedHeader->accept_note = $acceptNote;
+                $lockedHeader->status = 4; // Diterima
+                // acc_by dipakai untuk pencatat siapa yang klik "Kirim" (gudang asal)
+                // saat Terima jangan overwrite, supaya jejak pengirim tetap ada.
+                if (! $lockedHeader->acc_by) {
+                    $lockedHeader->acc_by = $accBy > 0 ? $accBy : $receiverId;
+                }
+                $lockedHeader->save();
             });
         } catch (Throwable $e) {
             return response()->json([
@@ -545,7 +1301,12 @@ class StockTransferController extends Controller
             ]);
         }
 
-        return response()->json(['status' => 1, 'message' => 'Stock transfer berhasil di-ACC']);
+        $after = $this->snapshotTransfer((int) $header->st_id);
+        $this->logTransferAction('accept', $after['header'] ?: $before['header'], [
+            'items_count' => count($after['items']),
+        ], $before, $after);
+
+        return response()->json(['status' => 1, 'message' => 'Stock transfer berhasil diterima']);
     }
 
     public function rejectStockTransfer(Request $req)
@@ -556,13 +1317,96 @@ class StockTransferController extends Controller
             return response()->json(['status' => -1, 'message' => 'Hanya transfer pending yang bisa ditolak']);
         }
 
+        $gate = $this->assertCanReject($header);
+        if ($gate !== true) {
+            return response()->json(['status' => -1, 'message' => $gate]);
+        }
+
+        $isProduction = $header->source_type === 'production';
+        $disposition = strtolower(trim((string) $req->input('disposition', '')));
+        $damageType = strtolower(trim((string) $req->input('damage_type', '')));
+        $allowedDamageTypes = ['rusak', 'cacat', 'kadaluarsa', 'lainnya'];
+        if ($isProduction && ! in_array($disposition, ['problematic', 'hangus'], true)) {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Pilih disposisi Produk Bermasalah atau Hangus.',
+            ], 422);
+        }
+        if ($isProduction && $disposition === 'problematic'
+            && ! in_array($damageType, $allowedDamageTypes, true)) {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Pilih jenis masalah produk.',
+            ], 422);
+        }
+
+        $before = $this->snapshotTransfer((int) $header->st_id);
+        $productIssueId = null;
         try {
-            DB::transaction(function () use ($header, $req) {
-                $this->restoreSourceStock($header, 'tolak');
-                $header->status = 3;
-                $header->accept_note = $req->accept_note ?? $req->note ?? $header->accept_note;
-                $header->acc_by = Session::get('user')->staff_id ?? null;
-                $header->save();
+            DB::transaction(function () use (
+                $stId,
+                $req,
+                $isProduction,
+                $disposition,
+                $damageType,
+                &$productIssueId
+            ) {
+                $lockedHeader = StockTransfer::query()
+                    ->where('st_id', $stId)
+                    ->where('status', 1)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $lockedHeader) {
+                    throw new \RuntimeException('Transfer sudah diproses.');
+                }
+
+                $notes = trim((string) ($req->input('notes') ?? $req->input('note') ?? ''));
+                if ($isProduction) {
+                    $details = StockTransferDetail::query()
+                        ->where('st_id', $stId)
+                        ->where('status', 1)
+                        ->lockForUpdate()
+                        ->get();
+                    if ($details->isEmpty()) {
+                        throw new \RuntimeException('Detail transfer kosong.');
+                    }
+
+                    $issue = new ProductIssues();
+                    $issue->pi_code = $issue->generateProductIssueID();
+                    $issue->pi_type = $disposition === 'hangus' ? 3 : 2;
+                    $issue->ref_num = 0;
+                    $issue->po_id = 0;
+                    $issue->pi_date = now()->toDateString();
+                    $issue->pi_notes = $disposition === 'hangus'
+                        ? ('Hangus' . ($notes !== '' ? ': ' . $notes : ''))
+                        : (ucfirst($damageType) . ($notes !== '' ? ': ' . $notes : ''));
+                    $issue->tipe_return = 2;
+                    $issue->status = 2;
+                    $issue->source_type = 'stock_transfer';
+                    $issue->source_id = $stId;
+                    $issue->created_by = Session::get('user')->staff_id ?? null;
+                    $issue->acc_by = Session::get('user')->staff_id ?? null;
+                    $issue->save();
+
+                    foreach ($details as $detail) {
+                        $issueDetail = new ProductIssuesDetail();
+                        $issueDetail->pi_id = $issue->pi_id;
+                        $issueDetail->pid_qty = $detail->qty;
+                        $issueDetail->item_id = $detail->product_variant_id;
+                        $issueDetail->unit_id = $detail->unit_id;
+                        $issueDetail->status = 1;
+                        $issueDetail->save();
+                    }
+                    $productIssueId = (int) $issue->pi_id;
+                    $lockedHeader->disposition = $disposition;
+                }
+
+                $lockedHeader->status = 3;
+                $lockedHeader->accept_note = $isProduction
+                    ? ($notes !== '' ? $notes : $lockedHeader->accept_note)
+                    : ($req->accept_note ?? $req->note ?? $lockedHeader->accept_note);
+                $lockedHeader->acc_by = Session::get('user')->staff_id ?? null;
+                $lockedHeader->save();
             });
         } catch (Throwable $e) {
             return response()->json([
@@ -571,7 +1415,14 @@ class StockTransferController extends Controller
             ]);
         }
 
-        return response()->json(['status' => 1, 'message' => 'Stock transfer ditolak, stok dikembalikan']);
+        $after = $this->snapshotTransfer((int) $header->st_id);
+        $this->logTransferAction('reject', $after['header'] ?: $before['header'], [
+            'disposition' => $isProduction ? $disposition : null,
+            'damage_type' => $isProduction && $disposition === 'problematic' ? $damageType : null,
+            'product_issue_id' => $productIssueId,
+        ], $before, $after);
+
+        return response()->json(['status' => 1, 'message' => 'Stock transfer ditolak']);
     }
 
     protected function restoreSourceStock(StockTransfer $header, string $reason): void
@@ -599,19 +1450,19 @@ class StockTransferController extends Controller
     }
 
     /**
-     * @return array{error:?string, transfer_date?:string, sender_id?:int, receiver_id?:int, from_warehouse_id?:int, to_warehouse_id?:int, note?:?string}
+     * @return array{error:?string, transfer_date?:string, sender_id?:int, receiver_id?:?int, from_warehouse_id?:int, to_warehouse_id?:int, note?:?string}
      */
     protected function parseHeaderPayload(Request $req): array
     {
-        $senderId = (int) ($req->sender_id ?? 0);
-        $receiverId = (int) ($req->receiver_id ?? 0);
+        $user = Session::get('user');
+        $senderId = (int) ($user->staff_id ?? 0);
         $fromId = (int) ($req->from_warehouse_id ?? 0);
         $toId = (int) ($req->to_warehouse_id ?? 0);
         $dateRaw = trim((string) ($req->transfer_date ?? ''));
         $note = $req->note ?? null;
 
-        if ($senderId <= 0 || $receiverId <= 0 || $fromId <= 0 || $toId <= 0 || $dateRaw === '') {
-            return ['error' => 'Lengkapi pengirim, penerima, gudang, dan tanggal'];
+        if ($senderId <= 0 || $fromId <= 0 || $toId <= 0 || $dateRaw === '') {
+            return ['error' => 'Lengkapi pengirim, gudang, dan tanggal'];
         }
         if ($fromId === $toId) {
             return ['error' => 'Gudang asal dan tujuan tidak boleh sama'];
@@ -631,7 +1482,7 @@ class StockTransferController extends Controller
             'error' => null,
             'transfer_date' => $date,
             'sender_id' => $senderId,
-            'receiver_id' => $receiverId,
+            'receiver_id' => null,
             'from_warehouse_id' => $fromId,
             'to_warehouse_id' => $toId,
             'note' => $note,
@@ -666,7 +1517,13 @@ class StockTransferController extends Controller
                 ) ?: ('Variant #' . $variantId);
             }
 
-            $normalized[] = [
+            $key = $variantId . ':' . $unitId;
+            if (isset($normalized[$key])) {
+                $normalized[$key]['qty'] += $qty;
+                continue;
+            }
+
+            $normalized[$key] = [
                 'product_variant_id' => $variantId,
                 'unit_id' => $unitId,
                 'qty' => $qty,
@@ -674,12 +1531,284 @@ class StockTransferController extends Controller
             ];
         }
 
-        return $normalized;
+        return array_values($normalized);
+    }
+
+    protected function warehouseIsMain(int $warehouseId): ?bool
+    {
+        $warehouse = Warehouse::query()
+            ->with('type:id,is_main_warehouse')
+            ->find($warehouseId);
+
+        return $warehouse && $warehouse->type
+            ? (int) $warehouse->type->is_main_warehouse === 1
+            : null;
     }
 
     /**
-     * ACC hanya gudang tujuan: gudang aktif = tujuan (bukan asal).
-     * Siapa pun staff yang login di gudang tujuan boleh ACC.
+     * @return array{error:?string,target_unit_id:?int}
+     */
+    protected function resolveTransferUnits(
+        ?bool $sourceIsMain,
+        ?bool $destinationIsMain,
+        ?ProductVariant $variant,
+        ?Product $product,
+        int $sentUnitId
+    ): array {
+        if ($sourceIsMain === null) {
+            return ['error' => 'Tipe gudang transfer tidak valid', 'target_unit_id' => null];
+        }
+        if (! $variant || ! $product) {
+            return ['error' => 'Produk transfer tidak ditemukan', 'target_unit_id' => null];
+        }
+
+        $defaultUnitId = (int) ($product->unit_id ?? 0);
+        $retailUnitId = (int) ($variant->retail_unit ?? 0);
+
+        if ($defaultUnitId <= 0) {
+            return [
+                'error' => 'Satuan default produk belum diatur untuk produk #' . $product->product_id,
+                'target_unit_id' => null,
+            ];
+        }
+        if (! Unit::query()->where('unit_id', $sentUnitId)->exists()) {
+            return ['error' => 'Satuan kirim tidak ditemukan', 'target_unit_id' => null];
+        }
+
+        // Gudang utama hanya mengirim default. Gudang eceran wajib packing ke
+        // unit non-retail yang masih berada pada chain retail unit.
+        if ($sourceIsMain && $sentUnitId !== $defaultUnitId) {
+            return [
+                'error' => 'Gudang utama hanya boleh mengirim dalam satuan default produk',
+                'target_unit_id' => null,
+            ];
+        }
+        if (! $sourceIsMain) {
+            if ($retailUnitId <= 0) {
+                return [
+                    'error' => 'Satuan retail belum diatur sebagai basis chain untuk varian #'
+                        . $variant->product_variant_id,
+                    'target_unit_id' => null,
+                ];
+            }
+            if ($sentUnitId === $retailUnitId) {
+                return [
+                    'error' => 'Gudang eceran tidak boleh mengirim memakai satuan eceran',
+                    'target_unit_id' => null,
+                ];
+            }
+            if (! ProductUnitStock::canConvertUnits(
+                $sentUnitId,
+                $retailUnitId,
+                (int) $variant->product_variant_id
+            )) {
+                return [
+                    'error' => 'Satuan kirim tidak berada dalam rantai konversi satuan retail',
+                    'target_unit_id' => null,
+                ];
+            }
+        }
+
+        // Tujuan belum dipilih: aturan sumber sudah cukup.
+        if ($destinationIsMain === null) {
+            return ['error' => null, 'target_unit_id' => $sentUnitId];
+        }
+
+        if ($destinationIsMain) {
+            $targetUnitId = $defaultUnitId;
+        } else {
+            if ($retailUnitId <= 0) {
+                return [
+                    'error' => 'Satuan retail belum diatur untuk varian #' . $variant->product_variant_id,
+                    'target_unit_id' => null,
+                ];
+            }
+            $targetUnitId = $retailUnitId;
+        }
+
+        if (! Unit::query()->where('unit_id', $targetUnitId)->exists()) {
+            return ['error' => 'Satuan tujuan tidak ditemukan', 'target_unit_id' => null];
+        }
+
+        if (! ProductUnitStock::canConvertUnits(
+            $sentUnitId,
+            $targetUnitId,
+            (int) $variant->product_variant_id
+        )) {
+            return [
+                'error' => 'Satuan kirim dan satuan tujuan tidak berada dalam rantai konversi yang sama',
+                'target_unit_id' => null,
+            ];
+        }
+
+        return ['error' => null, 'target_unit_id' => $targetUnitId];
+    }
+
+    protected function validRetailUnitsForVariant(ProductVariant $variant)
+    {
+        $product = Product::query()
+            ->where('product_id', $variant->product_id)
+            ->where('status', 1)
+            ->first(['product_id', 'product_unit']);
+        $unitIds = collect(json_decode($product?->product_unit ?? '[]', true) ?: [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        return $unitIds->isEmpty()
+            ? collect()
+            : Unit::query()
+                ->whereIn('unit_id', $unitIds)
+                ->get(['unit_id', 'unit_name', 'unit_short_name'])
+                ->sortBy(fn ($unit) => $unitIds->search((int) $unit->unit_id))
+                ->values();
+    }
+
+    protected function authorizeRetailUnitSetup(): void
+    {
+        $user = Session::get('user');
+        if (! RoleAccess::can($user, 'Stock Transfer', 'create')
+            && ! RoleAccess::can($user, 'Stock Transfer', 'edit')) {
+            abort(403, 'Unauthorized');
+        }
+    }
+
+    /**
+     * @param  array<int, array{product_variant_id:int,unit_id:int,qty:float,label?:string}>  $items
+     * @return array{ok:bool,message:string,invalid_variant_ids:array<int,int>}
+     */
+    protected function validateTransferItems(
+        int $fromWarehouseId,
+        ?int $toWarehouseId,
+        array $items
+    ): array {
+        $sourceIsMain = $this->warehouseIsMain($fromWarehouseId);
+        $destinationIsMain = $toWarehouseId ? $this->warehouseIsMain($toWarehouseId) : null;
+        if ($sourceIsMain === null || ($toWarehouseId && $destinationIsMain === null)) {
+            return [
+                'ok' => false,
+                'message' => 'Gudang atau tipe gudang transfer tidak valid',
+                'invalid_variant_ids' => [],
+            ];
+        }
+
+        $variantIds = collect($items)->pluck('product_variant_id')->map(fn ($id) => (int) $id)->unique();
+        $variants = ProductVariant::query()
+            ->whereIn('product_variant_id', $variantIds)
+            ->get()
+            ->keyBy('product_variant_id');
+        $products = Product::query()
+            ->whereIn('product_id', $variants->pluck('product_id')->unique())
+            ->get()
+            ->keyBy('product_id');
+        $errors = [];
+        $invalidVariantIds = [];
+
+        foreach ($items as $item) {
+            $variantId = (int) ($item['product_variant_id'] ?? 0);
+            $qty = (float) ($item['qty'] ?? 0);
+            if ($qty <= 0 || abs($qty - round($qty)) > 1e-9) {
+                $label = trim((string) ($item['label'] ?? '')) ?: ('Varian #' . $variantId);
+                $errors[] = $label . ': qty kirim harus berupa bilangan bulat positif';
+                $invalidVariantIds[] = $variantId;
+                continue;
+            }
+            $variant = $variants->get($variantId);
+            $product = $variant ? $products->get($variant->product_id) : null;
+            $resolution = $this->resolveTransferUnits(
+                $sourceIsMain,
+                $toWarehouseId ? $destinationIsMain : null,
+                $variant,
+                $product,
+                (int) ($item['unit_id'] ?? 0)
+            );
+            if (! $resolution['error']) {
+                continue;
+            }
+
+            $label = trim((string) ($item['label'] ?? '')) ?: ('Varian #' . $variantId);
+            $errors[] = $label . ': ' . $resolution['error'];
+            $invalidVariantIds[] = $variantId;
+        }
+
+        return [
+            'ok' => $errors === [],
+            'message' => $errors === [] ? 'Matriks satuan valid' : implode('; ', array_unique($errors)),
+            'invalid_variant_ids' => array_values(array_unique($invalidVariantIds)),
+        ];
+    }
+
+    /**
+     * Gudang retail menghitung stok dengan packing dua arah dalam satu chain.
+     *
+     * @param  array<int, array>  $items
+     * @return array<int, array>
+     */
+    protected function applySourceAvailabilityMode(array $items, ?bool $sourceIsMain): array
+    {
+        return array_map(function ($item) use ($sourceIsMain) {
+            $item['allow_packing'] = $sourceIsMain === false;
+            return $item;
+        }, $items);
+    }
+
+    protected function filterSourceSnapshot(
+        array $snapshot,
+        ?bool $sourceIsMain,
+        int $defaultUnitId
+    ): array
+    {
+        $units = collect((array) ($snapshot['units'] ?? []));
+        if ($sourceIsMain === null) {
+            $units = collect();
+        } elseif ($sourceIsMain) {
+            // Gudang utama hanya mengirim dalam satuan default produk.
+            $units = $defaultUnitId > 0
+                ? $units->filter(fn ($unit) => (int) ($unit['unit_id'] ?? 0) === $defaultUnitId)
+                : collect();
+        }
+        // Snapshot gudang eceran dibentuk oleh sourceSnapshot() agar unit retail
+        // tersembunyi dan unit chain tanpa row stok tetap tersedia.
+        $units = $units->values();
+
+        $snapshot['units'] = $units->all();
+        $snapshot['unit_order'] = $units->pluck('unit_id')->map(fn ($id) => (int) $id)->all();
+        $snapshot['stock_text'] = $units->isEmpty()
+            ? '0'
+            : $units->map(fn ($unit) => ($unit['ps_stock_text'] ?? $unit['ps_stock'] ?? 0)
+                . ' ' . ($unit['unit_name'] ?? $unit['unit_short_name'] ?? '-'))->implode(', ');
+
+        return $snapshot;
+    }
+
+    /**
+     * Kirim (Pending→Kirim) hanya di gudang asal.
+     *
+     * @param  array<int, int>  $assignedWh
+     */
+    protected function canShipTransferRow(
+        int $status,
+        int $fromWarehouseId,
+        int $staffId,
+        int $activeWarehouseId,
+        array $assignedWh
+    ): bool {
+        if ($status !== 1 || $fromWarehouseId <= 0 || $staffId <= 0 || $activeWarehouseId <= 0) {
+            return false;
+        }
+        if ($activeWarehouseId !== $fromWarehouseId) {
+            return false;
+        }
+        if ($assignedWh !== [] && ! in_array($fromWarehouseId, $assignedWh, true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Terima (Kirim→Diterima) hanya gudang tujuan.
      *
      * @param  array<int, int>  $assignedWh
      */
@@ -690,9 +1819,10 @@ class StockTransferController extends Controller
         int $toWarehouseId,
         int $staffId,
         int $activeWarehouseId,
-        array $assignedWh
+        array $assignedWh,
+        bool $allowSameWarehouse = false
     ): bool {
-        if ($status !== 1 || $toWarehouseId <= 0 || $staffId <= 0 || $activeWarehouseId <= 0) {
+        if ($status !== 2 || $toWarehouseId <= 0 || $staffId <= 0 || $activeWarehouseId <= 0) {
             return false;
         }
         // Gudang aktif wajib = tujuan
@@ -700,12 +1830,49 @@ class StockTransferController extends Controller
             return false;
         }
         // Tolak jika gudang aktif masih gudang asal
-        if ($fromWarehouseId > 0 && $activeWarehouseId === $fromWarehouseId) {
+        if (! $allowSameWarehouse && $fromWarehouseId > 0 && $activeWarehouseId === $fromWarehouseId) {
             return false;
         }
         // Harus assigned ke gudang tujuan (kalau ada daftar assign)
         if ($assignedWh !== [] && ! in_array($toWarehouseId, $assignedWh, true)) {
             return false;
+        }
+
+        return true;
+    }
+
+    protected function canEditTransferRow(
+        int $status,
+        int $fromWarehouseId,
+        int $activeWarehouseId
+    ): bool {
+        if ($status !== 1 || $fromWarehouseId <= 0 || $activeWarehouseId <= 0) {
+            return false;
+        }
+
+        return $activeWarehouseId === $fromWarehouseId;
+    }
+
+    /** @return true|string */
+    protected function assertCanShip(StockTransfer $header)
+    {
+        $user = Session::get('user');
+        $staffId = (int) ($user->staff_id ?? 0);
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        $assignedWh = $user ? Staff::assignedWarehouseIds($user) : [];
+        $fromWh = (int) $header->from_warehouse_id;
+
+        if ((int) $header->status !== 1) {
+            return 'Transfer sudah diproses';
+        }
+        if ($activeWh <= 0 || $activeWh !== $fromWh) {
+            return 'Kirim hanya bisa dilakukan di gudang asal. Ganti gudang aktif ke gudang asal.';
+        }
+        if ($staffId <= 0) {
+            return 'User login tidak valid';
+        }
+        if ($assignedWh !== [] && ! in_array($fromWh, $assignedWh, true)) {
+            return 'Anda tidak punya akses ke gudang asal transfer ini';
         }
 
         return true;
@@ -721,13 +1888,13 @@ class StockTransferController extends Controller
         $fromWh = (int) $header->from_warehouse_id;
         $toWh = (int) $header->to_warehouse_id;
 
-        if ((int) $header->status !== 1) {
-            return 'Transfer sudah diproses';
+        if ((int) $header->status !== 2) {
+            return 'Transfer harus berstatus Kirim sebelum diterima';
         }
         if ($activeWh <= 0 || $activeWh !== $toWh) {
             return 'ACC hanya bisa dilakukan di gudang tujuan. Ganti gudang aktif ke gudang tujuan.';
         }
-        if ($fromWh > 0 && $activeWh === $fromWh) {
+        if ($header->source_type !== 'production' && $fromWh > 0 && $activeWh === $fromWh) {
             return 'Gudang asal tidak bisa ACC. ACC hanya di gudang tujuan.';
         }
         if ($staffId <= 0) {
@@ -754,5 +1921,148 @@ class StockTransferController extends Controller
         }
 
         return true;
+    }
+
+    /** Tolak hanya di gudang asal saat Pending. @return true|string */
+    protected function assertCanReject(StockTransfer $header)
+    {
+        $user = Session::get('user');
+        $staffId = (int) ($user->staff_id ?? 0);
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        $assignedWh = $user ? Staff::assignedWarehouseIds($user) : [];
+        $fromWh = (int) $header->from_warehouse_id;
+
+        if ((int) $header->status !== 1) {
+            return 'Hanya transfer pending yang bisa ditolak';
+        }
+        if ($activeWh <= 0 || $activeWh !== $fromWh) {
+            return 'Tolak hanya bisa dilakukan di gudang asal. Ganti gudang aktif ke gudang asal.';
+        }
+        if ($staffId <= 0) {
+            return 'User login tidak valid';
+        }
+        if ($assignedWh !== [] && ! in_array($fromWh, $assignedWh, true)) {
+            return 'Anda tidak punya akses ke gudang asal transfer ini';
+        }
+
+        return true;
+    }
+
+    private function snapshotTransfer(int $stId): array
+    {
+        $header = StockTransfer::query()->where('st_id', $stId)->first();
+        if (! $header) {
+            return ['header' => null, 'items' => []];
+        }
+
+        $details = StockTransferDetail::query()
+            ->where('st_id', $stId)
+            ->where('status', 1)
+            ->orderBy('std_id')
+            ->get([
+                'std_id',
+                'product_variant_id',
+                'unit_id',
+                'received_unit_id',
+                'qty',
+                'qty_received',
+                'status',
+            ]);
+
+        return [
+            'header' => [
+                'st_id' => (int) $header->st_id,
+                'transfer_code' => (string) ($header->transfer_code ?? ''),
+                'transfer_date' => $header->transfer_date ? (string) $header->transfer_date : null,
+                'sender_id' => $header->sender_id ? (int) $header->sender_id : null,
+                'receiver_id' => $header->receiver_id ? (int) $header->receiver_id : null,
+                'from_warehouse_id' => $header->from_warehouse_id ? (int) $header->from_warehouse_id : null,
+                'to_warehouse_id' => $header->to_warehouse_id ? (int) $header->to_warehouse_id : null,
+                'note' => $header->note,
+                'accept_note' => $header->accept_note,
+                'source_type' => $header->source_type,
+                'source_id' => $header->source_id ? (int) $header->source_id : null,
+                'disposition' => $header->disposition,
+                'status' => (int) $header->status,
+                'acc_by' => $header->acc_by ? (int) $header->acc_by : null,
+            ],
+            'items' => $details->map(function ($d) use ($header) {
+                return [
+                    'std_id' => (int) $d->std_id,
+                    'product_variant_id' => (int) $d->product_variant_id,
+                    'unit_id' => (int) $d->unit_id,
+                    'received_unit_id' => $d->received_unit_id
+                        ? (int) $d->received_unit_id
+                        : ((int) $header->status === 4 ? (int) $d->unit_id : null),
+                    'qty' => (float) $d->qty,
+                    'qty_received' => $d->qty_received !== null ? (float) $d->qty_received : null,
+                ];
+            })->values()->all(),
+        ];
+    }
+
+    private function logTransferAction(
+        string $action,
+        ?array $headerSnapshot,
+        array $extraMeta = [],
+        ?array $before = null,
+        ?array $after = null
+    ): void {
+        if (! $headerSnapshot) {
+            return;
+        }
+
+        try {
+            $user = Session::get('user');
+            $staffId = (int) ($user->staff_id ?? 0);
+            $transferCode = (string) ($headerSnapshot['transfer_code'] ?? '');
+            $transferId = (int) ($headerSnapshot['st_id'] ?? 0);
+
+            $whatChangedMap = [
+                'create' => 'Buat stock transfer',
+                'update' => 'Edit stock transfer',
+                'delete' => 'Hapus stock transfer',
+                'ship' => 'ACC kirim stock transfer',
+                'accept' => 'Terima/ACC stock transfer',
+                'reject' => 'Tolak stock transfer',
+            ];
+
+            DashboardChangeLog::create([
+                'module_key' => self::TRANSFER_LOG_MODULE_KEY,
+                'module_label' => 'Stock Transfer',
+                'reference' => $transferCode !== '' ? $transferCode : ('ST #' . $transferId),
+                'what_changed' => $whatChangedMap[$action] ?? ('Aksi stock transfer: ' . $action),
+                'summary' => 'Action: ' . $action
+                    . ' | Status: ' . ((int) ($headerSnapshot['status'] ?? 0))
+                    . (! empty($headerSnapshot['source_type'])
+                        ? ' | Source: ' . $headerSnapshot['source_type'] . '#' . ($headerSnapshot['source_id'] ?? '-')
+                        : '')
+                    . (! empty($headerSnapshot['disposition'])
+                        ? ' | Disposition: ' . $headerSnapshot['disposition']
+                        : ''),
+                'url' => url('stockTransfer') . ($transferId > 0 ? ('?st_id=' . $transferId) : ''),
+                'url_label' => 'Buka Stock Transfer',
+                'created_by' => $staffId > 0 ? $staffId : null,
+                'meta' => array_merge([
+                    'action' => $action,
+                    'transfer_id' => $transferId,
+                    'transfer_code' => $transferCode,
+                    'before' => $before,
+                    'after' => $after,
+                ], $extraMeta),
+            ]);
+        } catch (Throwable $e) {
+            // Logging tidak boleh memblokir flow utama.
+        }
+    }
+
+    public function logProductionTransferCreated(int $stId): void
+    {
+        $snapshot = $this->snapshotTransfer($stId);
+        $this->logTransferAction('create', $snapshot['header'], [
+            'items_count' => count($snapshot['items']),
+            'automatic' => true,
+            'origin' => 'production',
+        ], null, $snapshot);
     }
 }

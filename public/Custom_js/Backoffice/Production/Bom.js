@@ -275,7 +275,12 @@
         $('#product_unit_info').hide().html('');
         $('#supplies_unit_info').hide().html('');
 
-        $('#product_id').append(`<option value="${data.product_id}">${data.product_name}</option>`);
+        var productLabel = data.product_name || '';
+        var sku = data.product_variant_sku || data.product_sku || '';
+        if (sku && sku !== '-') {
+            productLabel = productLabel ? (sku + ' | ' + productLabel) : sku;
+        }
+        $('#product_id').append(`<option value="${data.product_id}">${productLabel}</option>`);
         $('#bom_qty').val(data.bom_qty);
         (data.details || []).forEach(e => {
             var rowData  = {
