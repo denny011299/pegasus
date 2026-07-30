@@ -335,6 +335,22 @@ class StockController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Dokumen draft hanya boleh dilihat/diubah/dihapus oleh staff pembuatnya
+     * (atau super admin) — dipakai insert/update/delete/submit/acc/tolak/PDF
+     * stock opname bahan supaya aturan pemilik drafnya konsisten di semua
+     * jalur, bukan hanya di listing.
+     */
+    private function canManageStockOpnameBahanDraft($stob)
+    {
+        if (!$stob) return false;
+
+        $user = session()->get('user');
+        if (RoleAccess::isSuperAdmin($user)) return true;
+
+        return $user && (int) $stob->created_by === (int) ($user->staff_id ?? 0);
+    }
+
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
@@ -343,22 +359,66 @@ class StockController extends Controller
             $value["stob_id"] = $id;
             (new StockOpnameDetailBahan())->insertDetail($value);
         }
+        return ["status" => 1, "stob_id" => $id];
     }
 
     function updateStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $id = (new StockOpnameBahan())->updateStockOpnameBahan($data);
-        foreach (json_decode($req->item, true) as $key => $value) {
-            $value["stob_id"] = $id;
-            if (isset($value["stod_id"])) (new StockOpnameDetailBahan())->updateDetail($value);
-            else (new StockOpnameDetailBahan())->insertDetail($value);
+        $stob = StockOpnameBahan::find($data['stob_id'] ?? null);
+
+        if (!$stob || !$stob->is_draft || !$this->canManageStockOpnameBahanDraft($stob)) {
+            return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
         }
+
+        // Draft tetap draft sampai benar-benar diajukan lewat /submitStockOpnameBahan.
+        $data['is_draft'] = true;
+        $id = (new StockOpnameBahan())->updateStockOpnameBahan($data);
+
+        // Ganti seluruh detail lama dengan detail yang dikirim — draft boleh
+        // menambah/menghapus item bebas, jadi diffing per-baris tidak perlu.
+        foreach (StockOpnameDetailBahan::where('stob_id', $id)->where('status', 1)->get() as $old) {
+            $old->status = 0;
+            $old->save();
+        }
+        foreach (json_decode($req->item, true) ?? [] as $value) {
+            $value["stob_id"] = $id;
+            (new StockOpnameDetailBahan())->insertDetail($value);
+        }
+
+        return 1;
+    }
+
+    /**
+     * Ajukan draft: is_draft dimatikan, dokumen masuk alur approval biasa
+     * (statusnya sudah 1=Menunggu sejak dibuat, jadi tidak perlu diubah).
+     */
+    function submitStockOpnameBahan(Request $req)
+    {
+        $stob = StockOpnameBahan::find($req->stob_id);
+
+        if (!$stob || !$stob->is_draft) {
+            return ["status" => -1, "message" => "Dokumen ini bukan draft"];
+        }
+        if (!$this->canManageStockOpnameBahanDraft($stob)) {
+            return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
+        }
+
+        $stob->is_draft = false;
+        $stob->save();
+
+        return 1;
     }
 
     function deleteStockOpnameBahan(Request $req)
     {
         $data = $req->all();
+        $stob = StockOpnameBahan::find($data['stob_id'] ?? null);
+
+        if ($stob && $stob->is_draft && !$this->canManageStockOpnameBahanDraft($stob)) {
+            return ["status" => -1, "message" => "Tidak diizinkan menghapus draft milik staff lain"];
+        }
+
         return (new StockOpnameBahan())->deleteStockOpnameBahan($data);
     }
 
@@ -413,6 +473,9 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $stob = StockOpnameBahan::find($data['stob_id']);
+        if (!$stob || $stob->is_draft) {
+            return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
+        }
         foreach ($stod as $key => $value) {
             foreach ($value['sp_units'] as $u) {
                 $s = SuppliesStock::where('supplies_id', $value['supplies_id'])
@@ -455,6 +518,9 @@ class StockController extends Controller
     function tolakStockOpnameBahan(Request $req) {
         $data = $req->all();
         $stob = StockOpnameBahan::find($data["stob_id"]);
+        if (!$stob || $stob->is_draft) {
+            return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
+        }
 
         $stob->status = 3; // Tolak
         $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
@@ -463,6 +529,12 @@ class StockController extends Controller
 
     function generateStockOpnameBahan($id) {
         $param['stockOpname'] = StockOpnameBahan::find($id);
+        if (!$param['stockOpname']) {
+            abort(404);
+        }
+        if ($param['stockOpname']->is_draft && !$this->canManageStockOpnameBahanDraft($param['stockOpname'])) {
+            abort(404);
+        }
         $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
         $param["detail"] = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
 
