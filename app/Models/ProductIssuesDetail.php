@@ -276,9 +276,9 @@ class ProductIssuesDetail extends Model
                         $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
                         
                         $kb = $stokAtas->unit_id . '_cat2';
-                        $logSummary[$kb] = ['unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$kb]['jumlah'] ?? 0) + 1, 'cat' => 2, 'note' => "Konversi unit (Bongkar)", 'sort' => $stokAtas->ss_id * 10];
+                        $logSummary[$kb] = ['unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$kb]['jumlah'] ?? 0) + 1, 'cat' => 2, 'note' => "Konversi unit (Bongkar) " . LogStock::actorSuffix(), 'sort' => $stokAtas->ss_id * 10];
                         $kh = $stokSekarang->unit_id . '_cat1';
-                        $logSummary[$kh] = ['unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$kh]['jumlah'] ?? 0) + $hasilBongkar, 'cat' => 1, 'note' => "Konversi unit (Hasil)", 'sort' => ($stokAtas->ss_id * 10) + 1];
+                        $logSummary[$kh] = ['unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$kh]['jumlah'] ?? 0) + $hasilBongkar, 'cat' => 1, 'note' => "Konversi unit (Hasil) " . LogStock::actorSuffix(), 'sort' => ($stokAtas->ss_id * 10) + 1];
                         return true;
                     }
                     return false;
@@ -347,9 +347,9 @@ class ProductIssuesDetail extends Model
                         $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
                         
                         $kb = $stokAtas->unit_id . '_cat2';
-                        $logSummary[$kb] = ['unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$kb]['jumlah'] ?? 0) + 1, 'cat' => 2, 'note' => "Konversi unit (Bongkar)", 'sort' => $stokAtas->ps_id * 10];
+                        $logSummary[$kb] = ['unit_id' => $stokAtas->unit_id, 'jumlah' => ($logSummary[$kb]['jumlah'] ?? 0) + 1, 'cat' => 2, 'note' => "Konversi unit (Bongkar) " . LogStock::actorSuffix(), 'sort' => $stokAtas->ps_id * 10];
                         $kh = $stokSekarang->unit_id . '_cat1';
-                        $logSummary[$kh] = ['unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$kh]['jumlah'] ?? 0) + $hasilBongkar, 'cat' => 1, 'note' => "Konversi unit (Hasil)", 'sort' => ($stokAtas->ps_id * 10) + 1];
+                        $logSummary[$kh] = ['unit_id' => $stokSekarang->unit_id, 'jumlah' => ($logSummary[$kh]['jumlah'] ?? 0) + $hasilBongkar, 'cat' => 1, 'note' => "Konversi unit (Hasil) " . LogStock::actorSuffix(), 'sort' => ($stokAtas->ps_id * 10) + 1];
                         return true;
                     }
                     return false;

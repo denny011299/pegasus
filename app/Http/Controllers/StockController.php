@@ -489,7 +489,7 @@ class StockController extends Controller
                     'log_type'    => 2,
                     'log_category' => 2,
                     'log_item_id' => $value['supplies_id'],
-                    'log_notes'  => "Stock Opname Bahan Mentah",
+                    'log_notes'  => "Stock Opname Bahan Mentah " . LogStock::actorSuffix(),
                     'log_jumlah' => $s->ss_stock,
                     'unit_id'    => $u['unit_id'],
                 ]);
@@ -504,7 +504,7 @@ class StockController extends Controller
                     'log_type'    => 2,
                     'log_category' => 1,
                     'log_item_id' => $value['supplies_id'],
-                    'log_notes'  => "Stock Opname Bahan Mentah",
+                    'log_notes'  => "Stock Opname Bahan Mentah " . LogStock::actorSuffix(),
                     'log_jumlah' => $s->ss_stock,
                     'unit_id'    => $u['unit_id'],
                 ]);
@@ -824,7 +824,7 @@ class StockController extends Controller
                     // Catat Log
                     $logNotes = "";
                     $spr = Supplier::find($svr->supplier_id);
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                     (new LogStock())->insertLog([
                         'log_date' => now(),
                         'log_kode'    => $pi->pi_code,
@@ -855,7 +855,7 @@ class StockController extends Controller
 
                             // Catat Log
                             $logNotes = "";
-                            $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                            $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                             (new LogStock())->insertLog([
                                 'log_date' => now(),
                                 'log_kode'    => $pi->pi_code,
@@ -882,13 +882,13 @@ class StockController extends Controller
                     $sup = SuppliesVariant::find($value['supplies_variant_id']);
                     $spr = Supplier::find($sup->supplier_id);
                     
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                     $logCategory = 2;
                     $logType = 2;
 
                     $itemId = $sup->supplies_id;
                 } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                     $logCategory = 1;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -914,13 +914,13 @@ class StockController extends Controller
                     $sup = SuppliesVariant::find($value['supplies_variant_id']);
                     $spr = Supplier::find($sup->supplier_id);
                     
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                     $logCategory = 1;
                     $logType = 2;
                     $itemId = $sup->supplies_id;
 
                 } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                     $logCategory = 2;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -948,13 +948,13 @@ class StockController extends Controller
                     $sup = SuppliesVariant::find($value['supplies_variant_id']);
                     $spr = Supplier::find($sup->supplier_id);
                     
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                     $logCategory = 2;
                     $logType = 2;
                     $itemId = $sup->supplies_id;
 
                 } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                     $logCategory = 1;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -1084,14 +1084,14 @@ class StockController extends Controller
                             'unit_id'    => $stokAtas->unit_id,
                             'jumlah'     => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
                             'cat'        => 2,
-                            'note'       => 'Konversi unit dari retur armada (Bongkar)',
+                            'note'       => 'Konversi unit dari retur armada (Bongkar) ' . LogStock::actorSuffix(),
                             'sort_order' => $baseOrder,
                         ];
                         $logSummary[$stokSekarang->unit_id . '_cat1'] = [
                             'unit_id'    => $stokSekarang->unit_id,
                             'jumlah'     => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
                             'cat'        => 1,
-                            'note'       => 'Konversi unit dari retur armada (Hasil)',
+                            'note'       => 'Konversi unit dari retur armada (Hasil) ' . LogStock::actorSuffix(),
                             'sort_order' => $baseOrder + 1,
                         ];
                         return true;
@@ -1212,13 +1212,13 @@ class StockController extends Controller
                 $sup = SuppliesVariant::find($value['item_id']);
                 $spr = Supplier::find($sup->supplier_id);
 
-                $logNotes    = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                $logNotes    = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                 $logCategory = 1;
                 $logType     = 2;
                 $itemId      = $sup->supplies_id;
 
             } elseif ($pi->tipe_return == 2) {
-                $logNotes    = 'Penghapusan data produk bermasalah retur Armada';
+                $logNotes    = 'Penghapusan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                 $logCategory = 2;
                 $logType     = 1;
                 $itemId      = $value['item_id'];
@@ -1342,13 +1342,13 @@ class StockController extends Controller
             if ($pi->tipe_return == 1){
                 $sup = SuppliesVariant::find($value['item_id']);
                 $spr = Supplier::find($sup->supplier_id);
-                $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name;
+                $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                 $logCategory = 2;
                 $logType = 2;
 
                 $itemId = $sup->supplies_id;
             } elseif ($pi->tipe_return == 2){
-                $logNotes = 'Produk bermasalah retur Armada';
+                $logNotes = 'Produk bermasalah retur Armada ' . LogStock::actorSuffix();
                 $logCategory = 1;
                 $logType = 1;
                 $itemId = $value['item_id'];

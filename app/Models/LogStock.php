@@ -76,6 +76,16 @@ class LogStock extends Model
         return $t->log_id;
     }
 
+    /**
+     * "oleh <nama staff sesi aktif>" — ditempel di akhir log_notes (setelah spasi
+     * pemisah milik pemanggil) agar Catatan menyebut siapa yang melakukan
+     * transaksi, selain kolom Staff yang sudah ada.
+     */
+    public static function actorSuffix(): string
+    {
+        return 'oleh ' . (Session::get('user')->staff_name ?? '-');
+    }
+
     function getRawMaterialUsageReport($data = [])
     {
         $data = array_merge([
