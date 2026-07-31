@@ -13,6 +13,23 @@
         }
 
         table = $("#tablePermission").DataTable({
+            processing: false,
+            bFilter: true,
+            sDom: "fBtlpi",
+            lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
+            ordering: true,
+            autoWidth: false,
+            language: {
+                search: " ",
+                searchPlaceholder: "Cari data...",
+                sLengthMenu: "_MENU_",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                paginate: {
+                    next: ' <i class="fa fa-angle-right"></i>',
+                    previous: '<i class="fa fa-angle-left"></i> ',
+                },
+            },
             initComplete: function () {
                 table = this.api();
                 applyPermissionChecks();

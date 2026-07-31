@@ -3631,10 +3631,10 @@
 @if (Route::is(['warehouse']))
     <!-- modal -->
     <div class="modal modal-lg custom-modal fade" id="add_warehouse" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
-            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+        <div class="modal-dialog modal-dialog-centered modal-lg" style="max-height:calc(100vh - 2rem);margin:1rem auto;">
+            <div class="modal-content d-flex flex-column" style="max-height:calc(100vh - 2rem);border-radius:16px;overflow:hidden;border:none;">
                 {{-- ── HEADER ── --}}
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                <div class="modal-header border-0 flex-shrink-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
                     <div class="d-flex align-items-center gap-3">
                         <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
                             <i class="fe fe-box text-white" style="font-size:18px;"></i>
@@ -3647,8 +3647,8 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
-                <form action="#">
-                    <div class="modal-body p-0 bg-light d-flex flex-column">
+                <form action="#" class="d-flex flex-column flex-grow-1" style="min-height:0;overflow:hidden;">
+                    <div class="modal-body p-0 bg-light d-flex flex-column flex-grow-1" style="min-height:0;overflow-y:auto;">
                         {{-- Basic Info Panel --}}
                         <div class="p-4 border-bottom bg-white shadow-sm" style="flex: 0 0 auto;">
                             <div class="row g-4">
@@ -3746,7 +3746,7 @@
                     </div>
                     
                     {{-- ── FOOTER ── --}}
-                    <div class="modal-footer border-top" style="background:#f8fafc; padding:14px 24px;">
+                    <div class="modal-footer border-top flex-shrink-0 flex-wrap justify-content-end" style="background:#f8fafc;padding:14px 24px;">
                         <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
                         <button type="button" class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan Gudang</button>
                     </div>

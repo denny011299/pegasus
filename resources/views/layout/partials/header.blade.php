@@ -243,10 +243,12 @@
             -webkit-backdrop-filter: blur(3px) !important;
             box-shadow: none !important;
             z-index: 50 !important;
+            transform: none !important;
+        }
+        div.dataTables_wrapper div.dataTables_processing:not([style*="display: none"]) {
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
-            transform: none !important;
         }
 
         .dt-premium-spinner {
