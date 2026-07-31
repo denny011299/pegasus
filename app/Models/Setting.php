@@ -16,30 +16,30 @@ class Setting extends Model
             'select' => null,
         ], $data);
 
-        $result = Setting::where('status', '=', 1);
-        if ($data["select"]) $result->whereIn("setting_name",$data["select"] );
+        $result = Setting::query();
+        if ($data["select"]) $result->whereIn("setting_key",$data["select"] );
         $result = $result->get();
 
         $param = [];
         foreach ($result as $key => $value) {
-            $param[$value["setting_name"]] = $value["setting_value"];
+            $param[$value["setting_key"]] = $value["setting_value"];
         };
-        
+
         return $param;
     }
 
     function updateSetting($name, $value)
     {
         if (isset($value) && $name != '_token') {
-           
-            $p = Setting::where('setting_name', '=', $name)->first();
+
+            $p = Setting::where('setting_key', '=', $name)->first();
             if ($p) {
-               
+
                 $p->setting_value = $value;
                 $p->save();
             } else {
                 $newP = new Setting();
-                $newP->setting_name = $name;
+                $newP->setting_key = $name;
                 $newP->setting_value = $value;
                 $newP->save();
             }

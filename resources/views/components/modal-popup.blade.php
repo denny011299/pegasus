@@ -10,11 +10,6 @@
             border-color: #dc3545!important;
         }
 </style>
-@php
-    $akses = Session::has('user') && Session::get('user')?->role_access 
-        ? collect(json_decode(Session::get('user')->role_access)) 
-        : collect();
-@endphp
 <div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
@@ -511,10 +506,10 @@
 
 
                             <div class="modal-footer p-0">
-                                @if (in_array('others', $akses->firstWhere('name', 'Produk Bermasalah')->akses))
+                                @roleCan('Produk Bermasalah', 'others')
                                     <button type="button" id="btn-tolak" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
                                     <button type="button" id="btn-terima" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
-                                @endif
+                                @endroleCan
                                 <button type="button" data-bs-dismiss="modal"
                                     class="btn btn-back cancel-btn me-2">Batal</button>
                                 <button type="button" class="btn btn-primary paid-continue-btn btn-save">Tambah Produk
@@ -636,10 +631,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        @if (in_array('others', $akses->firstWhere('name', 'Produksi')->akses))
+                        @roleCan('Produksi', 'others')
                             <button type="button" id="btn-tolak" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
                             <button type="button" id="btn-terima" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
-                        @endif
+                        @endroleCan
                         <a class="btn btn-outline-secondary btn-cancel me-2" data-bs-dismiss="modal">Batal</a>
                         <a class="btn btn-primary btn-save">Tambah Produksi</a>
                     </div>
@@ -993,10 +988,10 @@
                     </div>
                     <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
                         <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2" style="border-radius:8px; font-size:13px; font-weight:600; color:#64748b;">Batal</button>
-                        @if (in_array('others', $akses->firstWhere('name', 'Pengiriman')->akses))
+                        @roleCan('Pengiriman', 'others')
                             <button type="button" class="btn btn-danger me-2 btn_decline d-none align-items-center gap-2" style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
                             <button type="button" class="btn btn-success me-2 btn_acc d-none align-items-center gap-2" style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-check"></i> Terima</button>
-                        @endif
+                        @endroleCan
                         <button type="button" class="btn btn-primary paid-continue-btn btn-save d-inline-flex align-items-center gap-2 ms-auto" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
                             <i class="fe fe-save"></i> <span id="btn_save_text">Tambah Pengiriman</span>
                         </button>
