@@ -728,14 +728,14 @@ class ProductionController extends Controller
                     'unit_id'    => $stokAtas->unit_id,
                     'jumlah'     => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + $bongkarSebenarnya,
                     'cat'        => 2,
-                    'note'       => "Konversi unit dari produksi (Bongkar)",
+                    'note'       => "Konversi unit dari produksi (Bongkar) " . LogStock::actorSuffix(),
                     'sort_order' => $baseOrder,
                 ];
                 $logSummary[$stokSekarang->unit_id . '_cat1'] = [
                     'unit_id'    => $stokSekarang->unit_id,
                     'jumlah'     => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
                     'cat'        => 1,
-                    'note'       => "Konversi unit dari produksi (Hasil)",
+                    'note'       => "Konversi unit dari produksi (Hasil) " . LogStock::actorSuffix(),
                     'sort_order' => $baseOrder + 1,
                 ];
                 return true;
@@ -790,7 +790,7 @@ class ProductionController extends Controller
                         'log_type'     => 2,
                         'log_category' => 2,
                         'log_item_id'  => $suppliesId,
-                        'log_notes'    => "Pengurangan bahan untuk produksi",
+                        'log_notes'    => "Pengurangan bahan untuk produksi " . LogStock::actorSuffix(),
                         'log_jumlah'   => $butuhTersedia,
                         'unit_id'      => $stokBawah->unit_id,
                     ]);
@@ -862,7 +862,7 @@ class ProductionController extends Controller
                             'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 1,
                             'log_item_id' => $value["product_variant_id"],
-                            'log_notes' => "Hasil Produksi Produk",
+                            'log_notes' => "Hasil Produksi Produk " . LogStock::actorSuffix(),
                             'log_jumlah' => $tambah, 'unit_id' => $r->pr_unit_id_1,
                         ]);
                         
@@ -872,7 +872,7 @@ class ProductionController extends Controller
                                 'log_kode' => $p->production_code,
                                 'log_type' => 1, 'log_category' => 1,
                                 'log_item_id' => $value["product_variant_id"],
-                                'log_notes' => "Hasil Produksi Produk",
+                                'log_notes' => "Hasil Produksi Produk " . LogStock::actorSuffix(),
                                 'log_jumlah' => $sisa, 'unit_id' => $r->pr_unit_id_2,
                             ]);
                         }
@@ -893,7 +893,7 @@ class ProductionController extends Controller
                             'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 1,
                             'log_item_id' => $value["product_variant_id"],
-                            'log_notes' => "Hasil Produksi Produk",
+                            'log_notes' => "Hasil Produksi Produk " . LogStock::actorSuffix(),
                             'log_jumlah' => $jumlahTambah, 'unit_id' => $unitIdInputUser,
                         ]);
 
@@ -1204,7 +1204,7 @@ class ProductionController extends Controller
                         'log_type'     => 2,
                         'log_category' => 1,
                         'log_item_id'  => $suppliesId,
-                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi",
+                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
                         'log_jumlah'   => $kembalikanDos,
                         'unit_id'      => $sr->su_id_1,
                     ]);
@@ -1221,7 +1221,7 @@ class ProductionController extends Controller
                         'log_type'     => 2,
                         'log_category' => 1,
                         'log_item_id'  => $suppliesId,
-                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi",
+                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
                         'log_jumlah'   => $sisaPiece,
                         'unit_id'      => $stokBawah->unit_id,
                     ]);
@@ -1238,7 +1238,7 @@ class ProductionController extends Controller
                     'log_type'     => 2,
                     'log_category' => 1,
                     'log_item_id'  => $suppliesId,
-                    'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi",
+                    'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
                     'log_jumlah'   => $butuhTersedia,
                     'unit_id'      => $stokBawah->unit_id,
                 ]);

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('stob_code', 6);
             $table->integer('staff_id');
             $table->longText('stob_notes')->nullable();
-            $table->boolean('status')->default(1)->comment('1=active, 0=inactive');
+            $table->boolean('status')->default(1)->comment('1=Menunggu Approval, 2=Disetujui, 3=Ditolak');
             $table->integer('created_by')->nullable()->comment('staff_id');
             $table->timestamp('created_at')->nullable();
             $table->timestamp('updated_at')->nullable();

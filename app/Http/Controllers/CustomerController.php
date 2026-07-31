@@ -22,21 +22,24 @@ use Illuminate\Support\Facades\Log;
 
 class CustomerController extends Controller
 {
-    public function SalesOrder(){
+    public function SalesOrder()
+    {
         return view('Backoffice.Customers.Sales_Order');
     }
 
-    public function SalesOrderDetail($id){
+    public function SalesOrderDetail($id)
+    {
         $param["data"] = (new SalesOrder())->getSalesOrder(["so_id" => $id, "with_items" => true])[0];
         return view('Backoffice.Customers.Sales_Order_Detail')->with($param);
     }
-    
-    function getSalesOrder(Request $req){
+
+    function getSalesOrder(Request $req)
+    {
         if ($req->has('draw')) {
             try {
                 return response()->json((new SalesOrder())->getSalesOrderDataTable($req->all()));
             } catch (\Throwable $e) {
-                Log::error('getSalesOrder DataTable failed: '.$e->getMessage(), [
+                Log::error('getSalesOrder DataTable failed: ' . $e->getMessage(), [
                     'file' => $e->getFile(),
                     'line' => $e->getLine(),
                 ]);
@@ -53,7 +56,8 @@ class CustomerController extends Controller
         return response()->json($data);
     }
 
-    function insertSalesOrder(Request $req){
+    function insertSalesOrder(Request $req)
+    {
         $data = $req->all();
 
         $productsData = json_decode($data['products'] ?? '[]', true);
@@ -77,7 +81,7 @@ class CustomerController extends Controller
         if ($stockErr) {
             return response()->json($stockErr);
         }
-        
+
         $img = [];
         foreach (json_decode($data["so_img"]) as $key => $value) {
             $image = $value;
@@ -99,7 +103,7 @@ class CustomerController extends Controller
         }
         $data["so_img"] = json_encode($img);
         $so = (new SalesOrder())->insertSalesOrder($data);
-        if ($so->so_id == -1){
+        if ($so->so_id == -1) {
             return -1;
         }
         foreach ($productsData as $key => $value) {
@@ -109,7 +113,8 @@ class CustomerController extends Controller
         return 1;
     }
 
-    function updateSalesOrder(Request $req){
+    function updateSalesOrder(Request $req)
+    {
         $data = $req->all();
 
         $productsData = json_decode($data['products'] ?? '[]', true);
@@ -237,10 +242,11 @@ class CustomerController extends Controller
         return 1;
     }
 
-    function deleteSalesOrder(Request $req){
+    function deleteSalesOrder(Request $req)
+    {
         $data = $req->all();
         (new SalesOrder())->deleteSalesOrder($data);
-        $v = SalesOrderDetail::where('so_id','=',$data["so_id"])->where('status', 1)->get();
+        $v = SalesOrderDetail::where('so_id', '=', $data["so_id"])->where('status', 1)->get();
         foreach ($v as $key => $value) {
             (new SalesOrderDetail())->deleteSalesOrderDetail($value);
         }
@@ -312,7 +318,8 @@ class CustomerController extends Controller
 
         return 1;
     }
-    function declineSO(Request $req){
+    function declineSO(Request $req)
+    {
         $data = $req->all();
         $q = SalesOrder::find($data['so_id']);
         if ($q->status != 1) {
@@ -353,7 +360,7 @@ class CustomerController extends Controller
     {
         $data = $req->all();
         $id = (new SalesOrderDelivery())->insertSoDelivery($data);
-         foreach (json_decode($data['sdo_detail'], true) as $key => $value) {
+        foreach (json_decode($data['sdo_detail'], true) as $key => $value) {
             $value['sdo_id'] = $id;
             (new SalesOrderDeliveryDetail())->insertSoDeliveryDetail($value);
         }
@@ -385,7 +392,7 @@ class CustomerController extends Controller
     function accSoDelivery(Request $req)
     {
         $data = $req->all();
-         $id = [];
+        $id = [];
         (new SalesOrderDelivery())->updateSoDelivery($data);
         (new SalesOrderDelivery())->statusSoDelivery($data);
         $status = SalesOrderDelivery::find($data["sdo_id"])->status; // approved
@@ -433,31 +440,35 @@ class CustomerController extends Controller
     }
 
     // Customer
-    function customer() {
+    function customer()
+    {
         return view('Backoffice.Customer.customer');
     }
-    
-    function customerDetail($id) {
-       // $param["data"] =(new Customer())->getCustomer(["cus_id"=>$id])[0];
-        $param["cus_id"] =$id;
+
+    function customerDetail($id)
+    {
+        // $param["data"] =(new Customer())->getCustomer(["cus_id"=>$id])[0];
+        $param["cus_id"] = $id;
         return view('Backoffice.Customer.CustomerDetails')->with($param);
     }
-    function viewInsertCustomer() {
-        $param["mode"] =1;
-        $param["data"] =[];
+    function viewInsertCustomer()
+    {
+        $param["mode"] = 1;
+        $param["data"] = [];
         return view('Backoffice.Customer.insertCustomer')->with($param);
     }
-    function ViewUpdateCustomer($id) {
-        $param["mode"]=2; // 1 = insert, 2 = update
-        $param["data"] = (new Customer())->getCustomer(["customer_id"=>$id])[0];
+    function ViewUpdateCustomer($id)
+    {
+        $param["mode"] = 2; // 1 = insert, 2 = update
+        $param["data"] = (new Customer())->getCustomer(["customer_id" => $id])[0];
         return view('Backoffice.Customer.insertCustomer')->with($param);
     }
 
     function getCustomer(Request $req)
     {
         $data =  (new Customer())->getCustomer([
-            "cus_name"=>$req->cus_name,
-            "city_id"=>$req->city_id
+            "cus_name" => $req->cus_name,
+            "city_id" => $req->city_id
         ]);
         return response()->json($data);
     }

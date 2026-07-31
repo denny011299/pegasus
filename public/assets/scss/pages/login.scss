@@ -1,5 +1,6 @@
 .login-body {
     display: $__table;
+    width: 100%;
     height: 100vh;
     min-height: 100vh;
     margin: $__auto;
@@ -49,10 +50,10 @@
             display: $__flex;
             justify-content: $__center;
             padding: 2rem;
-            width: 450px;
+            width: 100%;
 
-            @include respond-below(custom320) {
-                width: 100%;
+            @include respond-below(custom575) {
+                padding: 1.25rem;
             }
 
             .login-right-wrap {
