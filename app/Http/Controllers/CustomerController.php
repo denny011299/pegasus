@@ -6,17 +6,12 @@ use App\Models\SalesOrder;
 use App\Models\SalesOrderDelivery;
 use App\Models\SalesOrderDetailInvoice;
 use App\Models\Customer;
-use App\Models\LogStock;
-use App\Models\Product;
-use App\Models\ProductRelation;
-use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use App\Models\Staff;
 use App\Support\SalesOrderStock;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
