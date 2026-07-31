@@ -10,11 +10,6 @@
             border-color: #dc3545!important;
         }
 </style>
-@php
-    $akses = Session::has('user') && Session::get('user')?->role_access 
-        ? collect(json_decode(Session::get('user')->role_access)) 
-        : collect();
-@endphp
 <div class="modal fade" id="modalPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
@@ -474,10 +469,10 @@
 
 
                             <div class="modal-footer p-0">
-                                @if (in_array('others', $akses->firstWhere('name', 'Produk Bermasalah')->akses))
+                                @roleCan('Produk Bermasalah', 'others')
                                     <button type="button" id="btn-tolak" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
                                     <button type="button" id="btn-terima" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
-                                @endif
+                                @endroleCan
                                 <button type="button" data-bs-dismiss="modal"
                                     class="btn btn-back cancel-btn me-2">Batal</button>
                                 <button type="button" class="btn btn-primary paid-continue-btn btn-save">Tambah Produk
@@ -599,10 +594,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        @if (in_array('others', $akses->firstWhere('name', 'Produksi')->akses))
+                        @roleCan('Produksi', 'others')
                             <button type="button" id="btn-tolak" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
                             <button type="button" id="btn-terima" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
-                        @endif
+                        @endroleCan
                         <a class="btn btn-outline-secondary btn-cancel me-2" data-bs-dismiss="modal">Batal</a>
                         <a class="btn btn-primary btn-save">Tambah Produksi</a>
                     </div>
@@ -939,10 +934,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        @if (in_array('others', $akses->firstWhere('name', 'Pengiriman')->akses))
+                        @roleCan('Pengiriman', 'others')
                             <button type="button" class="btn btn-danger me-2 btn_decline" style="display: none">Tolak</button>
                             <button type="button" class="btn btn-success me-2 btn_acc" style="display: none">Terima</button>
-                        @endif
+                        @endroleCan
                         <button type="button" data-bs-dismiss="modal"
                             class="btn btn-back cancel-btn me-2">Batal</button>
                         <button type="button"
