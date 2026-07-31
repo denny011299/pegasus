@@ -67,6 +67,15 @@ This app has no `Auth::` guard — login is `Session::put('user', $staffRow)`, c
   `checkAccessAny::handle()`, which only declares one `$spec` param. Confirmed, deliberately
   deferred (not fixed) — see `cdocs/testing/KNOWN_ISSUES.md` and memory
   `pegasus-check-access-any-bug`. Don't "fix" this opportunistically in an unrelated task.
+- **`boms.product_id` actually stores a `product_variant_id`**, not a `products.product_id` —
+  confirmed from `Bom::getBom()`'s join to `product_variants`. A BOM/recipe is per product variant.
+  Get this wrong and every BOM lookup silently returns nothing.
+- **When a real flow's fixtures are too entangled to hand-pick cleanly** (Production/BOM: every
+  real BOM in the seed data has 4-5 ingredients and hits unit-conversion or "dos/pack" special-case
+  branches), build a **fully fresh fixture directly via Eloquent** in the test instead of reusing
+  seeded data — see `tests/Workflow/ProductionFlowTest.php`'s `createFixture()`. Don't go through
+  the app's own `insertX()` model methods for fixture setup; they carry validation/business logic
+  you don't want in a fixture. `DatabaseTransactions` rolls it all back after, so this is safe.
 - **`log_stocks.log_item_id` is polymorphic on `log_type`**, undocumented anywhere else:
   `log_type=1` → `product_variant_id`, `log_type=2` → `supplies_id` (not `supplies_variant_id`).
   `log_category` is direction (1=masuk/in, 2=keluar/out), independent of `log_type`.
