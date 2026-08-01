@@ -19,20 +19,26 @@ use Tests\TestCase;
 /**
  * Extends the Phase 3 pilot (tests/Workflow/ProductionFlowTest.php,
  * tests/Workflow/ProductionUnitConversionFlowTest.php,
- * cdocs/testing/workflows/PRODUCTION_FLOW.md). `accProduction` has no `DB::transaction()`
- * (same gap shape as Purchase Order's `accPO`), so this documents exactly how far a mid-request
- * failure gets rather than assuming the whole request is all-or-nothing.
+ * cdocs/testing/workflows/PRODUCTION_FLOW.md).
  *
- * Trigger: the confirmed, currently-active bug documented in KNOWN_ISSUES.md ("Production's
+ * UPDATED 2026-08-01 after merging `main` commit `2d73633` into this branch: `accProduction` used
+ * to have no `DB::transaction()` at all (same gap shape as Purchase Order's `accPO`), so a
+ * mid-request failure left earlier, already-applied stock mutations permanently committed while
+ * the production stayed pending — a real incident (`PR0258`, see `docs/production-acc-stock-safety.md`)
+ * another developer hit and fixed independently. This test previously characterized THAT broken
+ * behavior on purpose; it now asserts the fixed, atomic behavior instead. See
+ * `cdocs/testing/KNOWN_ISSUES.md`'s finished-goods null-guard entry for the full history.
+ *
+ * Trigger (still an open, separate bug — this fix didn't touch it, only contained its blast
+ * radius): the confirmed, currently-active crash documented in `KNOWN_ISSUES.md` ("Production's
  * finished-goods 'ladder split' has no null-guard on the larger-unit stock row") —
- * `ProductionController.php:846-851` crashes with "Attempt to assign property on null" when a
- * product has a `product_relations` ladder but is missing the ProductStock row at the larger
- * unit. Two production items are approved in ONE `accProduction` call: item A is a plain,
- * fully-valid production; item B has that missing row. Because the ingredient deduction for
- * BOTH items happens in one aggregated loop that runs to completion BEFORE the finished-goods
- * loop even starts, both items' raw materials are consumed and permanently committed —
- * regardless of item order — while only item A's finished goods are actually credited before
- * item B's crash. Item B's production is left having consumed its ingredients for nothing.
+ * `ProductionController.php`'s finished-goods increment crashes with "Attempt to assign property
+ * on null" when a product has a `product_relations` ladder but is missing the `ProductStock` row
+ * at the larger unit. Two production items are approved in ONE `accProduction` call: item A is a
+ * plain, fully-valid production; item B has that missing row, so its output credit crashes.
+ * Because the whole mutation section is now wrapped in `DB::beginTransaction()`/`rollBack()`, item
+ * B's crash rolls back item A's already-applied ingredient deduction and output credit too —
+ * nothing is left half-done, even though the underlying crash/500 still happens.
  */
 class ProductionApprovalAtomicityTest extends TestCase
 {
@@ -108,7 +114,7 @@ class ProductionApprovalAtomicityTest extends TestCase
         return compact('variant', 'productStock', 'bom', 'supplies', 'suppliesStock');
     }
 
-    public function test_a_mid_request_output_crash_leaves_both_items_ingredients_consumed_but_only_one_credited(): void
+    public function test_a_mid_request_output_crash_now_rolls_back_both_items_entirely(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -159,41 +165,32 @@ class ProductionApprovalAtomicityTest extends TestCase
 
         $accResponse = $this->post('/accProduction', ['production_id' => $production->production_id]);
 
-        // Documents current behavior: an uncaught error, not a clean {status:-1, ...} response.
+        // The crash itself still happens — this fix didn't touch the null-guard, only wrapped the
+        // mutation section in a transaction around it.
         $accResponse->assertStatus(500);
 
-        // Both items' ingredients are deducted and permanently committed — the ingredient loop
-        // runs to completion for ALL aggregated requirements before the output loop even starts.
+        // FIXED: neither item's ingredients are deducted anymore — DB::rollBack() reverts item
+        // A's already-applied mutation too, instead of leaving it permanently committed.
         $itemA['suppliesStock']->refresh();
         $itemB['suppliesStock']->refresh();
-        $this->assertSame(1000 - ($pdQtyA * 2), $itemA['suppliesStock']->ss_stock, "item A's ingredient is deducted despite item B's later crash");
-        $this->assertSame(1000 - ($pdQtyB * 2), $itemB['suppliesStock']->ss_stock, "item B's ingredient is ALSO deducted, even though its output crashes and is never credited");
+        $this->assertSame(1000, $itemA['suppliesStock']->ss_stock, "item A's ingredient deduction must be rolled back along with item B's failure");
+        $this->assertSame(1000, $itemB['suppliesStock']->ss_stock, "item B's ingredient deduction (which never even reaches output) must also be rolled back");
 
-        // Item A's finished goods (processed first in the output loop) are fully credited.
+        // FIXED: item A's finished goods are no longer credited either — the whole request is
+        // now all-or-nothing.
         $itemA['productStock']->refresh();
-        $this->assertSame($pdQtyA, $itemA['productStock']->ps_stock, "item A's output is credited before item B's crash halts the loop");
+        $this->assertSame(0, $itemA['productStock']->ps_stock, "item A's output credit must be rolled back, not left applied");
 
-        // Item B's finished goods are never credited — its ingredients were consumed for nothing.
         $itemB['productStock']->refresh();
-        $this->assertSame(0, $itemB['productStock']->ps_stock, "item B's output is never credited — the crash happens before its own stock write");
+        $this->assertSame(0, $itemB['productStock']->ps_stock, "item B's output was never credited to begin with");
 
-        // The production itself is left stuck: neither approved nor rejected.
+        // The production itself is left pending — same as before, just now for the right reason
+        // (a clean rollback, not a half-applied mutation).
         $production->refresh();
-        $this->assertSame(1, (int) $production->status, 'the production is left pending, despite having already consumed real ingredient stock for both items');
+        $this->assertSame(1, (int) $production->status);
         $this->assertNull($production->acc_by);
 
-        // Log-wise: both ingredient deductions get their log_stocks rows; only item A's output does.
-        $this->assertGreaterThanOrEqual($logCountBefore + 3, DB::table('log_stocks')->count());
-        $this->assertDatabaseHas('log_stocks', [
-            'log_type' => 1,
-            'log_category' => 1,
-            'log_item_id' => $itemA['variant']->product_variant_id,
-            'log_jumlah' => $pdQtyA,
-        ]);
-        $this->assertDatabaseMissing('log_stocks', [
-            'log_type' => 1,
-            'log_category' => 1,
-            'log_item_id' => $itemB['variant']->product_variant_id,
-        ]);
+        // FIXED: no new log_stocks rows survive the rollback at all.
+        $this->assertSame($logCountBefore, DB::table('log_stocks')->count(), 'every log_stocks row written during the failed attempt must be rolled back too');
     }
 }
