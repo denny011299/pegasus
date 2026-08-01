@@ -22,14 +22,15 @@ use Throwable;
 
 /**
  * Stock Transfer
- * Status: 0=deleted, 1=pending, 2=kirim, 3=rejected, 4=diterima
+ * Status: 0=deleted, 1=pending, 2=kirim, 3=cancel, 4=terkirim, 5=cancel_kirim
  *
- * Create  → status=1 (Pending), stok belum dipotong (cek ketersediaan saja)
- * Ship    → ACC gudang asal: potong stok sumber, status=2 (Kirim)
-     * ACC     → ACC gudang tujuan: konversi ke satuan target matriks, tambah stok tujuan, status=4
- * Delete  → pending saja, status=0 (tanpa restore — stok belum dipotong)
- * Reject  → pending saja, status=3 (tanpa restore)
- * Update  → pending saja, ganti item (tanpa mutasi stok)
+ * Create       → status=1 (Pending), stok belum dipotong
+ * Ship (ACC)   → Pending→Kirim: potong stok sumber, status=2
+ * Accept (ACC) → Kirim→Terkirim: konversi + tambah stok tujuan, status=4
+ * Cancel       → Pending→Cancel (status=3), tanpa restore
+ * Cancel Kirim → Kirim→Cancel Kirim (status=5), restore stok sumber
+ * Delete       → pending saja, status=0
+ * Update       → pending saja, ganti item (tanpa mutasi stok)
  */
 class StockTransferController extends Controller
 {
@@ -251,7 +252,8 @@ class StockTransferController extends Controller
             'delete' => 'Menghapus Stock Transfer dari ' . $from,
             'ship' => 'Mengirim Stock Transfer ke ' . $to . $suffix,
             'accept' => 'Menerima Stock Transfer dari ' . $from . $suffix,
-            'reject' => 'Menolak Stock Transfer dari ' . $from,
+            'reject' => 'Cancel Stock Transfer dari ' . $from,
+            'cancel_kirim' => 'Cancel Kirim Stock Transfer ke ' . $to,
             default => 'Aktivitas Stock Transfer',
         };
     }
@@ -276,7 +278,7 @@ class StockTransferController extends Controller
         $rows = $query
             ->orderByDesc('transfer_date')
             ->orderByDesc('st_id')
-            ->orderByRaw('CASE WHEN status = 1 THEN 0 WHEN status = 2 THEN 1 ELSE 2 END')
+            ->orderByRaw('CASE WHEN status = 1 THEN 0 WHEN status = 2 THEN 1 WHEN status = 4 THEN 2 ELSE 3 END')
             ->get();
 
         if ($rows->isEmpty()) {
@@ -349,6 +351,13 @@ class StockTransferController extends Controller
                 $fromWh,
                 $activeWh
             );
+            $canCancelKirimByWarehouse = $this->canCancelKirimTransferRow(
+                $status,
+                $fromWh,
+                $staffId,
+                $activeWh,
+                $assignedWh
+            );
 
             return [
                 'id' => (int) $row->st_id,
@@ -378,6 +387,7 @@ class StockTransferController extends Controller
                     && $status === 1
                     && $activeWh === $fromWh
                     && ($assignedWh === [] || in_array($fromWh, $assignedWh, true)),
+                'can_cancel_kirim' => $canOthersAccess && $canCancelKirimByWarehouse,
             ];
         })->values();
 
@@ -402,8 +412,13 @@ class StockTransferController extends Controller
             ->get();
 
         $variantIds = $details->pluck('product_variant_id')->unique()->all();
+        $products = Product::query()
+            ->whereIn('product_id', $details->pluck('product_id')->unique()->all())
+            ->get()
+            ->keyBy('product_id');
         $unitIds = $details->pluck('unit_id')
             ->merge($details->pluck('received_unit_id'))
+            ->merge($products->pluck('unit_id'))
             ->filter()
             ->unique()
             ->all();
@@ -412,10 +427,11 @@ class StockTransferController extends Controller
             ->whereIn('product_variant_id', $variantIds)
             ->get()
             ->keyBy('product_variant_id');
-        $products = Product::query()
-            ->whereIn('product_id', $details->pluck('product_id')->unique()->all())
-            ->get()
-            ->keyBy('product_id');
+        $unitIds = collect($unitIds)
+            ->merge($variants->pluck('retail_unit'))
+            ->filter()
+            ->unique()
+            ->all();
         $units = Unit::query()
             ->whereIn('unit_id', $unitIds)
             ->get()
@@ -423,8 +439,8 @@ class StockTransferController extends Controller
 
         $sender = Staff::query()->find($header->sender_id);
         $receiver = $header->receiver_id ? Staff::query()->find($header->receiver_id) : null;
-        $fromWh = Warehouse::query()->find($header->from_warehouse_id);
-        $toWh = Warehouse::query()->find($header->to_warehouse_id);
+        $fromWhModel = Warehouse::query()->find($header->from_warehouse_id);
+        $toWhModel = Warehouse::query()->find($header->to_warehouse_id);
 
         $sourceIsMain = $this->warehouseIsMain((int) $header->from_warehouse_id);
         $destinationIsMain = $this->warehouseIsMain((int) $header->to_warehouse_id);
@@ -440,6 +456,7 @@ class StockTransferController extends Controller
             $pv = $variants[$d->product_variant_id] ?? null;
             $pr = $products[$d->product_id] ?? null;
             $un = $units[$d->unit_id] ?? null;
+            $defaultUnitId = (int) ($pr->unit_id ?? 0);
             $resolution = $this->resolveTransferUnits(
                 $sourceIsMain,
                 $destinationIsMain,
@@ -448,9 +465,12 @@ class StockTransferController extends Controller
                 (int) $d->unit_id
             );
             $targetUnitId = (int) ($resolution['target_unit_id'] ?? $d->unit_id);
-            $receivedUnitId = (int) ($d->received_unit_id ?: $d->unit_id);
+            $receivedUnitId = (int) ($d->received_unit_id ?: $targetUnitId);
             $displayTargetUnitId = $d->qty_received !== null ? $receivedUnitId : $targetUnitId;
             $targetUnit = $units[$displayTargetUnitId] ?? Unit::query()->find($displayTargetUnitId);
+            $defaultUnit = $defaultUnitId > 0
+                ? ($units[$defaultUnitId] ?? Unit::query()->find($defaultUnitId))
+                : null;
             $convertedSent = ProductUnitStock::canConvertUnits(
                 (int) $d->unit_id,
                 $displayTargetUnitId,
@@ -463,6 +483,24 @@ class StockTransferController extends Controller
                     (int) $d->product_variant_id
                 )
                 : null;
+            $qtyReceivedTarget = $d->qty_received !== null ? (float) $d->qty_received : null;
+            $qtyReceivedSent = null;
+            if ($qtyReceivedTarget !== null) {
+                if ((int) $d->unit_id === $displayTargetUnitId) {
+                    $qtyReceivedSent = $qtyReceivedTarget;
+                } elseif (ProductUnitStock::canConvertUnits(
+                    $displayTargetUnitId,
+                    (int) $d->unit_id,
+                    (int) $d->product_variant_id
+                )) {
+                    $qtyReceivedSent = ProductUnitStock::convertQty(
+                        $qtyReceivedTarget,
+                        $displayTargetUnitId,
+                        (int) $d->unit_id,
+                        (int) $d->product_variant_id
+                    );
+                }
+            }
             $snap = ProductUnitStock::sourceSnapshot(
                 (int) $header->from_warehouse_id,
                 (int) $d->product_variant_id,
@@ -470,6 +508,9 @@ class StockTransferController extends Controller
                 (int) ($pr->unit_id ?? 0),
                 (int) ($pv->retail_unit ?? 0)
             );
+
+            $targetUnitRow = $units[$displayTargetUnitId] ?? $targetUnit;
+            $stockTargetUnitRow = $units[$targetUnitId] ?? $targetUnitRow;
 
             return [
                 'std_id' => (int) $d->std_id,
@@ -481,24 +522,42 @@ class StockTransferController extends Controller
                 'unit_id' => (int) $d->unit_id,
                 'unit_name' => $un->unit_name ?? ($un->unit_short_name ?? '-'),
                 'qty' => (float) $d->qty,
-                'qty_received' => $d->qty_received !== null ? (float) $d->qty_received : null,
+                'qty_received' => $qtyReceivedTarget,
+                'qty_received_sent_unit' => $qtyReceivedSent,
                 'received_unit_id' => $displayTargetUnitId,
-                'received_unit_name' => $targetUnit->unit_name
-                    ?? ($targetUnit->unit_short_name ?? '-'),
+                'received_unit_name' => $targetUnitRow
+                    ? ($targetUnitRow->unit_name ?? ($targetUnitRow->unit_short_name ?? '-'))
+                    : '-',
+                'default_unit_id' => $defaultUnitId > 0 ? $defaultUnitId : null,
+                'default_unit_name' => $defaultUnit
+                    ? ($defaultUnit->unit_name ?? ($defaultUnit->unit_short_name ?? '-'))
+                    : '-',
                 'target_unit_id' => $targetUnitId,
-                'target_unit_name' => $targetUnit->unit_name
-                    ?? ($targetUnit->unit_short_name ?? '-'),
+                'target_unit_name' => $stockTargetUnitRow
+                    ? ($stockTargetUnitRow->unit_name ?? ($stockTargetUnitRow->unit_short_name ?? '-'))
+                    : '-',
                 'converted_sent_qty' => $convertedSent,
                 'conversion_factor' => (float) $d->qty > 0 && $convertedSent !== null
                     ? $convertedSent / (float) $d->qty
                     : null,
-                'selisih' => $d->qty_received !== null && $convertedSent !== null
-                    ? ((float) $d->qty_received - $convertedSent)
+                'selisih' => $qtyReceivedTarget !== null && $convertedSent !== null
+                    ? ($qtyReceivedTarget - $convertedSent)
                     : null,
                 'stock_text' => $snap['stock_text'] ?? '-',
                 'units' => $snap['units'] ?? [],
             ];
         })->values();
+
+        $user = Session::get('user');
+        $staffId = (int) ($user->staff_id ?? 0);
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        $assignedWh = $user ? Staff::assignedWarehouseIds($user) : [];
+        $status = (int) $header->status;
+        $fromWh = (int) $header->from_warehouse_id;
+        $toWh = (int) $header->to_warehouse_id;
+        $isProduction = $header->source_type === 'production';
+        $canOthersAccess = RoleAccess::can($user, 'Stock Transfer', 'others');
+        $canEditAccess = RoleAccess::can($user, 'Stock Transfer', 'edit');
 
         return response()->json([
             'id' => (int) $header->st_id,
@@ -509,16 +568,47 @@ class StockTransferController extends Controller
             'sender_name' => $sender->staff_name ?? '-',
             'receiver_id' => $header->receiver_id ? (int) $header->receiver_id : null,
             'receiver_name' => $receiver->staff_name ?? '-',
-            'from_warehouse_id' => (int) $header->from_warehouse_id,
-            'from_warehouse_name' => $fromWh->warehouse_name ?? '-',
-            'to_warehouse_id' => (int) $header->to_warehouse_id,
-            'to_warehouse_name' => $toWh->warehouse_name ?? '-',
+            'from_warehouse_id' => $fromWh,
+            'from_warehouse_name' => $fromWhModel->warehouse_name ?? '-',
+            'to_warehouse_id' => $toWh,
+            'to_warehouse_name' => $toWhModel->warehouse_name ?? '-',
             'note' => $header->note,
             'accept_note' => $header->accept_note,
             'source_type' => $header->source_type,
             'source_id' => $header->source_id ? (int) $header->source_id : null,
             'disposition' => $header->disposition,
-            'status' => (int) $header->status,
+            'status' => $status,
+            'can_ship' => $canOthersAccess && $this->canShipTransferRow(
+                $status,
+                $fromWh,
+                $staffId,
+                $activeWh,
+                $assignedWh
+            ),
+            'can_acc' => $canOthersAccess && $this->canAccTransferRow(
+                $status,
+                (int) $header->sender_id,
+                $fromWh,
+                $toWh,
+                $staffId,
+                $activeWh,
+                $assignedWh,
+                $isProduction
+            ),
+            'can_edit' => ! $isProduction
+                && $canEditAccess
+                && $this->canEditTransferRow($status, $fromWh, $activeWh),
+            'can_reject' => $canOthersAccess
+                && $status === 1
+                && $activeWh === $fromWh
+                && ($assignedWh === [] || in_array($fromWh, $assignedWh, true)),
+            'can_cancel_kirim' => $canOthersAccess && $this->canCancelKirimTransferRow(
+                $status,
+                $fromWh,
+                $staffId,
+                $activeWh,
+                $assignedWh
+            ),
             'items' => $items,
         ]);
     }
@@ -1286,7 +1376,7 @@ class StockTransferController extends Controller
 
                 $lockedHeader->receiver_id = $receiverId;
                 $lockedHeader->accept_note = $acceptNote;
-                $lockedHeader->status = 4; // Diterima
+                $lockedHeader->status = 4; // Terkirim
                 // acc_by dipakai untuk pencatat siapa yang klik "Kirim" (gudang asal)
                 // saat Terima jangan overwrite, supaya jejak pengirim tetap ada.
                 if (! $lockedHeader->acc_by) {
@@ -1306,7 +1396,7 @@ class StockTransferController extends Controller
             'items_count' => count($after['items']),
         ], $before, $after);
 
-        return response()->json(['status' => 1, 'message' => 'Stock transfer berhasil diterima']);
+        return response()->json(['status' => 1, 'message' => 'Stock transfer berhasil diterima (Terkirim)']);
     }
 
     public function rejectStockTransfer(Request $req)
@@ -1314,7 +1404,7 @@ class StockTransferController extends Controller
         $stId = (int) ($req->id ?? $req->st_id ?? 0);
         $header = StockTransfer::query()->where('st_id', $stId)->where('status', 1)->first();
         if (! $header) {
-            return response()->json(['status' => -1, 'message' => 'Hanya transfer pending yang bisa ditolak']);
+            return response()->json(['status' => -1, 'message' => 'Hanya transfer pending yang bisa di-cancel']);
         }
 
         $gate = $this->assertCanReject($header);
@@ -1401,7 +1491,7 @@ class StockTransferController extends Controller
                     $lockedHeader->disposition = $disposition;
                 }
 
-                $lockedHeader->status = 3;
+                $lockedHeader->status = 3; // Cancel
                 $lockedHeader->accept_note = $isProduction
                     ? ($notes !== '' ? $notes : $lockedHeader->accept_note)
                     : ($req->accept_note ?? $req->note ?? $lockedHeader->accept_note);
@@ -1411,7 +1501,7 @@ class StockTransferController extends Controller
         } catch (Throwable $e) {
             return response()->json([
                 'status' => -1,
-                'message' => $e->getMessage() ?: 'Gagal tolak stock transfer',
+                'message' => $e->getMessage() ?: 'Gagal cancel stock transfer',
             ]);
         }
 
@@ -1422,7 +1512,70 @@ class StockTransferController extends Controller
             'product_issue_id' => $productIssueId,
         ], $before, $after);
 
-        return response()->json(['status' => 1, 'message' => 'Stock transfer ditolak']);
+        return response()->json([
+            'status' => 1,
+            'message' => $isProduction
+                ? 'Hasil produksi dibatalkan dan Product Issue dibuat'
+                : 'Stock transfer dibatalkan (Cancel)',
+        ]);
+    }
+
+    /**
+     * Cancel Kirim: Kirim → Cancel Kirim, restore stok sumber (kecuali asal produksi).
+     */
+    public function cancelKirimStockTransfer(Request $req)
+    {
+        $stId = (int) ($req->id ?? $req->st_id ?? 0);
+        $header = StockTransfer::query()->where('st_id', $stId)->where('status', 2)->first();
+        if (! $header) {
+            return response()->json(['status' => -1, 'message' => 'Hanya transfer berstatus Kirim yang bisa di-cancel kirim']);
+        }
+
+        $gate = $this->assertCanCancelKirim($header);
+        if ($gate !== true) {
+            return response()->json(['status' => -1, 'message' => $gate]);
+        }
+
+        $before = $this->snapshotTransfer((int) $header->st_id);
+        try {
+            DB::transaction(function () use ($stId, $req) {
+                $lockedHeader = StockTransfer::query()
+                    ->where('st_id', $stId)
+                    ->where('status', 2)
+                    ->lockForUpdate()
+                    ->first();
+                if (! $lockedHeader) {
+                    throw new \RuntimeException('Transfer sudah diproses');
+                }
+
+                if ($lockedHeader->source_type !== 'production') {
+                    $this->restoreSourceStock($lockedHeader, 'cancel kirim');
+                }
+
+                $lockedHeader->status = 5; // Cancel Kirim
+                $lockedHeader->accept_note = $req->input('accept_note')
+                    ?? $req->input('note')
+                    ?? $lockedHeader->accept_note;
+                $lockedHeader->save();
+            });
+        } catch (Throwable $e) {
+            return response()->json([
+                'status' => -1,
+                'message' => $e->getMessage() ?: 'Gagal cancel kirim stock transfer',
+            ]);
+        }
+
+        $after = $this->snapshotTransfer((int) $header->st_id);
+        $this->logTransferAction('cancel_kirim', $after['header'] ?: $before['header'], [
+            'items_count' => count($after['items']),
+        ], $before, $after);
+
+        return response()->json([
+            'status' => 1,
+            'message' => $header->source_type === 'production'
+                ? 'Pengiriman hasil produksi dibatalkan (Cancel Kirim)'
+                : 'Cancel Kirim berhasil, stok dikembalikan ke gudang asal',
+        ]);
     }
 
     protected function restoreSourceStock(StockTransfer $header, string $reason): void
@@ -1808,7 +1961,7 @@ class StockTransferController extends Controller
     }
 
     /**
-     * Terima (Kirim→Diterima) hanya gudang tujuan.
+     * Terima (Kirim→Terkirim) hanya gudang tujuan.
      *
      * @param  array<int, int>  $assignedWh
      */
@@ -1853,6 +2006,31 @@ class StockTransferController extends Controller
         return $activeWarehouseId === $fromWarehouseId;
     }
 
+    /**
+     * Cancel Kirim hanya di gudang asal saat status Kirim.
+     *
+     * @param  array<int, int>  $assignedWh
+     */
+    protected function canCancelKirimTransferRow(
+        int $status,
+        int $fromWarehouseId,
+        int $staffId,
+        int $activeWarehouseId,
+        array $assignedWh
+    ): bool {
+        if ($status !== 2 || $fromWarehouseId <= 0 || $staffId <= 0 || $activeWarehouseId <= 0) {
+            return false;
+        }
+        if ($activeWarehouseId !== $fromWarehouseId) {
+            return false;
+        }
+        if ($assignedWh !== [] && ! in_array($fromWarehouseId, $assignedWh, true)) {
+            return false;
+        }
+
+        return true;
+    }
+
     /** @return true|string */
     protected function assertCanShip(StockTransfer $header)
     {
@@ -1889,7 +2067,7 @@ class StockTransferController extends Controller
         $toWh = (int) $header->to_warehouse_id;
 
         if ((int) $header->status !== 2) {
-            return 'Transfer harus berstatus Kirim sebelum diterima';
+            return 'Transfer harus berstatus Kirim sebelum diterima (Terkirim)';
         }
         if ($activeWh <= 0 || $activeWh !== $toWh) {
             return 'ACC hanya bisa dilakukan di gudang tujuan. Ganti gudang aktif ke gudang tujuan.';
@@ -1923,7 +2101,7 @@ class StockTransferController extends Controller
         return true;
     }
 
-    /** Tolak hanya di gudang asal saat Pending. @return true|string */
+    /** Cancel / Tolak hanya di gudang asal saat Pending. @return true|string */
     protected function assertCanReject(StockTransfer $header)
     {
         $user = Session::get('user');
@@ -1933,10 +2111,35 @@ class StockTransferController extends Controller
         $fromWh = (int) $header->from_warehouse_id;
 
         if ((int) $header->status !== 1) {
-            return 'Hanya transfer pending yang bisa ditolak';
+            return 'Hanya transfer pending yang bisa di-cancel';
         }
         if ($activeWh <= 0 || $activeWh !== $fromWh) {
-            return 'Tolak hanya bisa dilakukan di gudang asal. Ganti gudang aktif ke gudang asal.';
+            return 'Cancel hanya bisa dilakukan di gudang asal. Ganti gudang aktif ke gudang asal.';
+        }
+        if ($staffId <= 0) {
+            return 'User login tidak valid';
+        }
+        if ($assignedWh !== [] && ! in_array($fromWh, $assignedWh, true)) {
+            return 'Anda tidak punya akses ke gudang asal transfer ini';
+        }
+
+        return true;
+    }
+
+    /** Cancel Kirim hanya di gudang asal saat status Kirim. @return true|string */
+    protected function assertCanCancelKirim(StockTransfer $header)
+    {
+        $user = Session::get('user');
+        $staffId = (int) ($user->staff_id ?? 0);
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        $assignedWh = $user ? Staff::assignedWarehouseIds($user) : [];
+        $fromWh = (int) $header->from_warehouse_id;
+
+        if ((int) $header->status !== 2) {
+            return 'Hanya transfer berstatus Kirim yang bisa di-cancel kirim';
+        }
+        if ($activeWh <= 0 || $activeWh !== $fromWh) {
+            return 'Cancel Kirim hanya bisa dilakukan di gudang asal. Ganti gudang aktif ke gudang asal.';
         }
         if ($staffId <= 0) {
             return 'User login tidak valid';
@@ -2023,8 +2226,9 @@ class StockTransferController extends Controller
                 'update' => 'Edit stock transfer',
                 'delete' => 'Hapus stock transfer',
                 'ship' => 'ACC kirim stock transfer',
-                'accept' => 'Terima/ACC stock transfer',
-                'reject' => 'Tolak stock transfer',
+                'accept' => 'ACC terkirim stock transfer',
+                'reject' => 'Cancel stock transfer',
+                'cancel_kirim' => 'Cancel kirim stock transfer',
             ];
 
             DashboardChangeLog::create([

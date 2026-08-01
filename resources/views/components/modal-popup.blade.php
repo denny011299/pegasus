@@ -427,8 +427,8 @@
                             <i class="fe fe-shuffle text-white" style="font-size:18px;"></i>
                         </div>
                         <div>
-                            <h5 class="mb-0 text-white fw-bold">Buat Stock Transfer</h5>
-                            <small class="text-white-50">Pindahkan stok antar gudang / toko</small>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Buat Stock Transfer</h5>
+                            <small class="text-white-50 transfer-modal-subtitle">Pindahkan stok antar gudang / toko</small>
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -559,9 +559,14 @@
 
                     {{-- PRODUCT TABLE --}}
                     <div class="d-flex flex-column" style="background:#fff;">
-                        <div class="d-flex align-items-center px-4 py-2 border-bottom" style="background:#f8fafc;">
-                            <i class="fe fe-list text-primary me-2"></i>
-                            <span class="fw-semibold text-dark" style="font-size:13px;">Daftar Produk yang Akan Ditransfer</span>
+                        <div class="d-flex align-items-center justify-content-between px-4 py-2 border-bottom" style="background:#f8fafc;">
+                            <div class="d-flex align-items-center">
+                                <i class="fe fe-list text-primary me-2"></i>
+                                <span class="fw-semibold text-dark" style="font-size:13px;">Daftar Produk yang Akan Ditransfer</span>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary btn-enable-edit-transfer d-none align-items-center gap-1" style="border-radius:8px;font-size:12px;font-weight:600;padding:6px 14px;height:34px;">
+                                <i class="fe fe-edit-2"></i> Edit Data
+                            </button>
                         </div>
                         <div class="table-responsive" style="min-height:240px; background:#fff;">
                             <table class="table table-hover mb-0" id="tableTransferItems" style="font-size:14px;">
@@ -593,9 +598,13 @@
                 </div>
 
                 {{-- ── FOOTER (fixed) ── --}}
-                <div class="modal-footer border-top flex-shrink-0" style="background:#f8fafc; padding:14px 24px;">
-                    <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
-                    <button type="button" class="btn btn-save-transfer d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan</button>
+                <div class="modal-footer border-top flex-shrink-0 d-flex justify-content-between align-items-center" style="background:#f8fafc; padding:14px 24px;">
+                    <button type="button" class="btn btn-cancel-transfer d-inline-flex align-items-center justify-content-center" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;min-width:130px;height:42px;">Batal</button>
+                    <div class="d-flex align-items-center gap-2 transfer-footer-actions">
+                        <button type="button" class="btn btn-reject-transfer d-none align-items-center justify-content-center gap-2" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;"><i class="fe fe-x me-1"></i>Tolak</button>
+                        <button type="button" class="btn btn-save-transfer d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan</button>
+                        <button type="button" class="btn btn-acc-transfer d-none align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(16,185,129,.3);"><i class="fe fe-send me-1"></i>Transfer</button>
+                    </div>
                 </div>
 
             </form>
@@ -716,13 +725,14 @@
                                     <th style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">Varian</th>
                                     <th style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">SKU</th>
                                     <th style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Qty Kirim</th>
-                                    <th style="width: 180px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Input Diterima (Unit Kirim)</th>
-                                    <th style="width: 130px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Selisih (Unit Tujuan)</th>
+                                    <th style="width: 180px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Qty Terima</th>
+                                    <th style="width: 160px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Hasil Konversi</th>
+                                    <th style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Selisih</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="empty-row">
-                                    <td colspan="6" class="text-center py-5">
+                                    <td colspan="7" class="text-center py-5">
                                         <div style="color:#94a3b8;">
                                             <i class="fe fe-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>
                                             <div class="fw-semibold" style="font-size:14px;">Belum ada produk</div>
@@ -854,13 +864,14 @@
                                     <th style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">Varian</th>
                                     <th style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">SKU</th>
                                     <th style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Kirim (Asli)</th>
-                                    <th style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Diterima (Konversi)</th>
-                                    <th style="width: 130px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Selisih (Unit Tujuan)</th>
+                                    <th style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Qty Terima</th>
+                                    <th style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Hasil Konversi</th>
+                                    <th style="width: 130px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;" class="text-center">Selisih</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr class="empty-row">
-                                    <td colspan="6" class="text-center text-muted py-5" style="font-size: 14px;">Belum ada produk.</td>
+                                    <td colspan="7" class="text-center text-muted py-5" style="font-size: 14px;">Belum ada produk.</td>
                                 </tr>
                             </tbody>
                         </table>

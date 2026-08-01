@@ -2,7 +2,8 @@
 @extends('layout.mainlayout')
 
 @section('custom_css')
-    <style>
+
+
         #tableStockTransferLogs {
             width: 100% !important;
             min-width: 1100px;

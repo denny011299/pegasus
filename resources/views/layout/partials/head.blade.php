@@ -11,6 +11,9 @@
 
     <!-- Feather CSS -->
     <link rel="stylesheet" href="{{ asset('assets/plugins/feather/feather.css') }}">
+    
+    <!-- Custom Premium Theme CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/css/custom-premium.css') }}?v={{ time() }}">
 
     <style>
         /* Select2 Multiple - Chip */

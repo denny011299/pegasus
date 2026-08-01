@@ -2,37 +2,7 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-        .custom-premium-tabs {
-            background: #f1f5f9;
-            border-radius: 12px;
-            padding: 6px;
-            display: inline-flex;
-            gap: 4px;
-            border: none;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
-        }
-        .custom-premium-tabs .nav-item {
-            margin: 0;
-        }
-        .custom-premium-tabs .nav-link {
-            border: none;
-            border-radius: 8px;
-            color: #64748b;
-            font-weight: 600;
-            font-size: 14px;
-            padding: 10px 24px;
-            transition: all 0.2s ease;
-            background: transparent;
-        }
-        .custom-premium-tabs .nav-link:hover:not(.active) {
-            color: #1e293b;
-            background: rgba(255,255,255,0.6);
-        }
-        .custom-premium-tabs .nav-link.active {
-            background: #ffffff;
-            color: #2563eb;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-        }
+
 
         #add_sales_order #so_qty_input {
             text-align: center;
@@ -184,35 +154,9 @@
             overflow-x: auto;
             overflow-y: hidden;
         }
-        #tableCustomerSupplyReturn-wrap.dt-pending #tableCustomerSupplyReturn,
-        #tableCustomerSupplyReturn-wrap.dt-pending #tableCustomerSupplyReturn_wrapper {
-            display: none !important;
-        }
-        #tableCustomerSupplyReturn-wrap.dt-ready > .dt-skeleton {
-            display: none !important;
-        }
-        #tableCustomerSupplyReturn-wrap > .dt-skeleton {
-            min-width: 1200px;
-            width: 100%;
-            overflow: hidden;
-        }
         #tableCustomerSupplyReturn-wrap .dt-skeleton-head,
         #tableCustomerSupplyReturn-wrap .dt-skeleton-row {
-            display: grid;
             grid-template-columns: 11% 13% 13% 15% 11% 14% 14% 9%;
-            align-items: center;
-        }
-        #tableCustomerSupplyReturn-wrap .dt-skeleton-head {
-            padding: 16px 25px;
-            background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%);
-            border-bottom: 2px solid #bfdbfe;
-        }
-        #tableCustomerSupplyReturn-wrap .dt-skeleton-body {
-            padding: 0 25px 8px;
-        }
-        #tableCustomerSupplyReturn-wrap .dt-skeleton-row {
-            min-height: 65px;
-            border-bottom: 1px solid #f1f5f9;
         }
         #tableCustomerSupplyReturn-wrap .csr-skeleton-center {
             justify-self: center;

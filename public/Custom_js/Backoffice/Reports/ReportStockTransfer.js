@@ -394,9 +394,10 @@ function statusLabel(value) {
     var labels = {
         0: "Dihapus",
         1: "Pending",
-        2: "Dikirim",
-        3: "Ditolak",
-        4: "Diterima",
+        2: "Kirim",
+        3: "Cancel",
+        4: "Terkirim",
+        5: "Cancel Kirim",
     };
     return labels[Number(value)] || "-";
 }

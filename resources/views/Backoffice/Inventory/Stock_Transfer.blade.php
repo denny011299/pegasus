@@ -5,9 +5,28 @@
     <style>
         #tableStockTransfer {
             width: 100% !important;
+            table-layout: fixed !important;
         }
-        #tableStockTransfer td:last-child {
+        #tableStockTransfer th,
+        #tableStockTransfer td {
             white-space: nowrap !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: middle !important;
+        }
+        #tableStockTransfer td:last-child,
+        #tableStockTransfer th:last-child {
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+        #tableStockTransfer td > div {
+            min-width: 0;
+            max-width: 100%;
+        }
+        #tableStockTransfer td > div > span {
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         #add_stock_transfer #tableTransferItems .transfer-row-retail-error > td,
         #add_stock_transfer #tableTransferItems .transfer-row-stock-error > td {
@@ -116,12 +135,12 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
-                            <div class="table-responsive dt-pending" id="tableStockTransfer-wrap">
+                            <div class="dt-pending" id="tableStockTransfer-wrap">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div style="padding: 16px 25px 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 12% 15% 15% 15% 15% 15% 8% 5%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 11% 14% 12% 13% 12% 13% 11% 8% 6%;">
                                         <span style="width:60%"></span>
                                         <span style="width:70%"></span>
                                         <span style="width:50%"></span>
@@ -129,11 +148,12 @@
                                         <span style="width:50%"></span>
                                         <span style="width:60%"></span>
                                         <span style="width:70%"></span>
+                                        <span style="width:50%;justify-self:center"></span>
                                         <span style="width:40%;justify-self:center"></span>
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 12% 15% 15% 15% 15% 15% 8% 5%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 11% 14% 12% 13% 12% 13% 11% 8% 6%;">
                                                 <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:80%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
@@ -141,6 +161,7 @@
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-text" style="width:90%"></span>
                                                 <span class="skel-text" style="width:80%"></span>
+                                                <span class="skel-badge" style="width:70%;justify-self:center"></span>
                                                 <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
                                                     <span class="skel-btn"></span>
                                                 </div>
@@ -148,18 +169,18 @@
                                         @endfor
                                     </div>
                                 </div>
-                                <table class="table table-center table-hover" id="tableStockTransfer">
+                                <table class="table table-hover" id="tableStockTransfer">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>Tanggal</th>
-                                            <th>Kode</th>
-                                            <th>Pengirim</th>
-                                            <th>Dari</th>
-                                            <th>Penerima</th>
-                                            <th>Ke</th>
-                                            <th>ACC Kirim Oleh</th>
-                                            <th>Status</th>
-                                            <th class="no-sort">Aksi</th>
+                                            <th style="width:11%">Tanggal</th>
+                                            <th style="width:14%">Kode</th>
+                                            <th style="width:12%">Pengirim</th>
+                                            <th style="width:13%">Dari</th>
+                                            <th style="width:12%">Penerima</th>
+                                            <th style="width:13%">Ke</th>
+                                            <th style="width:11%">ACC Kirim</th>
+                                            <th class="text-center" style="width:8%">Status</th>
+                                            <th class="no-sort text-center" style="width:6%">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

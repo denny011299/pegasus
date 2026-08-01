@@ -6,6 +6,12 @@
 var mode = 1;
 var table = null;
 var transferItems = [];
+var transferItemsSnapshot = [];
+var transferHeaderSnapshot = null;
+var transferFormLocked = false;
+var transferCanEdit = false;
+var transferCanShip = false;
+var transferCanReject = false;
 var transferScanMode = false;
 var stockLoadPending = 0;
 var retailUnitValidationPending = 0;
@@ -153,7 +159,7 @@ function inisialisasi() {
         lengthMenu: [10, 25, 50, 100],
         ordering: true,
         order: [[0, "desc"]],
-        scrollX: false,
+        scrollX: true,
         autoWidth: false,
         language: {
             search: " ",
@@ -177,11 +183,11 @@ function inisialisasi() {
             },
         },
         columns: [
-            { 
-                data: "transfer_date", 
+            {
+                data: "transfer_date",
+                width: "11%",
                 render: function(data, type) {
                     if(!data || data === "-") return type === "sort" || type === "type" ? "" : "-";
-                    // d-m-Y → sort key Ymd agar desc = terbaru di atas
                     if (type === "sort" || type === "type") {
                         var parts = String(data).split("-");
                         if (parts.length === 3) {
@@ -189,90 +195,97 @@ function inisialisasi() {
                         }
                         return String(data);
                     }
-                    return `<div style="display:flex;align-items:center;gap:10px;">
+                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;">
                                     <i class="fe fe-calendar"></i>
                                 </div>
-                                <span class="fw-semibold text-dark">${data}</span>
+                                <span class="fw-semibold text-dark text-truncate">${data}</span>
                             </div>`;
                 }
             },
-            { 
-                data: "transfer_code", 
+            {
+                data: "transfer_code",
+                width: "14%",
                 render: function(data, type, row) {
                     if(!data || data === "-") return "-";
                     var origin = row && row.source_type === "production"
                         ? '<span class="badge ms-1" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;padding:6px 8px;">Produksi</span>'
                         : '';
-                    return `<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">${data}</span>${origin}`;
+                    return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;"><span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">${data}</span>${origin}</div>`;
                 }
             },
-            { 
-                data: "sender_name", 
+            {
+                data: "sender_name",
+                width: "12%",
                 render: function(data) {
                     if(!data || data === "-") return "-";
-                    return `<div style="display:flex;align-items:center;gap:10px;">
+                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;">
                                     <i class="fe fe-user"></i>
                                 </div>
-                                <span class="fw-semibold text-dark">${data}</span>
+                                <span class="fw-semibold text-dark text-truncate">${data}</span>
                             </div>`;
                 }
             },
-            { 
-                data: "from_warehouse_name", 
+            {
+                data: "from_warehouse_name",
+                width: "13%",
                 render: function(data) {
                     if(!data || data === "-") return "-";
-                    return `<div style="display:flex;align-items:center;gap:10px;">
+                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;">
                                     <i class="fe fe-arrow-up-right"></i>
                                 </div>
-                                <span class="text-dark">${data}</span>
+                                <span class="text-dark text-truncate">${data}</span>
                             </div>`;
                 }
             },
-            { 
-                data: "receiver_name", 
+            {
+                data: "receiver_name",
+                width: "12%",
                 render: function(data) {
                     if(!data || data === "-") return "-";
-                    return `<div style="display:flex;align-items:center;gap:10px;">
+                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0;">
                                     <i class="fe fe-user-check"></i>
                                 </div>
-                                <span class="fw-semibold text-dark">${data}</span>
+                                <span class="fw-semibold text-dark text-truncate">${data}</span>
                             </div>`;
                 }
             },
-            { 
-                data: "to_warehouse_name", 
+            {
+                data: "to_warehouse_name",
+                width: "13%",
                 render: function(data) {
                     if(!data || data === "-") return "-";
-                    return `<div style="display:flex;align-items:center;gap:10px;">
+                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0;">
                                     <i class="fe fe-arrow-down-left"></i>
                                 </div>
-                                <span class="text-dark">${data}</span>
+                                <span class="text-dark text-truncate">${data}</span>
                             </div>`;
                 }
             },
             {
                 data: "ship_acc_by_name",
+                width: "11%",
                 render: function (data, type, row) {
                     var status = parseInt(row.status, 10);
                     if (status < 2) {
                         return '<span class="text-muted">-</span>';
                     }
                     var name = data && data !== "-" ? data : "N/A";
-                    return `<div style="display:flex;align-items:center;gap:10px;">
+                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#eef2ff;border:1px solid #c7d2fe;display:flex;align-items:center;justify-content:center;color:#4f46e5;flex-shrink:0;">
                                     <i class="fe fe-check-square"></i>
                                 </div>
-                                <span class="fw-semibold text-dark">${name}</span>
+                                <span class="fw-semibold text-dark text-truncate">${name}</span>
                             </div>`;
                 }
             },
             {
                 data: "status",
+                width: "8%",
                 className: "text-center",
                 render: function (data) {
                     if (data == 1) {
@@ -282,63 +295,51 @@ function inisialisasi() {
                         return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Kirim</span>';
                     }
                     if (data == 3) {
-                        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Ditolak</span>';
+                        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Cancel</span>';
                     }
                     if (data == 4) {
-                        return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Diterima</span>';
+                        return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Terkirim</span>';
+                    }
+                    if (data == 5) {
+                        return '<span class="badge" style="background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-rotate-ccw me-1"></i> Cancel Kirim</span>';
                     }
                     return "-";
                 },
             },
             {
                 data: null,
+                width: "6%",
                 orderable: false,
                 searchable: false,
                 className: "text-center",
                 render: function (data, type, row) {
                     var status = parseInt(row.status, 10);
-                    var pending = status === 1;
-                    var kirim = status === 2;
-                    var activeWh = String(
-                        (typeof getActiveWarehouseId === "function" && getActiveWarehouseId()) ||
-                            (window.activeWarehouse && window.activeWarehouse.id) ||
-                            ""
-                    );
-                    var toWh = String(row.to_warehouse_id || "");
-                    var fromWh = String(row.from_warehouse_id || "");
-
-                    // Kirim: Pending + gudang aktif = asal
                     var canShip = row.can_ship === true || row.can_ship === 1;
-
-                    // Terima: Kirim + gudang aktif = tujuan
                     var canAcc = row.can_acc === true || row.can_acc === 1;
-
-                    // Edit/Hapus hanya Pending di gudang asal (non-pending tidak bisa dihapus)
                     var canEdit = row.can_edit === true || row.can_edit === 1;
                     var canDelete = row.can_delete === true || row.can_delete === 1;
                     var canReject = row.can_reject === true || row.can_reject === 1;
+                    var canCancelKirim = row.can_cancel_kirim === true || row.can_cancel_kirim === 1;
+                    var pending = status === 1;
+                    var canOpenPending = pending && (canEdit || canShip || canReject);
+
+                    // Pending: satu tombol buka modal (view/edit/transfer/tolak di dalam modal)
+                    var openBtn = canOpenPending
+                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnOpenTransfer text-primary" title="Lihat / Proses Transfer" data-id="${row.id}">
+                                <i class="fe fe-eye"></i>
+                           </a>`
+                        : "";
 
                     var viewBtn =
-                        !canEdit
+                        !pending && !canEdit
                             ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnViewTransfer" title="Lihat Detail" data-id="${row.id}">
                                 <i class="fe fe-eye"></i>
                            </a>`
                             : "";
 
-                    var shipBtn = canShip
-                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnShipTransfer text-primary" title="Kirim Transfer" data-id="${row.id}">
-                                <i class="fe fe-send"></i>
-                           </a>`
-                        : "";
-
                     var accBtn = canAcc
-                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnAccept text-info" title="Terima Transfer" data-id="${row.id}">
+                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnAccept text-info" title="ACC Terkirim" data-id="${row.id}">
                                 <i class="fe fe-check-circle"></i>
-                           </a>`
-                        : "";
-                    var editBtn = canEdit
-                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnEditTransfer text-primary" title="Edit Transfer" data-id="${row.id}">
-                                <i class="fe fe-edit"></i>
                            </a>`
                         : "";
                     var delBtn = canDelete
@@ -346,28 +347,40 @@ function inisialisasi() {
                                 <i class="fe fe-trash-2"></i>
                            </a>`
                         : "";
-                    var rejectBtn = canReject && row.source_type === "production"
-                        ? `<a href="javascript:void(0);" class="p-2 btn-action-icon btnRejectProductionTransfer text-danger" title="Tolak hasil produksi" data-id="${row.id}">
-                                <i class="fe fe-x-circle"></i>
+                    var cancelKirimBtn = canCancelKirim
+                        ? `<a href="javascript:void(0);" class="p-2 btn-action-icon btnCancelKirimTransfer text-warning" title="Cancel Kirim" data-id="${row.id}">
+                                <i class="fe fe-rotate-ccw"></i>
                            </a>`
                         : "";
                     return `
                         <div class="d-flex justify-content-center gap-1">
+                            ${openBtn}
                             ${viewBtn}
-                            ${shipBtn}
                             ${accBtn}
-                            ${editBtn}
                             ${delBtn}
-                            ${rejectBtn}
+                            ${cancelKirimBtn}
                         </div>
                     `;
                 },
             },
         ],
+        drawCallback: function () {
+            if (table) {
+                try {
+                    table.columns.adjust();
+                } catch (e) {}
+            }
+        },
         initComplete: function () {
             $(".dataTables_filter").appendTo("#tableSearch");
             $(".dataTables_filter").appendTo(".search-input");
             $("#tableStockTransfer-wrap").removeClass("dt-pending").addClass("dt-ready");
+            var api = this.api();
+            setTimeout(function () {
+                try {
+                    api.columns.adjust();
+                } catch (e) {}
+            }, 50);
         },
     });
 }
@@ -878,15 +891,17 @@ function refreshTransferItemsTable() {
         return;
     }
 
+    var locked = transferFormLocked === true;
     transferItems.forEach(function (item, index) {
         var rowClass = item.retail_invalid
             ? " transfer-row-retail-error"
             : item.stock_invalid
               ? " transfer-row-stock-error"
               : "";
+        var unitDisabled = locked || item.stock_loading ? "disabled" : "";
         var unitControl = item.retail_invalid
             ? `
-                <select class="form-select form-select-sm transfer-retail-unit" data-index="${index}">
+                <select class="form-select form-select-sm transfer-retail-unit" data-index="${index}" ${locked ? "disabled" : ""}>
                     ${buildRetailUnitOptions(item)}
                 </select>
                 <small class="transfer-retail-error-text">
@@ -894,7 +909,7 @@ function refreshTransferItemsTable() {
                 </small>
             `
             : `
-                <select class="form-select form-select-sm transfer-unit" data-index="${index}" ${item.stock_loading ? "disabled" : ""}>
+                <select class="form-select form-select-sm transfer-unit" data-index="${index}" ${unitDisabled}>
                     ${buildUnitOptions(item)}
                 </select>
                 ${item.stock_loading ? '<small class="text-muted d-block mt-1">Memeriksa stok...</small>' : ""}
@@ -920,15 +935,19 @@ function refreshTransferItemsTable() {
                 </td>
                 <td style="padding: 14px 16px;">
                     <input type="number" class="form-control form-control-sm transfer-qty" min="1" step="1"
-                        value="${item.qty}" data-index="${index}" style="width:90px;font-size:14px;height:34px;">
+                        value="${item.qty}" data-index="${index}" ${locked ? "disabled" : ""} style="width:90px;font-size:14px;height:34px;">
                 </td>
                 <td style="padding: 14px 16px;">
                     ${unitControl}
                 </td>
                 <td class="text-center" style="padding: 14px 16px;">
-                    <a class="p-2 btn-action-icon text-danger btn-remove-transfer-item" href="javascript:void(0);" data-index="${index}">
-                        <i class="fe fe-trash-2"></i>
-                    </a>
+                    ${
+                        locked
+                            ? '<span class="text-muted">-</span>'
+                            : `<a class="p-2 btn-action-icon text-danger btn-remove-transfer-item" href="javascript:void(0);" data-index="${index}">
+                                <i class="fe fe-trash-2"></i>
+                           </a>`
+                    }
                 </td>
             </tr>
         `);
@@ -1610,6 +1629,12 @@ function setDefaultFromWarehouse() {
 
 function resetTransferForm() {
     transferItems = [];
+    transferItemsSnapshot = [];
+    transferHeaderSnapshot = null;
+    transferFormLocked = false;
+    transferCanEdit = false;
+    transferCanShip = false;
+    transferCanReject = false;
     transferScanMode = false;
     clearTransferStockLoads();
     retailUnitValidationPending = 0;
@@ -1630,7 +1655,6 @@ function resetTransferForm() {
         .html('<i class="fa fa-barcode"></i> Scan')
         .removeClass("btn-outline-primary")
         .addClass("btn-outline-secondary");
-    // Default tanggal = hari ini (format datetimepicker project: DD-MM-YYYY)
     var today =
         typeof moment === "function"
             ? moment().format("DD-MM-YYYY")
@@ -1650,6 +1674,129 @@ function resetTransferForm() {
     resetTransferSkuSelect();
     refreshTransferItemsTable();
     $(".is-invalid").removeClass("is-invalid");
+    syncTransferModalChrome();
+}
+
+function snapshotTransferForm() {
+    transferItemsSnapshot = JSON.parse(JSON.stringify(transferItems || []));
+    transferHeaderSnapshot = {
+        transfer_date: $("#transfer_date").val(),
+        note: $("#transfer_note").val(),
+        from_warehouse_id: $("#transfer_from_warehouse_id").val(),
+        from_warehouse_text: $("#transfer_from_warehouse_id").find("option:selected").text(),
+        to_warehouse_id: $("#transfer_to_warehouse_id").val(),
+        to_warehouse_text: $("#transfer_to_warehouse_id").find("option:selected").text(),
+    };
+}
+
+function restoreTransferFormSnapshot() {
+    if (!transferHeaderSnapshot) return;
+    $("#transfer_date").val(transferHeaderSnapshot.transfer_date || "");
+    if ($("#transfer_date").data("DateTimePicker") && transferHeaderSnapshot.transfer_date) {
+        $("#transfer_date").data("DateTimePicker").date(transferHeaderSnapshot.transfer_date);
+    }
+    $("#transfer_note").val(transferHeaderSnapshot.note || "");
+    fillSelectOption(
+        $("#transfer_from_warehouse_id"),
+        transferHeaderSnapshot.from_warehouse_id,
+        transferHeaderSnapshot.from_warehouse_text
+    );
+    fillSelectOption(
+        $("#transfer_to_warehouse_id"),
+        transferHeaderSnapshot.to_warehouse_id,
+        transferHeaderSnapshot.to_warehouse_text
+    );
+    transferItems = JSON.parse(JSON.stringify(transferItemsSnapshot || []));
+    refreshTransferItemsTable();
+}
+
+function setTransferFormLocked(locked) {
+    transferFormLocked = !!locked;
+    var $modal = $("#add_stock_transfer");
+    var selectors = [
+        "#transfer_from_warehouse_id",
+        "#transfer_to_warehouse_id",
+        "#transfer_date",
+        "#transfer_note",
+        "#transfer_sku",
+        "#transfer_qty_input",
+        "#transfer_unit_input",
+        "#transfer_scan_barcode",
+        "#transfer_scan_qty",
+        "#btn_add_transfer_product",
+        "#btn_toggle_scan_transfer",
+        "#btn_scan_add_transfer",
+    ];
+    selectors.forEach(function (sel) {
+        var $el = $modal.find(sel);
+        $el.prop("disabled", transferFormLocked);
+        if ($el.hasClass("select2-hidden-accessible")) {
+            $el.trigger("change.select2");
+        }
+    });
+    // pengirim selalu disabled
+    $("#transfer_sender_id").prop("disabled", true);
+    if (transferFormLocked) {
+        $(".transfer-product-panel").css("opacity", "0.65");
+    } else {
+        $(".transfer-product-panel").css("opacity", "1");
+    }
+    refreshTransferItemsTable();
+    syncTransferModalChrome();
+}
+
+function syncTransferModalChrome() {
+    var isCreate = mode === 1;
+    var isEditing = mode === 2 && !transferFormLocked;
+    var isViewing = mode === 2 && transferFormLocked;
+    var $title = $("#add_stock_transfer .modal-title");
+    var $sub = $("#add_stock_transfer .transfer-modal-subtitle");
+    var $editBtn = $("#add_stock_transfer .btn-enable-edit-transfer");
+    var $save = $("#add_stock_transfer .btn-save-transfer");
+    var $reject = $("#add_stock_transfer .btn-reject-transfer");
+    var $transfer = $("#add_stock_transfer .btn-acc-transfer");
+
+    if (isCreate) {
+        $title.text("Buat Stock Transfer");
+        $sub.text("Pindahkan stok antar gudang / toko");
+        $editBtn.addClass("d-none").removeClass("d-inline-flex");
+        $save.removeClass("d-none").addClass("d-inline-flex");
+        $reject.addClass("d-none").removeClass("d-inline-flex");
+        $transfer.addClass("d-none").removeClass("d-inline-flex");
+    } else if (isViewing) {
+        $title.text("Detail Stock Transfer");
+        $sub.text("Lihat data, transfer, atau tolak. Klik Edit Data untuk mengubah.");
+        if (transferCanEdit) {
+            $editBtn.removeClass("d-none").addClass("d-inline-flex");
+        } else {
+            $editBtn.addClass("d-none").removeClass("d-inline-flex");
+        }
+        $save.addClass("d-none").removeClass("d-inline-flex");
+        if (transferCanReject) {
+            $reject.removeClass("d-none").addClass("d-inline-flex");
+        } else {
+            $reject.addClass("d-none").removeClass("d-inline-flex");
+        }
+        if (transferCanShip) {
+            $transfer.removeClass("d-none").addClass("d-inline-flex");
+        } else {
+            $transfer.addClass("d-none").removeClass("d-inline-flex");
+        }
+    } else if (isEditing) {
+        $title.text("Edit Stock Transfer");
+        $sub.text("Ubah data lalu simpan. Batal = batalkan edit.");
+        $editBtn.addClass("d-none").removeClass("d-inline-flex");
+        $save.removeClass("d-none").addClass("d-inline-flex");
+        $reject.addClass("d-none").removeClass("d-inline-flex");
+        $transfer.addClass("d-none").removeClass("d-inline-flex");
+    }
+}
+
+function syncTransferEditActions(canShip, canReject, canEdit) {
+    transferCanShip = !!canShip;
+    transferCanReject = !!canReject;
+    transferCanEdit = !!canEdit;
+    syncTransferModalChrome();
 }
 
 $(document).on("show.bs.modal", "#add_stock_transfer", function () {
@@ -1661,12 +1808,13 @@ $(document).on("show.bs.modal", "#add_stock_transfer", function () {
 $(document).on("click", ".btnAdd", function () {
     mode = 1;
     if (!$("#add_stock_transfer").length) return;
-    $("#add_stock_transfer .modal-title").html("Stock Transfer");
     $("#add_stock_transfer").removeAttr("data-id");
+    $("#add_stock_transfer").removeAttr("data-source-type");
     resetTransferForm();
     initTransferAutocompletes();
     setDefaultSender();
     setDefaultFromWarehouse();
+    setTransferFormLocked(false);
     $("#add_stock_transfer").modal("show");
 });
 
@@ -1998,7 +2146,7 @@ $(document).on("click", ".btnViewTransfer", function () {
 
     $("#lbl_view_sender, #lbl_view_from, #lbl_view_date, #lbl_view_receiver, #lbl_view_to, #lbl_view_ship_note, #lbl_view_accept_note").text("-");
     $("#tableViewItems tbody").html(
-        '<tr class="empty-row"><td colspan="6" class="text-center text-muted">Memuat data...</td></tr>'
+        '<tr class="empty-row"><td colspan="7" class="text-center text-muted">Memuat data...</td></tr>'
     );
     $("#view_stock_transfer_loading").css("display", "flex");
     $("#view_stock_transfer").modal("show");
@@ -2010,7 +2158,7 @@ $(document).on("click", ".btnViewTransfer", function () {
         success: function (res) {
             if (!res || !res.id) {
                 $("#tableViewItems tbody").html(
-                    '<tr class="empty-row"><td colspan="6" class="text-center text-muted">Data tidak ditemukan.</td></tr>'
+                    '<tr class="empty-row"><td colspan="7" class="text-center text-muted">Data tidak ditemukan.</td></tr>'
                 );
                 if (typeof toastr !== "undefined") toastr.error("", "Data transfer tidak ditemukan");
                 return;
@@ -2027,7 +2175,7 @@ $(document).on("click", ".btnViewTransfer", function () {
             var items = res.items || [];
             if (!items.length) {
                 $("#tableViewItems tbody").html(
-                    '<tr class="empty-row"><td colspan="6" class="text-center text-muted py-5">Belum ada produk.</td></tr>'
+                    '<tr class="empty-row"><td colspan="7" class="text-center text-muted py-5">Belum ada produk.</td></tr>'
                 );
                 return;
             }
@@ -2035,10 +2183,14 @@ $(document).on("click", ".btnViewTransfer", function () {
             var html = "";
             items.forEach(function (it) {
                 var unitLabel = it.unit_name || it.unit_short_name || "";
-                var receivedUnitLabel =
-                    it.received_unit_name || it.target_unit_name || unitLabel;
+                var targetUnitLabel =
+                    it.target_unit_name || it.received_unit_name || it.default_unit_name || unitLabel;
                 var qtySend = formatTransferQty(it.qty);
-                var qtyRecv =
+                var qtyRecvSent =
+                    it.qty_received_sent_unit != null && it.qty_received_sent_unit !== ""
+                        ? formatTransferQty(it.qty_received_sent_unit)
+                        : null;
+                var qtyRecvConv =
                     it.qty_received != null && it.qty_received !== ""
                         ? formatTransferQty(it.qty_received)
                         : "-";
@@ -2046,7 +2198,7 @@ $(document).on("click", ".btnViewTransfer", function () {
                     it.selisih != null && it.selisih !== ""
                         ? parseFloat(it.selisih)
                         : null;
-                var selisihHtml = formatTransferSelisih(selisihVal, receivedUnitLabel);
+                var selisihHtml = formatTransferSelisih(selisihVal, targetUnitLabel);
                 html +=
                     "<tr data-search=\"" +
                     escapeHtml(
@@ -2074,9 +2226,14 @@ $(document).on("click", ".btnViewTransfer", function () {
                     formatTransferQtyWithUnit(qtySend, unitLabel) +
                     "</td>" +
                     '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
-                    (qtyRecv === "-"
+                    (qtyRecvSent == null
                         ? "-"
-                        : formatTransferQtyWithUnit(qtyRecv, receivedUnitLabel)) +
+                        : formatTransferQtyWithUnit(qtyRecvSent, unitLabel)) +
+                    "</td>" +
+                    '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
+                    (qtyRecvConv === "-"
+                        ? "-"
+                        : formatTransferQtyWithUnit(qtyRecvConv, targetUnitLabel)) +
                     "</td>" +
                     '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
                     selisihHtml +
@@ -2087,7 +2244,7 @@ $(document).on("click", ".btnViewTransfer", function () {
         },
         error: function () {
             $("#tableViewItems tbody").html(
-                '<tr class="empty-row"><td colspan="6" class="text-center text-muted py-5">Gagal memuat data.</td></tr>'
+                '<tr class="empty-row"><td colspan="7" class="text-center text-muted py-5">Gagal memuat data.</td></tr>'
             );
             if (typeof toastr !== "undefined") toastr.error("", "Gagal memuat detail transfer");
         },
@@ -2152,6 +2309,15 @@ function formatTransferSelisih(val, unitLabel) {
 }
 
 $(document).on("click", ".btn-save-transfer", function () {
+    if (transferFormLocked) {
+        if (typeof toastr !== "undefined") {
+            toastr.info("", "Klik Edit Data dulu sebelum menyimpan perubahan");
+        }
+        return;
+    }
+    var thenShip = $("#add_stock_transfer").data("then-ship") === true;
+    $("#add_stock_transfer").removeData("then-ship");
+
     if (
         hasPendingTransferRows() ||
         stockLoadPending > 0 ||
@@ -2238,14 +2404,25 @@ $(document).on("click", ".btn-save-transfer", function () {
     var $btn = $(this);
     var saveLabel = $btn.data("save-label") || $btn.html() || "Simpan";
     $btn.data("save-label", saveLabel);
+    var $accBtn = $("#add_stock_transfer .btn-acc-transfer");
+    var accLabel = $accBtn.data("acc-label") || $accBtn.html() || "Transfer";
+    $accBtn.data("acc-label", accLabel);
     if (typeof LoadingButton === "function") {
         LoadingButton(".btn-save-transfer");
+        if (thenShip) LoadingButton(".btn-acc-transfer");
     } else {
         $btn
             .prop("disabled", true)
             .html(
                 '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Menyimpan...'
             );
+        if (thenShip) {
+            $accBtn
+                .prop("disabled", true)
+                .html(
+                    '<span class="spinner-border spinner-border-sm me-1" role="status"></span> ACC...'
+                );
+        }
     }
 
     var itemsPayload = transferItems.map(function (it) {
@@ -2279,10 +2456,47 @@ $(document).on("click", ".btn-save-transfer", function () {
     function resetSaveBtn() {
         if (typeof ResetLoadingButton === "function") {
             ResetLoadingButton(".btn-save-transfer", saveLabel);
+            if (thenShip) ResetLoadingButton(".btn-acc-transfer", accLabel);
         } else {
             $btn.prop("disabled", false).html(saveLabel);
+            if (thenShip) $accBtn.prop("disabled", false).html(accLabel);
         }
         $btn.removeData("stock-loading");
+        $accBtn.removeData("stock-loading");
+    }
+
+    function doShip(stId) {
+        $.ajax({
+            url: "/shipStockTransfer",
+            method: "post",
+            data: {
+                id: stId,
+                _token: token || $('meta[name="csrf-token"]').attr("content"),
+            },
+            success: function (shipRes) {
+                resetSaveBtn();
+                if (!shipRes || shipRes.status != 1) {
+                    if (typeof toastr !== "undefined") {
+                        toastr.error("", (shipRes && shipRes.message) || "Gagal ACC kirim");
+                    }
+                    if (table) table.ajax.reload(null, false);
+                    return;
+                }
+                if (typeof toastr !== "undefined") {
+                    toastr.success("", shipRes.message || "Berhasil ACC kirim");
+                }
+                $("#add_stock_transfer").modal("hide");
+                if (table) table.ajax.reload(null, false);
+            },
+            error: function (xhr) {
+                resetSaveBtn();
+                var msg =
+                    (xhr.responseJSON && xhr.responseJSON.message) ||
+                    "Gagal ACC kirim stock transfer";
+                if (typeof toastr !== "undefined") toastr.error("", msg);
+                if (table) table.ajax.reload(null, false);
+            },
+        });
     }
 
     function doSave() {
@@ -2291,15 +2505,27 @@ $(document).on("click", ".btn-save-transfer", function () {
             method: "post",
             data: payload,
             success: function (saveRes) {
-                resetSaveBtn();
                 if (!saveRes || saveRes.status != 1) {
+                    resetSaveBtn();
                     if (typeof toastr !== "undefined") {
                         toastr.error("", (saveRes && saveRes.message) || "Gagal menyimpan");
                     }
                     return;
                 }
+                var savedId = editId || (saveRes.id || saveRes.st_id);
+                if (thenShip && savedId) {
+                    doShip(savedId);
+                    return;
+                }
+                resetSaveBtn();
                 if (typeof toastr !== "undefined") {
                     toastr.success("", saveRes.message || "Berhasil disimpan");
+                }
+                if (mode === 2) {
+                    snapshotTransferForm();
+                    setTransferFormLocked(true);
+                    if (table) table.ajax.reload(null, false);
+                    return;
                 }
                 $("#add_stock_transfer").modal("hide");
                 if (table) table.ajax.reload(null, false);
@@ -2318,6 +2544,63 @@ $(document).on("click", ".btn-save-transfer", function () {
         }
         setTimeout(doSave, 0);
     }, true);
+});
+
+$(document).on("click", ".btn-acc-transfer", function () {
+    var id = $("#add_stock_transfer").attr("data-id");
+    if (mode !== 2 || !id) {
+        if (typeof toastr !== "undefined") {
+            toastr.warning("", "Transfer hanya dari detail pending");
+        }
+        return;
+    }
+    // View mode: langsung ship. Edit mode: simpan dulu lalu ship.
+    if (transferFormLocked) {
+        showModalKonfirmasi(
+            "Kirim transfer ini? Stok gudang asal akan dipotong dan status menjadi Kirim.",
+            "btn-ship-stock-transfer"
+        );
+        $("#modalKonfirmasi #btn-ship-stock-transfer").attr("data-id", id);
+        return;
+    }
+    $("#add_stock_transfer").data("then-ship", true);
+    $(".btn-save-transfer").trigger("click");
+});
+
+$(document).on("click", ".btn-enable-edit-transfer", function () {
+    if (mode !== 2 || !transferCanEdit) return;
+    snapshotTransferForm();
+    setTransferFormLocked(false);
+});
+
+$(document).on("click", ".btn-cancel-transfer", function () {
+    // Mode edit pending: batal edit, jangan close modal
+    if (mode === 2 && !transferFormLocked) {
+        restoreTransferFormSnapshot();
+        setTransferFormLocked(true);
+        return;
+    }
+    $("#add_stock_transfer").modal("hide");
+});
+
+$(document).on("click", ".btn-reject-transfer", function () {
+    var id = $("#add_stock_transfer").attr("data-id");
+    var sourceType = $("#add_stock_transfer").attr("data-source-type") || "";
+    if (!id) return;
+    if (sourceType === "production") {
+        $("#reject_production_transfer").attr("data-id", id);
+        $("#production_reject_disposition").val("").trigger("change");
+        $("#production_reject_damage_type").val("");
+        $("#production_reject_notes").val("");
+        $("#production_reject_problem_fields").hide();
+        $("#reject_production_transfer").modal("show");
+        return;
+    }
+    showModalKonfirmasi(
+        "Cancel transfer pending ini? Status menjadi Cancel (stok belum dipotong).",
+        "btn-reject-stock-transfer"
+    );
+    $("#modalKonfirmasi #btn-reject-stock-transfer").attr("data-id", id);
 });
 
 // Remove invalid class on change
@@ -2350,7 +2633,7 @@ function loadTransferDetailForEdit(id) {
             resetTransferForm();
             initTransferAutocompletes();
             $("#add_stock_transfer").attr("data-id", res.id);
-            $("#add_stock_transfer .modal-title").html("Edit Stock Transfer");
+            $("#add_stock_transfer").attr("data-source-type", res.source_type || "");
             $("#transfer_date").val(res.transfer_date);
             if ($("#transfer_date").data("DateTimePicker")) {
                 $("#transfer_date").data("DateTimePicker").date(res.transfer_date);
@@ -2380,6 +2663,13 @@ function loadTransferDetailForEdit(id) {
             });
             refreshTransferItemsTable();
             revalidateAllTransferRows(false);
+            syncTransferEditActions(
+                res.can_ship === true || res.can_ship === 1,
+                res.can_reject === true || res.can_reject === 1,
+                res.can_edit === true || res.can_edit === 1
+            );
+            snapshotTransferForm();
+            setTransferFormLocked(true);
             $("#add_stock_transfer").modal("show");
         },
         error: function () {
@@ -2392,7 +2682,7 @@ function renderAcceptItems(items) {
     var $tb = $("#tableAcceptItems tbody");
     if (!items || !items.length) {
         $tb.html(
-            '<tr class="empty-row"><td colspan="6" class="text-center text-muted">Belum ada produk.</td></tr>'
+            '<tr class="empty-row"><td colspan="7" class="text-center text-muted">Belum ada produk.</td></tr>'
         );
         return;
     }
@@ -2402,7 +2692,8 @@ function renderAcceptItems(items) {
         var qty = qtyKirim;
         if (isNaN(qty)) qty = qtyKirim;
         var unitLabel = it.unit_name || it.unit_short_name || "";
-        var targetUnitLabel = it.target_unit_name || it.received_unit_name || unitLabel;
+        var targetUnitLabel =
+            it.target_unit_name || it.received_unit_name || it.default_unit_name || unitLabel;
         var factor = parseFloat(it.conversion_factor);
         if (isNaN(factor) || factor <= 0) factor = 1;
         var convertedSent = parseFloat(it.converted_sent_qty);
@@ -2447,7 +2738,7 @@ function renderAcceptItems(items) {
             '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
             formatTransferQtyWithUnit(formatTransferQty(qtyKirim), unitLabel) +
             "</td>" +
-            '<td style="padding: 14px 16px;"><div class="input-group input-group-sm" style="max-width: 140px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); border-radius: 6px; overflow: hidden;">' +
+            '<td style="padding: 14px 16px;"><div class="input-group input-group-sm" style="max-width: 160px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); border-radius: 6px; overflow: hidden;">' +
             '<input type="number" min="0" step="0.0001" class="form-control accept-qty text-center" data-index="' +
             idx +
             '" value="' +
@@ -2458,9 +2749,11 @@ function renderAcceptItems(items) {
                   escapeHtml(unitLabel) +
                   "</span>"
                 : "") +
-            '</div><small class="receive-conversion-preview text-muted d-block mt-1">' +
-            escapeHtml(formatTransferQty(convertedPreview) + " " + targetUnitLabel + " masuk stok") +
-            "</small></td>" +
+            "</div></td>" +
+            '<td class="text-center accept-conversion" style="padding: 14px 16px; font-weight: 500;">' +
+            formatTransferQtyWithUnit(formatTransferQty(convertedPreview), targetUnitLabel) +
+            '<div class="text-muted mt-1" style="font-size:11px;">satuan stok tujuan</div>' +
+            "</td>" +
             '<td class="text-center accept-selisih" style="padding: 14px 16px; font-weight: 500;">' +
             formatTransferSelisih(selisih, targetUnitLabel) +
             "</td>" +
@@ -2491,7 +2784,7 @@ $(document).on("input keyup", "#search_accept_barcode", function () {
     });
     if (!hasMatch) {
         $("#tableAcceptItems tbody").append(
-            '<tr class="empty-search"><td colspan="6" class="text-center py-5"><div style="color:#94a3b8;"><i class="fe fe-search" style="font-size:36px;display:block;margin-bottom:8px;"></i><div class="fw-semibold" style="font-size:14px;">Produk tidak ditemukan</div><div style="font-size:12px;">Pencarian "'+escapeHtml(q)+'" tidak membuahkan hasil.</div></div></td></tr>'
+            '<tr class="empty-search"><td colspan="7" class="text-center py-5"><div style="color:#94a3b8;"><i class="fe fe-search" style="font-size:36px;display:block;margin-bottom:8px;"></i><div class="fw-semibold" style="font-size:14px;">Produk tidak ditemukan</div><div style="font-size:12px;">Pencarian "'+escapeHtml(q)+'" tidak membuahkan hasil.</div></div></td></tr>'
         );
     }
 });
@@ -2514,7 +2807,7 @@ $(document).on("input keyup", "#search_view_barcode", function () {
     });
     if (!hasMatch) {
         $("#tableViewItems tbody").append(
-            '<tr class="empty-search"><td colspan="6" class="text-center py-5"><div style="color:#94a3b8;"><i class="fe fe-search" style="font-size:36px;display:block;margin-bottom:8px;"></i><div class="fw-semibold" style="font-size:14px;">Produk tidak ditemukan</div><div style="font-size:12px;">Pencarian "'+escapeHtml(q)+'" tidak membuahkan hasil.</div></div></td></tr>'
+            '<tr class="empty-search"><td colspan="7" class="text-center py-5"><div style="color:#94a3b8;"><i class="fe fe-search" style="font-size:36px;display:block;margin-bottom:8px;"></i><div class="fw-semibold" style="font-size:14px;">Produk tidak ditemukan</div><div style="font-size:12px;">Pencarian "'+escapeHtml(q)+'" tidak membuahkan hasil.</div></div></td></tr>'
         );
     }
 });
@@ -2546,15 +2839,16 @@ $(document).on("input change", "#tableAcceptItems .accept-qty", function () {
     if (isNaN(convertedSent)) convertedSent = qtyKirim * factor;
     var targetUnitLabel = $tr.attr("data-target-unit") || $tr.attr("data-unit") || "";
     var convertedReceived = qtyRecv * factor;
-    $tr.find(".receive-conversion-preview").text(
-        formatTransferQty(convertedReceived) + " " + targetUnitLabel + " masuk stok"
+    $tr.find(".accept-conversion").html(
+        formatTransferQtyWithUnit(formatTransferQty(convertedReceived), targetUnitLabel) +
+            '<div class="text-muted mt-1" style="font-size:11px;">satuan stok tujuan</div>'
     );
     $tr.find(".accept-selisih").html(
         formatTransferSelisih(convertedReceived - convertedSent, targetUnitLabel)
     );
 });
 
-$(document).on("click", ".btnEditTransfer", function () {
+$(document).on("click", ".btnOpenTransfer, .btnEditTransfer", function () {
     var id = $(this).attr("data-id");
     if (!id) return;
     loadTransferDetailForEdit(id);
@@ -2656,6 +2950,7 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
                 return;
             }
             if (typeof toastr !== "undefined") toastr.success("", res.message || "Berhasil dikirim");
+            $("#add_stock_transfer").modal("hide");
             if (table) table.ajax.reload(null, false);
         },
         error: function (xhr) {
@@ -2668,15 +2963,101 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
     });
 });
 
-$(document).on("click", ".btnRejectProductionTransfer", function () {
+$(document).on("click", ".btnRejectTransfer, .btnRejectProductionTransfer", function () {
     var id = $(this).attr("data-id");
     if (!id) return;
-    $("#reject_production_transfer").attr("data-id", id);
-    $("#production_reject_disposition").val("").trigger("change");
-    $("#production_reject_damage_type").val("");
-    $("#production_reject_notes").val("");
-    $("#production_reject_problem_fields").hide();
-    $("#reject_production_transfer").modal("show");
+    var sourceType = $(this).attr("data-source") || "";
+    if (sourceType === "production") {
+        $("#reject_production_transfer").attr("data-id", id);
+        $("#production_reject_disposition").val("").trigger("change");
+        $("#production_reject_damage_type").val("");
+        $("#production_reject_notes").val("");
+        $("#production_reject_problem_fields").hide();
+        $("#reject_production_transfer").modal("show");
+        return;
+    }
+    showModalKonfirmasi(
+        "Cancel transfer pending ini? Status menjadi Cancel.",
+        "btn-reject-stock-transfer"
+    );
+    $("#modalKonfirmasi #btn-reject-stock-transfer").attr("data-id", id);
+});
+
+$(document).on("click", "#btn-reject-stock-transfer", function () {
+    var id = $(this).attr("data-id");
+    if (!id) return;
+    LoadingButton(this);
+    $.ajax({
+        url: "/rejectStockTransfer",
+        method: "post",
+        data: {
+            id: id,
+            _token: token || $('meta[name="csrf-token"]').attr("content"),
+        },
+        success: function (res) {
+            ResetLoadingButton("#btn-reject-stock-transfer", "Konfirmasi");
+            closeModalConfirm();
+            if (!res || res.status != 1) {
+                if (typeof toastr !== "undefined") {
+                    toastr.error("", (res && res.message) || "Gagal cancel transfer");
+                }
+                return;
+            }
+            if (typeof toastr !== "undefined") toastr.success("", res.message || "Berhasil di-cancel");
+            $("#add_stock_transfer").modal("hide");
+            if (table) table.ajax.reload(null, false);
+        },
+        error: function (xhr) {
+            ResetLoadingButton("#btn-reject-stock-transfer", "Konfirmasi");
+            var msg =
+                (xhr.responseJSON && xhr.responseJSON.message) ||
+                "Gagal cancel stock transfer";
+            if (typeof toastr !== "undefined") toastr.error("", msg);
+        },
+    });
+});
+
+$(document).on("click", ".btnCancelKirimTransfer", function () {
+    var id = $(this).attr("data-id");
+    if (!id) return;
+    showModalKonfirmasi(
+        "Cancel Kirim transfer ini? Stok akan dikembalikan ke gudang asal.",
+        "btn-cancel-kirim-stock-transfer"
+    );
+    $("#modalKonfirmasi #btn-cancel-kirim-stock-transfer").attr("data-id", id);
+});
+
+$(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
+    var id = $(this).attr("data-id");
+    if (!id) return;
+    LoadingButton(this);
+    $.ajax({
+        url: "/cancelKirimStockTransfer",
+        method: "post",
+        data: {
+            id: id,
+            _token: token || $('meta[name="csrf-token"]').attr("content"),
+        },
+        success: function (res) {
+            ResetLoadingButton("#btn-cancel-kirim-stock-transfer", "Konfirmasi");
+            closeModalConfirm();
+            if (!res || res.status != 1) {
+                if (typeof toastr !== "undefined") {
+                    toastr.error("", (res && res.message) || "Gagal cancel kirim");
+                }
+                return;
+            }
+            if (typeof toastr !== "undefined") toastr.success("", res.message || "Cancel Kirim berhasil");
+            if (table) table.ajax.reload(null, false);
+        },
+        error: function (xhr) {
+            ResetLoadingButton("#btn-cancel-kirim-stock-transfer", "Konfirmasi");
+            var msg =
+                (xhr.responseJSON && xhr.responseJSON.message) ||
+                "Gagal cancel kirim stock transfer";
+            if (typeof toastr !== "undefined") toastr.error("", msg);
+        },
+    });
 });
 
 $(document).on("change", "#production_reject_disposition", function () {
@@ -2709,7 +3090,8 @@ $(document).on("click", ".btn-confirm-production-reject", function () {
                 return;
             }
             $("#reject_production_transfer").modal("hide");
-            if (typeof toastr !== "undefined") toastr.success("", res.message || "Hasil produksi ditolak");
+            $("#add_stock_transfer").modal("hide");
+            if (typeof toastr !== "undefined") toastr.success("", res.message || "Hasil produksi dibatalkan");
             if (table) table.ajax.reload(null, false);
         },
         error: function (xhr) {

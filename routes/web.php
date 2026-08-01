@@ -225,6 +225,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/shipStockTransfer', [StockTransferController::class, 'shipStockTransfer'])->name('shipStockTransfer');
         Route::post('/accStockTransfer', [StockTransferController::class, 'accStockTransfer'])->name('accStockTransfer');
         Route::post('/rejectStockTransfer', [StockTransferController::class, 'rejectStockTransfer'])->name('rejectStockTransfer');
+        Route::post('/cancelKirimStockTransfer', [StockTransferController::class, 'cancelKirimStockTransfer'])->name('cancelKirimStockTransfer');
     });
 
     Route::middleware('check.access:Stok Opname Bahan Mentah|view')->group(function () {

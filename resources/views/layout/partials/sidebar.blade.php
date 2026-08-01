@@ -1065,7 +1065,7 @@
                                     @if ($canShow('Stock Transfer'))
                                         <li><a href="{{ url('reportStockTransfer') }}"
                                             class="{{ Request::is('reportStockTransfer') ? 'active' : '' }}">
-                                            Log Stock Transfer</a></li>
+                                            Laporan Stock Transfer</a></li>
                                     @endif
 
                                     @if ($canShow('Kas'))
