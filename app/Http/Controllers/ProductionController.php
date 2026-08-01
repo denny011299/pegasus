@@ -502,6 +502,20 @@ class ProductionController extends Controller
         (new Production())->deleteProduction($data);
     }
 
+    /**
+     * ACC produksi (pending → approved).
+     *
+     * Alur keamanan stok (wajib dijaga):
+     * 1) self-heal log/stok orphan dari ACC gagal sebelumnya
+     * 2) pre-check SEMUA bahan tanpa mutasi
+     * 3) potong bahan + buat Stock Transfer hasil produksi + update status
+     *    dalam 1 DB transaction (rollback jika gagal)
+     *
+     * Catatan fase-2: ACC tidak menambah stok produk di gudang utama;
+     * hasil masuk lewat Stock Transfer (Pending) ke gudang tujuan.
+     *
+     * Detail: docs/production-acc-stock-safety.md
+     */
     function accProduction(Request $req){
         $data = $req->all();
         if (! Schema::hasColumn('production_details', 'destination_warehouse_id')
@@ -530,14 +544,13 @@ class ProductionController extends Controller
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
         }
-        // Idempotent guard: hanya proses produksi yang masih menunggu approval.
-        if ((int)$p->status !== 1) {
-            return response()->json([
-                "status" => 0,
-                "header" => "Sudah Diproses",
-                "message" => "Produksi ini sudah diproses sebelumnya"
-            ]);
-        }
+
+        // ACC gagal di tengah jalan (sebelum ada transaction) bisa potong stok
+        // + tulis log meski status masih pending. Kembalikan dulu.
+        DB::transaction(function () use ($p) {
+            $this->revertPendingProductionStockMutations($p->production_code);
+        });
+
         $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();
         $produk_tanpa_relasi = [];
         $bahan_kurang = []; // ← ditambahkan untuk menangkap bahan yang ternyata kurang saat eksekusi
@@ -688,6 +701,112 @@ class ProductionController extends Controller
                 'status' => 0,
                 'header' => 'Hasil Produksi Tidak Valid',
                 'message' => $transferPlan['message'],
+            ]);
+        }
+
+        // PRE-CHECK: validasi SEMUA kebutuhan bahan dulu (tanpa mutasi stok).
+        // Supaya gagal cepat sebelum masuk transaction potong bahan.
+        $bahan_kurang = [];
+        foreach ($aggregatedRequirements as $suppliesId => $butuh) {
+            $butuhTersedia = (float) $butuh['total_butuh'];
+            if ($butuhTersedia <= 0) {
+                continue;
+            }
+            $bd = $butuh['details'];
+            $reqUnitId = (int) $bd['unit_id'];
+            $ss = $this->ensureSuppliesStockRows($suppliesId);
+
+            if (
+                $ss->isEmpty()
+                || $this->getTotalSuppliesStockInUnit($suppliesId, $reqUnitId, $ss) < $butuhTersedia
+            ) {
+                $s = Supplies::find($suppliesId);
+                if ($s && ! in_array($s['supplies_name'], $bahan_kurang, true)) {
+                    $bahan_kurang[] = $s['supplies_name'];
+                }
+                continue;
+            }
+
+            $virtualStock = [];
+            foreach ($ss as $stok) {
+                $virtualStock[$stok->ss_id] = [
+                    'current' => (float) $stok->ss_stock,
+                    'unit_id' => $stok->unit_id,
+                    'ss_id' => $stok->ss_id,
+                ];
+            }
+
+            $siapkanStokCek = function ($targetKey, $units, $jumlahDibutuhkan) use (
+                &$virtualStock,
+                &$siapkanStokCek,
+                $bd
+            ) {
+                $stokSekarang = $units[$targetKey];
+                $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
+                    ->where('su_id_2', $stokSekarang->unit_id)
+                    ->where('status', 1)
+                    ->first();
+                if (! $sr) {
+                    return false;
+                }
+
+                $keyAtas = null;
+                foreach ($units as $idx => $stok) {
+                    if ($stok->unit_id == $sr->su_id_1) {
+                        $keyAtas = $idx;
+                        break;
+                    }
+                }
+                if ($keyAtas === null) {
+                    return false;
+                }
+
+                $stokAtas = $units[$keyAtas];
+                $nilaiKonversi = (float) $sr['sr_value_2'];
+                if ($nilaiKonversi <= 0) {
+                    return false;
+                }
+
+                $kekurangan = $jumlahDibutuhkan - $virtualStock[$stokSekarang->ss_id]['current'];
+                if ($kekurangan <= 0) {
+                    return true;
+                }
+
+                $butuhDariAtas = (int) ceil($kekurangan / $nilaiKonversi);
+                if ($virtualStock[$stokAtas->ss_id]['current'] < $butuhDariAtas) {
+                    $siapkanStokCek($keyAtas, $units, $butuhDariAtas);
+                }
+
+                $bongkarSebenarnya = min($butuhDariAtas, (int) $virtualStock[$stokAtas->ss_id]['current']);
+                if ($bongkarSebenarnya <= 0) {
+                    return false;
+                }
+
+                $virtualStock[$stokAtas->ss_id]['current'] -= $bongkarSebenarnya;
+                $virtualStock[$stokSekarang->ss_id]['current'] += $bongkarSebenarnya * $nilaiKonversi;
+
+                return true;
+            };
+
+            $keyPalingBawah = $this->findSuppliesStockUnitIndex($ss, $reqUnitId, $suppliesId);
+            $idPalingBawah = $ss[$keyPalingBawah]->ss_id;
+            if ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
+                $siapkanStokCek($keyPalingBawah, $ss, $butuhTersedia);
+            }
+
+            if ($virtualStock[$idPalingBawah]['current'] < $butuhTersedia) {
+                $s = Supplies::find($suppliesId);
+                if ($s && ! in_array($s['supplies_name'], $bahan_kurang, true)) {
+                    $bahan_kurang[] = $s['supplies_name'];
+                }
+            }
+        }
+
+        if (count($bahan_kurang) > 0) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Gagal ACC',
+                'message' => 'Bahan baku tidak mencukupi untuk : ' . implode(', ', $bahan_kurang),
             ]);
         }
 
@@ -1803,5 +1922,61 @@ class ProductionController extends Controller
         unset($group);
 
         return ['ok' => true, 'message' => null, 'groups' => $groups];
+    }
+
+    /**
+     * Balikkan mutasi stok dari ACC produksi yang gagal di tengah jalan
+     * (status masih pending tapi log_stocks sudah ada).
+     *
+     * Dipanggil di awal accProduction sebelum pre-check.
+     * Lihat: docs/production-acc-stock-safety.md
+     *
+     * @return int jumlah log yang di-revert & dihapus
+     */
+    private function revertPendingProductionStockMutations(string $productionCode): int
+    {
+        $logs = LogStock::where('log_kode', $productionCode)
+            ->where('status', 1)
+            ->orderByDesc('log_id')
+            ->get();
+
+        if ($logs->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($logs as $log) {
+            $qty = (int) $log->log_jumlah;
+            if ((int) $log->log_type === 2) {
+                $ss = SuppliesStock::where('supplies_id', $log->log_item_id)
+                    ->where('unit_id', $log->unit_id)
+                    ->where('status', 1)
+                    ->first();
+                if ($ss) {
+                    // cat 2 = keluar/bongkar (stok turun); cat 1 = hasil konversi (stok naik)
+                    if ((int) $log->log_category === 2) {
+                        $ss->ss_stock = (int) $ss->ss_stock + $qty;
+                    } elseif ((int) $log->log_category === 1) {
+                        $ss->ss_stock = (int) $ss->ss_stock - $qty;
+                    }
+                    $ss->save();
+                }
+            } elseif ((int) $log->log_type === 1) {
+                $ps = ProductStock::where('product_variant_id', $log->log_item_id)
+                    ->where('unit_id', $log->unit_id)
+                    ->where('status', 1)
+                    ->first();
+                if ($ps) {
+                    if ((int) $log->log_category === 1) {
+                        $ps->ps_stock = (int) $ps->ps_stock - $qty;
+                    } elseif ((int) $log->log_category === 2) {
+                        $ps->ps_stock = (int) $ps->ps_stock + $qty;
+                    }
+                    $ps->save();
+                }
+            }
+            $log->delete();
+        }
+
+        return $logs->count();
     }
 }
