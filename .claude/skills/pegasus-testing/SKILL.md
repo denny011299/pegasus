@@ -60,8 +60,11 @@ This app has no `Auth::` guard — login is `Session::put('user', $staffRow)`, c
   `supplies_stocks` row is backfilled to `warehouse_id = 1`), id 2 = `Gudang Eceran Toko` (empty,
   no stock). Before this, both tables were completely empty and every stock row had
   `warehouse_id = NULL`, which broke `SalesOrderStock::mainWarehouseId()` outright. No
-  `product_variant` in the seed data has `retail_unit` set yet, so retail-warehouse routing has
-  nothing real to route — build that fixture yourself if you need to test it.
+  `product_variant` in the seed data has `retail_unit` set yet, so retail-warehouse routing needs a
+  fresh fixture — see `tests/Workflow/SalesOrderRetailAndUnitConversionFlowTest.php`, which also
+  covers Sales Order's OWN separate unit-conversion implementation
+  (`App\Support\SalesOrderStock`/`ProductUnitStock` — deliberately independent of Production's
+  inline ladder logic per that class's own docblock, so don't assume the two share bugs or fixes).
 - **`check.access.any:ModuleA,ModuleB,ModuleC,ability`** only ever enforces `ModuleA` with a
   hardcoded `view` — Laravel splits the comma string into separate positional args before calling
   `checkAccessAny::handle()`, which only declares one `$spec` param. Confirmed, deliberately
@@ -87,6 +90,25 @@ This app has no `Auth::` guard — login is `Session::put('user', $staffRow)`, c
   hand from the old migration-drift memory, which is partially stale.
 - PHPUnit data providers run **before** the Laravel app boots — don't use `app_path()` or other
   container-dependent helpers inside a `#[DataProvider]` method; use `__DIR__`-relative paths.
+- **Never write a test that actually executes a `dd()`/`die()` code path.** `dd()` terminates the
+  PHP process — PHPUnit can't catch it, and it aborts the ENTIRE test run mid-suite, not just one
+  test. If a confirmed bug is a literal `dd()` left in shipped code (see
+  `SalesOrderDeliveryDetail::insertSoDeliveryDetail()` in `KNOWN_ISSUES.md`), document it and route
+  around it (e.g. an empty item list that never reaches the line) — don't add a regression test for
+  it. Grep for `dd(` in any method you're about to call from a test if something feels off before
+  you run it.
+- **File-upload endpoints**: use `Illuminate\Http\UploadedFile::fake()->image(...)` in the POST
+  payload array, not a real path — Laravel's test client auto-splits `UploadedFile` instances out
+  of the data array into the files bag. Some accept endpoints (`accTt`, and probably others using
+  the same `HelperController::insertFile()` pattern) unconditionally index `$data["tt_image"]`-style
+  keys that are only populated when a real upload is present — the real frontend usually
+  client-side-blocks the action without one, so this is a fixture requirement, not a bug (same
+  precedent as CashArmada's always-required `photo` field). Test-uploaded files land in real
+  `public/upload/<type>/` paths and aren't cleaned up automatically — feel free to delete stray
+  ones you notice (`git status --porcelain public/upload`).
+- **Bug-handling policy**: see memory `pegasus-testing-defer-bugs-policy` — confirmed bugs get
+  documented in `KNOWN_ISSUES.md` (+ a regression test where safe) and the work continues; don't
+  stop to ask fix-vs-defer per bug.
 
 ## Writing a new test — the loop that actually works
 

@@ -212,4 +212,75 @@ class ProductionFlowTest extends TestCase
         $this->assertSame(0, $fx['productStock']->ps_stock, 'a rejected approval must not add any output stock');
         $this->assertSame(5, $fx['suppliesStock']->ss_stock, 'a rejected approval must not touch ingredient stock at all');
     }
+
+    public function test_decline_a_pending_production_leaves_stock_untouched(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createFixture();
+        $pdQty = 10;
+
+        $insertResponse = $this->post('/insertProduction', [
+            'production_date' => now()->toDateString(),
+            'production_desc' => 'Workflow test production (decline)',
+            'detail' => json_encode([[
+                'bom_id' => $fx['bom']->bom_id,
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'pd_qty' => $pdQty,
+                'unit_id' => self::UNIT_ID,
+            ]]),
+            'list_bahan' => json_encode([[
+                'supplies_id' => $fx['supplies']->supplies_id,
+                'bom_detail_qty' => self::BOM_DETAIL_QTY,
+                'unit_id' => self::UNIT_ID,
+            ]]),
+        ]);
+        $insertResponse->assertStatus(200);
+        $production = Production::orderByDesc('production_id')->firstOrFail();
+
+        $this->post('/declineProduction', ['production_id' => $production->production_id])
+            ->assertStatus(200);
+
+        $production->refresh();
+        $this->assertSame(3, (int) $production->status, 'declining a pending production sets status to 3');
+        $this->assertNotNull($production->acc_by, 'declineProduction records who declined it, same as accProduction');
+
+        $fx['productStock']->refresh();
+        $fx['suppliesStock']->refresh();
+        $this->assertSame(0, $fx['productStock']->ps_stock, 'declining must not add any output stock — nothing was ever produced');
+        $this->assertSame(self::STARTING_SUPPLIES_STOCK, $fx['suppliesStock']->ss_stock, 'declining must not touch ingredient stock — nothing was ever deducted');
+    }
+
+    public function test_declining_an_already_decided_production_is_rejected(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createFixture();
+
+        $insertResponse = $this->post('/insertProduction', [
+            'production_date' => now()->toDateString(),
+            'production_desc' => 'Workflow test production (double decline)',
+            'detail' => json_encode([[
+                'bom_id' => $fx['bom']->bom_id,
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'pd_qty' => 10,
+                'unit_id' => self::UNIT_ID,
+            ]]),
+            'list_bahan' => json_encode([[
+                'supplies_id' => $fx['supplies']->supplies_id,
+                'bom_detail_qty' => self::BOM_DETAIL_QTY,
+                'unit_id' => self::UNIT_ID,
+            ]]),
+        ]);
+        $insertResponse->assertStatus(200);
+        $production = Production::orderByDesc('production_id')->firstOrFail();
+
+        $this->post('/declineProduction', ['production_id' => $production->production_id])->assertStatus(200);
+
+        $response = $this->post('/declineProduction', ['production_id' => $production->production_id]);
+        $response->assertJson(['status' => -2]);
+
+        $production->refresh();
+        $this->assertSame(3, (int) $production->status, 'a blocked repeat decline must leave status exactly as the first decline left it');
+    }
 }
