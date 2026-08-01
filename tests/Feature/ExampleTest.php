@@ -2,16 +2,29 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    use ActingAsStaff;
+
     /**
-     * A basic test example.
+     * Dashboard sits behind checkLogin (Session::get('user')), so a guest
+     * request redirects to /login instead of rendering — there is no
+     * unauthenticated 200 response on this app.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_guest_is_redirected_away_from_dashboard(): void
     {
+        $response = $this->get('/');
+
+        $response->assertRedirect('/login');
+    }
+
+    public function test_authenticated_staff_can_load_dashboard(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
         $response = $this->get('/');
 
         $response->assertStatus(200);
