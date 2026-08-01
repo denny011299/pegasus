@@ -34,10 +34,18 @@ class SalesOrderFlowTest extends TestCase
             ->firstOrFail();
     }
 
+    private function customerId(): int
+    {
+        // so_customer is a customers.customer_id reference (loosely-typed varchar column, no
+        // real FK) — confirmed 2026-08-01 while tracing the Sales Order Invoice flow. An earlier
+        // version of this fixture wrongly used a free-text string here.
+        return (int) DB::table('customers')->where('status', 1)->value('customer_id');
+    }
+
     private function insertSalesOrder(ProductStock $stock, int $qty): int
     {
         $response = $this->post('/insertSalesOrder', [
-            'so_customer' => 'Workflow Test Customer',
+            'so_customer' => $this->customerId(),
             'so_date' => now()->toDateString(),
             'so_total' => $qty * 1000,
             'so_img' => json_encode([]),
