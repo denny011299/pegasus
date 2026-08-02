@@ -134,4 +134,110 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         $po = PurchaseOrder::findOrFail($poId);
         $this->assertSame(3, (int) $po->status, 'a declined (uncounted) invoice leaves the accepted total below po_total, so status becomes 3');
     }
+
+    /**
+     * BUG (see KNOWN_ISSUES.md): `updateInvoicePO()` unconditionally calls `cekInvoice()` after
+     * saving, regardless of the invoice's own status. Editing a still-PENDING invoice (never
+     * accepted) re-triggers the same status recalculation acceptInvoicePO drives — moving
+     * purchase_orders.status away from 2 with no accept/decline action at all.
+     */
+    public function test_editing_a_still_pending_invoice_flips_po_status_with_no_accept_action(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $poId = $this->insertAndApprovePo(qty: 5, price: 1000);
+        $po = PurchaseOrder::findOrFail($poId);
+        $this->assertSame(2, (int) $po->status, 'fresh approval, before any invoice action, sits at status 2');
+
+        $invoice = PurchaseOrderDetailInvoice::where('po_id', $poId)->firstOrFail();
+        $this->assertSame(1, (int) $invoice->status, 'the automatic invoice is still pending — never accepted or declined');
+
+        $this->post('/updateInvoicePO', [
+            'poi_id' => $invoice->poi_id,
+            'po_id' => $poId,
+            'poi_date' => now()->toDateString(),
+            'poi_due' => now()->addDays(30)->toDateString(),
+            'poi_total' => $invoice->poi_total, // even an unchanged total re-triggers cekInvoice()
+        ])->assertOk();
+
+        $invoice->refresh();
+        $this->assertSame(1, (int) $invoice->status, 'the invoice itself is still pending — updateInvoicePO never touches status');
+
+        $po->refresh();
+        $this->assertSame(
+            3,
+            (int) $po->status,
+            'BUG: merely editing a pending invoice flips purchase_orders.status away from 2, with no accept/decline ever called'
+        );
+    }
+
+    /**
+     * BUG (see KNOWN_ISSUES.md): editing an ALREADY-ACCEPTED invoice's total downward
+     * retroactively re-runs cekInvoice(), which can flip purchase_orders.status back down from
+     * "fully covered" — a PO can silently regress from status 4 to status 3 purely by editing an
+     * invoice, without any new decline/reject action.
+     */
+    public function test_editing_an_accepted_invoices_total_downward_regresses_po_status(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $poId = $this->insertAndApprovePo(qty: 5, price: 1000);
+        $invoice = PurchaseOrderDetailInvoice::where('po_id', $poId)->firstOrFail();
+
+        $this->post('/acceptInvoicePO', ['poi_id' => $invoice->poi_id, 'status' => 2])->assertOk();
+        $po = PurchaseOrder::findOrFail($poId);
+        $this->assertSame(4, (int) $po->status, 'fully accepted, PO is fully covered');
+
+        $this->post('/updateInvoicePO', [
+            'poi_id' => $invoice->poi_id,
+            'po_id' => $poId,
+            'poi_date' => now()->toDateString(),
+            'poi_due' => now()->addDays(30)->toDateString(),
+            'poi_total' => $invoice->poi_total - 1000, // now below po_total
+        ])->assertOk();
+
+        $po->refresh();
+        $this->assertSame(
+            3,
+            (int) $po->status,
+            'BUG: reducing an already-accepted invoice\'s total retroactively regresses the PO from fully-covered (4) back to partially-covered (3)'
+        );
+    }
+
+    /**
+     * BUG (see KNOWN_ISSUES.md): `deleteInvoicePO()` calls `cekInvoice($t->po_id)` OUTSIDE its own
+     * `if ($t) { ... }` null-check — an invalid poi_id crashes instead of failing cleanly.
+     */
+    public function test_deleting_an_invoice_with_an_invalid_id_crashes_instead_of_failing_cleanly(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $bogusPoiId = 999999;
+        $response = $this->post('/deleteInvoicePO', ['poi_id' => $bogusPoiId, 'status' => -1]);
+
+        $response->assertStatus(500);
+    }
+
+    /**
+     * Confirms the same cekInvoice side-effect also fires on delete: soft-deleting a still-pending
+     * invoice (never accepted) flips purchase_orders.status away from 2, same as editing one.
+     */
+    public function test_deleting_a_still_pending_invoice_also_flips_po_status(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $poId = $this->insertAndApprovePo(qty: 4, price: 1000);
+        $po = PurchaseOrder::findOrFail($poId);
+        $this->assertSame(2, (int) $po->status);
+
+        $invoice = PurchaseOrderDetailInvoice::where('po_id', $poId)->firstOrFail();
+
+        $this->post('/deleteInvoicePO', ['poi_id' => $invoice->poi_id, 'status' => -1])->assertOk();
+
+        $invoice->refresh();
+        $this->assertSame(-1, (int) $invoice->status, 'deleteInvoicePO soft-deletes the invoice');
+
+        $po->refresh();
+        $this->assertSame(3, (int) $po->status, 'BUG: deleting a pending invoice also flips PO status via the same cekInvoice() side effect');
+    }
 }
