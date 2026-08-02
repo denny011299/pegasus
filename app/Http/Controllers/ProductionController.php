@@ -760,6 +760,73 @@ class ProductionController extends Controller
             ]);
         }
 
+        // 1b. PRE-CHECK: kalau produk punya ladder satuan (product_relations) dan produksi ini
+        // akan memicu split ke satuan yang lebih besar, pastikan baris ProductStock di satuan
+        // itu sudah ada — TANPA mutasi apa pun di sini. Kalau belum ada, jangan langsung dibuatkan
+        // otomatis; minta konfirmasi user dulu (lewat confirm_create_stock), supaya user sadar ada
+        // baris stok baru yang akan dibuat dengan stok awal 0.
+        $missingProductStockRows = [];
+        foreach ($item as $value) {
+            $v = ProductStock::where('product_variant_id', $value['product_variant_id'])
+                ->where('unit_id', $value['unit_id'])
+                ->where('status', 1)
+                ->first();
+            if (!$v) {
+                continue; // ditangani syncStock() di tahap eksekusi nanti, bukan bagian dari ladder ini
+            }
+
+            $jumlahTambah = (int) $value['pd_qty'];
+            $r = ProductRelation::where('pr_unit_id_2', '=', $v->unit_id)
+                ->where('product_variant_id', '=', $value['product_variant_id'])
+                ->where('status', '=', 1)
+                ->first();
+
+            if ($r && $jumlahTambah >= $r->pr_unit_value_2) {
+                foreach ([$r->pr_unit_id_1, $r->pr_unit_id_2] as $unitId) {
+                    $exists = ProductStock::where('product_variant_id', $value['product_variant_id'])
+                        ->where('unit_id', $unitId)
+                        ->where('status', 1)
+                        ->exists();
+
+                    if (!$exists) {
+                        $key = $value['product_variant_id'] . '_' . $unitId;
+                        if (!isset($missingProductStockRows[$key])) {
+                            $pv = ProductVariant::find($value['product_variant_id']);
+                            $productName = '-';
+                            if ($pv) {
+                                $prName = Product::find($pv->product_id);
+                                $productName = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                                if ($productName === '') {
+                                    $productName = $pv->product_variant_name ?? '-';
+                                }
+                            }
+                            $unit = Unit::find($unitId);
+                            $missingProductStockRows[$key] = [
+                                'product_variant_id' => (int) $value['product_variant_id'],
+                                'unit_id' => (int) $unitId,
+                                'product_name' => $productName,
+                                'unit_name' => $unit->unit_name ?? '-',
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        if (count($missingProductStockRows) > 0 && !$req->boolean('confirm_create_stock')) {
+            $labels = array_map(
+                fn ($m) => $m['product_name'] . ' (' . $m['unit_name'] . ')',
+                $missingProductStockRows
+            );
+            return response()->json([
+                'status' => -3,
+                'header' => 'Konfirmasi Diperlukan',
+                'message' => 'Baris stok untuk ' . implode(', ', $labels)
+                    . ' belum ada dan akan dibuat dengan stok awal 0. Lanjutkan approval?',
+                'missing_stock' => array_values($missingProductStockRows),
+            ]);
+        }
+
         DB::beginTransaction();
         try {
         // 2. PENGURANGAN BAHAN (SUPPLIES) - dengan konversi dulu
@@ -921,16 +988,22 @@ class ProductionController extends Controller
             ]);
         }
 
+        // Ditambahkan: kalau baris ProductStock tetap tidak bisa dibuat/ditemukan setelah
+        // syncStock() (mis. tidak ada gudang aktif sama sekali), dulu blok kredit di bawah
+        // ini di-skip diam-diam — production tetap berstatus Berhasil tapi stok produk jadi
+        // TIDAK pernah bertambah dan tidak ada log_stocks yang tercatat. Sekarang dikumpulkan
+        // dan di-rollback dengan pesan jelas, bukan gagal senyap.
+        $produk_gagal_stok = [];
         foreach ($item as $key => $value) {
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
-            $unitIdInputUser = $value['unit_id']; 
+            $unitIdInputUser = $value['unit_id'];
 
             // PENAMBAHAN PRODUK JADI
             $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
                 ->where("unit_id", $unitIdInputUser)
                 ->where("status", 1)
                 ->first();
-            
+
             if(!$v){
                 $pv = ProductVariant::find($value["product_variant_id"]);
                 (new ProductStock())->syncStock($pv->product_id);
@@ -952,18 +1025,12 @@ class ProductionController extends Controller
                         $tambah = floor($jumlahTambah / $r->pr_unit_value_2);
                         $sisa = $jumlahTambah%$r->pr_unit_value_2;
                         //sekarang kita tambah yang awal dulu
-                        $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                        ->where("unit_id",$r->pr_unit_id_1)
-                        ->where("status", 1)
-                        ->first();
+                        $ps_depan = $this->ensureProductStockRow((int) $value["product_variant_id"], (int) $r->pr_unit_id_1);
                         $ps_depan->ps_stock += $tambah;
                         $ps_depan->save();
 
-                        //sekarang kita tambah yang belakang 
-                        $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                        ->where("unit_id",$r->pr_unit_id_2)
-                        ->where("status", 1)
-                        ->first();
+                        //sekarang kita tambah yang belakang
+                        $ps_belakang = $this->ensureProductStockRow((int) $value["product_variant_id"], (int) $r->pr_unit_id_2);
                         $ps_belakang->ps_stock += $sisa;
                         $ps_belakang->save();
                         $insertProductLogOnce([
@@ -1008,7 +1075,31 @@ class ProductionController extends Controller
 
 
                     }
+            } else {
+                $pv = ProductVariant::find($value["product_variant_id"]);
+                $namaProduk = '-';
+                if ($pv) {
+                    $prName = Product::find($pv->product_id);
+                    $namaProduk = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                    if ($namaProduk === '') {
+                        $namaProduk = $pv->product_variant_name ?? '-';
+                    }
+                }
+                if (!in_array($namaProduk, $produk_gagal_stok, true)) {
+                    $produk_gagal_stok[] = $namaProduk;
+                }
             }
+        }
+
+        if (count($produk_gagal_stok) > 0) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal ACC',
+                'message' => 'Baris stok produk tidak dapat dibuat/ditemukan untuk: '
+                    . implode(', ', $produk_gagal_stok)
+                    . '. Pastikan minimal 1 gudang aktif tersedia, lalu coba lagi.',
+            ]);
         }
 
         (new Production())->accProduction($data);
@@ -1464,6 +1555,38 @@ class ProductionController extends Controller
         }
 
         return (int) ($pdSmallest / $bomSmallest);
+    }
+
+    /**
+     * Mirrors ensureSuppliesStockRows() below, on the finished-goods side: accProduction()'s
+     * ladder-split output crediting needs a ProductStock row at the larger unit (pr_unit_id_1) to
+     * exist before it can be credited — auto-provision it at 0 stock instead of crashing on a
+     * null lookup. Note: accDeleteProduction() has the identical unguarded lookup in its own
+     * reversal loop, not yet using this helper — see KNOWN_ISSUES.md.
+     */
+    private function ensureProductStockRow(int $productVariantId, int $unitId)
+    {
+        $ps = ProductStock::where('product_variant_id', $productVariantId)
+            ->where('unit_id', $unitId)
+            ->where('status', 1)
+            ->first();
+
+        if ($ps) {
+            return $ps;
+        }
+
+        $pv = ProductVariant::find($productVariantId);
+        (new ProductStock())->insertProductStock([
+            'product_id' => $pv->product_id,
+            'product_variant_id' => $productVariantId,
+            'unit_id' => $unitId,
+            'ps_stock' => 0,
+        ]);
+
+        return ProductStock::where('product_variant_id', $productVariantId)
+            ->where('unit_id', $unitId)
+            ->where('status', 1)
+            ->first();
     }
 
     private function ensureSuppliesStockRows(int $suppliesId)

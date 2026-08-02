@@ -2,14 +2,28 @@
 @extends('layout.mainlayout')
 @section('content')
     <style>
-        table.dataTable td:nth-child(5), table.dataTable td:nth-child(3) {
-            max-width: 250px;       /* Batasi lebar maksimal */
-            word-wrap: break-word;  /* Paksa teks turun */
-            white-space: normal;    /* Pastikan teks tidak satu baris terus */
-        }
+        /* table-layout:fixed membuat lebar kolom (di bawah) benar-benar dipaksakan — tanpa ini,
+           max-width/word-wrap di satu kolom cuma "saran" dan teks panjang tanpa jeda bisa
+           meluber/tumpang tindih ke kolom sebelah (kolom Status jadi korban paling sering,
+           karena badge-nya kecil dan gampang ketiban teks Keterangan yang membanjir). */
         #tableProduction {
             width: 100% !important;
+            table-layout: fixed;
         }
+        #tableProduction td, #tableProduction th {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+        #tableProduction td:nth-child(1), #tableProduction th:nth-child(1) { width: 10%; }
+        #tableProduction td:nth-child(2), #tableProduction th:nth-child(2) { width: 10%; }
+        #tableProduction td:nth-child(3), #tableProduction th:nth-child(3) { width: 19%; } /* Keterangan */
+        #tableProduction td:nth-child(4), #tableProduction th:nth-child(4) { width: 8%; }  /* Status */
+        #tableProduction td:nth-child(5), #tableProduction th:nth-child(5) { width: 12%; } /* Notes Pembatalan */
+        #tableProduction td:nth-child(6), #tableProduction th:nth-child(6) { width: 11%; }
+        #tableProduction td:nth-child(7), #tableProduction th:nth-child(7) { width: 11%; }
+        #tableProduction td:nth-child(8), #tableProduction th:nth-child(8) { width: 11%; }
+        #tableProduction td:nth-child(9), #tableProduction th:nth-child(9) { width: 8%; }  /* Aksi */
         #addProduction .select2-container {
             width: 100% !important;
         }
