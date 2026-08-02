@@ -1,0 +1,370 @@
+{
+    "production_code": "PR0258",
+    "database": "mypegasus",
+    "generated_at": "2026-08-02T22:55:24+07:00",
+    "formula": "estimasi_sebelum_dampak = stok_sekarang + qty_dampak_orphan",
+    "items": [
+        {
+            "supplies_id": 78,
+            "name": "BOTOL 100 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 42,
+            "stok_sekarang": 3390,
+            "estimasi_sebelum_dampak": 3432,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 72,
+            "name": "BOTOL MINYAK REM 50 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 3168,
+            "stok_sekarang": 19008,
+            "estimasi_sebelum_dampak": 22176,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 4,
+            "name": "BOTOL PET 1000 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 2076,
+            "stok_sekarang": 15764,
+            "estimasi_sebelum_dampak": 17840,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 5,
+            "name": "BOTOL PET 1500 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 4224,
+            "stok_sekarang": 10959,
+            "estimasi_sebelum_dampak": 15183,
+            "cut_at": "2026-08-01 14:37:34"
+        },
+        {
+            "supplies_id": 2,
+            "name": "BOTOL PET 400 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 716,
+            "stok_sekarang": 27766,
+            "estimasi_sebelum_dampak": 28482,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 34,
+            "name": "DOS AIR AKI HIKARI 20 X 400 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 18,
+            "stok_sekarang": 5995,
+            "estimasi_sebelum_dampak": 6013,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 27,
+            "name": "DOS AIR AKI PEGASUS 12 X 1000 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 58,
+            "stok_sekarang": 594,
+            "estimasi_sebelum_dampak": 652,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 26,
+            "name": "DOS AIR AKI PEGASUS 12 X 1500 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 102,
+            "stok_sekarang": 4919,
+            "estimasi_sebelum_dampak": 5021,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 95,
+            "name": "DOS AIR ZUUR HIKARI 12 X 1000 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 115,
+            "stok_sekarang": 7295,
+            "estimasi_sebelum_dampak": 7410,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 94,
+            "name": "DOS AIR ZUUR HIKARI 12 X 1500 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 250,
+            "stok_sekarang": 2639,
+            "estimasi_sebelum_dampak": 2889,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 35,
+            "name": "DOS AIR ZUUR HIKARI 20 X 400 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 16,
+            "stok_sekarang": 3110,
+            "estimasi_sebelum_dampak": 3126,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 69,
+            "name": "DOS HIKARI SHIELD 24 X 50 GR",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 3,
+            "stok_sekarang": 1477,
+            "estimasi_sebelum_dampak": 1480,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 36,
+            "name": "DOS MINYAK REM HIKARI 48 X 50 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 66,
+            "stok_sekarang": 1834,
+            "estimasi_sebelum_dampak": 1900,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 10,
+            "name": "DOS RADIATOR COOLANT HIKARI 4 X 5 LTR",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 246,
+            "stok_sekarang": 2694,
+            "estimasi_sebelum_dampak": 2940,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 11,
+            "name": "DOS RADIATOR COOLANT PEGASUS 12 X 1 LITER",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 88,
+            "stok_sekarang": 3218,
+            "estimasi_sebelum_dampak": 3306,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 90,
+            "name": "DOS SILICONE \/ TYRE \/ SHAMPOO 30 X 400 ML",
+            "unit_id": 7,
+            "unit": "DOS",
+            "qty_dampak": 1,
+            "stok_sekarang": 2453,
+            "estimasi_sebelum_dampak": 2454,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 12,
+            "name": "JERIGEN 1 LITER",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 1056,
+            "stok_sekarang": 25788,
+            "estimasi_sebelum_dampak": 26844,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 54,
+            "name": "STICKER AIR AKI HIKARI  (EX PPN )",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 360,
+            "stok_sekarang": 122530,
+            "estimasi_sebelum_dampak": 122890,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 52,
+            "name": "STICKER AIR AKI PEGASUS  ( EX PPN )",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 1920,
+            "stok_sekarang": 163562,
+            "estimasi_sebelum_dampak": 165482,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 55,
+            "name": "STICKER AIR ZUUR HIKARI (EX PPN)",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 4700,
+            "stok_sekarang": 106962,
+            "estimasi_sebelum_dampak": 111662,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 57,
+            "name": "STICKER MINYAK REM HIKARI 50 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 3168,
+            "stok_sekarang": 61508,
+            "estimasi_sebelum_dampak": 64676,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 49,
+            "name": "STICKER RADIATOR COOLANT HIKARI 5 LTR SET ( EX PPN )",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 985,
+            "stok_sekarang": 40236,
+            "estimasi_sebelum_dampak": 41221,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 50,
+            "name": "STICKER RADIATOR COOLANT PEGASUS 1 LTR SET (EX PPN)",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 1056,
+            "stok_sekarang": 49973,
+            "estimasi_sebelum_dampak": 51029,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 147,
+            "name": "STICKER SILICONE OIL",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 30,
+            "stok_sekarang": 4290,
+            "estimasi_sebelum_dampak": 4320,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 67,
+            "name": "STICKER SILICONE PEGASUS",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 48,
+            "stok_sekarang": 9796,
+            "estimasi_sebelum_dampak": 9844,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 22,
+            "name": "SUMPEL DATAR JERIGEN 1 LITER",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 1056,
+            "stok_sekarang": 33653,
+            "estimasi_sebelum_dampak": 34709,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 42,
+            "name": "SUMPEL DATAR JERIGEN 5 LTR",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 985,
+            "stok_sekarang": 11506,
+            "estimasi_sebelum_dampak": 12491,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 73,
+            "name": "SUMPEL MINYAK REM 50 ML\/1 LITER",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 3168,
+            "stok_sekarang": 17832,
+            "estimasi_sebelum_dampak": 21000,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 6,
+            "name": "Tutup Biru",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 2316,
+            "stok_sekarang": 81019,
+            "estimasi_sebelum_dampak": 83335,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 79,
+            "name": "TUTUP BIRU BOTOL 100 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 42,
+            "stok_sekarang": 17882,
+            "estimasi_sebelum_dampak": 17924,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 23,
+            "name": "TUTUP JERIGEN 1 LTR HIJAU",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 1056,
+            "stok_sekarang": 26165,
+            "estimasi_sebelum_dampak": 27221,
+            "cut_at": "2026-08-01 14:37:36"
+        },
+        {
+            "supplies_id": 38,
+            "name": "TUTUP JERIGEN HIJAU 5 LITER",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 985,
+            "stok_sekarang": 4992,
+            "estimasi_sebelum_dampak": 5977,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 7,
+            "name": "Tutup Merah",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 4700,
+            "stok_sekarang": 66904,
+            "estimasi_sebelum_dampak": 71604,
+            "cut_at": "2026-08-01 14:37:34"
+        },
+        {
+            "supplies_id": 75,
+            "name": "TUTUP MERAH BOTOL 50 ML",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 3168,
+            "stok_sekarang": 16412,
+            "estimasi_sebelum_dampak": 19580,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 13,
+            "name": "TUTUP TUMPUL BIRU",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 2280,
+            "stok_sekarang": 65032,
+            "estimasi_sebelum_dampak": 67312,
+            "cut_at": "2026-08-01 14:37:35"
+        },
+        {
+            "supplies_id": 14,
+            "name": "TUTUP TUMPUL MERAH",
+            "unit_id": 9,
+            "unit": "pcs",
+            "qty_dampak": 320,
+            "stok_sekarang": 95718,
+            "estimasi_sebelum_dampak": 96038,
+            "cut_at": "2026-08-01 14:37:35"
+        }
+    ],
+    "item_count": 36,
+    "sum_qty_all_units": 44588
+}
