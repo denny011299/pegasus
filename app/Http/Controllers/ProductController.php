@@ -144,6 +144,65 @@ class ProductController extends Controller
         return $data;
     }
 
+    /**
+     * Precheck (no mutation) shared by insertProduct()/updateProduct(): SKU must be unique
+     * among ALL active variants (any product — a barcode scan must never be ambiguous), and
+     * variant name must be unique among active variants of the SAME product (a product-owner
+     * choice; different products may reuse the same variant name, e.g. "Merah"). Checks both
+     * within the submitted batch and against existing rows. $productId is null for a brand-new
+     * product (nothing can exist for it yet, so only within-batch name dupes are checked).
+     */
+    private function validateVariantUniqueness(array $variants, ?int $productId): ?string
+    {
+        $seenSku = [];
+        $seenName = [];
+
+        foreach ($variants as $v) {
+            $sku = trim((string) ($v['variant_sku'] ?? ''));
+            $name = trim((string) ($v['variant_name'] ?? ''));
+            if (strtolower($name) === 'standar') {
+                $name = '';
+            }
+            $excludeId = !empty($v['product_variant_id']) ? (int) $v['product_variant_id'] : null;
+
+            if ($sku !== '') {
+                if (isset($seenSku[$sku])) {
+                    return "SKU \"{$sku}\" dipakai lebih dari satu varian pada penyimpanan ini.";
+                }
+                $seenSku[$sku] = true;
+
+                $q = ProductVariant::where('product_variant_sku', $sku)->where('status', 1);
+                if ($excludeId) {
+                    $q->where('product_variant_id', '<>', $excludeId);
+                }
+                if ($q->exists()) {
+                    return "SKU \"{$sku}\" sudah dipakai produk lain.";
+                }
+            }
+
+            if ($name !== '') {
+                if (isset($seenName[$name])) {
+                    return "Nama varian \"{$name}\" dipakai lebih dari satu kali pada produk ini.";
+                }
+                $seenName[$name] = true;
+
+                if ($productId) {
+                    $q = ProductVariant::where('product_id', $productId)
+                        ->where('product_variant_name', $name)
+                        ->where('status', 1);
+                    if ($excludeId) {
+                        $q->where('product_variant_id', '<>', $excludeId);
+                    }
+                    if ($q->exists()) {
+                        return "Nama varian \"{$name}\" sudah dipakai varian lain pada produk ini.";
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     function insertProduct(Request $req)
     {
         $data = $req->all();
@@ -159,9 +218,15 @@ class ProductController extends Controller
         //     ]);
         // }
 
-        $id = (new Product())->insertProduct($data);
         $variant = json_decode($data['product_variant'], true);
         $relasi = json_decode($data['product_relasi'], true);
+
+        $uniquenessError = $this->validateVariantUniqueness($variant, null);
+        if ($uniquenessError) {
+            return response()->json(['message' => $uniquenessError]);
+        }
+
+        $id = (new Product())->insertProduct($data);
         foreach ($variant as $key => $value) {
             $value['product_id'] = $id;
             $variant[$key]["product_variant_id"] = (new ProductVariant())->insertProductVariant($value);
@@ -182,6 +247,12 @@ class ProductController extends Controller
         $data = $req->all();
         $id = [];
         $variant = json_decode($data['product_variant'], true);
+
+        $uniquenessError = $this->validateVariantUniqueness($variant, (int) $data['product_id']);
+        if ($uniquenessError) {
+            return response()->json(['message' => $uniquenessError]);
+        }
+
         (new Product())->updateProduct($data);
         foreach ($variant as $key => $value) {
             $value['product_id'] = $data["product_id"];
