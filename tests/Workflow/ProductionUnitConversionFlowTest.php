@@ -488,4 +488,148 @@ class ProductionUnitConversionFlowTest extends TestCase
             'log_jumlah' => 6,
         ]);
     }
+
+    /**
+     * Every test above (and the original pilot) records production output in the product's own
+     * SMALLEST unit (Piece) and lets the ladder split it upward. This exercises the other
+     * direction: recording production directly in an already-"converted" (non-base) unit — the
+     * ladder logic (`ProductionController.php:956-1004`) keys off whatever unit the user actually
+     * submitted (`$unitIdInputUser`), not a hardcoded "smallest" unit, so it applies exactly the
+     * same one-level split relative to THAT unit's own next-level-up relation.
+     *
+     * Real unit id used here: 25 = Sak (one level above DOS in this fixture's own ladder — no
+     * relation to Piece is defined at all, so DOS is this BOM's own smallest recognized unit).
+     */
+    public function test_producing_directly_in_an_already_converted_unit_still_applies_the_output_ladder_one_level_up(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $dos = 7;
+        $sak = 25;
+
+        $category = new Category();
+        $category->category_name = 'Output Ladder From Intermediate Unit Category';
+        $category->status = 1;
+        $category->save();
+
+        $product = new Product();
+        $product->product_name = 'Output Ladder From Intermediate Unit Product';
+        $product->category_id = $category->category_id;
+        $product->product_unit = json_encode([$dos]);
+        $product->unit_id = $dos;
+        $product->status = 1;
+        $product->save();
+
+        $variant = new ProductVariant();
+        $variant->product_id = $product->product_id;
+        $variant->product_variant_name = 'Output Ladder From Intermediate Unit Variant';
+        $variant->product_variant_sku = 'WF-UCONV-INTERMEDIATE-'.uniqid();
+        $variant->product_variant_price = 0;
+        $variant->status = 1;
+        $variant->save();
+
+        $dosProductStock = new ProductStock();
+        $dosProductStock->product_id = $product->product_id;
+        $dosProductStock->product_variant_id = $variant->product_variant_id;
+        $dosProductStock->unit_id = $dos;
+        $dosProductStock->warehouse_id = self::WAREHOUSE_ID;
+        $dosProductStock->ps_stock = 0;
+        $dosProductStock->status = 1;
+        $dosProductStock->save();
+
+        $sakProductStock = new ProductStock();
+        $sakProductStock->product_id = $product->product_id;
+        $sakProductStock->product_variant_id = $variant->product_variant_id;
+        $sakProductStock->unit_id = $sak;
+        $sakProductStock->warehouse_id = self::WAREHOUSE_ID;
+        $sakProductStock->ps_stock = 0;
+        $sakProductStock->status = 1;
+        $sakProductStock->save();
+
+        $productRelation = new ProductRelation();
+        $productRelation->product_variant_id = $variant->product_variant_id;
+        $productRelation->pr_unit_id_1 = $sak; // larger unit
+        $productRelation->pr_unit_value_1 = 1;
+        $productRelation->pr_unit_id_2 = $dos; // smaller unit — this BOM's own recorded unit
+        $productRelation->pr_unit_value_2 = 2; // 1 Sak = 2 DOS
+        $productRelation->pr_default = 0;
+        $productRelation->status = 1;
+        $productRelation->save();
+
+        $supplies = new Supplies();
+        $supplies->supplies_name = 'Output Ladder Intermediate Unit Ingredient';
+        $supplies->supplies_unit = json_encode([$dos]);
+        $supplies->supplies_default_unit = $dos;
+        $supplies->status = 1;
+        $supplies->save();
+
+        $suppliesStock = new SuppliesStock();
+        $suppliesStock->supplies_id = $supplies->supplies_id;
+        $suppliesStock->unit_id = $dos;
+        $suppliesStock->warehouse_id = self::WAREHOUSE_ID;
+        $suppliesStock->ss_stock = 1000;
+        $suppliesStock->status = 1;
+        $suppliesStock->save();
+
+        $bom = new Bom();
+        $bom->product_id = $variant->product_variant_id;
+        $bom->bom_qty = 1;
+        $bom->unit_id = $dos;
+        $bom->status = 1;
+        $bom->save();
+
+        $bomDetail = new BomDetail();
+        $bomDetail->bom_id = $bom->bom_id;
+        $bomDetail->supplies_id = $supplies->supplies_id;
+        $bomDetail->bom_detail_qty = 1;
+        $bomDetail->unit_id = $dos;
+        $bomDetail->status = 1;
+        $bomDetail->save();
+
+        $pdQty = 5; // recorded directly in DOS: 5 >= the Sak ratio of 2, with a remainder
+
+        $insertResponse = $this->post('/insertProduction', [
+            'production_date' => now()->toDateString(),
+            'production_desc' => 'Output ladder from intermediate unit test',
+            'detail' => json_encode([[
+                'bom_id' => $bom->bom_id,
+                'product_variant_id' => $variant->product_variant_id,
+                'pd_qty' => $pdQty,
+                'unit_id' => $dos,
+            ]]),
+            'list_bahan' => json_encode([[
+                'supplies_id' => $supplies->supplies_id,
+                'bom_detail_qty' => 1,
+                'unit_id' => $dos,
+            ]]),
+        ]);
+        $insertResponse->assertStatus(200);
+        $production = Production::orderByDesc('production_id')->firstOrFail();
+
+        $accResponse = $this->post('/accProduction', ['production_id' => $production->production_id]);
+        $accResponse->assertStatus(200);
+
+        $production->refresh();
+        $this->assertSame(2, (int) $production->status);
+
+        $dosProductStock->refresh();
+        $sakProductStock->refresh();
+        $this->assertSame(2, $sakProductStock->ps_stock, 'floor(5/2)=2 Sak credited, even though production was recorded directly in DOS, not the base unit');
+        $this->assertSame(1, $dosProductStock->ps_stock, '5 mod 2 = 1 DOS remainder stays at the recorded unit');
+
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 1,
+            'log_category' => 1,
+            'log_item_id' => $variant->product_variant_id,
+            'unit_id' => $sak,
+            'log_jumlah' => 2,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 1,
+            'log_category' => 1,
+            'log_item_id' => $variant->product_variant_id,
+            'unit_id' => $dos,
+            'log_jumlah' => 1,
+        ]);
+    }
 }
