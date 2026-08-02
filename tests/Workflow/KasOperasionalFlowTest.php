@@ -19,6 +19,14 @@ use Tests\TestCase;
  * deferred by user decision, characterized in
  * tests/Regression/CashAdminOperasionalMissingCaTypeTest.php instead of here. See
  * cdocs/testing/KNOWN_ISSUES.md.
+ *
+ * The negative-`ca_nominal` sign-flip branches (added 2026-08-02) were the one piece of this
+ * flow's own math never exercised: unlike `CashArmada`/`CashSales`, `cash_admins.ca_nominal`
+ * itself is stored RAW (whatever sign the request sends, untouched) — only the LINKED `Cash` row's
+ * `cash_nominal` gets normalized to a positive value, with `cash_type` flipped based on the sign.
+ * `acceptCashAdmin` never reads `ca_nominal`'s sign at all (pure status flip, no balance
+ * calculation here unlike CashArmada/CashSales), so there's no double-negation trick to verify —
+ * just the insert-time Cash-row normalization.
  */
 class KasOperasionalFlowTest extends TestCase
 {
@@ -87,5 +95,51 @@ class KasOperasionalFlowTest extends TestCase
         $cash->refresh();
         $this->assertSame(3, (int) $cashAdmin->status);
         $this->assertSame(3, (int) $cash->status, 'declining a saldo entry must ALSO decline the linked Cash row');
+    }
+
+    public function test_negative_nominal_pengajuan_dana_flips_the_linked_cash_row_type_but_keeps_ca_nominal_raw(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $nominal = -500000;
+
+        $this->post('/insertCashAdmin', [
+            'staff_id' => $this->staffId(),
+            'jenis_input' => 'saldo',
+            'oc_transaksi' => 1, // pengajuan dana
+            'ca_nominal' => $nominal,
+            'ca_notes' => 'Workflow test negative pengajuan dana',
+        ])->assertStatus(200);
+
+        $cashAdmin = CashAdmin::orderByDesc('ca_id')->firstOrFail();
+        $this->assertSame($nominal, (int) $cashAdmin->ca_nominal, 'ca_nominal is stored RAW, unlike cash_admins\' linked Cash row');
+
+        $cash = Cash::find($cashAdmin->cash_id);
+        $this->assertNotNull($cash);
+        $this->assertSame(1, (int) $cash->cash_type, 'a negative ca_nominal flips oc_transaksi==1 from cash_type 3 to 1');
+        $this->assertSame(-$nominal, (int) $cash->cash_nominal, 'the linked Cash row normalizes cash_nominal to a positive value');
+    }
+
+    public function test_negative_nominal_pengembalian_dana_flips_the_linked_cash_row_type_but_keeps_ca_nominal_raw(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $nominal = -250000;
+
+        $this->post('/insertCashAdmin', [
+            'staff_id' => $this->staffId(),
+            'jenis_input' => 'saldo',
+            'oc_transaksi' => 2, // pengembalian dana
+            'ca_nominal' => $nominal,
+            'ca_notes' => 'Workflow test negative pengembalian dana',
+        ])->assertStatus(200);
+
+        $cashAdmin = CashAdmin::orderByDesc('ca_id')->firstOrFail();
+        $this->assertSame($nominal, (int) $cashAdmin->ca_nominal, 'ca_nominal is stored RAW, unlike cash_admins\' linked Cash row');
+
+        $cash = Cash::find($cashAdmin->cash_id);
+        $this->assertNotNull($cash);
+        $this->assertSame(2, (int) $cash->cash_type, 'a negative ca_nominal flips oc_transaksi==2 from cash_type 1 to 2');
+        $this->assertSame(-$nominal, (int) $cash->cash_nominal, 'the linked Cash row normalizes cash_nominal to a positive value');
     }
 }
