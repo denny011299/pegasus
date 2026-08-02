@@ -119,7 +119,7 @@
                                     <div class="accordion-body">
                                         
                                         <div class="row g-3">
-                                            <div class="col-6 col-md-4">
+                                            <div class="col-12 col-sm-6 col-md-4">
                                                 <div class="input-block">
                                                     <label>Nama Supplier</label>
                                                     <select id="po_supplier" class="form-control fill" disabled >
@@ -127,32 +127,32 @@
                                                     </select>
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-md-4">
+                                            <div class="col-12 col-sm-6 col-md-4">
                                                 <div class="input-block">
                                                     <label>Nomor PO</label>
                                                     <input type="text" class="form-control fill" value="{{ $data['po_number'] }}" id="po_number" disabled>
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-md-4">
+                                            <div class="col-12 col-sm-6 col-md-4">
                                                 <div class="input-block">
                                                     <label>Nomor Invoice</label>
                                                     <input type="text" class="form-control fill" value="{{ $data['poi_code'] }}" id="po_number" disabled>
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-md-4">
+                                            <div class="col-12 col-sm-6 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Tanggal PO</label>
                                                     <input type="text" class="form-control fill" id="po_date" disabled>
                                                 </div>
                                             </div>
-                                            <div class="col-6 col-md-4">
+                                            <div class="col-12 col-sm-6 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Jatuh Tempo</label>
                                                     <input type="text" class="form-control fill" id="poi_due" disabled>
                                                 </div>
                                             </div>
 
-                                            <div class="col-6 col-md-4">
+                                            <div class="col-12 col-sm-6 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Status</label>
                                                     <select id="po_status" class="form-control fill" disabled>

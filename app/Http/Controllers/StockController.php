@@ -305,7 +305,11 @@ class StockController extends Controller
             abort(404);
         }
         $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
-        $param["detail"] = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
+        $rawDetail = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
+        $param["detail"] = collect($rawDetail)
+            ->sortBy(fn($item) => strtolower((data_get($item, 'pr_name') ?? '') . '|' . (data_get($item, 'product_variant_name') ?? '')))
+            ->values()
+            ->all();
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
@@ -536,7 +540,11 @@ class StockController extends Controller
             abort(404);
         }
         $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
-        $param["detail"] = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
+        $rawDetailBahan = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
+        $param["detail"] = collect($rawDetailBahan)
+            ->sortBy(fn($item) => strtolower(data_get($item, 'supplies_name') ?? ''))
+            ->values()
+            ->all();
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";

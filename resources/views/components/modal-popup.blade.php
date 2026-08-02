@@ -2784,7 +2784,14 @@
                                     <div class="table-scroll overflow-x-auto">
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
                                             <thead>
-                                                <th style="width:15%">Tanggal</th>
+                                                <th style="width:15%">
+                                                    Tanggal
+                                                    <i class="fa fa-info-circle text-muted ms-1"
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="Tanggal aksi (persetujuan/pembatalan), bukan tanggal pengajuan/pembuatan dokumen">
+                                                    </i>
+                                                </th>
                                                 <th style="width:15%">Staff</th>
                                                 <th style="width:15%">No. Transaksi</th>
                                                 <th style="width:25%">Catatan</th>
@@ -2855,7 +2862,14 @@
                                     <div class="table-scroll overflow-x-auto">
                                         <table class="table table-center" id="tableLog" style="min-height: 15vh">
                                             <thead>
-                                                <th style="width: 15%">Tanggal</th>
+                                                <th style="width: 15%">
+                                                    Tanggal
+                                                    <i class="fa fa-info-circle text-muted ms-1"
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top"
+                                                        title="Tanggal aksi (persetujuan/pembatalan), bukan tanggal pengajuan/pembuatan dokumen">
+                                                    </i>
+                                                </th>
                                                 <th style="width: 15%">Staff</th>
                                                 <th style="width: 15%">No. Transaksi</th>
                                                 <th style="width: 25%">Catatan</th>
