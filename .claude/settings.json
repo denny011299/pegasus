@@ -8,7 +8,19 @@
       "Bash(grep -rn '::create\\($request\\\\|::create\\(request\\(\\\\|->fill\\($request\\\\|::create\\($data\\)\\\\b' app/Http/Controllers/)",
       "Bash(xargs -I{} sh -c 'echo ==={}===; cat \"{}\"')",
       "Bash(echo \"exit:$?\")",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(xargs -I{} sh -c 'echo \"=== {} ===\"; grep -n \"variant_id\\\\|Schema::create\" {}')",
+      "Bash(xargs -I{} sh -c 'grep -H \"Schema::create\\\\|unit_id\" {}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(len\\(d\\)\\); [print\\(x\\) for x in d]\")",
+      "Bash(xargs cat)",
+      "Bash(awk 'NR>=338 && NR<=384 {print NR\": \"$0}' routes/web.php)",
+      "Bash(grep -n 'warehouse_id\\\\|class SuppliesStock\\\\|protected $table\\\\|protected $fillable' app/Models/SuppliesStock.php)",
+      "Bash(awk 'NR==634,NR==1385' app/Http/Controllers/StockController.php)",
+      "Bash(python3 -c ' *)",
+      "Bash(xargs -I{} sh -c 'echo ===={}====; cat {}')",
+      "Bash(APP_ENV=testing php artisan tinker '--execute= *)",
+      "Bash(awk '/private function dashboardWarnings/,/^    }/' app/Http/Controllers/ReportController.php)"
     ]
   }
 }
