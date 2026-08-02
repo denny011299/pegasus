@@ -767,6 +767,9 @@ class ReportController extends Controller
     }
 
     // Report Petty Cash
+    // DEPRECATED (2026-08-02): Petty Cash is no longer used. insertPettyCash() below crashes on
+    // every call (petty_cashes is missing columns the model writes to) — not fixed, not tested,
+    // by explicit decision. See KNOWN_ISSUES.md.
     public function PettyCash(){
         return view('Backoffice.Reports.Petty_Cash');
     }
