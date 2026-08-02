@@ -208,6 +208,34 @@ class CashSalesFlowTest extends TestCase
         );
     }
 
+    public function test_saldo_aksi_2_with_a_negative_nominal_flips_the_linked_cash_row_type(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $staff = $this->pickStaff();
+        $staff->staff_saldo = 1000000;
+        $staff->save();
+        $nominal = -300000;
+
+        $csId = $this->insertSaldoCashSales($staff, csAksi: '2', csNominal: $nominal);
+
+        $cs = CashSales::findOrFail($csId);
+        $this->assertSame($nominal, (int) $cs->cs_nominal, 'cs_nominal is stored RAW, same as CashAdmin\'s ca_nominal');
+
+        $cash = Cash::find($cs->cash_id);
+        $this->assertSame(1, (int) $cash->cash_type, 'a negative cs_nominal flips aksi=="2" from cash_type 3 to 1');
+        $this->assertSame(-$nominal, (int) $cash->cash_nominal, 'the linked Cash row normalizes cash_nominal to a positive value, same pattern as CashAdmin/CashArmada');
+
+        $this->post('/acceptCashSales', ['cs_id' => $csId])->assertStatus(200);
+
+        $staff->refresh();
+        $this->assertSame(
+            1000000 - $nominal,
+            (int) $staff->staff_saldo,
+            'staff_saldo -= cs_nominal with a negative cs_nominal is a double negation: this INCREASES staff_saldo, the same sign trick as CashArmada\'s saldo branch'
+        );
+    }
+
     public function test_saldo_aksi_3_has_an_oppositely_typed_cash_row_but_the_identical_balance_effect_as_aksi_2(): void
     {
         $this->actingAsSuperAdminStaff();
