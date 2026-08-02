@@ -272,4 +272,76 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
             'BUG: the Tt\'s supplier_id reflects only the LAST invoice processed (supplier B), despite supplier A\'s PO being grouped in too'
         );
     }
+
+    /**
+     * `insertTt`/`updateTt` (`SupplierController.php:512-520`) are thin, fully-functional
+     * pass-throughs to the model — but confirmed 2026-08-02: no frontend JS anywhere calls
+     * `/insertTt` or `/updateTt` (grepped `public/Custom_js/`). Every real Tt in this app is
+     * created via `generateTandaTerimaInvoice()` instead. Not a bug (the code works correctly,
+     * unlike the genuinely-broken `pelunasanPurchaseOrder`/`updateProduction` dead-code findings)
+     * — just a orphaned-from-the-UI manual CRUD path, plausibly meant for a direct-entry use case
+     * that was never wired up. Covered here for completeness since it's still a real, reachable
+     * endpoint.
+     */
+    public function test_insert_tt_creates_a_row_directly_without_going_through_generate(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $supplier = Supplier::where('status', 1)->whereNotNull('bank_id')->firstOrFail();
+
+        $response = $this->post('/insertTt', [
+            'tt_date' => now()->toDateString(),
+            'tt_kode' => 'MANUAL-TT-0001',
+            'tt_total' => 50000,
+            'supplier_id' => $supplier->supplier_id,
+            'staff_name' => 'Workflow Test Staff',
+        ]);
+        $response->assertStatus(200);
+        $ttId = (int) $response->getContent();
+
+        $tt = purchase_order_tt::findOrFail($ttId);
+        $this->assertSame('MANUAL-TT-0001', $tt->tt_kode);
+        $this->assertEquals(50000, $tt->tt_total);
+        $this->assertSame($supplier->supplier_id, (int) $tt->supplier_id);
+        $this->assertSame(1, (int) $tt->status, 'a manually-inserted Tt defaults to pending, same as a generated one');
+    }
+
+    public function test_update_tt_edits_an_existing_row_and_returns_null_for_an_invalid_id(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $supplier = Supplier::where('status', 1)->whereNotNull('bank_id')->firstOrFail();
+
+        $ttId = (int) $this->post('/insertTt', [
+            'tt_date' => now()->toDateString(),
+            'tt_kode' => 'MANUAL-TT-0002',
+            'tt_total' => 10000,
+            'supplier_id' => $supplier->supplier_id,
+            'staff_name' => 'Workflow Test Staff',
+        ])->getContent();
+
+        $this->post('/updateTt', [
+            'tt_id' => $ttId,
+            'tt_date' => now()->toDateString(),
+            'tt_kode' => 'MANUAL-TT-0002-EDITED',
+            'tt_total' => 20000,
+            'staff_name' => 'Workflow Test Staff (edited)',
+        ])->assertStatus(200);
+
+        $tt = purchase_order_tt::findOrFail($ttId);
+        $this->assertSame('MANUAL-TT-0002-EDITED', $tt->tt_kode);
+        $this->assertEquals(20000, $tt->tt_total);
+
+        // updateTt has its own null-guard, unlike deleteInvoicePO — an invalid id returns null
+        // cleanly instead of crashing.
+        $response = $this->post('/updateTt', [
+            'tt_id' => 999999,
+            'tt_date' => now()->toDateString(),
+            'tt_kode' => 'DOES-NOT-EXIST',
+            'tt_total' => 1,
+            'staff_name' => 'Nobody',
+        ]);
+        $response->assertStatus(200);
+        $this->assertSame('', $response->getContent(), 'updateTt returns null for a missing row, rendered as an empty body — not a crash');
+    }
 }
