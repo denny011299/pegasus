@@ -50,9 +50,10 @@ class SalesOrderDeliveryDetail extends Model
             ->where("unit_id", "=", $data["unit_id"])
             ->where("status", "=", 1)
             ->first();
-            dd($s);
-        $s->ps_stock -= $data["sdod_qty"];
-        $s->save();
+        if ($s) {
+            $s->ps_stock -= $data["sdod_qty"];
+            $s->save();
+        }
 
         return $t->sdod_id;
     }
