@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Recalculate Stok Bahan — PR0258</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  body { font-family: Segoe UI, Arial, sans-serif; font-size: 12px; color: #111; margin: 24px; }
+  h1 { font-size: 18px; margin: 0 0 6px; }
+  .meta { color: #444; margin-bottom: 8px; }
+  .note { background: #fff8e1; border: 1px solid #ffe082; padding: 8px 10px; margin: 10px 0 16px; border-radius: 6px; }
+  .actions { margin-bottom: 14px; }
+  .actions button { padding: 8px 14px; margin-right: 8px; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: top; }
+  th { background: #e8eef8; text-align: left; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.unit { font-weight: 600; text-align: center; }
+  td.impact { background: #fff3cd; font-weight: 700; text-align: right; }
+  td.before { background: #e8f5e9; font-weight: 700; text-align: right; }
+  tfoot td { font-weight: 700; background: #f5f5f5; }
+  @media print {
+    .actions { display: none; }
+    body { margin: 0; }
+  }
+</style>
+</head>
+<body>
+  <div class="actions">
+    <button onclick="window.print()">Print / Simpan PDF</button>
+  </div>
+  <h1>Recalculate Stok Bahan — Dampak Bug Produksi Pending (PR0258)</h1>
+  <div class="meta">DB: mypegasus · Generated: 2026-08-02T22:55:24+07:00 · Item: 36</div>
+  <div class="note">
+    <strong>Rumus:</strong> Estimasi Sebelum Dampak = Stok Sekarang + Qty Dampak Orphan<br>
+    Satuan mengikuti unit log potongan / <code>supplies_stocks</code>. Jangan auto-restore tanpa keputusan bisnis.
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>ID</th>
+        <th>Nama Bahan Mentah</th>
+        <th>Satuan</th>
+        <th>Nama Satuan</th>
+        <th>Qty Dampak</th>
+        <th>Stok Sekarang</th>
+        <th>Estimasi Sebelum Dampak</th>
+        <th>Waktu Potongan</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="num">1</td>
+        <td class="num">78</td>
+        <td>BOTOL 100 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">42</td>
+        <td class="num">3.390</td>
+        <td class="before">3.432</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">2</td>
+        <td class="num">72</td>
+        <td>BOTOL MINYAK REM 50 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">3.168</td>
+        <td class="num">19.008</td>
+        <td class="before">22.176</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">3</td>
+        <td class="num">4</td>
+        <td>BOTOL PET 1000 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">2.076</td>
+        <td class="num">15.764</td>
+        <td class="before">17.840</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">4</td>
+        <td class="num">5</td>
+        <td>BOTOL PET 1500 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">4.224</td>
+        <td class="num">10.959</td>
+        <td class="before">15.183</td>
+        <td>2026-08-01 14:37:34</td>
+      </tr>
+      <tr>
+        <td class="num">5</td>
+        <td class="num">2</td>
+        <td>BOTOL PET 400 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">716</td>
+        <td class="num">27.766</td>
+        <td class="before">28.482</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">6</td>
+        <td class="num">34</td>
+        <td>DOS AIR AKI HIKARI 20 X 400 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">18</td>
+        <td class="num">5.995</td>
+        <td class="before">6.013</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">7</td>
+        <td class="num">27</td>
+        <td>DOS AIR AKI PEGASUS 12 X 1000 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">58</td>
+        <td class="num">594</td>
+        <td class="before">652</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">8</td>
+        <td class="num">26</td>
+        <td>DOS AIR AKI PEGASUS 12 X 1500 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">102</td>
+        <td class="num">4.919</td>
+        <td class="before">5.021</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">9</td>
+        <td class="num">95</td>
+        <td>DOS AIR ZUUR HIKARI 12 X 1000 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">115</td>
+        <td class="num">7.295</td>
+        <td class="before">7.410</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">10</td>
+        <td class="num">94</td>
+        <td>DOS AIR ZUUR HIKARI 12 X 1500 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">250</td>
+        <td class="num">2.639</td>
+        <td class="before">2.889</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">11</td>
+        <td class="num">35</td>
+        <td>DOS AIR ZUUR HIKARI 20 X 400 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">16</td>
+        <td class="num">3.110</td>
+        <td class="before">3.126</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">12</td>
+        <td class="num">69</td>
+        <td>DOS HIKARI SHIELD 24 X 50 GR</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">3</td>
+        <td class="num">1.477</td>
+        <td class="before">1.480</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">13</td>
+        <td class="num">36</td>
+        <td>DOS MINYAK REM HIKARI 48 X 50 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">66</td>
+        <td class="num">1.834</td>
+        <td class="before">1.900</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">14</td>
+        <td class="num">10</td>
+        <td>DOS RADIATOR COOLANT HIKARI 4 X 5 LTR</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">246</td>
+        <td class="num">2.694</td>
+        <td class="before">2.940</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">15</td>
+        <td class="num">11</td>
+        <td>DOS RADIATOR COOLANT PEGASUS 12 X 1 LITER</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">88</td>
+        <td class="num">3.218</td>
+        <td class="before">3.306</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">16</td>
+        <td class="num">90</td>
+        <td>DOS SILICONE / TYRE / SHAMPOO 30 X 400 ML</td>
+        <td class="unit">DOS</td>
+        <td>DOS</td>
+        <td class="impact">1</td>
+        <td class="num">2.453</td>
+        <td class="before">2.454</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">17</td>
+        <td class="num">12</td>
+        <td>JERIGEN 1 LITER</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">1.056</td>
+        <td class="num">25.788</td>
+        <td class="before">26.844</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">18</td>
+        <td class="num">54</td>
+        <td>STICKER AIR AKI HIKARI  (EX PPN )</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">360</td>
+        <td class="num">122.530</td>
+        <td class="before">122.890</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">19</td>
+        <td class="num">52</td>
+        <td>STICKER AIR AKI PEGASUS  ( EX PPN )</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">1.920</td>
+        <td class="num">163.562</td>
+        <td class="before">165.482</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">20</td>
+        <td class="num">55</td>
+        <td>STICKER AIR ZUUR HIKARI (EX PPN)</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">4.700</td>
+        <td class="num">106.962</td>
+        <td class="before">111.662</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">21</td>
+        <td class="num">57</td>
+        <td>STICKER MINYAK REM HIKARI 50 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">3.168</td>
+        <td class="num">61.508</td>
+        <td class="before">64.676</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">22</td>
+        <td class="num">49</td>
+        <td>STICKER RADIATOR COOLANT HIKARI 5 LTR SET ( EX PPN )</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">985</td>
+        <td class="num">40.236</td>
+        <td class="before">41.221</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">23</td>
+        <td class="num">50</td>
+        <td>STICKER RADIATOR COOLANT PEGASUS 1 LTR SET (EX PPN)</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">1.056</td>
+        <td class="num">49.973</td>
+        <td class="before">51.029</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">24</td>
+        <td class="num">147</td>
+        <td>STICKER SILICONE OIL</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">30</td>
+        <td class="num">4.290</td>
+        <td class="before">4.320</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">25</td>
+        <td class="num">67</td>
+        <td>STICKER SILICONE PEGASUS</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">48</td>
+        <td class="num">9.796</td>
+        <td class="before">9.844</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">26</td>
+        <td class="num">22</td>
+        <td>SUMPEL DATAR JERIGEN 1 LITER</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">1.056</td>
+        <td class="num">33.653</td>
+        <td class="before">34.709</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">27</td>
+        <td class="num">42</td>
+        <td>SUMPEL DATAR JERIGEN 5 LTR</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">985</td>
+        <td class="num">11.506</td>
+        <td class="before">12.491</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">28</td>
+        <td class="num">73</td>
+        <td>SUMPEL MINYAK REM 50 ML/1 LITER</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">3.168</td>
+        <td class="num">17.832</td>
+        <td class="before">21.000</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">29</td>
+        <td class="num">6</td>
+        <td>Tutup Biru</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">2.316</td>
+        <td class="num">81.019</td>
+        <td class="before">83.335</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">30</td>
+        <td class="num">79</td>
+        <td>TUTUP BIRU BOTOL 100 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">42</td>
+        <td class="num">17.882</td>
+        <td class="before">17.924</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">31</td>
+        <td class="num">23</td>
+        <td>TUTUP JERIGEN 1 LTR HIJAU</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">1.056</td>
+        <td class="num">26.165</td>
+        <td class="before">27.221</td>
+        <td>2026-08-01 14:37:36</td>
+      </tr>
+      <tr>
+        <td class="num">32</td>
+        <td class="num">38</td>
+        <td>TUTUP JERIGEN HIJAU 5 LITER</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">985</td>
+        <td class="num">4.992</td>
+        <td class="before">5.977</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">33</td>
+        <td class="num">7</td>
+        <td>Tutup Merah</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">4.700</td>
+        <td class="num">66.904</td>
+        <td class="before">71.604</td>
+        <td>2026-08-01 14:37:34</td>
+      </tr>
+      <tr>
+        <td class="num">34</td>
+        <td class="num">75</td>
+        <td>TUTUP MERAH BOTOL 50 ML</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">3.168</td>
+        <td class="num">16.412</td>
+        <td class="before">19.580</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">35</td>
+        <td class="num">13</td>
+        <td>TUTUP TUMPUL BIRU</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">2.280</td>
+        <td class="num">65.032</td>
+        <td class="before">67.312</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+      <tr>
+        <td class="num">36</td>
+        <td class="num">14</td>
+        <td>TUTUP TUMPUL MERAH</td>
+        <td class="unit">PCS</td>
+        <td>Piece</td>
+        <td class="impact">320</td>
+        <td class="num">95.718</td>
+        <td class="before">96.038</td>
+        <td>2026-08-01 14:37:35</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5">Total baris: 36 (sum qty lintas satuan, bukan 1 UOM)</td>
+        <td class="impact">44.588</td>
+        <td colspan="3"></td>
+      </tr>
+    </tfoot>
+  </table>
+</body>
+</html>
