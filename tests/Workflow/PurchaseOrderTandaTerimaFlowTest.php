@@ -28,11 +28,11 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
      * pembayaran still at its default of 1 (untouched by invoice acceptance), ready to be grouped
      * into a Tt.
      */
-    private function insertPoWithAcceptedInvoice(int $qty, int $price): array
+    private function insertPoWithAcceptedInvoice(int $qty, int $price, ?Supplier $supplier = null): array
     {
         $variant = SuppliesVariant::where('status', 1)->firstOrFail();
         $stock = SuppliesStock::where('supplies_id', $variant->supplies_id)->where('status', 1)->firstOrFail();
-        $supplier = Supplier::where('status', 1)->whereNotNull('bank_id')->firstOrFail();
+        $supplier ??= Supplier::where('status', 1)->whereNotNull('bank_id')->firstOrFail();
 
         $poId = (int) $this->post('/insertPurchaseOrder', [
             'po_supplier' => $supplier->supplier_id,
@@ -73,10 +73,29 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
 
     private function generateTt(int $poiId): array
     {
-        $response = $this->get('/generateTandaTerimaInvoice?'.http_build_query(['poi_id' => [$poiId]]));
+        return $this->generateTtForMany([$poiId]);
+    }
+
+    /** @param int[] $poiIds */
+    private function generateTtForMany(array $poiIds): array
+    {
+        $response = $this->get('/generateTandaTerimaInvoice?'.http_build_query(['poi_id' => $poiIds]));
         $response->assertStatus(200);
 
         return $response->json();
+    }
+
+    /**
+     * Forces a supplier's bank_id to a specific real bank — used to deterministically construct
+     * same-bank/different-bank scenarios rather than relying on whatever the seed snapshot happens
+     * to already contain.
+     */
+    private function forceSupplierBank(Supplier $supplier, int $bankId): Supplier
+    {
+        $supplier->bank_id = $bankId;
+        $supplier->save();
+
+        return $supplier;
     }
 
     /**
@@ -186,5 +205,71 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
 
         $po = PurchaseOrder::findOrFail($fx['po_id']);
         $this->assertSame(2, (int) $po->pembayaran, 'a blocked repeat accept must leave pembayaran exactly as the first accept left it');
+    }
+
+    public function test_grouping_invoices_from_suppliers_with_different_banks_is_rejected(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        [$supplierA, $supplierB] = Supplier::where('status', 1)->limit(2)->get();
+        $this->forceSupplierBank($supplierA, 1); // BSJ
+        $this->forceSupplierBank($supplierB, 2); // F — deliberately different
+
+        $fxA = $this->insertPoWithAcceptedInvoice(qty: 3, price: 1000, supplier: $supplierA);
+        $fxB = $this->insertPoWithAcceptedInvoice(qty: 2, price: 1000, supplier: $supplierB);
+
+        $result = $this->generateTtForMany([$fxA['poi_id'], $fxB['poi_id']]);
+
+        $this->assertSame(-1, $result['status']);
+        $this->assertStringContainsString('memiliki bank yang berbeda', $result['message']);
+
+        $poA = PurchaseOrder::findOrFail($fxA['po_id']);
+        $poB = PurchaseOrder::findOrFail($fxB['po_id']);
+        $this->assertNull($poA->tt_id, 'a rejected cross-bank grouping must not group anything, including the first (valid-looking) item');
+        $this->assertNull($poB->tt_id);
+        $this->assertSame(1, (int) $poA->pembayaran);
+        $this->assertSame(1, (int) $poB->pembayaran);
+    }
+
+    /**
+     * Found while testing the cross-bank guard: the guard only ever compares `bank_id` — it never
+     * checks that all grouped invoices belong to the SAME supplier, despite
+     * cdocs/docs/flows/purchase-order-tanda-terima/FLOW.md describing a Tt as grouping POs "by the
+     * same supplier and same bank." Two different suppliers who happen to share a bank_id can be
+     * grouped into one Tt today, and the resulting `purchase_order_tts.supplier_id` ends up set to
+     * whichever supplier's invoice happened to be LAST in the request array — `$param["supplier"]`
+     * is overwritten every loop iteration and only its final value is used after the loop
+     * (`SupplierController.php:396,426,434`) — not necessarily representative of every PO actually
+     * grouped into the batch. Not fixed — see KNOWN_ISSUES.md.
+     */
+    public function test_grouping_invoices_from_different_suppliers_sharing_one_bank_is_silently_allowed(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        [$supplierA, $supplierB] = Supplier::where('status', 1)->limit(2)->get();
+        $sharedBankId = 3; // CH
+        $this->forceSupplierBank($supplierA, $sharedBankId);
+        $this->forceSupplierBank($supplierB, $sharedBankId);
+
+        $fxA = $this->insertPoWithAcceptedInvoice(qty: 3, price: 1000, supplier: $supplierA);
+        $fxB = $this->insertPoWithAcceptedInvoice(qty: 2, price: 1000, supplier: $supplierB);
+
+        // supplierB's invoice is listed LAST — per the bug, the resulting Tt's supplier_id will
+        // reflect supplierB only, even though supplierA's PO is grouped into it too.
+        $result = $this->generateTtForMany([$fxA['poi_id'], $fxB['poi_id']]);
+
+        $this->assertSame(1, $result['status'], 'BUG: grouping across two different suppliers succeeds as long as their bank_id matches');
+
+        $poA = PurchaseOrder::findOrFail($fxA['po_id']);
+        $poB = PurchaseOrder::findOrFail($fxB['po_id']);
+        $this->assertSame((int) $result['tt_id'], (int) $poA->tt_id, "supplier A's PO is grouped into the batch");
+        $this->assertSame((int) $result['tt_id'], (int) $poB->tt_id, "supplier B's PO is ALSO grouped into the same batch");
+
+        $tt = purchase_order_tt::findOrFail($result['tt_id']);
+        $this->assertSame(
+            $supplierB->supplier_id,
+            (int) $tt->supplier_id,
+            'BUG: the Tt\'s supplier_id reflects only the LAST invoice processed (supplier B), despite supplier A\'s PO being grouped in too'
+        );
     }
 }
