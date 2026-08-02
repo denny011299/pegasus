@@ -40,31 +40,33 @@ Urutan di `accProduction`:
 
 ```
 1. Validasi data & status == pending (1)
-2. SELF-HEAL  → revertPendingProductionStockMutations(production_code)
-3. Agregasi kebutuhan BOM (semua item)
-4. PRE-CHECK  → cek SEMUA bahan cukup (tanpa mutasi stok)
-5. Jika kurang → return status -1 (belum ada potongan)
-6. TRANSACTION:
+2. Agregasi kebutuhan BOM (semua item)
+3. PRE-CHECK  → cek SEMUA bahan cukup (tanpa mutasi stok)
+4. Jika kurang → return status -1 (belum ada potongan)
+5. TRANSACTION:
      - potong bahan + log
      - tambah produk jadi + log
      - update status production → 2
    Jika gagal di tengah → DB::rollBack()
 ```
 
-### 1) Self-heal — `revertPendingProductionStockMutations`
+### Self-heal otomatis di ACC — DIMATIKAN
 
-Dipanggil **setiap** ACC pending, sebelum pre-check.
+Alasan (audit 2026-08-01 / `mypegasus`):
 
-- Ambil semua `log_stocks` dengan `log_kode = production_code` (status aktif), urutan `log_id` DESC.
-- Balikkan efek stok:
-  - `log_type = 2` (bahan): category `2` = stok dikembalikan (+); category `1` = stok dikurangi (−) — untuk log konversi.
-  - `log_type = 1` (produk): kebalikan dari penambahan hasil produksi.
-- Hapus log tersebut.
-- Jika tidak ada log orphan → no-op.
+- Ada opname bahan setelah potongan orphan `PR0258` (`SB0069`, `SB0070`).
+- Item yang kepotong di pending: **selisih opname = 0** (`system == real == stok sekarang`).
+- Artinya angka stok **sudah dikunci** di level setelah potongan salah.
+- Auto-heal saat ACC akan menaikkan stok sistem lagi → **tidak sinkron** dengan opname.
 
-**Kenapa perlu:** membersihkan sisa ACC gagal lama, supaya pre-check membaca stok yang benar dan retry tidak “mengunci” produksi.
+Perbaikan orphan hanya manual (setelah review):
 
-### 2) Pre-check
+```bash
+php artisan production:restore-pending-stock --dry-run
+php artisan production:restore-pending-stock --with-history --staff-id=...
+```
+
+### Pre-check
 
 Validasi total kebutuhan agregat vs stok tersedia (termasuk simulasi konversi unit) **tanpa** `save()` stok.
 
@@ -120,10 +122,53 @@ Setelah deploy fix, ACC ulang pada kode tersebut akan mengembalikan stok lalu me
 
 ---
 
+## Artisan: restore massal di server
+
+Untuk membersihkan **semua** (atau satu) produksi pending yang sudah kepotong tanpa menunggu ACC UI:
+
+```bash
+# 1) Cek dulu (tidak ubah DB)
+php artisan production:restore-pending-stock --dry-run
+
+# 2a) Restore TANPA history (default) — stok kembali, log orphan dihapus
+php artisan production:restore-pending-stock
+
+# 2b) Restore + catat di riwayat Stok Produk / Bahan Mentah
+php artisan production:restore-pending-stock --with-history --staff-id=9
+
+# Satu kode saja
+php artisan production:restore-pending-stock --code=PR0258 --with-history --staff-id=9
+```
+
+| Flag | Efek |
+|------|------|
+| `--dry-run` | Hanya list anomali |
+| `--with-history` | Tulis log kompensasi: *Pengembalian stok (perbaikan ACC pending gagal) …* (ON). Tanpa flag = OFF |
+| `--staff-id=` | Isi kolom staff di log (opsional) |
+| `--code=` | Batasi ke satu `production_code` |
+
+**File:** `app/Console/Commands/RestorePendingProductionStockCommand.php`  
+**Logic:** `app/Support/ProductionPendingStockRestorer.php`
+
+Self-heal di ACC UI **tidak** dipakai lagi (lihat alasan opname di atas).  
+Command artisan tetap ada untuk restore **manual** setelah dicek.
+
+Hapus lock log orphan **tanpa** restore stok (opname-safe):
+
+```bash
+php artisan production:clear-pending-material-locks --dry-run
+php artisan production:clear-pending-material-locks
+php artisan production:clear-pending-material-locks --code=PR0258
+```
+
+Setelah clear: history potongan palsu hilang, stok tetap. **Jangan ACC** produksi itu tanpa review (akan potong lagi) — tolak/batalkan saja.
+
+---
+
 ## Catatan untuk developer
 
-1. **Jangan hapus** self-heal / pre-check / transaction tanpa pengganti yang setara.
-2. Logika bisnis BOM / konversi unit **tidak diganti**; yang ditambah hanya guard + atomicity.
-3. Self-heal menghapus log orphan — ini disengaja agar `cekLog` tidak menganggap bahan “sudah dipotong” untuk ACC yang belum sukses.
+1. **Jangan hapus** pre-check / transaction tanpa pengganti yang setara.
+2. Logika bisnis BOM / konversi unit **tidak diganti**; yang ditambah guard + atomicity.
+3. Jangan restore orphan otomatis di ACC jika opname sudah mengunci angka setelah potongan.
 4. FE sudah handle `status: -1` untuk pesan bahan kurang; biarkan response shape itu.
-5. Data historis yang sudah “rusak” (pending + stok kepotong) diperbaiki otomatis saat user ACC lagi — tidak wajib skrip manual, kecuali ingin audit/restore di luar UI.
+5. Restore orphan hanya via artisan setelah audit (opname vs potongan pending).
