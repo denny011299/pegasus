@@ -296,4 +296,196 @@ class ProductionUnitConversionFlowTest extends TestCase
             'log_jumlah' => 6,
         ]);
     }
+
+    /**
+     * The two mechanisms above were each proven in isolation with their own single-ingredient BOM.
+     * This puts BOTH ingredient types on the SAME bom_id for ONE production item, to confirm the
+     * per-supplies_id aggregation (ProductionController.php's $aggregatedRequirements, keyed by
+     * supplies_id) really does keep them independent rather than one bleeding into the other's
+     * math or stock ladder. Reuses the exact same numbers as the two isolated tests above
+     * (pd_qty=30, 12-per-dos product ladder, 10 Liter/unit with a 1 Drum = 200 Liter supplies
+     * ladder) specifically so the expected end-state is provably identical to running each
+     * mechanism alone — proving no cross-talk, not just "it didn't crash".
+     */
+    public function test_bom_mixing_a_bongkar_ingredient_and_a_dos_pack_ingredient_in_the_same_production(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createProductFixture();
+        $liter = 3;
+        $drum = 5;
+        $dos = 7;
+
+        // Output-side ladder needs its larger-unit ProductStock row pre-provisioned, same
+        // null-guard gap documented in the dos/pack-only test above.
+        $dosProductStock = new ProductStock();
+        $dosProductStock->product_id = $fx['productStock']->product_id;
+        $dosProductStock->product_variant_id = $fx['variant']->product_variant_id;
+        $dosProductStock->unit_id = $dos;
+        $dosProductStock->warehouse_id = self::WAREHOUSE_ID;
+        $dosProductStock->ps_stock = 0;
+        $dosProductStock->status = 1;
+        $dosProductStock->save();
+
+        $productRelation = new ProductRelation();
+        $productRelation->product_variant_id = $fx['variant']->product_variant_id;
+        $productRelation->pr_unit_id_1 = $dos;
+        $productRelation->pr_unit_value_1 = 1;
+        $productRelation->pr_unit_id_2 = self::OUTPUT_UNIT_ID;
+        $productRelation->pr_unit_value_2 = 12;
+        $productRelation->pr_default = 0;
+        $productRelation->status = 1;
+        $productRelation->save();
+
+        // Ingredient 1: bongkar-needing, deliberately NOT matching /dos|pack/i.
+        $bongkarSupplies = new Supplies();
+        $bongkarSupplies->supplies_name = 'Mixed BOM Bongkar Ingredient';
+        $bongkarSupplies->supplies_unit = json_encode([$liter, $drum]);
+        $bongkarSupplies->supplies_default_unit = $liter;
+        $bongkarSupplies->status = 1;
+        $bongkarSupplies->save();
+
+        $literStock = new SuppliesStock();
+        $literStock->supplies_id = $bongkarSupplies->supplies_id;
+        $literStock->unit_id = $liter;
+        $literStock->warehouse_id = self::WAREHOUSE_ID;
+        $literStock->ss_stock = 50;
+        $literStock->status = 1;
+        $literStock->save();
+
+        $drumStock = new SuppliesStock();
+        $drumStock->supplies_id = $bongkarSupplies->supplies_id;
+        $drumStock->unit_id = $drum;
+        $drumStock->warehouse_id = self::WAREHOUSE_ID;
+        $drumStock->ss_stock = 5;
+        $drumStock->status = 1;
+        $drumStock->save();
+
+        $suppliesRelation = new SuppliesRelation();
+        $suppliesRelation->supplies_id = $bongkarSupplies->supplies_id;
+        $suppliesRelation->su_id_1 = $drum;
+        $suppliesRelation->su_id_2 = $liter;
+        $suppliesRelation->sr_value_1 = 1;
+        $suppliesRelation->sr_value_2 = 200; // 1 Drum = 200 Liter
+        $suppliesRelation->status = 1;
+        $suppliesRelation->save();
+
+        // Ingredient 2: dos/pack special-case, matching /dos|pack/i on purpose.
+        $dosSupplies = new Supplies();
+        $dosSupplies->supplies_name = 'Mixed BOM Dos Kemasan';
+        $dosSupplies->supplies_unit = json_encode([$dos]);
+        $dosSupplies->supplies_default_unit = $dos;
+        $dosSupplies->status = 1;
+        $dosSupplies->save();
+
+        $dosSuppliesStock = new SuppliesStock();
+        $dosSuppliesStock->supplies_id = $dosSupplies->supplies_id;
+        $dosSuppliesStock->unit_id = $dos;
+        $dosSuppliesStock->warehouse_id = self::WAREHOUSE_ID;
+        $dosSuppliesStock->ss_stock = 10;
+        $dosSuppliesStock->status = 1;
+        $dosSuppliesStock->save();
+
+        // Both BomDetail rows live on the SAME bom_id — this is the point of the test.
+        $bongkarBomDetail = new BomDetail();
+        $bongkarBomDetail->bom_id = $fx['bom']->bom_id;
+        $bongkarBomDetail->supplies_id = $bongkarSupplies->supplies_id;
+        $bongkarBomDetail->bom_detail_qty = 10; // Liter needed per 1 Piece produced
+        $bongkarBomDetail->unit_id = $liter;
+        $bongkarBomDetail->status = 1;
+        $bongkarBomDetail->save();
+
+        $dosBomDetail = new BomDetail();
+        $dosBomDetail->bom_id = $fx['bom']->bom_id;
+        $dosBomDetail->supplies_id = $dosSupplies->supplies_id;
+        $dosBomDetail->bom_detail_qty = 1; // 1 box per full dos of output
+        $dosBomDetail->unit_id = $dos;
+        $dosBomDetail->status = 1;
+        $dosBomDetail->save();
+
+        $pdQty = 30; // not a multiple of 12 — same as the isolated dos/pack test
+
+        $insertResponse = $this->post('/insertProduction', [
+            'production_date' => now()->toDateString(),
+            'production_desc' => 'Mixed bongkar + dos/pack BOM test',
+            'detail' => json_encode([[
+                'bom_id' => $fx['bom']->bom_id,
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'pd_qty' => $pdQty,
+                'unit_id' => self::OUTPUT_UNIT_ID,
+            ]]),
+            'list_bahan' => json_encode([[
+                ['supplies_id' => $bongkarSupplies->supplies_id, 'bom_detail_qty' => 10, 'unit_id' => $liter],
+                ['supplies_id' => $dosSupplies->supplies_id, 'bom_detail_qty' => 1, 'unit_id' => $dos],
+            ]]),
+        ]);
+        $insertResponse->assertStatus(200);
+        $production = Production::orderByDesc('production_id')->firstOrFail();
+
+        $accResponse = $this->post('/accProduction', ['production_id' => $production->production_id]);
+        $accResponse->assertStatus(200);
+
+        $production->refresh();
+        $this->assertSame(2, (int) $production->status);
+
+        // Bongkar ingredient: identical end-state to the isolated bongkar test (300 Liter needed
+        // total = 10 * batchCount(30), same as bom_detail_qty=300 there with batchCount=1).
+        $literStock->refresh();
+        $drumStock->refresh();
+        $this->assertSame(150, $literStock->ss_stock, 'bongkar math unaffected by the sibling dos/pack ingredient on the same BOM');
+        $this->assertSame(3, $drumStock->ss_stock, '2 of the 5 Drums broken down, same as running the mechanism alone');
+
+        // Dos/pack ingredient: identical end-state to the isolated dos/pack test.
+        $dosSuppliesStock->refresh();
+        $this->assertSame(8, $dosSuppliesStock->ss_stock, 'floor(30/12)=2 boxes consumed, unaffected by the sibling bongkar ingredient');
+
+        // Output side: identical split to the isolated dos/pack test.
+        $dosProductStock->refresh();
+        $fx['productStock']->refresh();
+        $this->assertSame(2, $dosProductStock->ps_stock);
+        $this->assertSame(6, $fx['productStock']->ps_stock);
+
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 2,
+            'log_category' => 2,
+            'log_item_id' => $bongkarSupplies->supplies_id,
+            'unit_id' => $drum,
+            'log_jumlah' => 2,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 2,
+            'log_category' => 1,
+            'log_item_id' => $bongkarSupplies->supplies_id,
+            'unit_id' => $liter,
+            'log_jumlah' => 400,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 2,
+            'log_category' => 2,
+            'log_item_id' => $bongkarSupplies->supplies_id,
+            'unit_id' => $liter,
+            'log_jumlah' => 300,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 2,
+            'log_category' => 2,
+            'log_item_id' => $dosSupplies->supplies_id,
+            'unit_id' => $dos,
+            'log_jumlah' => 2,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 1,
+            'log_category' => 1,
+            'log_item_id' => $fx['variant']->product_variant_id,
+            'unit_id' => $dos,
+            'log_jumlah' => 2,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 1,
+            'log_category' => 1,
+            'log_item_id' => $fx['variant']->product_variant_id,
+            'unit_id' => self::OUTPUT_UNIT_ID,
+            'log_jumlah' => 6,
+        ]);
+    }
 }
