@@ -30,6 +30,7 @@ use App\Models\SuppliesVariant;
 use App\Support\RoleAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use function Symfony\Component\Clock\now;
 
@@ -1251,6 +1252,63 @@ class StockController extends Controller
             ]);
         }
 
+        // 1. PRE-CHECK (tanpa mutasi apa pun): hanya relevan untuk retur ke supplier — retur
+        // dari customer/armada cuma menambah stok balik, tidak ada risiko kekurangan maupun
+        // lookup supplier. Memastikan stok cukup DAN data supplier bahan valid untuk SEMUA item
+        // dulu, sebelum ada satu pun mutasi — supaya tidak ada potongan stok sebagian kalau item
+        // belakangan ternyata kurang, dan supaya lookup supplier yang null/rusak ditolak dengan
+        // pesan jelas alih-alih 500 di tengah proses (dulu: Supplier::find($sup->supplier_id)
+        // ->supplier_name crash kalau supplier_id null atau suppliernya sudah dihapus).
+        $bahan_kurang = [];
+        $supplier_invalid = [];
+        if ($pi->tipe_return == 1) {
+            foreach ($item as $value) {
+                $m = SuppliesVariant::find($value['item_id']);
+                if (!$m) {
+                    $supplier_invalid[] = "Item bahan mentah tidak ditemukan (id {$value['item_id']})";
+                    continue;
+                }
+
+                $namaBahan = $m->supplies_variant_name;
+                if (!$namaBahan) {
+                    $namaBahan = Supplies::find($m->supplies_id)->supplies_name ?? "id {$m->supplies_variant_id}";
+                }
+
+                $s = SuppliesStock::where('supplies_id', '=', $m->supplies_id)
+                    ->where('unit_id', '=', $value['unit_id'])
+                    ->first();
+                $stocks = $s->ss_stock ?? 0;
+                if ($stocks - $value['pid_qty'] < 0) {
+                    $bahan_kurang[] = $namaBahan;
+                }
+
+                $spr = Supplier::find($m->supplier_id);
+                if (!$spr && !in_array($namaBahan, $supplier_invalid, true)) {
+                    $supplier_invalid[] = $namaBahan;
+                }
+            }
+        }
+
+        if (count($bahan_kurang) > 0) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Gagal ACC',
+                'message' => 'Stok bahan tidak mencukupi untuk: ' . implode(', ', $bahan_kurang),
+            ]);
+        }
+
+        if (count($supplier_invalid) > 0) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal ACC',
+                'message' => 'Data supplier tidak ditemukan/tidak valid untuk: '
+                    . implode(', ', $supplier_invalid)
+                    . '. Mohon perbarui data supplier bahan terkait sebelum approve.',
+            ]);
+        }
+
+        DB::beginTransaction();
+        try {
         foreach ($item as $key => $value) {
             $itemId = 0;
             // Return to Supplier
@@ -1258,7 +1316,7 @@ class StockController extends Controller
                 $itemId = $value['item_id'];
                 $m = SuppliesVariant::find($itemId);
                 $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$value["unit_id"])->first();
-                
+
                 // Cek dari retur pembelian, apakah ada barang yang dibeli dari invoice ini
                 if ($pi['po_id'] != 0){
                     if ($pi['ref_num'] != 0){
@@ -1268,13 +1326,8 @@ class StockController extends Controller
                     $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
                 }
 
-                // pengurangan qty stok
-                $stocks = $s->ss_stock ?? 0;
-                if ($stocks - $value["pid_qty"] >= 0) {
-                    $stocks -= $value["pid_qty"];
-                } else {
-                    return -1;
-                }
+                // pengurangan qty stok (sudah dipastikan cukup di pre-check di atas)
+                $stocks = ($s->ss_stock ?? 0) - $value["pid_qty"];
 
                 // pengurangan qty invoice
                 if ($pi['po_id'] != 0){
@@ -1297,7 +1350,7 @@ class StockController extends Controller
                     }
                     $total += $total * $po->po_ppn/100;
                     $total += $po->po_cost;
-    
+
                     $data_retur = ReturnSupplies::where('po_id', !isset($inv) ? $pi['po_id'] : $inv->po_id)->where('status', 1)->get();
                     $total_retur = 0;
                     if ($data_retur){
@@ -1307,7 +1360,7 @@ class StockController extends Controller
                         if (isset($pi['total_retur'])) $total -= $pi['total_retur'];
                         else $total -= $total_retur;
                     }
-    
+
                     if (isset($inv)){
                         $inv->poi_total = $total;
                         $inv->save();
@@ -1321,12 +1374,12 @@ class StockController extends Controller
                 $s->save();
             }
 
-            // Return from customer 
+            // Return from customer
             else{
                 $itemId = $value["item_id"];
                 $m = ProductVariant::find($itemId);
                 $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$value["unit_id"])->first();
-                
+
                 $stocks = $s->ps_stock ?? 0;
                 $stocks += $value["pid_qty"];
 
@@ -1363,10 +1416,18 @@ class StockController extends Controller
                 'log_jumlah' => $value['pid_qty'],
                 'unit_id'    => $value['unit_id'],
             ]);
-
-            (new ProductIssues())->accProductIssues($data);
         }
+
+        // 2. Status di-flip ke Approved HANYA SEKALI, setelah SEMUA item berhasil dimutasi —
+        // bukan di dalam loop (dulu: mid-loop, jadi item pertama sudah permanen ter-potong dan
+        // status sudah Approved sebelum item berikutnya sempat gagal).
+        (new ProductIssues())->accProductIssues($data);
+        DB::commit();
         return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function declineProductIssues(Request $req){
