@@ -609,6 +609,9 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Profil|view')->group(function () {
         Route::get('/profiles', [SettingController::class, 'Profiles'])->name('profiles');
     });
+    Route::middleware('check.access:Profil|edit')->group(function () {
+        Route::post('/updateProfile', [SettingController::class, 'updateProfile'])->name('updateProfile');
+    });
 
     Route::middleware('check.access.any:Kategori,Satuan,Variasi,view')->group(function () {
         Route::get('/area', [GeneralController::class, 'Area'])->name('area');
