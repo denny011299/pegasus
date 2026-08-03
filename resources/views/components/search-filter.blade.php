@@ -730,3 +730,108 @@
 </div>
 <!-- /Filter Pencarian -->
 @endif
+@if (Route::is(['externalApplication']))
+    <!-- Filter Pencarian -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-block">
+                            <label>Nama Aplikasi</label>
+                            <input type="text" class="form-control" id="filter_application_name"
+                                placeholder="Cari nama aplikasi">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-block">
+                            <label>Status</label>
+                            <select class="form-select" id="filter_application_status">
+                                <option value="">Semua</option>
+                                <option value="active">Aktif</option>
+                                <option value="disabled">Nonaktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4 col-sm-12 pt-4 text-end">
+                        <a class="btn btn-outline-secondary btn-clear">
+                            Clear
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /Filter Pencarian -->
+@endif
+
+@if (Route::is(['externalApiLog']))
+    <!-- Filter Pencarian -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Aplikasi</label>
+                            <select class="form-select" id="filter_log_application">
+                                <option value="">Semua</option>
+                                @foreach ($applications ?? [] as $app)
+                                    <option value="{{ $app->external_application_id }}">{{ $app->application_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Metode</label>
+                            <select class="form-select" id="filter_log_method">
+                                <option value="">Semua</option>
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="PATCH">PATCH</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Kode Status</label>
+                            <select class="form-select" id="filter_log_status">
+                                <option value="">Semua</option>
+                                <option value="2xx">2xx — Berhasil</option>
+                                <option value="4xx">4xx — Kesalahan Klien</option>
+                                <option value="5xx">5xx — Kesalahan Server</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Endpoint</label>
+                            <input type="text" class="form-control" id="filter_log_endpoint" placeholder="/api/v1/...">
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Dari</label>
+                            <input type="date" class="form-control" id="filter_log_start_date">
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Sampai</label>
+                            <input type="date" class="form-control" id="filter_log_end_date">
+                        </div>
+                    </div>
+                    <div class="col-12 text-end">
+                        <a class="btn btn-primary btn-filter me-2">Terapkan</a>
+                        <a class="btn btn-outline-secondary btn-clear">Clear</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /Filter Pencarian -->
+@endif

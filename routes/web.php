@@ -4,6 +4,7 @@ use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerProductReturnController;
 use App\Http\Controllers\CustomerSupplyReturnController;
+use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
@@ -12,6 +13,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SynchronizationController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\checkLogin;
 use Illuminate\Support\Facades\Route;
@@ -38,7 +40,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompleteBom', [AutocompleteController::class, 'autocompleteBom'])->name('autocompleteBom');
     Route::post('/autocompleteProduct', [AutocompleteController::class, 'autocompleteProduct'])->name('autocompleteProduct');
     Route::post('/autocompleteProductVariant', [AutocompleteController::class, 'autocompleteProductVariant'])->name('autocompleteProductVariant');
-    Route::post('/autocompleteProductVariants', [AutocompleteController::class, 'autocompleteProductVariants'])->name('autocompleteProductVariant');
+    Route::post('/autocompleteProductVariants', [AutocompleteController::class, 'autocompleteProductVariants'])->name('autocompleteProductVariants');
     Route::post('/autocompleteSupplies', [AutocompleteController::class, 'autocompleteSupplies'])->name('autocompleteSupplies');
     Route::post('/autocompleteSuppliesVariant', [AutocompleteController::class, 'autocompleteSuppliesVariant'])->name('autocompleteSuppliesVariant');
     Route::post('/autocompleteSuppliesVariantOnly', [AutocompleteController::class, 'autocompleteSuppliesVariantOnly'])->name('autocompleteSuppliesVariantOnly');
@@ -57,40 +59,21 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompleteWarehouseType', [AutocompleteController::class, 'autocompleteWarehouseType']);
     Route::post('/autocompleteWarehouse', [AutocompleteController::class, 'autocompleteWarehouse'])->name('autocompleteWarehouse');
 
-    Route::middleware('check.access:Kategori|view')->group(function () {
-    });
-    Route::middleware('check.access:Satuan|view')->group(function () {
-    });
-    Route::middleware('check.access:Variasi|view')->group(function () {
-    });
-    Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {
-        
-    });
-    Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {
-        
-    });
-    Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {
-        
-    });
-    Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {
-        
-    });
-    Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {
-    });
-    Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {
-    });
-    Route::middleware('check.access:Pengiriman|view')->group(function () {
-    });
-    Route::middleware('check.access.any:Kategori Kas,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,Kas,view')->group(function () {
-    });
-    Route::middleware('check.access:Peran & Perizinan|view')->group(function () {
-    });
-    Route::middleware('check.access.any:Bank Account,Hutang,view')->group(function () {
-    });
-    Route::middleware('check.access:Pembelian|view')->group(function () {
-    });
-    Route::middleware('check.access:Pengiriman|view')->group(function () {
-    });
+    Route::middleware('check.access:Kategori|view')->group(function () {});
+    Route::middleware('check.access:Satuan|view')->group(function () {});
+    Route::middleware('check.access:Variasi|view')->group(function () {});
+    Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {});
+    Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {});
+    Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {});
+    Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {});
+    Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {});
+    Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {});
+    Route::middleware('check.access:Pengiriman|view')->group(function () {});
+    Route::middleware('check.access.any:Kategori Kas,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,Kas,view')->group(function () {});
+    Route::middleware('check.access:Peran & Perizinan|view')->group(function () {});
+    Route::middleware('check.access.any:Bank Account,Hutang,view')->group(function () {});
+    Route::middleware('check.access:Pembelian|view')->group(function () {});
+    Route::middleware('check.access:Pengiriman|view')->group(function () {});
 
     Route::middleware('check.access:Kategori|view')->group(function () {
         Route::get('/category', [ProductController::class, 'Category'])->name('category');
@@ -165,7 +148,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tipe Gudang|delete')->group(function () {
         Route::post('/deleteWarehouseType', [App\Http\Controllers\WarehouseController::class, 'deleteWarehouseType'])->name('deleteWarehouseType');
     });
-    
+
     Route::post('/setActiveWarehouse', [App\Http\Controllers\WarehouseController::class, 'setActiveWarehouse'])->name('setActiveWarehouse');
     Route::post('/set-active-warehouse', [App\Http\Controllers\WarehouseController::class, 'setActiveWarehouse'])->name('set-active-warehouse');
 
@@ -191,6 +174,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Produk|edit')->group(function () {
         Route::post('/updateStockOpname', [StockController::class, 'updateStockOpname'])->name('updateStockOpname');
         Route::post('/updateDetailStockOpname', [StockController::class, 'updateDetailStockOpname'])->name('updateDetailStockOpname');
+        Route::post('/submitStockOpname', [StockController::class, 'submitStockOpname'])->name('submitStockOpname');
     });
     Route::middleware('check.access:Stok Opname Produk|delete')->group(function () {
         Route::post('/deleteStockOpname', [StockController::class, 'deleteStockOpname'])->name('deleteStockOpname');
@@ -243,6 +227,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Bahan Mentah|edit')->group(function () {
         Route::post('/updateStockOpnameBahan', [StockController::class, 'updateStockOpnameBahan'])->name('updateStockOpnameBahan');
         Route::post('/updateDetailStockOpnameBahan', [StockController::class, 'updateDetailStockOpnameBahan'])->name('updateDetailStockOpnameBahan');
+        Route::post('/submitStockOpnameBahan', [StockController::class, 'submitStockOpnameBahan'])->name('submitStockOpnameBahan');
     });
     Route::middleware('check.access:Stok Opname Bahan Mentah|delete')->group(function () {
         Route::post('/deleteStockOpnameBahan', [StockController::class, 'deleteStockOpnameBahan'])->name('deleteStockOpnameBahan');
@@ -748,7 +733,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/getTt', [SupplierController::class, 'getTt'])->name('getTt');
         Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, 'generateTandaTerima'])->name('generateTandaTerima');
         Route::get('/generateTandaTerimaInvoice', [SupplierController::class, 'generateTandaTerimaInvoice'])->name('generateTandaTerimaInvoice');
-        Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('generateTandaTerima');
+        Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('viewTandaTerima');
     });
     Route::middleware('check.access:Tanda Terima PO|create')->group(function () {
         Route::post('/insertTt', [SupplierController::class, 'insertTt'])->name('insertTt');
@@ -763,5 +748,63 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tanda Terima PO|others')->group(function () {
         Route::post('/accTt', [SupplierController::class, 'accTt'])->name('accTt');
         Route::post('/declineTt', [SupplierController::class, 'declineTt'])->name('declineTt');
+    });
+
+    // Pusat Sinkronisasi — daftar alur, wizard, dan eksekusi per langkah.
+    Route::middleware('check.access:Sinkronisasi|view')->group(function () {
+        Route::get('/synchronization', [SynchronizationController::class, 'center'])->name('synchronization');
+        Route::get('/synchronization/{flow}', [SynchronizationController::class, 'wizard'])->name('synchronizationWizard');
+        Route::get('/synchronization/{flow}/status', [SynchronizationController::class, 'status'])->name('synchronizationStatus');
+    });
+    Route::middleware('check.access:Sinkronisasi|others')->group(function () {
+        Route::post('/synchronization/{flow}/{step}/execute', [SynchronizationController::class, 'execute'])->name('synchronizationExecute');
+    });
+
+    // Platform API Eksternal — halaman administrasi di modul Integrasi.
+    // Endpoint yang dipakai sistem pihak ketiga TIDAK ada di sini; jalurnya
+    // terpisah di routes/api.php + routes/external-api/ dan dijaga API Key,
+    // bukan session.
+    Route::middleware('check.access:Aplikasi Eksternal|view')->group(function () {
+        Route::get('/externalApplication', [ExternalApiController::class, 'externalApplication'])->name('externalApplication');
+        Route::get('/externalApplication/{id}', [ExternalApiController::class, 'externalApplicationDetail'])->name('externalApplicationDetail');
+        Route::get('/getExternalApplication', [ExternalApiController::class, 'getExternalApplication'])->name('getExternalApplication');
+        Route::get('/getExternalApiKey', [ExternalApiController::class, 'getExternalApiKey'])->name('getExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|create')->group(function () {
+        Route::post('/insertExternalApplication', [ExternalApiController::class, 'insertExternalApplication'])->name('insertExternalApplication');
+        Route::post('/insertExternalApiKey', [ExternalApiController::class, 'insertExternalApiKey'])->name('insertExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|edit')->group(function () {
+        Route::post('/updateExternalApplication', [ExternalApiController::class, 'updateExternalApplication'])->name('updateExternalApplication');
+        Route::post('/updateExternalApiKey', [ExternalApiController::class, 'updateExternalApiKey'])->name('updateExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|delete')->group(function () {
+        Route::post('/deleteExternalApplication', [ExternalApiController::class, 'deleteExternalApplication'])->name('deleteExternalApplication');
+        Route::post('/deleteExternalApiKey', [ExternalApiController::class, 'deleteExternalApiKey'])->name('deleteExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApplication', [ExternalApiController::class, 'toggleExternalApplication'])->name('toggleExternalApplication');
+        Route::post('/revokeExternalApiKey', [ExternalApiController::class, 'revokeExternalApiKey'])->name('revokeExternalApiKey');
+    });
+
+    // Dokumentasi dipecah per modul: /externalApiDocumentation adalah halaman
+    // Umum, dan tiap kelompok endpoint punya halamannya sendiri di bawahnya.
+    // Satu rute berparameter melayani seluruh kelompok, jadi kelompok baru
+    // tidak perlu rute tambahan.
+    Route::middleware('check.access:Dokumentasi API Eksternal|view')->group(function () {
+        Route::get('/externalApiDocumentation', [ExternalApiController::class, 'externalApiDocumentation'])->name('externalApiDocumentation');
+        Route::get('/externalApiDocumentation/{group}', [ExternalApiController::class, 'externalApiDocumentation'])->name('externalApiDocumentationGroup');
+    });
+
+    Route::middleware('check.access:Log API Eksternal|view')->group(function () {
+        Route::get('/externalApiLog', [ExternalApiController::class, 'externalApiLog'])->name('externalApiLog');
+        Route::get('/getExternalApiLog', [ExternalApiController::class, 'getExternalApiLog'])->name('getExternalApiLog');
+        Route::get('/getExternalApiLogSummary', [ExternalApiController::class, 'getExternalApiLogSummary'])->name('getExternalApiLogSummary');
+    });
+    Route::middleware('check.access:Log API Eksternal|delete')->group(function () {
+        Route::post('/deleteExternalApiLog', [ExternalApiController::class, 'deleteExternalApiLog'])->name('deleteExternalApiLog');
+    });
+    Route::middleware('check.access:Log API Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApiLogging', [ExternalApiController::class, 'toggleExternalApiLogging'])->name('toggleExternalApiLogging');
     });
 });

@@ -7,9 +7,7 @@ use App\Models\Bank;
 use App\Models\Bom;
 use App\Models\CashCategory;
 use App\Models\Category;
-use App\Models\CategoryCoa;
 use App\Models\Cities;
-use App\Models\Coa;
 use App\Models\Customer;
 use App\Models\District;
 use App\Models\Product;
@@ -17,9 +15,7 @@ use App\Models\ProductVariant;
 use App\Models\Provinces;
 use App\Models\PurchaseOrder;
 use App\Models\Role;
-use App\Models\SalesOrder;
 use App\Models\Staff;
-use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesVariant;
@@ -28,8 +24,6 @@ use App\Models\Variant;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
 use Illuminate\Http\Request;
-
-use function Laravel\Prompts\alert;
 
 class AutocompleteController extends Controller
 {
@@ -218,7 +212,7 @@ class AutocompleteController extends Controller
         $productIds = collect($variants)
             ->pluck('product_id')
             ->filter()
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->unique()
             ->values();
 
@@ -379,7 +373,7 @@ class AutocompleteController extends Controller
             "product_id" => $req->product_id,
             "search_product" => $keyword,
         ]);
-        
+
 
         foreach ($data_city as $r) {
             $r->id = $r["product_id"];
@@ -521,23 +515,22 @@ class AutocompleteController extends Controller
 
     public function autocompleteRole(Request $req)
     {
-        $keyword = $req->keyword ?? $req->q ?? $req->term ?? null;
+        $keyword = isset($req->keyword) ? $req->keyword : null;
 
-        $roles = (new Role())->getRole([
-            'role_name' => $keyword,
+        $p = new Role();
+        $data_city = $p->getRole([
+            "role_name" => $keyword
         ]);
 
-        // Hanya id + text agar Select2 tidak gagal parse payload besar (role_access)
-        $data = $roles->map(static function ($role) {
-            return [
-                'id' => (int) $role->role_id,
-                'text' => (string) $role->role_name,
-            ];
-        })->values()->all();
 
-        return response()->json([
-            'data' => $data,
-        ]);
+        foreach ($data_city as $r) {
+            $r->id = $r["role_id"];
+            $r->text = $r["role_name"];
+        };
+
+        echo json_encode(array(
+            "data" => $data_city
+        ));
     }
 
     public function autocompleteRekening(Request $req)
@@ -608,7 +601,7 @@ class AutocompleteController extends Controller
 
         $query = Warehouse::query()
             ->active()
-            ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+            ->with(['type' => fn($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
             ->orderBy('warehouse_name');
 
         if ($keyword !== '') {

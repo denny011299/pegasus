@@ -1,10 +1,4 @@
-$('#login-form').on('submit', function(e) {
-    e.preventDefault();
-    $("#btn-login").click();
-});
-
-$(document).on("click", "#btn-login", function (e) {
-    e.preventDefault();
+$(document).on("click", "#btn-login", function () {
     LoadingButton("#btn-login");
     $('.is-invalid').removeClass('is-invalid');
     var username = $("#username").val();

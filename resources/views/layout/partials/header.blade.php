@@ -112,13 +112,13 @@
 
 @if (!Route::is(['index-three', 'index-four', 'index-five']))
     @if (!Route::is(['index-two']))
-        <div class="header header-one custom-premium-header">
+        <div class="header header-one" style="background-color: #102c5c">
     @endif
     @if (Route::is(['index-two']))
-        <div class="header header-two custom-premium-header">
+        <div class="header header-two">
     @endif
     @if (!Route::is(['index-two']))
-        
+
     @endif
     <!-- Sidebar Toggle -->
     <a href="javascript:void(0);" id="toggle_btn">
@@ -285,7 +285,7 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
+
         @keyframes dt-pulse {
             0% { opacity: 0.6; }
             50% { opacity: 1; }
@@ -330,7 +330,7 @@
         /* =============================================
            DATATABLE — PREMIUM REDESIGN
            ============================================= */
-        
+
         /* 1. Base Reset */
         table.dataTable {
             border-collapse: collapse !important;
@@ -436,7 +436,7 @@
             visibility: hidden !important;
             background: transparent !important;
         }
-        
+
         /* 5. Header Styling */
         table.dataTable thead th {
             background: transparent !important;
@@ -497,7 +497,7 @@
             float: right;
             padding: 14px 20px !important;
         }
-        
+
         /* Pagination buttons */
         .dataTables_wrapper .dataTables_paginate .paginate_button {
             border-radius: 6px !important;

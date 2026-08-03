@@ -276,7 +276,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         "showMethod": "fadeIn",
         "hideMethod": "fadeOut"
     }
-    
+
     // Global DataTables defaults initialized above
       // Tooltip
     if ($('[data-bs-toggle="tooltip"]').length > 0) {
@@ -332,26 +332,26 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         if ($('#modalDelete .modal-body').is(':empty')) {
             $('#modalDelete .modal-body').html('<p id="text-delete" style="font-size:10pt"></p>');
         }
-        
+
         $("#text-delete").html(text);
         // Scope ke modal delete saja — jangan set id di semua .btn-konfirmasi (bikin duplikat id)
         $('#modalKonfirmasi .btn-konfirmasi').removeAttr('id');
         $('#modalDelete .btn-konfirmasi').attr("id", button_id);
         $('#modalDelete').modal("show");
     }
-      
+
     function showModalKonfirmasi(text, button_id) {
         $("#text-konfirmasi").html(text);
         $('#modalDelete .btn-konfirmasi').removeAttr('id');
         $('#modalKonfirmasi .btn-konfirmasi').attr("id", button_id);
         $('#modalKonfirmasi').modal("show");
     }
-      
+
     $('.btn-cancel').on("click",function(){
         closeModalDelete();
         closeModalConfirm();
     })
-    
+
     function closeModalDelete() {
         $('#modalDelete').modal("hide");
     }
@@ -404,31 +404,31 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     $(document).on("input", ".number-minus", function() {
         let val = $(this).val();
         if (val === "-") return;
-        
+
         // Izinkan minus hanya di awal
         let isNegative = val.startsWith("-");
-        
+
         // Hapus semua karakter selain angka
         val = val.replace(/[^0-9]/g, '');
-        
+
         // Hapus leading zero
         if (val[0] === '0' && val.length > 1) {
             val = val.substring(1);
         }
-        
+
         // Pasang kembali minus jika ada
         if (isNegative && val.length > 0) {
             val = "-" + val;
         }
-        
+
         $(this).val(val);
     });
     $(document).on("keyup", ".nominal_minus", function() {
         let val = $(this).val();
         if (val === "-") return;
-        
+
         let formatted = formatRupiahMinus(convertToAngkaMinus(val));
-        
+
         $(this).val(formatted);
     });
 
@@ -442,7 +442,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
         let isNegative = angka < 0;
         angka = Math.abs(angka).toString();
-        
+
         var number_string = angka.replace(/[^,\d]/g, "").toString();
         var split = number_string.split(",");
         var sisa = split[0].length % 3;
@@ -526,7 +526,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         if (isMain === null) return null;
         return isMain ? 'main' : 'retail';
     }
-    
+
     function autocompleteCity(id, modalParent = null,prov_id=null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
@@ -557,7 +557,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             placeholder: "Pilih Kota",
             closeOnSelect: true,
             allowClear: true,
-            
+
             width: "100%",
             dir: "ltr",
             dropdownParent: modalParent ? $(modalParent) : "",
@@ -631,7 +631,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             dropdownParent: modalParent ? $(modalParent) : "",
         });
     }
-    
+
     function autocompleteDistrict(id, modalParent = null, city_id=null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
@@ -939,7 +939,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             width: "100%",
             dropdownParent: modalParent ? $(modalParent) : "",
         });
-        
+
     }
     function autocompleteSuppliesVariantOnly(id, modalParent = null,supplier_id=null) {
         // Destroy dulu kalau sudah pernah di-init
@@ -1085,7 +1085,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             dropdownParent: modalParent ? $(modalParent) : "",
         });
     }
-    
+
     function autocompleteStaffSales(id, modalParent = null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
@@ -1154,7 +1154,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         });
     }
 
-    
+
      function autocompleteStaff(id, modalParent = null) {
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
@@ -1189,32 +1189,26 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
      }
 
     function autocompleteRole(id, modalParent = null) {
-        if (!$(id).length) return;
-
         if ($(id).hasClass('select2-hidden-accessible')) {
             $(id).select2('destroy');
         }
 
+        //search country dan city
          $(id).select2({
              ajax: {
                  url: "/autocompleteRole",
                  dataType: "json",
                  type: "post",
-                 delay: 250,
                  data: function data(params) {
                      return {
-                         "keyword": params.term || '',
-                         '_token': $('meta[name="csrf-token"]').attr('content') || (typeof token !== 'undefined' ? token : '')
+                         "keyword": params.term,
+                         '_token': $('meta[name="csrf-token"]').attr('content')
                      };
                  },
                  processResults: function processResults(data) {
-                     var rows = (data && data.data) ? data.data : [];
                      return {
-                         results: $.map(rows, function(item) {
-                             return {
-                                 id: item.id,
-                                 text: item.text
-                             };
+                         results: $.map(data.data, function(item) {
+                             return item;
                          }),
                      };
                  },
@@ -1665,7 +1659,7 @@ function adjustModalHeight() {
         if (!video) return;
 
         let modalDialog = $("#modalPhoto .modal-body");
-    
+
         // Tinggi modal mengikuti tinggi video
         modalDialog.css("height", (video.clientHeight/4)+ "px");
 }

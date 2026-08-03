@@ -16,7 +16,6 @@ use App\Models\PurchaseOrderDetailInvoice;
 use App\Models\ReturnSupplies;
 use App\Models\ReturnSuppliesDetail;
 use App\Models\Staff;
-use App\Models\Stock;
 use App\Models\StockAlert;
 use App\Models\StockAlertSupplies;
 use App\Models\StockOpname;
@@ -53,6 +52,22 @@ class StockController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Dokumen draft hanya boleh dilihat/diubah/dihapus oleh staff pembuatnya
+     * (atau super admin) — dipakai insert/update/delete/submit/acc/tolak/PDF
+     * stock opname produk supaya aturan pemilik drafnya konsisten di semua
+     * jalur, bukan hanya di listing.
+     */
+    private function canManageStockOpnameDraft($sto)
+    {
+        if (!$sto) return false;
+
+        $user = session()->get('user');
+        if (RoleAccess::isSuperAdmin($user)) return true;
+
+        return $user && (int) $sto->created_by === (int) ($user->staff_id ?? 0);
+    }
+
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
@@ -61,22 +76,66 @@ class StockController extends Controller
             $value["sto_id"] = $id;
             (new StockOpnameDetail())->insertDetail($value);
         }
+        return ["status" => 1, "sto_id" => $id];
     }
 
-    // function updateStockOpname(Request $req)
-    // {
-    //     $data = $req->all();
-    //     $id = (new StockOpname())->updateStockOpname($data);
-    //     foreach (json_decode($req->item, true) as $key => $value) {
-    //         $value["sto_id"] = $id;
-    //         if (isset($value["stod_id"])) (new StockOpnameDetail())->updateDetail($value);
-    //         else (new StockOpnameDetail())->insertDetail($value);
-    //     }
-    // }
+    function updateStockOpname(Request $req)
+    {
+        $data = $req->all();
+        $sto = StockOpname::find($data['sto_id'] ?? null);
+
+        if (!$sto || !$sto->is_draft || !$this->canManageStockOpnameDraft($sto)) {
+            return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
+        }
+
+        // Draft tetap draft sampai benar-benar diajukan lewat /submitStockOpname.
+        $data['is_draft'] = true;
+        $id = (new StockOpname())->updateStockOpname($data);
+
+        // Ganti seluruh detail lama dengan detail yang dikirim — draft boleh
+        // menambah/menghapus item bebas, jadi diffing per-baris tidak perlu.
+        foreach (StockOpnameDetail::where('sto_id', $id)->where('status', 1)->get() as $old) {
+            $old->status = 0;
+            $old->save();
+        }
+        foreach (json_decode($req->item, true) ?? [] as $value) {
+            $value["sto_id"] = $id;
+            (new StockOpnameDetail())->insertDetail($value);
+        }
+
+        return 1;
+    }
+
+    /**
+     * Ajukan draft: is_draft dimatikan, dokumen masuk alur approval biasa
+     * (statusnya sudah 1=Menunggu sejak dibuat, jadi tidak perlu diubah).
+     */
+    function submitStockOpname(Request $req)
+    {
+        $sto = StockOpname::find($req->sto_id);
+
+        if (!$sto || !$sto->is_draft) {
+            return ["status" => -1, "message" => "Dokumen ini bukan draft"];
+        }
+        if (!$this->canManageStockOpnameDraft($sto)) {
+            return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
+        }
+
+        $sto->is_draft = false;
+        $sto->save();
+
+        return 1;
+    }
 
     function deleteStockOpname(Request $req)
     {
         $data = $req->all();
+        $sto = StockOpname::find($data['sto_id'] ?? null);
+
+        if ($sto && $sto->is_draft && !$this->canManageStockOpnameDraft($sto)) {
+            return ["status" => -1, "message" => "Tidak diizinkan menghapus draft milik staff lain"];
+        }
+
         return (new StockOpname())->deleteStockOpname($data);
     }
 
@@ -137,6 +196,8 @@ class StockController extends Controller
             'category_id' => $sto->category_id,
             'sto_notes'   => $sto->sto_notes,
             'status'      => $sto->status,
+            'is_draft'    => (bool) $sto->is_draft,
+            'created_by'  => $sto->created_by,
             'item'        => $items
         ];
 
@@ -182,7 +243,8 @@ class StockController extends Controller
         return (new StockOpnameDetail())->deleteDetailStockOpname($data);
     }
 
-    function accStockOpname(Request $req) {
+    function accStockOpname(Request $req)
+    {
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $sto = StockOpname::find($data['sto_id']);
@@ -246,25 +308,40 @@ class StockController extends Controller
         $sto->save();
     }
 
-    function tolakStockOpname(Request $req) {
+    function tolakStockOpname(Request $req)
+    {
         $data = $req->all();
         $sto = StockOpname::find($data["sto_id"]);
+        if (!$sto || $sto->is_draft) {
+            return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
+        }
 
         $sto->status = 3; // Tolak
         $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
     }
 
-    function generateStockOpname($id) {
+    function generateStockOpname($id)
+    {
         $param['stockOpname'] = StockOpname::find($id);
+        if (!$param['stockOpname']) {
+            abort(404);
+        }
+        if ($param['stockOpname']->is_draft && !$this->canManageStockOpnameDraft($param['stockOpname'])) {
+            abort(404);
+        }
         $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
-        $param["detail"] = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
+        $rawDetail = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
+        $param["detail"] = collect($rawDetail)
+            ->sortBy(fn($item) => strtolower((data_get($item, 'pr_name') ?? '') . '|' . (data_get($item, 'product_variant_name') ?? '')))
+            ->values()
+            ->all();
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
         else if ($param['stockOpname']['status'] == 3) $param['status'] = "Ditolak";
 
-        if(count($param["detail"])<=0){
+        if (count($param["detail"]) <= 0) {
             return -1;
         }
 
@@ -273,7 +350,7 @@ class StockController extends Controller
         $param['printed_at'] = now()->format('d/m/Y H:i');
 
         $pdf = Pdf::loadView('Backoffice.PDF.Opname', $param);
-        return $pdf->download('Stock Opname_'.$param["stockOpname"]["sto_code"].'.pdf');
+        return $pdf->download('Stock Opname_' . $param["stockOpname"]["sto_code"] . '.pdf');
     }
 
     // Stock Opname
@@ -288,6 +365,22 @@ class StockController extends Controller
         return response()->json($data);
     }
 
+    /**
+     * Dokumen draft hanya boleh dilihat/diubah/dihapus oleh staff pembuatnya
+     * (atau super admin) — dipakai insert/update/delete/submit/acc/tolak/PDF
+     * stock opname bahan supaya aturan pemilik drafnya konsisten di semua
+     * jalur, bukan hanya di listing.
+     */
+    private function canManageStockOpnameBahanDraft($stob)
+    {
+        if (!$stob) return false;
+
+        $user = session()->get('user');
+        if (RoleAccess::isSuperAdmin($user)) return true;
+
+        return $user && (int) $stob->created_by === (int) ($user->staff_id ?? 0);
+    }
+
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
@@ -296,22 +389,66 @@ class StockController extends Controller
             $value["stob_id"] = $id;
             (new StockOpnameDetailBahan())->insertDetail($value);
         }
+        return ["status" => 1, "stob_id" => $id];
     }
 
     function updateStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $id = (new StockOpnameBahan())->updateStockOpnameBahan($data);
-        foreach (json_decode($req->item, true) as $key => $value) {
-            $value["stob_id"] = $id;
-            if (isset($value["stod_id"])) (new StockOpnameDetailBahan())->updateDetail($value);
-            else (new StockOpnameDetailBahan())->insertDetail($value);
+        $stob = StockOpnameBahan::find($data['stob_id'] ?? null);
+
+        if (!$stob || !$stob->is_draft || !$this->canManageStockOpnameBahanDraft($stob)) {
+            return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
         }
+
+        // Draft tetap draft sampai benar-benar diajukan lewat /submitStockOpnameBahan.
+        $data['is_draft'] = true;
+        $id = (new StockOpnameBahan())->updateStockOpnameBahan($data);
+
+        // Ganti seluruh detail lama dengan detail yang dikirim — draft boleh
+        // menambah/menghapus item bebas, jadi diffing per-baris tidak perlu.
+        foreach (StockOpnameDetailBahan::where('stob_id', $id)->where('status', 1)->get() as $old) {
+            $old->status = 0;
+            $old->save();
+        }
+        foreach (json_decode($req->item, true) ?? [] as $value) {
+            $value["stob_id"] = $id;
+            (new StockOpnameDetailBahan())->insertDetail($value);
+        }
+
+        return 1;
+    }
+
+    /**
+     * Ajukan draft: is_draft dimatikan, dokumen masuk alur approval biasa
+     * (statusnya sudah 1=Menunggu sejak dibuat, jadi tidak perlu diubah).
+     */
+    function submitStockOpnameBahan(Request $req)
+    {
+        $stob = StockOpnameBahan::find($req->stob_id);
+
+        if (!$stob || !$stob->is_draft) {
+            return ["status" => -1, "message" => "Dokumen ini bukan draft"];
+        }
+        if (!$this->canManageStockOpnameBahanDraft($stob)) {
+            return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
+        }
+
+        $stob->is_draft = false;
+        $stob->save();
+
+        return 1;
     }
 
     function deleteStockOpnameBahan(Request $req)
     {
         $data = $req->all();
+        $stob = StockOpnameBahan::find($data['stob_id'] ?? null);
+
+        if ($stob && $stob->is_draft && !$this->canManageStockOpnameBahanDraft($stob)) {
+            return ["status" => -1, "message" => "Tidak diizinkan menghapus draft milik staff lain"];
+        }
+
         return (new StockOpnameBahan())->deleteStockOpnameBahan($data);
     }
 
@@ -362,7 +499,8 @@ class StockController extends Controller
         return (new StockOpnameDetailBahan())->deleteDetailStockOpname($data);
     }
 
-    function accStockOpnameBahan(Request $req) {
+    function accStockOpnameBahan(Request $req)
+    {
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $stob = StockOpnameBahan::find($data['stob_id']);
@@ -426,25 +564,40 @@ class StockController extends Controller
         $stob->save();
     }
 
-    function tolakStockOpnameBahan(Request $req) {
+    function tolakStockOpnameBahan(Request $req)
+    {
         $data = $req->all();
         $stob = StockOpnameBahan::find($data["stob_id"]);
+        if (!$stob || $stob->is_draft) {
+            return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
+        }
 
         $stob->status = 3; // Tolak
         $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $stob->save();
     }
 
-    function generateStockOpnameBahan($id) {
+    function generateStockOpnameBahan($id)
+    {
         $param['stockOpname'] = StockOpnameBahan::find($id);
+        if (!$param['stockOpname']) {
+            abort(404);
+        }
+        if ($param['stockOpname']->is_draft && !$this->canManageStockOpnameBahanDraft($param['stockOpname'])) {
+            abort(404);
+        }
         $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
-        $param["detail"] = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
+        $rawDetailBahan = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
+        $param["detail"] = collect($rawDetailBahan)
+            ->sortBy(fn($item) => strtolower(data_get($item, 'supplies_name') ?? ''))
+            ->values()
+            ->all();
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
         else if ($param['stockOpname']['status'] == 3) $param['status'] = "Ditolak";
 
-        if(count($param["detail"])<=0){
+        if (count($param["detail"]) <= 0) {
             return -1;
         }
 
@@ -453,7 +606,7 @@ class StockController extends Controller
         $param['printed_at'] = now()->format('d/m/Y H:i');
 
         $pdf = Pdf::loadView('Backoffice.PDF.OpnameBahan', $param);
-        return $pdf->download('Stock Opname_'.$param["stockOpname"]["stob_code"].'.pdf');
+        return $pdf->download('Stock Opname_' . $param["stockOpname"]["stob_code"] . '.pdf');
     }
 
     // Stock Alert
@@ -551,18 +704,18 @@ class StockController extends Controller
     {
         $data = $req->all();
         // Ambil base64
-        if (isset($req->photo)){
+        if (isset($req->photo)) {
             $image = $req->photo;
-    
+
             // Hilangkan prefix base64
             $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
-    
+
             // Decode
             $imageData = base64_decode($image);
-    
+
             // Nama file
             $imageName = 'photo_' . time() . '.png';
-    
+
             // Path tujuan di public/produksi
             $path = public_path('issue/' . $imageName);
             // Simpan file
@@ -570,16 +723,16 @@ class StockController extends Controller
             $data["pi_img"] = $imageName;
         }
 
-        if ($data['tipe_return'] == 1){
+        if ($data['tipe_return'] == 1) {
             $bermasalah = [];
             $kurang = [];
-            foreach (json_decode($data['items'], true) as $key => $value) { 
+            foreach (json_decode($data['items'], true) as $key => $value) {
                 // Pengecekan invoice
                 // if (isset($data['ref_num'])){
                 //     $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
                 //     $po = PurchaseOrder::find($inv->po_id);
                 //     $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
-                    
+
                 //     $ada = -1;
                 //     foreach ($pod as $key => $detail) {
                 //         if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
@@ -596,17 +749,17 @@ class StockController extends Controller
             }
             if (count($bermasalah) > 0) {
                 return [
-                    "status"=>-1,
-                    "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
+                    "status" => -1,
+                    "message" => "Bahan tidak ditemukan dalam invoice : " . implode(", ", $bermasalah)
                 ];
             }
             if (count($kurang) > 0) {
                 return [
-                    "status"=>-1,
-                    "message"=>"Stok dalam invoice tidak mencukupi : ".implode(", ",$kurang)
+                    "status" => -1,
+                    "message" => "Stok dalam invoice tidak mencukupi : " . implode(", ", $kurang)
                 ];
             }
-    
+
             foreach (json_decode($data['items'], true) as $key => $value) {
                 $value['tipe_return'] = $data['tipe_return'];
                 // Pengecekan stock
@@ -644,7 +797,7 @@ class StockController extends Controller
         // Simpan file
         file_put_contents($path, $imageData);
         $data["pi_img"] = $imageName;
-        
+
         $id = [];
 
         // if ($data['tipe_return'] == 1) {
@@ -660,7 +813,7 @@ class StockController extends Controller
             foreach ($getPi as $key => $val) {
                 foreach (json_decode($data['items'], true) as $key => $value) {
                     if ($data['tipe_return'] == 1) {
-                        if ($value['supplies_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']){
+                        if ($value['supplies_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']) {
                             $val['tipe_return'] = $data['tipe_return'];
                             $val['pid_qty'] = $value['pid_qty'];
                             $c = (new ProductIssuesDetail())->stockCheck($val);
@@ -668,7 +821,7 @@ class StockController extends Controller
                         }
                     }
                     if ($data['tipe_return'] == 2) {
-                        if ($value['product_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']){
+                        if ($value['product_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']) {
                             $val['tipe_return'] = $data['tipe_return'];
                             $val['pid_qty'] = $value['pid_qty'];
                             $c = (new ProductIssuesDetail())->stockCheck($val);
@@ -680,87 +833,87 @@ class StockController extends Controller
         }
         // Pengecekan invoice
         // if (isset($pi->ref_num) && $pi->ref_num > 0){
-            // $bermasalah = [];
-            // foreach (json_decode($data['items'], true) as $key => $value) {
-            //     $inv = PurchaseOrderDetailInvoice::find($pi->ref_num);
-            //     $po = PurchaseOrder::find($inv->po_id);
-            //     $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
-                
-            //     $ada = -1;
-            //     foreach ($pod as $key => $detail) {
-            //         if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
-            //             $ada = 1;
-            //             break;
-            //         }
-            //     }
-            //     if ($ada == -1) {
-            //         array_push($bermasalah, $value['supplies_name']);
-            //     }
-            // }
-            // if (count($bermasalah) > 0) {
-            //     return [
-            //         "status"=>-1,
-            //         "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
-            //     ];
-            // }
+        // $bermasalah = [];
+        // foreach (json_decode($data['items'], true) as $key => $value) {
+        //     $inv = PurchaseOrderDetailInvoice::find($pi->ref_num);
+        //     $po = PurchaseOrder::find($inv->po_id);
+        //     $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
 
-            // Kembalikan stock semua
-            $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
-            if (count($getPi) > 0) {
-                foreach ($getPi as $key => $val) {
-                    // Kembalikan stock invoice
-                    // $total = 0;
-                    // foreach ($pod as $key => $detail) {
-                    //     if ($val->item_id == $detail['supplies_variant_id'] && $val->unit_id == $detail['unit_id']){
-                    //         $detail['pod_qty'] += $val['pid_qty'];
-                    //         $detail['pod_subtotal'] = $detail['pod_harga'] * $detail['pod_qty'];
-                    //         $detail->save();
-                    //     }
-                    //     $total += $detail['pod_subtotal'];
-                    // }
-                    // if ($po->jenis_discount == "persen"){
-                    //     $total -= $total * $po->po_discount/100;
-                    // } else {
-                    //     $total -= $po->po_discount;
-                    // }
-                    // $total += $total * $po->po_ppn/100;
-                    // $total += $po->po_cost;
-                    
-                    // $inv->poi_total = $total;
-                    // $inv->save();
-                    // $po->po_total = $total;
-                    // $po->save();
-
-                    // Kembalikan stock
-                    $svr = SuppliesVariant::find($val->item_id);
-                    $ss = SuppliesStock::where('supplies_id', $svr->supplies_id)->where('unit_id', $val->unit_id)->first();
-                    $ss->ss_stock += $val['pid_qty'];
-                    $ss->save();
-                    
-                    // Catat Log
-                    $logNotes = "";
-                    $spr = Supplier::find($svr->supplier_id);
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
-                    (new LogStock())->insertLog([
-                        'log_date' => now(),
-                        'log_kode'    => $pi->pi_code,
-                        'log_type'    => 2,
-                        'log_category' => 1,
-                        'log_item_id' => $svr->supplies_id,
-                        'log_notes'  => $logNotes,
-                        'log_jumlah' => $val['pid_qty'],
-                        'unit_id'    => $val['unit_id'],
-                    ]);
-                }
-            }
+        //     $ada = -1;
+        //     foreach ($pod as $key => $detail) {
+        //         if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
+        //             $ada = 1;
+        //             break;
+        //         }
+        //     }
+        //     if ($ada == -1) {
+        //         array_push($bermasalah, $value['supplies_name']);
+        //     }
         // }
-        
+        // if (count($bermasalah) > 0) {
+        //     return [
+        //         "status"=>-1,
+        //         "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
+        //     ];
+        // }
+
+        // Kembalikan stock semua
+        $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
+        if (count($getPi) > 0) {
+            foreach ($getPi as $key => $val) {
+                // Kembalikan stock invoice
+                // $total = 0;
+                // foreach ($pod as $key => $detail) {
+                //     if ($val->item_id == $detail['supplies_variant_id'] && $val->unit_id == $detail['unit_id']){
+                //         $detail['pod_qty'] += $val['pid_qty'];
+                //         $detail['pod_subtotal'] = $detail['pod_harga'] * $detail['pod_qty'];
+                //         $detail->save();
+                //     }
+                //     $total += $detail['pod_subtotal'];
+                // }
+                // if ($po->jenis_discount == "persen"){
+                //     $total -= $total * $po->po_discount/100;
+                // } else {
+                //     $total -= $po->po_discount;
+                // }
+                // $total += $total * $po->po_ppn/100;
+                // $total += $po->po_cost;
+
+                // $inv->poi_total = $total;
+                // $inv->save();
+                // $po->po_total = $total;
+                // $po->save();
+
+                // Kembalikan stock
+                $svr = SuppliesVariant::find($val->item_id);
+                $ss = SuppliesStock::where('supplies_id', $svr->supplies_id)->where('unit_id', $val->unit_id)->first();
+                $ss->ss_stock += $val['pid_qty'];
+                $ss->save();
+
+                // Catat Log
+                $logNotes = "";
+                $spr = Supplier::find($svr->supplier_id);
+                $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $pi->pi_code,
+                    'log_type'    => 2,
+                    'log_category' => 1,
+                    'log_item_id' => $svr->supplies_id,
+                    'log_notes'  => $logNotes,
+                    'log_jumlah' => $val['pid_qty'],
+                    'unit_id'    => $val['unit_id'],
+                ]);
+            }
+        }
+        // }
+
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $data["pi_id"];
             if (isset($pi->ref_num)) $value['ref_num'] = $pi->ref_num;
 
             if (!isset($value["pid_id"])) {
-                if ($pi->tipe_return == 2){
+                if ($pi->tipe_return == 2) {
                     $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
                     if (count($getPi) > 0) {
                         foreach ($getPi as $key => $val) {
@@ -771,7 +924,7 @@ class StockController extends Controller
 
                             // Catat Log
                             $logNotes = "";
-                            $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                            $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                             (new LogStock())->insertLog([
                                 'log_date' => now(),
                                 'log_kode'    => $pi->pi_code,
@@ -785,26 +938,26 @@ class StockController extends Controller
                         }
                     }
                 }
-                
+
                 // Pengurangan stock
                 $t = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
-                
+
                 // Catat Log
                 $logNotes = "";
                 $logCategory = 0;
                 $logType = 0;
                 $itemId = 0;
-                if ($pi->tipe_return == 1){
+                if ($pi->tipe_return == 1) {
                     $sup = SuppliesVariant::find($value['supplies_variant_id']);
                     $spr = Supplier::find($sup->supplier_id);
-                    
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                     $logCategory = 2;
                     $logType = 2;
 
                     $itemId = $sup->supplies_id;
-                } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                } elseif ($pi->tipe_return == 2) {
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                     $logCategory = 1;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -819,24 +972,22 @@ class StockController extends Controller
                     'log_jumlah' => $value['pid_qty'],
                     'unit_id'    => $value['unit_id'],
                 ]);
-            }
-            else {
+            } else {
                 // Catat Log
                 $logNotes = "";
                 $logCategory = 0;
                 $logType = 0;
                 $itemId = 0;
-                if ($pi->tipe_return == 1){
+                if ($pi->tipe_return == 1) {
                     $sup = SuppliesVariant::find($value['supplies_variant_id']);
                     $spr = Supplier::find($sup->supplier_id);
-                    
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                     $logCategory = 1;
                     $logType = 2;
                     $itemId = $sup->supplies_id;
-
-                } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                } elseif ($pi->tipe_return == 2) {
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                     $logCategory = 2;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -852,7 +1003,7 @@ class StockController extends Controller
                     'log_jumlah' => $value['pid_qty'],
                     'unit_id'    => $value['unit_id'],
                 ]);
-                
+
                 $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
 
                 // Catat Log
@@ -860,17 +1011,16 @@ class StockController extends Controller
                 $logCategory = 0;
                 $logType = 0;
                 $itemId = 0;
-                if ($pi->tipe_return == 1){
+                if ($pi->tipe_return == 1) {
                     $sup = SuppliesVariant::find($value['supplies_variant_id']);
                     $spr = Supplier::find($sup->supplier_id);
-                    
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name;
+
+                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                     $logCategory = 2;
                     $logType = 2;
                     $itemId = $sup->supplies_id;
-
-                } elseif ($pi->tipe_return == 2){
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada';
+                } elseif ($pi->tipe_return == 2) {
+                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                     $logCategory = 1;
                     $logType = 1;
                     $itemId = $value['product_variant_id'];
@@ -888,7 +1038,6 @@ class StockController extends Controller
                 ]);
             }
             array_push($id, $t);
-            
         }
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
@@ -898,7 +1047,7 @@ class StockController extends Controller
         $data = $req->all();
 
         $pi = ProductIssues::find($data['pi_id']);
-        $w = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->where('status', '>=', 1)->get();
+        $w = ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->where('status', '>=', 1)->get();
 
         if ($pi->tipe_return == 2) {
             // ─── Fase 1: Agregasi ───────────────────────────────────────────
@@ -963,7 +1112,7 @@ class StockController extends Controller
                 }
 
                 // Fungsi rekursif — cari unit atas via relasi, tidak bergantung index
-                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
                     $stokSekarang = $units[$targetKey];
 
                     $sr = ProductRelation::where('product_variant_id', $variantId)
@@ -1000,14 +1149,14 @@ class StockController extends Controller
                             'unit_id'    => $stokAtas->unit_id,
                             'jumlah'     => ($logSummary[$stokAtas->unit_id . '_cat2']['jumlah'] ?? 0) + 1,
                             'cat'        => 2,
-                            'note'       => 'Konversi unit dari retur armada (Bongkar)',
+                            'note'       => 'Konversi unit dari retur armada (Bongkar) ' . LogStock::actorSuffix(),
                             'sort_order' => $baseOrder,
                         ];
                         $logSummary[$stokSekarang->unit_id . '_cat1'] = [
                             'unit_id'    => $stokSekarang->unit_id,
                             'jumlah'     => ($logSummary[$stokSekarang->unit_id . '_cat1']['jumlah'] ?? 0) + $hasilBongkar,
                             'cat'        => 1,
-                            'note'       => 'Konversi unit dari retur armada (Hasil)',
+                            'note'       => 'Konversi unit dari retur armada (Hasil) ' . LogStock::actorSuffix(),
                             'sort_order' => $baseOrder + 1,
                         ];
                         return true;
@@ -1128,13 +1277,12 @@ class StockController extends Controller
                 $sup = SuppliesVariant::find($value['item_id']);
                 $spr = Supplier::find($sup->supplier_id);
 
-                $logNotes    = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name;
+                $logNotes    = 'Penghapusan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                 $logCategory = 1;
                 $logType     = 2;
                 $itemId      = $sup->supplies_id;
-
             } elseif ($pi->tipe_return == 2) {
-                $logNotes    = 'Penghapusan data produk bermasalah retur Armada';
+                $logNotes    = 'Penghapusan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
                 $logCategory = 2;
                 $logType     = 1;
                 $itemId      = $value['item_id'];
@@ -1153,7 +1301,8 @@ class StockController extends Controller
         }
     }
 
-    function accProductIssues(Request $req){
+    function accProductIssues(Request $req)
+    {
         $data = $req->all();
         $pi = ProductIssues::find($data['pi_id']);
         $item = ProductIssuesDetail::where('pi_id', $data['pi_id'])->where('status', 1)->get();
@@ -1170,14 +1319,14 @@ class StockController extends Controller
         foreach ($item as $key => $value) {
             $itemId = 0;
             // Return to Supplier
-            if ($pi->tipe_return == 1){
+            if ($pi->tipe_return == 1) {
                 $itemId = $value['item_id'];
                 $m = SuppliesVariant::find($itemId);
-                $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$value["unit_id"])->first();
-                
+                $s = SuppliesStock::where('supplies_id', '=', $m->supplies_id)->where('unit_id', '=', $value["unit_id"])->first();
+
                 // Cek dari retur pembelian, apakah ada barang yang dibeli dari invoice ini
-                if ($pi['po_id'] != 0){
-                    if ($pi['ref_num'] != 0){
+                if ($pi['po_id'] != 0) {
+                    if ($pi['ref_num'] != 0) {
                         $inv = PurchaseOrderDetailInvoice::find($pi['ref_num']);
                     }
                     $po = PurchaseOrder::find(!isset($inv) ? $pi['po_id'] : $inv->po_id);
@@ -1193,12 +1342,12 @@ class StockController extends Controller
                 }
 
                 // pengurangan qty invoice
-                if ($pi['po_id'] != 0){
+                if ($pi['po_id'] != 0) {
                     $total = 0;
                     foreach ($pod as $key => $val) {
                         // Kalau retur pembelian tidak perlu potong stok PO
-                        if (!isset($data['retur_pembelian'])){
-                            if ($value['item_id'] == $val['supplies_variant_id'] && $value['unit_id'] == $val['unit_id']){
+                        if (!isset($data['retur_pembelian'])) {
+                            if ($value['item_id'] == $val['supplies_variant_id'] && $value['unit_id'] == $val['unit_id']) {
                                 $val['pod_qty'] -= $value['pid_qty'];
                                 $val['pod_subtotal'] = $val['pod_harga'] * $val['pod_qty'];
                                 $val->save();
@@ -1206,25 +1355,25 @@ class StockController extends Controller
                         }
                         $total += $val['pod_subtotal'];
                     }
-                    if ($po->jenis_discount == "persen"){
-                        $total -= $total * $po->po_discount/100;
+                    if ($po->jenis_discount == "persen") {
+                        $total -= $total * $po->po_discount / 100;
                     } else {
                         $total -= $po->po_discount;
                     }
-                    $total += $total * $po->po_ppn/100;
+                    $total += $total * $po->po_ppn / 100;
                     $total += $po->po_cost;
-    
+
                     $data_retur = ReturnSupplies::where('po_id', !isset($inv) ? $pi['po_id'] : $inv->po_id)->where('status', 1)->get();
                     $total_retur = 0;
-                    if ($data_retur){
+                    if ($data_retur) {
                         foreach ($data_retur as $key => $dr) {
                             $total_retur += $dr->rs_total;
                         }
                         if (isset($pi['total_retur'])) $total -= $pi['total_retur'];
                         else $total -= $total_retur;
                     }
-    
-                    if (isset($inv)){
+
+                    if (isset($inv)) {
                         $inv->poi_total = $total;
                         $inv->save();
                     }
@@ -1237,12 +1386,12 @@ class StockController extends Controller
                 $s->save();
             }
 
-            // Return from customer 
-            else{
+            // Return from customer
+            else {
                 $itemId = $value["item_id"];
                 $m = ProductVariant::find($itemId);
-                $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$value["unit_id"])->first();
-                
+                $s = ProductStock::where('product_variant_id', '=', $m->product_variant_id)->where('unit_id', '=', $value["unit_id"])->first();
+
                 $stocks = $s->ps_stock ?? 0;
                 $stocks += $value["pid_qty"];
 
@@ -1255,16 +1404,16 @@ class StockController extends Controller
             $logCategory = 0;
             $logType = 0;
             $itemId = 0;
-            if ($pi->tipe_return == 1){
+            if ($pi->tipe_return == 1) {
                 $sup = SuppliesVariant::find($value['item_id']);
                 $spr = Supplier::find($sup->supplier_id);
-                $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name;
+                $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
                 $logCategory = 2;
                 $logType = 2;
 
                 $itemId = $sup->supplies_id;
-            } elseif ($pi->tipe_return == 2){
-                $logNotes = 'Produk bermasalah retur Armada';
+            } elseif ($pi->tipe_return == 2) {
+                $logNotes = 'Produk bermasalah retur Armada ' . LogStock::actorSuffix();
                 $logCategory = 1;
                 $logType = 1;
                 $itemId = $value['item_id'];
@@ -1285,7 +1434,8 @@ class StockController extends Controller
         return 1;
     }
 
-    function declineProductIssues(Request $req){
+    function declineProductIssues(Request $req)
+    {
         $data = $req->all();
         $q = ProductIssues::find($data['pi_id']);
         if ($q->status != 1) {
@@ -1331,7 +1481,7 @@ class StockController extends Controller
         $viewMode = 'main';
         if ($warehouseId) {
             $warehouse = Warehouse::query()
-                ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+                ->with(['type' => fn($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
                 ->find($warehouseId);
             $isMain = $warehouse
                 && $warehouse->type
@@ -1561,8 +1711,8 @@ class StockController extends Controller
         $data = (new ProductVariant())->getProductVariant();
         $defaultUnits = $isMain
             ? Product::query()
-                ->whereIn('product_id', $data->pluck('product_id')->filter()->unique()->all())
-                ->pluck('unit_id', 'product_id')
+            ->whereIn('product_id', $data->pluck('product_id')->filter()->unique()->all())
+            ->pluck('unit_id', 'product_id')
             : collect();
         foreach ($data as $key => $value) {
             $value->stock = (new ProductStock())->getProductStock([

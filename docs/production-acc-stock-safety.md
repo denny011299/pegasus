@@ -9,11 +9,11 @@ Dokumen perbaikan di `ProductionController::accProduction` agar ACC gagal **tida
 
 ## Perbedaan fase-2 vs alur lama
 
-| | Alur lama | fase-2 (inventori-first) |
-|--|-----------|--------|
+|                 | Alur lama                             | fase-2 (inventori-first)                                                                                                          |
+| --------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Saat ACC sukses | potong bahan + **tambah stok produk** | potong bahan + **tambah stok di gudang produksi**; ST Pending **hanya** jika tujuan ≠ asal (eceran/lain). Tidak ada ST main→main. |
-| ST Kirim | n/a | potong stok dari gudang asal |
-| ST Terima | n/a | tambah stok di gudang tujuan |
+| ST Kirim        | n/a                                   | potong stok dari gudang asal                                                                                                      |
+| ST Terima       | n/a                                   | tambah stok di gudang tujuan                                                                                                      |
 
 Create produksi tetap **pending**, belum potong stok.
 
@@ -23,7 +23,7 @@ Create produksi tetap **pending**, belum potong stok.
 
 ### Gejala (historis)
 
-1. ACC gagal (*bahan baku tidak mencukupi*).
+1. ACC gagal (_bahan baku tidak mencukupi_).
 2. Status produksi **tetap Pending**.
 3. Sebagian stok bahan **sudah terpotong** + ada `log_stocks`.
 4. ACC ulang → daftar bahan kurang bisa **bertambah**.

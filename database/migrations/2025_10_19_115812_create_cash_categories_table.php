@@ -6,22 +6,22 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('cash_categories', function (Blueprint $table) {
-            $table->integerIncrements('cc_id');
+            $table->charset('latin1');
+            $table->collation('latin1_swedish_ci');
+
+            $table->integer('cc_id', true);
             $table->string('cc_name', 100);
             $table->string('cc_type', 15);
-            $table->timestamps();
+            $table->tinyInteger('status')->default(1);
+            $table->integer('created_by')->nullable()->comment('staff_id');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('cash_categories');

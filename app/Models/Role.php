@@ -16,14 +16,13 @@ class Role extends Model
             "role_name"=>null
         ], $data);
 
-        $result = self::where('status', '=', 1)
-            ->where('role_id', '>', 0);
-
-        if (!empty($data['role_name'])) {
-            $result->where('role_name', 'like', '%' . $data['role_name'] . '%');
-        }
-
-        return $result->orderBy('role_name', 'asc')->get();
+        // $result = self::where('status', '=', 1)->where('role_id', '>=', 1);
+        $result = self::where('status', '=', 1);
+        if($data["role_name"]) $result->where('role_name','like','%'.$data["role_name"].'%');
+        $result->orderBy('created_at', 'asc');
+       
+        $result = $result->get();
+        return $result;
     }
 
     function insertRole($data)

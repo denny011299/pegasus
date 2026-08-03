@@ -30,6 +30,25 @@ class CashCategory extends Model
         return $result;
     }
 
+    /**
+     * Daftar kategori kas untuk External API.
+     *
+     * Aturan bisnisnya sama dengan getCashCategory(): hanya baris aktif
+     * (status = 1). Bedanya, created_by_name tidak ikut diambil — pemanggilan
+     * Staff::find() per baris itu kueri N+1 sekaligus membocorkan nama staf
+     * internal, dua hal yang sama-sama tidak diinginkan di API publik.
+     *
+     * cc_id ditambahkan sebagai penentu urutan akhir agar keluarannya tetap
+     * sama di setiap permintaan, meski beberapa baris punya created_at kembar.
+     */
+    function getCashCategoryForExternalApi()
+    {
+        return CashCategory::where('status', '=', 1)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('cc_id', 'asc')
+            ->get(['cc_id', 'cc_name', 'cc_type']);
+    }
+
     function insertCashCategory($data)
     {
         $t = new CashCategory();

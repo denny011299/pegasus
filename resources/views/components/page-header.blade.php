@@ -16,22 +16,6 @@
                     </li>
                     @endroleCan
                 @endif
-                @if (Route::is(['warehouse']))
-                    @roleCan('Gudang', 'create')
-                    <li>
-                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Gudang</a>
-                    </li>
-                    @endroleCan
-                @endif
-                @if (Route::is(['warehouse-type']))
-                    @roleCan('Tipe Gudang', 'create')
-                    <li>
-                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Tipe Gudang</a>
-                    </li>
-                    @endroleCan
-                @endif
                 @if (Route::is(['unit']))
                     @roleCan('Satuan', 'create')
                     <li>
@@ -316,6 +300,40 @@
                             Wilayah</a>
                     </li>
                     @endroleCanAny
+                @endif
+                @if (Route::is(['synchronizationWizard']))
+                    <li>
+                        <a class="btn btn-outline-secondary" href="/synchronization"><i class="fa fa-chevron-left me-2"
+                                aria-hidden="true"></i>Kembali ke Pusat Sinkronisasi</a>
+                    </li>
+                @endif
+                @if (Route::is(['externalApplication']))
+                    @roleCan('Aplikasi Eksternal', 'create')
+                    <li>
+                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2"
+                                aria-hidden="true"></i>Tambah Aplikasi</a>
+                    </li>
+                    @endroleCan
+                @endif
+                @if (Route::is(['externalApplicationDetail']))
+                    @roleCan('Aplikasi Eksternal', 'create')
+                    <li>
+                        <a class="btn btn-primary btnAddKey" href="javascript:void(0);"><i class="fa fa-plus-circle me-2"
+                                aria-hidden="true"></i>Buat API Key</a>
+                    </li>
+                    @endroleCan
+                    <li>
+                        <a class="btn btn-outline-secondary" href="/externalApplication"><i class="fa fa-chevron-left me-2"
+                                aria-hidden="true"></i>Kembali</a>
+                    </li>
+                @endif
+                @if (Route::is(['externalApiLog']))
+                    @roleCan('Log API Eksternal', 'delete')
+                    <li>
+                        <a class="btn btn-outline-danger btnCleanupLog" href="javascript:void(0);"><i
+                                class="fa fa-trash me-2" aria-hidden="true"></i>Bersihkan Log</a>
+                    </li>
+                    @endroleCan
                 @endif
                 @if (Route::is(['cashCategory']))
                     @roleCan('Kategori Kas', 'create')

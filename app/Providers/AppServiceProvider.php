@@ -2,23 +2,51 @@
 
 namespace App\Providers;
 
+use App\ExternalApi\ApiKeyManager;
+use App\ExternalApi\Docs\ApiDocRegistry;
+use App\ExternalApi\Logging\RequestLogger;
 use App\Models\ProductVariant;
 use App\Models\Staff;
 use App\Models\Warehouse;
 use App\Support\RoleAccess;
+use App\Synchronization\Pmo\PmoClient;
+use App\Synchronization\SyncFlowRegistry;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
+    /**
+     * Register any application services.
+     */
     public function register(): void
     {
-        //
+        $this->app->singleton(PmoClient::class, function () {
+            return new PmoClient(config('synchronization.pmo', []));
+        });
+
+        $this->app->singleton(SyncFlowRegistry::class, function () {
+            return new SyncFlowRegistry(config('synchronization.flows', []));
+        });
+
+        $this->app->singleton(ApiKeyManager::class, function () {
+            return new ApiKeyManager(config('externalapi.key', []));
+        });
+
+        $this->app->singleton(ApiDocRegistry::class, function () {
+            return new ApiDocRegistry(config('externalapi.docs', []));
+        });
+
+        // Singleton supaya pembacaan saklar pencatatan di tabel `settings`
+        // cukup sekali per permintaan.
+        $this->app->singleton(RequestLogger::class);
     }
 
+    /**
+     * Bootstrap any application services.
+     */
     public function boot()
     {
         Blade::if('roleCan', function (string $module, string $ability) {
@@ -90,7 +118,7 @@ class AppServiceProvider extends ServiceProvider
 
             if ($activeId) {
                 $activeWarehouse = $warehouses->first(
-                    fn ($wh) => (int) $wh->id === (int) $activeId
+                    fn($wh) => (int) $wh->id === (int) $activeId
                 );
                 if (! $activeWarehouse) {
                     // Session mengarah ke gudang non-aktif / tidak di-assign → bersihkan

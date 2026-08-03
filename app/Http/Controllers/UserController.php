@@ -6,8 +6,6 @@ use App\Models\Bank;
 use App\Models\Role;
 use App\Models\Staff;
 use App\Models\User;
-use App\Models\Warehouse;
-use App\Support\RoleAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Arr;
@@ -17,30 +15,9 @@ class UserController extends Controller
     function loginUser(Request $req)
     {
         $data = (new Staff())->getStaff($req->all());
-        if ($data === -1) {
-            return -1;
-        }
-
-        if (count($data) > 0) {
-            $user = $data[0];
-            Session::put('user', $user);
-
-            // Pulihkan gudang aktif terakhir dari DB (survive restart / session baru)
-            $lastWarehouseId = $user->last_active_warehouse_id ?? null;
-            if ($lastWarehouseId) {
-                $allowed = Warehouse::availableForUser($user);
-                $stillAllowed = $allowed->contains(fn ($wh) => (int) $wh->id === (int) $lastWarehouseId);
-                if ($stillAllowed) {
-                    Session::put('active_warehouse_id', (int) $lastWarehouseId);
-                } else {
-                    Session::forget('active_warehouse_id');
-                    // Bersihkan preferensi usang di DB
-                    Staff::where('staff_id', (int) $user->staff_id)
-                        ->update(['last_active_warehouse_id' => null]);
-                }
-            } else {
-                Session::forget('active_warehouse_id');
-            }
+        if ($data === -1) return -1;
+        else if(count($data)>0){
+            Session::put("user",$data[0]);
         }
 
         return $data;
@@ -56,33 +33,14 @@ class UserController extends Controller
     }
 
     function viewInsertStaff() {
-        $param["mode"] = 1; // 1 = insert, 2 = update
-        $param["data"] = [
-            'staff_id' => null,
-            'staff_name' => '',
-            'staff_email' => '',
-            'staff_phone' => '',
-            'staff_address' => '',
-            'staff_username' => '',
-            'role_id' => null,
-            'role_name' => '',
-            'staff_warehouses' => [],
-        ];
-        $param["warehouses"] = Warehouse::allActive();
-        $param["roles"] = (new Role())->getRole();
+        $param["mode"] =1; // 1 = insert, 2 = update
+        $param["data"] =[];
         return view('Backoffice.User.insertStaff')->with($param);
     }
 
     function ViewUpdateStaff($id) {
-        $formData = (new Staff())->getStaffFormData($id);
-        if (!$formData) {
-            abort(404, 'Data staf tidak ditemukan');
-        }
-
-        $param["mode"] = 2; // 1 = insert, 2 = update
-        $param["data"] = $formData;
-        $param["warehouses"] = Warehouse::allActive();
-        $param["roles"] = (new Role())->getRole();
+        $param["mode"]=2; // 1 = insert, 2 = update
+        $param["data"] = (new Staff())->getStaff(["staff_id"=>$id])[0];
         return view('Backoffice.User.insertStaff')->with($param);
     }
 
@@ -98,10 +56,6 @@ class UserController extends Controller
     }
 
     function updateStaff(Request $req){
-        $req->validate([
-            'staff_password' => 'nullable|string',
-        ]);
-
         $data = $req->all();
         if(isset($req->image)&&$req->image!="undefined")$data["staff_image"] = (new HelperController)->insertFile($req->image, "staff");
         return (new Staff())->updateStaff($data);
@@ -191,7 +145,6 @@ class UserController extends Controller
     function updatePermission(Request $req){
         $data = $req->all();
         $updatedRoleId = (new Role())->updateRole($data);
-        RoleAccess::clearCache();
 
         if (Session::has('user')) {
             $sessionUser = Session::get('user');
@@ -236,7 +189,6 @@ class UserController extends Controller
 
         $role->role_access = json_encode($filtered, JSON_UNESCAPED_UNICODE);
         $role->save();
-        RoleAccess::clearCache();
 
         if (Session::has('user')) {
             $sessionUser = Session::get('user');

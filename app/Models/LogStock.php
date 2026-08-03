@@ -19,18 +19,18 @@ class LogStock extends Model
     {
 
         $data = array_merge([
-            "log_notes"=>null,
-            "log_type"=>null,
-            "log_item_id"=>null,
-            "date"=>null,
-            "warehouse_id"=>null,
-            "limit"=>200,
+            "log_notes" => null,
+            "log_type" => null,
+            "log_item_id" => null,
+            "date" => null,
+            "warehouse_id" => null,
+            "limit" => 200,
         ], $data);
 
         $result = LogStock::where('status', '=', 1);
-        if($data['log_notes'])$result->where('log_notes','like','%'.$data["log_notes"].'%');
-        if($data["log_type"])$result->where('log_type','=',$data["log_type"]);
-        if($data["log_item_id"])$result->where('log_item_id','=',$data["log_item_id"]);
+        if ($data['log_notes']) $result->where('log_notes', 'like', '%' . $data["log_notes"] . '%');
+        if ($data["log_type"]) $result->where('log_type', '=', $data["log_type"]);
+        if ($data["log_item_id"]) $result->where('log_item_id', '=', $data["log_item_id"]);
 
         $warehouseId = (int) ($data['warehouse_id'] ?? 0);
         if ($warehouseId <= 0) {
@@ -206,7 +206,7 @@ class LogStock extends Model
             return [[], [], []];
         }
 
-        $unitIds = $stockRows->pluck('unit_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+        $unitIds = $stockRows->pluck('unit_id')->map(fn($id) => (int) $id)->unique()->values()->all();
         $units = Unit::whereIn('unit_id', $unitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id');
         foreach ($stockRows as $stock) {
             $unit = $units->get($stock->unit_id);
@@ -942,7 +942,7 @@ class LogStock extends Model
             ];
         }
 
-        $ids = collect($totalsMerged)->pluck('supplies_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+        $ids = collect($totalsMerged)->pluck('supplies_id')->filter()->map(fn($id) => (int) $id)->unique()->values()->all();
 
         $pivotRows = DB::table('log_stocks as l')
             ->where('l.status', 1)
@@ -1080,7 +1080,7 @@ class LogStock extends Model
             $productRows = $q->get();
             $productLogsByKey = self::fetchAgingLogsGrouped(
                 1,
-                $productRows->pluck('product_variant_id')->map(fn ($id) => (int) $id)->unique()->values()->all()
+                $productRows->pluck('product_variant_id')->map(fn($id) => (int) $id)->unique()->values()->all()
             );
 
             foreach ($productRows as $row) {
@@ -1137,7 +1137,7 @@ class LogStock extends Model
             $bahanRows = $q->get();
             $bahanLogsByKey = self::fetchAgingLogsGrouped(
                 2,
-                $bahanRows->pluck('supplies_id')->map(fn ($id) => (int) $id)->unique()->values()->all()
+                $bahanRows->pluck('supplies_id')->map(fn($id) => (int) $id)->unique()->values()->all()
             );
 
             foreach ($bahanRows as $row) {

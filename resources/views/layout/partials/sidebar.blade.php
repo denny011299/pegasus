@@ -193,6 +193,7 @@
         <div class="sidebar-inner slimscroll">
             <div id="sidebar-menu" class="sidebar-menu">
                 @if (false){{-- menu template Kanakku (horizontal), tidak dipakai layout vertical --}}
+                <nav class="greedys sidebar-horizantal">
                     <ul class="list-inline-item list-unstyled links">
                         <li class="menu-title"><span>Main</span></li>
                         <li class="submenu">
@@ -708,10 +709,12 @@
         };
     @endphp
                     <li class="menu-title"><span>Menu Utama</span></li>
-                    <li>
-                        <a class="{{ Request::is('/', 'index') ? 'active' : '' }}" href="/">
-                            <i class="fe fe-home"></i> <span>Dashboard</span>
-                        </a>
+                    <li class="submenu">
+                        <li>
+                            <a class="{{ Request::is('index') ? 'active' : '' }}" href="/">
+                                <i class="fe fe-home"></i> <span>Dashboard</span>
+                            </a>
+                        </li>
                     </li>
                     <!-- /Main -->
 
@@ -767,9 +770,6 @@
                                         <li><a href="{{ url('variant') }}"
                                             class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                                     @endif
-                                </ul>
-                            </li>
-                        @endif
 
                         @if ($showGudangMenu)
                             <li class="submenu">
@@ -1104,6 +1104,48 @@
                                 <a class="{{ Request::is('roles-permission', 'permission') ? 'active' : '' }}"
                                     href="/role"><i class="fe fe-clipboard"></i> <span>Peran &
                                         Perizinan</span></a>
+                            </li>
+                        @endif
+                    @endif
+
+                    @php
+                        $showIntegrasi =
+                            $akses->firstWhere('name', 'Sinkronisasi') ||
+                            $akses->firstWhere('name', 'Aplikasi Eksternal') ||
+                            $akses->firstWhere('name', 'Dokumentasi API Eksternal') ||
+                            $akses->firstWhere('name', 'Log API Eksternal');
+                    @endphp
+
+                    @if ($showIntegrasi)
+                        <li class="menu-title"><span>Integrasi</span></li>
+                        @if ($akses->firstWhere('name', 'Sinkronisasi'))
+                            <li>
+                                <a class="{{ Request::is('synchronization*') ? 'active' : '' }}" href="/synchronization">
+                                    <i class="fe fe-refresh-cw"></i> <span>Pusat Sinkronisasi</span>
+                                </a>
+                            </li>
+                        @endif
+                        @if ($akses->firstWhere('name', 'Aplikasi Eksternal'))
+                            <li>
+                                <a class="{{ Request::is('externalApplication*') ? 'active' : '' }}"
+                                    href="/externalApplication">
+                                    <i class="fe fe-box"></i> <span>Aplikasi Eksternal</span>
+                                </a>
+                            </li>
+                        @endif
+                        @if ($akses->firstWhere('name', 'Dokumentasi API Eksternal'))
+                            <li>
+                                <a class="{{ Request::is('externalApiDocumentation*') ? 'active' : '' }}"
+                                    href="/externalApiDocumentation">
+                                    <i class="fe fe-book-open"></i> <span>Dokumentasi API Eksternal</span>
+                                </a>
+                            </li>
+                        @endif
+                        @if ($akses->firstWhere('name', 'Log API Eksternal'))
+                            <li>
+                                <a class="{{ Request::is('externalApiLog*') ? 'active' : '' }}" href="/externalApiLog">
+                                    <i class="fe fe-activity"></i> <span>Log API Eksternal</span>
+                                </a>
                             </li>
                         @endif
                     @endif
