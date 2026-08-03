@@ -154,7 +154,7 @@ class WarehouseType extends Model
 
         return self::active()
             ->whereRaw('LOWER(warehouse_type_name) = ?', [mb_strtolower($name)])
-            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
             ->exists();
     }
 
@@ -172,7 +172,7 @@ class WarehouseType extends Model
     {
         return self::active()
             ->where('is_main_warehouse', 1)
-            ->when($exceptId, fn ($q) => $q->where('id', '!=', $exceptId))
+            ->when($exceptId, fn($q) => $q->where('id', '!=', $exceptId))
             ->exists();
     }
 }

@@ -100,6 +100,12 @@ class ProductIssues extends Model
         $t->po_id = $data["po_id"] ?? 0;
         $t->pi_date = $pi_date;
         $t->pi_notes = $data["pi_notes"];    
+        if (Schema::hasColumn($t->getTable(), 'source_type')) {
+            $t->source_type = $data['source_type'] ?? null;
+        }
+        if (Schema::hasColumn($t->getTable(), 'source_id')) {
+            $t->source_id = $data['source_id'] ?? null;
+        }
         $t->tipe_return = $data["tipe_return"];     
         $t->pi_img = $data["pi_img"] ?? null;
         $t->status = $data['status'] ?? 1;

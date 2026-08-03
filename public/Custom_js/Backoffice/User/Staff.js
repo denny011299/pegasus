@@ -34,7 +34,7 @@
                 { data: "role_name_text" },
                 { data: "saldo_text" },
                 { data: "created" },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "action", class: "d-flex align-items-center" },
             ],
             initComplete: (settings, json) => {

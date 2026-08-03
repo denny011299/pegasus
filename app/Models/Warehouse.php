@@ -88,9 +88,9 @@ class Warehouse extends Model
             ->from('warehouses')
             ->active()
             ->whereIn('warehouses.id', $ids)
-            ->whereHas('type', fn ($q) => $q->where('warehouse_types.status', 1))
+            ->whereHas('type', fn($q) => $q->where('warehouse_types.status', 1))
             ->with([
-                'type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse'),
+                'type' => fn($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse'),
             ])
             ->leftJoin('warehouse_types', 'warehouse_types.id', '=', 'warehouses.warehouse_type_id')
             ->orderByDesc('warehouse_types.is_main_warehouse')
@@ -127,14 +127,14 @@ class Warehouse extends Model
 
         $lastId = $user->last_active_warehouse_id ?? null;
         if ($lastId) {
-            $found = $warehouses->first(fn ($wh) => (int) $wh->id === (int) $lastId);
+            $found = $warehouses->first(fn($wh) => (int) $wh->id === (int) $lastId);
             if ($found) {
                 return $found;
             }
         }
 
         $main = $warehouses->first(
-            fn ($wh) => (int) ($wh->type->is_main_warehouse ?? 0) === 1
+            fn($wh) => (int) ($wh->type->is_main_warehouse ?? 0) === 1
         );
 
         return $main ?: $warehouses->first();
@@ -295,7 +295,7 @@ class Warehouse extends Model
         }
 
         $clean = array_values(array_unique(array_filter(array_map(
-            static fn ($m) => is_string($m) ? trim($m) : '',
+            static fn($m) => is_string($m) ? trim($m) : '',
             $menus
         ))));
 
@@ -339,9 +339,9 @@ class Warehouse extends Model
         }
 
         $clean = array_values(array_unique(array_filter(array_map(
-            static fn ($m) => is_string($m) ? trim($m) : '',
+            static fn($m) => is_string($m) ? trim($m) : '',
             $raw
-        ), static fn ($m) => $m !== '')));
+        ), static fn($m) => $m !== '')));
 
         return $clean === [] ? null : $clean;
     }
@@ -423,7 +423,7 @@ class Warehouse extends Model
 
         return self::active()
             ->whereRaw('LOWER(warehouse_name) = ?', [mb_strtolower($name)])
-            ->when($excludeId, fn ($q) => $q->where('id', '!=', $excludeId))
+            ->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))
             ->exists();
     }
 

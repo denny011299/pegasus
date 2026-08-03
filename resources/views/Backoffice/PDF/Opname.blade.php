@@ -97,17 +97,19 @@
                     <th>Produk</th>
                     <th>Varian</th>
                     <th>Stock Sistem</th>
-                    {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
-                    @endif --}}
                     <th>Stock Real</th>
-                    {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
-                    @endif --}}
                     <th>Selisih</th>
-                    
                     <th>Catatan</th>
                 </tr>
             </thead>
             <tbody>
+                @php
+                    $fmtQty = fn (?string $s) => preg_replace_callback(
+                        '/(-?\d+)/',
+                        fn($m) => number_format((int)$m[1], 0, ',', '.'),
+                        (string)($s ?? '-')
+                    );
+                @endphp
                 @foreach ($detail as $item)
                     @php
                         $hasSelisih = false;
@@ -128,16 +130,9 @@
                         <td>{{ empty($item['product_variant_sku']) ? '-' : $item['product_variant_sku'] }}</td>
                         <td>{{ $item['pr_name'] ?? '-' }}</td>
                         <td>{{ empty($item['product_variant_name']) ? '-' : $item['product_variant_name'] }}</td>
-                        <td style="{{ $highlight }}">{{ $item['stod_system'] ?? '-' }}</td>
-                        {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
-                        @endif --}}
-                        
-                        <td style="{{ $highlight }}">{{ $item['stod_real'] ?? '-' }}</td>
-
-                        <td style="{{ $highlight }}">{{ $item['stod_selisih'] ?? '-' }}</td>
-                        {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
-                        @endif --}}
-                        
+                        <td style="{{ $highlight }}">{{ $fmtQty($item['stod_system'] ?? null) }}</td>
+                        <td style="{{ $highlight }}">{{ $fmtQty($item['stod_real'] ?? null) }}</td>
+                        <td style="{{ $highlight }}">{{ $fmtQty($item['stod_selisih'] ?? null) }}</td>
                         <td>{{ empty($item['stod_notes']) ? '-' : $item['stod_notes'] }}</td>
                     </tr>
                 @endforeach

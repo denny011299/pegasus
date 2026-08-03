@@ -110,7 +110,7 @@
                 { data: "product_name", width: "20%" },
                 { data: "supplies", width: '35%' },
                 { data: "unit_text", width: '10%' },
-                { data: "created_by_name", defaultContent: "-", width: '12%' },
+                { data: "created_by_name", defaultContent: "-", width: '12%' , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "action", class: "text-center align-middle", width: "13" },
             ],
             initComplete: (settings, json) => {
@@ -275,7 +275,12 @@
         $('#product_unit_info').hide().html('');
         $('#supplies_unit_info').hide().html('');
 
-        $('#product_id').append(`<option value="${data.product_id}">${data.product_name}</option>`);
+        var productLabel = data.product_name || '';
+        var sku = data.product_variant_sku || data.product_sku || '';
+        if (sku && sku !== '-') {
+            productLabel = productLabel ? (sku + ' | ' + productLabel) : sku;
+        }
+        $('#product_id').append(`<option value="${data.product_id}">${productLabel}</option>`);
         $('#bom_qty').val(data.bom_qty);
         (data.details || []).forEach(e => {
             var rowData  = {

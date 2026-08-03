@@ -6,9 +6,7 @@
     });
     
     function inisialisasi() {
-        // Cek apakah DataTable sudah diinisialisasi sebelumnya
         if ($.fn.DataTable.isDataTable("#tableCustomer")) {
-            // Destroy DataTable yang sudah ada
             $("#tableCustomer").DataTable().destroy();
         }
         table = $('#tableCustomer').DataTable({
@@ -17,35 +15,50 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
             autoWidth: false,
-            scrollX: true,
+            scrollX: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Armada",
                 info: "_START_ - _END_ of _TOTAL_ items",
+                emptyTable: "Tidak ada data armada",
+                zeroRecords: "Armada tidak ditemukan",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
                 },
             },
             columns: [
-                { data: "customer_notes", width: "15%" },
-                { data: "customer_pic", width: "15%" },
-                { data: "customer_pic_phone", width: "15%" },
-                { data: "saldo", width: "15%" },
+                { data: "customer_notes", width: "16%" },
+                { data: "customer_pic", width: "16%" },
+                { data: "customer_pic_phone", width: "14%" },
+                { data: "saldo", width: "14%" },
                 { data: "created", width: "12%" },
-                { data: "created_by_name", defaultContent: "-", width: "15%" },
-                { data: "action", class: "d-flex align-items-center", width: "13%" },
+                { data: "created_by_name", defaultContent: "-", width: "16%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
+                {
+                    data: "action",
+                    className: "text-center align-middle",
+                    width: "12%",
+                    orderable: false,
+                },
             ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            initComplete: function () {
+                var $filter = $('.dataTables_filter').last();
+                $filter.appendTo('#tableSearch');
+                $filter.appendTo('.search-input');
+                if (!$filter.find('label .fa-search').length) {
+                    $filter.find('label').prepend('<i class="fa fa-search"></i> ');
+                }
+                if (table) table.columns.adjust();
+            },
+            drawCallback: function () {
+                if (table) table.columns.adjust();
             },
         });
     }
 
     function refreshCustomer() {
+        $('#tableCustomer-wrap').addClass('dt-pending');
         $.ajax({
             url: "/getCustomer",
             method: "get",
@@ -55,13 +68,9 @@
                 }
 
                 table.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].created = moment(e[i].created_at).format('D MMM YYYY');
                     e[i].saldo = `Rp ${formatRupiah(e[i].customer_saldo)}`
-                    // <a class="me-2 btn-action-icon p-2 btn_view" href="/customerDetail/${e[i].customer_id}" data-bs-target="#view-supplier">
-                    //     <i class="fe fe-eye"></i>
-                    // </a>
                     var ce =
                         roleIconEdit(
                             "Armada",
@@ -83,21 +92,19 @@
                 }
 
                 table.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
+                if (typeof feather !== "undefined") feather.replace();
+                if (table) table.columns.adjust();
+                $('#tableCustomer-wrap').removeClass('dt-pending');
             },
             error: function (err) {
                 console.error("Gagal load:", err);
+                $('#tableCustomer-wrap').removeClass('dt-pending');
             }
         });
     }
 
-    // $(document).on("keyup","#filter_customer_name",function(){
-    //     refreshCustomer();
-    // });
-
-    //delete
     $(document).on("click",".btn_delete",function(){
-        var data = $('#tableCustomer').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var data = $('#tableCustomer').DataTable().row($(this).parents('tr')).data();
         showModalDelete("Apakah yakin ingin menghapus Armada ini?","btn-delete-customer");
         $('#btn-delete-customer').attr("customer_id", data.customer_id);
     });

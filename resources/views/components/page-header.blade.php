@@ -66,9 +66,17 @@
                 @endif
                 @if (Route::is(['salesOrder']))
                     @roleCan('Pengiriman', 'create')
-                    <li>
+                    <li id="btn-container-pengiriman">
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pengiriman</a>
+                    </li>
+                    <li id="btn-container-pengembalian-bahan" style="display: none;">
+                        <a class="btn btn-primary" id="csr-add"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Pengembalian Bahan Mentah</a>
+                    </li>
+                    <li id="btn-container-pengembalian-produk" style="display: none;">
+                        <a class="btn btn-primary" id="cpr-add"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Pengembalian Produk Jadi</a>
                     </li>
                     @endroleCan
                 @endif
@@ -166,7 +174,7 @@
                     </li>
                     @endroleCan
                 @endif
-               
+
                 @if (Route::is(['bank']))
                     @roleCan('Bank Account', 'create')
                     <li>
@@ -185,7 +193,7 @@
                     </li>
                     @endroleCan
                 @endif
-            
+
                 @if (Route::is(['stockOpname']))
                     @roleCan('Stok Opname Produk', 'create')
                     <li>
@@ -202,6 +210,15 @@
                     </li>
                     @endroleCan
                 @endif
+                @if (Route::is(['stockTransfer']))
+                    @roleCan('Stock Transfer', 'create')
+                    <li>
+                        <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Stock Transfer</a>
+                    </li>
+                    @endroleCan
+                @endif
+
                 @if (Route::is(['detailStockOpname']))
                     <li>
                         <a class="btn btn-primary btnBack"><i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali</a>
@@ -354,7 +371,7 @@
 @endif
 
 @if (Route::is(['companies','subscription','plans-list','packages']))
-    
+
 <!-- Page Header -->
 <div class="page-header">
     <div class="content-page-header">
@@ -362,7 +379,7 @@
         <div class="page-content">
             <div class="list-btn">
                 <ul class="filter-list">
-                    
+
                 </ul>
             </div>
         </div>

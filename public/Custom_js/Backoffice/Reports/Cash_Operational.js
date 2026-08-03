@@ -280,7 +280,7 @@
 
             $('#add_cash_admin .modal-title').html("Tambah Aktivitas Admin");
             $('#staff_id').empty(null).attr('disabled', false);
-            $('#jenis_input').val("saldo").attr('disabled', false).trigger('change');
+            $('#jenis_input').val("operasional").attr('disabled', false).trigger('change');
             autocompleteStaff('#staff_id', '#add_cash_admin .modal-body');
             $('.total').html("Rp 0");
 
@@ -311,7 +311,7 @@
             $('#add_cash_gudang .modal-title').html("Tambah Aktivitas Gudang");
             $('#staff_id_gudang').empty(null).attr('disabled', false);
             $('#customer_id').empty(null);
-            $('#jenis_input_gudang').val("saldo").attr('disabled', false).trigger('change');
+            $('#jenis_input_gudang').val("operasional").attr('disabled', false).trigger('change');
             autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
             autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
             
@@ -337,7 +337,7 @@
             $('#cc_id').empty(null).attr('disabled', false);
             $('#add_cash_armada .modal-title').html("Tambah Aktivitas Armada");
             $('#customer_id_armada').empty(null).attr('disabled', false);
-            $('#jenis_input_armada').val("saldo").attr('disabled', false).trigger('change');
+            $('#jenis_input_armada').val("operasional").attr('disabled', false).trigger('change');
             autocompleteCustomer('#customer_id_armada', '#add_cash_armada .modal-body');
             autocompleteCashCategory('#cc_id', '#add_cash_armada .modal-body');
             $('.total_armada').html("Rp 0");
@@ -365,7 +365,7 @@
             $('#oc_transaksi_sales').val(1).attr('disabled', false).show().trigger('change');
             $('#add_cash_sales .modal-title').html("Tambah Aktivitas Sales");
             $('#staff_id_sales, #bank_account, #cc_id_sales').empty(null).attr('disabled', false);
-            $('#jenis_input_sales').val("saldo").attr('disabled', false).trigger('change');
+            $('#jenis_input_sales').val("operasional").attr('disabled', false).trigger('change');
             $('#aksi_sales').val(1).attr('disabled', false).trigger('change');
             autocompleteStaffSales('#staff_id_sales', '#add_cash_sales .modal-body');
             autocompleteCashCategory('#cc_id_sales', '#add_cash_sales .modal-body');
@@ -515,7 +515,7 @@
                 { data: "ca_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
@@ -536,7 +536,7 @@
                 { data: "cg_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
@@ -557,7 +557,7 @@
                 { data: "cr_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
@@ -578,7 +578,7 @@
                 { data: "cs_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" },
+                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },

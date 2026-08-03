@@ -95,12 +95,16 @@ class Bom extends Model
             $value->product_sku = $v ? $v->product_variant_sku : '-';
             $value->product_variant_id = $v ? $v->product_variant_id : null;
             $value->default_unit = $u ? $u->unit_id : null;
+            $value->retail_unit = $v && $v->retail_unit ? (int) $v->retail_unit : null;
             $defaultUnit = $u ? $unitsMap->get($u->unit_id) : null;
             $value->default_unit_name = $defaultUnit ? $defaultUnit->unit_short_name : '-';
             $value->product_name = $v && $u
                 ? trim($u->product_name . ' ' . $v->product_variant_name)
                 : '-';
             $value->product_variant_sku = $v ? $v->product_variant_sku : '-';
+            $value->qty_per_pallet = $v && (int) ($v->qty_per_pallet ?? 0) > 0
+                ? (int) $v->qty_per_pallet
+                : null;
             $bomUnit = $unitsMap->get($value->unit_id);
             $value->unit_name = $bomUnit ? ($bomUnit->unit_name ?? $bomUnit->unit_short_name ?? '-') : '-';
             $unitIds = $u ? (json_decode($u->product_unit, true) ?: []) : [];

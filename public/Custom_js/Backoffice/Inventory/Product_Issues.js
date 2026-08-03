@@ -94,7 +94,7 @@
                 { data: "pi_code",          width: "10%" },
                 { data: "pi_notes",         width: "40%" },
                 { data: "status_text",      width: "15%", class: "text-center" },
-                { data: "created_by_name",  width: "10%", defaultContent: "-" },
+                { data: "created_by_name",  width: "10%", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name",      width: "10%", defaultContent: "-" },
                 { data: "action",           width: "5%",  class: "text-center align-middle" },
             ],
@@ -128,7 +128,7 @@
                 { data: "ref_num_text",     width: "10%", defaultContent: "-" },
                 { data: "pi_notes",         width: "25%" },
                 { data: "status_text",      width: "15%", class: "text-center" },
-                { data: "created_by_name",  width: "10%", defaultContent: "-" },
+                { data: "created_by_name",  width: "10%", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name",      width: "10%", defaultContent: "-" },
                 { data: "action",           width: "10%",  class: "text-center align-middle" },
             ],
@@ -152,7 +152,9 @@
                 // Manipulasi data sebelum masuk ke tabel
                 e.forEach(item => {
                     item.date = moment(item.pi_date).format('D MMM YYYY');
-                    item.ref_num_text = item.poi_code || item.po_number;
+                    item.ref_num_text = item.pi_type == 3
+                        ? '<span class="badge bg-dark">Hangus</span>'
+                        : (item.poi_code || item.po_number || '<span class="badge bg-danger">Rusak</span>');
                     
                     var pia = "";
                     if (hasAccessAction("Produk Bermasalah", "view")) {
@@ -231,7 +233,7 @@
                 console.log(e);
                 
                 let returnProduct = e.filter(item => item.pi_type == 1);
-                let damageProduct = e.filter(item => item.pi_type == 2);
+                let damageProduct = e.filter(item => item.pi_type == 2 || item.pi_type == 3);
                 tableReturn.clear().rows.add(returnProduct).draw();
                 tableDamage.clear().rows.add(damageProduct).draw();
                 
@@ -536,7 +538,7 @@ function loadPiType() {
         if(idx==-1){
             var data  = {
                 "product_variant_id": temp.product_variant_id,
-                "product_name": `${temp.pr_name} ${temp.product_variant_name}`,
+                "product_name": temp.text || `${temp.product_variant_sku ? temp.product_variant_sku + ' | ' : ''}${temp.pr_name || ''} ${temp.product_variant_name || ''}`.trim(),
                 "pid_qty": parseInt($('#pid_qty').val()),
                 "unit_name": $('#unit_product_id option:selected').text(),
                 "unit_id": $('#unit_product_id').val(),
@@ -779,7 +781,7 @@ $(document).on("click", ".btn_view", function () {
     $("#pi_notes").val(data.pi_notes);
     $('#tipe_return').val(data.tipe_return).trigger('change');
     $("#pi_type").empty().append(
-        `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":"Rusak"}</option>`
+        `<option value="${data.pi_type}">${data.pi_type==1?"Dikembalikan":(data.pi_type==3?"Hangus":"Rusak")}</option>`
     );
     // $('#ref_num').empty().append(`
     //     <option value="${data.ref_num}">

@@ -13,6 +13,19 @@ class Supplies extends Model
     protected $primaryKey = "supplies_id";
     public $timestamps = true;
     public $incrementing = true;
+    protected $fillable = [
+        'supplies_name',
+        'supplies_desc',
+        'supplies_unit',
+        'supplies_alert',
+        'supplies_default_unit',
+        'lead_time_days',
+        'safety_stock',
+    ];
+    protected $casts = [
+        'lead_time_days' => 'integer',
+        'safety_stock' => 'integer',
+    ];
 
     function getSupplies($data = [])
     {
@@ -226,6 +239,8 @@ class Supplies extends Model
         $t->supplies_unit = $data["supplies_unit"];
         $t->supplies_alert = $data["supplies_alert"];
         $t->supplies_default_unit = $data["supplies_default_unit"];
+        $t->lead_time_days = max(0, (int) ($data["lead_time_days"] ?? 0));
+        $t->safety_stock = max(0, (int) ($data["safety_stock"] ?? 0));
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplies_id;
@@ -239,6 +254,8 @@ class Supplies extends Model
         $t->supplies_unit = $data["supplies_unit"];
         $t->supplies_alert = $data["supplies_alert"];
         $t->supplies_default_unit = $data["supplies_default_unit"];
+        $t->lead_time_days = max(0, (int) ($data["lead_time_days"] ?? 0));
+        $t->safety_stock = max(0, (int) ($data["safety_stock"] ?? 0));
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplies_id;
@@ -252,7 +269,9 @@ class Supplies extends Model
         $t->save();
 
         SuppliesVariant::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
-        SuppliesStock::where("supplies_id", "=", $data["supplies_id"])->update(["status" => 0]);
+        SuppliesStock::withoutGlobalScope('active_warehouse')
+            ->where("supplies_id", "=", $data["supplies_id"])
+            ->update(["status" => 0]);
     }
 
     public function getActiveUnitsForSupplies(int $suppliesId)

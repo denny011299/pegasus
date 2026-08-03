@@ -11,6 +11,10 @@ return new class extends Migration
         if (! Schema::hasColumn('product_variants', 'safety_stock')) {
             Schema::table('product_variants', function (Blueprint $table) {
                 $table->integer('safety_stock')->default(0)->after('product_variant_alert');
+            });
+        }
+        if (! Schema::hasColumn('product_variants', 'safety_unit_id')) {
+            Schema::table('product_variants', function (Blueprint $table) {
                 $table->integer('safety_unit_id')->nullable()->after('safety_stock');
             });
         }
@@ -24,9 +28,14 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::hasColumn('product_variants', 'safety_unit_id')) {
+            Schema::table('product_variants', function (Blueprint $table) {
+                $table->dropColumn('safety_unit_id');
+            });
+        }
         if (Schema::hasColumn('product_variants', 'safety_stock')) {
             Schema::table('product_variants', function (Blueprint $table) {
-                $table->dropColumn(['safety_stock', 'safety_unit_id']);
+                $table->dropColumn('safety_stock');
             });
         }
 

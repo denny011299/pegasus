@@ -66,7 +66,7 @@
                     </li>
                     <li class="nav-item nav-jenis"  tipe="2">
                         <a href="#damage" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                            Rusak
+                            Rusak / Hangus
                         </a>
                     </li>
                 </ul>

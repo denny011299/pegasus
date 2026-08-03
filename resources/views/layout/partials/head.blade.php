@@ -11,6 +11,9 @@
 
     <!-- Feather CSS -->
     <link rel="stylesheet" href="{{ asset('assets/plugins/feather/feather.css') }}">
+    
+    <!-- Custom Premium Theme CSS -->
+    <link rel="stylesheet" href="{{ asset('assets/css/custom-premium.css') }}?v={{ time() }}">
 
     <style>
         /* Select2 Multiple - Chip */
@@ -91,6 +94,48 @@
             box-sizing: border-box !important;
         }
 
+        /* Global Table Styling (Aesthetic) */
+        .table-responsive {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        
+        .table {
+            margin-bottom: 0 !important;
+        }
+
+        .table thead {
+            background: #f1f5f9 !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+
+        .table thead th, .table thead td {
+            background-color: #f1f5f9 !important;
+            color: #64748b !important;
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: .4px !important;
+            padding: 14px 24px !important;
+            border-bottom: none !important;
+        }
+
+        .table tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .table tbody td {
+            padding: 16px 24px !important;
+            vertical-align: middle;
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .table tbody tr:hover {
+            background-color: #f8fafc !important;
+        }
     </style>
 
     @if (Route::is([
@@ -269,7 +314,7 @@
     @endif
 
     <!-- Main CSS -->
-    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}?v={{ time() }}">
 
     <style>
         /* Select2 single — perbaikan tampilan autocomplete */
@@ -312,6 +357,89 @@
             font-weight: bold;
             cursor: pointer;
             z-index: 1;
+        }
+
+        /* Datatable Skeleton Custom Styles */
+        .dt-pending table,
+        .dt-pending .dataTables_wrapper {
+            display: none !important;
+        }
+        .dt-ready .dt-skeleton {
+            display: none !important;
+        }
+        .dt-skeleton {
+            width: 100%;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        .dt-skeleton-head {
+            display: grid;
+            gap: 0;
+            background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%);
+            border-bottom: 2px solid #bfdbfe;
+            border-radius: 8px 8px 0 0;
+            padding: 16px 25px;
+            margin-bottom: 0;
+        }
+        .dt-skeleton-head span {
+            height: 12px;
+            border-radius: 6px;
+            background: rgba(30, 64, 175, 0.15);
+        }
+        .dt-skeleton-body {
+            padding: 0 25px 8px;
+        }
+        .dt-skeleton-row {
+            display: grid;
+            gap: 0;
+            align-items: center;
+            min-height: 65px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .dt-skeleton-row span {
+            background: #e2e8f0;
+            background-image: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 40%, #e2e8f0 80%);
+            background-size: 200% 100%;
+            animation: dt-shimmer 1.5s ease-in-out infinite;
+            display: inline-block;
+        }
+        .skel-icon { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; }
+        .skel-avatar { width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0; }
+        .skel-badge { height: 26px; border-radius: 20px; }
+        .skel-btn { width: 32px; height: 32px; border-radius: 8px; }
+        .skel-text { height: 14px; border-radius: 6px; }
+
+        .dt-skeleton-row:nth-child(2) span { animation-delay: 0.1s; }
+        .dt-skeleton-row:nth-child(3) span { animation-delay: 0.2s; }
+        .dt-skeleton-row:nth-child(4) span { animation-delay: 0.3s; }
+        .dt-skeleton-row:nth-child(5) span { animation-delay: 0.4s; }
+
+        @keyframes dt-shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        /* Enhanced DataTable Processing Overlay & Skeleton Styles */
+        div.dataTables_wrapper div.dataTables_processing {
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            margin-top: 0 !important;
+            margin-left: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            z-index: 1050 !important;
+        }
+
+        .dt-skeleton-overlay {
+            animation: fadeInOverlay 0.2s ease-in-out;
+        }
+
+        @keyframes fadeInOverlay {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 

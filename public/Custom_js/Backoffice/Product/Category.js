@@ -34,7 +34,7 @@
             columns: [
                 { data: "category_name", width: "30vw" },
                 { data: "category_date", width: "20vw" },
-                { data: "created_by_name", defaultContent: "-", width: "30vw" },
+                { data: "created_by_name", defaultContent: "-", width: "30vw" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "action", class: "text-center align-middle", width: "10vw" },
             ],
             initComplete: (settings, json) => {

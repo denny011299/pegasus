@@ -1,15 +1,17 @@
 var mode = 1;
-    var table;
+var table;
 
 $(document).ready(function () {
-        inisialisasi();
+    inisialisasi();
     autocompleteWarehouseType("#warehouse_type_id", "#add_warehouse");
 });
 
 $(document).on("click", ".btnAdd", function () {
     mode = 1;
     $("#add_warehouse .modal-title").html("Tambah Gudang");
-    $("#add_warehouse input:not([type=checkbox]), #add_warehouse textarea").val("");
+    $("#add_warehouse input:not([type=checkbox]), #add_warehouse textarea").val(
+        "",
+    );
     $("#warehouse_type_id").val(null).trigger("change");
     setWarehouseSidebarMenus(null);
     $(".is-invalid").removeClass("is-invalid");
@@ -53,7 +55,10 @@ function updateAllModuleChecks() {
 
 $(document).on("change", ".module-check-all", function () {
     var isChecked = $(this).is(":checked");
-    $(this).closest(".menu-card").find(".warehouse-sidebar-menu").prop("checked", isChecked);
+    $(this)
+        .closest(".menu-card")
+        .find(".warehouse-sidebar-menu")
+        .prop("checked", isChecked);
 });
 
 $(document).on("change", ".warehouse-sidebar-menu", function () {
@@ -74,9 +79,9 @@ $(document).on("click", "#btn-sidebar-menus-all", function () {
 $(document).on("click", "#btn-sidebar-menus-none", function () {
     $(".warehouse-sidebar-menu").prop("checked", false);
     updateAllModuleChecks();
-    });
-    
-    function inisialisasi() {
+});
+
+function inisialisasi() {
     table = $("#tableWarehouse").DataTable({
         ajax: {
             url: "/getWarehouse",
@@ -94,22 +99,22 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
                 });
             },
         },
-            bFilter: true,
+        bFilter: true,
         sDom: "fBtlpi",
-            lengthMenu: [10, 25, 50, 100],
-            ordering: true,
+        lengthMenu: [10, 25, 50, 100],
+        ordering: true,
         autoWidth: false,
         scrollX: false,
-            language: {
+        language: {
             search: " ",
             sLengthMenu: "_MENU_",
-                searchPlaceholder: "Cari Gudang",
-                info: "_START_ - _END_ of _TOTAL_ items",
+            searchPlaceholder: "Cari Gudang",
+            info: "_START_ - _END_ of _TOTAL_ items",
             emptyTable: "Belum ada data gudang",
             zeroRecords: "Data tidak ditemukan",
             loadingRecords: "Sedang memuat data...",
-                paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
+            paginate: {
+                next: ' <i class=" fa fa-angle-right"></i>',
                 previous: '<i class="fa fa-angle-left"></i> ',
             },
         },
@@ -120,8 +125,11 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
                 width: "22%",
                 render: function (data, type, row) {
                     if (type !== "display") return data;
-                    var isUtama = row.type && parseInt(row.type.is_main_warehouse) === 1;
-                    var iconClass = isUtama ? "fas fa-building" : "fas fa-store";
+                    var isUtama =
+                        row.type && parseInt(row.type.is_main_warehouse) === 1;
+                    var iconClass = isUtama
+                        ? "fas fa-building"
+                        : "fas fa-store";
                     var iconBg = isUtama ? "#eff6ff" : "#f8fafc";
                     var iconColor = isUtama ? "#2563eb" : "#64748b";
                     var iconBorder = isUtama ? "#bfdbfe" : "#e2e8f0";
@@ -158,8 +166,10 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
                 width: "14%",
                 render: function (data, type, row) {
                     if (type !== "display") return data;
-                    if (!data || data === "-") return '<span class="text-muted">-</span>';
-                    var isUtama = row.type && parseInt(row.type.is_main_warehouse) === 1;
+                    if (!data || data === "-")
+                        return '<span class="text-muted">-</span>';
+                    var isUtama =
+                        row.type && parseInt(row.type.is_main_warehouse) === 1;
                     var bg = isUtama ? "#dbeafe" : "#e0f2fe";
                     var color = isUtama ? "#1e40af" : "#0369a1";
                     var border = isUtama ? "#bfdbfe" : "#bae6fd";
@@ -183,7 +193,11 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
                 width: "20%",
                 render: function (data, type) {
                     if (type !== "display") return data;
-                    return '<span style="color:#475569;display:inline-block;text-align:left;">' + (data || "-") + "</span>";
+                    return (
+                        '<span style="color:#475569;display:inline-block;text-align:left;">' +
+                        (data || "-") +
+                        "</span>"
+                    );
                 },
             },
             {
@@ -207,7 +221,8 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
                 width: "14%",
                 render: function (data, type) {
                     if (type !== "display") return data;
-                    if (!data || data === "-") return '<span class="text-muted">-</span>';
+                    if (!data || data === "-")
+                        return '<span class="text-muted">-</span>';
                     return (
                         '<div style="display:flex;align-items:center;justify-content:flex-start;gap:8px;">' +
                         '<div style="width:24px;height:24px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:10px;">' +
@@ -251,9 +266,14 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
         initComplete: function () {
             $(".dataTables_filter").appendTo("#tableSearch");
             $(".dataTables_filter").appendTo(".search-input");
-            $(".dataTables_filter input[type='search']").attr("placeholder", "Cari gudang...");
+            $(".dataTables_filter input[type='search']").attr(
+                "placeholder",
+                "Cari gudang...",
+            );
             table.columns.adjust();
-            $("#warehouse-table-wrap").removeClass("dt-pending").addClass("dt-ready");
+            $("#warehouse-table-wrap")
+                .removeClass("dt-pending")
+                .addClass("dt-ready");
         },
         drawCallback: function () {
             if (typeof feather !== "undefined") feather.replace();
@@ -264,8 +284,12 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
 }
 
 function buildActionButtons(row) {
-    var canEdit = typeof hasAccessAction === "function" && hasAccessAction("Gudang", "edit");
-    var canDelete = typeof hasAccessAction === "function" && hasAccessAction("Gudang", "delete");
+    var canEdit =
+        typeof hasAccessAction === "function" &&
+        hasAccessAction("Gudang", "edit");
+    var canDelete =
+        typeof hasAccessAction === "function" &&
+        hasAccessAction("Gudang", "delete");
     var html = "";
 
     if (canEdit) {
@@ -295,7 +319,11 @@ function buildActionButtons(row) {
     }
 
     if (!html) return '<span class="text-muted small">—</span>';
-    return '<div style="display:flex;gap:6px;justify-content:center;">' + html + "</div>";
+    return (
+        '<div style="display:flex;gap:6px;justify-content:center;">' +
+        html +
+        "</div>"
+    );
 }
 
 function refreshWarehouse() {
@@ -304,25 +332,36 @@ function refreshWarehouse() {
 }
 
 $(document).on("click", ".btn-save", function () {
-       LoadingButton(this);
+    LoadingButton(this);
     $(".is-invalid").removeClass("is-invalid");
     var url = "/insertWarehouse";
     var valid = 1;
 
     $("#add_warehouse .fill").each(function () {
-        if ($(this).val() == null || $(this).val() == "null" || $(this).val() == "") {
+        if (
+            $(this).val() == null ||
+            $(this).val() == "null" ||
+            $(this).val() == ""
+        ) {
             valid = -1;
             $(this).addClass("is-invalid");
         }
     });
 
     if (valid == -1) {
-        notifikasi("error", "Gagal Insert", "Silahkan cek kembali inputan anda");
-        ResetLoadingButton(".btn-save", mode == 1 ? "Tambah Gudang" : "Update Gudang");
-            return false;
+        notifikasi(
+            "error",
+            "Gagal Insert",
+            "Silahkan cek kembali inputan anda",
+        );
+        ResetLoadingButton(
+            ".btn-save",
+            mode == 1 ? "Tambah Gudang" : "Update Gudang",
+        );
+        return false;
     }
 
-        param = {
+    param = {
         warehouse_name: $("#warehouse_name").val(),
         warehouse_type_id: $("#warehouse_type_id").val(),
         warehouse_address: $("#warehouse_address").val(),
@@ -333,77 +372,107 @@ $(document).on("click", ".btn-save", function () {
     if (mode == 2) {
         url = "/updateWarehouse";
         param.id = $("#add_warehouse").attr("data-id");
-        }
+    }
 
-        LoadingButton($(this));
-        $.ajax({
+    LoadingButton($(this));
+    $.ajax({
         url: url,
-            data: param,
+        data: param,
         method: "post",
-            headers: {
+        headers: {
             "X-CSRF-TOKEN": token,
-            },
+        },
         success: function (e) {
-            ResetLoadingButton(".btn-save", mode == 1 ? "Tambah Gudang" : "Update Gudang");
-                if (e == -2) {
+            ResetLoadingButton(
+                ".btn-save",
+                mode == 1 ? "Tambah Gudang" : "Update Gudang",
+            );
+            if (e == -2) {
                 notifikasi("error", "Gagal", "Nama gudang sudah terdaftar!");
                 $("#warehouse_name").addClass("is-invalid");
-                    return;
-                }
-                afterInsert();
-            },
+                return;
+            }
+            afterInsert();
+        },
         error: function (e) {
-            ResetLoadingButton(".btn-save", mode == 1 ? "Tambah Gudang" : "Update Gudang");
+            ResetLoadingButton(
+                ".btn-save",
+                mode == 1 ? "Tambah Gudang" : "Update Gudang",
+            );
             notifikasi("error", "Gagal", "Terjadi kesalahan saat menyimpan");
-                console.log(e);
+            console.log(e);
         },
     });
-    });
+});
 
-    function afterInsert() {
-        $(".modal").modal("hide");
-    if (mode == 1) notifikasi("success", "Berhasil Insert", "Berhasil Tambah Gudang");
-    else if (mode == 2) notifikasi("success", "Berhasil Update", "Berhasil Update Gudang");
+function afterInsert() {
+    $(".modal").modal("hide");
+    if (mode == 1)
+        notifikasi("success", "Berhasil Insert", "Berhasil Tambah Gudang");
+    else if (mode == 2)
+        notifikasi("success", "Berhasil Update", "Berhasil Update Gudang");
 
     // Sidebar tergantung sidebar_menus gudang aktif → reload supaya menu ikut berubah
     var editedId = $("#add_warehouse").attr("data-id");
     var activeId =
-        typeof getActiveWarehouseId === "function" ? getActiveWarehouseId() : null;
-    if (mode == 2 && editedId && activeId && String(editedId) === String(activeId)) {
+        typeof getActiveWarehouseId === "function"
+            ? getActiveWarehouseId()
+            : null;
+    if (
+        mode == 2 &&
+        editedId &&
+        activeId &&
+        String(editedId) === String(activeId)
+    ) {
         setTimeout(function () {
             window.location.reload();
         }, 400);
         return;
     }
 
-        refreshWarehouse();
-    }
+    refreshWarehouse();
+}
 
-$(document).on("keypress", "#add_warehouse input, #add_warehouse textarea", function (e) {
-    if (e.which == 13) {
-        e.preventDefault();
-        $(".btn-save").trigger("click");
-    }
-});
+$(document).on(
+    "keypress",
+    "#add_warehouse input, #add_warehouse textarea",
+    function (e) {
+        if (e.which == 13) {
+            e.preventDefault();
+            $(".btn-save").trigger("click");
+        }
+    },
+);
 
 $(document).on("click", ".btn_edit", function () {
     var data = table.row($(this).parents("tr")).data();
     mode = 2;
     $("#add_warehouse .modal-title").html("Update Gudang");
-    $("#add_warehouse input:not([type=checkbox]), #add_warehouse textarea").val("");
+    $("#add_warehouse input:not([type=checkbox]), #add_warehouse textarea").val(
+        "",
+    );
     $("#warehouse_type_id").val(null).trigger("change");
     $(".is-invalid").removeClass("is-invalid");
     $(".btn-save").html(mode == 1 ? "Tambah Gudang" : "Update Gudang");
 
     $("#warehouse_name").val(data.warehouse_name);
     $("#warehouse_address").val(
-        data.warehouse_address && data.warehouse_address != "-" ? data.warehouse_address : ""
+        data.warehouse_address && data.warehouse_address != "-"
+            ? data.warehouse_address
+            : "",
     );
     if (data.warehouse_type_id) {
         var typeName =
             data.type && data.type.warehouse_type_name
                 ? data.type.warehouse_type_name
                 : "-";
+        if (
+            data.type &&
+            (data.type.is_main_warehouse == 1 ||
+                data.type.is_main_warehouse === true)
+        ) {
+            typeName += " (Gudang Utama)";
+        }
         var opt = new Option(typeName, data.warehouse_type_id, true, true);
         $("#warehouse_type_id").append(opt).trigger("change");
     }
@@ -415,13 +484,16 @@ $(document).on("click", ".btn_edit", function () {
 
 $(document).on("click", ".btn_delete", function () {
     var data = table.row($(this).parents("tr")).data();
-    showModalDelete("Apakah yakin ingin menghapus gudang ini?", "btn-delete-warehouse");
+    showModalDelete(
+        "Apakah yakin ingin menghapus gudang ini?",
+        "btn-delete-warehouse",
+    );
     $("#btn-delete-warehouse").attr("data-id", data.id);
 });
 
 $(document).on("click", "#btn-delete-warehouse", function () {
     var id = $(this).attr("data-id");
-        $.ajax({
+    $.ajax({
         url: "/deleteWarehouse",
         data: {
             id: id,
@@ -435,7 +507,9 @@ $(document).on("click", "#btn-delete-warehouse", function () {
                 var msg =
                     e.message ||
                     "Apakah anda yakin ingin menghapus gudang ini? Masih terdapat stock yang terdaftar di gudang ini";
-                $("#modalKonfirmasi .modal-title").text("Konfirmasi Hapus Lanjutan");
+                $("#modalKonfirmasi .modal-title").text(
+                    "Konfirmasi Hapus Lanjutan",
+                );
                 $("#modalKonfirmasi .btn-konfirmasi")
                     .removeClass("btn-success")
                     .addClass("btn-danger");
@@ -456,9 +530,9 @@ $(document).on("click", "#btn-delete-warehouse", function () {
 });
 
 $(document).on("click", "#btn-force-delete-warehouse", function () {
-            $.ajax({
+    $.ajax({
         url: "/deleteWarehouse",
-                data: {
+        data: {
             id: $(this).attr("data-id"),
             force: 1,
             _token: token,
@@ -485,17 +559,23 @@ $(document).on("click", ".btn_status", function () {
             : "Apakah yakin ingin menon-aktifkan gudang ini? Gudang yang dinon-aktifkan tidak bisa digunakan dalam transaksi.";
 
     $("#modalKonfirmasi .modal-title").text(
-        status == 1 ? "Konfirmasi Aktifkan" : "Konfirmasi Non Aktif"
+        status == 1 ? "Konfirmasi Aktifkan" : "Konfirmasi Non Aktif",
     );
 
     if (status == 1) {
-        $("#modalKonfirmasi .btn-konfirmasi").removeClass("btn-danger").addClass("btn-success");
+        $("#modalKonfirmasi .btn-konfirmasi")
+            .removeClass("btn-danger")
+            .addClass("btn-success");
     } else {
-        $("#modalKonfirmasi .btn-konfirmasi").removeClass("btn-success").addClass("btn-danger");
+        $("#modalKonfirmasi .btn-konfirmasi")
+            .removeClass("btn-success")
+            .addClass("btn-danger");
     }
 
     showModalKonfirmasi(text, "btn-update-warehouse-status");
-    $("#btn-update-warehouse-status").attr("data-id", id).attr("data-status", status);
+    $("#btn-update-warehouse-status")
+        .attr("data-id", id)
+        .attr("data-status", status);
 });
 
 $(document).on("click", "#btn-update-warehouse-status", function () {
@@ -514,11 +594,15 @@ $(document).on("click", "#btn-update-warehouse-status", function () {
             }
             $(".modal").modal("hide");
             refreshWarehouse();
-            notifikasi("success", "Berhasil", "Berhasil mengubah status gudang");
+            notifikasi(
+                "success",
+                "Berhasil",
+                "Berhasil mengubah status gudang",
+            );
         },
         error: function (e) {
             notifikasi("error", "Gagal", "Gagal mengubah status gudang");
             console.log(e);
         },
     });
-    });
+});

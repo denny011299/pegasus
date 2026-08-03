@@ -2,12 +2,6 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-        .table-scroll {
-            max-height: 45vh;
-            overflow-y: auto;
-            overflow-x: hidden; 
-        }
-
         #tableLog {
             width: 100% !important;
             border-collapse: collapse;
@@ -16,14 +10,10 @@
         #tableLog thead th {
             position: sticky;
             top: 0;
-            background-color: #e7f1ff;
             z-index: 10;
-            border-bottom: 2px solid #dee2e6;
-            padding: 12px 8px;
         }
 
         #tableLog tbody td {
-            padding: 10px 8px;
             vertical-align: middle;
             white-space: normal !important;
             word-wrap: break-word;
@@ -37,6 +27,19 @@
         #tableStock td {
             white-space: normal !important;
             word-wrap: break-word;
+        }
+
+        #tableStock tbody tr {
+            cursor: pointer;
+        }
+
+        #tableStock-wrap.is-loading tbody {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        #tableStock-wrap.dt-pending #tableStock {
+            min-height: 180px;
         }
     </style>
 @endsection
@@ -63,7 +66,24 @@
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
-                            <div class="table-responsive">
+                            <div class="table-responsive dt-pending" id="tableStock-wrap">
+                                <div class="dt-skeleton" aria-hidden="true">
+                                    <div style="padding: 16px 25px;">
+                                        <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
+                                    </div>
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 75% 25%;">
+                                        <span style="width:40%"></span>
+                                        <span style="width:60%"></span>
+                                    </div>
+                                    <div class="dt-skeleton-body">
+                                        @for ($i = 0; $i < 5; $i++)
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 75% 25%;">
+                                                <span class="skel-text" style="width:60%"></span>
+                                                <span class="skel-badge" style="width:60%;justify-self:center"></span>
+                                            </div>
+                                        @endfor
+                                    </div>
+                                </div>
                                 <table class="table table-center table-hover" id="tableStock">
                                     <thead class="thead-light">
                                         <tr>

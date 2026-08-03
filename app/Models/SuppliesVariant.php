@@ -51,7 +51,7 @@ class SuppliesVariant extends Model
         if ($data["search"]) {
             $result->where(function ($q) use ($data) {
                 $q->where("supplies_variant_sku", "=", $data["search"])
-                  ->orWhere("supplies_variant_barcode", "=", $data["search"]);
+                    ->orWhere("supplies_variant_barcode", "=", $data["search"]);
             });
         }
 
@@ -103,7 +103,8 @@ class SuppliesVariant extends Model
                 "supplies_variant_name" => $data["supplies_variant_name"],
                 "supplies_variant_sku" => $data["supplies_variant_sku"],
                 "supplies_variant_price" => $data["supplies_variant_price"],
-                "supplies_variant_barcode" => $data["supplies_variant_barcode"] ?? null,
+                "supplies_variant_barcode" => $data["supplies_variant_barcode"] ?? "",
+                "supplier_id" => $data["supplier_id"] ?? null,
             ]);
         }
         $t->supplies_id = $data["supplies_id"];

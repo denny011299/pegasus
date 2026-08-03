@@ -703,33 +703,27 @@
 
 @if(Route::is(['production']))
 <!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
-    <div class="row">
-        <div class="col-12 col-md-12 mb-4">
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-4">
-                        <label>Tanggal</label>
-                        <input type="date" class="form-control fill" id="date_production" >
-                    </div>
-                    <div class="col-md-4">
-                        <div class="input-block">
-                            <label>Status</label>
-                            <select class="form-select fill" id="status">
-                                <option value="">Semua</option>
-                                <option value="1">Pending</option>
-                                <option value="2">Berhasil</option>
-                                <option value="4">Menunggu Batal</option>
-                                <option value="3">Tolak</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-4 col-sm-12 pt-4 text-end">
-                        <a class="btn btn-outline-secondary btn-clear">
-                            Clear
-                        </a>
-                    </div>
-                </div>
+<div class="card mb-4 border-0 mt-3" style="background: linear-gradient(145deg, #ffffff, #f8fafc); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-radius: 12px;">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap align-items-end gap-3">
+            <div style="flex: 1; min-width: 200px; max-width: 300px;">
+                <label class="form-label text-muted fw-semibold mb-2" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fe fe-calendar me-1"></i> Tanggal</label>
+                <input type="date" class="form-control fill" id="date_production" style="border-radius: 8px; font-weight: 600; color: #1e293b; font-size: 14px; height: 42px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+            </div>
+            <div style="flex: 1; min-width: 200px; max-width: 300px;">
+                <label class="form-label text-muted fw-semibold mb-2" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fe fe-activity me-1"></i> Status</label>
+                <select class="form-select fill" id="status" style="border-radius: 8px; font-weight: 600; color: #1e293b; font-size: 14px; height: 42px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                    <option value="">Semua</option>
+                    <option value="1">Pending</option>
+                    <option value="2">Berhasil</option>
+                    <option value="4">Menunggu Batal</option>
+                    <option value="3">Tolak</option>
+                </select>
+            </div>
+            <div>
+                <button class="btn btn-light btn-clear" style="padding: 0 24px; font-weight: 600; border-radius: 8px; height: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; color: #475569; transition: all 0.2s ease;">
+                    <i class="fe fe-refresh-cw me-2" style="font-size: 14px;"></i> Clear
+                </button>
             </div>
         </div>
     </div>

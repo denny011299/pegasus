@@ -113,7 +113,7 @@ class AppServiceProvider extends ServiceProvider
 
             if ($activeId) {
                 $activeWarehouse = $warehouses->first(
-                    fn ($wh) => (int) $wh->id === (int) $activeId
+                    fn($wh) => (int) $wh->id === (int) $activeId
                 );
                 if (! $activeWarehouse) {
                     // Session mengarah ke gudang non-aktif / tidak di-assign → bersihkan

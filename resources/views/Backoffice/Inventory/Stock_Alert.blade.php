@@ -2,20 +2,41 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-        #tableStockAlertLow, #tableStockAlertOut {
+        .stock-alert-table {
             width: 100% !important;
-            min-width: 1000px;
+            min-width: 960px;
+            table-layout: fixed;
         }
-        #tableStockAlertLow td, #tableStockAlertOut td {
+        .stock-alert-table th,
+        .stock-alert-table td {
+            box-sizing: border-box !important;
             white-space: normal !important;
-            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            vertical-align: middle;
         }
-        #tableStockAlertLow td:last-child, #tableStockAlertOut td:last-child {
-            white-space: nowrap !important;
+        .stock-alert-table th:nth-child(1),
+        .stock-alert-table td:nth-child(1) {
+            width: 30% !important;
         }
-        #tableStockAlertLow td:last-child a, #tableStockAlertOut td:last-child a {
-            display: inline-flex !important;
-            align-items: center;
+        .stock-alert-table th:nth-child(2),
+        .stock-alert-table td:nth-child(2) {
+            width: 15% !important;
+        }
+        .stock-alert-table th:nth-child(3),
+        .stock-alert-table td:nth-child(3) {
+            width: 15% !important;
+        }
+        .stock-alert-table th:nth-child(4),
+        .stock-alert-table td:nth-child(4) {
+            width: 25% !important;
+        }
+        .stock-alert-table th:nth-child(5),
+        .stock-alert-table td:nth-child(5) {
+            width: 15% !important;
+        }
+        .stock-alert-table td.dataTables_empty {
+            width: auto !important;
+            text-align: center;
         }
     </style>
 @endsection
@@ -29,6 +50,7 @@
                 @component('components.page-header')
                     @slot('title')
                         Peringatan Stok Produk
+                        <div class="small text-muted fw-normal mt-1" id="stock-alert-wh-label" style="font-size:13px;"></div>
                     @endslot
                 @endcomponent
                 <ul class="nav nav-pills navtab-bg d-flex flex-nowrap mb-md-0 mb-3" style="z-index: 10; position: relative;">
@@ -59,13 +81,13 @@
 							<div class="tab-content">
 								<div class="tab-pane show active" id="low">
 									<div class="table-responsive">
-                                        <table class="table table-center table-hover" id="tableStockAlertLow">
+                                        <table class="table table-center table-hover stock-alert-table" id="tableStockAlertLow">
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
-                                                    <th>Qty Peringatan</th>
+                                                    <th>Stok Minimum Rekomendasi</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
@@ -77,13 +99,13 @@
 								</div>
 								<div class="tab-pane" id="out">
 									<div class="table-responsive">
-                                        <table class="table table-center table-hover" id="tableStockAlertOut" style="width: 100%">
+                                        <table class="table table-center table-hover stock-alert-table" id="tableStockAlertOut">
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
-                                                    <th>Qty Peringatan</th>
+                                                    <th>Stok Minimum Rekomendasi</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
@@ -109,5 +131,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=4"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=6"></script>
 @endsection
