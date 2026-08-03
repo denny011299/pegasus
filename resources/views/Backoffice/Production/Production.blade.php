@@ -2,18 +2,52 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-        /* Pola DataTable sama Pengiriman (Sales_Order) */
+        /* table-layout:fixed membuat lebar kolom (di bawah) benar-benar dipaksakan — tanpa ini,
+           max-width/word-wrap di satu kolom cuma "saran" dan teks panjang tanpa jeda bisa
+           meluber/tumpang tindih ke kolom sebelah (kolom Status jadi korban paling sering,
+           karena badge-nya kecil dan gampang ketiban teks Keterangan yang membanjir). */
         #tableProduction {
             width: 100% !important;
             table-layout: fixed;
+            min-width: 1250px;
         }
-
-        #tableProduction th,
-        #tableProduction td {
-            white-space: normal !important;
-            word-wrap: break-word;
+        #tableProduction thead th {
+            color: #64748b !important;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            background: #f1f5f9 !important;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        #tableProduction tbody td {
+            color: #475569;
+            font-size: 13px;
             vertical-align: middle;
-            box-sizing: border-box;
+        }
+        #tableProduction tbody > tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+        #tableProduction tbody > tr:hover {
+            background-color: #f8fafc;
+        }
+        #tableProduction td, #tableProduction th {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+        #tableProduction td:nth-child(1), #tableProduction th:nth-child(1) { width: 10%; }
+        #tableProduction td:nth-child(2), #tableProduction th:nth-child(2) { width: 10%; }
+        #tableProduction td:nth-child(3), #tableProduction th:nth-child(3) { width: 19%; } /* Keterangan */
+        #tableProduction td:nth-child(4), #tableProduction th:nth-child(4) { width: 8%; }  /* Status */
+        #tableProduction td:nth-child(5), #tableProduction th:nth-child(5) { width: 12%; } /* Notes Pembatalan */
+        #tableProduction td:nth-child(6), #tableProduction th:nth-child(6) { width: 11%; }
+        #tableProduction td:nth-child(7), #tableProduction th:nth-child(7) { width: 11%; }
+        #tableProduction td:nth-child(8), #tableProduction th:nth-child(8) { width: 11%; }
+        #tableProduction td:nth-child(9), #tableProduction th:nth-child(9) { width: 8%; }  /* Aksi */
+        #addProduction .select2-container {
+            width: 100% !important;
         }
 
         #tableProduction thead th {
