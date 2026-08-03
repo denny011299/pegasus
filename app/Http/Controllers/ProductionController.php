@@ -796,6 +796,63 @@ class ProductionController extends Controller
             ]);
         }
 
+        // PRE-CHECK: hasil produksi selalu di-credit ke gudang utama lewat
+        // ProductUnitStock::addQty(), yang otomatis membuat baris ProductStock baru
+        // (stok awal 0) kalau belum ada untuk kombinasi varian+satuan itu — TANPA mutasi
+        // apa pun di sini. Kalau ada baris yang bakal dibuat baru, minta konfirmasi user dulu
+        // (lewat confirm_create_stock), supaya user sadar ada baris stok baru yang akan dibuat.
+        $missingProductStockRows = [];
+        foreach ($transferPlan['groups'] as $group) {
+            foreach ($group['items'] as $output) {
+                $key = (int) $output['product_variant_id'] . '_' . (int) $output['unit_id'];
+                if (isset($missingProductStockRows[$key])) {
+                    continue;
+                }
+
+                $exists = ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', (int) $mainWarehouse->id)
+                    ->where('product_variant_id', $output['product_variant_id'])
+                    ->where('unit_id', $output['unit_id'])
+                    ->where('status', 1)
+                    ->exists();
+
+                if ($exists) {
+                    continue;
+                }
+
+                $pv = ProductVariant::find($output['product_variant_id']);
+                $productName = '-';
+                if ($pv) {
+                    $prName = Product::find($pv->product_id);
+                    $productName = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                    if ($productName === '') {
+                        $productName = $pv->product_variant_name ?? '-';
+                    }
+                }
+                $unit = Unit::find($output['unit_id']);
+                $missingProductStockRows[$key] = [
+                    'product_variant_id' => (int) $output['product_variant_id'],
+                    'unit_id' => (int) $output['unit_id'],
+                    'product_name' => $productName,
+                    'unit_name' => $unit->unit_name ?? '-',
+                ];
+            }
+        }
+
+        if (count($missingProductStockRows) > 0 && !$req->boolean('confirm_create_stock')) {
+            $labels = array_map(
+                fn ($m) => $m['product_name'] . ' (' . $m['unit_name'] . ')',
+                $missingProductStockRows
+            );
+            return response()->json([
+                'status' => -3,
+                'header' => 'Konfirmasi Diperlukan',
+                'message' => 'Baris stok untuk ' . implode(', ', $labels)
+                    . ' belum ada dan akan dibuat dengan stok awal 0. Lanjutkan approval?',
+                'missing_stock' => array_values($missingProductStockRows),
+            ]);
+        }
+
         $createdTransferIds = [];
         DB::beginTransaction();
         try {
@@ -1151,62 +1208,57 @@ class ProductionController extends Controller
             ]);
         }
 
-        $produk_kurang = [];
-        $cek = -1;
-
-        foreach ($p['items'] as $key => $value) {
-            $b = Bom::find($value['bom_id']);
-            $jumlahTambah = intval($value['pd_qty']);
-
-            $stok = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
-                ->where("unit_id", "=", $value['unit_id'])
-                ->where("status", 1)
-                ->first();
-
-            $r = ProductRelation::where('pr_unit_id_2', '=', $value["unit_id"])
-                ->where('product_variant_id', '=', $value["product_variant_id"])
-                ->where('status', '=', 1)
-                ->first();
-
-            if ($b['unit_id'] == $value['unit_id'] && $r) {
-                $sisa   = $jumlahTambah % $r->pr_unit_value_2;
-                $tambah = floor($jumlahTambah / $r->pr_unit_value_2);
-
-                // Hitung total stok tersedia dalam satuan piece (gabung dari dos + piece)
-                $stok_depan = ProductStock::where("product_variant_id", "=", $value['product_variant_id'])
-                    ->where("unit_id", "=", $r->pr_unit_id_1)
-                    ->where("status", 1)
-                    ->first();
-
-                $totalTersedia = ($stok ? $stok->ps_stock : 0)
-                    + ($stok_depan ? $stok_depan->ps_stock * $r->pr_unit_value_2 : 0);
-
-                if ($totalTersedia < $jumlahTambah) {
-                    $cek = 1;
-                    $pvr = ProductVariant::find($value['product_variant_id']);
-                    $pr  = Product::find($pvr->product_id);
-                    if (!in_array($pr['product_name'] . " " . $pvr['product_variant_name'], $produk_kurang, true)) {
-                        $produk_kurang[] = $pr['product_name'] . " " . $pvr['product_variant_name'];
-                    }
-                }
-            } else {
-                // Tidak ada relasi — cek stok langsung
-                $totalTersedia = $stok ? $stok->ps_stock : 0;
-                if ($totalTersedia < $jumlahTambah) {
-                    $cek = 1;
-                    $pvr = ProductVariant::find($value['product_variant_id']);
-                    $pr  = Product::find($pvr->product_id);
-                    if (!in_array($pr['product_name'] . " " . $pvr['product_variant_name'], $produk_kurang, true)) {
-                        $produk_kurang[] = $pr['product_name'] . " " . $pvr['product_variant_name'];
-                    }
-                }
-            }
+        // accProduction() credits finished-goods stock into the MAIN warehouse only, via
+        // ProductUnitStock::addQty() (single unit, no ladder-split). Reversal here must mirror
+        // that exact operation instead of the old direct-ProductStock ladder logic, which assumed
+        // a split across two unit rows that addQty() no longer creates and could null-deref when
+        // the larger-unit row didn't exist.
+        $mainWarehouse = $this->activeMainProductionWarehouse();
+        if (! $mainWarehouse) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang Utama Wajib Aktif',
+                'message' => 'Pembatalan produksi hanya dapat dilakukan saat gudang aktif adalah gudang utama.',
+            ]);
         }
 
-        if ($cek == 1) {
+        $outputTotals = [];
+        foreach ($p['items'] as $value) {
+            $key = (int) $value['product_variant_id'] . '_' . (int) $value['unit_id'];
+            $outputTotals[$key] ??= [
+                'product_variant_id' => (int) $value['product_variant_id'],
+                'unit_id' => (int) $value['unit_id'],
+                'qty' => 0.0,
+            ];
+            $outputTotals[$key]['qty'] += (float) $value['pd_qty'];
+        }
+
+        ProductUnitStock::clearCache();
+        $checkItems = [];
+        foreach ($outputTotals as $output) {
+            $pv = ProductVariant::find($output['product_variant_id']);
+            $label = '-';
+            if ($pv) {
+                $prod = Product::find($pv->product_id);
+                $label = trim(($prod->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                if ($label === '') {
+                    $label = $pv->product_variant_name ?? '-';
+                }
+            }
+            $checkItems[] = [
+                'product_variant_id' => $output['product_variant_id'],
+                'unit_id' => $output['unit_id'],
+                'qty' => $output['qty'],
+                'label' => $label,
+            ];
+        }
+
+        $check = ProductUnitStock::checkItems((int) $mainWarehouse->id, $checkItems);
+        if (! $check['ok']) {
+            $names = array_map(fn($s) => $s['label'], $check['shortages']);
             return response()->json([
                 "status"  => -1,
-                "message" => "Stok produk tidak mencukupi: " . implode(', ', $produk_kurang),
+                "message" => "Stok produk tidak mencukupi: " . implode(', ', $names),
             ]);
         }
 
@@ -1214,73 +1266,19 @@ class ProductionController extends Controller
         (new ProductionDetails())->cancelProductionDetail($data);
 
         // Stok produk
-        foreach ($p['items'] as $key => $value) {
-            $b = Bom::find($value->bom_id);
-            $jumlahKurang = intval($value['pd_qty']);
-
-            $r = ProductRelation::where('pr_unit_id_2', $value["unit_id"])
-                ->where('product_variant_id', $value["product_variant_id"])
-                ->where('status', 1)
-                ->first();
-
-            if ($r && $jumlahKurang >= $r->pr_unit_value_2) {
-                $kurangDos = floor($jumlahKurang / $r->pr_unit_value_2);
-                $sisaPiece = $jumlahKurang % $r->pr_unit_value_2;
-
-                $ps_depan = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id", $r->pr_unit_id_1)
-                    ->where("status", 1)
-                    ->first();
-                $ps_depan->ps_stock -= $kurangDos;
-                $ps_depan->save();
-
-                (new LogStock())->insertLog([
-                    'log_date'     => now(),
-                    'log_kode'     => $p->production_code,
-                    'log_type'     => 1,
-                    'log_category' => 2,
-                    'log_item_id'  => $value["product_variant_id"],
-                    'log_notes'    => "Pembatalan produksi produk",
-                    'log_jumlah'   => $kurangDos,
-                    'unit_id'      => $r->pr_unit_id_1,
-                ]);
-
-                if ($sisaPiece > 0) {
-                    $ps_belakang = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                        ->where("unit_id", $r->pr_unit_id_2)
-                        ->where("status", 1)
-                        ->first();
-                    $ps_belakang->ps_stock -= $sisaPiece;
-                    $ps_belakang->save();
-
-                    (new LogStock())->insertLog([
-                        'log_date'     => now(),
-                        'log_kode'     => $p->production_code,
-                        'log_type'     => 1,
-                        'log_category' => 2,
-                        'log_item_id'  => $value["product_variant_id"],
-                        'log_notes'    => "Pembatalan produksi produk",
-                        'log_jumlah'   => $sisaPiece,
-                        'unit_id'      => $r->pr_unit_id_2,
-                    ]);
-                }
-            } else {
-                $v = ProductStock::where("product_variant_id", $value["product_variant_id"])
-                    ->where("unit_id", $value["unit_id"])
-                    ->where("status", 1)
-                    ->first();
-                $v->ps_stock -= $jumlahKurang;
-                $v->save();
-
-                (new LogStock())->insertLog([
-                    'log_date'     => now(),
-                    'log_kode'     => $p->production_code,
-                    'log_type'     => 1,
-                    'log_category' => 2,
-                    'log_item_id'  => $value["product_variant_id"],
-                    'log_notes'    => "Pembatalan produksi produk",
-                    'log_jumlah'   => $jumlahKurang,
-                    'unit_id'      => $value["unit_id"],
+        foreach ($outputTotals as $output) {
+            $cut = ProductUnitStock::deductQty(
+                (int) $mainWarehouse->id,
+                $output['product_variant_id'],
+                $output['unit_id'],
+                $output['qty'],
+                $p->production_code,
+                'Pembatalan produksi ' . $p->production_code
+            );
+            if (! $cut['ok']) {
+                return response()->json([
+                    "status"  => -1,
+                    "message" => $cut['message'] ?? 'Gagal membatalkan stok hasil produksi.',
                 ]);
             }
         }

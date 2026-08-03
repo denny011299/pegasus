@@ -17,21 +17,29 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Bug: `ProductionController::accProduction()`'s finished-goods "ladder split" looks up the
- * `ProductStock` row for the larger unit (`pr_unit_id_1`) with no null-guard:
+ * Fixed 2026-08-02: `ProductionController::accProduction()`'s finished-goods "ladder split" used
+ * to look up the `ProductStock` row for the larger unit (`pr_unit_id_1`) with no null-guard:
  *
  *   $ps_depan = ProductStock::where(...)->where("unit_id", $r->pr_unit_id_1)->first();
- *   $ps_depan->ps_stock += $tambah;   // crashes "Attempt to assign property on null" if missing
+ *   $ps_depan->ps_stock += $tambah;   // crashed "Attempt to assign property on null" if missing
  *
- * If a product has a `product_relations` unit ladder but is missing the `ProductStock` row at the
- * larger unit, approving any production that outputs at least `pr_unit_value_2` units crashes with
+ * If a product had a `product_relations` unit ladder but was missing the `ProductStock` row at the
+ * larger unit, approving any production that output at least `pr_unit_value_2` units crashed with
  * a 500. Confirmed 2026-08-01 while building `tests/Workflow/ProductionUnitConversionFlowTest.php`
  * — see `cdocs/testing/KNOWN_ISSUES.md`'s "Production's finished-goods 'ladder split'..." entry
- * for the full history, including a related fix (main commit `2d73633`, merged into this branch)
- * that wraps `accProduction` in a `DB::transaction()`. That fix did NOT touch this null-guard —
- * the crash itself is still live — but it DID change the consequence: the crash now cleanly rolls
- * back instead of leaving stock permanently corrupted. This test characterizes both facts at once:
- * the crash still happens (deliberately not fixed here), but it's now safely contained.
+ * for the full history, including an earlier, related fix (main commit `2d73633`) that wrapped
+ * `accProduction` in a `DB::transaction()` so this crash (while still live) no longer corrupted
+ * stock.
+ *
+ * Fix applied 2026-08-02: rather than silently auto-creating the missing row, `accProduction()`
+ * now runs a pre-check pass (no mutation) before entering its `DB::transaction()` — if a ladder
+ * split would need a `ProductStock` row that doesn't exist yet, it returns
+ * `{"status": -3, "header": "Konfirmasi Diperlukan", "message": "...", "missing_stock": [...]}`
+ * instead of proceeding. Only once the request is resent with `confirm_create_stock: 1` does
+ * `ProductionController::ensureProductStockRow()` (mirroring `ensureSuppliesStockRows()` on the
+ * ingredient side) actually create the row at 0 stock and let the approval proceed. This test
+ * verifies both steps: the first call is blocked pending confirmation (no mutation at all), the
+ * confirmed retry succeeds and lands the ladder split correctly.
  */
 class ProductionOutputLadderNullGuardCrashTest extends TestCase
 {
@@ -41,7 +49,7 @@ class ProductionOutputLadderNullGuardCrashTest extends TestCase
     private const DOS_UNIT_ID = 7;    // DOS
     private const WAREHOUSE_ID = 1;
 
-    public function test_missing_larger_unit_stock_row_crashes_but_no_longer_corrupts_stock(): void
+    public function test_missing_larger_unit_stock_row_asks_for_confirmation_then_provisions_on_confirm(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -116,7 +124,7 @@ class ProductionOutputLadderNullGuardCrashTest extends TestCase
         $relation->status = 1;
         $relation->save();
 
-        $pdQty = 20; // >= 12, triggers the crashing ladder-split branch
+        $pdQty = 20; // >= 12, triggers the ladder-split branch
 
         $insertResponse = $this->post('/insertProduction', [
             'production_date' => now()->toDateString(),
@@ -136,21 +144,67 @@ class ProductionOutputLadderNullGuardCrashTest extends TestCase
         $insertResponse->assertStatus(200);
         $production = Production::orderByDesc('production_id')->firstOrFail();
 
-        $logCountBefore = DB::table('log_stocks')->count();
-
+        // First call: no confirmation flag — must be blocked, with no mutation at all.
         $accResponse = $this->post('/accProduction', ['production_id' => $production->production_id]);
+        $accResponse->assertStatus(200);
+        $accResponse->assertJson(['status' => -3, 'header' => 'Konfirmasi Diperlukan']);
+        $accResponse->assertJsonFragment([
+            'product_variant_id' => $variant->product_variant_id,
+            'unit_id' => self::DOS_UNIT_ID,
+        ]);
 
-        // The crash is still live — this test does not fix it, only characterizes it.
-        $accResponse->assertStatus(500);
-
-        // But the DB::transaction() added in main commit 2d73633 (merged into this branch) means
-        // the crash no longer corrupts stock: everything rolls back cleanly.
         $suppliesStock->refresh();
         $productStock->refresh();
         $production->refresh();
-        $this->assertSame(1000, $suppliesStock->ss_stock, 'the ingredient deduction must be rolled back, not left applied');
-        $this->assertSame(0, $productStock->ps_stock, 'no output credit should survive the rollback');
-        $this->assertSame(1, (int) $production->status, 'the production is left pending, not partially approved');
-        $this->assertSame($logCountBefore, DB::table('log_stocks')->count(), 'no log_stocks rows should survive the rollback');
+        $this->assertSame(1, (int) $production->status, 'blocked pending confirmation — must not be approved yet');
+        $this->assertSame(1000, $suppliesStock->ss_stock, 'blocked pending confirmation — no ingredient deduction yet');
+        $this->assertSame(0, $productStock->ps_stock, 'blocked pending confirmation — no output credit yet');
+        $this->assertNull(
+            ProductStock::where('product_variant_id', $variant->product_variant_id)
+                ->where('unit_id', self::DOS_UNIT_ID)
+                ->where('status', 1)
+                ->first(),
+            'blocked pending confirmation — the missing row must not be created yet either'
+        );
+
+        // Second call: with confirm_create_stock=1 — now it actually proceeds.
+        $accResponse = $this->post('/accProduction', [
+            'production_id' => $production->production_id,
+            'confirm_create_stock' => 1,
+        ]);
+        $accResponse->assertStatus(200);
+
+        $suppliesStock->refresh();
+        $productStock->refresh();
+        $production->refresh();
+        $this->assertSame(2, (int) $production->status, 'approval succeeds once confirmed');
+
+        // 20 pieces, 12-per-DOS ladder: floor(20/12)=1 DOS, remainder 8 pieces.
+        $this->assertSame(8, $productStock->ps_stock, 'the remainder lands on the pre-existing Piece-level row');
+
+        $dosStock = ProductStock::where('product_variant_id', $variant->product_variant_id)
+            ->where('unit_id', self::DOS_UNIT_ID)
+            ->where('status', 1)
+            ->first();
+        $this->assertNotNull($dosStock, 'the previously-missing DOS-level row is auto-provisioned instead of crashing');
+        $this->assertSame(1, $dosStock->ps_stock, 'the DOS-level row is credited correctly once provisioned');
+
+        // 40 (20 * bom_detail_qty 2) ingredient units consumed, matching the un-crashed happy path.
+        $this->assertSame(960, $suppliesStock->ss_stock);
+
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 1,
+            'log_category' => 1,
+            'log_item_id' => $variant->product_variant_id,
+            'unit_id' => self::DOS_UNIT_ID,
+            'log_jumlah' => 1,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 1,
+            'log_category' => 1,
+            'log_item_id' => $variant->product_variant_id,
+            'unit_id' => self::OUTPUT_UNIT_ID,
+            'log_jumlah' => 8,
+        ]);
     }
 }
