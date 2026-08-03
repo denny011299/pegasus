@@ -505,14 +505,10 @@ class ProductionController extends Controller
     /**
      * ACC produksi (pending → approved).
      *
-     * Alur keamanan stok (wajib dijaga):
-     * 1) self-heal log/stok orphan dari ACC gagal sebelumnya
-     * 2) pre-check SEMUA bahan tanpa mutasi
-     * 3) potong bahan + buat Stock Transfer hasil produksi + update status
+     * Alur keamanan stok:
+     * 1) pre-check SEMUA bahan tanpa mutasi
+     * 2) potong bahan + inventori hasil ke gudang asal + buat ST Pending + update status
      *    dalam 1 DB transaction (rollback jika gagal)
-     *
-     * Catatan fase-2: ACC tidak menambah stok produk di gudang utama;
-     * hasil masuk lewat Stock Transfer (Pending) ke gudang tujuan.
      *
      * Detail: docs/production-acc-stock-safety.md
      */
@@ -545,12 +541,6 @@ class ProductionController extends Controller
             ]);
         }
 
-        // ACC gagal di tengah jalan (sebelum ada transaction) bisa potong stok
-        // + tulis log meski status masih pending. Kembalikan dulu.
-        DB::transaction(function () use ($p) {
-            $this->revertPendingProductionStockMutations($p->production_code);
-        });
-
         $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();
         $produk_tanpa_relasi = [];
         $bahan_kurang = []; // ← ditambahkan untuk menangkap bahan yang ternyata kurang saat eksekusi
@@ -564,20 +554,6 @@ class ProductionController extends Controller
                     . implode(', ', $bahan_satuan_tidak_aktif),
             ]);
         }
-
-        $insertProductLogOnce = function($payload) use ($p) {
-            $exists = LogStock::where('log_kode', '=', $p->production_code)
-                ->where('log_type', '=', $payload['log_type'])
-                ->where('log_category', '=', $payload['log_category'])
-                ->where('log_item_id', '=', $payload['log_item_id'])
-                ->where('unit_id', '=', $payload['unit_id'])
-                ->where('log_jumlah', '=', $payload['log_jumlah'])
-                ->where('log_notes', '=', $payload['log_notes'])
-                ->exists();
-            if (!$exists) {
-                (new LogStock())->insertLog($payload);
-            }
-        };
 
         // --- TAHAP 2: EKSEKUSI REAL (PENGURANGAN & PENAMBAHAN) ---
         // 1. AGGREGASI: Hitung total kebutuhan bahan mentah dari SEMUA item produksi di awal
@@ -823,6 +799,7 @@ class ProductionController extends Controller
             if (StockTransfer::query()
                 ->where('source_type', 'production')
                 ->where('source_id', (int) $p->production_id)
+                ->whereIn('status', [1, 2, 4])
                 ->exists()) {
                 throw new \RuntimeException('Stock Transfer hasil produksi sudah pernah dibuat.');
             }
@@ -935,13 +912,20 @@ class ProductionController extends Controller
                 // 1. Save hasil konversi KECUALI unit terbawah
                 foreach ($virtualStock as $psId => $v) {
                     if ($psId == $idPalingBawah) continue;
-                    $v['model']->ss_stock = (int)$v['current'];
+                    $v['model']->ss_stock = round((float) $v['current'], 4);
                     $v['model']->save();
                 }
 
                 // 2. Catat log konversi
                 usort($logSummary, fn($a, $b) => $a['sort_order'] <=> $b['sort_order']);
                 foreach ($logSummary as $l) {
+                    $saldoUnit = null;
+                    foreach ($virtualStock as $v) {
+                        if ((int) $v['model']->unit_id === (int) $l['unit_id']) {
+                            $saldoUnit = (float) $v['current'];
+                            break;
+                        }
+                    }
                     (new LogStock())->insertLog([
                         'log_date'     => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                         'log_kode'     => $p->production_code,
@@ -950,34 +934,32 @@ class ProductionController extends Controller
                         'log_item_id'  => $suppliesId,
                         'log_notes'    => $l['note'],
                         'log_jumlah'   => $l['jumlah'],
+                        'log_saldo'    => $saldoUnit,
                         'unit_id'      => $l['unit_id'],
+                        'warehouse_id' => (int) $mainWarehouse->id,
                     ]);
                 }
 
                 // 3. Kurangi stok unit terbawah (Piece) sebesar kebutuhan
                 $stokBawah = SuppliesStock::find($idPalingBawah);
-                $cekLog = LogStock::where('log_kode', $p->production_code)
-                    ->where('log_type', 2)
-                    ->where('log_category', 2)
-                    ->where('log_item_id', $suppliesId)
-                    ->where('unit_id', $stokBawah->unit_id)
-                    ->exists();
+                $stokBawah->ss_stock = round(
+                    (float) $virtualStock[$idPalingBawah]['current'] - $butuhTersedia,
+                    4
+                );
+                $stokBawah->save();
 
-                if (!$cekLog) {
-                    $stokBawah->ss_stock = (int)($virtualStock[$idPalingBawah]['current'] - $butuhTersedia);
-                    $stokBawah->save();
-
-                    (new LogStock())->insertLog([
-                        'log_date'     => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
-                        'log_kode'     => $p->production_code,
-                        'log_type'     => 2,
-                        'log_category' => 2,
-                        'log_item_id'  => $suppliesId,
-                        'log_notes'    => "Pengurangan bahan untuk produksi",
-                        'log_jumlah'   => $butuhTersedia,
-                        'unit_id'      => $stokBawah->unit_id,
-                    ]);
-                }
+                (new LogStock())->insertLog([
+                    'log_date'     => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                    'log_kode'     => $p->production_code,
+                    'log_type'     => 2,
+                    'log_category' => 2,
+                    'log_item_id'  => $suppliesId,
+                    'log_notes'    => "Pengurangan bahan untuk produksi",
+                    'log_jumlah'   => $butuhTersedia,
+                    'log_saldo'    => (float) $stokBawah->ss_stock,
+                    'unit_id'      => $stokBawah->unit_id,
+                    'warehouse_id' => (int) $mainWarehouse->id,
+                ]);
             } else {
                 // ← ditambahkan: sebelumnya silent skip tanpa pesan apapun
                 $s = Supplies::find($suppliesId);
@@ -993,12 +975,49 @@ class ProductionController extends Controller
             );
         }
 
+        // Inventori hasil ke gudang asal dulu (agar ST Kirim bisa potong stok).
+        // ST hanya dibuat jika tujuan ≠ gudang asal (mis. eceran). Main→main tidak perlu ST.
+        $inventoryBuckets = [];
+        foreach ($transferPlan['groups'] as $group) {
+            foreach ($group['items'] as $output) {
+                $key = (int) $output['product_variant_id'] . ':' . (int) $output['unit_id'];
+                $inventoryBuckets[$key] ??= [
+                    'product_id' => (int) $output['product_id'],
+                    'product_variant_id' => (int) $output['product_variant_id'],
+                    'unit_id' => (int) $output['unit_id'],
+                    'qty' => 0,
+                ];
+                $inventoryBuckets[$key]['qty'] += (float) $output['qty'];
+            }
+        }
+        ProductUnitStock::clearCache();
+        foreach ($inventoryBuckets as $output) {
+            $add = ProductUnitStock::addQty(
+                (int) $mainWarehouse->id,
+                (int) $output['product_id'],
+                (int) $output['product_variant_id'],
+                (int) $output['unit_id'],
+                (float) $output['qty'],
+                $p->production_code,
+                'Hasil produksi ' . $p->production_code
+            );
+            if (! $add['ok']) {
+                throw new \RuntimeException(
+                    $add['message'] ?? 'Gagal menambah stok hasil produksi ke gudang asal'
+                );
+            }
+        }
+
+        $mainWarehouseId = (int) $mainWarehouse->id;
         foreach ($transferPlan['groups'] as $destinationId => $group) {
+            if ((int) $destinationId === $mainWarehouseId) {
+                continue;
+            }
             $transfer = StockTransfer::query()->create([
                 'transfer_code' => 'ST-' . $p->production_code . '-' . $destinationId,
                 'transfer_date' => $p->production_date,
                 'sender_id' => session('user')->staff_id ?? $p->production_created_by,
-                'from_warehouse_id' => (int) $mainWarehouse->id,
+                'from_warehouse_id' => $mainWarehouseId,
                 'to_warehouse_id' => (int) $destinationId,
                 'note' => 'Hasil produksi ' . $p->production_code,
                 'source_type' => 'production',
@@ -1037,9 +1056,14 @@ class ProductionController extends Controller
             $transferController->logProductionTransferCreated($transferId);
         }
 
+        $stCount = count($createdTransferIds);
+        $message = $stCount > 0
+            ? $stCount . ' Stock Transfer hasil produksi dibuat (Pending). Stok sudah masuk gudang asal.'
+            : 'Hasil produksi masuk gudang asal. Tidak ada Stock Transfer (tujuan sama dengan gudang produksi).';
+
         return response()->json([
             'status' => 1,
-            'message' => count($createdTransferIds) . ' Stock Transfer hasil produksi dibuat (Pending).',
+            'message' => $message,
             'stock_transfer_ids' => $createdTransferIds,
         ]);
     }
@@ -1085,11 +1109,12 @@ class ProductionController extends Controller
             && StockTransfer::query()
                 ->where('source_type', 'production')
                 ->where('source_id', (int) $data['production_id'])
+                ->whereIn('status', [1, 2, 4])
                 ->exists()) {
             return response()->json([
                 'status' => 0,
                 'header' => 'Pembatalan Tidak Diizinkan',
-                'message' => 'Produksi sudah menghasilkan Stock Transfer. Selesaikan melalui alur transfer atau disposisi produk.',
+                'message' => 'Produksi punya Stock Transfer aktif. Selesaikan/tolak lewat Stock Transfer dulu (stok tetap di gudang asal jika masih Pending).',
             ]);
         }
         if ($p['items']->count() == 0){
@@ -1846,74 +1871,68 @@ class ProductionController extends Controller
     private function buildProductionTransferPlan($details, int $mainWarehouseId): array
     {
         $groups = [];
-        $retailWarehouses = Warehouse::query()
+        $activeWarehouses = Warehouse::query()
             ->active()
-            ->whereHas('type', fn ($query) => $query->where('is_main_warehouse', 0))
-            ->pluck('id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
+            ->with('type')
+            ->get()
+            ->keyBy('id');
 
         foreach ($details as $detail) {
             $variant = ProductVariant::query()->find((int) $detail->product_variant_id);
             $product = $variant ? Product::query()->find((int) $variant->product_id) : null;
-            $defaultUnitId = (int) ($product->unit_id ?? 0);
             $inputUnitId = (int) $detail->unit_id;
             $qty = (float) $detail->pd_qty;
-            if (! $variant || ! $product || $defaultUnitId <= 0 || $qty <= 0) {
-                return ['ok' => false, 'message' => 'Produk, satuan default, atau qty hasil produksi tidak valid.', 'groups' => []];
+            if (! $variant || ! $product || $inputUnitId <= 0 || $qty <= 0) {
+                return ['ok' => false, 'message' => 'Produk, satuan, atau qty hasil produksi tidak valid.', 'groups' => []];
+            }
+            if (abs($qty - round($qty)) > 1e-9) {
+                return [
+                    'ok' => false,
+                    'message' => 'Qty hasil produksi harus bilangan bulat untuk '
+                        . trim($product->product_name . ' ' . $variant->product_variant_name) . '.',
+                    'groups' => [],
+                ];
+            }
+
+            $destinationId = (int) ($detail->destination_warehouse_id ?? 0);
+            if ($destinationId <= 0) {
+                $destinationId = $mainWarehouseId;
+            }
+            $destWh = $activeWarehouses->get($destinationId);
+            if (! $destWh) {
+                return [
+                    'ok' => false,
+                    'message' => 'Gudang tujuan hasil produksi tidak aktif atau belum dipilih.',
+                    'groups' => [],
+                ];
             }
 
             $isRetail = (int) ($variant->retail_unit ?? 0) > 0
                 && $inputUnitId === (int) $variant->retail_unit;
-            $destinationId = $isRetail
-                ? (int) ($detail->destination_warehouse_id ?? 0)
-                : $mainWarehouseId;
-            if ($isRetail && ! in_array($destinationId, $retailWarehouses, true)) {
-                return [
-                    'ok' => false,
-                    'message' => 'Gudang eceran hasil produksi tidak aktif atau belum dipilih.',
-                    'groups' => [],
-                ];
+            if ($isRetail) {
+                $destIsMain = (int) ($destWh->type->is_main_warehouse ?? 0) === 1;
+                if ($destIsMain || $destinationId === $mainWarehouseId) {
+                    return [
+                        'ok' => false,
+                        'message' => 'Hasil produksi bersatuan eceran harus menuju gudang eceran aktif.',
+                        'groups' => [],
+                    ];
+                }
+            } else {
+                $destinationId = $mainWarehouseId;
             }
 
-            if ($inputUnitId !== $defaultUnitId
-                && ! ProductUnitStock::canConvertUnits(
-                    $inputUnitId,
-                    $defaultUnitId,
-                    (int) $variant->product_variant_id
-                )) {
-                return [
-                    'ok' => false,
-                    'message' => 'Relasi satuan ke satuan default tidak ditemukan untuk '
-                        . trim($product->product_name . ' ' . $variant->product_variant_name) . '.',
-                    'groups' => [],
-                ];
-            }
-            $defaultQty = ProductUnitStock::convertQty(
-                $qty,
-                $inputUnitId,
-                $defaultUnitId,
-                (int) $variant->product_variant_id
-            );
-            if ($defaultQty <= 0 || abs($defaultQty - round($defaultQty)) > 1e-9) {
-                return [
-                    'ok' => false,
-                    'message' => 'Qty hasil produksi harus menghasilkan bilangan bulat pada satuan default untuk '
-                        . trim($product->product_name . ' ' . $variant->product_variant_name) . '.',
-                    'groups' => [],
-                ];
-            }
-
+            // Hasil selalu diinventori ke gudang asal; ST hanya jika tujuan beda (eceran/lain).
             $detail->destination_warehouse_id = $destinationId;
-            $key = (int) $variant->product_variant_id . ':' . $defaultUnitId;
+            $key = (int) $variant->product_variant_id . ':' . $inputUnitId;
             $groups[$destinationId] ??= ['items' => []];
             $groups[$destinationId]['items'][$key] ??= [
                 'product_id' => (int) $product->product_id,
                 'product_variant_id' => (int) $variant->product_variant_id,
-                'unit_id' => $defaultUnitId,
+                'unit_id' => $inputUnitId,
                 'qty' => 0,
             ];
-            $groups[$destinationId]['items'][$key]['qty'] += (int) round($defaultQty);
+            $groups[$destinationId]['items'][$key]['qty'] += (int) round($qty);
         }
 
         foreach ($groups as &$group) {
@@ -1922,61 +1941,5 @@ class ProductionController extends Controller
         unset($group);
 
         return ['ok' => true, 'message' => null, 'groups' => $groups];
-    }
-
-    /**
-     * Balikkan mutasi stok dari ACC produksi yang gagal di tengah jalan
-     * (status masih pending tapi log_stocks sudah ada).
-     *
-     * Dipanggil di awal accProduction sebelum pre-check.
-     * Lihat: docs/production-acc-stock-safety.md
-     *
-     * @return int jumlah log yang di-revert & dihapus
-     */
-    private function revertPendingProductionStockMutations(string $productionCode): int
-    {
-        $logs = LogStock::where('log_kode', $productionCode)
-            ->where('status', 1)
-            ->orderByDesc('log_id')
-            ->get();
-
-        if ($logs->isEmpty()) {
-            return 0;
-        }
-
-        foreach ($logs as $log) {
-            $qty = (int) $log->log_jumlah;
-            if ((int) $log->log_type === 2) {
-                $ss = SuppliesStock::where('supplies_id', $log->log_item_id)
-                    ->where('unit_id', $log->unit_id)
-                    ->where('status', 1)
-                    ->first();
-                if ($ss) {
-                    // cat 2 = keluar/bongkar (stok turun); cat 1 = hasil konversi (stok naik)
-                    if ((int) $log->log_category === 2) {
-                        $ss->ss_stock = (int) $ss->ss_stock + $qty;
-                    } elseif ((int) $log->log_category === 1) {
-                        $ss->ss_stock = (int) $ss->ss_stock - $qty;
-                    }
-                    $ss->save();
-                }
-            } elseif ((int) $log->log_type === 1) {
-                $ps = ProductStock::where('product_variant_id', $log->log_item_id)
-                    ->where('unit_id', $log->unit_id)
-                    ->where('status', 1)
-                    ->first();
-                if ($ps) {
-                    if ((int) $log->log_category === 1) {
-                        $ps->ps_stock = (int) $ps->ps_stock - $qty;
-                    } elseif ((int) $log->log_category === 2) {
-                        $ps->ps_stock = (int) $ps->ps_stock + $qty;
-                    }
-                    $ps->save();
-                }
-            }
-            $log->delete();
-        }
-
-        return $logs->count();
     }
 }

@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CustomerSupplyReturn;
-use App\Models\CustomerSupplyReturnDetail;
+use App\Models\CustomerProductReturn;
+use App\Models\CustomerProductReturnDetail;
 use App\Models\LogStock;
-use App\Models\SuppliesStock;
+use App\Models\ProductStock;
 use App\Support\RoleAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-class CustomerSupplyReturnController extends Controller
+class CustomerProductReturnController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
@@ -32,48 +33,48 @@ class CustomerSupplyReturnController extends Controller
             ? 'asc'
             : 'desc';
         $columns = [
-            'csr.return_number',
-            'csr.return_date',
-            'csr.ref_number',
+            'cpr.return_number',
+            'cpr.return_date',
+            'cpr.ref_number',
             'c.customer_notes',
-            'csr.status',
+            'cpr.status',
             'creator.staff_name',
             'approver.staff_name',
-            'csr.return_id',
+            'cpr.return_id',
         ];
 
-        $base = DB::table('customer_supply_returns as csr')
-            ->leftJoin('customers as c', 'c.customer_id', '=', 'csr.customer_id')
-            ->leftJoin('staffs as creator', 'creator.staff_id', '=', 'csr.created_by')
-            ->leftJoin('staffs as approver', 'approver.staff_id', '=', 'csr.acc_by')
-            ->where('csr.status', '>', 0);
+        $base = DB::table('customer_product_returns as cpr')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'cpr.customer_id')
+            ->leftJoin('staffs as creator', 'creator.staff_id', '=', 'cpr.created_by')
+            ->leftJoin('staffs as approver', 'approver.staff_id', '=', 'cpr.acc_by')
+            ->where('cpr.status', '>', 0);
 
-        $recordsTotal = DB::table('customer_supply_returns')->where('status', '>', 0)->count();
+        $recordsTotal = DB::table('customer_product_returns')->where('status', '>', 0)->count();
         if ($search !== '') {
             $like = '%' . $search . '%';
             $base->where(function ($query) use ($like) {
-                $query->where('csr.return_number', 'like', $like)
-                    ->orWhere('csr.ref_number', 'like', $like)
+                $query->where('cpr.return_number', 'like', $like)
+                    ->orWhere('cpr.ref_number', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
             });
         }
 
-        $recordsFiltered = (clone $base)->count('csr.return_id');
+        $recordsFiltered = (clone $base)->count('cpr.return_id');
         $rows = $base
             ->select([
-                'csr.return_id',
-                'csr.return_number',
-                'csr.return_date',
-                'csr.ref_number',
-                'csr.status',
+                'cpr.return_id',
+                'cpr.return_number',
+                'cpr.return_date',
+                'cpr.ref_number',
+                'cpr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
                 'approver.staff_name as acc_by_name',
             ])
-            ->orderBy($columns[$orderIndex] ?? 'csr.return_date', $orderDirection)
-            ->orderByDesc('csr.return_id')
+            ->orderBy($columns[$orderIndex] ?? 'cpr.return_date', $orderDirection)
+            ->orderByDesc('cpr.return_id')
             ->offset($start)
             ->limit($length)
             ->get();
@@ -97,14 +98,14 @@ class CustomerSupplyReturnController extends Controller
     {
         $this->authorizeAbility('view');
 
-        $header = DB::table('customer_supply_returns as csr')
-            ->leftJoin('customers as c', 'c.customer_id', '=', 'csr.customer_id')
-            ->leftJoin('staffs as creator', 'creator.staff_id', '=', 'csr.created_by')
-            ->leftJoin('staffs as approver', 'approver.staff_id', '=', 'csr.acc_by')
-            ->where('csr.return_id', $returnId)
-            ->where('csr.status', '>', 0)
+        $header = DB::table('customer_product_returns as cpr')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'cpr.customer_id')
+            ->leftJoin('staffs as creator', 'creator.staff_id', '=', 'cpr.created_by')
+            ->leftJoin('staffs as approver', 'approver.staff_id', '=', 'cpr.acc_by')
+            ->where('cpr.return_id', $returnId)
+            ->where('cpr.status', '>', 0)
             ->first([
-                'csr.*',
+                'cpr.*',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
                 'approver.staff_name as acc_by_name',
@@ -114,8 +115,9 @@ class CustomerSupplyReturnController extends Controller
             return response()->json(['message' => 'Pengembalian tidak ditemukan.'], 404);
         }
 
-        $details = DB::table('customer_supply_return_details as d')
-            ->join('supplies as s', 's.supplies_id', '=', 'd.supplies_id')
+        $details = DB::table('customer_product_return_details as d')
+            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'd.product_variant_id')
+            ->join('products as p', 'p.product_id', '=', 'pv.product_id')
             ->join('units as u', 'u.unit_id', '=', 'd.unit_id')
             ->join('warehouses as w', 'w.id', '=', 'd.warehouse_id')
             ->where('d.return_id', $returnId)
@@ -123,15 +125,23 @@ class CustomerSupplyReturnController extends Controller
             ->orderBy('d.return_detail_id')
             ->get([
                 'd.return_detail_id',
-                'd.supplies_id',
+                'd.product_variant_id',
                 'd.unit_id',
                 'd.warehouse_id',
                 'd.qty',
-                's.supplies_name',
+                'p.product_name',
+                'pv.product_variant_name',
                 'u.unit_name',
                 'u.unit_short_name',
                 'w.warehouse_name',
             ]);
+
+        foreach ($details as $detail) {
+            $detail->product_label = trim(
+                ($detail->product_name ?: '-') .
+                ($detail->product_variant_name ? ' — ' . $detail->product_variant_name : '')
+            );
+        }
 
         $header->proof_url = $header->proof_path ? asset($header->proof_path) : null;
         $header->details = $details;
@@ -151,9 +161,8 @@ class CustomerSupplyReturnController extends Controller
             $newProofPath = $this->storeProof($request, true);
             $record = DB::transaction(function () use ($data, $details, $newProofPath) {
                 $this->validateDetails($details);
-                $record = CustomerSupplyReturn::create([
-                    'return_number' => 'PCR' . now()->format('ymdHis') . strtoupper(Str::random(4)),
-                    'so_id' => null,
+                $record = CustomerProductReturn::create([
+                    'return_number' => 'PPR' . now()->format('ymdHis') . strtoupper(Str::random(4)),
                     'customer_id' => $data['customer_id'],
                     'return_date' => $data['return_date'],
                     'ref_number' => $data['ref_number'] ?: null,
@@ -167,7 +176,7 @@ class CustomerSupplyReturnController extends Controller
                 return $record;
             });
 
-            return response()->json(['success' => true, 'message' => 'Pengembalian berhasil disimpan.', 'data' => $record]);
+            return response()->json(['success' => true, 'message' => 'Pengembalian produk berhasil disimpan.', 'data' => $record]);
         } catch (\Throwable $e) {
             $this->deleteProof($newProofPath);
             throw $e;
@@ -187,7 +196,7 @@ class CustomerSupplyReturnController extends Controller
             }
 
             DB::transaction(function () use ($returnId, $data, $details, $newProofPath, &$oldProofPath) {
-                $record = CustomerSupplyReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
+                $record = CustomerProductReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
                 if ((int) $record->status !== 1) {
                     throw ValidationException::withMessages(['status' => 'Hanya pengembalian Pending yang dapat diubah.']);
                 }
@@ -195,7 +204,6 @@ class CustomerSupplyReturnController extends Controller
                 $this->validateDetails($details);
                 $oldProofPath = $record->proof_path;
                 $record->fill([
-                    'so_id' => null,
                     'customer_id' => $data['customer_id'],
                     'return_date' => $data['return_date'],
                     'ref_number' => $data['ref_number'] ?: null,
@@ -212,7 +220,7 @@ class CustomerSupplyReturnController extends Controller
                 $this->deleteProof($oldProofPath);
             }
 
-            return response()->json(['success' => true, 'message' => 'Pengembalian berhasil diperbarui.']);
+            return response()->json(['success' => true, 'message' => 'Pengembalian produk berhasil diperbarui.']);
         } catch (\Throwable $e) {
             $this->deleteProof($newProofPath);
             throw $e;
@@ -224,16 +232,16 @@ class CustomerSupplyReturnController extends Controller
         $this->authorizeAbility('delete');
 
         DB::transaction(function () use ($returnId) {
-            $record = CustomerSupplyReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
+            $record = CustomerProductReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
             if ((int) $record->status !== 1) {
                 throw ValidationException::withMessages(['status' => 'Hanya pengembalian Pending yang dapat dihapus.']);
             }
             $record->status = 0;
             $record->save();
-            CustomerSupplyReturnDetail::where('return_id', $returnId)->update(['status' => 0]);
+            CustomerProductReturnDetail::where('return_id', $returnId)->update(['status' => 0]);
         });
 
-        return response()->json(['success' => true, 'message' => 'Pengembalian berhasil dihapus.']);
+        return response()->json(['success' => true, 'message' => 'Pengembalian produk berhasil dihapus.']);
     }
 
     public function accept(int $returnId): JsonResponse
@@ -241,7 +249,7 @@ class CustomerSupplyReturnController extends Controller
         $this->authorizeAbility('others');
 
         DB::transaction(function () use ($returnId) {
-            $record = CustomerSupplyReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
+            $record = CustomerProductReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
             if ((int) $record->status !== 1) {
                 throw ValidationException::withMessages(['status' => 'Pengembalian sudah diproses dan tidak dapat di-ACC ulang.']);
             }
@@ -250,12 +258,12 @@ class CustomerSupplyReturnController extends Controller
                 ->where('customer_id', $record->customer_id)
                 ->value('customer_notes') ?: '-';
 
-            $details = CustomerSupplyReturnDetail::where('return_id', $returnId)
+            $details = CustomerProductReturnDetail::where('return_id', $returnId)
                 ->where('status', 1)
                 ->lockForUpdate()
                 ->get()
                 ->map(fn ($detail) => [
-                    'supplies_id' => (int) $detail->supplies_id,
+                    'product_variant_id' => (int) $detail->product_variant_id,
                     'unit_id' => (int) $detail->unit_id,
                     'warehouse_id' => (int) $detail->warehouse_id,
                     'qty' => (int) $detail->qty,
@@ -263,34 +271,45 @@ class CustomerSupplyReturnController extends Controller
             $this->validateDetails($details);
 
             foreach ($details as $detail) {
-                $stock = SuppliesStock::withoutGlobalScope('active_warehouse')
-                    ->where('supplies_id', $detail['supplies_id'])
+                $variant = DB::table('product_variants')
+                    ->where('product_variant_id', $detail['product_variant_id'])
+                    ->where('status', 1)
+                    ->first(['product_variant_id', 'product_id']);
+                if (! $variant) {
+                    throw ValidationException::withMessages([
+                        'details' => 'Varian produk tidak aktif: ' . $detail['product_variant_id'],
+                    ]);
+                }
+
+                $stock = ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('product_variant_id', $detail['product_variant_id'])
                     ->where('unit_id', $detail['unit_id'])
                     ->where('warehouse_id', $detail['warehouse_id'])
                     ->lockForUpdate()
                     ->first();
                 if (! $stock) {
-                    $stock = new SuppliesStock([
-                        'supplies_id' => $detail['supplies_id'],
+                    $stock = new ProductStock([
+                        'product_id' => (int) $variant->product_id,
+                        'product_variant_id' => $detail['product_variant_id'],
                         'unit_id' => $detail['unit_id'],
                         'warehouse_id' => $detail['warehouse_id'],
-                        'ss_stock' => 0,
+                        'ps_stock' => 0,
                         'status' => 1,
                         'created_by' => $this->userId(),
                     ]);
                 }
                 $stock->status = 1;
-                $stock->ss_stock = (int) $stock->ss_stock + $detail['qty'];
+                $stock->ps_stock = (float) $stock->ps_stock + $detail['qty'];
                 $stock->created_by = $this->userId();
                 $stock->save();
 
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode' => $record->return_number,
-                    'log_type' => 2,
+                    'log_type' => 1,
                     'log_category' => 1,
-                    'log_item_id' => $detail['supplies_id'],
-                    'log_notes' => 'Pengembalian bahan/kemasan dari armada ' . $customerName,
+                    'log_item_id' => $detail['product_variant_id'],
+                    'log_notes' => 'Pengembalian produk jadi dari armada ' . $customerName,
                     'log_jumlah' => $detail['qty'],
                     'unit_id' => $detail['unit_id'],
                     'warehouse_id' => $detail['warehouse_id'],
@@ -302,7 +321,7 @@ class CustomerSupplyReturnController extends Controller
             $record->save();
         }, 3);
 
-        return response()->json(['success' => true, 'message' => 'Pengembalian diterima dan stok bahan telah ditambahkan.']);
+        return response()->json(['success' => true, 'message' => 'Pengembalian diterima dan stok produk telah ditambahkan.']);
     }
 
     public function decline(int $returnId): JsonResponse
@@ -310,7 +329,7 @@ class CustomerSupplyReturnController extends Controller
         $this->authorizeAbility('others');
 
         DB::transaction(function () use ($returnId) {
-            $record = CustomerSupplyReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
+            $record = CustomerProductReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
             if ((int) $record->status !== 1) {
                 throw ValidationException::withMessages(['status' => 'Pengembalian sudah diproses.']);
             }
@@ -342,18 +361,18 @@ class CustomerSupplyReturnController extends Controller
         $rawDetails = $request->input('details');
         $details = is_string($rawDetails) ? json_decode($rawDetails, true) : $rawDetails;
         if (! is_array($details) || $details === []) {
-            throw ValidationException::withMessages(['details' => 'Minimal satu bahan harus ditambahkan.']);
+            throw ValidationException::withMessages(['details' => 'Minimal satu produk harus ditambahkan.']);
         }
 
         $merged = [];
         foreach ($details as $index => $detail) {
             $line = Validator::make((array) $detail, [
-                'supplies_id' => ['required', 'integer', 'min:1'],
+                'product_variant_id' => ['required', 'integer', 'min:1'],
                 'unit_id' => ['required', 'integer', 'min:1'],
                 'warehouse_id' => ['required', 'integer', 'min:1'],
                 'qty' => ['required', 'integer', 'min:1', 'max:999999999999'],
             ])->validate();
-            $key = $line['supplies_id'] . '|' . $line['unit_id'] . '|' . $line['warehouse_id'];
+            $key = $line['product_variant_id'] . '|' . $line['unit_id'] . '|' . $line['warehouse_id'];
             if (! isset($merged[$key])) {
                 $merged[$key] = $line;
             } else {
@@ -375,19 +394,19 @@ class CustomerSupplyReturnController extends Controller
     private function validateDetails(array $details): void
     {
         $context = $this->buildReturnContext();
-        $allowed = collect($context['supplies'])->keyBy('supplies_id');
-        $mainWarehouseIds = collect($context['warehouses'])->pluck('id')->map(fn ($id) => (int) $id);
+        $allowed = collect($context['products'])->keyBy('product_variant_id');
+        $warehouseIds = collect($context['warehouses'])->pluck('id')->map(fn ($id) => (int) $id);
 
         foreach ($details as $index => $detail) {
-            $supply = $allowed->get((int) $detail['supplies_id']);
-            if (! $supply) {
-                throw ValidationException::withMessages(["details.$index.supplies_id" => 'Bahan tidak aktif atau tidak valid.']);
+            $product = $allowed->get((int) $detail['product_variant_id']);
+            if (! $product) {
+                throw ValidationException::withMessages(["details.$index.product_variant_id" => 'Produk tidak aktif atau tidak valid.']);
             }
-            if (! collect($supply['units'])->contains(fn ($unit) => (int) $unit['unit_id'] === (int) $detail['unit_id'])) {
-                throw ValidationException::withMessages(["details.$index.unit_id" => 'Satuan tidak aktif untuk bahan yang dipilih.']);
+            if (! collect($product['units'])->contains(fn ($unit) => (int) $unit['unit_id'] === (int) $detail['unit_id'])) {
+                throw ValidationException::withMessages(["details.$index.unit_id" => 'Satuan tidak aktif untuk produk yang dipilih.']);
             }
-            if (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
-                throw ValidationException::withMessages(["details.$index.warehouse_id" => 'Gudang tujuan harus gudang utama aktif.']);
+            if (! $warehouseIds->contains((int) $detail['warehouse_id'])) {
+                throw ValidationException::withMessages(["details.$index.warehouse_id" => 'Gudang tujuan harus gudang aktif.']);
             }
             if ((int) $detail['qty'] <= 0) {
                 throw ValidationException::withMessages(["details.$index.qty" => 'Qty harus lebih dari 0.']);
@@ -397,31 +416,54 @@ class CustomerSupplyReturnController extends Controller
 
     private function buildReturnContext(): array
     {
-        $suppliesRows = DB::table('supplies')
-            ->where('status', 1)
-            ->orderBy('supplies_name')
-            ->get(['supplies_id', 'supplies_name', 'supplies_unit', 'supplies_default_unit']);
+        $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
+        $hasProductUnitId = Schema::hasColumn('products', 'unit_id');
+        $variantCols = [
+            'pv.product_variant_id',
+            'pv.product_id',
+            'pv.product_variant_name',
+            'p.product_name',
+            'p.product_unit',
+        ];
+        if ($hasProductUnitId) {
+            $variantCols[] = 'p.unit_id as default_unit_id';
+        }
+        if ($hasRetailCol) {
+            $variantCols[] = 'pv.retail_unit';
+        }
 
-        $supplyIds = $suppliesRows->pluck('supplies_id')->map(fn ($id) => (int) $id)->values();
-        $relationUnits = $supplyIds->isEmpty()
+        $variants = DB::table('product_variants as pv')
+            ->join('products as p', 'p.product_id', '=', 'pv.product_id')
+            ->where('pv.status', 1)
+            ->where('p.status', 1)
+            ->orderBy('p.product_name')
+            ->orderBy('pv.product_variant_name')
+            ->get($variantCols);
+
+        $variantIds = $variants->pluck('product_variant_id')->map(fn ($id) => (int) $id)->values();
+        $relationUnits = $variantIds->isEmpty()
             ? collect()
-            : DB::table('supplies_relations')
+            : DB::table('product_relations')
                 ->where('status', 1)
-                ->whereIn('supplies_id', $supplyIds)
-                ->get(['supplies_id', 'su_id_1', 'su_id_2'])
-                ->groupBy('supplies_id');
+                ->whereIn('product_variant_id', $variantIds)
+                ->get(['product_variant_id', 'pr_unit_id_1', 'pr_unit_id_2'])
+                ->groupBy('product_variant_id');
 
         $allUnitIds = [];
-        foreach ($suppliesRows as $row) {
-            if ((int) ($row->supplies_default_unit ?? 0) > 0) {
-                $allUnitIds[(int) $row->supplies_default_unit] = true;
+        foreach ($variants as $variant) {
+            $defaultUnitId = $hasProductUnitId ? (int) ($variant->default_unit_id ?? 0) : 0;
+            if ($defaultUnitId > 0) {
+                $allUnitIds[$defaultUnitId] = true;
             }
-            foreach ((array) (json_decode($row->supplies_unit ?? '[]', true) ?: []) as $unitId) {
+            foreach ((array) (json_decode($variant->product_unit ?? '[]', true) ?: []) as $unitId) {
                 $allUnitIds[(int) $unitId] = true;
             }
-            foreach ($relationUnits->get($row->supplies_id, collect()) as $relation) {
-                $allUnitIds[(int) $relation->su_id_1] = true;
-                $allUnitIds[(int) $relation->su_id_2] = true;
+            if ($hasRetailCol && (int) ($variant->retail_unit ?? 0) > 0) {
+                $allUnitIds[(int) $variant->retail_unit] = true;
+            }
+            foreach ($relationUnits->get($variant->product_variant_id, collect()) as $relation) {
+                $allUnitIds[(int) $relation->pr_unit_id_1] = true;
+                $allUnitIds[(int) $relation->pr_unit_id_2] = true;
             }
         }
 
@@ -430,19 +472,30 @@ class CustomerSupplyReturnController extends Controller
             : DB::table('units')->where('status', 1)->whereIn('unit_id', array_keys($allUnitIds))
                 ->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id');
 
-        $supplies = $suppliesRows->map(function ($row) use ($relationUnits, $units) {
-            $unitIds = collect(json_decode($row->supplies_unit ?? '[]', true) ?: []);
-            $defaultUnitId = (int) ($row->supplies_default_unit ?? 0);
+        $products = $variants->map(function ($variant) use ($relationUnits, $units, $hasRetailCol, $hasProductUnitId) {
+            $unitIds = collect(json_decode($variant->product_unit ?? '[]', true) ?: []);
+            $defaultUnitId = $hasProductUnitId ? (int) ($variant->default_unit_id ?? 0) : 0;
             if ($defaultUnitId > 0) {
                 $unitIds->prepend($defaultUnitId);
+            } elseif ($unitIds->isNotEmpty()) {
+                $defaultUnitId = (int) $unitIds->first();
             }
-            foreach ($relationUnits->get($row->supplies_id, collect()) as $relation) {
-                $unitIds->push($relation->su_id_1)->push($relation->su_id_2);
+            if ($hasRetailCol && (int) ($variant->retail_unit ?? 0) > 0) {
+                $unitIds->push((int) $variant->retail_unit);
+            }
+            foreach ($relationUnits->get($variant->product_variant_id, collect()) as $relation) {
+                $unitIds->push($relation->pr_unit_id_1)->push($relation->pr_unit_id_2);
             }
 
+            $label = trim(
+                ($variant->product_name ?: '-') .
+                ($variant->product_variant_name ? ' — ' . $variant->product_variant_name : '')
+            );
+
             return [
-                'supplies_id' => (int) $row->supplies_id,
-                'supplies_name' => $row->supplies_name,
+                'product_variant_id' => (int) $variant->product_variant_id,
+                'product_id' => (int) $variant->product_id,
+                'product_label' => $label,
                 'default_unit_id' => $defaultUnitId,
                 'units' => $unitIds->map(fn ($unitId) => $units->get((int) $unitId))
                     ->filter()
@@ -455,32 +508,26 @@ class CustomerSupplyReturnController extends Controller
             ];
         })->values()->all();
 
-        return [
-            'supplies' => $supplies,
-            'warehouses' => $this->mainWarehouses(),
-        ];
-    }
-
-    private function mainWarehouses(): array
-    {
-        return DB::table('warehouses as w')
-            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+        $warehouses = DB::table('warehouses as w')
             ->where('w.status', 1)
-            ->where('wt.status', 1)
-            ->where('wt.is_main_warehouse', 1)
             ->orderBy('w.warehouse_name')
             ->get(['w.id', 'w.warehouse_name'])
             ->map(fn ($warehouse) => ['id' => (int) $warehouse->id, 'warehouse_name' => $warehouse->warehouse_name])
             ->values()->all();
+
+        return [
+            'products' => $products,
+            'warehouses' => $warehouses,
+        ];
     }
 
     private function replaceDetails(int $returnId, array $details): void
     {
-        CustomerSupplyReturnDetail::where('return_id', $returnId)->delete();
+        CustomerProductReturnDetail::where('return_id', $returnId)->delete();
         $now = now();
-        CustomerSupplyReturnDetail::insert(array_map(fn ($detail) => [
+        CustomerProductReturnDetail::insert(array_map(fn ($detail) => [
             'return_id' => $returnId,
-            'supplies_id' => $detail['supplies_id'],
+            'product_variant_id' => $detail['product_variant_id'],
             'unit_id' => $detail['unit_id'],
             'warehouse_id' => $detail['warehouse_id'],
             'qty' => $detail['qty'],
@@ -521,19 +568,19 @@ class CustomerSupplyReturnController extends Controller
             throw ValidationException::withMessages(['proof' => 'Isi file bukti bukan gambar JPEG, PNG, atau WebP yang valid.']);
         }
         $extension = $extensions[$mime];
-        $directory = public_path('customer_supply_returns');
+        $directory = public_path('customer_product_returns');
         File::ensureDirectoryExists($directory);
         $filename = now()->format('YmdHis') . '_' . Str::random(24) . '.' . $extension;
         if (File::put($directory . DIRECTORY_SEPARATOR . $filename, $binary) === false) {
             throw ValidationException::withMessages(['proof' => 'Bukti gagal disimpan.']);
         }
 
-        return 'customer_supply_returns/' . $filename;
+        return 'customer_product_returns/' . $filename;
     }
 
     private function deleteProof(?string $path): void
     {
-        if (! $path || ! str_starts_with($path, 'customer_supply_returns/')) {
+        if (! $path || ! str_starts_with($path, 'customer_product_returns/')) {
             return;
         }
         File::delete(public_path(str_replace('/', DIRECTORY_SEPARATOR, $path)));

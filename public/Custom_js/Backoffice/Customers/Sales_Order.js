@@ -291,19 +291,19 @@
                 <div class="col-lg-3 col-md-4 col-5">
                     <div class="input-block mb-0">
                         <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Qty</label>
-                        <input type="number" min="1" class="form-control" id="so_qty_input" value="1" placeholder="Qty" style="border-radius: 8px;">
+                        <input type="number" min="1" class="form-control" id="so_qty_input" value="1" placeholder="Qty" style="border-radius: 8px; height:42px;">
                     </div>
                 </div>
                 <div class="col-lg-5 col-md-4 col-7">
                     <div class="input-block mb-0">
                         <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Satuan</label>
-                        <select class="form-select" id="so_unit_input" style="border-radius: 8px;">
+                        <select class="form-select" id="so_unit_input" style="border-radius: 8px; height:42px;">
                             <option value="" selected>Pilih Satuan</option>
                         </select>
                     </div>
                 </div>
                 <div class="col-lg-4 col-md-4 col-12 text-lg-end mt-md-0 mt-2">
-                    <button type="button" class="btn btn-primary w-100 d-inline-flex justify-content-center align-items-center gap-2" id="btn-add-product-so" style="border-radius: 8px; height: 38px; font-weight: 500;"><i class="fe fe-plus"></i> Tambah</button>
+                    <button type="button" class="btn w-100 d-inline-flex justify-content-center align-items-center gap-2" id="btn-add-product-so" style="border-radius: 8px; height: 42px; font-weight: 600; background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; border:none; box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-plus"></i> Tambah</button>
                 </div>
             </div>
         `);

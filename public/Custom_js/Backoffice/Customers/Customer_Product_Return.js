@@ -1,12 +1,12 @@
 (function ($) {
     "use strict";
 
-    var csrTable = null;
-    var csrLines = [];
-    var csrContext = null;
-    var csrMode = "create";
-    var csrExistingProofUrl = "";
-    var csrXhr = null;
+    var cprTable = null;
+    var cprLines = [];
+    var cprContext = null;
+    var cprMode = "create";
+    var cprExistingProofUrl = "";
+    var cprXhr = null;
 
     function can(action) {
         return typeof hasAccessAction === "function" && hasAccessAction("Pengiriman", action);
@@ -59,10 +59,10 @@
     }
 
     function adjustTable() {
-        if (!csrTable) return;
-        csrTable.columns.adjust();
-        if (csrTable.responsive && typeof csrTable.responsive.recalc === "function") {
-            csrTable.responsive.recalc();
+        if (!cprTable) return;
+        cprTable.columns.adjust();
+        if (cprTable.responsive && typeof cprTable.responsive.recalc === "function") {
+            cprTable.responsive.recalc();
         }
     }
 
@@ -77,13 +77,13 @@
     }
 
     function setTableLoading(loading) {
-        $("#tableCustomerSupplyReturn-wrap").toggleClass("is-loading", !!loading);
+        $("#tableCustomerProductReturn-wrap").toggleClass("is-loading", !!loading);
     }
 
-    function customerReturnAjax(data, callback) {
-        if (csrXhr && csrXhr.readyState !== 4) csrXhr.abort();
-        csrXhr = $.ajax({
-            url: "/customerSupplyReturns",
+    function productReturnAjax(data, callback) {
+        if (cprXhr && cprXhr.readyState !== 4) cprXhr.abort();
+        cprXhr = $.ajax({
+            url: "/customerProductReturns",
             type: "GET",
             data: data,
             beforeSend: function () { setTableLoading(true); },
@@ -104,13 +104,13 @@
         var canDelete = parseInt(row.status, 10) === 1 && can("delete");
 
         if (canView) {
-            html += '<a class="btn-action-icon csr-view" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon cpr-view" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
         }
         if (canEdit) {
-            html += '<a class="btn-action-icon csr-edit" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#fffbeb;border:1px solid #fde68a;color:#d97706;" data-bs-toggle="tooltip" title="Edit"><i class="fe fe-edit-2" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon cpr-edit" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#fffbeb;border:1px solid #fde68a;color:#d97706;" data-bs-toggle="tooltip" title="Edit"><i class="fe fe-edit-2" style="font-size:14px;"></i></a>';
         }
         if (canDelete) {
-            html += '<a class="btn-action-icon csr-delete" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon cpr-delete" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
         }
         html += '</div>';
         if (!canView && !canEdit && !canDelete) {
@@ -120,16 +120,16 @@
     }
 
     function initTable() {
-        if (csrTable || !$("#tableCustomerSupplyReturn").length) return;
-        $("#tableCustomerSupplyReturn")
-            .off(".dt.csr")
-            .on("preXhr.dt.csr processing.dt.csr", function (_event, _settings, processing) {
+        if (cprTable || !$("#tableCustomerProductReturn").length) return;
+        $("#tableCustomerProductReturn")
+            .off(".dt.cpr")
+            .on("preXhr.dt.cpr processing.dt.cpr", function (_event, _settings, processing) {
                 setTableLoading(processing !== false);
             })
-            .on("xhr.dt.csr error.dt.csr", function () {
+            .on("xhr.dt.cpr error.dt.cpr", function () {
                 setTableLoading(false);
             });
-        csrTable = $("#tableCustomerSupplyReturn").DataTable({
+        cprTable = $("#tableCustomerProductReturn").DataTable({
             processing: true,
             serverSide: true,
             deferRender: true,
@@ -142,13 +142,13 @@
             ordering: true,
             autoWidth: false,
             scrollX: false,
-            ajax: customerReturnAjax,
+            ajax: productReturnAjax,
             language: {
                 search: " ",
-                searchPlaceholder: "Cari Pengembalian Bahan",
+                searchPlaceholder: "Cari Pengembalian Produk",
                 sLengthMenu: "_MENU_",
                 info: "_START_ - _END_ of _TOTAL_ items",
-                emptyTable: "Belum ada pengembalian bahan mentah",
+                emptyTable: "Belum ada pengembalian produk jadi",
                 zeroRecords: "Pengembalian tidak ditemukan",
                 processing: '<div><span class="spinner-border spinner-border-sm text-primary" role="status"></span><span>Memuat pengembalian...</span></div>',
                 paginate: {
@@ -240,33 +240,33 @@
                 adjustTable();
             },
             initComplete: function () {
-                var $filter = $("#tableCustomerSupplyReturn_wrapper .dataTables_filter");
-                $filter.addClass("csr-table-filter").appendTo($(".search-input").first());
+                var $filter = $("#tableCustomerProductReturn_wrapper .dataTables_filter");
+                $filter.addClass("cpr-table-filter").appendTo($(".search-input").first());
                 if (!$filter.find("label .fa-search").length) {
                     $filter.find("label").prepend('<i class="fa fa-search"></i> ');
                 }
-                $("#tableCustomerSupplyReturn-wrap").removeClass("dt-pending").addClass("dt-ready");
+                $("#tableCustomerProductReturn-wrap").removeClass("dt-pending").addClass("dt-ready");
                 setTableLoading(false);
-                setActiveTableFilter("supply-return");
+                setActiveTableFilter("product-return");
                 adjustTable();
             },
         });
     }
 
     function setupCustomerSelect() {
-        var $select = $("#csr-customer");
+        var $select = $("#cpr-customer");
         if ($select.hasClass("select2-hidden-accessible")) $select.select2("destroy");
-        autocompleteCustomer("#csr-customer", "#customer-supply-return-modal .modal-content");
+        autocompleteCustomer("#cpr-customer", "#customer-product-return-modal .modal-content");
     }
 
     function setCustomer(customerId, customerName) {
-        var $select = $("#csr-customer");
+        var $select = $("#cpr-customer");
         $select.empty();
         if (customerId) {
             $select.append(new Option(customerName || "-", customerId, true, true));
         }
         $select.trigger("change.select2");
-        setSelectInvalid("#csr-customer", false);
+        setSelectInvalid("#cpr-customer", false);
     }
 
     function destroySelect($select) {
@@ -278,7 +278,7 @@
         destroySelect($select);
         $select.select2({
             width: "100%",
-            dropdownParent: $("#customer-supply-return-modal"),
+            dropdownParent: $("#customer-product-return-modal"),
             placeholder: placeholder,
             allowClear: true,
         });
@@ -290,7 +290,7 @@
     }
 
     function cameraPhotos() {
-        var value = $("#csr-proof-camera").val();
+        var value = $("#cpr-proof-camera").val();
         if (typeof parsePhotoInputValue === "function") return parsePhotoInputValue(value);
         if (!value) return [];
         try {
@@ -302,39 +302,39 @@
     }
 
     function currentProofUrl() {
-        return cameraPhotos()[0] || csrExistingProofUrl || "";
+        return cameraPhotos()[0] || cprExistingProofUrl || "";
     }
 
     function refreshProofState() {
-        var hasProof = !!currentProofUrl() || !!$("#csr-proof-file")[0].files.length;
-        $("#csr-check-foto").toggleClass("d-none", !hasProof);
-        $("#csr-btn-view-proof").toggleClass("d-none", !hasProof);
-        $("#csr-btn-upload-proof").removeClass("border-danger text-danger");
+        var hasProof = !!currentProofUrl() || !!$("#cpr-proof-file")[0].files.length;
+        $("#cpr-check-foto").toggleClass("d-none", !hasProof);
+        $("#cpr-btn-view-proof").toggleClass("d-none", !hasProof);
+        $("#cpr-btn-upload-proof").removeClass("border-danger text-danger");
     }
 
     function applyContext(context) {
-        csrContext = context || {};
-        var $supply = $("#csr-supply").empty().append(new Option("Pilih bahan / kemasan", ""));
-        (csrContext.supplies || []).forEach(function (supply) {
-            $supply.append(new Option(supply.supplies_name, supply.supplies_id));
+        cprContext = context || {};
+        var $product = $("#cpr-product").empty().append(new Option("Pilih produk / varian", ""));
+        (cprContext.products || []).forEach(function (product) {
+            $product.append(new Option(product.product_label, product.product_variant_id));
         });
-        setupLocalSelect("#csr-supply", "Cari dan pilih bahan / kemasan");
+        setupLocalSelect("#cpr-product", "Cari dan pilih produk / varian");
 
-        var warehouseOptions = '<option value="">Pilih gudang utama</option>';
-        (csrContext.warehouses || []).forEach(function (warehouse) {
+        var warehouseOptions = '<option value="">Pilih gudang</option>';
+        (cprContext.warehouses || []).forEach(function (warehouse) {
             warehouseOptions += '<option value="' + warehouse.id + '">' + esc(warehouse.warehouse_name) + "</option>";
         });
-        $("#csr-warehouse").html(warehouseOptions);
-        setupLocalSelect("#csr-warehouse", "Cari dan pilih gudang utama");
-        if ((csrContext.warehouses || []).length > 0) {
-            $("#csr-warehouse").val(String(csrContext.warehouses[0].id)).trigger("change.select2");
+        $("#cpr-warehouse").html(warehouseOptions);
+        setupLocalSelect("#cpr-warehouse", "Cari dan pilih gudang");
+        if ((cprContext.warehouses || []).length > 0) {
+            $("#cpr-warehouse").val(String(cprContext.warehouses[0].id)).trigger("change.select2");
         }
-        $("#csr-unit").html('<option value="">Pilih satuan</option>');
-        setupLocalSelect("#csr-unit", "Pilih satuan");
+        $("#cpr-unit").html('<option value="">Pilih satuan</option>');
+        setupLocalSelect("#cpr-unit", "Pilih satuan");
     }
 
     function loadContext(done) {
-        $.get("/customerSupplyReturns/context")
+        $.get("/customerProductReturns/context")
             .done(function (context) {
                 applyContext(context);
                 if (typeof done === "function") done(context);
@@ -343,76 +343,76 @@
     }
 
     function resetModal() {
-        csrMode = "create";
-        csrLines = [];
-        csrContext = null;
-        csrExistingProofUrl = "";
-        $("#csr-id,#csr-ref-number,#csr-notes,#csr-qty").val("");
-        $("#csr-date").val(new Date().toISOString().slice(0, 10));
-        $("#csr-proof-camera,#csr-proof-file").val("");
-        $("#csr-check-foto,#csr-btn-view-proof").addClass("d-none");
-        $("#csr-proof-preview").attr("src", "");
-        $("#csr-proof-download").attr("href", "");
-        destroySelect($("#csr-customer"));
-        $("#csr-customer").empty().prop("disabled", false);
-        setSelectInvalid("#csr-customer", false);
-        ["#csr-supply", "#csr-unit", "#csr-warehouse"].forEach(function (selector) {
+        cprMode = "create";
+        cprLines = [];
+        cprContext = null;
+        cprExistingProofUrl = "";
+        $("#cpr-id,#cpr-ref-number,#cpr-notes,#cpr-qty").val("");
+        $("#cpr-date").val(new Date().toISOString().slice(0, 10));
+        $("#cpr-proof-camera,#cpr-proof-file").val("");
+        $("#cpr-check-foto,#cpr-btn-view-proof").addClass("d-none");
+        $("#cpr-proof-preview").attr("src", "");
+        $("#cpr-proof-download").attr("href", "");
+        destroySelect($("#cpr-customer"));
+        $("#cpr-customer").empty().prop("disabled", false);
+        setSelectInvalid("#cpr-customer", false);
+        ["#cpr-product", "#cpr-unit", "#cpr-warehouse"].forEach(function (selector) {
             destroySelect($(selector));
             $(selector).empty().prop("disabled", false);
             setSelectInvalid(selector, false);
         });
 
-        $("#csr-qty").removeClass("is-invalid");
-        $("#csr-line-form").removeClass("d-none");
-        $("#csr-save").removeClass("d-none").text("Simpan Pengembalian");
-        $("#csr-btn-upload-proof").removeClass("d-none border-danger text-danger");
-        $("#csr-accept,#csr-decline").addClass("d-none");
-        $("#customer-supply-return-modal .modal-title").text("Tambah Pengembalian Bahan Mentah");
-        $("#customer-supply-return-modal input, #customer-supply-return-modal textarea").prop("readonly", false).prop("disabled", false);
+        $("#cpr-qty").removeClass("is-invalid");
+        $("#cpr-line-form").removeClass("d-none");
+        $("#cpr-save").removeClass("d-none").text("Simpan Pengembalian");
+        $("#cpr-btn-upload-proof").removeClass("d-none border-danger text-danger");
+        $("#cpr-accept,#cpr-decline").addClass("d-none");
+        $("#customer-product-return-modal .modal-title").text("Tambah Pengembalian Produk Jadi");
+        $("#customer-product-return-modal input, #customer-product-return-modal textarea").prop("readonly", false).prop("disabled", false);
         setupCustomerSelect();
         renderLines();
         loadContext();
     }
 
-    function selectedSupply() {
-        if (!csrContext) return null;
-        var id = parseInt($("#csr-supply").val(), 10);
-        return (csrContext.supplies || []).find(function (supply) {
-            return parseInt(supply.supplies_id, 10) === id;
+    function selectedProduct() {
+        if (!cprContext) return null;
+        var id = parseInt($("#cpr-product").val(), 10);
+        return (cprContext.products || []).find(function (product) {
+            return parseInt(product.product_variant_id, 10) === id;
         }) || null;
     }
 
     function renderLines() {
         var html = "";
-        csrLines.forEach(function (line, index) {
+        cprLines.forEach(function (line, index) {
             html += "<tr>" +
-                "<td class=\"fw-semibold\">" + esc(line.supplies_name) + "</td>" +
+                "<td class=\"fw-semibold\">" + esc(line.product_label) + "</td>" +
                 "<td>" + esc(line.unit_name) + "</td>" +
                 "<td>" + esc(line.qty) + "</td>" +
                 "<td>" + esc(line.warehouse_name) + "</td>" +
-                '<td class="text-center">' + (csrMode === "view" ? "—" :
-                    '<a href="javascript:void(0);" class="btn-action-icon csr-remove-line" data-index="' + index + '" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>') +
+                '<td class="text-center">' + (cprMode === "view" ? "—" :
+                    '<a href="javascript:void(0);" class="btn-action-icon cpr-remove-line" data-index="' + index + '" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>') +
                 "</td></tr>";
         });
-        if (!html) html = '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada bahan ditambahkan.</td></tr>';
-        $("#csr-lines").html(html);
+        if (!html) html = '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada produk ditambahkan.</td></tr>';
+        $("#cpr-lines").html(html);
         if (typeof feather !== "undefined") feather.replace();
     }
 
     function openRecord(id, mode) {
-        $.get("/customerSupplyReturns/" + id).done(function (record) {
+        $.get("/customerProductReturns/" + id).done(function (record) {
             resetModal();
-            csrMode = mode;
-            $("#csr-id").val(record.return_id);
-            $("#csr-date").val(String(record.return_date || "").slice(0, 10));
-            $("#csr-ref-number").val(record.ref_number || "");
-            $("#csr-notes").val(record.notes || "");
+            cprMode = mode;
+            $("#cpr-id").val(record.return_id);
+            $("#cpr-date").val(String(record.return_date || "").slice(0, 10));
+            $("#cpr-ref-number").val(record.ref_number || "");
+            $("#cpr-notes").val(record.notes || "");
             applyContext(record.context || {});
             setCustomer(record.customer_id, record.customer_name);
-            csrLines = (record.details || []).map(function (detail) {
+            cprLines = (record.details || []).map(function (detail) {
                 return {
-                    supplies_id: parseInt(detail.supplies_id, 10),
-                    supplies_name: detail.supplies_name,
+                    product_variant_id: parseInt(detail.product_variant_id, 10),
+                    product_label: detail.product_label || detail.product_name || "-",
                     unit_id: parseInt(detail.unit_id, 10),
                     unit_name: detail.unit_name || detail.unit_short_name || "-",
                     warehouse_id: parseInt(detail.warehouse_id, 10),
@@ -422,51 +422,51 @@
             });
             renderLines();
             if (record.proof_url) {
-                csrExistingProofUrl = record.proof_url;
+                cprExistingProofUrl = record.proof_url;
                 refreshProofState();
             }
 
             if (mode === "view") {
-                $("#customer-supply-return-modal .modal-title").text("Detail Pengembalian Bahan " + record.return_number);
-                $("#customer-supply-return-modal input, #customer-supply-return-modal textarea").prop("disabled", true);
-                $("#csr-customer,#csr-supply,#csr-unit,#csr-warehouse").prop("disabled", true);
-                $("#csr-btn-upload-proof").addClass("d-none");
-                $("#csr-line-form,#csr-save").addClass("d-none");
+                $("#customer-product-return-modal .modal-title").text("Detail Pengembalian Produk " + record.return_number);
+                $("#customer-product-return-modal input, #customer-product-return-modal textarea").prop("disabled", true);
+                $("#cpr-customer,#cpr-product,#cpr-unit,#cpr-warehouse").prop("disabled", true);
+                $("#cpr-btn-upload-proof").addClass("d-none");
+                $("#cpr-line-form,#cpr-save").addClass("d-none");
                 if (parseInt(record.status, 10) === 1 && can("others")) {
-                    $("#csr-accept,#csr-decline").removeClass("d-none");
+                    $("#cpr-accept,#cpr-decline").removeClass("d-none");
                 }
             } else {
-                $("#customer-supply-return-modal .modal-title").text("Edit Pengembalian Bahan " + record.return_number);
-                $("#csr-save").text("Update Pengembalian");
-                $("#csr-btn-upload-proof").removeClass("d-none");
+                $("#customer-product-return-modal .modal-title").text("Edit Pengembalian Produk " + record.return_number);
+                $("#cpr-save").text("Update Pengembalian");
+                $("#cpr-btn-upload-proof").removeClass("d-none");
             }
-            $("#customer-supply-return-modal").modal("show");
+            $("#customer-product-return-modal").modal("show");
         }).fail(notifyError);
     }
 
     function submitRecord() {
-        var customerId = $("#csr-customer").val();
-        setSelectInvalid("#csr-customer", !customerId);
-        if (!$("#csr-date").val() || !customerId || !csrLines.length) {
-            toastr.error("Tanggal, Armada, dan minimal satu bahan wajib diisi.");
+        var customerId = $("#cpr-customer").val();
+        setSelectInvalid("#cpr-customer", !customerId);
+        if (!$("#cpr-date").val() || !customerId || !cprLines.length) {
+            toastr.error("Tanggal, Armada, dan minimal satu produk wajib diisi.");
             return;
         }
         var photos = cameraPhotos();
-        var proofFile = $("#csr-proof-file")[0].files[0];
-        if (csrMode === "create" && !photos.length && !proofFile) {
-            $("#csr-btn-upload-proof").addClass("border-danger text-danger");
+        var proofFile = $("#cpr-proof-file")[0].files[0];
+        if (cprMode === "create" && !photos.length && !proofFile) {
+            $("#cpr-btn-upload-proof").addClass("border-danger text-danger");
             toastr.error("Bukti foto wajib diunggah.");
             return;
         }
         var form = new FormData();
         form.append("_token", csrf());
         form.append("customer_id", customerId);
-        form.append("return_date", $("#csr-date").val());
-        form.append("ref_number", $("#csr-ref-number").val());
-        form.append("notes", $("#csr-notes").val());
-        form.append("details", JSON.stringify(csrLines.map(function (line) {
+        form.append("return_date", $("#cpr-date").val());
+        form.append("ref_number", $("#cpr-ref-number").val());
+        form.append("notes", $("#cpr-notes").val());
+        form.append("details", JSON.stringify(cprLines.map(function (line) {
             return {
-                supplies_id: line.supplies_id,
+                product_variant_id: line.product_variant_id,
                 unit_id: line.unit_id,
                 warehouse_id: line.warehouse_id,
                 qty: line.qty,
@@ -478,124 +478,115 @@
             form.append("proof", proofFile);
         }
 
-        var id = $("#csr-id").val();
-        var url = csrMode === "edit" ? "/customerSupplyReturns/" + id : "/customerSupplyReturns";
-        $("#csr-save").prop("disabled", true);
+        var id = $("#cpr-id").val();
+        var url = cprMode === "edit" ? "/customerProductReturns/" + id : "/customerProductReturns";
+        $("#cpr-save").prop("disabled", true);
         $.ajax({ url: url, method: "POST", data: form, processData: false, contentType: false })
             .done(function (response) {
-                $("#customer-supply-return-modal").modal("hide");
+                $("#customer-product-return-modal").modal("hide");
                 toastr.success(response.message || "Pengembalian berhasil disimpan.");
-                if (csrTable) csrTable.ajax.reload(null, false);
+                if (cprTable) cprTable.ajax.reload(null, false);
             })
             .fail(notifyError)
-            .always(function () { $("#csr-save").prop("disabled", false); });
+            .always(function () { $("#cpr-save").prop("disabled", false); });
     }
 
     function processRecord(id, action, question) {
         Swal.fire({
             icon: action === "accept" ? "question" : "warning",
             title: question,
-            text: action === "accept" ? "Stok bahan akan bertambah dan tindakan ini tidak dapat diulang." : "Penolakan tidak mengubah stok.",
+            text: action === "accept" ? "Stok produk akan bertambah dan tindakan ini tidak dapat diulang." : "Penolakan tidak mengubah stok.",
             showCancelButton: true,
             confirmButtonText: "Ya, lanjutkan",
             cancelButtonText: "Batal",
         }).then(function (result) {
             if (!result.isConfirmed) return;
-            $.post("/customerSupplyReturns/" + id + "/" + action, { _token: csrf() })
+            $.post("/customerProductReturns/" + id + "/" + action, { _token: csrf() })
                 .done(function (response) {
-                    $("#customer-supply-return-modal").modal("hide");
+                    $("#customer-product-return-modal").modal("hide");
                     toastr.success(response.message);
-                    if (csrTable) csrTable.ajax.reload(null, false);
+                    if (cprTable) cprTable.ajax.reload(null, false);
                 }).fail(notifyError);
         });
     }
 
     $(function () {
         setupCustomerSelect();
-        $("#supply-return-tab").on("shown.bs.tab", function () {
-            $(".btnAdd").addClass("d-none");
-            initTable();
-            setActiveTableFilter("supply-return");
-            window.setTimeout(adjustTable, 0);
-        });
-        $("#shipping-tab").on("shown.bs.tab", function () {
-            $(".btnAdd").removeClass("d-none");
-            setActiveTableFilter("shipping");
-            if (window.table) window.table.columns.adjust();
-        });
         $("#product-return-tab").on("shown.bs.tab", function () {
             $(".btnAdd").addClass("d-none");
+            initTable();
             setActiveTableFilter("product-return");
+            window.setTimeout(adjustTable, 0);
         });
 
-        $("#csr-add").on("click", function () {
+        $("#cpr-add").on("click", function () {
             resetModal();
-            $("#customer-supply-return-modal").modal("show");
+            $("#customer-product-return-modal").modal("show");
         });
-        $("#csr-customer").on("change", function () {
-            setSelectInvalid("#csr-customer", !$(this).val());
+        $("#cpr-customer").on("change", function () {
+            setSelectInvalid("#cpr-customer", !$(this).val());
         });
-        $("#csr-supply").on("change", function () {
-            var supply = selectedSupply();
-            setSelectInvalid("#csr-supply", false);
-            destroySelect($("#csr-unit"));
-            $("#csr-unit").html('<option value="">Pilih satuan</option>');
-            (supply ? supply.units : []).forEach(function (unit) {
-                $("#csr-unit").append(new Option(unit.unit_name || unit.unit_short_name, unit.unit_id));
+        $("#cpr-product").on("change", function () {
+            var product = selectedProduct();
+            setSelectInvalid("#cpr-product", false);
+            destroySelect($("#cpr-unit"));
+            $("#cpr-unit").html('<option value="">Pilih satuan</option>');
+            (product ? product.units : []).forEach(function (unit) {
+                $("#cpr-unit").append(new Option(unit.unit_name || unit.unit_short_name, unit.unit_id));
             });
-            setupLocalSelect("#csr-unit", "Pilih satuan");
-            if (supply && supply.default_unit_id) {
-                $("#csr-unit").val(String(supply.default_unit_id)).trigger("change.select2");
+            setupLocalSelect("#cpr-unit", "Pilih satuan");
+            if (product && product.default_unit_id) {
+                $("#cpr-unit").val(String(product.default_unit_id)).trigger("change.select2");
             }
-            $("#csr-qty").val(supply ? 1 : "");
+            $("#cpr-qty").val(product ? 1 : "");
         });
-        $("#csr-unit,#csr-warehouse").on("change", function () {
+        $("#cpr-unit,#cpr-warehouse").on("change", function () {
             setSelectInvalid("#" + this.id, false);
         });
-        $("#csr-qty").on("input", function () {
+        $("#cpr-qty").on("input", function () {
             $(this).removeClass("is-invalid");
         });
-        $("#csr-add-line").on("click", function () {
-            var supply = selectedSupply();
-            var unitId = parseInt($("#csr-unit").val(), 10);
-            var warehouseId = parseInt($("#csr-warehouse").val(), 10);
-            var qty = parseInt($("#csr-qty").val(), 10);
-            setSelectInvalid("#csr-supply", !supply);
-            setSelectInvalid("#csr-unit", !unitId);
-            setSelectInvalid("#csr-warehouse", !warehouseId);
-            $("#csr-qty").toggleClass("is-invalid", !qty || qty <= 0);
-            if (!supply || !unitId || !warehouseId || !qty || qty <= 0) {
-                toastr.error("Pilih bahan, satuan, qty positif, dan gudang utama.");
+        $("#cpr-add-line").on("click", function () {
+            var product = selectedProduct();
+            var unitId = parseInt($("#cpr-unit").val(), 10);
+            var warehouseId = parseInt($("#cpr-warehouse").val(), 10);
+            var qty = parseInt($("#cpr-qty").val(), 10);
+            setSelectInvalid("#cpr-product", !product);
+            setSelectInvalid("#cpr-unit", !unitId);
+            setSelectInvalid("#cpr-warehouse", !warehouseId);
+            $("#cpr-qty").toggleClass("is-invalid", !qty || qty <= 0);
+            if (!product || !unitId || !warehouseId || !qty || qty <= 0) {
+                toastr.error("Pilih produk, satuan, qty positif, dan gudang.");
                 return;
             }
             var keyMatch = function (line) {
-                return line.supplies_id === parseInt(supply.supplies_id, 10) &&
+                return line.product_variant_id === parseInt(product.product_variant_id, 10) &&
                     line.unit_id === unitId && line.warehouse_id === warehouseId;
             };
-            var existing = csrLines.find(keyMatch);
+            var existing = cprLines.find(keyMatch);
             if (existing) {
                 existing.qty += qty;
             } else {
-                csrLines.push({
-                    supplies_id: parseInt(supply.supplies_id, 10),
-                    supplies_name: supply.supplies_name,
+                cprLines.push({
+                    product_variant_id: parseInt(product.product_variant_id, 10),
+                    product_label: product.product_label,
                     unit_id: unitId,
-                    unit_name: $("#csr-unit option:selected").text(),
+                    unit_name: $("#cpr-unit option:selected").text(),
                     warehouse_id: warehouseId,
-                    warehouse_name: $("#csr-warehouse option:selected").text(),
+                    warehouse_name: $("#cpr-warehouse option:selected").text(),
                     qty: qty,
                 });
             }
-            $("#csr-supply").val(null).trigger("change");
-            $("#csr-unit").val(null).trigger("change.select2");
-            $("#csr-qty").val("").removeClass("is-invalid");
+            $("#cpr-product").val(null).trigger("change");
+            $("#cpr-unit").val(null).trigger("change.select2");
+            $("#cpr-qty").val("").removeClass("is-invalid");
             renderLines();
         });
-        $(document).on("click", ".csr-remove-line", function () {
-            csrLines.splice(parseInt($(this).data("index"), 10), 1);
+        $(document).on("click", ".cpr-remove-line", function () {
+            cprLines.splice(parseInt($(this).data("index"), 10), 1);
             renderLines();
         });
-        $("#csr-proof-file").on("change", function () {
+        $("#cpr-proof-file").on("change", function () {
             var file = this.files[0];
             if (!file) {
                 refreshProofState();
@@ -606,65 +597,65 @@
                 $(this).val("");
                 return;
             }
-            $("#csr-proof-camera").val("");
+            $("#cpr-proof-camera").val("");
             refreshProofState();
         });
-        $("#csr-btn-upload-proof").on("click", function () {
+        $("#cpr-btn-upload-proof").on("click", function () {
             rotationAngle = 0;
             camRotation = 0;
             photoData = "";
             modeCamera = 3;
-            inputFile = "#csr-proof-camera";
-            cameraReturnModal = "#customer-supply-return-modal";
+            inputFile = "#cpr-proof-camera";
+            cameraReturnModal = "#customer-product-return-modal";
             resetCameraModalUi();
             startCamera();
-            $("#customer-supply-return-modal").modal("hide");
+            $("#customer-product-return-modal").modal("hide");
             $("#modalPhoto").modal("show");
         });
         $(document).on("click", "#uploadBtn", function () {
-            if (inputFile === "#csr-proof-camera") {
+            if (inputFile === "#cpr-proof-camera") {
                 window.setTimeout(function () {
                     var photos = cameraPhotos();
                     if (photos.length) {
-                        $("#csr-proof-camera").val(JSON.stringify([photos[photos.length - 1]]));
-                        $("#csr-proof-file").val("");
+                        $("#cpr-proof-camera").val(JSON.stringify([photos[photos.length - 1]]));
+                        $("#cpr-proof-file").val("");
                     }
                     refreshProofState();
                 }, 0);
             }
         });
-        $("#csr-btn-view-proof").on("click", function () {
+        $("#cpr-btn-view-proof").on("click", function () {
             var source = currentProofUrl();
-            var file = $("#csr-proof-file")[0].files[0];
+            var file = $("#cpr-proof-file")[0].files[0];
             if (!source && file) source = URL.createObjectURL(file);
             if (!source) {
                 toastr.error("Bukti foto belum tersedia.");
                 return;
             }
-            $("#csr-proof-preview").attr("src", source);
-            $("#csr-proof-download").attr("href", source);
-            $("#customer-supply-return-modal").modal("hide");
-            $("#csr-photo-preview-modal").modal("show");
+            $("#cpr-proof-preview").attr("src", source);
+            $("#cpr-proof-download").attr("href", source);
+            $("#customer-product-return-modal").modal("hide");
+            $("#cpr-photo-preview-modal").modal("show");
         });
-        $("#csr-photo-preview-modal").on("hidden.bs.modal", function () {
-            $("#customer-supply-return-modal").modal("show");
+        $("#cpr-photo-preview-modal").on("hidden.bs.modal", function () {
+            $("#customer-product-return-modal").modal("show");
         });
-        $("#csr-save").on("click", submitRecord);
-        $(document).on("click", ".csr-view", function () { openRecord($(this).data("id"), "view"); });
-        $(document).on("click", ".csr-edit", function () { openRecord($(this).data("id"), "edit"); });
-        $(document).on("click", ".csr-delete", function () {
+        $("#cpr-save").on("click", submitRecord);
+        $(document).on("click", ".cpr-view", function () { openRecord($(this).data("id"), "view"); });
+        $(document).on("click", ".cpr-edit", function () { openRecord($(this).data("id"), "edit"); });
+        $(document).on("click", ".cpr-delete", function () {
             var id = $(this).data("id");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus" })
+            Swal.fire({ icon: "warning", title: "Hapus pengembalian produk?", showCancelButton: true, confirmButtonText: "Hapus" })
                 .then(function (result) {
                     if (!result.isConfirmed) return;
-                    $.post("/customerSupplyReturns/" + id + "/delete", { _token: csrf() })
+                    $.post("/customerProductReturns/" + id + "/delete", { _token: csrf() })
                         .done(function (response) {
                             toastr.success(response.message);
-                            csrTable.ajax.reload(null, false);
+                            cprTable.ajax.reload(null, false);
                         }).fail(notifyError);
                 });
         });
-        $("#csr-accept").on("click", function () { processRecord($("#csr-id").val(), "accept", "ACC pengembalian bahan?"); });
-        $("#csr-decline").on("click", function () { processRecord($("#csr-id").val(), "decline", "Tolak pengembalian bahan?"); });
+        $("#cpr-accept").on("click", function () { processRecord($("#cpr-id").val(), "accept", "ACC pengembalian produk?"); });
+        $("#cpr-decline").on("click", function () { processRecord($("#cpr-id").val(), "decline", "Tolak pengembalian produk?"); });
     });
 })(jQuery);

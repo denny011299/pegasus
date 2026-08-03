@@ -2,8 +2,7 @@
 @extends('layout.mainlayout')
 
 @section('custom_css')
-
-
+    <style>
         #tableStockTransferLogs {
             width: 100% !important;
             min-width: 1100px;
@@ -234,23 +233,23 @@
     <div class="modal custom-modal fade" id="modalViewMeta" role="dialog" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 92vw;">
             <div class="modal-content d-flex flex-column" style="max-height: 92vh;border:0;border-radius:16px;overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
-                <div class="modal-header flex-shrink-0" style="background:#ffffff;padding:20px 24px;border-bottom: 1px solid #f1f5f9; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
                     <div class="d-flex align-items-center gap-3">
-                        <span style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#f0f9ff;color:#2563eb;border:1px solid #e0f2fe;">
-                            <i class="fe fe-file-text" style="font-size:18px;"></i>
-                        </span>
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-file-text text-white" style="font-size:18px;"></i>
+                        </div>
                         <div>
-                            <h5 class="mb-1 fw-bold text-dark" id="metaModalTitle" style="font-size:16px; letter-spacing:0.3px;">Detail Stock Transfer</h5>
-                            <small class="text-muted fw-semibold" id="metaModalSubtitle" style="font-size:12px; letter-spacing:0.3px;">-</small>
+                            <h5 class="mb-0 text-white fw-bold modal-title" id="metaModalTitle" style="font-size:16px; letter-spacing:0.3px;">Detail Stock Transfer</h5>
+                            <small class="text-white-50 mb-0 mt-1" id="metaModalSubtitle" style="font-size:13px; letter-spacing:0.3px;">-</small>
                         </div>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background-color:#f1f5f9; border-radius:8px; padding: 10px;"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body flex-grow-1" style="overflow-y:auto;min-height:0;background:#f8fafc;padding:24px;">
                     <div id="metaContent"></div>
                 </div>
-                <div class="modal-footer border-top flex-shrink-0" style="background:#ffffff;padding:16px 24px;border-top:1px solid #f1f5f9;">
-                    <button type="button" class="btn btn-light fw-semibold" data-bs-dismiss="modal" style="border-radius:8px; padding:8px 20px; color:#475569; background:#f8fafc; border:1px solid #e2e8f0; transition:all 0.2s;">Tutup</button>
+                <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-back ms-auto" style="border-radius:8px; font-size:13px; font-weight:600; color:#64748b;">Tutup</button>
                 </div>
             </div>
         </div>

@@ -132,6 +132,7 @@
                                                             <div class="small text-muted fw-normal alert-stock-wh-label" style="font-size:10px;line-height:1.2;text-transform:none;letter-spacing:0;"></div>
                                                         </th>
                                                         <th style="width:160px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Satuan Eceran</th>
+                                                        <th style="width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Isi / Pallet<br><small class="text-muted fw-normal" style="font-size:10px;text-transform:none;letter-spacing:0;">opsional, utk Produksi</small></th>
                                                         <th class="col-safety-stock d-none" style="width:230px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">
                                                             Safety Stock
                                                             <div class="small text-muted fw-normal safety-stock-wh-label" style="font-size:10px;line-height:1.2;text-transform:none;letter-spacing:0;"></div>

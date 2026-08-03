@@ -252,6 +252,7 @@ class ProductVariant extends Model
         if (Schema::hasColumn($t->getTable(), 'retail_unit')) {
             $t->retail_unit = ! empty($data["retail_unit"]) ? (int) $data["retail_unit"] : null;
         }
+        $t->qty_per_pallet = $this->normalizeQtyPerPallet($data['qty_per_pallet'] ?? null);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->product_variant_id;
@@ -272,6 +273,7 @@ class ProductVariant extends Model
                 "safety_unit_id" => $data["safety_unit_id"] ?? null,
                 "retail_unit" => $data["retail_unit"] ?? null,
                 "lead_time_days" => $data["lead_time_days"] ?? 0,
+                "qty_per_pallet" => $data["qty_per_pallet"] ?? null,
             ]);
         }
         $t->product_id = $data["product_id"];
@@ -295,10 +297,21 @@ class ProductVariant extends Model
         if (Schema::hasColumn($t->getTable(), 'retail_unit') && array_key_exists('retail_unit', $data)) {
             $t->retail_unit = ! empty($data["retail_unit"]) ? (int) $data["retail_unit"] : null;
         }
+        $t->qty_per_pallet = $this->normalizeQtyPerPallet($data['qty_per_pallet'] ?? null);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->product_variant_id;
+    }
+
+    private function normalizeQtyPerPallet($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $qty = (int) $value;
+
+        return $qty > 0 ? $qty : null;
     }
 
     public function deleteProductVariant($data)

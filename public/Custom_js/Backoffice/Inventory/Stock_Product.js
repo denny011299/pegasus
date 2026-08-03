@@ -529,6 +529,8 @@
                 render: function (data, type, row) {
                     if (type !== "display") {
                         return (
+                            (row.product_variant_sku || "") +
+                            " " +
                             (row.pr_name || "") +
                             " " +
                             (row.product_variant_name || "")
@@ -546,6 +548,7 @@
 
                     var variant = (row.product_variant_name || "").toString().trim();
                     var category = (row.product_category || "").toString().trim();
+                    var sku = (row.product_variant_sku || "").toString().trim();
                     var metaParts = [];
                     if (variant) metaParts.push(variant);
                     if (category) metaParts.push(category);
@@ -556,6 +559,11 @@
                         avatarHtml +
                         "</div>" +
                         '<div class="sretail-product-info">' +
+                        (sku
+                            ? '<span class="badge mb-1" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 8px;font-size:11px;">' +
+                              escapeHtml(sku) +
+                              "</span>"
+                            : "") +
                         '<span class="sretail-product-name">' +
                         escapeHtml(row.pr_name || "-") +
                         "</span>" +
@@ -660,37 +668,68 @@
         }
     }
 
-    function openHistoryModalLoading() {
-        $("#tableLog tbody").html(`
-            <tr class="row-log-loading">
-                <td colspan="6" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center justify-content-center py-4" style="background: rgba(255, 255, 255, 0.9); border-radius: 8px;">
-                        <div class="spinner-border text-primary" style="width: 2.5rem; height: 2.5rem; border-width: 0.25em;" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <div class="mt-2 fw-semibold" style="color: #475569; font-size: 13px; letter-spacing: 0.3px;">Sedang memuat histori...</div>
+    function setHistoryLogLoading(show) {
+        var $scroll = $("#add_stock_product #tableLogScroll");
+        if (!$scroll.length) return;
+        $scroll.find(".log-loading-overlay").remove();
+        if (!show) return;
+        $("#add_stock_product #tableLog tbody").empty();
+        $scroll.css("position", "relative").append(`
+            <div class="log-loading-overlay" style="position:absolute;inset:0;min-height:260px;display:flex;align-items:center;justify-content:center;background:#fff;z-index:15;">
+                <div class="d-flex flex-column align-items-center justify-content-center text-center px-3">
+                    <div class="spinner-border text-primary" style="width:2.5rem;height:2.5rem;border-width:0.25em;" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                </td>
-            </tr>
+                    <div class="mt-2 fw-semibold" style="color:#475569;font-size:13px;letter-spacing:0.3px;">Sedang memuat histori...</div>
+                </div>
+            </div>
         `);
+    }
+
+    function openHistoryModalLoading() {
+        setHistoryLogLoading(true);
         $("#add_stock_product .modal-title").html("Lihat Histori Produk");
         bindLogScroll();
         $("#add_stock_product").modal("show");
     }
 
+    function formatLogSaldoQty(val) {
+        if (val == null || val === "") return null;
+        var n = parseFloat(val);
+        if (isNaN(n)) return null;
+        return String(Math.round(n));
+    }
+
     function renderLogRows(rows) {
         return (rows || [])
             .map(function (e) {
+                var saldoText;
+                if (e.log_saldo_text) {
+                    saldoText =
+                        '<span style="font-weight:700;color:#0f172a;">' +
+                        $("<div>").text(e.log_saldo_text).html() +
+                        "</span>";
+                } else {
+                    var saldoQty = formatLogSaldoQty(e.log_saldo);
+                    saldoText =
+                        saldoQty == null
+                            ? '<span style="color: #cbd5e1;">-</span>'
+                            : '<span style="font-weight:700;color:#0f172a;">' +
+                              saldoQty +
+                              " " +
+                              (e.unit_name || "") +
+                              "</span>";
+                }
                 return `
                     <tr class="row-log align-middle" data-id="${e.log_id}" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
-                        <td style="width:15%; padding: 14px 24px;">
+                        <td style="width:12%; padding: 14px 24px;">
                             <div class="d-flex align-items-center gap-2">
                                 <div style="width:8px;height:8px;border-radius:50%;background-color:${e.log_category == 1 ? '#22c55e' : (e.log_category == 2 ? '#ef4444' : '#cbd5e1')}"></div>
                                 <span style="color: #64748b; font-size: 13px; font-weight: 500;">${moment(e.log_date).format("D MMM YYYY")}</span>
                             </div>
                             <small style="color: #94a3b8; margin-left: 16px;">${moment(e.log_date).format("HH:mm")}</small>
                         </td>
-                        <td style="width:15%; padding: 14px 24px;">
+                        <td style="width:12%; padding: 14px 24px;">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="bg-light text-secondary d-flex justify-content-center align-items-center rounded-circle" style="width: 24px; height: 24px; font-size: 10px; font-weight: bold;">
                                     ${(e.staff_name || 'U').charAt(0).toUpperCase()}
@@ -698,20 +737,21 @@
                                 <span style="font-weight: 600; color: #334155;">${e.staff_name || '-'}</span>
                             </div>
                         </td>
-                        <td style="width:15%; padding: 14px 24px;">
+                        <td style="width:12%; padding: 14px 24px;">
                             <span style="background: #eff6ff; color: #3b82f6; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">
                                 ${e.log_kode || '-'}
                             </span>
                         </td>
-                        <td style="width:25%; padding: 14px 24px;">
+                        <td style="width:22%; padding: 14px 24px;">
                             <span style="color: #475569; font-size: 13px;">${e.log_notes || '-'}</span>
                         </td>
-                        <td style="width:15%; padding: 14px 24px;" class="text-center">
+                        <td style="width:12%; padding: 14px 24px;" class="text-center">
                             ${e.log_category == 1 ? '<span class="badge" style="background-color: #dcfce7; color: #166534; font-size: 12px; font-weight: 600; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px;"><i class="fe fe-arrow-down-left me-1"></i>' + e.log_jumlah + ' ' + e.unit_name + '</span>' : '<span style="color: #cbd5e1;">-</span>'}
                         </td>
-                        <td style="width:15%; padding: 14px 24px;" class="text-center">
+                        <td style="width:12%; padding: 14px 24px;" class="text-center">
                             ${e.log_category == 2 ? '<span class="badge" style="background-color: #fee2e2; color: #991b1b; font-size: 12px; font-weight: 600; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px;"><i class="fe fe-arrow-up-right me-1"></i>' + e.log_jumlah + ' ' + e.unit_name + '</span>' : '<span style="color: #cbd5e1;">-</span>'}
                         </td>
+                        <td style="width:12%; padding: 14px 24px;" class="text-center">${saldoText}</td>
                     </tr>
                 `;
             })
@@ -723,7 +763,7 @@
         if (!show) return;
         $("#tableLog tbody").append(`
             <tr class="row-log-more">
-                <td colspan="6" class="text-center py-3 text-muted">
+                <td colspan="7" class="text-center py-3 text-muted">
                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>Memuat lagi...
                 </td>
             </tr>
@@ -778,17 +818,18 @@
                 setLogFooterLoading(false);
 
                 if (!append) {
+                    setHistoryLogLoading(false);
                     if (!rows.length) {
-                        $("#tableLog tbody").html(`
+                        $("#add_stock_product #tableLog tbody").html(`
                             <tr class="empty-log">
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     Produk ini belum ada riwayat perubahan stok
                                 </td>
                             </tr>
                         `);
                         return;
                     }
-                    $("#tableLog tbody").html(renderLogRows(rows));
+                    $("#add_stock_product #tableLog tbody").html(renderLogRows(rows));
                     setTimeout(maybeFillLogViewport, 50);
                     return;
                 }
@@ -804,9 +845,10 @@
                 setLogFooterLoading(false);
                 console.error("Gagal load:", xhr);
                 if (!append) {
-                    $("#tableLog tbody").html(`
+                    setHistoryLogLoading(false);
+                    $("#add_stock_product #tableLog tbody").html(`
                         <tr class="empty-log">
-                            <td colspan="6" class="text-center text-danger py-4">
+                            <td colspan="7" class="text-center text-danger py-4">
                                 Gagal memuat histori
                             </td>
                         </tr>

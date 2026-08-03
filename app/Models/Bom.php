@@ -102,6 +102,9 @@ class Bom extends Model
                 ? trim($u->product_name . ' ' . $v->product_variant_name)
                 : '-';
             $value->product_variant_sku = $v ? $v->product_variant_sku : '-';
+            $value->qty_per_pallet = $v && (int) ($v->qty_per_pallet ?? 0) > 0
+                ? (int) $v->qty_per_pallet
+                : null;
             $bomUnit = $unitsMap->get($value->unit_id);
             $value->unit_name = $bomUnit ? ($bomUnit->unit_name ?? $bomUnit->unit_short_name ?? '-') : '-';
             $unitIds = $u ? (json_decode($u->product_unit, true) ?: []) : [];

@@ -173,19 +173,26 @@
         }
     }
 
-    function openHistoryModalLoading() {
-        $("#add_stock_supplies #tableLog tbody").html(`
-            <tr class="row-log-loading">
-                <td colspan="6" class="text-center py-5">
-                    <div class="d-flex flex-column align-items-center justify-content-center py-4" style="background: rgba(255, 255, 255, 0.9); border-radius: 8px;">
-                        <div class="spinner-border text-primary" style="width: 2.5rem; height: 2.5rem; border-width: 0.25em;" role="status">
-                            <span class="visually-hidden">Loading...</span>
-                        </div>
-                        <div class="mt-2 fw-semibold" style="color: #475569; font-size: 13px; letter-spacing: 0.3px;">Sedang memuat histori...</div>
+    function setHistoryLogLoading(show) {
+        var $scroll = $("#add_stock_supplies #tableLogScroll");
+        if (!$scroll.length) return;
+        $scroll.find(".log-loading-overlay").remove();
+        if (!show) return;
+        $("#add_stock_supplies #tableLog tbody").empty();
+        $scroll.css("position", "relative").append(`
+            <div class="log-loading-overlay" style="position:absolute;inset:0;min-height:260px;display:flex;align-items:center;justify-content:center;background:#fff;z-index:15;">
+                <div class="d-flex flex-column align-items-center justify-content-center text-center px-3">
+                    <div class="spinner-border text-primary" style="width:2.5rem;height:2.5rem;border-width:0.25em;" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                </td>
-            </tr>
+                    <div class="mt-2 fw-semibold" style="color:#475569;font-size:13px;letter-spacing:0.3px;">Sedang memuat histori...</div>
+                </div>
+            </div>
         `);
+    }
+
+    function openHistoryModalLoading() {
+        setHistoryLogLoading(true);
         $("#add_stock_supplies .modal-title").html("Lihat Histori Bahan Mentah");
         bindLogScroll();
         $("#add_stock_supplies").modal("show");
@@ -194,16 +201,39 @@
     function renderLogRows(rows) {
         return (rows || [])
             .map(function (e) {
+                var saldoText;
+                if (e.log_saldo_text) {
+                    saldoText =
+                        '<span style="font-weight:700;color:#0f172a;">' +
+                        $("<div>").text(e.log_saldo_text).html() +
+                        "</span>";
+                } else {
+                    var saldoQty =
+                        e.log_saldo == null || e.log_saldo === ""
+                            ? null
+                            : (function () {
+                                  var n = parseFloat(e.log_saldo);
+                                  return isNaN(n) ? null : String(Math.round(n));
+                              })();
+                    saldoText =
+                        saldoQty == null
+                            ? '<span style="color: #cbd5e1;">-</span>'
+                            : '<span style="font-weight:700;color:#0f172a;">' +
+                              saldoQty +
+                              " " +
+                              (e.unit_name || "") +
+                              "</span>";
+                }
                 return `
                     <tr class="row-log align-middle" data-id="${e.log_id}" style="border-bottom: 1px solid #f1f5f9;">
-                        <td style="width:15%; padding: 14px 24px;">
+                        <td style="width:12%; padding: 14px 24px;">
                             <div class="d-flex align-items-center gap-2">
                                 <div style="width:8px;height:8px;border-radius:50%;background-color:${e.log_category == 1 ? '#22c55e' : (e.log_category == 2 ? '#ef4444' : '#cbd5e1')}"></div>
                                 <span style="color: #64748b; font-size: 13px; font-weight: 500;">${moment(e.log_date).format("D MMM YYYY")}</span>
                             </div>
                             <small style="color: #94a3b8; margin-left: 16px;">${moment(e.log_date).format("HH:mm")}</small>
                         </td>
-                        <td style="width:15%; padding: 14px 24px;">
+                        <td style="width:12%; padding: 14px 24px;">
                             <div class="d-flex align-items-center gap-2">
                                 <div style="width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 10px; font-weight: 700;">
                                     ${(e.staff_name || 'S').charAt(0).toUpperCase()}
@@ -211,24 +241,25 @@
                                 <span style="font-weight: 600; color: #334155;">${e.staff_name || '-'}</span>
                             </div>
                         </td>
-                        <td style="width:15%; padding: 14px 24px;">
+                        <td style="width:12%; padding: 14px 24px;">
                             <span style="background: #eff6ff; color: #3b82f6; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-size: 12px; font-weight: 600; border: 1px solid #dbeafe;">
                                 ${e.log_kode || '-'}
                             </span>
                         </td>
-                        <td style="width:25%; padding: 14px 24px;">
+                        <td style="width:22%; padding: 14px 24px;">
                             <span style="color: #475569; font-size: 13px;">${e.log_notes || '-'}</span>
                         </td>
-                        <td style="width:15%; padding: 14px 24px;" class="text-center">
+                        <td style="width:12%; padding: 14px 24px;" class="text-center">
                             ${e.log_category == 1 
                                 ? '<span style="background: #ecfdf5; color: #10b981; padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 11px; letter-spacing: 0.3px;"><i class="fe fe-arrow-down me-1"></i>' + e.log_jumlah + ' ' + e.unit_name + '</span>' 
                                 : '<span style="color: #cbd5e1;">-</span>'}
                         </td>
-                        <td style="width:15%; padding: 14px 24px;" class="text-center">
+                        <td style="width:12%; padding: 14px 24px;" class="text-center">
                             ${e.log_category == 2 
                                 ? '<span style="background: #fef2f2; color: #ef4444; padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 11px; letter-spacing: 0.3px;"><i class="fe fe-arrow-up me-1"></i>' + e.log_jumlah + ' ' + e.unit_name + '</span>' 
                                 : '<span style="color: #cbd5e1;">-</span>'}
                         </td>
+                        <td style="width:12%; padding: 14px 24px;" class="text-center">${saldoText}</td>
                     </tr>
                 `;
             })
@@ -240,7 +271,7 @@
         if (!show) return;
         $("#add_stock_supplies #tableLog tbody").append(`
             <tr class="row-log-more">
-                <td colspan="6" class="text-center py-3 text-muted">
+                <td colspan="7" class="text-center py-3 text-muted">
                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>Memuat lagi...
                 </td>
             </tr>
@@ -295,10 +326,11 @@
                 setLogFooterLoading(false);
 
                 if (!append) {
+                    setHistoryLogLoading(false);
                     if (!rows.length) {
                         $("#add_stock_supplies #tableLog tbody").html(`
                             <tr class="empty-log">
-                                <td colspan="6" class="text-center text-muted py-4">
+                                <td colspan="7" class="text-center text-muted py-4">
                                     Bahan ini belum ada riwayat perubahan stok di gudang ini
                                 </td>
                             </tr>
@@ -321,9 +353,10 @@
                 setLogFooterLoading(false);
                 console.error("Gagal load:", xhr);
                 if (!append) {
+                    setHistoryLogLoading(false);
                     $("#add_stock_supplies #tableLog tbody").html(`
                         <tr class="empty-log">
-                            <td colspan="6" class="text-center text-danger py-4">
+                            <td colspan="7" class="text-center text-danger py-4">
                                 Gagal memuat histori
                             </td>
                         </tr>

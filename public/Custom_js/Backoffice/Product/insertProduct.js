@@ -53,6 +53,7 @@ $(document).ready(function() {
             if (element.retail_unit) {
                 $('.row-variant').last().find('.unit_retail').val(element.retail_unit);
             }
+            $('.row-variant').last().find('.variant_qty_per_pallet').val(element.qty_per_pallet || '');
         });
 
         $('#product_unit').empty();
@@ -181,6 +182,9 @@ function addRow(names="",idx=0) {
                     <option value="">-</option>
                 </select>
             </td>
+            <td style="padding: 12px 16px;">
+                <input type="number" min="1" class="form-control number-only variant_qty_per_pallet" placeholder="Qty">
+            </td>
             <td class="${safetyCellClass}" style="padding: 12px 16px;">
                 <div class="input-group">
                     <input type="text" class="form-control variant_safety_stock nominal-only" placeholder="Qty" value="0">
@@ -246,6 +250,7 @@ $(document).on("click",".btn-save",function(){
             unit_id: $(this).find('.unit_alert').val(),
             retail_unit: $(this).find('.unit_retail').val() || null,
             lead_time_days: Math.max(0, parseInt($(this).find('.variant_lead_time').val(), 10) || 0),
+            qty_per_pallet: $(this).find('.variant_qty_per_pallet').val(),
         };
         if (canAccessSafetyStock) {
             variant.safety_stock = $(this).find('.variant_safety_stock').val() || 0;

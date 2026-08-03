@@ -353,25 +353,42 @@ function renderItemsTable(items, title, side, comparisonItems) {
             <td><span class="log-sku">${escapeHtml(valueOrDash(item.sku))}</span></td>
             <td class="text-center fw-semibold">${escapeHtml(formatQty(item.qty, item.unit_name))}</td>
             <td class="text-center">${escapeHtml(
-                item.qty_received == null ? "-" : formatQty(item.qty_received, item.unit_name)
+                item.qty_received == null
+                    ? "-"
+                    : formatQty(item.qty_received, item.received_unit_name || item.unit_name)
             )}</td>
+            <td class="text-center">${formatReportSelisih(item.selisih)}</td>
             <td class="text-center">${badge || '<span class="text-muted">—</span>'}</td>
         </tr>`;
     }).join("");
 
     if (!rows) {
-        rows = '<tr><td colspan="5" class="text-center text-muted py-4">Tidak ada produk.</td></tr>';
+        rows = '<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada produk.</td></tr>';
     }
 
     return `<div class="log-section ${side === "current" ? "mt-3" : ""}">
         <div class="log-section-title"><i class="fe fe-list text-primary"></i> ${escapeHtml(title)}</div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 log-items-table">
-                <thead><tr><th>Produk</th><th>SKU</th><th class="text-center">Qty Kirim</th><th class="text-center">Qty Diterima</th><th class="text-center">Perubahan</th></tr></thead>
+                <thead><tr><th>Produk</th><th>SKU</th><th class="text-center">Qty Kirim</th><th class="text-center">Qty Diterima</th><th class="text-center">Selisih</th><th class="text-center">Perubahan</th></tr></thead>
                 <tbody>${rows}</tbody>
             </table>
         </div>
     </div>`;
+}
+
+function formatReportSelisih(val) {
+    if (val == null || val === "" || isNaN(parseFloat(val))) {
+        return '<span class="text-muted">-</span>';
+    }
+    var n = parseFloat(val);
+    if (Math.abs(n) < 1e-9) {
+        return '<span class="text-muted">0</span>';
+    }
+    if (n < 0) {
+        return '<span style="color:#dc2626;font-weight:700;">' + escapeHtml(String(n)) + "</span>";
+    }
+    return '<span style="color:#059669;font-weight:700;">+' + escapeHtml(String(n)) + "</span>";
 }
 
 function itemKey(item) {

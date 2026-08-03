@@ -91,8 +91,8 @@ class ProductUnitStock
 
     /**
      * Pilihan satuan kirim sesuai tipe gudang.
-     * Gudang retail menawarkan seluruh unit non-retail yang satu chain dengan retail unit,
-     * termasuk unit tanpa row stok yang dapat dibentuk melalui packing.
+     * Gudang utama: semua satuan dalam chain default (multi), konversi ke default saat terima.
+     * Gudang eceran: hanya satuan eceran (retail_unit).
      */
     public static function sourceSnapshot(
         int $warehouseId,
@@ -102,15 +102,10 @@ class ProductUnitStock
         int $retailUnitId
     ): array {
         $candidateIds = $sourceIsMain
-            ? ($defaultUnitId > 0 ? [$defaultUnitId] : [])
-            : self::connectedUnitIds($productVariantId, $retailUnitId);
-
-        if (! $sourceIsMain) {
-            $candidateIds = array_values(array_filter(
-                $candidateIds,
-                fn ($id) => (int) $id !== $retailUnitId
-            ));
-        }
+            ? ($defaultUnitId > 0
+                ? self::connectedUnitIds($productVariantId, $defaultUnitId)
+                : [])
+            : ($retailUnitId > 0 ? [$retailUnitId] : []);
 
         $stocks = self::stocks($warehouseId, $productVariantId);
         $directByUnit = $stocks
@@ -131,11 +126,12 @@ class ProductUnitStock
             }
 
             $direct = (float) ($directByUnit->get($unitId) ?? 0);
+            // Packing dua arah hanya untuk gudang utama multi-satuan.
             $available = self::totalAvailable(
                 $warehouseId,
                 $productVariantId,
                 $unitId,
-                ! $sourceIsMain
+                $sourceIsMain
             );
             $units[] = [
                 'unit_id' => (int) $unitId,
@@ -622,6 +618,7 @@ class ProductUnitStock
                 'log_item_id' => $productVariantId,
                 'log_notes' => $log['note'],
                 'log_jumlah' => $log['qty'],
+                'log_saldo' => round((float) ($virtual[$log['unit_id']] ?? 0), 4),
                 'unit_id' => $log['unit_id'],
                 'warehouse_id' => $warehouseId,
             ]);
@@ -803,6 +800,7 @@ class ProductUnitStock
                     ? 'Stock Transfer - hasil packing satuan'
                     : 'Stock Transfer - bahan packing satuan',
                 'log_jumlah' => abs($delta),
+                'log_saldo' => round((float) ($plan['after'][$currentUnitId] ?? 0), 4),
                 'unit_id' => $currentUnitId,
                 'warehouse_id' => $warehouseId,
             ]);
@@ -817,6 +815,7 @@ class ProductUnitStock
                 . number_format($qty * $targetMultiplier, 0, ',', '.')
                 . ' unit dasar)',
             'log_jumlah' => $qty,
+            'log_saldo' => round((float) ($plan['after'][$unitId] ?? 0), 4),
             'unit_id' => $unitId,
             'warehouse_id' => $warehouseId,
         ]);
@@ -882,6 +881,7 @@ class ProductUnitStock
             'log_item_id' => $productVariantId,
             'log_notes' => $logNotes,
             'log_jumlah' => $qty,
+            'log_saldo' => (float) $row->ps_stock,
             'unit_id' => $unitId,
             'warehouse_id' => $warehouseId,
         ]);

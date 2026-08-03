@@ -9,10 +9,11 @@ Dokumen perbaikan di `ProductionController::accProduction` agar ACC gagal **tida
 
 ## Perbedaan fase-2 vs alur lama
 
-| | Alur lama | fase-2 |
+| | Alur lama | fase-2 (inventori-first) |
 |--|-----------|--------|
-| Saat ACC sukses | potong bahan + **tambah stok produk** | potong bahan + **buat Stock Transfer Pending** ke gudang tujuan |
-| Stok produk di gudang | langsung naik | naik saat ST di-ACC terima (setelah kirim) |
+| Saat ACC sukses | potong bahan + **tambah stok produk** | potong bahan + **tambah stok di gudang produksi**; ST Pending **hanya** jika tujuan ≠ asal (eceran/lain). Tidak ada ST main→main. |
+| ST Kirim | n/a | potong stok dari gudang asal |
+| ST Terima | n/a | tambah stok di gudang tujuan |
 
 Create produksi tetap **pending**, belum potong stok.
 
@@ -20,23 +21,20 @@ Create produksi tetap **pending**, belum potong stok.
 
 ## Masalah yang diperbaiki
 
-### Gejala
+### Gejala (historis)
 
 1. ACC gagal (*bahan baku tidak mencukupi*).
 2. Status produksi **tetap Pending**.
 3. Sebagian stok bahan **sudah terpotong** + ada `log_stocks`.
-4. ACC ulang → daftar bahan kurang bisa **bertambah** (stok sudah turun).
+4. ACC ulang → daftar bahan kurang bisa **bertambah**.
 
 ### Root cause
 
-Loop potong bahan satu per satu, lalu baru return error tanpa rollback (versi lama).  
-Retry + `cekLog` membuat pre-check seolah stok “kurang” padahal potongan milik ACC yang gagal.
+Loop potong bahan satu per satu, lalu return error tanpa rollback (versi lama).
 
-Di fase-2 sudah ada `DB::transaction` + throw saat bahan kurang → rollback.  
-Tetap ditambah **self-heal** + **pre-check** agar:
+### Solusi sekarang
 
-- data rusak historis bisa bersih saat ACC ulang,
-- gagal stok kurang terjadi **sebelum** mutasi (fail cepat).
+`DB::transaction` + pre-check bahan sebelum mutasi. Self-heal orphan log sudah dihapus (data historis sudah dibersihkan di server).
 
 ---
 
@@ -44,25 +42,20 @@ Tetap ditambah **self-heal** + **pre-check** agar:
 
 ```
 1. Validasi migrasi / status == pending (1)
-2. SELF-HEAL  → revertPendingProductionStockMutations(production_code)
-3. Agregasi kebutuhan BOM
-4. Validasi gudang utama + rencana Stock Transfer
-5. PRE-CHECK  → cek SEMUA bahan cukup (tanpa mutasi)
-6. Jika kurang → return status -1 (belum potong)
-7. TRANSACTION:
+2. Agregasi kebutuhan BOM
+3. Validasi gudang utama + rencana Stock Transfer
+4. PRE-CHECK  → cek SEMUA bahan cukup (tanpa mutasi)
+5. Jika kurang → return status -1 (belum potong)
+6. TRANSACTION:
      - lock production
-     - potong bahan + log
+     - potong bahan + log (+ log_saldo)
+     - inventori hasil produksi ke gudang asal (+ log Hasil produksi)
      - create Stock Transfer (Pending) per gudang tujuan
      - update status production → 2
    Gagal → DB::rollBack()
+7. ST Kirim → potong stok gudang asal
+8. ST Terima → tambah stok gudang tujuan
 ```
-
-### Self-heal — `revertPendingProductionStockMutations`
-
-- Ambil `log_stocks` `log_kode = production_code`, urutan `log_id` DESC.
-- Balikkan stok bahan/produk sesuai `log_type` / `log_category`.
-- Hapus log.
-- Tidak ada log → no-op (tidak redundan).
 
 ### Pre-check
 
@@ -70,7 +63,7 @@ Simulasi konversi unit di memori. Kurang → JSON `status: -1` tanpa masuk trans
 
 ### Transaction
 
-Sudah ada di fase-2. Bahan kurang di fase eksekusi → `RuntimeException` → rollback.
+Bahan kurang di fase eksekusi → `RuntimeException` → rollback.
 
 ---
 
@@ -91,7 +84,7 @@ GROUP BY p.production_code, p.status;
 
 ## Catatan developer
 
-1. Jangan hapus self-heal / pre-check / transaction tanpa pengganti setara.
-2. Logika BOM / konversi tidak diganti; yang ditambah guard + atomicity + heal.
+1. Jaga pre-check + transaction; jangan potong stok di luar transaction.
+2. Logika BOM / konversi tidak diganti; yang ditambah guard + atomicity.
 3. Setelah ACC sukses, stok produk mengikuti alur **Stock Transfer** (Pending → Kirim → Terkirim).
 4. FE handle `status: -1` untuk pesan bahan kurang.

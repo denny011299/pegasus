@@ -1,4 +1,4 @@
-<?php $page = 'sales_order'; ?>
+﻿<?php $page = 'sales_order'; ?>
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
@@ -147,12 +147,75 @@
 
 
 
-        #tableCustomerSupplyReturn-wrap {
+        #tableCustomerSupplyReturn-wrap,
+        #tableCustomerProductReturn-wrap {
             position: relative;
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             overflow-x: auto;
             overflow-y: hidden;
+        }
+        #tableCustomerProductReturn-wrap .dt-skeleton-head,
+        #tableCustomerProductReturn-wrap .dt-skeleton-row {
+            grid-template-columns: 11% 13% 13% 15% 11% 14% 14% 9%;
+        }
+        #tableCustomerProductReturn {
+            width: 100% !important;
+            min-width: 1200px;
+            table-layout: auto;
+        }
+        #tableCustomerProductReturn th,
+        #tableCustomerProductReturn td {
+            vertical-align: middle !important;
+            box-sizing: border-box;
+        }
+        #tableCustomerProductReturn thead th {
+            padding: 14px 18px;
+            color: #64748b;
+            background: #f1f5f9;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        #tableCustomerProductReturn tbody td {
+            padding: 14px 18px;
+            color: #475569;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        #tableCustomerProductReturn_wrapper {
+            min-width: 1200px;
+        }
+        #tableCustomerProductReturn-wrap.is-loading tbody {
+            opacity: .45;
+            pointer-events: none;
+        }
+        #customer-product-return-modal .modal-content {
+            max-height: 92vh;
+            overflow: hidden;
+        }
+        #customer-product-return-modal .modal-body {
+            overflow-y: auto;
+        }
+        #customer-product-return-modal .select2-container {
+            width: 100% !important;
+        }
+        #customer-product-return-modal .select2-selection--single {
+            height: 42px !important;
+            border-radius: 8px !important;
+            display: flex;
+            align-items: center;
+        }
+        #customer-product-return-modal .select2-selection__arrow {
+            height: 40px !important;
+        }
+        #customer-product-return-modal .select2-selection.is-invalids {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 .2rem rgba(220, 53, 69, .15) !important;
         }
         #tableCustomerSupplyReturn-wrap .dt-skeleton-head,
         #tableCustomerSupplyReturn-wrap .dt-skeleton-row {
@@ -359,9 +422,15 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link d-flex align-items-center gap-2" id="customer-return-tab" data-bs-toggle="tab"
-                            data-bs-target="#customer-return-pane" type="button" role="tab">
-                            <i class="fe fe-rotate-ccw"></i> Pengembalian
+                        <button class="nav-link d-flex align-items-center gap-2" id="supply-return-tab" data-bs-toggle="tab"
+                            data-bs-target="#supply-return-pane" type="button" role="tab">
+                            <i class="fe fe-package"></i> Pengembalian Bahan Mentah
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link d-flex align-items-center gap-2" id="product-return-tab" data-bs-toggle="tab"
+                            data-bs-target="#product-return-pane" type="button" role="tab">
+                            <i class="fe fe-box"></i> Pengembalian Produk Jadi
                         </button>
                     </li>
                 </ul>
@@ -429,7 +498,7 @@
             <!-- /Table -->
                 </div>
 
-                <div class="tab-pane fade" id="customer-return-pane" role="tabpanel">
+                <div class="tab-pane fade" id="supply-return-pane" role="tabpanel">
                     <div class="row">
                         <div class="col-sm-12">
                             <div class="card-table">
@@ -459,7 +528,54 @@
                                         <tr>
                                             <th>Nomor</th>
                                             <th>Tanggal</th>
-                                            <th>Inv. Pengiriman</th>
+                                            <th>No. Ref</th>
+                                            <th>Armada</th>
+                                            <th class="text-center">Status</th>
+                                            <th>Dibuat Oleh</th>
+                                            <th>Diproses Oleh</th>
+                                            <th class="no-sort text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="product-return-pane" role="tabpanel">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card-table">
+                                <div class="card-body">
+                            <div class="table-responsive position-relative dt-pending" id="tableCustomerProductReturn-wrap">
+                                <div class="dt-skeleton" aria-hidden="true">
+                                    <div style="padding:16px 25px;">
+                                        <span class="skel-text" style="width:250px;height:38px;border-radius:20px;"></span>
+                                    </div>
+                                    <div class="dt-skeleton-head">
+                                        @for ($i = 0; $i < 8; $i++)
+                                            <span style="width:55%;height:12px;border-radius:6px;"></span>
+                                        @endfor
+                                    </div>
+                                    <div class="dt-skeleton-body">
+                                        @for ($row = 0; $row < 5; $row++)
+                                            <div class="dt-skeleton-row">
+                                                @for ($col = 0; $col < 8; $col++)
+                                                    <span class="skel-text" style="width:65%;height:14px;border-radius:6px;"></span>
+                                                @endfor
+                                            </div>
+                                        @endfor
+                                    </div>
+                                </div>
+                                <table class="table table-center table-hover mb-0" id="tableCustomerProductReturn">
+                                    <thead>
+                                        <tr>
+                                            <th>Nomor</th>
+                                            <th>Tanggal</th>
+                                            <th>No. Ref</th>
                                             <th>Armada</th>
                                             <th class="text-center">Status</th>
                                             <th>Dibuat Oleh</th>
@@ -487,10 +603,10 @@
                 <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
                     <div class="d-flex align-items-center gap-3">
                         <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                            <i class="fe fe-rotate-ccw text-white" style="font-size:18px;"></i>
+                            <i class="fe fe-package text-white" style="font-size:18px;"></i>
                         </div>
                         <div>
-                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengembalian</h5>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengembalian Bahan Mentah</h5>
                             <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Bahan mentah atau kemasan kosong dari armada</small>
                         </div>
                     </div>
@@ -504,10 +620,6 @@
                             <input type="date" class="form-control fill" id="csr-date" style="border-radius: 8px; height:42px;">
                         </div>
                         <div class="col-lg-5 col-md-6">
-                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Referensi Pengiriman <span class="text-danger">*</span></label>
-                            <select class="form-select fill" id="csr-so" style="border-radius: 8px; height:42px;"></select>
-                        </div>
-                        <div class="col-lg-4 col-md-6">
                             <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Armada / Customer <span class="text-danger">*</span></label>
                             <select class="form-select fill" id="csr-customer" style="border-radius: 8px; height:42px;"></select>
                         </div>
@@ -515,11 +627,11 @@
                             <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Nomor Referensi</label>
                             <input type="text" class="form-control fill" id="csr-ref-number" maxlength="100" style="border-radius: 8px; height:42px;">
                         </div>
-                        <div class="col-lg-5 col-md-6">
+                        <div class="col-lg-8 col-md-6">
                             <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Catatan</label>
                             <textarea class="form-control fill" id="csr-notes" rows="1" maxlength="2000" style="border-radius: 8px; height:42px;"></textarea>
                         </div>
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-4 col-md-6">
                             <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Bukti Foto <span class="text-danger">*</span></label>
                             <span id="csr-check-foto" class="ms-2 d-none">
                                 <i class="fa fa-check-circle text-success"></i>
@@ -537,8 +649,6 @@
                             <input type="file" class="d-none" id="csr-proof-file" accept="image/jpeg,image/png,image/webp">
                         </div>
                     </div>
-
-                    <div id="csr-bom-warning" class="alert alert-warning mt-3 d-none"></div>
 
                     <hr class="mt-4 mb-4" style="border-color: #e2e8f0;">
 
@@ -569,7 +679,6 @@
                             <thead class="bg-light" style="position: sticky; top: 0; z-index: 1;">
                                 <tr>
                                     <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Bahan / Kemasan</th>
-                                    <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Asal BOM</th>
                                     <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Satuan</th>
                                     <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Qty</th>
                                     <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Gudang</th>
@@ -585,6 +694,110 @@
                     <button type="button" class="btn btn-danger me-2 d-none align-items-center gap-2" id="csr-decline" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
                     <button type="button" class="btn btn-success me-2 d-none align-items-center gap-2" id="csr-accept" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-check"></i> Terima</button>
                     <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 ms-auto" id="csr-save" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                        <i class="fe fe-save"></i> Simpan Pengembalian
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="customer-product-return-modal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4">
+                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                            <i class="fe fe-box text-white" style="font-size:18px;"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengembalian Produk Jadi</h5>
+                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Produk jadi dari armada ke gudang</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="cpr-id">
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Tanggal <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control fill" id="cpr-date" style="border-radius: 8px; height:42px;">
+                        </div>
+                        <div class="col-lg-5 col-md-6">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Armada / Customer <span class="text-danger">*</span></label>
+                            <select class="form-select fill" id="cpr-customer" style="border-radius: 8px; height:42px;"></select>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Nomor Referensi</label>
+                            <input type="text" class="form-control fill" id="cpr-ref-number" maxlength="100" style="border-radius: 8px; height:42px;">
+                        </div>
+                        <div class="col-lg-8 col-md-6">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Catatan</label>
+                            <textarea class="form-control fill" id="cpr-notes" rows="1" maxlength="2000" style="border-radius: 8px; height:42px;"></textarea>
+                        </div>
+                        <div class="col-lg-4 col-md-6">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Bukti Foto <span class="text-danger">*</span></label>
+                            <span id="cpr-check-foto" class="ms-2 d-none">
+                                <i class="fa fa-check-circle text-success"></i>
+                                <small class="text-muted">Terunggah</small>
+                            </span>
+                            <div class="d-flex gap-2 mt-2">
+                                <button class="btn w-100" id="cpr-btn-upload-proof" type="button" style="border-radius:8px;height:42px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;font-weight:600;">
+                                    <i class="fe fe-camera me-1"></i> Upload
+                                </button>
+                                <button class="btn w-100 d-none" id="cpr-btn-view-proof" type="button" style="border-radius:8px;height:42px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                                    <i class="fe fe-image me-1"></i> Lihat
+                                </button>
+                            </div>
+                            <input type="hidden" id="cpr-proof-camera">
+                            <input type="file" class="d-none" id="cpr-proof-file" accept="image/jpeg,image/png,image/webp">
+                        </div>
+                    </div>
+
+                    <hr class="mt-4 mb-4" style="border-color: #e2e8f0;">
+
+                    <div class="row g-2 align-items-end mt-1" id="cpr-line-form">
+                        <div class="col-lg-4">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Produk / Varian</label>
+                            <select class="form-select fill" id="cpr-product" style="border-radius: 8px; height:42px;"></select>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Satuan</label>
+                            <select class="form-select fill" id="cpr-unit" style="border-radius: 8px; height:42px;"></select>
+                        </div>
+                        <div class="col-lg-2">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Qty</label>
+                            <input type="number" min="1" step="1" class="form-control fill" id="cpr-qty" style="border-radius: 8px; height:42px;">
+                        </div>
+                        <div class="col-lg-3">
+                            <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Gudang Tujuan</label>
+                            <select class="form-select fill" id="cpr-warehouse" style="border-radius: 8px; height:42px;"></select>
+                        </div>
+                        <div class="col-lg-1">
+                            <button type="button" class="btn w-100 d-flex align-items-center justify-content-center" id="cpr-add-line" style="border-radius:8px;height:42px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive border rounded-3 mt-3" style="max-height:300px; border-color: #e2e8f0 !important;">
+                        <table class="table table-center mb-0">
+                            <thead class="bg-light" style="position: sticky; top: 0; z-index: 1;">
+                                <tr>
+                                    <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Produk / Varian</th>
+                                    <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Satuan</th>
+                                    <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Qty</th>
+                                    <th style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Gudang</th>
+                                    <th class="text-center" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px; color:#64748b; font-weight:700;">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cpr-lines"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
+                    <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2" style="border-radius:8px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                    <button type="button" class="btn btn-danger me-2 d-none align-items-center gap-2" id="cpr-decline" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
+                    <button type="button" class="btn btn-success me-2 d-none align-items-center gap-2" id="cpr-accept" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-check"></i> Terima</button>
+                    <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 ms-auto" id="cpr-save" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
                         <i class="fe fe-save"></i> Simpan Pengembalian
                     </button>
                 </div>
@@ -609,26 +822,43 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="cpr-photo-preview-modal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 overflow-hidden">
+                <div class="modal-header border-0 text-white" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">
+                    <h5 class="modal-title text-white"><i class="fe fe-image me-2"></i>Bukti Foto Pengembalian Produk</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light text-center p-3">
+                    <img id="cpr-proof-preview" class="img-fluid rounded" style="max-height:65vh;object-fit:contain;" alt="Bukti pengembalian produk">
+                </div>
+                <div class="modal-footer">
+                    <a id="cpr-proof-download" class="btn btn-outline-primary" download><i class="fe fe-download me-1"></i>Download</a>
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('custom_js')
     <script>
-        var public = "{{ asset('') }}";    
+        var public = "{{ asset('') }}";
 
         $(document).ready(function() {
-            // Toggle header buttons based on active tab
+            function syncHeaderButtons(targetId) {
+                $('#btn-container-pengiriman').toggle(targetId === 'shipping-tab');
+                $('#btn-container-pengembalian-bahan').toggle(targetId === 'supply-return-tab');
+                $('#btn-container-pengembalian-produk').toggle(targetId === 'product-return-tab');
+            }
+            syncHeaderButtons('shipping-tab');
             $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
-                var targetId = $(e.target).attr("id");
-                if (targetId === "shipping-tab") {
-                    $('#btn-container-pengiriman').show();
-                    $('#btn-container-pengembalian').hide();
-                } else if (targetId === "customer-return-tab") {
-                    $('#btn-container-pengiriman').hide();
-                    $('#btn-container-pengembalian').show();
-                }
+                syncHeaderButtons($(e.target).attr('id'));
             });
         });
     </script>
     <script src="{{asset('Custom_js/Backoffice/Customers/Sales_Order.js')}}?v={{time()}}"></script>
     <script src="{{asset('Custom_js/Backoffice/Customers/Customer_Supply_Return.js')}}?v={{time()}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Customers/Customer_Product_Return.js')}}?v={{time()}}"></script>
 @endsection

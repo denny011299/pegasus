@@ -34,6 +34,7 @@ use App\Support\UnitStockSorter;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 use function Symfony\Component\Clock\now;
@@ -185,37 +186,58 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $sto = StockOpname::find($data['sto_id']);
+        $warehouseId = (int) (
+            ($sto->warehouse_id ?? null)
+            ?: (Session::get('active_warehouse_id') ?? 0)
+        );
         foreach ($stod as $key => $value) {
             foreach ($value['units'] as $u) {
-                $s = ProductStock::where('product_variant_id', $value['product_variant_id'])
-                    ->where('unit_id', $u['unit_id'])
-                    ->first();
-                
-                // Catat log
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $sto->sto_code,
-                    'log_type'    => 1,
-                    'log_category' => 2,
-                    'log_item_id' => $value['product_variant_id'],
-                    'log_notes'  => "Stock Opname Produk",
-                    'log_jumlah' => $s->ps_stock,
-                    'unit_id'    => $u['unit_id'],
-                ]);
+                $q = ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('status', 1)
+                    ->where('product_variant_id', $value['product_variant_id'])
+                    ->where('unit_id', $u['unit_id']);
+                if ($warehouseId > 0) {
+                    $q->where('warehouse_id', $warehouseId);
+                }
+                $s = $q->first();
+                if (! $s) {
+                    continue;
+                }
 
-                $s->ps_stock = $u['real_qty'];
+                $oldQty = (float) $s->ps_stock;
+                $newQty = (float) $u['real_qty'];
+                $s->ps_stock = $newQty;
                 $s->save();
 
+                $wid = (int) ($s->warehouse_id ?: $warehouseId);
+                $diff = round($newQty - $oldQty, 4);
+                if (abs($diff) < 1e-9) {
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode' => $sto->sto_code,
+                        'log_type' => 1,
+                        'log_category' => 1,
+                        'log_item_id' => $value['product_variant_id'],
+                        'log_notes' => 'Stock Opname Produk (tidak berubah)',
+                        'log_jumlah' => 0,
+                        'log_saldo' => $newQty,
+                        'unit_id' => $u['unit_id'],
+                        'warehouse_id' => $wid > 0 ? $wid : null,
+                    ]);
+                    continue;
+                }
+
                 (new LogStock())->insertLog([
-                    // Catat log
                     'log_date' => now(),
-                    'log_kode'    => $sto->sto_code,
-                    'log_type'    => 1,
-                    'log_category' => 1,
+                    'log_kode' => $sto->sto_code,
+                    'log_type' => 1,
+                    'log_category' => $diff > 0 ? 1 : 2,
                     'log_item_id' => $value['product_variant_id'],
-                    'log_notes'  => "Stock Opname Produk",
-                    'log_jumlah' => $s->ps_stock,
-                    'unit_id'    => $u['unit_id'],
+                    'log_notes' => 'Stock Opname Produk',
+                    'log_jumlah' => abs($diff),
+                    'log_saldo' => $newQty,
+                    'unit_id' => $u['unit_id'],
+                    'warehouse_id' => $wid > 0 ? $wid : null,
                 ]);
             }
         }
@@ -344,37 +366,58 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $stob = StockOpnameBahan::find($data['stob_id']);
+        $warehouseId = (int) (
+            ($stob->warehouse_id ?? null)
+            ?: (Session::get('active_warehouse_id') ?? 0)
+        );
         foreach ($stod as $key => $value) {
             foreach ($value['sp_units'] as $u) {
-                $s = SuppliesStock::where('supplies_id', $value['supplies_id'])
-                    ->where('unit_id', $u['unit_id'])
-                    ->first();
-                
-                // Catat log
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $stob->stob_code,
-                    'log_type'    => 2,
-                    'log_category' => 2,
-                    'log_item_id' => $value['supplies_id'],
-                    'log_notes'  => "Stock Opname Bahan Mentah",
-                    'log_jumlah' => $s->ss_stock,
-                    'unit_id'    => $u['unit_id'],
-                ]);
+                $q = SuppliesStock::withoutGlobalScope('active_warehouse')
+                    ->where('status', 1)
+                    ->where('supplies_id', $value['supplies_id'])
+                    ->where('unit_id', $u['unit_id']);
+                if ($warehouseId > 0) {
+                    $q->where('warehouse_id', $warehouseId);
+                }
+                $s = $q->first();
+                if (! $s) {
+                    continue;
+                }
 
-                $s->ss_stock = $u['real_qty'];
+                $oldQty = (float) $s->ss_stock;
+                $newQty = (float) $u['real_qty'];
+                $s->ss_stock = $newQty;
                 $s->save();
 
-                // Catat log
+                $wid = (int) ($s->warehouse_id ?: $warehouseId);
+                $diff = round($newQty - $oldQty, 4);
+                if (abs($diff) < 1e-9) {
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode' => $stob->stob_code,
+                        'log_type' => 2,
+                        'log_category' => 1,
+                        'log_item_id' => $value['supplies_id'],
+                        'log_notes' => 'Stock Opname Bahan Mentah (tidak berubah)',
+                        'log_jumlah' => 0,
+                        'log_saldo' => $newQty,
+                        'unit_id' => $u['unit_id'],
+                        'warehouse_id' => $wid > 0 ? $wid : null,
+                    ]);
+                    continue;
+                }
+
                 (new LogStock())->insertLog([
                     'log_date' => now(),
-                    'log_kode'    => $stob->stob_code,
-                    'log_type'    => 2,
-                    'log_category' => 1,
+                    'log_kode' => $stob->stob_code,
+                    'log_type' => 2,
+                    'log_category' => $diff > 0 ? 1 : 2,
                     'log_item_id' => $value['supplies_id'],
-                    'log_notes'  => "Stock Opname Bahan Mentah",
-                    'log_jumlah' => $s->ss_stock,
-                    'unit_id'    => $u['unit_id'],
+                    'log_notes' => 'Stock Opname Bahan Mentah',
+                    'log_jumlah' => abs($diff),
+                    'log_saldo' => $newQty,
+                    'unit_id' => $u['unit_id'],
+                    'warehouse_id' => $wid > 0 ? $wid : null,
                 ]);
             }
         }
@@ -1398,11 +1441,23 @@ class StockController extends Controller
                     ->where('product_stocks.warehouse_id', $warehouseId)
                     ->whereIn('product_stocks.product_variant_id', $variantIds);
 
-                // Gudang utama hanya menyimpan/menampilkan stok dalam satuan default produk.
-                if ($isMain) {
-                    $stockQuery
-                        ->join('products as stock_product', 'stock_product.product_id', '=', 'product_stocks.product_id')
-                        ->whereColumn('product_stocks.unit_id', 'stock_product.unit_id');
+                // Gudang utama: multi satuan (semua unit stok).
+                // Gudang eceran: hanya satuan eceran.
+                if (! $isMain) {
+                    if (Schema::hasColumn('product_variants', 'retail_unit')) {
+                        $stockQuery
+                            ->join(
+                                'product_variants as stock_variant',
+                                'stock_variant.product_variant_id',
+                                '=',
+                                'product_stocks.product_variant_id'
+                            )
+                            ->whereNotNull('stock_variant.retail_unit')
+                            ->where('stock_variant.retail_unit', '>', 0)
+                            ->whereColumn('product_stocks.unit_id', 'stock_variant.retail_unit');
+                    } else {
+                        $stockQuery->whereRaw('1 = 0');
+                    }
                 }
 
                 $stockRows = $stockQuery->get([

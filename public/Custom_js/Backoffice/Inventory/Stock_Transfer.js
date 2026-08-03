@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Stock Transfer — FE
  * Autocomplete staff/gudang + input produk pola Pembelian (select / scan).
- * Save/ACC backend masih stub.
+ * Pending: form default locked; unlock via Edit Data (butuh hak edit).
  */
 var mode = 1;
 var table = null;
@@ -32,6 +32,93 @@ var transferScanLookupRun = 0;
 var transferStockLoadRun = 0;
 var transferStockLoads = {};
 var retailSetupPrompts = {};
+/** Konfirmasi/tolak dari modal detail: hide dulu, restore jika cancel. */
+var transferOverlayState = {
+    parent: "#add_stock_transfer",
+    shouldRestore: false,
+    done: false,
+};
+
+function transferParentModalOpen() {
+    var $parent = $(transferOverlayState.parent);
+    return $parent.length > 0 && ($parent.hasClass("show") || $parent.is(":visible"));
+}
+
+function beginTransferOverlay(parentSelector) {
+    transferOverlayState.parent = parentSelector || "#add_stock_transfer";
+    transferOverlayState.done = false;
+    transferOverlayState.shouldRestore = false;
+    if (!transferParentModalOpen()) {
+        return false;
+    }
+    transferOverlayState.shouldRestore = true;
+    $(transferOverlayState.parent).modal("hide");
+    return true;
+}
+
+function markTransferOverlayDone() {
+    transferOverlayState.done = true;
+    transferOverlayState.shouldRestore = false;
+}
+
+function restoreTransferOverlayIfNeeded() {
+    if (
+        !transferOverlayState.shouldRestore ||
+        transferOverlayState.done ||
+        !transferOverlayState.parent
+    ) {
+        return;
+    }
+    var sel = transferOverlayState.parent;
+    transferOverlayState.shouldRestore = false;
+    $(sel).modal("show");
+}
+
+/** Konfirmasi di atas detail ST: hide detail → show konfirmasi; cancel → buka lagi detail. */
+function showTransferModalKonfirmasi(text, buttonId, dataId) {
+    transferOverlayState.done = false;
+    var wasOpen = beginTransferOverlay("#add_stock_transfer");
+    function openConfirm() {
+        if (typeof showModalKonfirmasi === "function") {
+            showModalKonfirmasi(text, buttonId);
+        }
+        // Harus SETELAH showModalKonfirmasi (button id baru di-assign di situ)
+        if (dataId != null && dataId !== "") {
+            $("#modalKonfirmasi #" + buttonId).attr("data-id", dataId);
+            $("#modalKonfirmasi").attr("data-transfer-id", dataId);
+        }
+    }
+    if (wasOpen) {
+        $(transferOverlayState.parent).one("hidden.bs.modal", openConfirm);
+    } else {
+        openConfirm();
+    }
+}
+
+function showProductionRejectOverTransfer(id) {
+    transferOverlayState.done = false;
+    $("#reject_production_transfer").attr("data-id", id);
+    $("#production_reject_notes").val("");
+    var wasOpen = beginTransferOverlay("#add_stock_transfer");
+    function openReject() {
+        $("#reject_production_transfer").modal("show");
+    }
+    if (wasOpen) {
+        $(transferOverlayState.parent).one("hidden.bs.modal", openReject);
+    } else {
+        openReject();
+    }
+}
+
+$(document).on("hidden.bs.modal", "#modalKonfirmasi", function () {
+    $("#modalKonfirmasi").removeAttr("data-transfer-id");
+    $("#modalKonfirmasi .btn-konfirmasi").removeAttr("data-id");
+    restoreTransferOverlayIfNeeded();
+});
+
+$(document).on("hidden.bs.modal", "#reject_production_transfer", function () {
+    restoreTransferOverlayIfNeeded();
+});
 
 function transferUnitLabel(unit) {
     unit = unit || {};
@@ -54,23 +141,60 @@ function transferDefaultUnit(raw) {
     };
 }
 
+/** Satuan dari data autocomplete (pr_unit) — tanpa nunggu fetch stok. */
+function transferUnitsFromRaw(raw) {
+    raw = raw || {};
+    var units = [];
+    var seen = {};
+    var list = Array.isArray(raw.pr_unit) ? raw.pr_unit : [];
+    list.forEach(function (u) {
+        var id = parseInt(u && u.unit_id, 10) || 0;
+        if (!id || seen[id]) return;
+        seen[id] = true;
+        units.push({
+            unit_id: id,
+            unit_name: u.unit_name || "-",
+            unit_short_name: u.unit_short_name || u.unit_name || "-",
+        });
+    });
+    var def = transferDefaultUnit(raw);
+    if (def && !seen[def.unit_id]) {
+        units.unshift(def);
+        seen[def.unit_id] = true;
+    }
+    return { units: units, defaultUnit: def };
+}
+
 function renderTransferDraftDefault(raw) {
-    var unit = transferDefaultUnit(raw);
+    var packed = transferUnitsFromRaw(raw);
     var $unit = $("#transfer_unit_input").empty().removeClass("is-invalid");
-    if (!unit) {
-        $unit.prop("disabled", true).append('<option value="">Unit default produk belum diatur</option>');
+    transferDraft.defaultUnitInvalid = false;
+
+    if (!packed.units.length) {
+        $unit.prop("disabled", true).append('<option value="">Unit produk belum diatur</option>');
         $("#transfer_stock_available")
-            .text("Unit default produk belum diatur")
+            .text("Unit produk belum diatur")
             .addClass("text-danger");
         transferDraft.defaultUnitInvalid = true;
         return false;
     }
-    $unit
-        .append($("<option>", { value: unit.unit_id, text: transferUnitLabel(unit) }))
-        .val(String(unit.unit_id))
-        .prop("disabled", true);
+
+    $unit.append('<option value="">Pilih satuan</option>');
+    packed.units.forEach(function (unit) {
+        $unit.append(
+            $("<option>", {
+                value: unit.unit_id,
+                text: transferUnitLabel(unit),
+            })
+        );
+    });
+
+    var selected = packed.defaultUnit || packed.units[0];
+    $unit.prop("disabled", false).val(String(selected.unit_id));
+    // Seed sementara supaya +Tambah bisa dipakai sebelum stok selesai load
+    transferDraft.stock = { units: packed.units };
     $("#transfer_stock_available")
-        .text("Unit default: " + transferUnitLabel(unit))
+        .text("Memuat stok...")
         .removeClass("text-danger");
     return true;
 }
@@ -160,7 +284,7 @@ function inisialisasi() {
         ordering: true,
         order: [[0, "desc"]],
         scrollX: true,
-        autoWidth: false,
+        autoWidth: true,
         language: {
             search: " ",
             sLengthMenu: "_MENU_",
@@ -199,7 +323,7 @@ function inisialisasi() {
                                 <div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;">
                                     <i class="fe fe-calendar"></i>
                                 </div>
-                                <span class="fw-semibold text-dark text-truncate">${data}</span>
+                                <span class="fw-semibold text-dark text-nowrap">${data}</span>
                             </div>`;
                 }
             },
@@ -223,7 +347,7 @@ function inisialisasi() {
                                 <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;">
                                     <i class="fe fe-user"></i>
                                 </div>
-                                <span class="fw-semibold text-dark text-truncate">${data}</span>
+                                <span class="fw-semibold text-dark text-nowrap">${data}</span>
                             </div>`;
                 }
             },
@@ -236,7 +360,7 @@ function inisialisasi() {
                                 <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;">
                                     <i class="fe fe-arrow-up-right"></i>
                                 </div>
-                                <span class="text-dark text-truncate">${data}</span>
+                                <span class="text-dark text-nowrap">${data}</span>
                             </div>`;
                 }
             },
@@ -249,7 +373,7 @@ function inisialisasi() {
                                 <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0;">
                                     <i class="fe fe-user-check"></i>
                                 </div>
-                                <span class="fw-semibold text-dark text-truncate">${data}</span>
+                                <span class="fw-semibold text-dark text-nowrap">${data}</span>
                             </div>`;
                 }
             },
@@ -262,13 +386,13 @@ function inisialisasi() {
                                 <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0;">
                                     <i class="fe fe-arrow-down-left"></i>
                                 </div>
-                                <span class="text-dark text-truncate">${data}</span>
+                                <span class="text-dark text-nowrap">${data}</span>
                             </div>`;
                 }
             },
             {
                 data: "ship_acc_by_name",
-                width: "11%",
+                width: "10%",
                 render: function (data, type, row) {
                     var status = parseInt(row.status, 10);
                     if (status < 2) {
@@ -279,9 +403,20 @@ function inisialisasi() {
                                 <div style="width:32px;height:32px;border-radius:8px;background:#eef2ff;border:1px solid #c7d2fe;display:flex;align-items:center;justify-content:center;color:#4f46e5;flex-shrink:0;">
                                     <i class="fe fe-check-square"></i>
                                 </div>
-                                <span class="fw-semibold text-dark text-truncate">${name}</span>
+                                <span class="fw-semibold text-dark text-nowrap">${name}</span>
                             </div>`;
                 }
+            },
+            {
+                data: "selisih",
+                width: "8%",
+                className: "text-center",
+                render: function (data, type, row) {
+                    if (parseInt(row.status, 10) !== 4) {
+                        return '<span class="text-muted">-</span>';
+                    }
+                    return formatTransferSelisih(data, "");
+                },
             },
             {
                 data: "status",
@@ -308,7 +443,7 @@ function inisialisasi() {
             },
             {
                 data: null,
-                width: "6%",
+                width: "5%",
                 orderable: false,
                 searchable: false,
                 className: "text-center",
@@ -321,17 +456,18 @@ function inisialisasi() {
                     var canReject = row.can_reject === true || row.can_reject === 1;
                     var canCancelKirim = row.can_cancel_kirim === true || row.can_cancel_kirim === 1;
                     var pending = status === 1;
-                    var canOpenPending = pending && (canEdit || canShip || canReject);
+                    // Pending: selalu bisa dibuka (view). Edit unlock di modal jika can_edit.
+                    var canOpenPending = pending;
 
                     // Pending: satu tombol buka modal (view/edit/transfer/tolak di dalam modal)
                     var openBtn = canOpenPending
-                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnOpenTransfer text-primary" title="Lihat / Proses Transfer" data-id="${row.id}">
+                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnOpenTransfer text-primary" title="${canEdit ? 'Lihat / Edit / Proses' : 'Lihat / Proses Transfer'}" data-id="${row.id}">
                                 <i class="fe fe-eye"></i>
                            </a>`
                         : "";
 
                     var viewBtn =
-                        !pending && !canEdit
+                        !pending && !canEdit && !canAcc
                             ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnViewTransfer" title="Lihat Detail" data-id="${row.id}">
                                 <i class="fe fe-eye"></i>
                            </a>`
@@ -459,18 +595,14 @@ function updateTransferDraftAvailable() {
 }
 
 function renderTransferDraftStock(stock) {
-    var units = Array.isArray(stock && stock.units) ? stock.units : [];
+    var units = Array.isArray(stock && stock.units) ? stock.units.slice() : [];
     var defaultUnit = transferDefaultUnit(transferDraft.raw);
     var defaultUnitId =
         (stock && stock.default_unit_id) || (defaultUnit && defaultUnit.unit_id) || null;
     var sourceIsMain = stock && stock.warehouse_is_main === true;
-    if (sourceIsMain) {
+    if (!sourceIsMain && stock && stock.warehouse_is_main === false && stock.retail_unit_id) {
         units = units.filter(function (unit) {
-            return String(unit.unit_id) === String(defaultUnitId);
-        });
-    } else if (stock && stock.warehouse_is_main === false && stock.retail_unit_id) {
-        units = units.filter(function (unit) {
-            return String(unit.unit_id) !== String(stock.retail_unit_id);
+            return String(unit.unit_id) === String(stock.retail_unit_id);
         });
     }
     var $unit = $("#transfer_unit_input")
@@ -489,14 +621,6 @@ function renderTransferDraftStock(stock) {
 
     transferDraft.defaultUnitInvalid = false;
     if (!units.length) {
-        if (defaultUnit) {
-            $unit.append(
-                $("<option>", {
-                    value: defaultUnit.unit_id,
-                    text: transferUnitLabel(defaultUnit),
-                })
-            ).val(String(defaultUnit.unit_id));
-        }
         $unit.prop("disabled", true);
         $("#transfer_stock_available")
             .text((stock && stock.message) || "Stok/satuan valid tidak tersedia")
@@ -505,50 +629,10 @@ function renderTransferDraftStock(stock) {
         return;
     }
 
-    var selectedUnit = units.find(function (unit) {
-        return String(unit.unit_id) === String(defaultUnitId);
-    });
-    if (!selectedUnit) {
-        if (defaultUnit) {
-            $unit.append(
-                $("<option>", {
-                    value: defaultUnit.unit_id,
-                    text: transferUnitLabel(defaultUnit),
-                })
-            ).val(String(defaultUnit.unit_id));
-        }
-        transferDraft.defaultUnitInvalid = true;
-        $unit.prop("disabled", true);
-        $("#transfer_stock_available")
-            .text("Unit default produk tidak tersedia atau relasi konversinya invalid")
-            .addClass("text-danger");
-        return;
-    }
-    if (transferDraft.requireDefaultUnit) {
-        var requestedQty = Number($("#transfer_qty_input").val()) || 1;
-        var available = selectedUnit
-            ? Number(
-                  selectedUnit.available_qty != null
-                      ? selectedUnit.available_qty
-                      : selectedUnit.ps_stock || 0
-              )
-            : 0;
-        if (!selectedUnit || available + 1e-9 < requestedQty) {
-            transferDraft.defaultUnitInvalid = true;
-            $unit.prop("disabled", true).val(String(defaultUnitId));
-            $("#transfer_stock_available")
-                .text(
-                    !selectedUnit
-                        ? "Unit default produk tidak tersedia atau relasi konversinya invalid"
-                        : "Unit default tidak dapat dibentuk. Tersedia: " +
-                              formatTransferQty(available) +
-                              " " +
-                              transferUnitLabel(selectedUnit)
-                )
-                .addClass("text-danger");
-            return;
-        }
-    }
+    var selectedUnit =
+        units.find(function (unit) {
+            return String(unit.unit_id) === String(defaultUnitId);
+        }) || units[0];
 
     $unit.prop("disabled", false).val(String(selectedUnit.unit_id));
     $("#transfer_stock_available").removeClass("text-danger");
@@ -561,11 +645,11 @@ function loadTransferDraftStock(raw, done) {
     var toId = $("#transfer_to_warehouse_id").val();
     var runId = ++transferDraftRun;
     transferDraft.raw = raw;
-    transferDraft.stock = null;
     transferDraft.loading = true;
-    transferDraft.requireDefaultUnit = true;
-    renderTransferDraftDefault(raw);
-    $("#btn_add_transfer_product").prop("disabled", true);
+    transferDraft.requireDefaultUnit = false;
+    var hasUnits = renderTransferDraftDefault(raw);
+    // Jangan disable satuan/+Tambah — satuan sudah dari data produk
+    $("#btn_add_transfer_product").prop("disabled", !hasUnits || transferDraft.defaultUnitInvalid);
 
     if (!variantId || !fromId || !toId || !validateWarehousesDifferent()) {
         transferDraft.loading = false;
@@ -580,7 +664,16 @@ function loadTransferDraftStock(raw, done) {
         if (runId !== transferDraftRun) return;
         transferDraft.loading = false;
         transferDraft.stock = stock || { units: [] };
+        var prevUnitId = $("#transfer_unit_input").val();
         renderTransferDraftStock(transferDraft.stock);
+        // Pertahankan satuan yang sudah dipilih user jika masih valid
+        if (
+            prevUnitId &&
+            $("#transfer_unit_input option[value='" + prevUnitId + "']").length
+        ) {
+            $("#transfer_unit_input").val(String(prevUnitId));
+            updateTransferDraftAvailable();
+        }
         $("#btn_add_transfer_product").prop("disabled", transferDraft.defaultUnitInvalid);
         if (transferDraft.defaultUnitInvalid && typeof toastr !== "undefined") {
             toastr.error("", $("#transfer_stock_available").text());
@@ -954,6 +1047,98 @@ function refreshTransferItemsTable() {
     });
 }
 
+/** Update satu baris tanpa rebuild tbody (supaya input qty tidak kehilangan fokus). */
+function patchTransferItemsRow(item) {
+    var idx = transferItems.indexOf(item);
+    if (idx < 0) return;
+    var $row = $('#tableTransferItems tbody tr[data-index="' + idx + '"]');
+    if (!$row.length) {
+        refreshTransferItemsTable();
+        return;
+    }
+
+    var hasRetailSelect = $row.find(".transfer-retail-unit").length > 0;
+    if (!!item.retail_invalid !== hasRetailSelect) {
+        var $focused = $(document.activeElement);
+        var focusIdx = $focused.hasClass("transfer-qty")
+            ? parseInt($focused.attr("data-index"), 10)
+            : -1;
+        var focusVal = focusIdx >= 0 ? $focused.val() : null;
+        var selStart = focusIdx >= 0 ? $focused[0].selectionStart : null;
+        var selEnd = focusIdx >= 0 ? $focused[0].selectionEnd : null;
+        refreshTransferItemsTable();
+        if (focusIdx >= 0) {
+            var $qtyRestore = $(
+                '#tableTransferItems .transfer-qty[data-index="' + focusIdx + '"]'
+            );
+            if ($qtyRestore.length) {
+                if (focusVal != null) $qtyRestore.val(focusVal);
+                $qtyRestore.trigger("focus");
+                try {
+                    if (selStart != null) {
+                        $qtyRestore[0].setSelectionRange(selStart, selEnd);
+                    }
+                } catch (e) {}
+            }
+        }
+        return;
+    }
+
+    var locked = transferFormLocked === true;
+    $row
+        .toggleClass("transfer-row-retail-error", !!item.retail_invalid)
+        .toggleClass(
+            "transfer-row-stock-error",
+            !!item.stock_invalid && !item.retail_invalid
+        );
+
+    var stockHtml = escapeHtml(item.stock_text || "…");
+    if (item.stock_invalid) {
+        stockHtml +=
+            '<small class="transfer-stock-error-text">' +
+            escapeHtml(
+                item.stock_error ||
+                    "Stok tidak cukup. Tersedia: " +
+                        formatTransferQty(item.available_qty || 0)
+            ) +
+            "</small>";
+    }
+    $row.find(".col-stock-asal").html(stockHtml);
+
+    var $qty = $row.find(".transfer-qty");
+    if (!$qty.is(":focus")) {
+        $qty.val(item.qty);
+    }
+    $qty.prop("disabled", locked);
+
+    if (item.retail_invalid) {
+        var $retail = $row.find(".transfer-retail-unit");
+        if (!$retail.is(":focus")) {
+            $retail.html(buildRetailUnitOptions(item));
+        }
+        $retail.prop("disabled", locked);
+        $row
+            .find(".transfer-retail-error-text")
+            .text(item.retail_error || "Satuan eceran wajib dilengkapi");
+    } else {
+        var $unit = $row.find(".transfer-unit");
+        if (!$unit.is(":focus")) {
+            $unit.html(buildUnitOptions(item)).val(String(item.unit_id));
+        }
+        $unit.prop("disabled", locked || !!item.stock_loading);
+        var $hint = $unit.siblings("small.text-muted");
+        if (item.stock_loading) {
+            if (!$hint.length) {
+                $unit.after(
+                    '<small class="text-muted d-block mt-1">Memeriksa stok...</small>'
+                );
+            }
+        } else {
+            $hint.remove();
+        }
+    }
+}
+
 function escapeHtml(str) {
     return String(str == null ? "" : str)
         .replace(/&/g, "&amp;")
@@ -1006,7 +1191,7 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
         item.retail_unit_options = [];
         item.retail_error = null;
     }
-    refreshTransferItemsTable();
+    patchTransferItemsRow(item);
     syncTransferSaveButton();
 
     function isCurrent() {
@@ -1024,7 +1209,7 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
         finished = true;
         if (isCurrent()) {
             item.stock_loading = false;
-            refreshTransferItemsTable();
+            patchTransferItemsRow(item);
         }
         syncTransferSaveButton();
     }
@@ -1153,13 +1338,9 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
 
         stock = stock || { units: [] };
         var units = Array.isArray(stock.units) ? stock.units.slice() : [];
-        if (stock.warehouse_is_main === true) {
+        if (stock.warehouse_is_main === false && stock.retail_unit_id) {
             units = units.filter(function (unit) {
-                return String(unit.unit_id) === String(item.unit_id);
-            });
-        } else if (stock.warehouse_is_main === false && stock.retail_unit_id) {
-            units = units.filter(function (unit) {
-                return String(unit.unit_id) !== String(stock.retail_unit_id);
+                return String(unit.unit_id) === String(stock.retail_unit_id);
             });
         }
         var selectedUnit = units.find(function (unit) {
@@ -1492,13 +1673,9 @@ function addTransferProduct(raw, qty, requireDefaultUnit) {
         }
         return;
     }
-    transferDraft.raw = raw;
     $("#transfer_qty_input").val(parseInt(qty, 10) > 0 ? parseInt(qty, 10) : 1);
-    transferDraft.requireDefaultUnit = true;
-    transferDraft.loading = false;
-    transferDraft.stock = null;
-    transferDraft.defaultUnitInvalid = !renderTransferDraftDefault(raw);
-    $("#btn_add_transfer_product").prop("disabled", transferDraft.defaultUnitInvalid);
+    // Load stok + daftar satuan (utama = multi; eceran = satuan eceran saja)
+    loadTransferDraftStock(raw);
 }
 
 function commitOptimisticTransferProduct(raw, qty, selectedUnit) {
@@ -1508,7 +1685,7 @@ function commitOptimisticTransferProduct(raw, qty, selectedUnit) {
     var unitName = selectedUnit.unit_name || selectedUnit.unit_short_name || "";
     var unitShortName = selectedUnit.unit_short_name || selectedUnit.unit_name || "";
 
-    // Duplikat = variant + satuan sama → tambah qty
+    // Duplikat = variant + satuan sama â†’ tambah qty
     var existing = -1;
     transferItems.forEach(function (el, idx) {
         if (
@@ -1573,19 +1750,54 @@ function addTransferDraft() {
         if (typeof toastr !== "undefined") toastr.error("", "Qty harus berupa bilangan bulat positif");
         return;
     }
-    var defaultUnit = transferDefaultUnit(raw);
-    if (!defaultUnit) {
-        transferDraft.defaultUnitInvalid = true;
+    if (transferDraft.loading && !draftUnitById($("#transfer_unit_input").val()) && !transferDefaultUnit(raw)) {
+        if (typeof toastr !== "undefined") toastr.info("", "Sedang memuat satuan/stok produk...");
+        return;
+    }
+    var selectedUnit =
+        draftUnitById($("#transfer_unit_input").val()) ||
+        (function () {
+            var packed = transferUnitsFromRaw(raw);
+            var id = $("#transfer_unit_input").val();
+            return (
+                packed.units.find(function (u) {
+                    return String(u.unit_id) === String(id);
+                }) || packed.defaultUnit
+            );
+        })();
+    if (!selectedUnit || !$("#transfer_unit_input").val()) {
+        $("#transfer_unit_input").addClass("is-invalid");
         if (typeof toastr !== "undefined") {
-            toastr.error("", "Unit default produk belum diatur");
+            toastr.error(
+                "",
+                transferDraft.defaultUnitInvalid
+                    ? $("#transfer_stock_available").text() || "Satuan tidak tersedia"
+                    : "Pilih satuan terlebih dahulu"
+            );
         }
         return;
     }
 
-    var item = commitOptimisticTransferProduct(raw, qtyRaw, defaultUnit);
+    var item = commitOptimisticTransferProduct(raw, qtyRaw, selectedUnit);
     if (!item) {
         if (typeof toastr !== "undefined") toastr.error("", "Produk atau satuan tidak valid");
         return;
+    }
+    // Isi opsi multi-satuan dari stok yang sudah diload (jika ada)
+    if (transferDraft.stock && Array.isArray(transferDraft.stock.units)) {
+        var units = transferDraft.stock.units.slice();
+        if (
+            transferDraft.stock.warehouse_is_main === false &&
+            transferDraft.stock.retail_unit_id
+        ) {
+            units = units.filter(function (unit) {
+                return String(unit.unit_id) === String(transferDraft.stock.retail_unit_id);
+            });
+        }
+        if (units.length) {
+            item.units = units;
+            item.pr_unit = units;
+        }
     }
 
     resetTransferDraft();
@@ -1625,6 +1837,17 @@ function setDefaultFromWarehouse() {
         $el.append(new Option(text, id, true, true));
     }
     $el.val(String(id)).trigger("change");
+    lockTransferFromWarehouse();
+}
+
+/** Gudang asal selalu = gudang aktif / data transfer — tidak bisa diganti di form. */
+function lockTransferFromWarehouse() {
+    var $el = $("#transfer_from_warehouse_id");
+    if (!$el.length) return;
+    $el.prop("disabled", true);
+    if ($el.hasClass("select2-hidden-accessible")) {
+        $el.trigger("change.select2");
+    }
 }
 
 function resetTransferForm() {
@@ -1714,7 +1937,6 @@ function setTransferFormLocked(locked) {
     transferFormLocked = !!locked;
     var $modal = $("#add_stock_transfer");
     var selectors = [
-        "#transfer_from_warehouse_id",
         "#transfer_to_warehouse_id",
         "#transfer_date",
         "#transfer_note",
@@ -1734,8 +1956,9 @@ function setTransferFormLocked(locked) {
             $el.trigger("change.select2");
         }
     });
-    // pengirim selalu disabled
+    // pengirim + gudang asal selalu terkunci (asal = gudang aktif / data ST)
     $("#transfer_sender_id").prop("disabled", true);
+    lockTransferFromWarehouse();
     if (transferFormLocked) {
         $(".transfer-product-panel").css("opacity", "0.65");
     } else {
@@ -1765,7 +1988,11 @@ function syncTransferModalChrome() {
         $transfer.addClass("d-none").removeClass("d-inline-flex");
     } else if (isViewing) {
         $title.text("Detail Stock Transfer");
-        $sub.text("Lihat data, transfer, atau tolak. Klik Edit Data untuk mengubah.");
+        $sub.text(
+            transferCanEdit
+                ? "Default terkunci. Klik Edit Data untuk ubah, lalu Simpan / Transfer."
+                : "Lihat data. Transfer atau tolak jika punya akses."
+        );
         if (transferCanEdit) {
             $editBtn.removeClass("d-none").addClass("d-inline-flex");
         } else {
@@ -1846,10 +2073,7 @@ $(document).on("change", "#transfer_to_warehouse_id", function () {
     transferScanLookupRun++;
     clearTransferStockLoads();
     if (transferDraft.raw) {
-        transferDraft.stock = null;
-        transferDraft.loading = false;
-        transferDraft.defaultUnitInvalid = !renderTransferDraftDefault(transferDraft.raw);
-        $("#btn_add_transfer_product").prop("disabled", transferDraft.defaultUnitInvalid);
+        loadTransferDraftStock(transferDraft.raw);
     } else {
         resetTransferDraft(false);
     }
@@ -2031,6 +2255,7 @@ $(document).on("input", ".transfer-qty", function () {
             transferItems[idx].stock_loading = false;
             transferItems[idx].stock_invalid = true;
             transferItems[idx].stock_error = "Qty harus berupa bilangan bulat positif";
+            patchTransferItemsRow(transferItems[idx]);
             syncTransferSaveButton();
         }
         return;
@@ -2261,6 +2486,8 @@ $(document).on("hidden.bs.modal", "#view_stock_transfer", function () {
 function formatTransferQty(val) {
     var n = parseFloat(val);
     if (isNaN(n)) return "-";
+    // Rapikan noise float (mis. 3312.0719999999997)
+    n = Math.round(n * 1e6) / 1e6;
     if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
     return String(n);
 }
@@ -2556,11 +2783,11 @@ $(document).on("click", ".btn-acc-transfer", function () {
     }
     // View mode: langsung ship. Edit mode: simpan dulu lalu ship.
     if (transferFormLocked) {
-        showModalKonfirmasi(
+        showTransferModalKonfirmasi(
             "Kirim transfer ini? Stok gudang asal akan dipotong dan status menjadi Kirim.",
-            "btn-ship-stock-transfer"
+            "btn-ship-stock-transfer",
+            id
         );
-        $("#modalKonfirmasi #btn-ship-stock-transfer").attr("data-id", id);
         return;
     }
     $("#add_stock_transfer").data("then-ship", true);
@@ -2588,19 +2815,14 @@ $(document).on("click", ".btn-reject-transfer", function () {
     var sourceType = $("#add_stock_transfer").attr("data-source-type") || "";
     if (!id) return;
     if (sourceType === "production") {
-        $("#reject_production_transfer").attr("data-id", id);
-        $("#production_reject_disposition").val("").trigger("change");
-        $("#production_reject_damage_type").val("");
-        $("#production_reject_notes").val("");
-        $("#production_reject_problem_fields").hide();
-        $("#reject_production_transfer").modal("show");
+        showProductionRejectOverTransfer(id);
         return;
     }
-    showModalKonfirmasi(
+    showTransferModalKonfirmasi(
         "Cancel transfer pending ini? Status menjadi Cancel (stok belum dipotong).",
-        "btn-reject-stock-transfer"
+        "btn-reject-stock-transfer",
+        id
     );
-    $("#modalKonfirmasi #btn-reject-stock-transfer").attr("data-id", id);
 });
 
 // Remove invalid class on change
@@ -2642,6 +2864,7 @@ function loadTransferDetailForEdit(id) {
             setDefaultSender();
             fillSelectOption($("#transfer_from_warehouse_id"), res.from_warehouse_id, res.from_warehouse_name);
             fillSelectOption($("#transfer_to_warehouse_id"), res.to_warehouse_id, res.to_warehouse_name);
+            lockTransferFromWarehouse();
             enableTransferProductSelect();
 
             transferItems = (res.items || []).map(function (it) {
@@ -2739,10 +2962,10 @@ function renderAcceptItems(items) {
             formatTransferQtyWithUnit(formatTransferQty(qtyKirim), unitLabel) +
             "</td>" +
             '<td style="padding: 14px 16px;"><div class="input-group input-group-sm" style="max-width: 160px; box-shadow: 0 1px 2px rgba(0,0,0,0.03); border-radius: 6px; overflow: hidden;">' +
-            '<input type="number" min="0" step="0.0001" class="form-control accept-qty text-center" data-index="' +
+            '<input type="number" min="0" step="1" inputmode="numeric" class="form-control accept-qty text-center number-only" data-index="' +
             idx +
             '" value="' +
-            qty +
+            Math.round(qty) +
             '" style="font-weight: 600; color: #334155; font-size: 14px; height: 34px;">' +
             (unitLabel
                 ? '<span class="input-group-text" style="background: #f8fafc; border-color: #e2e8f0; color: #64748b; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px;">' +
@@ -2830,10 +3053,14 @@ $(document).on("keydown", "#search_accept_barcode", function (e) {
 });
 
 $(document).on("input change", "#tableAcceptItems .accept-qty", function () {
+    var raw = String($(this).val() || "").replace(/[^\d]/g, "");
+    if ($(this).val() !== raw) {
+        $(this).val(raw);
+    }
     var $tr = $(this).closest("tr");
-    var qtyKirim = parseFloat($tr.attr("data-qty-kirim")) || 0;
-    var qtyRecv = parseFloat($(this).val());
-    if (isNaN(qtyRecv)) qtyRecv = 0;
+    var qtyKirim = parseInt($tr.attr("data-qty-kirim"), 10) || 0;
+    var qtyRecv = parseInt(raw, 10);
+    if (isNaN(qtyRecv) || qtyRecv < 0) qtyRecv = 0;
     var factor = parseFloat($tr.attr("data-conversion-factor")) || 1;
     var convertedSent = parseFloat($tr.attr("data-converted-sent"));
     if (isNaN(convertedSent)) convertedSent = qtyKirim * factor;
@@ -2917,7 +3144,7 @@ $(document).on("click", ".btnShipTransfer", function () {
 
     showModalKonfirmasi(
         row && row.source_type === "production"
-            ? "Kirim hasil produksi ini? Status menjadi Kirim tanpa memotong stok gudang asal."
+            ? "Kirim hasil produksi ini? Stok gudang asal akan dipotong dan status menjadi Kirim."
             : "Kirim transfer ini? Stok gudang asal akan dipotong dan status menjadi Kirim.",
         "btn-ship-stock-transfer"
     );
@@ -2925,7 +3152,7 @@ $(document).on("click", ".btnShipTransfer", function () {
 });
 
 $(document).on("click", "#btn-ship-stock-transfer", function () {
-    var id = $(this).attr("data-id");
+    var id = $(this).attr("data-id") || $("#modalKonfirmasi").attr("data-transfer-id");
     if (!id) {
         if (typeof toastr !== "undefined") {
             toastr.error("", "ID transfer tidak ditemukan");
@@ -2942,19 +3169,22 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
         },
         success: function (res) {
             ResetLoadingButton("#btn-ship-stock-transfer", "Konfirmasi");
-            closeModalConfirm();
             if (!res || res.status != 1) {
+                closeModalConfirm();
                 if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal kirim transfer");
                 }
                 return;
             }
+            markTransferOverlayDone();
+            closeModalConfirm();
             if (typeof toastr !== "undefined") toastr.success("", res.message || "Berhasil dikirim");
             $("#add_stock_transfer").modal("hide");
             if (table) table.ajax.reload(null, false);
         },
         error: function (xhr) {
             ResetLoadingButton("#btn-ship-stock-transfer", "Konfirmasi");
+            closeModalConfirm();
             var msg =
                 (xhr.responseJSON && xhr.responseJSON.message) ||
                 "Gagal kirim stock transfer";
@@ -2969,10 +3199,7 @@ $(document).on("click", ".btnRejectTransfer, .btnRejectProductionTransfer", func
     var sourceType = $(this).attr("data-source") || "";
     if (sourceType === "production") {
         $("#reject_production_transfer").attr("data-id", id);
-        $("#production_reject_disposition").val("").trigger("change");
-        $("#production_reject_damage_type").val("");
         $("#production_reject_notes").val("");
-        $("#production_reject_problem_fields").hide();
         $("#reject_production_transfer").modal("show");
         return;
     }
@@ -2984,7 +3211,7 @@ $(document).on("click", ".btnRejectTransfer, .btnRejectProductionTransfer", func
 });
 
 $(document).on("click", "#btn-reject-stock-transfer", function () {
-    var id = $(this).attr("data-id");
+    var id = $(this).attr("data-id") || $("#modalKonfirmasi").attr("data-transfer-id");
     if (!id) return;
     LoadingButton(this);
     $.ajax({
@@ -2996,19 +3223,22 @@ $(document).on("click", "#btn-reject-stock-transfer", function () {
         },
         success: function (res) {
             ResetLoadingButton("#btn-reject-stock-transfer", "Konfirmasi");
-            closeModalConfirm();
             if (!res || res.status != 1) {
+                closeModalConfirm();
                 if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal cancel transfer");
                 }
                 return;
             }
+            markTransferOverlayDone();
+            closeModalConfirm();
             if (typeof toastr !== "undefined") toastr.success("", res.message || "Berhasil di-cancel");
             $("#add_stock_transfer").modal("hide");
             if (table) table.ajax.reload(null, false);
         },
         error: function (xhr) {
             ResetLoadingButton("#btn-reject-stock-transfer", "Konfirmasi");
+            closeModalConfirm();
             var msg =
                 (xhr.responseJSON && xhr.responseJSON.message) ||
                 "Gagal cancel stock transfer";
@@ -3060,42 +3290,41 @@ $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
     });
 });
 
-$(document).on("change", "#production_reject_disposition", function () {
-    $("#production_reject_problem_fields").toggle($(this).val() === "problematic");
-});
-
 $(document).on("click", ".btn-confirm-production-reject", function () {
     var id = $("#reject_production_transfer").attr("data-id");
-    var disposition = $("#production_reject_disposition").val();
-    var damageType = $("#production_reject_damage_type").val();
-    if (!disposition || (disposition === "problematic" && !damageType)) {
-        if (typeof toastr !== "undefined") toastr.warning("", "Lengkapi disposisi hasil produksi");
+    if (!id) {
+        if (typeof toastr !== "undefined") toastr.error("", "ID transfer tidak ditemukan");
         return;
     }
-    var $btn = $(this).prop("disabled", true);
+    var $btn = $(this);
+    if ($btn.data("busy")) return;
+    $btn.data("busy", true);
+    LoadingButton(this);
     $.ajax({
         url: "/rejectStockTransfer",
         method: "post",
         data: {
             id: id,
-            disposition: disposition,
-            damage_type: damageType,
+            disposition: "return_warehouse",
             notes: $("#production_reject_notes").val(),
             _token: token || $('meta[name="csrf-token"]').attr("content"),
         },
         success: function (res) {
-            $btn.prop("disabled", false);
+            ResetLoadingButton(".btn-confirm-production-reject", '<i class="fe fe-x-circle me-1"></i> Tolak ST');
+            $btn.data("busy", false);
             if (!res || res.status != 1) {
                 if (typeof toastr !== "undefined") toastr.error("", (res && res.message) || "Gagal menolak transfer");
                 return;
             }
+            markTransferOverlayDone();
             $("#reject_production_transfer").modal("hide");
             $("#add_stock_transfer").modal("hide");
-            if (typeof toastr !== "undefined") toastr.success("", res.message || "Hasil produksi dibatalkan");
+            if (typeof toastr !== "undefined") toastr.success("", res.message || "Stock transfer dibatalkan");
             if (table) table.ajax.reload(null, false);
         },
         error: function (xhr) {
-            $btn.prop("disabled", false);
+            ResetLoadingButton(".btn-confirm-production-reject", '<i class="fe fe-x-circle me-1"></i> Tolak ST');
+            $btn.data("busy", false);
             var message = (xhr.responseJSON && xhr.responseJSON.message) || "Gagal menolak transfer";
             if (typeof toastr !== "undefined") toastr.error("", message);
         },
@@ -3213,7 +3442,7 @@ $(document).on("click", ".btn-accept-transfer", function () {
     var payloadItems = [];
     $("#tableAcceptItems tbody tr[data-std-id]").each(function () {
         var stdId = $(this).attr("data-std-id");
-        var qty = parseFloat($(this).find(".accept-qty").val());
+        var qty = parseInt(String($(this).find(".accept-qty").val() || "").replace(/[^\d]/g, ""), 10);
         if (isNaN(qty) || qty < 0) qty = 0;
         payloadItems.push({
             std_id: stdId,
@@ -3230,7 +3459,9 @@ $(document).on("click", ".btn-accept-transfer", function () {
     }
 
     var $btn = $(this);
-    $btn.prop("disabled", true);
+    if ($btn.data("busy")) return;
+    $btn.data("busy", true);
+    LoadingButton(this);
     $.ajax({
         url: "/accStockTransfer",
         method: "post",
@@ -3242,7 +3473,8 @@ $(document).on("click", ".btn-accept-transfer", function () {
             _token: token || $('meta[name="csrf-token"]').attr("content"),
         },
         success: function (res) {
-            $btn.prop("disabled", false);
+            ResetLoadingButton(".btn-accept-transfer", '<i class="fe fe-check-circle me-1"></i>Terima Transfer');
+            $btn.data("busy", false);
             if (!res || res.status != 1) {
                 if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal ACC");
@@ -3254,7 +3486,8 @@ $(document).on("click", ".btn-accept-transfer", function () {
             if (table) table.ajax.reload(null, false);
         },
         error: function () {
-            $btn.prop("disabled", false);
+            ResetLoadingButton(".btn-accept-transfer", '<i class="fe fe-check-circle me-1"></i>Terima Transfer');
+            $btn.data("busy", false);
             if (typeof toastr !== "undefined") toastr.error("", "Gagal ACC stock transfer");
         },
     });

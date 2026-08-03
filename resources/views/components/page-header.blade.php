@@ -70,9 +70,13 @@
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pengiriman</a>
                     </li>
-                    <li id="btn-container-pengembalian" style="display: none;">
+                    <li id="btn-container-pengembalian-bahan" style="display: none;">
                         <a class="btn btn-primary" id="csr-add"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Pengembalian</a>
+                            Pengembalian Bahan Mentah</a>
+                    </li>
+                    <li id="btn-container-pengembalian-produk" style="display: none;">
+                        <a class="btn btn-primary" id="cpr-add"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Pengembalian Produk Jadi</a>
                     </li>
                     @endroleCan
                 @endif

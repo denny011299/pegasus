@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerProductReturnController;
 use App\Http\Controllers\CustomerSupplyReturnController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
@@ -316,15 +317,18 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/getSoDelivery', [CustomerController::class, 'getSoDelivery'])->name('getSoDelivery');
         Route::get('/getSoInvoice', [CustomerController::class, 'getSoInvoice'])->name('getSoInvoice');
         Route::get('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'index'])->name('customerSupplyReturns.index');
-        Route::get('/customerSupplyReturns/sales-orders', [CustomerSupplyReturnController::class, 'salesOrders'])->name('customerSupplyReturns.salesOrders');
-        Route::get('/customerSupplyReturns/sales-orders/{soId}', [CustomerSupplyReturnController::class, 'salesOrderContext'])->name('customerSupplyReturns.salesOrderContext');
+        Route::get('/customerSupplyReturns/context', [CustomerSupplyReturnController::class, 'context'])->name('customerSupplyReturns.context');
         Route::get('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'show'])->name('customerSupplyReturns.show');
+        Route::get('/customerProductReturns', [CustomerProductReturnController::class, 'index'])->name('customerProductReturns.index');
+        Route::get('/customerProductReturns/context', [CustomerProductReturnController::class, 'context'])->name('customerProductReturns.context');
+        Route::get('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'show'])->name('customerProductReturns.show');
     });
     Route::middleware('check.access:Pengiriman|create')->group(function () {
         Route::post('/insertSalesOrder', [CustomerController::class, 'insertSalesOrder'])->name('insertSalesOrder');
         Route::post('/insertSoDelivery', [CustomerController::class, 'insertSoDelivery'])->name('insertSoDelivery');
         Route::post('/insertInvoiceSO', [CustomerController::class, 'insertInvoiceSO'])->name('insertInvoiceSO');
         Route::post('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'store'])->name('customerSupplyReturns.store');
+        Route::post('/customerProductReturns', [CustomerProductReturnController::class, 'store'])->name('customerProductReturns.store');
     });
     Route::middleware('check.access:Pengiriman|edit')->group(function () {
         Route::post('/updateSalesOrder', [CustomerController::class, 'updateSalesOrder'])->name('updateSalesOrder');
@@ -332,12 +336,14 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/updateSoDelivery', [CustomerController::class, 'updateSoDelivery'])->name('updateSoDelivery');
         Route::post('/updateInvoiceSO', [CustomerController::class, 'updateInvoiceSO'])->name('updateInvoiceSO');
         Route::post('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'update'])->name('customerSupplyReturns.update');
+        Route::post('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'update'])->name('customerProductReturns.update');
     });
     Route::middleware('check.access:Pengiriman|delete')->group(function () {
         Route::post('/deleteSalesOrder', [CustomerController::class, 'deleteSalesOrder'])->name('deleteSalesOrder');
         Route::post('/deleteSoDelivery', [CustomerController::class, 'deleteSoDelivery'])->name('deleteSoDelivery');
         Route::post('/deleteInvoiceSO', [CustomerController::class, 'deleteInvoiceSO'])->name('deleteInvoiceSO');
         Route::post('/customerSupplyReturns/{returnId}/delete', [CustomerSupplyReturnController::class, 'destroy'])->name('customerSupplyReturns.destroy');
+        Route::post('/customerProductReturns/{returnId}/delete', [CustomerProductReturnController::class, 'destroy'])->name('customerProductReturns.destroy');
     });
     Route::middleware('check.access:Pengiriman|others')->group(function () {
         Route::post('/accSO', [CustomerController::class, 'accSO'])->name('accSO');
@@ -348,6 +354,8 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/declineInvoiceSO', [CustomerController::class, 'declineInvoiceSO'])->name('declineInvoiceSO');
         Route::post('/customerSupplyReturns/{returnId}/accept', [CustomerSupplyReturnController::class, 'accept'])->name('customerSupplyReturns.accept');
         Route::post('/customerSupplyReturns/{returnId}/decline', [CustomerSupplyReturnController::class, 'decline'])->name('customerSupplyReturns.decline');
+        Route::post('/customerProductReturns/{returnId}/accept', [CustomerProductReturnController::class, 'accept'])->name('customerProductReturns.accept');
+        Route::post('/customerProductReturns/{returnId}/decline', [CustomerProductReturnController::class, 'decline'])->name('customerProductReturns.decline');
     });
 
     Route::middleware('check.access:Pembelian|view')->group(function () {

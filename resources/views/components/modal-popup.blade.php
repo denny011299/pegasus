@@ -114,7 +114,7 @@
     </div>
   </div>
 <!--- modal Konfirmasi -->
-<div class="modal fade" id="modalKonfirmasi" tabindex="-1" role="dialog">
+<div class="modal fade" id="modalKonfirmasi" tabindex="-1" role="dialog" style="z-index: 1065;">
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
@@ -125,9 +125,9 @@
           <p id="text-konfirmasi" style="font-size:10pt"></p>
           
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary btn-cancel" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-success btn-konfirmasi ms-2">Konfirmasi</button>
+        <div class="modal-footer d-flex justify-content-end align-items-center gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-cancel" data-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-success btn-konfirmasi">Konfirmasi</button>
         </div>
       </div>
     </div>
@@ -463,7 +463,7 @@
                                             </div>
                                             <div class="col-6">
                                                 <label class="text-muted mb-1" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang / Toko Asal</label>
-                                                <select class="form-select form-control fill select2 mt-1" id="transfer_from_warehouse_id" style="border-radius:8px;font-size:13px;">
+                                                <select class="form-select form-control fill select2 mt-1" id="transfer_from_warehouse_id" style="border-radius:8px;font-size:13px;" disabled>
                                                     <option value="">Pilih toko atau gudang</option>
                                                 </select>
                                             </div>
@@ -597,14 +597,12 @@
                     </div>
                 </div>
 
-                {{-- ── FOOTER (fixed) ── --}}
-                <div class="modal-footer border-top flex-shrink-0 d-flex justify-content-between align-items-center" style="background:#f8fafc; padding:14px 24px;">
+                {{-- ── FOOTER: semua aksi di kanan — Batal, Tolak, Simpan/Transfer ── --}}
+                <div class="modal-footer border-top flex-shrink-0 d-flex justify-content-end align-items-center gap-2" style="background:#f8fafc; padding:14px 24px;">
                     <button type="button" class="btn btn-cancel-transfer d-inline-flex align-items-center justify-content-center" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;min-width:130px;height:42px;">Batal</button>
-                    <div class="d-flex align-items-center gap-2 transfer-footer-actions">
-                        <button type="button" class="btn btn-reject-transfer d-none align-items-center justify-content-center gap-2" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;"><i class="fe fe-x me-1"></i>Tolak</button>
-                        <button type="button" class="btn btn-save-transfer d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan</button>
-                        <button type="button" class="btn btn-acc-transfer d-none align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(16,185,129,.3);"><i class="fe fe-send me-1"></i>Transfer</button>
-                    </div>
+                    <button type="button" class="btn btn-reject-transfer d-none align-items-center justify-content-center gap-2" style="background:#fef2f2;color:#ef4444;border:1px solid #fecaca;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;"><i class="fe fe-x me-1"></i>Tolak</button>
+                    <button type="button" class="btn btn-save-transfer d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i class="fe fe-save me-1"></i>Simpan</button>
+                    <button type="button" class="btn btn-acc-transfer d-none align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;min-width:130px;height:42px;box-shadow:0 4px 12px rgba(16,185,129,.3);"><i class="fe fe-send me-1"></i>Transfer</button>
                 </div>
 
             </form>
@@ -744,9 +742,9 @@
                     </div>
                 </div>
 
-                {{-- ── FOOTER ── --}}
-                <div class="modal-footer border-top" style="background:#f8fafc;padding:14px 24px;">
-                    <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
+                {{-- ── FOOTER: Batal, Terima (kanan) ── --}}
+                <div class="modal-footer border-top d-flex justify-content-end align-items-center gap-2" style="background:#f8fafc;padding:14px 24px;">
+                    <button type="button" data-bs-dismiss="modal" class="btn" style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;min-width:130px;height:42px;">Batal</button>
                     <button type="button" class="btn btn-accept-transfer d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#059669,#16a34a);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:150px;height:42px;box-shadow:0 4px 12px rgba(5,150,105,.3);"><i class="fe fe-check-circle me-1"></i>Terima Transfer</button>
                 </div>
 
@@ -894,40 +892,25 @@
                             <i class="fe fe-alert-triangle text-white"></i>
                         </span>
                         <div>
-                            <h5 class="mb-0 text-white fw-bold">Tolak Hasil Produksi</h5>
-                            <small class="text-white-50">Output tidak akan masuk ke stok</small>
+                            <h5 class="mb-0 text-white fw-bold">Tolak Stock Transfer Produksi</h5>
+                            <small class="text-white-50">ST dibatalkan, stok tetap di gudang asal</small>
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4" style="background:#f8fafc;">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Disposisi <span class="text-danger">*</span></label>
-                        <select class="form-select" id="production_reject_disposition">
-                            <option value="">Pilih disposisi</option>
-                            <option value="problematic">Produk Bermasalah</option>
-                            <option value="hangus">Hangus</option>
-                        </select>
-                    </div>
-                    <div id="production_reject_problem_fields" class="mb-3" style="display:none;">
-                        <label class="form-label fw-semibold">Jenis Masalah <span class="text-danger">*</span></label>
-                        <select class="form-select" id="production_reject_damage_type">
-                            <option value="">Pilih jenis masalah</option>
-                            <option value="rusak">Rusak</option>
-                            <option value="cacat">Cacat</option>
-                            <option value="kadaluarsa">Kadaluarsa</option>
-                            <option value="lainnya">Lainnya</option>
-                        </select>
+                    <div class="alert alert-light border mb-3" style="font-size:13px;">
+                        Hasil produksi sudah ada di gudang asal. Menolak ST hanya membatalkan pengiriman — stok tidak dipotong.
                     </div>
                     <div>
                         <label class="form-label fw-semibold">Catatan</label>
                         <textarea class="form-control" id="production_reject_notes" rows="3" placeholder="Alasan atau keterangan tambahan"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer border-top" style="background:#fff;padding:14px 24px;">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-danger btn-confirm-production-reject">
-                        <i class="fe fe-x-circle me-1"></i> Tolak & Buat Product Issue
+                <div class="modal-footer border-top d-flex justify-content-end align-items-center gap-2" style="background:#fff;padding:14px 24px;">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="min-width:120px;">Batal</button>
+                    <button type="button" class="btn btn-danger btn-confirm-production-reject" style="min-width:130px;">
+                        <i class="fe fe-x-circle me-1"></i> Tolak ST
                     </button>
                 </div>
             </div>
@@ -1132,9 +1115,10 @@
                                     </div>
                                 </div>
                                 <div class="col-6 col-lg-2 add">
-                                    <div class="input-block mb-0">
+                                    <div class="input-block mb-0" style="position: relative;">
                                         <label class="text-muted mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Qty <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control fill_product number-only" id="production_qty" placeholder="Qty" style="font-size:14px;border-radius:8px;height:42px;">
+                                        <small class="text-muted position-absolute" id="production_pallet_hint" style="bottom: -18px; left: 2px; font-size: 10px; white-space: nowrap;"></small>
                                     </div>
                                 </div>
                                 <div class="col-6 col-lg-2 add">
@@ -1362,19 +1346,19 @@
                                     <div class="col-lg-3 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3">
                                             <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Tanggal <span class="text-danger">*</span></label>
-                                            <input type="date" class="form-control fill" id="so_date" style="border-radius: 8px;">
+                                            <input type="date" class="form-control fill" id="so_date" style="border-radius: 8px; height:42px;">
                                         </div>
                                     </div>
                                     <div class="col-lg-4 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3 " id="row-Armada">
                                             <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Nama Armada <span class="text-danger">*</span></label>
-                                            <select id="so_customer" class="form-control fill"></select>
+                                            <select id="so_customer" class="form-control fill" style="border-radius: 8px; height:42px;"></select>
                                         </div>
                                     </div>
                                     <div class="col-lg-3 col-md-6 col-12 pe-0">
                                         <div class="input-block mb-3">
                                             <label class="form-label text-muted fw-semibold" style="font-size: 11px; text-transform:uppercase; letter-spacing:.4px;">Ref Number</label>
-                                            <input id="so_ref_number" class="form-control" placeholder="Input Ref Number" style="border-radius: 8px;">
+                                            <input id="so_ref_number" class="form-control" placeholder="Input Ref Number" style="border-radius: 8px; height:42px;">
                                         </div>
                                     </div>
                                     <div class="col-lg-2 col-md-6 col-12 pe-0">
@@ -1385,10 +1369,10 @@
                                                 </span>
                                             </label>
                                             <div class="d-flex gap-2">
-                                                <button class="btn btn-outline-primary w-100 p-0" id="btn_bukti_foto" type="button" style="border-radius: 8px; font-weight: 500; height: 42px;">
+                                                <button class="btn w-100 p-0" id="btn_bukti_foto" type="button" style="border-radius:8px;height:42px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;font-weight:600;">
                                                     <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-camera me-1"></i> Upload</div>
                                                 </button>
-                                                <button type="button" class="btn btn-primary w-100 p-0" id="btn-lihat-bukti" style="display: none; border-radius: 8px; font-weight: 500; height: 42px;">
+                                                <button type="button" class="btn w-100 p-0" id="btn-lihat-bukti" style="display:none;border-radius:8px;height:42px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
                                                     <div class="d-flex align-items-center justify-content-center w-100 h-100"><i class="fe fe-image me-1"></i> Lihat</div>
                                                 </button>
                                             </div>
@@ -1447,22 +1431,22 @@
                                                 <select class="form-select" id="so_sku"></select>
                                             </div>
                                             <div id="so_mode_scan" style="display:none">
-                                                <div class="input-group" style="border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02);"> 
+                                                <div class="input-group" style="border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.02); height: 42px;"> 
                                                     <input type="text" 
                                                         class="form-control" 
                                                         id="so_scan_barcode" 
                                                         placeholder="Scan / ketik barcode..." 
-                                                        style="flex: 1 1 auto; border-right: 0;"> 
+                                                        style="flex: 1 1 auto; border-right: 0; height: 42px;"> 
                                                     <input type="number" 
                                                         class="form-control" 
                                                         id="so_scan_qty" 
                                                         placeholder="Qty" 
                                                         value="1" 
                                                         min="1" 
-                                                        style="max-width:90px; border-left: 1px solid #e2e8f0;">
+                                                        style="max-width:90px; border-left: 1px solid #e2e8f0; height: 42px;">
                                                     <button type="button" 
-                                                            class="btn btn-primary d-inline-flex align-items-center justify-content-center px-3" 
-                                                            id="btn_scan_add_so" title="Tambah Produk">
+                                                            class="btn d-inline-flex align-items-center justify-content-center px-3" 
+                                                            id="btn_scan_add_so" title="Tambah Produk" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;">
                                                         <i class="fa fa-plus"></i>
                                                     </button>
                                                 </div>
@@ -1581,6 +1565,26 @@
                                         <textarea class="form-control " id="sdo_desc" cols="30" rows="5" placeholder="Keterangan pengiriman"></textarea>
                                     </div>
                                 </div>
+                                <div class="col-12 mb-3 delivery-product-picker">
+                                    <label class="form-label">Tambah Produk (bebas / tidak wajib dari SO)</label>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-md-5">
+                                            <select class="form-select" id="sdo_product_sku"></select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <input type="number" min="1" class="form-control" id="sdo_product_qty" placeholder="Qty" value="1">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select class="form-select" id="sdo_product_unit"></select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="button" class="btn btn-primary w-100" id="btn_add_sdo_product">
+                                                <i class="fe fe-plus"></i> Tambah
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Catatan pengiriman bersifat rencana — stok tidak dipotong di sini.</small>
+                                </div>
                                 <div class="col-12">
                                     <div class="table-responsive">
                                         <table class="table table-center" id="tableSalesDelivery">
@@ -1590,6 +1594,7 @@
                                                 <th>SKU</th>
                                                 <th class="text-center">Qty</th>
                                                 <th class="text-center">Satuan</th>
+                                                <th class="text-center">Aksi</th>
                                             </thead>
                                             <tbody></tbody>
                                         </table>
@@ -3437,16 +3442,17 @@
                                 </div>
                             </div>
                             
-                            <div class="table-responsive flex-grow-1" id="tableLogScroll" style="min-height:300px; max-height: 50vh; overflow-y:auto; background:#fff;">
+                            <div class="table-responsive flex-grow-1 position-relative" id="tableLogScroll" style="min-height:300px; max-height: 50vh; overflow-y:auto; background:#fff;">
                                 <table class="table table-center table-hover mb-0" id="tableLog" style="font-size:13px;">
                                     <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
                                         <tr>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Tanggal</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Staff</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">No. Transaksi</th>
-                                            <th style="width:25%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Catatan</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Masuk</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Keluar</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Tanggal</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Staff</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">No. Transaksi</th>
+                                            <th style="width:22%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Catatan</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Masuk</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Keluar</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Saldo</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -3504,16 +3510,17 @@
                                 </div>
                             </div>
 
-                            <div class="table-responsive flex-grow-1" id="tableLogScroll" style="min-height:300px; max-height: 50vh; overflow-y:auto; background:#fff;">
+                            <div class="table-responsive flex-grow-1 position-relative" id="tableLogScroll" style="min-height:300px; max-height: 50vh; overflow-y:auto; background:#fff;">
                                 <table class="table table-center table-hover mb-0" id="tableLog" style="font-size:13px;">
                                     <thead style="background:#f1f5f9; position: sticky; top: 0; z-index: 10;">
                                         <tr>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Tanggal</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Staff</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">No. Transaksi</th>
-                                            <th style="width:25%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Catatan</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Masuk</th>
-                                            <th style="width:15%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Keluar</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Tanggal</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Staff</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">No. Transaksi</th>
+                                            <th style="width:22%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;">Catatan</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Masuk</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Keluar</th>
+                                            <th style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;" class="text-center">Saldo</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

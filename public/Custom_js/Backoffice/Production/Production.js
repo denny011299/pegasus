@@ -15,20 +15,35 @@
         var product = $('#product_id').select2("data")[0] || {};
         var isRetail = parseInt(product.retail_unit || 0, 10) > 0
             && parseInt($('#unit_id').val() || 0, 10) === parseInt(product.retail_unit, 10);
-        $('#production-main-warehouse-badge span').text(productionActiveWarehouseName());
+        var $badge = $('#production-main-warehouse-badge');
+        var $dest = $('#production_destination_warehouse_id');
+        var $destSelect2 = $dest.next('.select2-container');
+
+        $badge.find('span').text(productionActiveWarehouseName());
+
         if (isRetail) {
-            $('#production-main-warehouse-badge').hide();
-            $('#production_destination_warehouse_id').show();
+            // Satuan eceran → pilih gudang eceran (d-none, bukan .hide — badge pakai d-flex !important)
+            $badge.addClass('d-none').removeClass('d-flex');
             if (typeof autocompleteWarehouse === "function") {
                 autocompleteWarehouse(
                     '#production_destination_warehouse_id',
                     '#addProduction',
-                    { retailOnly: true, placeholder: 'Pilih gudang eceran' }
+                    { placeholder: 'Pilih gudang eceran tujuan', retailOnly: true }
                 );
             }
+            $destSelect2 = $dest.next('.select2-container');
+            if ($destSelect2.length) {
+                $destSelect2.show();
+            } else {
+                $dest.show();
+            }
         } else {
-            $('#production_destination_warehouse_id').val(null).trigger('change').hide();
-            $('#production-main-warehouse-badge').show();
+            $dest.val(null).trigger('change');
+            if ($destSelect2.length) {
+                $destSelect2.hide();
+            }
+            $dest.hide();
+            $badge.removeClass('d-none').addClass('d-flex');
         }
     }
 
@@ -169,6 +184,44 @@
         return { valid: invalid.length === 0, invalid: invalid };
     }
 
+    function resolveProductionInputQtyUnit(tempBom) {
+        var rawQty = parseInt($('#production_qty').val(), 10) || 0;
+        var selected = $('#unit_id option:selected');
+        var unitVal = String($('#unit_id').val() || '');
+
+        if (unitVal === '__PALLET__') {
+            var perPallet = parseInt(selected.data('qty-per-pallet'), 10)
+                || parseInt(tempBom && tempBom.qty_per_pallet, 10)
+                || 0;
+            var defaultUnitId = parseInt(selected.data('default-unit-id'), 10)
+                || parseInt(tempBom && (tempBom.default_unit || tempBom.unit_id), 10)
+                || 0;
+            var defaultUnitName = selected.data('default-unit-name')
+                || (tempBom && tempBom.default_unit_name)
+                || 'DOS';
+            if (perPallet <= 0 || defaultUnitId <= 0) {
+                return { ok: false, message: 'Isi per pallet belum diatur di master varian produk.' };
+            }
+            return {
+                ok: true,
+                pd_qty: rawQty * perPallet,
+                unit_id: defaultUnitId,
+                unit_name: defaultUnitName,
+                from_pallet: true,
+                pallet_qty: rawQty,
+                qty_per_pallet: perPallet,
+            };
+        }
+
+        return {
+            ok: true,
+            pd_qty: rawQty,
+            unit_id: parseInt(unitVal, 10) || 0,
+            unit_name: selected.text(),
+            from_pallet: false,
+        };
+    }
+
     function continueAddProduct(tempBom) {
         var satuanResep = validateBomActiveUnits(tempBom);
         if (!satuanResep.valid) {
@@ -179,9 +232,20 @@
             );
             return false;
         }
+
+        var resolved = resolveProductionInputQtyUnit(tempBom);
+        if (!resolved.ok) {
+            notifikasi('error', 'Pallet Tidak Valid', resolved.message);
+            return false;
+        }
+        if (resolved.pd_qty <= 0 || !resolved.unit_id) {
+            notifikasi('error', 'Qty Tidak Valid', 'Qty / satuan produksi belum lengkap.');
+            return false;
+        }
+
         var qtyKelipatan = cekQtyKelipatanResep(
-            parseInt($('#production_qty').val()),
-            parseInt($('#unit_id').val()),
+            resolved.pd_qty,
+            resolved.unit_id,
             tempBom
         );
         if (!qtyKelipatan.valid) {
@@ -194,9 +258,9 @@
         var idx = -1;
         items.forEach(function (element) {
             if (element.product_variant_id == temp.product_variant_id
-                && element.unit_id == $('#unit_id').val()
+                && element.unit_id == resolved.unit_id
                 && parseInt(element.destination_warehouse_id || 0, 10) === destinationId) {
-                element.pd_qty += parseInt($('#production_qty').val());
+                element.pd_qty += resolved.pd_qty;
                 idx = 1;
             }
         });
@@ -204,7 +268,7 @@
         if (idx == 1) {
             var mergedItem = items.find(function (element) {
                 return element.product_variant_id == temp.product_variant_id
-                    && element.unit_id == $('#unit_id').val()
+                    && element.unit_id == resolved.unit_id
                     && parseInt(element.destination_warehouse_id || 0, 10) === destinationId;
             });
             var qtyKelipatanGabung = cekQtyKelipatanResep(
@@ -213,7 +277,7 @@
                 tempBom
             );
             if (!qtyKelipatanGabung.valid) {
-                mergedItem.pd_qty -= parseInt($('#production_qty').val());
+                mergedItem.pd_qty -= resolved.pd_qty;
                 notifikasi('error', 'Qty Tidak Valid', 'Total qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
                 return false;
             }
@@ -226,9 +290,9 @@
             var data = {
                 "product_variant_id": temp.product_variant_id,
                 "product_name": temp.product_name,
-                "pd_qty": parseInt($('#production_qty').val()),
-                "unit_name": $('#unit_id option:selected').text(),
-                "unit_id": parseInt($('#unit_id').val()),
+                "pd_qty": resolved.pd_qty,
+                "unit_name": resolved.unit_name,
+                "unit_id": resolved.unit_id,
                 "retail_unit": parseInt(temp.retail_unit || 0, 10) || null,
                 "default_unit": parseInt(temp.default_unit || 0, 10) || null,
                 "destination_warehouse_id": destinationId || null,
@@ -244,6 +308,7 @@
         $('#unit_id').empty();
         $('#unit_id').append("<option selected>Pilih Satuan</option>");
         $('#production_qty').val("");
+        $('#production_pallet_hint').text('');
         $('#production_destination_warehouse_id').val(null).trigger('change');
         syncProductionDestinationControl();
         return true;
@@ -287,7 +352,30 @@
             qty=0;
         }
         $('#production_total').val(qty);
+        updateProductionPalletHint();
     });
+
+    $(document).on('change', '#unit_id', function () {
+        updateProductionPalletHint();
+    });
+
+    function updateProductionPalletHint() {
+        var $hint = $('#production_pallet_hint');
+        if (!$hint.length) return;
+        var selected = $('#unit_id option:selected');
+        if (String($('#unit_id').val()) !== '__PALLET__') {
+            $hint.text('');
+            return;
+        }
+        var qty = parseInt($('#production_qty').val(), 10) || 0;
+        var per = parseInt(selected.data('qty-per-pallet'), 10) || 0;
+        var unitName = selected.data('default-unit-name') || 'DOS';
+        if (per <= 0) {
+            $hint.text('');
+            return;
+        }
+        $hint.text('= ' + (qty * per) + ' ' + unitName);
+    }
 
     $(document).on('change', '#product_id', function(){
         var data = $(this).select2("data")[0];
@@ -313,6 +401,14 @@
         data.pr_unit.forEach(element => {
             $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
         });
+        // Shortcut Produksi: input Pallet → convert ke satuan default (DOS/dll)
+        var qtyPerPallet = parseInt(data.qty_per_pallet, 10) || 0;
+        if (qtyPerPallet > 0) {
+            var defaultUnitName = data.default_unit_name || 'DOS';
+            $('#unit_id').append(
+                `<option value="__PALLET__" data-qty-per-pallet="${qtyPerPallet}" data-default-unit-id="${data.default_unit || data.unit_id}" data-default-unit-name="${defaultUnitName}">PALLET (1 = ${qtyPerPallet} ${defaultUnitName})</option>`
+            );
+        }
         $('#unit_id').val(data.default_unit || data.unit_id).trigger("change");
         $('#pi_unit option').first().prop('selected', true);
         
@@ -607,7 +703,7 @@
                 && !parseInt(item.destination_warehouse_id || 0, 10);
         });
         if (missingRetailDestination) {
-            notifikasi('error', 'Gudang Tujuan Wajib', 'Pilih gudang eceran untuk setiap hasil produksi bersatuan eceran.');
+            notifikasi('error', 'Gudang Tujuan Wajib', 'Pilih gudang tujuan untuk setiap hasil produksi bersatuan eceran.');
             ResetLoadingButton('.btn-save', mode == 1 ? "Tambah Produksi" : "Update Produksi");
             return false;
         }
