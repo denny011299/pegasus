@@ -171,8 +171,8 @@ function refreshStockOpname(callback) {
                             rl_stock += `</div><div class="input-group mb-1 rstock">`;
                     }
                     rl_stock += `
-                            <input type="number"
-                                class="form-control real-stock include-nol"
+                            <input type="text"
+                                class="form-control real-stock nominal_only"
                                 value=""
                                 data-unit-id="${element.unit_id}"
                                 data-unit-name="${element.unit_short_name}"
@@ -196,13 +196,6 @@ function refreshStockOpname(callback) {
                 //             <input type="hidden" class="stobd_id">
                 //         </td>
                 //         <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
-                //         <td class="">
-                //             <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode==2?item.stobd_notes:''}">
-                //             <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
-                //         </td>
-                //     </tr>
-                // `);
-
                 // Untuk Non Admin
                 $("#tbStock").append(`
                         <tr class="row-stock" data-supplies-id="${item.supplies_id}">
@@ -231,8 +224,9 @@ function refreshStockOpname(callback) {
                         .find(".real-stock")
                         .each(function () {
                             var unitId = $(this).data("unit-id");
-                            if (savedValues[key].stocks[unitId] != undefined) {
-                                $(this).val(savedValues[key].stocks[unitId]);
+                            var sv = savedValues[key].stocks[unitId];
+                            if (sv != undefined && sv !== '') {
+                                $(this).val(formatRupiah(String(sv)));
                             }
                         });
                 }
@@ -310,9 +304,9 @@ function renderMode2(items) {
                     rl_stock += `</div><div class="input-group mb-1 rstock">`;
             }
             rl_stock += `
-                    <input type="number"
-                        class="form-control real-stock include-nol"
-                        value="${element.real_qty}"
+                    <input type="text"
+                        class="form-control real-stock nominal_only"
+                        value="${formatRupiah(String(element.real_qty))}"
                         data-unit-id="${element.unit_id}"
                         data-unit-name="${element.unit_short_name}"
                         data-system-qty="${element.system_qty}">
@@ -574,7 +568,7 @@ function insertData(options) {
             let realQty =
                 val === "" || val === null || val === undefined
                     ? -1
-                    : parseInt(val);
+                    : (convertToAngka(String(val)) || 0);
 
             sp_units.push({
                 unit_id: unitId,
@@ -702,7 +696,7 @@ $(document).on("click", "#btn-acc-stob", function () {
             let realQty =
                 val === "" || val === null || val === undefined
                     ? -1
-                    : parseInt(val);
+                    : (convertToAngka(String(val)) || 0);
 
             sp_units.push({
                 unit_id: unitId,

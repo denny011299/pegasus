@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerProductReturnController;
+use App\Http\Controllers\CustomerSupplyReturnController;
 use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
+use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SynchronizationController;
 use App\Http\Controllers\UserController;
@@ -180,6 +183,34 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/tolakStockOpname', [StockController::class, 'tolakStockOpname'])->name('tolakStockOpname');
     });
 
+    // Stock Transfer (scaffold — logic menyusul setelah UI Gemini)
+    Route::middleware('check.access:Stock Transfer|view')->group(function () {
+        Route::get('/stockTransfer', [StockTransferController::class, 'index'])->name('stockTransfer');
+        Route::get('/reportStockTransfer', [StockTransferController::class, 'logsPage'])->name('reportStockTransfer');
+        Route::get('/getStockTransfer', [StockTransferController::class, 'getStockTransfer'])->name('getStockTransfer');
+        Route::get('/getStockTransferDetail', [StockTransferController::class, 'getStockTransferDetail'])->name('getStockTransferDetail');
+        Route::get('/getTransferSourceStock', [StockTransferController::class, 'getTransferSourceStock'])->name('getTransferSourceStock');
+        Route::get('/getStockTransferLogs', [StockTransferController::class, 'getStockTransferLogs'])->name('getStockTransferLogs');
+        Route::post('/checkTransferStock', [StockTransferController::class, 'checkTransferStock'])->name('checkTransferStock');
+    });
+    Route::post('/getTransferRetailUnitSetup', [StockTransferController::class, 'getTransferRetailUnitSetup'])->name('getTransferRetailUnitSetup');
+    Route::post('/saveTransferRetailUnit', [StockTransferController::class, 'saveTransferRetailUnit'])->name('saveTransferRetailUnit');
+    Route::middleware('check.access:Stock Transfer|create')->group(function () {
+        Route::post('/insertStockTransfer', [StockTransferController::class, 'insertStockTransfer'])->name('insertStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|edit')->group(function () {
+        Route::post('/updateStockTransfer', [StockTransferController::class, 'updateStockTransfer'])->name('updateStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|delete')->group(function () {
+        Route::post('/deleteStockTransfer', [StockTransferController::class, 'deleteStockTransfer'])->name('deleteStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|others')->group(function () {
+        Route::post('/shipStockTransfer', [StockTransferController::class, 'shipStockTransfer'])->name('shipStockTransfer');
+        Route::post('/accStockTransfer', [StockTransferController::class, 'accStockTransfer'])->name('accStockTransfer');
+        Route::post('/rejectStockTransfer', [StockTransferController::class, 'rejectStockTransfer'])->name('rejectStockTransfer');
+        Route::post('/cancelKirimStockTransfer', [StockTransferController::class, 'cancelKirimStockTransfer'])->name('cancelKirimStockTransfer');
+    });
+
     Route::middleware('check.access:Stok Opname Bahan Mentah|view')->group(function () {
         Route::get('/stockOpnameBahan', [StockController::class, 'StockOpnameBahan'])->name('stockOpnameBahan');
         Route::get('/getStockOpnameBahan', [StockController::class, 'getStockOpnameBahan'])->name('getStockOpnameBahan');
@@ -268,22 +299,34 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/salesOrderDetail/{id}', [CustomerController::class, 'SalesOrderDetail'])->name('salesOrderDetail');
         Route::get('/getSoDelivery', [CustomerController::class, 'getSoDelivery'])->name('getSoDelivery');
         Route::get('/getSoInvoice', [CustomerController::class, 'getSoInvoice'])->name('getSoInvoice');
+        Route::get('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'index'])->name('customerSupplyReturns.index');
+        Route::get('/customerSupplyReturns/context', [CustomerSupplyReturnController::class, 'context'])->name('customerSupplyReturns.context');
+        Route::get('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'show'])->name('customerSupplyReturns.show');
+        Route::get('/customerProductReturns', [CustomerProductReturnController::class, 'index'])->name('customerProductReturns.index');
+        Route::get('/customerProductReturns/context', [CustomerProductReturnController::class, 'context'])->name('customerProductReturns.context');
+        Route::get('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'show'])->name('customerProductReturns.show');
     });
     Route::middleware('check.access:Pengiriman|create')->group(function () {
         Route::post('/insertSalesOrder', [CustomerController::class, 'insertSalesOrder'])->name('insertSalesOrder');
         Route::post('/insertSoDelivery', [CustomerController::class, 'insertSoDelivery'])->name('insertSoDelivery');
         Route::post('/insertInvoiceSO', [CustomerController::class, 'insertInvoiceSO'])->name('insertInvoiceSO');
+        Route::post('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'store'])->name('customerSupplyReturns.store');
+        Route::post('/customerProductReturns', [CustomerProductReturnController::class, 'store'])->name('customerProductReturns.store');
     });
     Route::middleware('check.access:Pengiriman|edit')->group(function () {
         Route::post('/updateSalesOrder', [CustomerController::class, 'updateSalesOrder'])->name('updateSalesOrder');
         Route::post('/updateSalesOrderDetail', [CustomerController::class, 'updateSalesOrderDetail'])->name('updateSalesOrderDetail');
         Route::post('/updateSoDelivery', [CustomerController::class, 'updateSoDelivery'])->name('updateSoDelivery');
         Route::post('/updateInvoiceSO', [CustomerController::class, 'updateInvoiceSO'])->name('updateInvoiceSO');
+        Route::post('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'update'])->name('customerSupplyReturns.update');
+        Route::post('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'update'])->name('customerProductReturns.update');
     });
     Route::middleware('check.access:Pengiriman|delete')->group(function () {
         Route::post('/deleteSalesOrder', [CustomerController::class, 'deleteSalesOrder'])->name('deleteSalesOrder');
         Route::post('/deleteSoDelivery', [CustomerController::class, 'deleteSoDelivery'])->name('deleteSoDelivery');
         Route::post('/deleteInvoiceSO', [CustomerController::class, 'deleteInvoiceSO'])->name('deleteInvoiceSO');
+        Route::post('/customerSupplyReturns/{returnId}/delete', [CustomerSupplyReturnController::class, 'destroy'])->name('customerSupplyReturns.destroy');
+        Route::post('/customerProductReturns/{returnId}/delete', [CustomerProductReturnController::class, 'destroy'])->name('customerProductReturns.destroy');
     });
     Route::middleware('check.access:Pengiriman|others')->group(function () {
         Route::post('/accSO', [CustomerController::class, 'accSO'])->name('accSO');
@@ -292,6 +335,10 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/declineSoDelivery', [CustomerController::class, 'declineSoDelivery'])->name('declineSoDelivery');
         Route::post('/acceptInvoiceSO', [CustomerController::class, 'acceptInvoiceSO'])->name('acceptInvoiceSO');
         Route::post('/declineInvoiceSO', [CustomerController::class, 'declineInvoiceSO'])->name('declineInvoiceSO');
+        Route::post('/customerSupplyReturns/{returnId}/accept', [CustomerSupplyReturnController::class, 'accept'])->name('customerSupplyReturns.accept');
+        Route::post('/customerSupplyReturns/{returnId}/decline', [CustomerSupplyReturnController::class, 'decline'])->name('customerSupplyReturns.decline');
+        Route::post('/customerProductReturns/{returnId}/accept', [CustomerProductReturnController::class, 'accept'])->name('customerProductReturns.accept');
+        Route::post('/customerProductReturns/{returnId}/decline', [CustomerProductReturnController::class, 'decline'])->name('customerProductReturns.decline');
     });
 
     Route::middleware('check.access:Pembelian|view')->group(function () {
@@ -359,6 +406,10 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Produk|view')->group(function () {
         Route::get('/stockProduct', [StockController::class, 'Stock'])->name('stockProduct');
         Route::get('/getStock', [StockController::class, 'getStock'])->name('getStock');
+    });
+    Route::middleware('check.access:Safety Stock|edit')->group(function () {
+        Route::post('/updateProductSafetyStock', [StockController::class, 'updateProductSafetyStock'])->name('updateProductSafetyStock');
+        Route::post('/transferSafetyToStock', [StockController::class, 'transferSafetyToStock'])->name('transferSafetyToStock');
     });
 
     Route::middleware('check.access:Daftar Bahan Mentah|view')->group(function () {

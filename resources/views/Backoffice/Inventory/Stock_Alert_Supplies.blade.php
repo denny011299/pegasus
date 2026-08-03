@@ -29,6 +29,7 @@
                 @component('components.page-header')
                     @slot('title')
                         Peringatan Stok Bahan Mentah
+                        <div class="small text-muted fw-normal mt-1" id="stock-alert-supplies-wh-label" style="font-size:13px;"></div>
                     @endslot
                 @endcomponent
                 <ul class="nav nav-pills navtab-bg d-flex flex-nowrap mb-md-0 mb-3" style="z-index: 10; position: relative;">
@@ -63,7 +64,7 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
-                                                    <th>Qty Peringatan</th>
+                                                    <th>Stok Minimum Rekomendasi</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
@@ -79,7 +80,7 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
-                                                    <th>Qty Peringatan</th>
+                                                    <th>Stok Minimum Rekomendasi</th>
                                                     <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
@@ -105,5 +106,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert_Supplies.js')}}?v=4"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert_Supplies.js')}}?v=5"></script>
 @endsection

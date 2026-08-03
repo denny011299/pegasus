@@ -5,8 +5,8 @@
        ============================================= */
 
     /* Increase specificity to override [data-sidebar=light] body .sidebar from style.css */
-    #sidebar.sidebar, 
-    body.mini-sidebar #sidebar.sidebar, 
+    #sidebar.sidebar,
+    body.mini-sidebar #sidebar.sidebar,
     body.mini-sidebar.expand-menu #sidebar.sidebar {
         background: #ffffff !important;
         border-right: 1px solid #e2e8f0 !important;
@@ -757,7 +757,7 @@
                                         <li><a href="{{ url('category') }}"
                                             class="{{ Request::is('category') ? 'active' : '' }}">Kategori</a></li>
                                     @endif
-                                    
+
                                     @if ($canShow('Satuan'))
                                         <li><a href="{{ url('unit') }}"
                                             class="{{ Request::is('unit') ? 'active' : '' }}">Satuan</a></li>
@@ -788,7 +788,7 @@
                                 </ul>
                             </li>
                         @endif
-                    
+
                         @if ($showProduk)
                             @if ($canShow('Daftar Produk'))
                                 <li>
@@ -805,7 +805,7 @@
                                     </a>
                                 </li>
                             @endif
-                            
+
                             @if ($canShow('Daftar Produk'))
                                 <li>
                                     <a href="{{ url('barcodePrint') }}" class="{{ Request::is('barcodePrint') ? 'active' : '' }}">
@@ -814,7 +814,7 @@
                                 </li>
                             @endif
                         @endif
-                        
+
                         @if ($showBahan)
                             <li class="submenu">
                                 <a href="#"><i class="fa fa-cubes"></i> <span> Bahan Mentah</span> <span
@@ -832,20 +832,20 @@
                                 </ul>
                             </li>
                         @endif
-                    
+
                         <li class="submenu">
                             @if ($canShow('Armada'))
                                 <li>
                                     <a class="{{ Request::is('customer') ? 'active' : '' }}" href="/customer"><i
                                         class="fe fe-users"></i> <span>Armada</span></a>
-                                </li>   
+                                </li>
                             @endif
 
                             @if ($canShow('Pemasok'))
                                 <li>
                                     <a class="{{ Request::is('supplier') ? 'active' : '' }}" href="/supplier"><i
                                         class="fe fe-truck"></i> <span>Pemasok</span></a>
-                                </li>   
+                                </li>
                             @endif
                         </li>
 
@@ -858,22 +858,22 @@
                                         <li><a href="{{ url('productIssue') }}"
                                             class="{{ Request::is('productIssue') ? 'active' : '' }}">Produk Bermasalah</a></li>
                                     @endif
-    
+
                                     @if ($canShow('Peringatan Stok Produk'))
                                         <li><a href="{{ url('stockAlert') }}"
                                             class="{{ Request::is('stockAlert') ? 'active' : '' }}">Peringatan Stok Produk</a></li>
                                     @endif
-    
+
                                     @if ($canShow('Peringatan Stok Bahan Mentah'))
                                         <li><a href="{{ url('stockAlertSupplies') }}"
                                             class="{{ Request::is('stockAlertSupplies') ? 'active' : '' }}">Peringatan Stok Bahan Mentah</a></li>
                                     @endif
-    
+
                                     @if ($canShow('Stok Opname Produk'))
                                         <li><a href="{{ url('stockOpname') }}"
                                             class="{{ Request::is('stockOpname') ? 'active' : '' }}">Stok Opname Produk</a></li>
                                     @endif
-    
+
                                     @if ($canShow('Stok Opname Bahan Mentah'))
                                         <li><a href="{{ url('stockOpnameBahan') }}"
                                             class="{{ Request::is('stockOpnameBahan') ? 'active' : '' }}">Stok Opname Bahan Mentah</a></li>
@@ -885,7 +885,7 @@
                     <!-- /Master -->
 
                     {{-- Ordering --}}
-                    @if ($canShow('Pengiriman') || $canShow('Pembelian') || $canShow('Tanda Terima PO'))
+                    @if ($canShow('Pengiriman') || $canShow('Pembelian') || $canShow('Tanda Terima PO') || $canShow('Stock Transfer'))
                         <li class="menu-title"><span>Penjualan & Pembelian</span></li>
                         <li class="submenu">
                             @if ($canShow('Pengiriman'))
@@ -908,6 +908,13 @@
                                         <i class="fe fe-file-text"></i> <span>Tanda Terima PO</span></a>
                                 </li>
                             @endif
+
+                            @if ($canShow('Stock Transfer'))
+                                <li>
+                                    <a class="{{ Request::is('stockTransfer') ? 'active' : '' }}" href="{{ url('stockTransfer') }}">
+                                        <i class="fe fe-shuffle"></i> <span>Stock Transfer</span></a>
+                                </li>
+                            @endif
                         </li>
                     @endif
                     {{-- /Ordering --}}
@@ -921,7 +928,7 @@
                                         class="fe fe-file-text"></i> <span>Resep Bahan Mentah</span></a>
                                 </li>
                             @endif
-                           
+
                             @if ($canShow('Produksi'))
                                 <li>
                                     <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">
@@ -954,6 +961,7 @@
                         $canShow('Laporan Produksi') ||
                         // $canShow('Laporan Efisiensi Produksi') ||
                         $canShow('Laporan Stock Aging') ||
+                        $canShow('Stock Transfer') ||
                         $canShow('Stok Opname Produk') ||
                         $canShow('Stok Opname Bahan Mentah') ||
                         $canShow('Untung & Rugi') ||
@@ -965,7 +973,7 @@
 
                     @if ($showAccounting || $showLaporanMenu || $canShow('Bank Account') || $canShow('Hutang'))
                         <li class="menu-title"><span>Akuntansi & Laporan</span></li>
-                        
+
                         @if ($canShow('Bank Account'))
                             <li>
                                 <a class="{{ Request::is('bank') ? 'active' : '' }}" href="/bank">
@@ -987,12 +995,12 @@
                                 <ul style="display: none;">
                                     @if ($canShow('Kategori Kas'))
                                         <li><a href="{{ url('cashCategory') }}"
-                                        class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>    
+                                        class="{{ Request::is('cashCategory') ? 'active' : '' }}">Kategori Kas</a></li>
                                     @endif
 
                                     @if ($hasKasOperasional)
                                         <li><a href="{{ url('operationalCash') }}"
-                                        class="{{ Request::is('operationalCash') ? 'active' : '' }}">Kas Operasional</a></li>    
+                                        class="{{ Request::is('operationalCash') ? 'active' : '' }}">Kas Operasional</a></li>
                                     @endif
 
                                     {{-- @if ($canShow('Kas Kecil'))
@@ -1052,6 +1060,12 @@
                                         <li><a href="/reportStockAging"
                                             class="{{ Request::is('reportStockAging') ? 'active' : '' }}">
                                             Laporan Stock Aging</a></li>
+                                    @endif
+
+                                    @if ($canShow('Stock Transfer'))
+                                        <li><a href="{{ url('reportStockTransfer') }}"
+                                            class="{{ Request::is('reportStockTransfer') ? 'active' : '' }}">
+                                            Laporan Stock Transfer</a></li>
                                     @endif
 
                                     @if ($canShow('Kas'))
@@ -1144,7 +1158,7 @@
                         $canShow('Profil') ||
                         $canShow('Pengaturan');
                     @endphp
-                    
+
                     @if ($showSetting)
                         {{-- <li class="menu-title"><span>Pengaturan</span></li>
                         <li class="submenu">

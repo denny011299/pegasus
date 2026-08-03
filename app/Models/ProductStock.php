@@ -6,6 +6,7 @@ use App\Support\UnitStockSorter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class ProductStock extends Model
@@ -22,6 +23,7 @@ class ProductStock extends Model
         'warehouse_id',
         'ps_stock',
         'ps_safety_stock',
+        'ps_alert_stock',
         'status',
         'created_by',
     ];
@@ -71,6 +73,7 @@ class ProductStock extends Model
         $data = array_merge([
             "product_id" => null,
             "product_variant_id" => null,
+            "unit_id" => null,
             "warehouse_id" => null,
             "relations" => null,
         ], $data);
@@ -85,6 +88,7 @@ class ProductStock extends Model
         }
         if ($data["product_id"]) $result->where('product_id', '=', $data["product_id"]);
         if ($data["product_variant_id"]) $result->where('product_variant_id', '=', $data["product_variant_id"]);
+        if ($data["unit_id"]) $result->where('unit_id', '=', $data["unit_id"]);
         $result->orderBy('created_at', 'asc');
 
         $result = $result->get();
@@ -110,6 +114,7 @@ class ProductStock extends Model
         $t->warehouse_id = self::resolveWarehouseId($data["warehouse_id"] ?? null) ?: null;
         $t->ps_stock = $data["ps_stock"] ?? 0;
         $t->ps_safety_stock = $data["ps_safety_stock"] ?? 0;
+        $t->ps_alert_stock = $data["ps_alert_stock"] ?? 0;
         $t->status = $data["status"] ?? 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
@@ -142,12 +147,25 @@ class ProductStock extends Model
 
     /**
      * Seed stok 0 untuk semua produk/varian aktif di satu gudang.
+     * Gudang utama: semua satuan di product_unit.
+     * Gudang eceran: hanya retail_unit (skip jika belum di-set).
      */
     public function generateStocksForWarehouse($warehouseId): int
     {
         $warehouseId = (int) $warehouseId;
         if ($warehouseId <= 0) {
             return 0;
+        }
+
+        $isMain = Warehouse::query()
+            ->whereKey($warehouseId)
+            ->whereHas('type', fn($q) => $q->where('is_main_warehouse', 1))
+            ->exists();
+
+        $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
+        $variantCols = ['product_variant_id'];
+        if ($hasRetailCol) {
+            $variantCols[] = 'retail_unit';
         }
 
         $products = Product::where('status', 1)->get(['product_id', 'product_unit']);
@@ -157,17 +175,31 @@ class ProductStock extends Model
         $chunk = [];
 
         foreach ($products as $product) {
-            $units = json_decode($product->product_unit ?? '[]', true) ?: [];
-            if (empty($units)) {
+            $productUnits = json_decode($product->product_unit ?? '[]', true) ?: [];
+            if ($isMain && empty($productUnits)) {
                 continue;
             }
 
             $variants = ProductVariant::where('product_id', $product->product_id)
                 ->where('status', 1)
-                ->get(['product_variant_id']);
+                ->get($variantCols);
 
             foreach ($variants as $variant) {
+                if ($isMain) {
+                    $units = $productUnits;
+                } else {
+                    $retailUnitId = $hasRetailCol ? (int) ($variant->retail_unit ?? 0) : 0;
+                    if ($retailUnitId <= 0) {
+                        continue; // belum ada satuan eceran → skip
+                    }
+                    $units = [$retailUnitId];
+                }
+
                 foreach ($units as $unitId) {
+                    $unitId = (int) $unitId;
+                    if ($unitId <= 0) {
+                        continue;
+                    }
                     $exists = self::withoutGlobalScope('active_warehouse')
                         ->where('warehouse_id', $warehouseId)
                         ->where('product_variant_id', $variant->product_variant_id)
@@ -186,6 +218,7 @@ class ProductStock extends Model
                         'warehouse_id' => $warehouseId,
                         'ps_stock' => 0,
                         'ps_safety_stock' => 0,
+                        'ps_alert_stock' => 0,
                         'status' => 1,
                         'created_by' => $createdBy,
                         'created_at' => $now,
@@ -212,23 +245,49 @@ class ProductStock extends Model
     {
         $variant = ProductVariant::where("product_id", "=", $product_id)->where('status', '=', 1)->get();
         $product = Product::find($product_id);
-        $units = json_decode($product->product_unit ?? '[]', true) ?: [];
+        $productUnits = json_decode($product->product_unit ?? '[]', true) ?: [];
+        $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
 
-        $warehouseIds = Warehouse::query()->where('status', 1)->pluck('id');
-        if ($warehouseIds->isEmpty()) {
+        $warehouses = Warehouse::query()
+            ->where('status', 1)
+            ->with(['type' => fn($q) => $q->select('id', 'is_main_warehouse')])
+            ->get(['id', 'warehouse_type_id']);
+        if ($warehouses->isEmpty()) {
             $fallback = self::resolveWarehouseId();
-            $warehouseIds = $fallback ? collect([$fallback]) : collect();
+            $warehouses = $fallback
+                ? Warehouse::query()
+                ->whereKey($fallback)
+                ->with(['type' => fn($q) => $q->select('id', 'is_main_warehouse')])
+                ->get(['id', 'warehouse_type_id'])
+                : collect();
         }
 
-        foreach ($warehouseIds as $warehouseId) {
+        foreach ($warehouses as $warehouse) {
+            $warehouseId = (int) $warehouse->id;
+            $isMain = (int) ($warehouse->type->is_main_warehouse ?? 0) === 1;
+
             foreach ($variant as $value) {
-                self::withoutGlobalScope('active_warehouse')
+                if ($isMain) {
+                    $units = $productUnits;
+                } else {
+                    $retailUnitId = $hasRetailCol ? (int) ($value->retail_unit ?? 0) : 0;
+                    $units = $retailUnitId > 0 ? [$retailUnitId] : [];
+                }
+
+                // Nonaktifkan satuan yang tidak relevan untuk tipe gudang ini
+                $deactivate = self::withoutGlobalScope('active_warehouse')
                     ->where('warehouse_id', $warehouseId)
-                    ->where('product_variant_id', '=', $value["product_variant_id"])
-                    ->whereNotIn('unit_id', $units)
-                    ->update(["status" => 0]);
+                    ->where('product_variant_id', '=', $value["product_variant_id"]);
+                if ($units !== []) {
+                    $deactivate->whereNotIn('unit_id', $units);
+                }
+                $deactivate->update(["status" => 0]);
 
                 foreach ($units as $unit) {
+                    $unit = (int) $unit;
+                    if ($unit <= 0) {
+                        continue;
+                    }
                     $dt = self::withoutGlobalScope('active_warehouse')
                         ->where('warehouse_id', $warehouseId)
                         ->where('product_variant_id', '=', $value["product_variant_id"])
@@ -236,7 +295,6 @@ class ProductStock extends Model
                         ->count();
 
                     if ($dt == 0) {
-                        // Safety stock per gudang — baris baru mulai dari 0
                         self::insertProductStock([
                             "product_id" => $product_id,
                             "product_variant_id" => $value->product_variant_id,
@@ -256,7 +314,6 @@ class ProductStock extends Model
                                 $v->status = 1;
                                 $v->save();
                             }
-                            // Jangan timpa ps_safety_stock gudang lain
                         }
                     }
                 }
@@ -341,12 +398,97 @@ class ProductStock extends Model
         return $map;
     }
 
+    /**
+     * Set peringatan stok HANYA untuk satu gudang (master produk mengikuti gudang aktif).
+     * $variants: [[product_variant_id, alert_stock, alert_unit_id], ...]
+     */
+    public function applyAlertStockForWarehouse($productId, $warehouseId, array $variants): void
+    {
+        if (! Schema::hasColumn($this->getTable(), 'ps_alert_stock')) {
+            return;
+        }
+
+        $warehouseId = (int) $warehouseId;
+        $productId = (int) $productId;
+        if ($warehouseId <= 0 || $productId <= 0) {
+            return;
+        }
+
+        foreach ($variants as $row) {
+            $variantId = (int) ($row['product_variant_id'] ?? 0);
+            if ($variantId <= 0) {
+                continue;
+            }
+
+            $alertQty = isset($row['alert_stock']) && $row['alert_stock'] !== ''
+                ? (int) $row['alert_stock']
+                : 0;
+            $alertUnit = ! empty($row['alert_unit_id']) ? (int) $row['alert_unit_id'] : 0;
+
+            self::withoutGlobalScope('active_warehouse')
+                ->where('warehouse_id', $warehouseId)
+                ->where('product_id', $productId)
+                ->where('product_variant_id', $variantId)
+                ->where('status', 1)
+                ->update(['ps_alert_stock' => 0]);
+
+            if ($alertUnit > 0 && $alertQty >= 0) {
+                self::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', $warehouseId)
+                    ->where('product_id', $productId)
+                    ->where('product_variant_id', $variantId)
+                    ->where('unit_id', $alertUnit)
+                    ->where('status', 1)
+                    ->update(['ps_alert_stock' => $alertQty]);
+            }
+        }
+    }
+
+    /**
+     * Ambil peringatan stok per variant untuk satu gudang (untuk form master produk).
+     * @return array<int, array{alert_stock:int, alert_unit_id:int|null}>
+     */
+    public function getAlertStockMapForWarehouse($warehouseId, array $variantIds): array
+    {
+        if (! Schema::hasColumn($this->getTable(), 'ps_alert_stock')) {
+            return [];
+        }
+
+        $warehouseId = (int) $warehouseId;
+        $variantIds = array_values(array_filter(array_map('intval', $variantIds)));
+        if ($warehouseId <= 0 || $variantIds === []) {
+            return [];
+        }
+
+        $rows = self::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $warehouseId)
+            ->whereIn('product_variant_id', $variantIds)
+            ->where('status', 1)
+            ->where('ps_alert_stock', '>', 0)
+            ->orderByDesc('ps_alert_stock')
+            ->get(['product_variant_id', 'unit_id', 'ps_alert_stock']);
+
+        $map = [];
+        foreach ($rows as $row) {
+            $vid = (int) $row->product_variant_id;
+            if (isset($map[$vid])) {
+                continue;
+            }
+            $map[$vid] = [
+                'alert_stock' => (int) $row->ps_alert_stock,
+                'alert_unit_id' => (int) $row->unit_id,
+            ];
+        }
+
+        return $map;
+    }
+
     function cekStockBerlebih($data)
     {
         $warehouseId = self::resolveWarehouseId($data["warehouse_id"] ?? null);
         $t = self::withoutGlobalScope('active_warehouse')
             ->where('ps_id', $data["ps_id"])
-            ->when($warehouseId, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->when($warehouseId, fn($q) => $q->where('warehouse_id', $warehouseId))
             ->first();
 
         if (! $t) {

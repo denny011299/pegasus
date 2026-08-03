@@ -18,9 +18,12 @@ use App\Models\SuppliesUnit;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
+use App\Support\RoleAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Schema;
 
 class ProductController extends Controller
 {
@@ -140,8 +143,213 @@ class ProductController extends Controller
 
     function getProduct(Request $req)
     {
+        // Server-side DataTables (Yajra-compatible JSON)
+        if ($req->has('draw')) {
+            return $this->getProductDataTable($req);
+        }
+
+        // Legacy (client-side / pemakaian lain)
         $data = (new Product())->getProduct();
-        return $data;
+        return response()->json($data);
+    }
+
+    /**
+     * DataTables server-side untuk halaman Daftar Produk.
+     * Response: draw, recordsTotal, recordsFiltered, data[]
+     */
+    private function getProductDataTable(Request $req)
+    {
+        $draw = (int) $req->input('draw', 1);
+        $start = max(0, (int) $req->input('start', 0));
+        $length = (int) $req->input('length', 10);
+        if ($length < 1) {
+            $length = 10;
+        }
+        if ($length > 100) {
+            $length = 100;
+        }
+
+        $search = trim((string) data_get($req->input('search'), 'value', ''));
+        $orderColIdx = (int) data_get($req->input('order'), '0.column', 0);
+        $orderDir = strtolower((string) data_get($req->input('order'), '0.dir', 'asc')) === 'desc'
+            ? 'desc'
+            : 'asc';
+
+        $columns = [
+            0 => 'products.product_name',
+            1 => 'cat.category_name',
+            2 => 'products.product_name', // unit_values (derived)
+            3 => 'products.product_name', // variant_values (derived)
+            4 => 'st.staff_name',
+            5 => 'products.product_id',   // action — no meaningful sort
+        ];
+        $orderCol = $columns[$orderColIdx] ?? 'products.product_name';
+
+        $base = Product::query()
+            ->from('products')
+            ->leftJoin('categories as cat', 'cat.category_id', '=', 'products.category_id')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'products.created_by')
+            ->where('products.status', 1);
+
+        $recordsTotal = (clone $base)->count('products.product_id');
+
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $base->where(function ($q) use ($like, $search) {
+                $q->where('products.product_name', 'like', $like)
+                    ->orWhere('cat.category_name', 'like', $like)
+                    ->orWhere('st.staff_name', 'like', $like)
+                    ->orWhereExists(function ($sq) use ($like) {
+                        $sq->select(DB::raw(1))
+                            ->from('product_variants')
+                            ->whereColumn('product_variants.product_id', 'products.product_id')
+                            ->where('product_variants.status', 1)
+                            ->where('product_variants.product_variant_name', 'like', $like);
+                    })
+                    ->orWhereExists(function ($sq) use ($like) {
+                        $sq->select(DB::raw(1))
+                            ->from('units')
+                            ->where('units.status', 1)
+                            ->where('units.unit_name', 'like', $like)
+                            ->whereRaw(
+                                'JSON_CONTAINS(products.product_unit, JSON_QUOTE(CAST(units.unit_id AS CHAR)), "$")
+                                 OR JSON_CONTAINS(products.product_unit, CAST(units.unit_id AS JSON), "$")'
+                            );
+                    });
+            });
+        }
+
+        $recordsFiltered = (clone $base)->count('products.product_id');
+
+        $rows = $base
+            ->select([
+                'products.product_id',
+                'products.product_name',
+                'products.category_id',
+                'products.product_unit',
+                'products.created_by',
+                'cat.category_name as product_category',
+                'st.staff_name as created_by_name',
+            ])
+            ->orderBy($orderCol, $orderDir)
+            ->orderBy('products.product_id', 'asc')
+            ->skip($start)
+            ->take($length)
+            ->get();
+
+        $productIds = $rows->pluck('product_id')->all();
+
+        $hasRetailUnitCol = Schema::hasColumn('product_variants', 'retail_unit');
+
+        // Batch variants
+        $variantsByProduct = collect();
+        if ($productIds !== []) {
+            $variantCols = ['product_id', 'product_variant_id', 'product_variant_name'];
+            if ($hasRetailUnitCol) {
+                $variantCols[] = 'retail_unit';
+            }
+            $variantsByProduct = ProductVariant::query()
+                ->where('status', 1)
+                ->whereIn('product_id', $productIds)
+                ->orderBy('created_at', 'asc')
+                ->get($variantCols)
+                ->groupBy('product_id');
+        }
+
+        // Batch units
+        $unitIdSet = [];
+        foreach ($rows as $row) {
+            foreach ((array) (json_decode($row->product_unit, true) ?: []) as $unitId) {
+                $unitIdSet[(int) $unitId] = true;
+            }
+        }
+        if ($hasRetailUnitCol && $variantsByProduct->isNotEmpty()) {
+            foreach ($variantsByProduct as $variants) {
+                foreach ($variants as $variantRow) {
+                    $retailUnitId = (int) ($variantRow->retail_unit ?? 0);
+                    if ($retailUnitId > 0) {
+                        $unitIdSet[$retailUnitId] = true;
+                    }
+                }
+            }
+        }
+        $unitsMap = $unitIdSet !== []
+            ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
+            : collect();
+
+        $user = Session::get('user');
+        $canEdit = RoleAccess::can($user, 'Daftar Produk', 'edit');
+        $canDelete = RoleAccess::can($user, 'Daftar Produk', 'delete');
+
+        $data = [];
+        foreach ($rows as $row) {
+            $unitIds = (array) (json_decode($row->product_unit, true) ?: []);
+            $unitNames = [];
+            foreach ($unitIds as $unitId) {
+                $u = $unitsMap->get((int) $unitId);
+                if ($u) {
+                    $unitNames[] = $u->unit_name;
+                }
+            }
+
+            $variantNames = ($variantsByProduct->get($row->product_id) ?? collect())
+                ->map(function ($variantRow) use ($unitsMap, $hasRetailUnitCol) {
+                    $variantName = trim((string) ($variantRow->product_variant_name ?? ''));
+                    if (! $hasRetailUnitCol) {
+                        return $variantName;
+                    }
+                    $retailUnitId = (int) ($variantRow->retail_unit ?? 0);
+                    $retailUnitName = '-';
+                    if ($retailUnitId > 0) {
+                        $unit = $unitsMap->get($retailUnitId);
+                        $retailUnitName = $unit->unit_short_name ?? $unit->unit_name ?? '-';
+                    }
+                    return trim($variantName . ' [Eceran: ' . $retailUnitName . ']');
+                })
+                ->filter()
+                ->values()
+                ->all();
+
+            $data[] = [
+                'product_id' => $row->product_id,
+                'product_name' => $row->product_name,
+                'product_category' => $row->product_category ?: '-',
+                'unit_values' => $unitNames !== [] ? implode(', ', $unitNames) : '-',
+                'variant_values' => $variantNames !== [] ? implode(', ', $variantNames) : '-',
+                'created_by_name' => $row->created_by_name ?: '-',
+                'action' => $this->buildProductActionHtml(
+                    (int) $row->product_id,
+                    $canEdit,
+                    $canDelete
+                ),
+            ];
+        }
+
+        return response()->json([
+            'draw' => $draw,
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
+        ]);
+    }
+
+    private function buildProductActionHtml(int $productId, bool $canEdit, bool $canDelete): string
+    {
+        $html = '';
+
+        if ($canEdit) {
+            $html .= '<a class="me-2 btn-action-icon p-2" href="/updateProduct/' . $productId . '">'
+                . '<i class="fe fe-edit"></i></a>';
+        }
+
+        if ($canDelete) {
+            $html .= '<a class="p-2 btn-action-icon btn_delete" data-id="' . $productId . '" href="javascript:void(0);">'
+                . '<i class="fe fe-trash-2"></i></a>';
+        }
+
+        return $html !== ''
+            ? $html
+            : '<span class="text-muted small">—</span>';
     }
 
     /**
@@ -218,7 +426,10 @@ class ProductController extends Controller
         //     ]);
         // }
 
-        $variant = json_decode($data['product_variant'], true);
+        $id = (new Product())->insertProduct($data);
+        $variant = $this->sanitizeVariantValues(json_decode($data['product_variant'], true) ?: []);
+        $safetyPayload = $this->extractSafetyPayload($variant);
+        $variant = $this->stripSafetyFromVariants($variant);
         $relasi = json_decode($data['product_relasi'], true);
 
         $uniquenessError = $this->validateVariantUniqueness($variant, null);
@@ -230,6 +441,9 @@ class ProductController extends Controller
         foreach ($variant as $key => $value) {
             $value['product_id'] = $id;
             $variant[$key]["product_variant_id"] = (new ProductVariant())->insertProductVariant($value);
+            if (isset($safetyPayload[$key])) {
+                $safetyPayload[$key]['product_variant_id'] = $variant[$key]["product_variant_id"];
+            }
         }
         foreach ($relasi as $keyRelasi => $value) {
             foreach ($value as $key => $perVariant) {
@@ -239,6 +453,8 @@ class ProductController extends Controller
             }
         }
         (new ProductStock())->syncStock($id);
+        $this->applySafetyForActiveWarehouse($id, $safetyPayload);
+        $this->applyAlertForActiveWarehouse($id, $variant);
         return 1;
     }
 
@@ -246,19 +462,18 @@ class ProductController extends Controller
     {
         $data = $req->all();
         $id = [];
-        $variant = json_decode($data['product_variant'], true);
-
-        $uniquenessError = $this->validateVariantUniqueness($variant, (int) $data['product_id']);
-        if ($uniquenessError) {
-            return response()->json(['message' => $uniquenessError]);
-        }
-
+        $variant = $this->sanitizeVariantValues(json_decode($data['product_variant'], true) ?: []);
+        $safetyPayload = $this->extractSafetyPayload($variant);
+        $variant = $this->stripSafetyFromVariants($variant);
         (new Product())->updateProduct($data);
         foreach ($variant as $key => $value) {
             $value['product_id'] = $data["product_id"];
             if (!isset($value["product_variant_id"])) $t = (new ProductVariant())->insertProductVariant($value);
             else $t = (new ProductVariant())->updateProductVariant($value);
             $variant[$key]["product_variant_id"] = $t;
+            if (isset($safetyPayload[$key])) {
+                $safetyPayload[$key]['product_variant_id'] = $t;
+            }
             array_push($id, $t);
         }
         ProductVariant::where('product_id', '=', $data["product_id"])->whereNotIn("product_variant_id", $id)->update(["status" => 0]);
@@ -267,12 +482,12 @@ class ProductController extends Controller
             $pvr_id = $variant[$keyRelasi]['product_variant_id'] ?? 0;
             $id = [];
             $activeUnitPairs = [];
-            
+
             // Jika ada data relasi dari frontend
             if (!empty($value)) {
                 foreach ($value as $key => $perVariant) {
                     $perVariant['product_variant_id'] = $pvr_id;
-                    
+
                     // Konversi pr_id dengan aman
                     $current_pr_id = isset($perVariant['pr_id']) ? intval($perVariant['pr_id']) : 0;
                     $perVariant['pr_id'] = $current_pr_id;
@@ -283,7 +498,7 @@ class ProductController extends Controller
                     } else {
                         $t = (new ProductRelation())->updateProductRelation($perVariant);
                     }
-                    
+
                     // Simpan ID yang aktif ke array $id
                     if ($t) $id[] = $t;
 
@@ -299,6 +514,8 @@ class ProductController extends Controller
                 ->update(['status' => 0]);
         }
         (new ProductStock())->syncStock($data["product_id"]);
+        $this->applySafetyForActiveWarehouse((int) $data["product_id"], $safetyPayload);
+        $this->applyAlertForActiveWarehouse((int) $data["product_id"], $variant);
         return 1;
     }
 
@@ -461,7 +678,7 @@ class ProductController extends Controller
 
     function insertSupplies(Request $req)
     {
-        $data = $req->all();
+        $data = $this->sanitizeSuppliesValues($req->all());
 
         // Pengecekan Unique
         $suppliesName = trim(strtolower($data['supplies_name']));
@@ -472,9 +689,9 @@ class ProductController extends Controller
                 'message' => 'Nama bahan sudah digunakan'
             ]);
         }
-        
+
         $id = (new Supplies())->insertSupplies($data);
-        foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
+        foreach (json_decode($data['supplies_variant'], true) ?: [] as $key => $value) {
             $value['supplies_id'] = $id;
             (new SuppliesVariant())->insertSuppliesVariant($value);
         }
@@ -488,12 +705,12 @@ class ProductController extends Controller
 
     function updateSupplies(Request $req)
     {
-        $data = $req->all();
+        $data = $this->sanitizeSuppliesValues($req->all());
         $id = [];
         $id_r = [];
         $before = Supplies::find($data["supplies_id"]);
         (new Supplies())->updateSupplies($data);
-        foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
+        foreach (json_decode($data['supplies_variant'], true) ?: [] as $key => $value) {
             $value['supplies_id'] = $data["supplies_id"];
             if (!isset($value["supplies_variant_id"])) $t = (new SuppliesVariant())->insertSuppliesVariant($value);
             else $t = (new SuppliesVariant())->updateSuppliesVariant($value);
@@ -514,12 +731,12 @@ class ProductController extends Controller
         $afterName = trim((string) ($after->supplies_name ?? ($data['supplies_name'] ?? '')));
         $changeTexts = [];
         if ($beforeName !== '' && $afterName !== '' && strcasecmp($beforeName, $afterName) !== 0) {
-            $changeTexts[] = 'Nama: "'.$beforeName.'" -> "'.$afterName.'"';
+            $changeTexts[] = 'Nama: "' . $beforeName . '" -> "' . $afterName . '"';
         }
         $beforeAlert = (float) ($before->supplies_alert ?? 0);
         $afterAlert = (float) ($after->supplies_alert ?? ($data['supplies_alert'] ?? 0));
         if (abs($beforeAlert - $afterAlert) > 0.000001) {
-            $changeTexts[] = 'Batas min: '.$beforeAlert.' -> '.$afterAlert;
+            $changeTexts[] = 'Batas min: ' . $beforeAlert . ' -> ' . $afterAlert;
         }
         if ((int) ($before->supplies_default_unit ?? 0) !== (int) ($after->supplies_default_unit ?? ($data['supplies_default_unit'] ?? 0))) {
             $changeTexts[] = 'Satuan default diperbarui';
@@ -531,10 +748,10 @@ class ProductController extends Controller
         DashboardChangeLog::create([
             'module_key' => 'master_bahan',
             'module_label' => 'Master Bahan',
-            'reference' => 'BHN #'.(int) $data['supplies_id'],
+            'reference' => 'BHN #' . (int) $data['supplies_id'],
             'what_changed' => $whatChanged,
             'summary' => $afterName !== '' ? $afterName : ($beforeName !== '' ? $beforeName : 'Bahan'),
-            'url' => url('supplies').'?supplies_id='.(int) $data['supplies_id'],
+            'url' => url('supplies') . '?supplies_id=' . (int) $data['supplies_id'],
             'url_label' => 'Buka master',
             'created_by' => $actor ? ($actor->staff_id ?? null) : null,
             'meta' => [
@@ -595,5 +812,103 @@ class ProductController extends Controller
             // "category_id" => $req->category_id
         ]);
         return response()->json($data);
+    }
+
+    /**
+     * Safety stock hanya boleh diubah oleh role yang punya akses edit.
+     */
+    private function sanitizeVariantValues(array $variants): array
+    {
+        $canEdit = RoleAccess::can(Session::get('user'), 'Safety Stock', 'edit');
+        foreach ($variants as $i => $variant) {
+            $variants[$i]['lead_time_days'] = max(0, (int) ($variant['lead_time_days'] ?? 0));
+            if (! $canEdit) {
+                unset($variants[$i]['safety_stock'], $variants[$i]['safety_unit_id']);
+            } elseif (array_key_exists('safety_stock', $variant)) {
+                $variants[$i]['safety_stock'] = max(0, (int) $variant['safety_stock']);
+            }
+        }
+
+        return $variants;
+    }
+
+    private function sanitizeSuppliesValues(array $data): array
+    {
+        $data['lead_time_days'] = max(0, (int) ($data['lead_time_days'] ?? 0));
+        $data['safety_stock'] = max(0, (int) ($data['safety_stock'] ?? 0));
+
+        return $data;
+    }
+
+    /** Simpan payload safety terpisah (per index variant) sebelum strip dari save variant. */
+    private function extractSafetyPayload(array $variants): array
+    {
+        $payload = [];
+        foreach ($variants as $i => $variant) {
+            if (! array_key_exists('safety_stock', $variant) && ! array_key_exists('safety_unit_id', $variant)) {
+                continue;
+            }
+            $payload[$i] = [
+                'product_variant_id' => $variant['product_variant_id'] ?? null,
+                'safety_stock' => $variant['safety_stock'] ?? 0,
+                'safety_unit_id' => $variant['safety_unit_id'] ?? null,
+            ];
+        }
+
+        return $payload;
+    }
+
+    private function stripSafetyFromVariants(array $variants): array
+    {
+        foreach ($variants as $i => $variant) {
+            unset($variants[$i]['safety_stock'], $variants[$i]['safety_unit_id']);
+        }
+
+        return $variants;
+    }
+
+    private function applySafetyForActiveWarehouse(int $productId, array $safetyPayload): void
+    {
+        if ($safetyPayload === []) {
+            return;
+        }
+        if (! RoleAccess::can(Session::get('user'), 'Safety Stock', 'edit')) {
+            return;
+        }
+
+        $warehouseId = ProductStock::resolveWarehouseId();
+        if (! $warehouseId) {
+            return;
+        }
+
+        (new ProductStock())->applySafetyStockForWarehouse($productId, $warehouseId, array_values($safetyPayload));
+    }
+
+    /** Simpan peringatan stok ke product_stocks gudang aktif. */
+    private function applyAlertForActiveWarehouse(int $productId, array $variants): void
+    {
+        $warehouseId = ProductStock::resolveWarehouseId();
+        if (! $warehouseId || $variants === []) {
+            return;
+        }
+
+        $payload = [];
+        foreach ($variants as $variant) {
+            $vid = (int) ($variant['product_variant_id'] ?? 0);
+            if ($vid <= 0) {
+                continue;
+            }
+            $payload[] = [
+                'product_variant_id' => $vid,
+                'alert_stock' => $variant['variant_alert'] ?? 0,
+                'alert_unit_id' => $variant['unit_id'] ?? null,
+            ];
+        }
+
+        if ($payload === []) {
+            return;
+        }
+
+        (new ProductStock())->applyAlertStockForWarehouse($productId, $warehouseId, $payload);
     }
 }

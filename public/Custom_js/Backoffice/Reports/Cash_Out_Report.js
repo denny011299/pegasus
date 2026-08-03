@@ -41,7 +41,7 @@
                 { data: "cash_type_label" },
                 { data: "cash_tujuan_label" },
                 { data: "cash_nominal_text", className: "text-end" },
-                { data: "created_by_name" },
+                { data: "created_by_name" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name" },
             ],
             initComplete: (settings, json) => {

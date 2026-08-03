@@ -21,6 +21,7 @@
         $('#supplies_variant').empty();
         $('#unit_id').html("-");
         $('#alert').val(0);
+        $('#lead_time_days, #safety_stock').val(0);
         $('#tbVariant').html("")
         addRow();
         $('.btn-save').html(mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
@@ -44,22 +45,22 @@
     function addRow(names="") {
         
         $('#tbVariant').append(`
-            <tr class="row-variant">
-                <td style="width:23%;" class="td-supplier">
-                    <div class="input-block" id="row-supplier">
-                        <select class="form-select supplier_id select2 fill" name="" id="" style="width:100%;"></select>
+            <tr class="row-variant align-middle" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+                <td style="width:23%; padding: 12px 16px;" class="td-supplier">
+                    <div class="input-block mb-0" id="row-supplier">
+                        <select class="form-select supplier_id select2 fill" style="width:100%;"></select>
                     </div>
                 </td>
-                <td><input type="text" class="form-control fill variant_name" name="" id="" value="${names}" placeholder="Masukkan Nama"></td>
-                <td><input type="text" class="form-control fill variant_sku" name="" id="" placeholder="Masukkan SKU"></td>
-                <td><input type="text" class="form-control fill variant_price nominal_only" name="" id="" placeholder="Masukkan Harga"></td>
-                <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukkan Barcode"><input type="hidden" class="form-control variant_id" name="" id=""></td>
-                <td class="text-center">
-                    <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
-                            <i data-feather="trash-2" class="feather-trash-2"></i>
-                        </a>
-                    </td>
-                </tr>    
+                <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_name" value="${names}" placeholder="Masukkan Nama"></td>
+                <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_sku" placeholder="Masukkan SKU"></td>
+                <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_price nominal_only" placeholder="Masukkan Harga"></td>
+                <td style="padding: 12px 16px;"><input type="text" class="form-control variant_barcode" placeholder="Masukkan Barcode"><input type="hidden" class="form-control variant_id"></td>
+                <td class="text-center" style="padding: 12px 16px;">
+                    <a class="btn_delete_row d-inline-flex align-items-center justify-content-center mx-auto" href="javascript:void(0);" style="width: 32px; height: 32px; background: #fee2e2; color: #ef4444; border-radius: 8px; transition: all 0.2s ease;" title="Hapus Variasi">
+                        <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                    </a>
+                </td>
+            </tr>    
         `);
         feather.replace();
 
@@ -91,7 +92,7 @@
                 { data: "variant_values", width: "25%" },
                 { data: "unit_values", width: "12%" },
                 { data: "desc", width: "15%" },
-                { data: "created_by_name", defaultContent: "-", width: "10%" },
+                { data: "created_by_name", defaultContent: "-", width: "10%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "action", class: "text-center align-middle", width: "13%" },
             ],
             initComplete: (settings, json) => {
@@ -193,6 +194,8 @@
             supplies_desc:$('#supplies_desc').val(),
             supplies_alert:$('#alert').val(),
             supplies_default_unit:$('#unit_id').val(),
+            lead_time_days:Math.max(0, parseInt($('#lead_time_days').val(), 10) || 0),
+            safety_stock:Math.max(0, parseInt($('#safety_stock').val(), 10) || 0),
             supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
             supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token
@@ -207,7 +210,6 @@
                 supplies_variant_price: convertToAngka($(this).find('.variant_price').val()),
                 supplies_variant_barcode: $(this).find('.variant_barcode').val(),
                 supplies_variant_id: $(this).find('.variant_id').val(),
-                
             };
             temp.push(variant);
         });
@@ -314,6 +316,8 @@
         $('#unit_id').append(`<option value="${data.supplies_unit}" selected>${data.unit_values}</option>`);
         $('#unit_id').val(data.supplies_unit).trigger('change');
         $('#alert').val(data.supplies_alert);
+        $('#lead_time_days').val(Math.max(0, parseInt(data.lead_time_days, 10) || 0));
+        $('#safety_stock').val(Math.max(0, parseInt(data.safety_stock, 10) || 0));
         $('#tbVariant').html("");
         $('#tbRelasi').html("");
 

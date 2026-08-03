@@ -1,115 +1,77 @@
-# ACC Produksi — Keamanan Mutasi Stok
+# ACC Produksi — Keamanan Mutasi Stok (fase-2)
 
-Dokumen ini menjelaskan perbaikan di `ProductionController::accProduction` agar ACC gagal **tidak** meninggalkan stok terpotong sementara status masih pending.
+Dokumen perbaikan di `ProductionController::accProduction` agar ACC gagal **tidak** meninggalkan stok terpotong sementara status masih pending.
 
-**File utama:** `app/Http/Controllers/ProductionController.php`  
-**Endpoint:** ACC produksi (status `productions.status = 1` → `2`)
+**File:** `app/Http/Controllers/ProductionController.php`  
+**Branch konteks:** `fase-2` (produksi terintegrasi Stock Transfer)
+
+---
+
+## Perbedaan fase-2 vs alur lama
+
+|                 | Alur lama                             | fase-2 (inventori-first)                                                                                                          |
+| --------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Saat ACC sukses | potong bahan + **tambah stok produk** | potong bahan + **tambah stok di gudang produksi**; ST Pending **hanya** jika tujuan ≠ asal (eceran/lain). Tidak ada ST main→main. |
+| ST Kirim        | n/a                                   | potong stok dari gudang asal                                                                                                      |
+| ST Terima       | n/a                                   | tambah stok di gudang tujuan                                                                                                      |
+
+Create produksi tetap **pending**, belum potong stok.
 
 ---
 
 ## Masalah yang diperbaiki
 
-### Gejala (dari client / DB lokal `mypegasus`)
+### Gejala (historis)
 
-1. ACC produksi kadang gagal dengan pesan *“Bahan baku tidak mencukupi …”*.
+1. ACC gagal (_bahan baku tidak mencukupi_).
 2. Status produksi **tetap Pending**.
-3. Stok bahan (PET, Tutup Jerigen, dll.) **sudah terpotong**.
-4. ACC ulang → daftar bahan kurang bisa **bertambah** (stok sudah turun dari ACC sebelumnya).
-
-### Contoh bukti
-
-- Kode: `PR0258`
-- `productions.status = 1` (pending)
-- `log_stocks` sudah berisi puluhan baris *“Pengurangan bahan untuk produksi”*
-- Belum ada log hasil produk jadi
+3. Sebagian stok bahan **sudah terpotong** + ada `log_stocks`.
+4. ACC ulang → daftar bahan kurang bisa **bertambah**.
 
 ### Root cause
 
-Alur lama:
+Loop potong bahan satu per satu, lalu return error tanpa rollback (versi lama).
 
-1. Loop potong bahan **satu per satu** + tulis `log_stocks`.
-2. Baru di akhir (atau di tengah) baru ketemu bahan kurang → return error.
-3. **Tidak ada rollback** → stok & log sudah berubah, status tetap pending.
-4. Ada `cekLog`: bahan yang sudah punya log **tidak dipotong lagi** saat retry, tapi stok fisik sudah turun → pre-check berikutnya menganggap stok “kurang” padahal potongannya milik ACC yang gagal.
+### Solusi sekarang
+
+`DB::transaction` + pre-check bahan sebelum mutasi. Self-heal orphan log sudah dihapus (data historis sudah dibersihkan di server).
 
 ---
 
-## Perbaikan (alur baru)
-
-Urutan di `accProduction`:
+## Alur ACC sekarang
 
 ```
-1. Validasi data & status == pending (1)
-2. Agregasi kebutuhan BOM (semua item)
-3. PRE-CHECK  → cek SEMUA bahan cukup (tanpa mutasi stok)
-4. Jika kurang → return status -1 (belum ada potongan)
-5. TRANSACTION:
-     - potong bahan + log
-     - tambah produk jadi + log
+1. Validasi migrasi / status == pending (1)
+2. Agregasi kebutuhan BOM
+3. Validasi gudang utama + rencana Stock Transfer
+4. PRE-CHECK  → cek SEMUA bahan cukup (tanpa mutasi)
+5. Jika kurang → return status -1 (belum potong)
+6. TRANSACTION:
+     - lock production
+     - potong bahan + log (+ log_saldo)
+     - inventori hasil produksi ke gudang asal (+ log Hasil produksi)
+     - create Stock Transfer (Pending) per gudang tujuan
      - update status production → 2
-   Jika gagal di tengah → DB::rollBack()
-```
-
-### Self-heal otomatis di ACC — DIMATIKAN
-
-Alasan (audit 2026-08-01 / `mypegasus`):
-
-- Ada opname bahan setelah potongan orphan `PR0258` (`SB0069`, `SB0070`).
-- Item yang kepotong di pending: **selisih opname = 0** (`system == real == stok sekarang`).
-- Artinya angka stok **sudah dikunci** di level setelah potongan salah.
-- Auto-heal saat ACC akan menaikkan stok sistem lagi → **tidak sinkron** dengan opname.
-
-Perbaikan orphan hanya manual (setelah review):
-
-```bash
-php artisan production:restore-pending-stock --dry-run
-php artisan production:restore-pending-stock --with-history --staff-id=...
+   Gagal → DB::rollBack()
+7. ST Kirim → potong stok gudang asal
+8. ST Terima → tambah stok gudang tujuan
 ```
 
 ### Pre-check
 
-Validasi total kebutuhan agregat vs stok tersedia (termasuk simulasi konversi unit) **tanpa** `save()` stok.
+Simulasi konversi unit di memori. Kurang → JSON `status: -1` tanpa masuk transaction potong.
 
-Jika ada yang kurang → JSON:
+### Transaction
 
-```json
-{
-  "status": -1,
-  "header": "Gagal ACC",
-  "message": "Bahan baku tidak mencukupi untuk : ..."
-}
-```
-
-### 3) Transaction
-
-Mutasi stok + update status dibungkus `DB::beginTransaction()` / `commit()` / `rollBack()`.
-
-- Bahan kurang di fase eksekusi (jarang, race) → `rollBack()` lalu return `-1`.
-- Exception lain → `rollBack()` lalu rethrow.
-
-**Jangan** menambah `save()` stok / `insertLog` di luar blok transaction ini tanpa alasan kuat.
+Bahan kurang di fase eksekusi → `RuntimeException` → rollback.
 
 ---
 
-## Status produksi (ringkas)
+## Invariant
 
-| status | Arti (ACC flow) |
-|--------|-----------------|
-| 1 | Pending — belum ACC; **seharusnya belum ada** log potong bahan |
-| 2 | Sudah di-ACC |
-| lainnya | Ditolak / batal / dll. (lihat model `Production`) |
-
-**Invariant yang harus dijaga:**
-
-> Pending (`status = 1`) **tidak boleh** punya `log_stocks` potong bahan untuk `production_code`-nya.  
-> Jika ada → itu state rusak; self-heal akan membersihkannya saat ACC berikutnya.
-
----
-
-## Cara cek data mencurigakan (SQL)
+> Pending (`status = 1`) **tidak boleh** punya `log_stocks` potong bahan untuk `production_code`-nya.
 
 ```sql
--- Produksi pending yang sudah punya log potong bahan (anomali)
 SELECT p.production_code, p.status, COUNT(ls.log_id) AS logs
 FROM productions p
 JOIN log_stocks ls ON ls.log_kode = p.production_code
@@ -118,57 +80,11 @@ WHERE p.status = 1
 GROUP BY p.production_code, p.status;
 ```
 
-Setelah deploy fix, ACC ulang pada kode tersebut akan mengembalikan stok lalu mencoba ACC bersih.
-
 ---
 
-## Artisan: restore massal di server
+## Catatan developer
 
-Untuk membersihkan **semua** (atau satu) produksi pending yang sudah kepotong tanpa menunggu ACC UI:
-
-```bash
-# 1) Cek dulu (tidak ubah DB)
-php artisan production:restore-pending-stock --dry-run
-
-# 2a) Restore TANPA history (default) — stok kembali, log orphan dihapus
-php artisan production:restore-pending-stock
-
-# 2b) Restore + catat di riwayat Stok Produk / Bahan Mentah
-php artisan production:restore-pending-stock --with-history --staff-id=9
-
-# Satu kode saja
-php artisan production:restore-pending-stock --code=PR0258 --with-history --staff-id=9
-```
-
-| Flag | Efek |
-|------|------|
-| `--dry-run` | Hanya list anomali |
-| `--with-history` | Tulis log kompensasi: *Pengembalian stok (perbaikan ACC pending gagal) …* (ON). Tanpa flag = OFF |
-| `--staff-id=` | Isi kolom staff di log (opsional) |
-| `--code=` | Batasi ke satu `production_code` |
-
-**File:** `app/Console/Commands/RestorePendingProductionStockCommand.php`  
-**Logic:** `app/Support/ProductionPendingStockRestorer.php`
-
-Self-heal di ACC UI **tidak** dipakai lagi (lihat alasan opname di atas).  
-Command artisan tetap ada untuk restore **manual** setelah dicek.
-
-Hapus lock log orphan **tanpa** restore stok (opname-safe):
-
-```bash
-php artisan production:clear-pending-material-locks --dry-run
-php artisan production:clear-pending-material-locks
-php artisan production:clear-pending-material-locks --code=PR0258
-```
-
-Setelah clear: history potongan palsu hilang, stok tetap. **Jangan ACC** produksi itu tanpa review (akan potong lagi) — tolak/batalkan saja.
-
----
-
-## Catatan untuk developer
-
-1. **Jangan hapus** pre-check / transaction tanpa pengganti yang setara.
-2. Logika bisnis BOM / konversi unit **tidak diganti**; yang ditambah guard + atomicity.
-3. Jangan restore orphan otomatis di ACC jika opname sudah mengunci angka setelah potongan.
-4. FE sudah handle `status: -1` untuk pesan bahan kurang; biarkan response shape itu.
-5. Restore orphan hanya via artisan setelah audit (opname vs potongan pending).
+1. Jaga pre-check + transaction; jangan potong stok di luar transaction.
+2. Logika BOM / konversi tidak diganti; yang ditambah guard + atomicity.
+3. Setelah ACC sukses, stok produk mengikuti alur **Stock Transfer** (Pending → Kirim → Terkirim).
+4. FE handle `status: -1` untuk pesan bahan kurang.

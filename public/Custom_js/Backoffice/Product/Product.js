@@ -1,122 +1,99 @@
-    var mode=1;
+    var mode = 1;
     var table;
 
-    $(document).ready(function(){
+    $(document).ready(function () {
         inisialisasi();
-        refreshProduct();
     });
-    
+
     function inisialisasi() {
-        table = $('#tableProduct').DataTable({
-            responsive: true,
+        var $productTable = $("#tableProduct");
+
+        $productTable.on("processing.dt", function (event, settings, processing) {
+            $(settings.nTableWrapper).toggleClass("is-processing", processing);
+        });
+
+        table = $productTable.DataTable({
+            processing: true,
+            serverSide: true,
+            deferRender: true,
+            // responsive + scrollX sering bikin header/body tidak sinkron
+            responsive: false,
             autoWidth: false,
+            scrollX: false,
             bFilter: true,
-            sDom: 'fBtlpi',
+            sDom: "fBtlpi",
             lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
             ordering: true,
-            scrollX: true,
+            order: [[0, "asc"]],
+            searchDelay: 400,
             language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
+                search: " ",
+                sLengthMenu: "_MENU_",
                 searchPlaceholder: "Cari Produk",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
+                    previous: '<i class="fa fa-angle-left"></i> ',
                 },
             },
+            ajax: {
+                url: "/getProduct",
+                type: "GET",
+            },
             columns: [
-                { data: "product_name", width: '15%' },
-                { data: "product_category", width: '10%' },
-                { data: "unit_values", width: '10%' },
-                { data: "variant_values", width: '50%' },
-                { data: "created_by_name", defaultContent: "-", width: "12%" },
-                { data: "action", class: "text-center align-middle", width: "13%" },
+                { data: "product_name", width: "18%" },
+                { data: "product_category", width: "12%" },
+                { data: "unit_values", width: "12%" },
+                { data: "variant_values", width: "35%" },
+                { data: "created_by_name", defaultContent: "-", width: "13%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
+                {
+                    data: "action",
+                    className: "text-center align-middle",
+                    width: "10%",
+                    orderable: false,
+                    searchable: false,
+                },
             ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            initComplete: function () {
+                var $filter = $(".dataTables_filter");
+                $filter.appendTo(".search-input");
+                $filter.find("label").prepend('<i class="fa fa-search"></i> ');
+                this.api().columns.adjust();
+            },
+            drawCallback: function () {
+                this.api().columns.adjust();
             },
         });
-         feather.replace();
     }
 
     function refreshProduct() {
-        $.ajax({
-            url: "/getProduct",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-
-                table.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].variant_values = "";
-                    e[i].pr_variant.forEach((element,index) => {
-                         e[i].variant_values += element.product_variant_name;
-                         if(index< e[i].pr_variant.length-1){
-                            e[i].variant_values += ", ";
-                         }
-                    });
-                    e[i].unit_values = "";
-                    e[i].pr_unit.forEach((element,index) => {
-                         e[i].unit_values += element.unit_name;
-                         if(index< e[i].pr_unit.length-1){
-                            e[i].unit_values += ", ";
-                         }
-                    });
-                    var pe =
-                        roleIconEdit(
-                            "Daftar Produk",
-                            "me-2 btn-action-icon p-2",
-                            'href="/updateProduct/' + e[i].product_id + '"'
-                        ) +
-                        roleIconDelete(
-                            "Daftar Produk",
-                            "p-2 btn-action-icon btn_delete",
-                            'data-id="' + e[i].pr_id + '" href="javascript:void(0);"'
-                        );
-                    e[i].action =
-                        pe ||
-                        '<span class="text-muted small">—</span>';
-                }
-
-                table.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                console.error("Gagal load:", err);
-            }
-        });
+        if (table) table.ajax.reload(null, false);
     }
-    
-    //delete
-    $(document).on("click",".btn_delete",function(){
-        var data = $('#tableProduct').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        showModalDelete("Apakah yakin ingin menghapus produk ini?","btn-delete-product");
-        $('#btn-delete-product').attr("product_id", data.product_id);
-        $('#modalDelete').modal("show");
+
+    // delete
+    $(document).on("click", ".btn_delete", function () {
+        var data = $("#tableProduct").DataTable().row($(this).parents("tr")).data();
+        showModalDelete("Apakah yakin ingin menghapus produk ini?", "btn-delete-product");
+        $("#btn-delete-product").attr("product_id", data.product_id);
+        $("#modalDelete").modal("show");
     });
 
-    $(document).on("click","#btn-delete-product",function(){
+    $(document).on("click", "#btn-delete-product", function () {
         $.ajax({
-            url:"/deleteProduct",
-            data:{
-                product_id:$('#btn-delete-product').attr('product_id'),
-                _token:token
+            url: "/deleteProduct",
+            data: {
+                product_id: $("#btn-delete-product").attr("product_id"),
+                _token: token,
             },
-            method:"post",
-            success:function(e){
-                $('.modal').modal("hide");
+            method: "post",
+            success: function (e) {
+                $(".modal").modal("hide");
                 refreshProduct();
-                notifikasi('success', "Berhasil Delete", "Berhasil delete produk");
-                
+                notifikasi("success", "Berhasil Delete", "Berhasil delete produk");
             },
-            error:function(e){
+            error: function (e) {
                 console.log(e);
-            }
+            },
         });
     });

@@ -7,9 +7,7 @@ use App\Models\Bank;
 use App\Models\Bom;
 use App\Models\CashCategory;
 use App\Models\Category;
-use App\Models\CategoryCoa;
 use App\Models\Cities;
-use App\Models\Coa;
 use App\Models\Customer;
 use App\Models\District;
 use App\Models\Product;
@@ -17,9 +15,7 @@ use App\Models\ProductVariant;
 use App\Models\Provinces;
 use App\Models\PurchaseOrder;
 use App\Models\Role;
-use App\Models\SalesOrder;
 use App\Models\Staff;
-use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesVariant;
@@ -28,8 +24,6 @@ use App\Models\Variant;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
 use Illuminate\Http\Request;
-
-use function Laravel\Prompts\alert;
 
 class AutocompleteController extends Controller
 {
@@ -182,12 +176,69 @@ class AutocompleteController extends Controller
 
         foreach ($data_city as $r) {
             $r->id = $r["bom_id"];
-            $r->text = $r["product_variant_sku"] . " | " . $r["product_name"];
+            // product_name sudah = nama produk + varian
+            $r->text = $this->formatProductVariantLabel(
+                $r["product_name"] ?? '',
+                '',
+                $r["product_variant_sku"] ?? ($r["product_sku"] ?? '')
+            );
         };
 
         echo json_encode(array(
             "data" => $data_city
         ));
+    }
+
+    /**
+     * Label dropdown produk+varian: "SKU | Nama Produk Nama Variasi"
+     */
+    private function formatProductVariantLabel($productName, $variantName = '', $sku = ''): string
+    {
+        $name = trim(preg_replace(
+            '/\s+/',
+            ' ',
+            trim((string) $productName) . ' ' . trim((string) $variantName)
+        ));
+        $sku = trim((string) $sku);
+        if ($sku !== '' && $sku !== '-') {
+            return $name !== '' ? ($sku . ' | ' . $name) : $sku;
+        }
+
+        return $name !== '' ? $name : '-';
+    }
+
+    private function attachProductDefaultUnits($variants): void
+    {
+        $productIds = collect($variants)
+            ->pluck('product_id')
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($productIds->isEmpty()) {
+            return;
+        }
+
+        $defaults = Product::query()
+            ->leftJoin('units as default_units', 'default_units.unit_id', '=', 'products.unit_id')
+            ->whereIn('products.product_id', $productIds)
+            ->get([
+                'products.product_id',
+                'products.unit_id as default_unit_id',
+                'default_units.unit_name as default_unit_name',
+                'default_units.unit_short_name as default_unit_short_name',
+            ])
+            ->keyBy('product_id');
+
+        foreach ($variants as $variant) {
+            $default = $defaults->get((int) ($variant->product_id ?? 0));
+            $variant->default_unit_id = $default?->default_unit_id
+                ? (int) $default->default_unit_id
+                : null;
+            $variant->default_unit_name = $default?->default_unit_name;
+            $variant->default_unit_short_name = $default?->default_unit_short_name;
+        }
     }
 
     public function autocompleteProduct(Request $req)
@@ -299,10 +350,15 @@ class AutocompleteController extends Controller
         $results = $p->getProductVariant([
             "search" => $keyword,
         ]);
+        $this->attachProductDefaultUnits($results);
 
         foreach ($results as $r) {
             $r->id = $r["product_variant_id"];
-            $r->text = $r["pr_name"] . " " . $r["product_variant_name"];
+            $r->text = $this->formatProductVariantLabel(
+                $r["pr_name"] ?? '',
+                $r["product_variant_name"] ?? '',
+                $r["product_variant_sku"] ?? ''
+            );
         }
 
         return response()->json(["data" => $results]);
@@ -317,11 +373,15 @@ class AutocompleteController extends Controller
             "product_id" => $req->product_id,
             "search_product" => $keyword,
         ]);
-        
+
 
         foreach ($data_city as $r) {
             $r->id = $r["product_id"];
-            $r->text = $r["pr_name"] . " " . $r["product_variant_name"];
+            $r->text = $this->formatProductVariantLabel(
+                $r["pr_name"] ?? '',
+                $r["product_variant_name"] ?? '',
+                $r["product_variant_sku"] ?? ''
+            );
         };
 
         echo json_encode(array(
@@ -336,11 +396,16 @@ class AutocompleteController extends Controller
             "product_id" => $req->product_id,
             "search_product" => $keyword,
         ]);
+        $this->attachProductDefaultUnits($data_city);
 
 
         foreach ($data_city as $r) {
             $r->id = $r["product_variant_id"];
-            $r->text = $r["pr_name"] . " " . $r["product_variant_name"];
+            $r->text = $this->formatProductVariantLabel(
+                $r["pr_name"] ?? '',
+                $r["product_variant_name"] ?? '',
+                $r["product_variant_sku"] ?? ''
+            );
         };
 
         echo json_encode(array(
@@ -522,7 +587,8 @@ class AutocompleteController extends Controller
 
         foreach ($data as $r) {
             $r->id = $r->id;
-            $r->text = $r->warehouse_type_name;
+            $r->text = $r->warehouse_type_name
+                . ((int) ($r->is_main_warehouse ?? 0) === 1 ? ' (Gudang Utama)' : '');
         }
 
         return response()->json([
@@ -536,7 +602,7 @@ class AutocompleteController extends Controller
 
         $query = Warehouse::query()
             ->active()
-            ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+            ->with(['type' => fn($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
             ->orderBy('warehouse_name');
 
         if ($keyword !== '') {

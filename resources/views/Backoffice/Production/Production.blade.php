@@ -9,6 +9,28 @@
         #tableProduction {
             width: 100% !important;
             table-layout: fixed;
+            min-width: 1250px;
+        }
+        #tableProduction thead th {
+            color: #64748b !important;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            background: #f1f5f9 !important;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        #tableProduction tbody td {
+            color: #475569;
+            font-size: 13px;
+            vertical-align: middle;
+        }
+        #tableProduction tbody > tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+        #tableProduction tbody > tr:hover {
+            background-color: #f8fafc;
         }
         #tableProduction td, #tableProduction th {
             word-wrap: break-word;
@@ -27,13 +49,37 @@
         #addProduction .select2-container {
             width: 100% !important;
         }
-        #tableProduction td:last-child {
+        #tableProduction td:last-child,
+        #tableProduction th:last-child {
             white-space: nowrap !important;
+            width: 82px !important;
+            min-width: 82px;
+            text-align: center;
         }
 
         #tableProduction td:last-child a {
             display: inline-flex !important;
             align-items: center;
+        }
+        #tableProduction-wrap {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+        }
+        #tableProduction .btn-action-icon,
+        .btn-action-icon {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        #tableProduction .btn-action-icon:hover,
+        .btn-action-icon:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
         }
     </style>
     <!-- Page Wrapper -->
@@ -66,19 +112,50 @@
                     </div>
                     <div class=" card-table">
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-center table-hover" id="tableProduction">
-                                    <thead class="thead-light">
+                            <div class="table-responsive dt-pending" id="tableProduction-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                                <div class="dt-skeleton" aria-hidden="true">
+                                    <div style="padding: 16px 25px;">
+                                        <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
+                                    </div>
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 10% 11% 14% 9% 14% 12% 12% 12% 6%;">
+                                        <span style="width:60%"></span>
+                                        <span style="width:70%"></span>
+                                        <span style="width:50%"></span>
+                                        <span style="width:60%"></span>
+                                        <span style="width:70%"></span>
+                                        <span style="width:50%"></span>
+                                        <span style="width:60%"></span>
+                                        <span style="width:50%"></span>
+                                        <span style="width:60%"></span>
+                                    </div>
+                                    <div class="dt-skeleton-body">
+                                        @for ($i = 0; $i < 5; $i++)
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 10% 11% 14% 9% 14% 12% 12% 12% 6%;">
+                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-badge" style="width:60%;justify-self:center"></span>
+                                                <span class="skel-text" style="width:60%"></span>
+                                                <span class="skel-text" style="width:60%"></span>
+                                                <span class="skel-text" style="width:80%"></span>
+                                                <span class="skel-text" style="width:40%"></span>
+                                                <span class="skel-btn" style="justify-self:center"></span>
+                                                <span class="skel-text" style="width:80%"></span>
+                                                <span class="skel-text" style="width:40%"></span>
+                                            </div>
+                                        @endfor
+                                    </div>
+                                </div>
+                                <table class="table table-center table-hover mb-0" id="tableProduction">
+                                    <thead>
                                         <tr>
                                             <th>Tanggal</th>
                                             <th>Kode Produksi</th>
                                             <th>Keterangan</th>
-                                            <th>Status</th>
+                                            <th class="text-center">Status</th>
                                             <th>Notes Pembatalan</th>
                                             <th>Dibuat Oleh</th>
                                             <th>Diapprove Oleh</th>
                                             <th>Pengajuan Batal Oleh</th>
-                                            <th class="no-sort">Aksi</th>
+                                            <th class="text-center no-sort">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -95,41 +172,39 @@
     <!-- /Page Wrapper -->
 
     {{-- modal --}}
-    <div class="modal modal-lg custom-modal fade" id="modalBahan" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal custom-modal fade" id="modalBahan" data-bs-backdrop="static" data-bs-keyboard="false">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content ">
-                <div class="modal-header border-0 pb-0">
-                    <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Detail Bahan</h4>
+            <div class="modal-content d-flex flex-column" style="max-height: 92vh;border:0;border-radius:16px;overflow:hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                <div class="modal-header border-0 flex-shrink-0" style="background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%);padding:18px 24px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:rgba(255,255,255,.15);color:#fff;">
+                            <i class="fe fe-box" style="font-size:18px;"></i>
+                        </span>
+                        <div>
+                            <h5 class="mb-0 fw-bold text-white modal-title" style="font-size:16px;letter-spacing:.2px;">Detail Bahan</h5>
+                            <small class="text-white-50">Daftar kebutuhan bahan mentah produksi</small>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close btn-close-bahan" data-bs-dismiss="modal" aria-label="Close">
-                    </button>
+                    <button type="button" class="btn-close btn-close-white btn-close-bahan" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form action="#">
-                    <div class="modal-body">
-                        <div class="form-groups-item border-0 pb-0">
-                            <div class="row">
-                                {{-- <div class="col-lg-6 col-12">
-                                    <div class="mb-3">
-                                        <label class="form-label">Tanggal</label>
-                                        <input type="date" class="form-control fill" id="production_date">
-                                    </div>
-                                </div> --}}
-                                <div class="col-lg-6"></div>
-                                <div class="col-12 py-3 mb-3">
-                                    <table class="table table-center" id="tableSupplies" style="min-height: 15vh">
-                                        <thead>
-                                            <th class="text-center">#</th>
-                                            <th>Nama Bahan</th>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
+                <form action="#" class="d-flex flex-column h-100" style="margin: 0; min-height: 0;">
+                    <div class="modal-body p-0 bg-light d-flex flex-column" style="overflow-y:auto;">
+                        <div class="p-4" style="flex: 1 1 auto; background: #f8fafc;">
+                            <div class="table-responsive rounded border bg-white">
+                                <table class="table table-center custom-table-scroll mb-0" id="tableSupplies" style="min-height: 15vh">
+                                    <thead style="background: #f1f5f9;">
+                                        <tr>
+                                            <th class="text-center" style="width: 15%; padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">#</th>
+                                            <th style="padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Nama Bahan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <a class="btn btn-primary btn-save-bahan">Simpan Perubahan</a>
+                    <div class="modal-footer border-top" style="background:#f8fafc;padding:14px 24px;">
+                        <button type="button" class="btn btn-save-bahan ms-2 d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:160px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3); cursor:pointer;"><i class="fe fe-save me-1"></i>Simpan Perubahan</button>
                     </div>
                 </form>
             </div>

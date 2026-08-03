@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class SalesOrderDetail extends Model
 {
@@ -11,7 +12,8 @@ class SalesOrderDetail extends Model
     public $timestamps = true;
     public $incrementing = true;
 
-    function getSalesOrderDetail($data = []){
+    function getSalesOrderDetail($data = [])
+    {
         $data = array_merge([
             "so_id" => null,
             "product_variant_id" => null,
@@ -19,13 +21,13 @@ class SalesOrderDetail extends Model
 
         $result = SalesOrderDetail::where("status", "=", 1);
         if ($data["so_id"]) {
-            $result->where("so_id", "=" ,$data["so_id"]);
+            $result->where("so_id", "=", $data["so_id"]);
         }
-            
+
         if ($data["product_variant_id"]) {
-            $result->where("product_variant_id", "=" ,$data["product_variant_id"]);
+            $result->where("product_variant_id", "=", $data["product_variant_id"]);
         }
-        
+
         $result->orderBy("sod_id", "asc");
         $result = $result->get();
 
@@ -64,6 +66,10 @@ class SalesOrderDetail extends Model
         $unitsMap = $unitIdSet !== []
             ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
             : collect();
+        $warehouseNames = Schema::hasColumn($this->getTable(), 'warehouse_id')
+            ? Warehouse::whereIn('id', $details->pluck('warehouse_id')->filter()->unique()->all())
+            ->pluck('warehouse_name', 'id')
+            : collect();
 
         foreach ($details as $value) {
             $variant = $variants->get($value->product_variant_id);
@@ -71,11 +77,14 @@ class SalesOrderDetail extends Model
             $unit = $unitsMap->get($value->unit_id);
             $value->unit_name = $unit ? $unit->unit_name : null;
             $value->retail_unit = $variant ? (int) ($variant->retail_unit ?? 0) : 0;
+            $value->warehouse_name = $value->warehouse_id
+                ? ($warehouseNames[$value->warehouse_id] ?? null)
+                : null;
 
             $unitIds = $product ? (json_decode($product->product_unit, true) ?: []) : [];
             $value->units = $unitIds;
             $value->pr_unit = collect($unitIds)
-                ->map(fn ($id) => $unitsMap->get((int) $id))
+                ->map(fn($id) => $unitsMap->get((int) $id))
                 ->filter()
                 ->values();
         }
@@ -83,7 +92,8 @@ class SalesOrderDetail extends Model
         return $details;
     }
 
-    function insertSalesOrderDetail($data){
+    function insertSalesOrderDetail($data)
+    {
         $t = new SalesOrderDetail();
         $t->so_id = $data["so_id"];
         $t->product_variant_id = $data["product_variant_id"];
@@ -91,6 +101,10 @@ class SalesOrderDetail extends Model
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
         $t->unit_id = $data["unit_id"];
+        if (Schema::hasColumn($t->getTable(), 'warehouse_id')) {
+            $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+            $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];
@@ -99,7 +113,8 @@ class SalesOrderDetail extends Model
         return $t->sod_id;
     }
 
-    function updateSalesOrderDetail($data){
+    function updateSalesOrderDetail($data)
+    {
 
         $t = SalesOrderDetail::find($data["sod_id"]);
         $t->so_id = $data["so_id"];
@@ -108,6 +123,10 @@ class SalesOrderDetail extends Model
         $t->sod_variant = $data["product_variant_name"];
         $t->sod_sku = $data["product_variant_sku"];
         $t->unit_id = $data["unit_id"];
+        if (Schema::hasColumn($t->getTable(), 'warehouse_id')) {
+            $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+            $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];
@@ -116,11 +135,12 @@ class SalesOrderDetail extends Model
         return $t->sod_id;
     }
 
-    function deleteSalesOrderDetail($data){
+    function deleteSalesOrderDetail($data)
+    {
         $t = SalesOrderDetail::find($data["sod_id"]);
         $t->status = 1; // soft delete
         $t->save();
-        
+
         // $m = ProductVariant::find($t->product_variant_id);
         // $s = ProductStock::where('product_variant_id',$m->product_variant_id)->where('unit_id',$t->unit_id)->first();
 

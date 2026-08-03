@@ -1,552 +1,915 @@
-    autocompleteBom('#product_id', '#addProduction .modal-content')
-    var mode=1; // 1 = insert; 2 = edit; 3 = view
-    var modeBahan = 1;
-    var table;
-    var items = [];
-    var list_photo =  [];
-    var list_bahan=[];
-    function getTodayStr() {
-        let today = new Date();
-        let yyyy = today.getFullYear();
-        let mm = String(today.getMonth() + 1).padStart(2, '0');
-        let dd = String(today.getDate()).padStart(2, '0');
-        return yyyy + '-' + mm + '-' + dd;
-    }
+autocompleteBom("#product_id", "#addProduction");
+var mode = 1; // 1 = insert; 2 = edit; 3 = view
+var modeBahan = 1;
+var table;
+var items = [];
+var list_photo = [];
+var list_bahan = [];
 
-    function convertQtyToSmallestUnit(qty, unitId, productData) {
-        var multiplier = 1;
-        var relations = productData.relasi || [];
-        relations.forEach(function (relation) {
-            if (parseInt(relation.pr_unit_id_2) !== parseInt(unitId)) {
-                multiplier *= parseInt(relation.pr_unit_value_2);
-            }
-        });
-        return qty * multiplier;
-    }
+function productionActiveWarehouseName() {
+    return (
+        (window.activeWarehouse &&
+            (window.activeWarehouse.name ||
+                window.activeWarehouse.warehouse_name)) ||
+        "Gudang utama aktif"
+    );
+}
 
-    function cekQtyKelipatanResep(pdQty, unitId, bomData) {
-        if (!bomData || !bomData.bom_qty) {
-            return { valid: true };
-        }
-        var pdSmallest = convertQtyToSmallestUnit(pdQty, unitId, bomData);
-        var bomSmallest = convertQtyToSmallestUnit(parseInt(bomData.bom_qty), parseInt(bomData.unit_id), bomData);
-        if (bomSmallest <= 0) {
-            bomSmallest = parseInt(bomData.bom_qty);
-        }
-        return { valid: pdSmallest % bomSmallest === 0 };
-    }
+function syncProductionDestinationControl() {
+    var product = $("#product_id").select2("data")[0] || {};
+    var isRetail =
+        parseInt(product.retail_unit || 0, 10) > 0 &&
+        parseInt($("#unit_id").val() || 0, 10) ===
+            parseInt(product.retail_unit, 10);
+    var $badge = $("#production-main-warehouse-badge");
+    var $dest = $("#production_destination_warehouse_id");
+    var $destSelect2 = $dest.next(".select2-container");
 
-    function getBomDetailRows(bomData) {
-        if (!bomData) {
-            return [];
-        }
-        var details = bomData.details || bomData.items || [];
-        return Array.isArray(details) ? details : [];
-    }
+    $badge.find("span").text(productionActiveWarehouseName());
 
-    function bomDetailHasActiveUnits(bomData) {
-        return getBomDetailRows(bomData).some(function (detail) {
-            var activeUnits = detail.active_units || detail.units || [];
-            return Array.isArray(activeUnits) && activeUnits.length > 0;
-        });
-    }
-
-    function loadBomForValidation(bomId, callback) {
-        $.ajax({
-            url: "/getBom",
-            method: "get",
-            data: { bom_id: bomId, with_details: 1 },
-            success: function (response) {
-                callback(response && response[0] ? response[0] : null);
-            },
-            error: function () {
-                callback(null);
-            }
-        });
-    }
-
-    function validateBomActiveUnits(bomData) {
-        var details = getBomDetailRows(bomData);
-        if (details.length === 0) {
-            return { valid: true, invalid: [] };
-        }
-
-        var invalid = [];
-        var hasUnitData = false;
-
-        details.forEach(function (detail) {
-            var activeUnits = detail.active_units || detail.units || [];
-            if (!Array.isArray(activeUnits) || activeUnits.length === 0) {
-                return;
-            }
-
-            hasUnitData = true;
-            var unitId = detail.unit_id;
-            var isActive = activeUnits.some(function (unit) {
-                return parseInt(unit.unit_id, 10) === parseInt(unitId, 10);
-            });
-
-            if (!isActive) {
-                var label = (detail.supplies_name || '-')
-                    + ' (' + (detail.current_unit_name || detail.unit_name || '-') + ')';
-                if (invalid.indexOf(label) === -1) {
-                    invalid.push(label);
-                }
-            }
-        });
-
-        // Data autocomplete belum punya active_units — validasi dibiarkan ke backend.
-        if (!hasUnitData) {
-            return { valid: true, invalid: [] };
-        }
-
-        return { valid: invalid.length === 0, invalid: invalid };
-    }
-
-    function continueAddProduct(tempBom) {
-        var satuanResep = validateBomActiveUnits(tempBom);
-        if (!satuanResep.valid) {
-            notifikasi(
-                'error',
-                'Satuan Resep Tidak Aktif',
-                'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: ' + satuanResep.invalid.join(', ')
+    if (isRetail) {
+        // Satuan eceran → pilih gudang eceran (d-none, bukan .hide — badge pakai d-flex !important)
+        $badge.addClass("d-none").removeClass("d-flex");
+        if (typeof autocompleteWarehouse === "function") {
+            autocompleteWarehouse(
+                "#production_destination_warehouse_id",
+                "#addProduction",
+                { placeholder: "Pilih gudang eceran tujuan", retailOnly: true },
             );
-            return false;
         }
-        var qtyKelipatan = cekQtyKelipatanResep(
-            parseInt($('#production_qty').val()),
-            parseInt($('#unit_id').val()),
-            tempBom
-        );
-        if (!qtyKelipatan.valid) {
-            notifikasi('error', 'Qty Tidak Valid', 'Qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
-            return false;
+        $destSelect2 = $dest.next(".select2-container");
+        if ($destSelect2.length) {
+            $destSelect2.show();
+        } else {
+            $dest.show();
         }
-
-        var temp = $('#product_id').select2("data")[0];
-        var idx = -1;
-        items.forEach(function (element) {
-            if (element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val()) {
-                element.pd_qty += parseInt($('#production_qty').val());
-                idx = 1;
-            }
-        });
-
-        if (idx == 1) {
-            var mergedItem = items.find(function (element) {
-                return element.product_variant_id == temp.product_variant_id && element.unit_id == $('#unit_id').val();
-            });
-            var qtyKelipatanGabung = cekQtyKelipatanResep(
-                mergedItem.pd_qty,
-                mergedItem.unit_id,
-                tempBom
-            );
-            if (!qtyKelipatanGabung.valid) {
-                mergedItem.pd_qty -= parseInt($('#production_qty').val());
-                notifikasi('error', 'Qty Tidak Valid', 'Total qty produksi harus kelipatan resep bahan mentah (' + tempBom.bom_qty + ' ' + (tempBom.unit_name || '') + ') untuk produk: ' + tempBom.product_name);
-                return false;
-            }
+    } else {
+        $dest.val(null).trigger("change");
+        if ($destSelect2.length) {
+            $destSelect2.hide();
         }
-
-        if (idx == -1) {
-            var data = {
-                "product_variant_id": temp.product_variant_id,
-                "product_name": temp.product_name,
-                "pd_qty": parseInt($('#production_qty').val()),
-                "unit_name": $('#unit_id option:selected').text(),
-                "unit_id": parseInt($('#unit_id').val()),
-                "bom_id": temp.bom_id
-            };
-            items.push(data);
-        }
-        addRow(items);
-
-        $('#product_id').empty();
-        $('#unit_id').empty();
-        $('#unit_id').append("<option selected>Pilih Satuan</option>");
-        $('#production_qty').val("");
-        return true;
+        $dest.hide();
+        $badge.removeClass("d-none").addClass("d-flex");
     }
-    $(document).ready(function(){
-        // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
-        inisialisasi();
-        refreshProduction();
+}
+
+function resetProductionApprovalActions() {
+    $("#addProduction #btn-terima, #addProduction #btn-tolak")
+        .addClass("d-none")
+        .removeClass("btn_acc_produksi btn_decline_produksi btn_acc btn_cancel")
+        .removeAttr("production_id");
+}
+
+function showProductionApprovalActions(action, productionId) {
+    resetProductionApprovalActions();
+    if (!hasAccessAction("Produksi", "others")) {
+        return;
+    }
+
+    var $accept = $("#addProduction #btn-terima");
+    var $decline = $("#addProduction #btn-tolak");
+    if (action === "production") {
+        $accept.addClass("btn_acc_produksi");
+        $decline.addClass("btn_decline_produksi");
+    } else if (action === "cancellation") {
+        $accept.addClass("btn_acc");
+        $decline.addClass("btn_cancel");
+    } else {
+        return;
+    }
+
+    $accept
+        .add($decline)
+        .attr("production_id", productionId)
+        .removeClass("d-none");
+}
+
+$("#addProduction").on("hidden.bs.modal", function () {
+    resetProductionApprovalActions();
+    if (!$("#modalBahan").hasClass("show")) {
+        $(this)
+            .removeAttr("production_id revision_source_production_id")
+            .removeData("approval-action");
+    }
+});
+
+function getTodayStr() {
+    let today = new Date();
+    let yyyy = today.getFullYear();
+    let mm = String(today.getMonth() + 1).padStart(2, "0");
+    let dd = String(today.getDate()).padStart(2, "0");
+    return yyyy + "-" + mm + "-" + dd;
+}
+
+function convertQtyToSmallestUnit(qty, unitId, productData) {
+    var multiplier = 1;
+    var relations = productData.relasi || [];
+    relations.forEach(function (relation) {
+        if (parseInt(relation.pr_unit_id_2) !== parseInt(unitId)) {
+            multiplier *= parseInt(relation.pr_unit_value_2);
+        }
     });
+    return qty * multiplier;
+}
 
-    $(document).on('click', '.btnAdd', function(){
-        mode=1;
-        modeBahan = 1;
-        items = [];
-        list_bahan = [];
-        $('#addProduction .modal-title').html("Tambah Produksi");
-        $('#addProduction input').val("");
-        $('#product_id').empty();
-        $('#production_qty').val("");
-        $('#tableProduct tr.row-product').remove();
-        $('.is-invalid').removeClass('is-invalid');
-        $('#unit_id').html("");
-        $('#unit_id').append("<option selected>Pilih Satuan</option>");
-        $('.add, .btn-save, .btn_delete_row_pr').show();
-        $('#production_desc').attr('disabled', false);
-        $('.btn-save').show();
-        $('.btn-cancel').html("Batal");
-        $('#addProduction').modal("show");
-        $('.dos').hide();
-        $('#btn-terima, #btn-tolak').hide();
-        $("#production_date").val(getTodayStr()).prop('disabled', true);
-        $('#addProduction').removeAttr("revision_source_production_id");
-    })
+function cekQtyKelipatanResep(pdQty, unitId, bomData) {
+    if (!bomData || !bomData.bom_qty) {
+        return { valid: true };
+    }
+    var pdSmallest = convertQtyToSmallestUnit(pdQty, unitId, bomData);
+    var bomSmallest = convertQtyToSmallestUnit(
+        parseInt(bomData.bom_qty),
+        parseInt(bomData.unit_id),
+        bomData,
+    );
+    if (bomSmallest <= 0) {
+        bomSmallest = parseInt(bomData.bom_qty);
+    }
+    return { valid: pdSmallest % bomSmallest === 0 };
+}
 
-    $(document).on('keyup', '#production_qty', function(){
-        var data = $('#product_id').select2("data")[0];
+function getBomDetailRows(bomData) {
+    if (!bomData) {
+        return [];
+    }
+    var details = bomData.details || bomData.items || [];
+    return Array.isArray(details) ? details : [];
+}
 
-        var qty = $(this).val();
-        if(qty==""||qty==null||isNaN(qty)){
-            qty=0;
-        }
-        $('#production_total').val(qty);
+function bomDetailHasActiveUnits(bomData) {
+    return getBomDetailRows(bomData).some(function (detail) {
+        var activeUnits = detail.active_units || detail.units || [];
+        return Array.isArray(activeUnits) && activeUnits.length > 0;
     });
+}
 
-    $(document).on('change', '#product_id', function(){
-        var data = $(this).select2("data")[0];
-        console.log(data);
+function loadBomForValidation(bomId, callback) {
+    $.ajax({
+        url: "/getBom",
+        method: "get",
+        data: { bom_id: bomId, with_details: 1 },
+        success: function (response) {
+            callback(response && response[0] ? response[0] : null);
+        },
+        error: function () {
+            callback(null);
+        },
+    });
+}
 
-        // Blokir jika produk / varian sudah tidak aktif
-        if (data && (data.product_status == 0 || data.product_variant_status == 0)) {
-            var alasan = [];
-            if (data.product_status == 0)         alasan.push('produk sudah tidak aktif');
-            if (data.product_variant_status == 0) alasan.push('varian produk sudah tidak aktif');
-            notifikasi(
-                'error',
-                'Produk Tidak Aktif',
-                'Tidak dapat memilih resep ini karena ' + alasan.join(' & ') + '. Silakan hapus resep (BOM) ini di halaman Resep Bahan Mentah.'
-            );
-            // Clear pilihan agar user tidak bisa lanjut
-            $(this).val(null).trigger('change');
-            $('#unit_id').html('');
+function validateBomActiveUnits(bomData) {
+    var details = getBomDetailRows(bomData);
+    if (details.length === 0) {
+        return { valid: true, invalid: [] };
+    }
+
+    var invalid = [];
+    var hasUnitData = false;
+
+    details.forEach(function (detail) {
+        var activeUnits = detail.active_units || detail.units || [];
+        if (!Array.isArray(activeUnits) || activeUnits.length === 0) {
             return;
         }
 
-        $('#unit_id').html("");
-        data.pr_unit.forEach(element => {
-            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
+        hasUnitData = true;
+        var unitId = detail.unit_id;
+        var isActive = activeUnits.some(function (unit) {
+            return parseInt(unit.unit_id, 10) === parseInt(unitId, 10);
         });
-        $('#unit_id').val(data.default_unit || data.unit_id).trigger("change");
-        $('#pi_unit option').first().prop('selected', true);
-        
-        $('#production_qty').trigger('keyup');
-    })
 
-    $(document).on('click', '#product_id', function() {
-        autocompleteBom('#product_id', '#addProduction .modal-content')
-    })
+        if (!isActive) {
+            var label =
+                (detail.supplies_name || "-") +
+                " (" +
+                (detail.current_unit_name || detail.unit_name || "-") +
+                ")";
+            if (invalid.indexOf(label) === -1) {
+                invalid.push(label);
+            }
+        }
+    });
 
-    // Cegah Enter menutup modal secara tidak sengaja (form action="#" menyebabkan page navigation)
-    $(document).on('keydown', '#addProduction input, #addProduction select', function(e) {
-        if (e.key === 'Enter') {
+    // Data autocomplete belum punya active_units — validasi dibiarkan ke backend.
+    if (!hasUnitData) {
+        return { valid: true, invalid: [] };
+    }
+
+    return { valid: invalid.length === 0, invalid: invalid };
+}
+
+function resolveProductionInputQtyUnit(tempBom) {
+    var rawQty = parseInt($("#production_qty").val(), 10) || 0;
+    var selected = $("#unit_id option:selected");
+    var unitVal = String($("#unit_id").val() || "");
+
+    if (unitVal === "__PALLET__") {
+        var perPallet =
+            parseInt(selected.data("qty-per-pallet"), 10) ||
+            parseInt(tempBom && tempBom.qty_per_pallet, 10) ||
+            0;
+        var defaultUnitId =
+            parseInt(selected.data("default-unit-id"), 10) ||
+            parseInt(
+                tempBom && (tempBom.default_unit || tempBom.unit_id),
+                10,
+            ) ||
+            0;
+        var defaultUnitName =
+            selected.data("default-unit-name") ||
+            (tempBom && tempBom.default_unit_name) ||
+            "DOS";
+        if (perPallet <= 0 || defaultUnitId <= 0) {
+            return {
+                ok: false,
+                message: "Isi per pallet belum diatur di master varian produk.",
+            };
+        }
+        return {
+            ok: true,
+            pd_qty: rawQty * perPallet,
+            unit_id: defaultUnitId,
+            unit_name: defaultUnitName,
+            from_pallet: true,
+            pallet_qty: rawQty,
+            qty_per_pallet: perPallet,
+        };
+    }
+
+    return {
+        ok: true,
+        pd_qty: rawQty,
+        unit_id: parseInt(unitVal, 10) || 0,
+        unit_name: selected.text(),
+        from_pallet: false,
+    };
+}
+
+function continueAddProduct(tempBom) {
+    var satuanResep = validateBomActiveUnits(tempBom);
+    if (!satuanResep.valid) {
+        notifikasi(
+            "error",
+            "Satuan Resep Tidak Aktif",
+            "Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: " +
+                satuanResep.invalid.join(", "),
+        );
+        return false;
+    }
+
+    var resolved = resolveProductionInputQtyUnit(tempBom);
+    if (!resolved.ok) {
+        notifikasi("error", "Pallet Tidak Valid", resolved.message);
+        return false;
+    }
+    if (resolved.pd_qty <= 0 || !resolved.unit_id) {
+        notifikasi(
+            "error",
+            "Qty Tidak Valid",
+            "Qty / satuan produksi belum lengkap.",
+        );
+        return false;
+    }
+
+    var qtyKelipatan = cekQtyKelipatanResep(
+        resolved.pd_qty,
+        resolved.unit_id,
+        tempBom,
+    );
+    if (!qtyKelipatan.valid) {
+        notifikasi(
+            "error",
+            "Qty Tidak Valid",
+            "Qty produksi harus kelipatan resep bahan mentah (" +
+                tempBom.bom_qty +
+                " " +
+                (tempBom.unit_name || "") +
+                ") untuk produk: " +
+                tempBom.product_name,
+        );
+        return false;
+    }
+
+    var temp = $("#product_id").select2("data")[0];
+    var destinationId = parseInt(
+        $("#production_destination_warehouse_id").val() || 0,
+        10,
+    );
+    var idx = -1;
+    items.forEach(function (element) {
+        if (
+            element.product_variant_id == temp.product_variant_id &&
+            element.unit_id == resolved.unit_id &&
+            parseInt(element.destination_warehouse_id || 0, 10) ===
+                destinationId
+        ) {
+            element.pd_qty += resolved.pd_qty;
+            idx = 1;
+        }
+    });
+
+    if (idx == 1) {
+        var mergedItem = items.find(function (element) {
+            return (
+                element.product_variant_id == temp.product_variant_id &&
+                element.unit_id == resolved.unit_id &&
+                parseInt(element.destination_warehouse_id || 0, 10) ===
+                    destinationId
+            );
+        });
+        var qtyKelipatanGabung = cekQtyKelipatanResep(
+            mergedItem.pd_qty,
+            mergedItem.unit_id,
+            tempBom,
+        );
+        if (!qtyKelipatanGabung.valid) {
+            mergedItem.pd_qty -= resolved.pd_qty;
+            notifikasi(
+                "error",
+                "Qty Tidak Valid",
+                "Total qty produksi harus kelipatan resep bahan mentah (" +
+                    tempBom.bom_qty +
+                    " " +
+                    (tempBom.unit_name || "") +
+                    ") untuk produk: " +
+                    tempBom.product_name,
+            );
+            return false;
+        }
+    }
+
+    if (idx == -1) {
+        var destinationData = $(
+            "#production_destination_warehouse_id",
+        ).hasClass("select2-hidden-accessible")
+            ? $("#production_destination_warehouse_id").select2("data")[0] || {}
+            : {};
+        var data = {
+            product_variant_id: temp.product_variant_id,
+            product_name: temp.product_name,
+            pd_qty: resolved.pd_qty,
+            unit_name: resolved.unit_name,
+            unit_id: resolved.unit_id,
+            retail_unit: parseInt(temp.retail_unit || 0, 10) || null,
+            default_unit: parseInt(temp.default_unit || 0, 10) || null,
+            destination_warehouse_id: destinationId || null,
+            destination_warehouse_name:
+                destinationData.text || productionActiveWarehouseName(),
+            bom_id: temp.bom_id,
+        };
+        items.push(data);
+    }
+    addRow(items);
+
+    $("#product_id").empty();
+    $("#unit_id").empty();
+    $("#unit_id").append("<option selected>Pilih Satuan</option>");
+    $("#production_qty").val("");
+    $("#production_pallet_hint").text("");
+    $("#production_destination_warehouse_id").val(null).trigger("change");
+    syncProductionDestinationControl();
+    return true;
+}
+$(document).ready(function () {
+    // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
+    inisialisasi();
+    refreshProduction();
+});
+
+$(document).on("click", ".btnAdd", function () {
+    resetProductionApprovalActions();
+    mode = 1;
+    modeBahan = 1;
+    items = [];
+    list_bahan = [];
+    $("#addProduction .modal-title").html("Tambah Produksi");
+    $("#addProduction input").val("");
+    $("#product_id").empty();
+    $("#production_qty").val("");
+    $("#tableProduct tr.row-product").remove();
+    $(".is-invalid").removeClass("is-invalid");
+    $("#unit_id").html("");
+    $("#unit_id").append("<option selected>Pilih Satuan</option>");
+    $(".input_table, .add, .btn-save, .btn_delete_row_pr").show();
+    $(".btn-save").html('<i class="fe fe-save me-1"></i> Tambah Produksi');
+    $("#production_desc").attr("disabled", false);
+    $(".btn-save").show();
+    $(".btn-cancel").html("Batal");
+    $("#addProduction").modal("show");
+    $(".dos").hide();
+    $("#production_date").val(getTodayStr()).prop("disabled", true);
+    $("#addProduction").removeAttr("revision_source_production_id");
+});
+
+$(document).on("keyup", "#production_qty", function () {
+    var data = $("#product_id").select2("data")[0];
+
+    var qty = $(this).val();
+    if (qty == "" || qty == null || isNaN(qty)) {
+        qty = 0;
+    }
+    $("#production_total").val(qty);
+    updateProductionPalletHint();
+});
+
+$(document).on("change", "#unit_id", function () {
+    updateProductionPalletHint();
+});
+
+function updateProductionPalletHint() {
+    var $hint = $("#production_pallet_hint");
+    if (!$hint.length) return;
+    var selected = $("#unit_id option:selected");
+    if (String($("#unit_id").val()) !== "__PALLET__") {
+        $hint.text("");
+        return;
+    }
+    var qty = parseInt($("#production_qty").val(), 10) || 0;
+    var per = parseInt(selected.data("qty-per-pallet"), 10) || 0;
+    var unitName = selected.data("default-unit-name") || "DOS";
+    if (per <= 0) {
+        $hint.text("");
+        return;
+    }
+    $hint.text("= " + qty * per + " " + unitName);
+}
+
+$(document).on("change", "#product_id", function () {
+    var data = $(this).select2("data")[0];
+    console.log(data);
+
+    // Blokir jika produk / varian sudah tidak aktif
+    if (
+        data &&
+        (data.product_status == 0 || data.product_variant_status == 0)
+    ) {
+        var alasan = [];
+        if (data.product_status == 0) alasan.push("produk sudah tidak aktif");
+        if (data.product_variant_status == 0)
+            alasan.push("varian produk sudah tidak aktif");
+        notifikasi(
+            "error",
+            "Produk Tidak Aktif",
+            "Tidak dapat memilih resep ini karena " +
+                alasan.join(" & ") +
+                ". Silakan hapus resep (BOM) ini di halaman Resep Bahan Mentah.",
+        );
+        // Clear pilihan agar user tidak bisa lanjut
+        $(this).val(null).trigger("change");
+        $("#unit_id").html("");
+        return;
+    }
+
+    $("#unit_id").html("");
+    data.pr_unit.forEach((element) => {
+        $("#unit_id").append(
+            `<option value="${element.unit_id}">${element.unit_name}</option>`,
+        );
+    });
+    // Shortcut Produksi: input Pallet → convert ke satuan default (DOS/dll)
+    var qtyPerPallet = parseInt(data.qty_per_pallet, 10) || 0;
+    if (qtyPerPallet > 0) {
+        var defaultUnitName = data.default_unit_name || "DOS";
+        $("#unit_id").append(
+            `<option value="__PALLET__" data-qty-per-pallet="${qtyPerPallet}" data-default-unit-id="${data.default_unit || data.unit_id}" data-default-unit-name="${defaultUnitName}">PALLET (1 = ${qtyPerPallet} ${defaultUnitName})</option>`,
+        );
+    }
+    $("#unit_id")
+        .val(data.default_unit || data.unit_id)
+        .trigger("change");
+    $("#pi_unit option").first().prop("selected", true);
+
+    $("#production_qty").trigger("keyup");
+});
+
+$(document).on("change", "#unit_id", syncProductionDestinationControl);
+
+// Cegah Enter menutup modal secara tidak sengaja (form action="#" menyebabkan page navigation)
+$(document).on(
+    "keydown",
+    "#addProduction input, #addProduction select",
+    function (e) {
+        if (e.key === "Enter") {
             e.preventDefault();
         }
-    });
+    },
+);
 
-    function inisialisasi() {
-        table = $('#tableProduction').DataTable({
-            bFilter: true,
-            sDom: 'fBtlpi',
-            lengthMenu: [10, 25, 50, 100],
-            ordering: false,
-            searching: false,
-            language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Produksi",
-                info: "_START_ - _END_ of _TOTAL_ items",
-                paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
+function inisialisasi() {
+    table = $("#tableProduction").DataTable({
+        bFilter: true,
+        sDom: "fBtlpi",
+        lengthMenu: [10, 25, 50, 100],
+        ordering: false,
+        searching: false,
+        language: {
+            search: " ",
+            sLengthMenu: "_MENU_",
+            searchPlaceholder: "Cari Produksi",
+            info: "_START_ - _END_ of _TOTAL_ items",
+            paginate: {
+                next: ' <i class=" fa fa-angle-right"></i>',
+                previous: '<i class="fa fa-angle-left"></i> ',
+            },
+        },
+        // Lebar kolom diatur lewat CSS (nth-child, lihat <style> di Production.blade.php) —
+        // supaya table-layout:fixed jadi satu-satunya sumber lebar, tidak tumpang tindih
+        // dengan width inline yang tadinya di-set di sini.
+        columns: [
+            { data: "date" },
+            { data: "production_code" },
+            { data: "production_desc", defaultContent: "-" },
+            { data: "status_text" },
+            { data: "notes", defaultContent: "-", width: "30%" },
+            {
+                data: "created_by_name",
+                defaultContent: "-",
+                render: function (data) {
+                    return typeof renderCreatedByName === "function"
+                        ? renderCreatedByName(data)
+                        : data;
                 },
             },
-            // Lebar kolom diatur lewat CSS (nth-child, lihat <style> di Production.blade.php) —
-            // supaya table-layout:fixed jadi satu-satunya sumber lebar, tidak tumpang tindih
-            // dengan width inline yang tadinya di-set di sini.
-            columns: [
-                { data: "date" },
-                { data: "production_code" },
-                { data: "production_desc", defaultContent: "-" },
-                { data: "status_text" },
-                { data: "notes", defaultContent: "-" },
-                { data: "created_by_name", defaultContent: "-" },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "cancel_requested_by_name", defaultContent: "-" },
-                { data: "action", class: "text-center align-middle" },
-            ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            {
+                data: "acc_by_name",
+                defaultContent: "-",
+                render: function (data) {
+                    return typeof renderCreatedByName === "function"
+                        ? renderCreatedByName(data)
+                        : data;
+                },
             },
-        });
-    }
-
-    function refreshProduction() {
-        $.ajax({
-            url: "/getProduction",
-            method: "get",
-            data:{
-                "date":$('#date_production').val(),
-                status: $('#status').val()
+            {
+                data: "cancel_requested_by_name",
+                defaultContent: "-",
+                render: function (data) {
+                    return typeof renderCreatedByName === "function"
+                        ? renderCreatedByName(data)
+                        : data;
+                },
             },
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                console.log(e);
-                table.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].production_date).format('D MMM YYYY');
-                    const isOldRow = moment(e[i].production_date).isBefore(
-                        moment().subtract(2, "days").format("YYYY-MM-DD")
-                    );
-                    let prAct = "";
-                    if (hasAccessAction("Produksi", "view")) {
-                        prAct +=
-                            '<button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>';
-                    }
-                    if (
-                        !isOldRow &&
-                        e[i].status == 2 &&
-                        hasAccessAction("Produksi", "delete")
-                    ) {
-                        prAct +=
-                            '<button class="btn btn-sm btn-danger btn-action-icon btn_delete"><i class="fa-solid fa-ban"></i></button>';
-                    }
-                    if (isOldRow || (e[i].status != 1 && e[i].status != 2)) {
-                        prAct = hasAccessAction("Produksi", "view")
-                            ? '<button class="btn btn-sm btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>'
-                            : "";
-                    }
-                    e[i].action =
-                        prAct ||
-                        '<span class="text-muted small">—</span>';
-                    // if(e[i].status == 3){
-
-                    //      e[i].action = `
-                    //         <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
-                    //         <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
-                    //         <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
-                    //     `;
-                    // } else if (e[i].status == 1){
-                    //     e[i].action = `
-                    //         <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                    //         <button class="btn btn-sm me-2 btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
-                    //         data-bs-placement="bottom" title="Terima"  production_id = "${e[i].production_id}" >
-                    //             <i class="fa-solid fa-check"></i>
-                    //         </button>
-                    //         <button  class="btn btn-sm btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
-                    //         data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
-                    //             <i class="fa-solid fa-x"></i>
-                    //         </button>
-                    //     `;
-                    // }
-                    if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-secondary" style="font-size: 12px">Pending</span>`;
-                    } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Berhasil</span>`;
-                    } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Tolak</span>`;
-                    } else if (e[i].status == 4){
-                        e[i].status_text = `<span class="badge bg-warning text-dark" style="font-size: 12px">Menunggu batal</span>`;
-                    }
-                }
-
-                table.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-                openProductionRevisionFromDashboardLink();
-                openProductionFromDashboardLink();
+            {
+                data: "action",
+                className: "text-center align-middle",
+                width: "82px",
             },
-            error: function (err) {
-                console.error("Gagal load kategori:", err);
-            }
-        });
-    }
-
-    /** Dari dashboard: /production?production_id=123 — buka modal detail batch tersebut */
-    function openProductionFromDashboardLink() {
-        try {
-            var params = new URLSearchParams(window.location.search);
-            var pid = params.get("production_id");
-            if (!pid || !table) {
-                return;
-            }
-            var opened = false;
-            table.rows().every(function () {
-                var d = this.data();
-                if (String(d.production_id) === String(pid)) {
-                    $(this.node()).find(".btn_view").first().trigger("click");
-                    opened = true;
-                    return false;
-                }
-            });
-            if (opened) {
-                params.delete("production_id");
-                var q = params.toString();
-                window.history.replaceState(
-                    {},
-                    "",
-                    window.location.pathname + (q ? "?" + q : "")
-                );
-            }
-        } catch (err) {
-            console.warn("openProductionFromDashboardLink", err);
-        }
-    }
-
-    /** Dari dashboard revisi: /production?rev_production_id=123 — buka modal revisi dengan data lama */
-    function openProductionRevisionFromDashboardLink() {
-        try {
-            var params = new URLSearchParams(window.location.search);
-            var pid = params.get("rev_production_id");
-            if (!pid || !table) {
-                return;
-            }
-
-            var rowData = null;
-            table.rows().every(function () {
-                var d = this.data();
-                if (String(d.production_id) === String(pid)) {
-                    rowData = d;
-                    return false;
-                }
-            });
-
-            if (!rowData) return;
-
-            mode = 1; // submit ulang sebagai pengajuan baru (pending ACC)
-            modeBahan = 1;
-            items = [];
-            list_bahan = [];
-
-            $('#addProduction .modal-title').html("Revisi Produksi");
-            $('#addProduction input').val("");
-            $('#product_id').empty();
-            $('#production_qty').val("");
-            $('#tableProduct tr.row-product').remove();
-            $('.is-invalid').removeClass('is-invalid');
-            $('#unit_id').html("");
-
-            $('#production_date').val(getTodayStr()).prop('disabled', true);
-            $('#production_desc').val(rowData.production_desc || "").attr('disabled', false);
-
-            rowData.items.forEach(function (e) {
-                var temp = {
-                    "pd_id": e.pd_id,
-                    "product_variant_id": e.product_variant_id,
-                    "product_name": e.product_name,
-                    "pd_qty": e.pd_qty,
-                    "unit_name": e.unit_name,
-                    "unit_id": e.unit_id,
-                    "bom_id": e.bom_id
-                };
-                items.push(temp);
-                list_bahan.push(e.list_bahan);
-            });
-
-            addRow(items);
-            $('#total_dos').html(rowData.total_dos || 0);
-            $('.is-invalid').removeClass('is-invalid');
-            $('.add, .btn-save, .btn_delete_row_pr').show();
-            $('.dos').show();
-            $('#btn-terima, #btn-tolak').hide();
-            $('.btn-cancel').html("Batal");
-            $('#addProduction').removeAttr("production_id");
-            $('#addProduction').attr("revision_source_production_id", rowData.production_id);
-            $('#addProduction').modal("show");
-
-            params.delete("rev_production_id");
-            var q = params.toString();
-            window.history.replaceState({}, "", window.location.pathname + (q ? "?" + q : ""));
-        } catch (err) {
-            console.warn("openProductionRevisionFromDashboardLink", err);
-        }
-    }
-
-    $(document).on("change","#date_production, #status",function(){
-        refreshProduction();
+        ],
+        initComplete: (settings, json) => {
+            $(".dataTables_filter").appendTo("#tableSearch");
+            $(".dataTables_filter").appendTo(".search-input");
+            $(".dataTables_filter label").prepend(
+                '<i class="fa fa-search"></i> ',
+            );
+        },
     });
+}
 
-    $(document).on('click', '.btn-clear', function(){
-        $('#date_production').val("");
-        $('#status').val("");
-        refreshProduction();
-    })
+function refreshProduction() {
+    $("#tableProduction-wrap").removeClass("dt-ready").addClass("dt-pending");
+    $.ajax({
+        url: "/getProduction",
+        method: "get",
+        data: {
+            date: $("#date_production").val(),
+            status: $("#status").val(),
+        },
+        success: function (e) {
+            if (!Array.isArray(e)) {
+                e = e.original || [];
+            }
+            console.log(e);
+            table.clear().draw();
+            // Manipulasi data sebelum masuk ke tabel
+            for (let i = 0; i < e.length; i++) {
+                e[i].date =
+                    `<div class="d-flex align-items-center gap-2"><div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;"><i class="fe fe-calendar"></i></div><span style="font-weight: 600; color: #334155; font-size: 13px;">${moment(e[i].production_date).format("DD MMM YYYY")}</span></div>`;
+                if (e[i].production_code) {
+                    e[i].production_code =
+                        `<span style="font-family: monospace; font-size: 12px; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 4px 8px; border-radius: 6px; border: 1px solid #e0f2fe;">${e[i].production_code}</span>`;
+                }
+                const isOldRow = moment(e[i].production_date).isBefore(
+                    moment().subtract(2, "days").format("YYYY-MM-DD"),
+                );
+                let prAct = "";
+                if (hasAccessAction("Produksi", "view")) {
+                    prAct +=
+                        '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+                }
+                if (
+                    !isOldRow &&
+                    e[i].status == 2 &&
+                    hasAccessAction("Produksi", "delete")
+                ) {
+                    prAct +=
+                        '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
+                }
+                if (isOldRow || (e[i].status != 1 && e[i].status != 2)) {
+                    prAct = hasAccessAction("Produksi", "view")
+                        ? '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>'
+                        : "";
+                }
+                e[i].action =
+                    (prAct
+                        ? '<div style="display:flex;gap:6px;justify-content:center;">' +
+                          prAct +
+                          "</div>"
+                        : "") || '<span class="text-muted small">—</span>';
+                // if(e[i].status == 3){
 
-    $(document).on("click",".btn-save",function(){
-       LoadingButton(this);
-        $('.is-invalid').removeClass('is-invalid');
-        var url ="/insertProduction";
-        var valid=1;
-        var dt = $('#product_id').select2("data")[0];
+                //      e[i].action = `
+                //         <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
+                //         <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
+                //         <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
+                //     `;
+                // } else if (e[i].status == 1){
+                //     e[i].action = `
+                //         <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
+                //         <button class="btn btn-sm me-2 btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
+                //         data-bs-placement="bottom" title="Terima"  production_id = "${e[i].production_id}" >
+                //             <i class="fa-solid fa-check"></i>
+                //         </button>
+                //         <button  class="btn btn-sm btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
+                //         data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
+                //             <i class="fa-solid fa-x"></i>
+                //         </button>
+                //     `;
+                // }
+                if (e[i].status == 1) {
+                    e[i].status_text =
+                        `<span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-clock me-1"></i> Pending</span>`;
+                } else if (e[i].status == 2) {
+                    e[i].status_text =
+                        `<span class="badge" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-check-circle me-1"></i> Berhasil</span>`;
+                } else if (e[i].status == 3) {
+                    e[i].status_text =
+                        `<span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-x-circle me-1"></i> Tolak</span>`;
+                } else if (e[i].status == 4) {
+                    e[i].status_text =
+                        `<span class="badge" style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-alert-circle me-1"></i> Menunggu Batal</span>`;
+                }
+            }
 
-        $("#addProduction .fill").each(function(){
-            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
-                valid=-1;
-                $(this).addClass('is-invalid');
+            table.rows.add(e).draw();
+            feather.replace(); // Biar icon feather muncul lagi
+            $('[data-bs-toggle="tooltip"]').tooltip();
+            openProductionRevisionFromDashboardLink();
+            openProductionFromDashboardLink();
+        },
+        error: function (err) {
+            console.error("Gagal load kategori:", err);
+        },
+        complete: function () {
+            $("#tableProduction-wrap")
+                .removeClass("dt-pending")
+                .addClass("dt-ready");
+        },
+    });
+}
+
+/** Dari dashboard: /production?production_id=123 — buka modal detail batch tersebut */
+function openProductionFromDashboardLink() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var pid = params.get("production_id");
+        if (!pid || !table) {
+            return;
+        }
+        var opened = false;
+        table.rows().every(function () {
+            var d = this.data();
+            if (String(d.production_id) === String(pid)) {
+                $(this.node()).find(".btn_view").first().trigger("click");
+                opened = true;
+                return false;
             }
         });
-        if(valid==-1){
-            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-            return false;
-        };
-        if(moment($('#production_date').val()).isAfter(moment().add(1, 'days'), 'day')){
-            $('#production_date').addClass('is-invalid');
-            notifikasi('error', "Gagal Insert", 'Input tanggal maksimal 1 hari setelah hari ini');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-            return false;
+        if (opened) {
+            params.delete("production_id");
+            var q = params.toString();
+            window.history.replaceState(
+                {},
+                "",
+                window.location.pathname + (q ? "?" + q : ""),
+            );
         }
-        if (items.length == 0){
-            notifikasi('error', "Gagal Insert", 'Harus ada 1 produk dipilih');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
-            return false;
+    } catch (err) {
+        console.warn("openProductionFromDashboardLink", err);
+    }
+}
+
+/** Dari dashboard revisi: /production?rev_production_id=123 — buka modal revisi dengan data lama */
+function openProductionRevisionFromDashboardLink() {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var pid = params.get("rev_production_id");
+        if (!pid || !table) {
+            return;
         }
-        param = {
-            production_date:$('#production_date').val(),
-            production_desc:$('#production_desc').val(),
-            detail:JSON.stringify(items),
-            list_bahan: JSON.stringify(list_bahan),
-            _token:token
-        };
-        var revisionSourceId = $('#addProduction').attr("revision_source_production_id");
-        if (revisionSourceId) {
-            param.revision_source_production_id = revisionSourceId;
-        }
-        LoadingButton($(this));
-        $.ajax({
-            url:url,
-            data: param,
-            method:"post",
-            headers: {
-                'X-CSRF-TOKEN': token
-            },
-            success:function(e){ 
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-                console.log(e.length);      
-                if (e.status == 0){
-                    notifikasi('error', e.header, e.message);
-                    return false;
-                }
-                else if(e.status == -1){
-                    notifikasi('error', "Stock Tidak Mencukupi", e.message);
-                    return false;
-                }
-                afterInsert();
-            },
-            error:function(a){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-                console.log(a);
+
+        var rowData = null;
+        table.rows().every(function () {
+            var d = this.data();
+            if (String(d.production_id) === String(pid)) {
+                rowData = d;
+                return false;
             }
         });
-        /*
+
+        if (!rowData) return;
+
+        resetProductionApprovalActions();
+        mode = 1; // submit ulang sebagai pengajuan baru (pending ACC)
+        modeBahan = 1;
+        items = [];
+        list_bahan = [];
+
+        $("#addProduction .modal-title").html("Revisi Produksi");
+        $("#addProduction input").val("");
+        $("#product_id").empty();
+        $("#production_qty").val("");
+        $("#tableProduct tr.row-product").remove();
+        $(".is-invalid").removeClass("is-invalid");
+        $("#unit_id").html("");
+
+        $("#production_date").val(getTodayStr()).prop("disabled", true);
+        $("#production_desc")
+            .val(rowData.production_desc || "")
+            .attr("disabled", false);
+
+        rowData.items.forEach(function (e) {
+            var temp = {
+                pd_id: e.pd_id,
+                product_variant_id: e.product_variant_id,
+                product_name: e.product_name,
+                pd_qty: e.pd_qty,
+                unit_name: e.unit_name,
+                unit_id: e.unit_id,
+                retail_unit: e.retail_unit,
+                default_unit: e.default_unit,
+                destination_warehouse_id: e.destination_warehouse_id,
+                destination_warehouse_name: e.destination_warehouse_name,
+                bom_id: e.bom_id,
+            };
+            items.push(temp);
+            list_bahan.push(e.list_bahan);
+        });
+
+        addRow(items);
+        $("#total_dos").html(rowData.total_dos || 0);
+        $(".is-invalid").removeClass("is-invalid");
+        $(".input_table, .add, .btn-save, .btn_delete_row_pr").show();
+        $(".btn-save").html('<i class="fe fe-save me-1"></i> Simpan Revisi');
+        $(".dos").show();
+        $(".btn-cancel").html("Batal");
+        $("#addProduction").removeAttr("production_id");
+        $("#addProduction").attr(
+            "revision_source_production_id",
+            rowData.production_id,
+        );
+        $("#addProduction").modal("show");
+
+        params.delete("rev_production_id");
+        var q = params.toString();
+        window.history.replaceState(
+            {},
+            "",
+            window.location.pathname + (q ? "?" + q : ""),
+        );
+    } catch (err) {
+        console.warn("openProductionRevisionFromDashboardLink", err);
+    }
+}
+
+$(document).on("change", "#date_production, #status", function () {
+    refreshProduction();
+});
+
+$(document).on("click", ".btn-clear", function () {
+    $("#date_production").val("");
+    $("#status").val("");
+    refreshProduction();
+});
+
+$(document).on("click", ".btn-save", function () {
+    LoadingButton(this);
+    $(".is-invalid").removeClass("is-invalid");
+    var url = "/insertProduction";
+    var valid = 1;
+    var dt = $("#product_id").select2("data")[0];
+
+    $("#addProduction .fill").each(function () {
+        if (
+            $(this).val() == null ||
+            $(this).val() == "null" ||
+            $(this).val() == ""
+        ) {
+            valid = -1;
+            $(this).addClass("is-invalid");
+        }
+    });
+    if (valid == -1) {
+        notifikasi(
+            "error",
+            "Gagal Insert",
+            "Silahkan cek kembali inputan anda",
+        );
+        ResetLoadingButton(
+            ".btn-save",
+            mode == 1 ? "Tambah Produksi" : "Update Produksi",
+        );
+        return false;
+    }
+    if (
+        moment($("#production_date").val()).isAfter(
+            moment().add(1, "days"),
+            "day",
+        )
+    ) {
+        $("#production_date").addClass("is-invalid");
+        notifikasi(
+            "error",
+            "Gagal Insert",
+            "Input tanggal maksimal 1 hari setelah hari ini",
+        );
+        ResetLoadingButton(
+            ".btn-save",
+            mode == 1 ? "Tambah Produksi" : "Update Produksi",
+        );
+        return false;
+    }
+    if (items.length == 0) {
+        notifikasi("error", "Gagal Insert", "Harus ada 1 produk dipilih");
+        ResetLoadingButton(
+            ".btn-save",
+            mode == 1 ? "Tambah Produksi" : "Update Produksi",
+        );
+        return false;
+    }
+    var missingRetailDestination = items.some(function (item) {
+        return (
+            parseInt(item.retail_unit || 0, 10) > 0 &&
+            parseInt(item.unit_id || 0, 10) ===
+                parseInt(item.retail_unit, 10) &&
+            !parseInt(item.destination_warehouse_id || 0, 10)
+        );
+    });
+    if (missingRetailDestination) {
+        notifikasi(
+            "error",
+            "Gudang Tujuan Wajib",
+            "Pilih gudang tujuan untuk setiap hasil produksi bersatuan eceran.",
+        );
+        ResetLoadingButton(
+            ".btn-save",
+            mode == 1 ? "Tambah Produksi" : "Update Produksi",
+        );
+        return false;
+    }
+    param = {
+        production_date: $("#production_date").val(),
+        production_desc: $("#production_desc").val(),
+        detail: JSON.stringify(items),
+        list_bahan: JSON.stringify(list_bahan),
+        _token: token,
+    };
+    var revisionSourceId = $("#addProduction").attr(
+        "revision_source_production_id",
+    );
+    if (revisionSourceId) {
+        param.revision_source_production_id = revisionSourceId;
+    }
+    LoadingButton($(this));
+    $.ajax({
+        url: url,
+        data: param,
+        method: "post",
+        headers: {
+            "X-CSRF-TOKEN": token,
+        },
+        success: function (e) {
+            ResetLoadingButton(
+                ".btn-save",
+                mode == 1 ? "Tambah Produksi" : "Update Produksi",
+            );
+            console.log(e.length);
+            if (e.status == 0) {
+                notifikasi("error", e.header, e.message);
+                return false;
+            } else if (e.status == -1) {
+                notifikasi("error", "Stock Tidak Mencukupi", e.message);
+                return false;
+            }
+            afterInsert();
+        },
+        error: function (a) {
+            ResetLoadingButton(
+                ".btn-save",
+                mode == 1 ? "Tambah Produksi" : "Update Produksi",
+            );
+            console.log(a);
+        },
+    });
+    /*
         // Cek stock supplies
         var qtyInput = $('#production_qty').val();
         var validQty = 1;
@@ -575,299 +938,352 @@
 
                 if (validQty == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", `Mohon cek stock ${bahanKurang.map(d => d).join(", ")}`);
-                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
                     return false;
                 } else{
-                    
+
             },
             error:function(e){
                 console.log(e)
             }
         })*/
-    });
+});
 
-    function afterInsert() {
-        items = [];
-        $(".modal").modal("hide");
-        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produksi");
-        refreshProduction();
-    }
+function afterInsert() {
+    items = [];
+    $(".modal").modal("hide");
+    if (mode == 1)
+        notifikasi("success", "Berhasil Insert", "Berhasil Tambah Produksi");
+    refreshProduction();
+}
 
-    function addRow(e) {
-        $('#tableProduct tbody').html("");
-        e.forEach((element, index) => {
-            console.log(element);
-            $('#tableProduct tbody').append(`
-                <tr class="row-product" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
-                    <td>${element.product_name}</td>
-                    <td class="text-center">${formatRupiah(element.pd_qty)}</td>
-                    <td>${element.unit_name}</td>
+function addRow(e) {
+    $("#tableProduct tbody").html("");
+    e.forEach((element, index) => {
+        console.log(element);
+
+        let btnAct = `<a class="btn_delete_row_pr d-inline-flex align-items-center justify-content-center" href="javascript:void(0);" style="width: 28px; height: 28px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 6px; transition: all 0.2s ease;" title="Hapus Produk"><i class="fe fe-trash-2" style="font-size: 13px;"></i></a>`;
+        if (mode == 3) {
+            btnAct = `<a href="javascript:void(0);" class="btn_list_row d-inline-flex align-items-center justify-content-center" index="${index}" style="width: 28px; height: 28px; background: #f0f9ff; color: #0ea5e9; border: 1px solid #bae6fd; border-radius: 6px; transition: all 0.2s ease;" title="Lihat Daftar Bahan"><i class="fe fe-list" style="font-size: 13px;"></i></a>`;
+        }
+
+        $("#tableProduct tbody").append(`
+                <tr class="row-product" data-index="${index}" data-id="${element.product_variant_id}" data-bom="${element.bom_id}">
+                    <td style="font-weight: 600; color: #334155;">${element.product_name}</td>
+                    <td class="text-center" style="font-weight: 700; color: #1e293b;">${formatRupiah(element.pd_qty)}</td>
+                    <td style="color: #64748b;">${element.unit_name}</td>
+                    <td><span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;"><i class="fe fe-map-pin me-1"></i>${element.destination_warehouse_name || productionActiveWarehouseName()}</span></td>
                     <td class="text-center align-middle">
-                        <a class="p-2 btn-action-icon btn_delete_row_pr" href="javascript:void(0);">
-                            <i class="fe fe-trash-2"></i>
-                        </a>
+                        ${btnAct}
                     </td>
                 </tr>
-            `)
-            modeBahan = 1;
-            if (mode != 3) getBom(element.bom_id, index);
-        })
+            `);
+        modeBahan = 1;
+        if (mode != 3) getBom(element.bom_id, index);
+    });
+}
+
+$(document).on("click", ".btn-add-product", function () {
+    $(".is-invalid").removeClass("is-invalid");
+    $(".is-invalids").removeClass("is-invalids");
+    var valid = 1;
+    $("#addProduction .fill_product").each(function () {
+        if (
+            $(this).val() == null ||
+            $(this).val() == "null" ||
+            $(this).val() == ""
+        ) {
+            valid = -1;
+            $(this).addClass("is-invalid");
+        }
+    });
+    if (
+        $("#product_id").val() == null ||
+        $("#product_id").val() == "null" ||
+        $("#product_id").val() == ""
+    ) {
+        valid = -1;
+        $("#row-product .select2-selection--single").addClass("is-invalids");
+    }
+    if ($("#production_qty").val() <= 0) {
+        valid = -1;
+        $("#production_qty").addClass("is-invalid");
+        notifikasi(
+            "error",
+            "Qty Tidak Valid",
+            "Qty produksi harus lebih dari 0",
+        );
+        return false;
+    }
+    if (valid == -1) {
+        notifikasi(
+            "error",
+            "Gagal Insert",
+            "Silahkan cek kembali inputan anda",
+        );
+        return false;
     }
 
-    $(document).on('click', '.btn-add-product', function(){
-        $('.is-invalid').removeClass('is-invalid');
-        $('.is-invalids').removeClass('is-invalids');
-        var valid=1;
-        $("#addProduction .fill_product").each(function(){
-            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
-                valid=-1;
-                $(this).addClass('is-invalid');
-            }
-        });
-        if($('#product_id').val()==null||$('#product_id').val()=="null"||$('#product_id').val()==""){
-            valid=-1;
-            $('#row-product .select2-selection--single').addClass('is-invalids');
-        }
-        if($('#production_qty').val()<=0){
-            valid=-1;
-            $('#production_qty').addClass('is-invalid');
-            notifikasi('error', "Qty Tidak Valid", 'Qty produksi harus lebih dari 0');
-            return false;
-        }
-        if(valid==-1){
-            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            return false;
-        }
+    var tempBom = $("#product_id").select2("data")[0];
+    var isRetailOutput =
+        parseInt(tempBom.retail_unit || 0, 10) > 0 &&
+        parseInt($("#unit_id").val() || 0, 10) ===
+            parseInt(tempBom.retail_unit, 10);
+    if (
+        isRetailOutput &&
+        !parseInt($("#production_destination_warehouse_id").val() || 0, 10)
+    ) {
+        $("#production_destination_warehouse_id")
+            .next(".select2-container")
+            .find(".select2-selection")
+            .addClass("is-invalid");
+        notifikasi(
+            "error",
+            "Gudang Tujuan Wajib",
+            "Pilih gudang eceran untuk hasil produksi bersatuan eceran.",
+        );
+        return false;
+    }
 
-        var tempBom = $('#product_id').select2("data")[0];
+    // Guard: blokir jika produk / varian tidak aktif
+    if (
+        tempBom &&
+        (tempBom.product_status == 0 || tempBom.product_variant_status == 0)
+    ) {
+        var alasan = [];
+        if (tempBom.product_status == 0)
+            alasan.push("produk sudah tidak aktif");
+        if (tempBom.product_variant_status == 0)
+            alasan.push("varian produk sudah tidak aktif");
+        notifikasi(
+            "error",
+            "Produk Tidak Aktif",
+            "Tidak dapat produksi karena " +
+                alasan.join(" & ") +
+                ". Silakan hapus resep (BOM) ini di halaman Resep Bahan Mentah.",
+        );
+        return false;
+    }
 
-        // Guard: blokir jika produk / varian tidak aktif
-        if (tempBom && (tempBom.product_status == 0 || tempBom.product_variant_status == 0)) {
-            var alasan = [];
-            if (tempBom.product_status == 0)         alasan.push('produk sudah tidak aktif');
-            if (tempBom.product_variant_status == 0) alasan.push('varian produk sudah tidak aktif');
-            notifikasi('error', 'Produk Tidak Aktif',
-                'Tidak dapat produksi karena ' + alasan.join(' & ') + '. Silakan hapus resep (BOM) ini di halaman Resep Bahan Mentah.');
-            return false;
-        }
+    if (bomDetailHasActiveUnits(tempBom)) {
+        continueAddProduct(tempBom);
+        return;
+    }
 
-        if (bomDetailHasActiveUnits(tempBom)) {
-            continueAddProduct(tempBom);
+    LoadingButton(".btn-add-product");
+    loadBomForValidation(tempBom.bom_id, function (fullBom) {
+        ResetLoadingButton(".btn-add-product", "+");
+        if (!fullBom) {
+            notifikasi(
+                "error",
+                "Gagal Memuat Resep",
+                "Tidak dapat memuat detail resep. Silakan coba lagi.",
+            );
             return;
         }
-
-        LoadingButton('.btn-add-product');
-        loadBomForValidation(tempBom.bom_id, function (fullBom) {
-            ResetLoadingButton('.btn-add-product', '+');
-            if (!fullBom) {
-                notifikasi('error', 'Gagal Memuat Resep', 'Tidak dapat memuat detail resep. Silakan coba lagi.');
-                return;
-            }
-            continueAddProduct(fullBom);
-        });
-    })
-
-    $(document).on("click",".btn_delete_row_pr",function(){
-        let row = $(this).closest("tr");
-        let productId = row.data("id");
-        items = items.filter(e => e.product_variant_id != productId);
-
-        let index = row.find('.btn_list_row').attr('index');
-        if (index !== undefined) {
-            list_bahan.splice(index, 1);
-        }
-        
-        console.log(items)
-        row.remove();
+        continueAddProduct(fullBom);
     });
+});
 
-    $(document).on('click', '.btn_view', function(){
-        var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        console.log(data);
-        mode=3;
-        modeBahan = 1;
-        items = [];
-        list_bahan = [];
-        $('#addProduction .modal-title').html("Detail Produksi");
-        $('#addProduction input').val("");
-        $('#product_id').empty();
-        $('#production_qty').val("");
-        $('#tableProduct tr.row-product').remove();
-        $('.is-invalid').removeClass('is-invalid');
-        $('#unit_id').html("");
-        $('#production_date').val(data.production_date);
-        $('#production_desc').val(data.production_desc).attr('disabled', true);
+$(document).on("click", ".btn_delete_row_pr", function () {
+    let row = $(this).closest("tr");
+    let index = parseInt(row.data("index"), 10);
+    items.splice(index, 1);
+    list_bahan.splice(index, 1);
 
-        var total_dos = 0;
+    console.log(items);
+    addRow(items);
+});
 
-        data.items.forEach(e => {
-            var temp  = {
-                "pd_id": e.pd_id,
-                "product_variant_id": e.product_variant_id,
-                "product_name": e.product_name,
-                "pd_qty": e.pd_qty,
-                "unit_name": e.unit_name,
-                "unit_id": e.unit_id,
-                "bom_id": e.bom_id
-            };
-            items.push(temp);
+$(document).on("click", ".btn_view", function () {
+    var data = $("#tableProduction")
+        .DataTable()
+        .row($(this).parents("tr"))
+        .data(); //ambil data dari table
+    console.log(data);
+    resetProductionApprovalActions();
+    mode = 3;
+    modeBahan = 1;
+    items = [];
+    list_bahan = [];
+    $("#addProduction .modal-title").html("Detail Produksi");
+    $("#addProduction input").val("");
+    $("#product_id").empty();
+    $("#production_qty").val("");
+    $("#tableProduct tr.row-product").remove();
+    $(".is-invalid").removeClass("is-invalid");
+    $("#unit_id").html("");
+    $("#production_date").val(data.production_date);
+    $("#production_desc").val(data.production_desc).attr("disabled", true);
 
-            list_bahan.push(e.list_bahan);
+    var total_dos = 0;
 
-            if (e.unit_name.toUpperCase().includes("DOS")){
-                total_dos += e.pd_qty
-            }
-        })
-        console.log(items);
-        console.log(list_bahan);
-        addRow(items);
-        $('#total_dos').html(formatRupiah(data.total_dos));
-        if (data.status == 1){
-            if (hasAccessAction("Produksi", "others")){
-                $('#btn-terima, #btn-tolak').show();
-            }
-            $('#btn-terima').addClass('btn_acc_produksi');
-            $('#btn-tolak').addClass('btn_decline_produksi');
-            $('#btn-terima').removeClass('btn_acc');
-            $('#btn-tolak').removeClass('btn_cancel');
-            $('#btn-terima').attr('production_id', data.production_id);
-            $('#btn-tolak').attr('production_id', data.production_id);
+    data.items.forEach((e) => {
+        var temp = {
+            pd_id: e.pd_id,
+            product_variant_id: e.product_variant_id,
+            product_name: e.product_name,
+            pd_qty: e.pd_qty,
+            unit_name: e.unit_name,
+            unit_id: e.unit_id,
+            retail_unit: e.retail_unit,
+            default_unit: e.default_unit,
+            destination_warehouse_id: e.destination_warehouse_id,
+            destination_warehouse_name: e.destination_warehouse_name,
+            bom_id: e.bom_id,
+        };
+        items.push(temp);
+
+        list_bahan.push(e.list_bahan);
+
+        if (e.unit_name.toUpperCase().includes("DOS")) {
+            total_dos += e.pd_qty;
+        }
+    });
+    console.log(items);
+    console.log(list_bahan);
+    addRow(items);
+    $("#total_dos").html(formatRupiah(data.total_dos));
+    var approvalAction = null;
+    if (
+        !moment(data.production_date).isBefore(
+            moment().subtract(3, "days").format("YYYY-MM-DD"),
+        )
+    ) {
+        if (data.status == 1) {
+            approvalAction = "production";
         } else if (data.status == 4) {
-            if (hasAccessActionAny("Produksi", "others")){
-            }
-            $('#btn-terima, #btn-tolak').show();
-            $('#btn-terima').addClass('btn_acc');
-            $('#btn-tolak').addClass('btn_cancel');
-            $('#btn-terima').removeClass('btn_acc_produksi');
-            $('#btn-tolak').removeClass('btn_decline_produksi');
-            $('#btn-terima').attr('production_id', data.production_id);
-            $('#btn-tolak').attr('production_id', data.production_id);
-        } else {
-            $('#btn-terima, #btn-tolak').hide();
+            approvalAction = "cancellation";
         }
-        if (moment(data.production_date).isBefore(moment().subtract(3, 'days').format('YYYY-MM-DD'))) {
-            $('#btn-terima, #btn-tolak').hide();
-        }
-        
-        $('.is-invalid').removeClass('is-invalid');
-        $('.add, .btn-save, .btn_delete_row_pr').hide();
-        $('.dos').show();
-        $('.btn-cancel').html("Kembali");
-        $('#production_date').prop('disabled', true);
-        $('#addProduction').attr("production_id", data.production_id);
-        $('#addProduction').removeAttr("revision_source_production_id");
-        $('#addProduction').modal("show");
-    })
+    }
+    $("#addProduction").data("approval-action", approvalAction);
+    showProductionApprovalActions(approvalAction, data.production_id);
 
-    $(document).on('click', '.btn_list_row', function(){
-        $('#addProduction').modal('hide');
-        $('#modalBahan').modal('show');
-        let row = $(this).closest("tr").data("bom");
-        let index = $(this).attr('index');
-        $('.btn-save-bahan').attr('index',index);
-        modeBahan = 2;
-        getBom(row, index);
-        if (mode == 3) $('.btn-save-bahan').hide();
-        else $('.btn-save-bahan').show();
-    })
+    $(".is-invalid").removeClass("is-invalid");
+    $(".input_table, .add, .btn-save, .btn_delete_row_pr").hide();
+    $(".dos").show();
+    $(".btn-cancel").html("Kembali");
+    $("#production_date").prop("disabled", true);
+    $("#addProduction").attr("production_id", data.production_id);
+    $("#addProduction").removeAttr("revision_source_production_id");
+    $("#addProduction").modal("show");
+});
 
-    $(document).on('click', '.btn-close-bahan', function(){
-        $('#addProduction').modal('show');
-        $('#modalBahan').modal('hide');
-    })
+$(document).on("click", ".btn_list_row", function () {
+    $("#addProduction").modal("hide");
+    $("#modalBahan").modal("show");
+    let row = $(this).closest("tr").data("bom");
+    let index = $(this).attr("index");
+    $(".btn-save-bahan").attr("index", index);
+    modeBahan = 2;
+    getBom(row, index);
+    if (mode == 3) $(".btn-save-bahan").hide();
+    else $(".btn-save-bahan").show();
+});
 
-    function getBom(id, index = null) {
-        // kalau index sudah ada, maka akan balik
-        if (modeBahan == 1 && list_bahan[index] !== undefined) {
-            return; 
-        }
+$(document).on("click", ".btn-close-bahan", function () {
+    $("#addProduction").modal("show");
+    $("#modalBahan").modal("hide");
+    if (mode === 3) {
+        showProductionApprovalActions(
+            $("#addProduction").data("approval-action"),
+            $("#addProduction").attr("production_id"),
+        );
+    }
+});
 
-        $.ajax({
-            url: "/getBom",
-            method: "get",
-            data: { bom_id: id },
-            success: function(e) {
-                console.log(e);
-                if (modeBahan == 1) {
-                    var temp = [];
-                    e[0].details.forEach(detail => {
-                        temp.push(detail.supplies_id);
-                    });
-                    list_bahan[index] = temp;
-                } 
-                else if (modeBahan == 2) {
-                    $('#tableSupplies tbody').html("");
-
-                    let current_list = list_bahan[index];
-                    // 1. Pastikan current_list jadi array murni (handle JSON string dari DB)
-                    if (typeof current_list === 'string') {
-                        try {
-                            current_list = JSON.parse(current_list);
-                        } catch (e) {
-                            current_list = [];
-                        }
-                    }
-
-                    e[0].details.forEach(b => {
-                        let isChecked = false;
-                        if (Array.isArray(current_list)) {
-                            // Gunakan parseInt untuk memastikan perbandingan angka benar
-                            isChecked = current_list.some(id => parseInt(id) == parseInt(b.supplies_id));
-                        }
-                        let isDisabled = (mode == 3) ? 'disabled' : '';
-                        
-                        $('#tableSupplies tbody').append(`
-                            <tr class="row-bahan">
-                                <td class="text-center">
-                                    <input type="checkbox" ${isChecked ? 'checked' : ''} ${isDisabled}
-                                    class="form-check-input chk" supplies_id="${b.supplies_id}" />
-                                </td>
-                                <td>${b.supplies_name}</td>
-                            </tr>
-                        `);
-                    });
-                }
-                console.log(list_bahan);
-            }
-        });
+function getBom(id, index = null) {
+    // kalau index sudah ada, maka akan balik
+    if (modeBahan == 1 && list_bahan[index] !== undefined) {
+        return;
     }
 
-    
+    $.ajax({
+        url: "/getBom",
+        method: "get",
+        data: { bom_id: id },
+        success: function (e) {
+            console.log(e);
+            if (modeBahan == 1) {
+                var temp = [];
+                e[0].details.forEach((detail) => {
+                    temp.push(detail.supplies_id);
+                });
+                list_bahan[index] = temp;
+            } else if (modeBahan == 2) {
+                $("#tableSupplies tbody").html("");
 
-    $(document).on('click', '.btn-save-bahan', function(){
-        var index = parseInt($(this).attr('index'));
+                let current_list = list_bahan[index];
+                // 1. Pastikan current_list jadi array murni (handle JSON string dari DB)
+                if (typeof current_list === "string") {
+                    try {
+                        current_list = JSON.parse(current_list);
+                    } catch (e) {
+                        current_list = [];
+                    }
+                }
 
-        // Ambil semua id dari checkbox yang HANYA ada di tabel modal saat ini
-        var temp = $('#tableSupplies tbody .chk:checked').map(function() {
-            return parseInt($(this).attr('supplies_id'));
-        }).get();
+                e[0].details.forEach((b) => {
+                    let isChecked = false;
+                    if (Array.isArray(current_list)) {
+                        // Gunakan parseInt untuk memastikan perbandingan angka benar
+                        isChecked = current_list.some(
+                            (id) => parseInt(id) == parseInt(b.supplies_id),
+                        );
+                    }
+                    let isDisabled = mode == 3 ? "disabled" : "";
 
-        var valid = 1;
-        LoadingButton('.btn-save-bahan');
-
-        if (temp.length === 0) {
-            valid = -1;
-        } else {
-            list_bahan[index] = temp;
-        }
-        
-        if(valid==-1){
-            notifikasi('error', "Gagal Insert", 'Mohon input minimal 1 bahan');
-            ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan"); 
-            return false;
-        }
-
-        $('#modalBahan').modal('hide');
-        $('#addProduction').modal('show');
-        modeBahan = 1;
-        notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Detail Bahan');
-        ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan");
+                    $("#tableSupplies tbody").append(`
+                            <tr class="row-bahan" style="border-bottom: 1px solid #f1f5f9;">
+                                <td class="text-center" style="vertical-align: middle;">
+                                    <input type="checkbox" ${isChecked ? "checked" : ""} ${isDisabled}
+                                    class="form-check-input chk" supplies_id="${b.supplies_id}" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px;" />
+                                </td>
+                                <td style="font-weight: 600; color: #475569;">${b.supplies_name}</td>
+                            </tr>
+                        `);
+                });
+            }
+            console.log(list_bahan);
+        },
     });
-    
+}
+
+$(document).on("click", ".btn-save-bahan", function () {
+    var index = parseInt($(this).attr("index"));
+
+    // Ambil semua id dari checkbox yang HANYA ada di tabel modal saat ini
+    var temp = $("#tableSupplies tbody .chk:checked")
+        .map(function () {
+            return parseInt($(this).attr("supplies_id"));
+        })
+        .get();
+
+    var valid = 1;
+    LoadingButton(".btn-save-bahan");
+
+    if (temp.length === 0) {
+        valid = -1;
+    } else {
+        list_bahan[index] = temp;
+    }
+
+    if (valid == -1) {
+        notifikasi("error", "Gagal Insert", "Mohon input minimal 1 bahan");
+        ResetLoadingButton(".btn-save-bahan", "Simpan Perubahan");
+        return false;
+    }
+
+    $("#modalBahan").modal("hide");
+    $("#addProduction").modal("show");
+    modeBahan = 1;
+    notifikasi("success", "Berhasil Simpan", "Berhasil Simpan Detail Bahan");
+    ResetLoadingButton(".btn-save-bahan", "Simpan Perubahan");
+});
 
 //delete
 $(document).on("click", ".btn_delete", function () {
-    $('#modalDelete .modal-body #delete_reason').remove();
+    $("#modalDelete .modal-body #delete_reason").remove();
     var tbId = $(this).closest("table").attr("id");
     var data = $("#" + tbId)
         .DataTable()
@@ -875,36 +1291,40 @@ $(document).on("click", ".btn_delete", function () {
         .data(); //ambil data dari table
     showModalDelete(
         "Apakah yakin ingin batalkan produksi ini?",
-        "btn-delete-production"
+        "btn-delete-production",
     );
-    $('#modalDelete .modal-body').append(`<textarea class="form-control mt-2" id="delete_reason" placeholder="Alasan pembatalan produksi..." rows="3"></textarea>`);
+    $("#modalDelete .modal-body").append(
+        `<textarea class="form-control mt-2" id="delete_reason" placeholder="Alasan pembatalan produksi..." rows="3"></textarea>`,
+    );
     $("#btn-delete-production").html("Batal Produksi");
     $("#btn-delete-production").attr("production_id", data.production_id);
 });
 
 $(document).on("click", "#btn-delete-production", function () {
     LoadingButton(this);
-    $('.is-invalid').removeClass('is-invalid');
-    console.log($('#delete_reason').val());
-    
+    $(".is-invalid").removeClass("is-invalid");
+    console.log($("#delete_reason").val());
+
     LoadingButton(this);
     $.ajax({
         url: "/deleteProduction",
         data: {
-            production_id : $("#btn-delete-production").attr("production_id"),
-            delete_reason: $('#delete_reason').val(),
+            production_id: $("#btn-delete-production").attr("production_id"),
+            delete_reason: $("#delete_reason").val(),
             _token: token,
         },
         method: "post",
         success: function (e) {
-            $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
+            $("#modalDelete .modal-body").html(
+                `<p id="text-delete" style="font-size:10pt"></p>`,
+            );
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
                 "success",
                 "Berhasil Batalkan",
-                "Berhasil batalkan produksi"
+                "Berhasil batalkan produksi",
             );
         },
         error: function (e) {
@@ -921,11 +1341,11 @@ $(document).on("click", ".btn_acc", function () {
     //     .DataTable()
     //     .row($(this).parents("tr"))
     //     .data(); //ambil data dari table
-    var production_id = $(this).attr('production_id');
-    $('.modal').modal('hide');
+    var production_id = $(this).attr("production_id");
+    $(".modal").modal("hide");
     showModalDelete(
         "Apakah yakin ingin Approve pembatalan produksi ini?",
-        "btn-acc-delete-production"
+        "btn-acc-delete-production",
     );
     $("#btn-acc-delete-production").attr("production_id", production_id);
     $(".btn-konfirmasi").html("Batal Produksi");
@@ -936,22 +1356,30 @@ $(document).on("click", "#btn-acc-delete-production", function () {
     $.ajax({
         url: "/accDeleteProduction",
         data: {
-            production_id : $("#btn-acc-delete-production").attr("production_id"),
+            production_id: $("#btn-acc-delete-production").attr(
+                "production_id",
+            ),
             _token: token,
         },
         method: "post",
         success: function (e) {
-            $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
+            $("#modalDelete .modal-body").html(
+                `<p id="text-delete" style="font-size:10pt"></p>`,
+            );
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             $(".modal").modal("hide");
-            if(e.status == -1){
-                notifikasi('error', "Stok Tidak Mencukupi", e.message);
+            if (e.status == -1) {
+                notifikasi("error", "Stok Tidak Mencukupi", e.message);
                 return false;
             }
-            if(e.status == -2){
-                notifikasi('error', e.header || "Stok Tidak Mencukupi", e.message);
-                if (e.header){
-                    refreshProduction()
+            if (e.status == -2) {
+                notifikasi(
+                    "error",
+                    e.header || "Stok Tidak Mencukupi",
+                    e.message,
+                );
+                if (e.header) {
+                    refreshProduction();
                 }
                 return false;
             }
@@ -959,7 +1387,7 @@ $(document).on("click", "#btn-acc-delete-production", function () {
             notifikasi(
                 "success",
                 "Berhasil Approve",
-                "Berhasil approve pembatalan produksi"
+                "Berhasil approve pembatalan produksi",
             );
         },
         error: function (e) {
@@ -976,11 +1404,11 @@ $(document).on("click", ".btn_cancel", function () {
     //     .DataTable()
     //     .row($(this).parents("tr"))
     //     .data(); //ambil data dari table
-    var production_id = $(this).attr('production_id');
-    $('.modal').modal('hide');
+    var production_id = $(this).attr("production_id");
+    $(".modal").modal("hide");
     showModalKonfirmasi(
         "Apakah yakin ingin Tolak pembatalan produksi ini?",
-        "btn-cancel-delete-production"
+        "btn-cancel-delete-production",
     );
     $(".btn-konfirmasi").html("Konfirmasi Batal Produksi");
     $("#btn-cancel-delete-production").attr("production_id", production_id);
@@ -991,19 +1419,23 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
     $.ajax({
         url: "/tolakDeleteProduction",
         data: {
-            production_id : $("#btn-cancel-delete-production").attr("production_id"),
+            production_id: $("#btn-cancel-delete-production").attr(
+                "production_id",
+            ),
             _token: token,
         },
         method: "post",
         success: function (e) {
-            $('#modalDelete .modal-body').html(`<p id="text-delete" style="font-size:10pt"></p>`);
+            $("#modalDelete .modal-body").html(
+                `<p id="text-delete" style="font-size:10pt"></p>`,
+            );
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi Batal Produksi");
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
                 "success",
                 "Berhasil Tolak",
-                "Berhasil tolak pembatalan produksi"
+                "Berhasil tolak pembatalan produksi",
             );
         },
         error: function (e) {
@@ -1013,161 +1445,194 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
     });
 });
 
-    $(document).on('click', '.btn_acc_produksi', function(){
-        // var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        var production_id = $(this).attr('production_id');
-        $('.modal').modal('hide');
-        showModalKonfirmasi(
-            "Apakah yakin ingin Approve produksi ini?",
-            "btn-accept-production"
-        );
-        $('#btn-accept-production').attr("production_id", production_id);
-        $('.btn-konfirmasi').html("Konfirmasi");
-    })
+$(document).on("click", ".btn_acc_produksi", function () {
+    // var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+    var production_id = $(this).attr("production_id");
+    $(".modal").modal("hide");
+    showModalKonfirmasi(
+        "Apakah yakin ingin Approve produksi ini?",
+        "btn-accept-production",
+    );
+    $("#btn-accept-production").attr("production_id", production_id);
+    $(".btn-konfirmasi").html("Konfirmasi");
+});
 
-    // Dipakai baik oleh konfirmasi approve awal maupun konfirmasi "buat baris stok baru" di bawah
-    // — accProduction bisa membalas status:-3 kalau ada satuan ladder yang baris ProductStock-nya
-    // belum ada, sebelum mengubah apa pun. confirmCreateStock=true dikirim setelah user setuju.
-    function submitAccProduction(productionId, confirmCreateStock) {
-        LoadingButton($('.btn-konfirmasi'));
-        $.ajax({
-            url:"/accProduction",
-            data:{
-                production_id: productionId,
-                confirm_create_stock: confirmCreateStock ? 1 : 0,
-                _token:token
-            },
-            method:"post",
-            success:function(e){
-                if (e!=1){
-                    if (typeof e === "object"){
-                        if (e.status == -3) {
-                            // Perlu konfirmasi tambahan: ada baris stok yang belum ada dan akan
-                            // dibuat dengan stok awal 0 kalau user melanjutkan.
-                            ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                            showModalKonfirmasi(e.message, "btn-confirm-create-stock-production");
-                            $('#btn-confirm-create-stock-production').attr("production_id", productionId);
-                            $('.btn-konfirmasi').html("Konfirmasi");
-                            return false;
-                        }
-                        notifikasi('error', e.header, e.message);
-                        if (e.status == -2) {
-                            $('.modal').modal("hide");
-                            refreshProduction();
-                        }
-                        ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+// Dipakai baik oleh konfirmasi approve awal maupun konfirmasi "buat baris stok baru" di bawah
+// — accProduction bisa membalas status:-3 kalau ada satuan ladder yang baris ProductStock-nya
+// belum ada, sebelum mengubah apa pun. confirmCreateStock=true dikirim setelah user setuju.
+function submitAccProduction(productionId, confirmCreateStock) {
+    LoadingButton($(".btn-konfirmasi"));
+    $.ajax({
+        url: "/accProduction",
+        data: {
+            production_id: productionId,
+            confirm_create_stock: confirmCreateStock ? 1 : 0,
+            _token: token,
+        },
+        method: "post",
+        success: function (e) {
+            var success = e === 1 || (typeof e === "object" && e.status == 1);
+            if (!success) {
+                if (typeof e === "object") {
+                    if (e.status == -3) {
+                        // Perlu konfirmasi tambahan: ada baris stok yang belum ada dan akan
+                        // dibuat dengan stok awal 0 kalau user melanjutkan.
+                        ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+                        showModalKonfirmasi(
+                            e.message,
+                            "btn-confirm-create-stock-production",
+                        );
+                        $("#btn-confirm-create-stock-production").attr(
+                            "production_id",
+                            productionId,
+                        );
+                        $(".btn-konfirmasi").html("Konfirmasi");
                         return false;
-                    } else {
-                        ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
                     }
-                }
-                else{
-                    ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                    refreshProduction();
-                    $('.modal').modal("hide");
-                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Produksi");
-                }
-            },
-            error:function(e){
-                console.log(e);
-                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-            }
-        });
-    }
-
-    $(document).on('click', '#btn-accept-production', function(){
-        // Baca lewat selector id (bukan $(this)) — .btn-konfirmasi juga dipakai tombol lain
-        // (mis. #modalDelete) sehingga showModalKonfirmasi() bisa menaruh id yang sama di lebih
-        // dari satu elemen; supaya konsisten dengan tempat penulisannya (juga lewat selector id),
-        // pembacaan production_id ikut lewat selector id juga.
-        submitAccProduction($('#btn-accept-production').attr('production_id'), false);
-    })
-
-    $(document).on('click', '#btn-confirm-create-stock-production', function(){
-        submitAccProduction($('#btn-confirm-create-stock-production').attr('production_id'), true);
-    })
-
-    $(document).on('click', '.btn_decline_produksi', function(){
-        // var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
-        var production_id = $(this).attr('production_id');
-        $('.modal').modal('hide');
-        showModalDelete("Apakah yakin ingin tolak produksi ini?","btn-decline-production");
-        $('#btn-decline-production').attr("production_id", production_id);
-        $('.btn-konfirmasi').html("Konfirmasi");
-    })
-
-    $(document).on('click', '#btn-decline-production', function(){
-        LoadingButton(this);
-        $.ajax({
-            url:"/declineProduction",
-            data:{
-                production_id:$('#btn-decline-production').attr('production_id'),
-                _token:token
-            },
-            method:"post",
-            success:function(e){
-                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                $('.modal').modal("hide");
-                if (e.status == -2){
-                    notifikasi('error', e.header, e.message);
-                    refreshProduction()
+                    notifikasi("error", e.header, e.message);
+                    if (e.status == -2) {
+                        $(".modal").modal("hide");
+                        refreshProduction();
+                    }
+                    ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
                     return false;
+                } else {
+                    ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+                    notifikasi(
+                        "error",
+                        "Gagal Update",
+                        "Stock Product yang tidak mencukupi : " + e,
+                    );
                 }
-                refreshProduction()
-                notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
-                
-            },
-            error:function(e){
-                console.log(e);
-                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+            } else {
+                ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+                refreshProduction();
+                $(".modal").modal("hide");
+                notifikasi(
+                    "success",
+                    "Berhasil Terima",
+                    (e && e.message) || "Stock Transfer hasil produksi dibuat",
+                );
             }
-        });
-    })
+        },
+        error: function (e) {
+            console.log(e);
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+        },
+    });
+}
 
-$(document).on('click', '.btn-prev', function(){
-    var index = parseInt($('#fotoProduksiImage').attr('index'));
-    if(index > 0){
+$(document).on("click", "#btn-accept-production", function () {
+    // Baca lewat selector id (bukan $(this)) — .btn-konfirmasi juga dipakai tombol lain
+    // (mis. #modalDelete) sehingga showModalKonfirmasi() bisa menaruh id yang sama di lebih
+    // dari satu elemen; supaya konsisten dengan tempat penulisannya (juga lewat selector id),
+    // pembacaan production_id ikut lewat selector id juga.
+    submitAccProduction(
+        $("#btn-accept-production").attr("production_id"),
+        false,
+    );
+});
+
+$(document).on("click", "#btn-confirm-create-stock-production", function () {
+    submitAccProduction(
+        $("#btn-confirm-create-stock-production").attr("production_id"),
+        true,
+    );
+});
+
+$(document).on("click", ".btn_decline_produksi", function () {
+    // var data = $('#tableProduction').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+    var production_id = $(this).attr("production_id");
+    $(".modal").modal("hide");
+    showModalDelete(
+        "Apakah yakin ingin tolak produksi ini?",
+        "btn-decline-production",
+    );
+    $("#btn-decline-production").attr("production_id", production_id);
+    $(".btn-konfirmasi").html("Konfirmasi");
+});
+
+$(document).on("click", "#btn-decline-production", function () {
+    LoadingButton(this);
+    $.ajax({
+        url: "/declineProduction",
+        data: {
+            production_id: $("#btn-decline-production").attr("production_id"),
+            _token: token,
+        },
+        method: "post",
+        success: function (e) {
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            $(".modal").modal("hide");
+            if (e.status == -2) {
+                notifikasi("error", e.header, e.message);
+                refreshProduction();
+                return false;
+            }
+            refreshProduction();
+            notifikasi("success", "Berhasil Tolak", "Berhasil Tolak Pengajuan");
+        },
+        error: function (e) {
+            console.log(e);
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+        },
+    });
+});
+
+$(document).on("click", ".btn-prev", function () {
+    var index = parseInt($("#fotoProduksiImage").attr("index"));
+    if (index > 0) {
         index -= 1;
-        $('#fotoProduksiImage').attr('src', public+list_photo[index].pp_photo);
-        $('#fotoProduksiImage').attr('index', index);
-        $('#btn_download_photo').attr('href', public+list_photo[index].pp_photo);
+        $("#fotoProduksiImage").attr(
+            "src",
+            public + list_photo[index].pp_photo,
+        );
+        $("#fotoProduksiImage").attr("index", index);
+        $("#btn_download_photo").attr(
+            "href",
+            public + list_photo[index].pp_photo,
+        );
     }
 });
-$(document).on('click', '.btn-next', function(){
-    var index = parseInt($('#fotoProduksiImage').attr('index'));
-    if(index < list_photo.length - 1){
+$(document).on("click", ".btn-next", function () {
+    var index = parseInt($("#fotoProduksiImage").attr("index"));
+    if (index < list_photo.length - 1) {
         index += 1;
-        $('#fotoProduksiImage').attr('src', public+list_photo[index].pp_photo);
-        $('#fotoProduksiImage').attr('index', index);
-        $('#btn_download_photo').attr('href', public+list_photo[index].pp_photo);
+        $("#fotoProduksiImage").attr(
+            "src",
+            public + list_photo[index].pp_photo,
+        );
+        $("#fotoProduksiImage").attr("index", index);
+        $("#btn_download_photo").attr(
+            "href",
+            public + list_photo[index].pp_photo,
+        );
     }
 });
 
-$(document).on('click', '.LihatfotoProduksi', function(){
-       list_photo = [];
-       $('#fotoProduksiImage').attr('src', public+"no_img.png");
-       $.ajax({
+$(document).on("click", ".LihatfotoProduksi", function () {
+    list_photo = [];
+    $("#fotoProduksiImage").attr("src", public + "no_img.png");
+    $.ajax({
         url: "/getFotoProduksi",
         data: {
-            pp_date: $('#date_production').val(),
+            pp_date: $("#date_production").val(),
             _token: token,
         },
         method: "get",
         success: function (e) {
             console.log(e);
- 
-            if(e.length > 0){
+
+            if (e.length > 0) {
                 list_photo = e;
-                $('#modalViewPhoto .modal-footer').show();
-                $('#fotoProduksiImage').attr('src', public+e[0].pp_photo);
-                $('#fotoProduksiImage').attr('index', 0);
-                $('#btn_download_photo').attr('href', public+e[0].pp_photo);
+                $("#modalViewPhoto .modal-footer").show();
+                $("#fotoProduksiImage").attr("src", public + e[0].pp_photo);
+                $("#fotoProduksiImage").attr("index", 0);
+                $("#btn_download_photo").attr("href", public + e[0].pp_photo);
+            } else {
+                $("#modalViewPhoto .modal-footer").hide();
             }
-            else{
-                $('#modalViewPhoto .modal-footer').hide();
-            }
-            $('#modalViewPhoto').modal('show');
+            $("#modalViewPhoto").modal("show");
         },
         error: function (e) {
             console.log(e);

@@ -1,43 +1,74 @@
 
-    var table = $('.datatable').DataTable();
+    var table = null;
     var preservedRoleAccessExtras = [];
-    
-    $(document).ready(function(){
-        console.log(perm)
-        $('.role_name').html(data.role_name)
-        var moduleNames = new Set();
-        $(table.rows().nodes()).each(function(){
-            moduleNames.add(String($(this).attr("module") || ""));
-        });
-        preservedRoleAccessExtras = (perm || []).filter(function(item){
-            return !moduleNames.has(String(item && item.name ? item.name : ""));
-        });
-        if(perm.length>0){
-            perm.forEach(item => {
-                $(table.rows().nodes()).each(function(){
-                    console.log(item.name)
-                    console.log($(this).attr("module"))
-                    if(item.name == $(this).attr("module")){
-                      
-                        if(item.akses.length==5){
-                            $(this).find(".all").prop("checked",true).trigger("change");
-                            item.akses.forEach(element => {
-                                $(this).find("."+element).prop("checked",true);
-                            });
-                        }
-                        else{
-                            item.akses.forEach(element => {
-                                $(this).find("."+element).prop("checked",true);
-                            });
-                        }
-                    }
-                }) 
-            });
+
+    $(document).ready(function () {
+        $(".role_name").html(data.role_name);
+
+        if ($.fn.DataTable.isDataTable("#tablePermission")) {
+            table = $("#tablePermission").DataTable();
+            applyPermissionChecks();
+            $("#tablePermission-wrap").removeClass("dt-pending").addClass("dt-ready");
+            return;
         }
 
+        table = $("#tablePermission").DataTable({
+            processing: false,
+            bFilter: true,
+            sDom: "fBtlpi",
+            lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
+            ordering: true,
+            autoWidth: false,
+            language: {
+                search: " ",
+                searchPlaceholder: "Cari data...",
+                sLengthMenu: "_MENU_",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                paginate: {
+                    next: ' <i class="fa fa-angle-right"></i>',
+                    previous: '<i class="fa fa-angle-left"></i> ',
+                },
+            },
+            initComplete: function () {
+                table = this.api();
+                applyPermissionChecks();
+                $("#tablePermission-wrap").removeClass("dt-pending").addClass("dt-ready");
+            },
+        });
     });
-    
-       
+
+    function applyPermissionChecks() {
+        if (!table) return;
+
+        var moduleNames = new Set();
+        $(table.rows().nodes()).each(function () {
+            moduleNames.add(String($(this).attr("module") || ""));
+        });
+
+        preservedRoleAccessExtras = (perm || []).filter(function (item) {
+            return !moduleNames.has(String(item && item.name ? item.name : ""));
+        });
+
+        if (!perm || perm.length <= 0) return;
+
+        perm.forEach(function (item) {
+            $(table.rows().nodes()).each(function () {
+                if (item.name != $(this).attr("module")) return;
+
+                if (item.akses.length == 5) {
+                    $(this).find(".all").prop("checked", true).trigger("change");
+                    item.akses.forEach(function (element) {
+                        $(this).find("." + element).prop("checked", true);
+                    }.bind(this));
+                } else {
+                    item.akses.forEach(function (element) {
+                        $(this).find("." + element).prop("checked", true);
+                    }.bind(this));
+                }
+            });
+        });
+    }
     $(document).on("change",".all",function(){
         var isChecked = $(this).is(':checked');
         $(this).closest('.row-module').find('input[type="checkbox"]').prop('checked', isChecked);

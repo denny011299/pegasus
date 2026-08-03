@@ -27,7 +27,7 @@ class ProductVariant extends Model
         ], $data);
 
         $result = self::where("product_variants.status", "=", 1);
-        $result->join("products as pr", 'pr.product_id','product_variants.product_id');
+        $result->join("products as pr", 'pr.product_id', 'product_variants.product_id');
         $result->where("pr.status", "=", 1);
 
         // Filter berdasarkan product_id
@@ -40,10 +40,11 @@ class ProductVariant extends Model
             $result->where("product_variants.product_variant_sku", "like", "%" . $data["product_variant_sku"] . "%");
         }
 
-        if ($data["search_product"]){
+        if ($data["search_product"]) {
             $result->whereAny([
                 "pr.product_name",
-                "product_variants.product_variant_name"
+                "product_variants.product_variant_name",
+                "product_variants.product_variant_sku",
             ], "like", "%" . $data["search_product"] . "%");
         }
 
@@ -51,42 +52,42 @@ class ProductVariant extends Model
         if ($data["product_variant_id"]) {
             $result->where("product_variants.product_variant_id", "=", $data["product_variant_id"]);
         }
-        
+
 
         if ($data["search"]) {
             $result->where(function ($q) use ($data) {
                 $q->where("product_variants.product_variant_sku", "=", $data["search"])
-                  ->orWhere("product_variants.product_variant_barcode", "=", $data["search"]);
+                    ->orWhere("product_variants.product_variant_barcode", "=", $data["search"]);
             });
         }
 
         // Filter berdasarkan product_variant_id
         if ($data["category_id"]) {
-            $result->join("products as p", 'p.product_id','product_variants.product_id');
-            $result->where('category_id','=',$data["category_id"]);
+            $result->join("products as p", 'p.product_id', 'product_variants.product_id');
+            $result->where('category_id', '=', $data["category_id"]);
         }
-        
+
         $result->select('product_variants.*');
         $result->orderBy("pr.product_name", "asc");
 
         $variants = $result->get();
-        
+
         // Menambahkan nama produk dari relasi
         foreach ($variants as $variant) {
             $p = Product::find($variant->product_id);
-            $u =  Unit::whereIn('unit_id', json_decode($p->product_unit,true))->first();
+            $u =  Unit::whereIn('unit_id', json_decode($p->product_unit, true))->first();
 
             $variant->pr_name = $p ? $p->product_name : "-";
             $variant->product_unit = $u ? $u->unit_name : "-";
             $variant->product_category = Category::find($p->category_id)->category_name ?? "-";
             $variant->category_id = $p->category_id;
-            $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit,true))->get();
-            $variant->relasi = (new ProductRelation())->getProductRelation(['product_variant_id' =>$variant->product_variant_id]);
+            $variant->pr_unit = Unit::whereIn('unit_id', json_decode($p->product_unit, true))->get();
+            $variant->relasi = (new ProductRelation())->getProductRelation(['product_variant_id' => $variant->product_variant_id]);
             $variant->stock = (new ProductStock())->getProductStock([
                 "product_variant_id" => $variant->product_variant_id,
                 "relations" => $variant->relasi,
             ]);
-            
+
             // Get nama unit default
 
             // Get stock
@@ -183,7 +184,7 @@ class ProductVariant extends Model
         foreach ($products as $pid => $p) {
             $uids = json_decode($p->product_unit, true) ?: [];
             $prUnitsByProductId[$pid] = collect($uids)
-                ->map(fn ($uid) => $units->get((int) $uid))
+                ->map(fn($uid) => $units->get((int) $uid))
                 ->filter()
                 ->values();
         }
@@ -231,15 +232,15 @@ class ProductVariant extends Model
 
     public function insertProductVariant($data)
     {
-        if($data["variant_name"]=="standar")$data["variant_name"] = "";
+        if ($data["variant_name"] == "standar") $data["variant_name"] = "";
         $t = new self();
         $t->product_id = $data["product_id"];
         $t->product_variant_name = $data["variant_name"];
         $t->product_variant_sku = $data["variant_sku"];
         $t->unit_id = $data["unit_id"];
-      //  $t->product_variant_price = $data["variant_price"]!=""? $data["variant_price"] : 0;
-        $t->product_variant_barcode = $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
-        $t->product_variant_alert = $data["variant_alert"]!="" ? $data["variant_alert"] : 0;
+        //  $t->product_variant_price = $data["variant_price"]!=""? $data["variant_price"] : 0;
+        $t->product_variant_barcode = $data["variant_barcode"] != "" ? $data["variant_barcode"] : $t->generateBarcode();
+        $t->product_variant_alert = $data["variant_alert"] != "" ? $data["variant_alert"] : 0;
         $t->product_variant_stock = 0;
         $t->safety_stock = isset($data["safety_stock"]) && $data["safety_stock"] !== ""
             ? (int) $data["safety_stock"]
@@ -250,6 +251,7 @@ class ProductVariant extends Model
         if (Schema::hasColumn($t->getTable(), 'retail_unit')) {
             $t->retail_unit = ! empty($data["retail_unit"]) ? (int) $data["retail_unit"] : null;
         }
+        $t->qty_per_pallet = $this->normalizeQtyPerPallet($data['qty_per_pallet'] ?? null);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->product_variant_id;
@@ -269,15 +271,18 @@ class ProductVariant extends Model
                 "safety_stock" => $data["safety_stock"] ?? 0,
                 "safety_unit_id" => $data["safety_unit_id"] ?? null,
                 "retail_unit" => $data["retail_unit"] ?? null,
+                "lead_time_days" => $data["lead_time_days"] ?? 0,
+                "qty_per_pallet" => $data["qty_per_pallet"] ?? null,
             ]);
         }
         $t->product_id = $data["product_id"];
         $t->product_variant_name = $data["variant_name"];
         $t->product_variant_sku = $data["variant_sku"];
-      //  $t->product_variant_price = $data["variant_price"]!=""? $data["variant_price"] : 0;
-        $t->product_variant_barcode =  $data["variant_barcode"]!="" ? $data["variant_barcode"] : $t->generateBarcode();
+        //  $t->product_variant_price = $data["variant_price"]!=""? $data["variant_price"] : 0;
+        $t->product_variant_barcode =  $data["variant_barcode"] != "" ? $data["variant_barcode"] : $t->generateBarcode();
         $t->product_variant_alert = $data["variant_alert"];
         $t->unit_id = $data["unit_id"];
+        $t->lead_time_days = max(0, (int) ($data["lead_time_days"] ?? 0));
         if (array_key_exists('safety_stock', $data)) {
             $t->safety_stock = $data["safety_stock"] !== "" && $data["safety_stock"] !== null
                 ? (int) $data["safety_stock"]
@@ -291,10 +296,21 @@ class ProductVariant extends Model
         if (Schema::hasColumn($t->getTable(), 'retail_unit') && array_key_exists('retail_unit', $data)) {
             $t->retail_unit = ! empty($data["retail_unit"]) ? (int) $data["retail_unit"] : null;
         }
+        $t->qty_per_pallet = $this->normalizeQtyPerPallet($data['qty_per_pallet'] ?? null);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
         return $t->product_variant_id;
+    }
+
+    private function normalizeQtyPerPallet($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $qty = (int) $value;
+
+        return $qty > 0 ? $qty : null;
     }
 
     public function deleteProductVariant($data)
@@ -307,9 +323,10 @@ class ProductVariant extends Model
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
-     function generateBarcode() {
-       do {
-        // Generate angka acak sebanyak 12 digit
+    function generateBarcode()
+    {
+        do {
+            // Generate angka acak sebanyak 12 digit
             $barcode = (string) random_int(100000000000, 999999999999);
         } while (self::where('product_variant_barcode', $barcode)->exists());
         return $barcode;

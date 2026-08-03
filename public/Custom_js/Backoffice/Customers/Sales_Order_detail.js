@@ -1,7 +1,8 @@
     var mode=1;
     var canDeliveryApproval = false;
     var tablePr, tableDn, tableInv, tablePrModal;
-    let detail_delivery = []
+    let detail_delivery = [];
+    var deliveryRows = [];
 
     function matchingSoLine(row) {
         if (!data.items || !data.items.length) return null;
@@ -24,6 +25,7 @@
     }
     // autocompleteStaff("#sdo_receiver",null);
     autocompleteCustomer("#so_customer",null);
+    autocompleteProductVariantOnly("#sdo_product_sku", "#add_sales_delivery");
     $(document).ready(function(){
         canDeliveryApproval = hasAccessAction("Pengiriman", "others");
         if (!canDeliveryApproval) {
@@ -32,6 +34,70 @@
         inisialisasi();
         refresh();
         refreshSummary();
+    });
+
+    $(document).on("change", "#sdo_product_sku", function () {
+        var product = $(this).select2("data")[0] || {};
+        var $unit = $("#sdo_product_unit").empty();
+        var units = Array.isArray(product.pr_unit) ? product.pr_unit : [];
+        units.forEach(function (u) {
+            $unit.append(
+                $("<option>", {
+                    value: u.unit_id,
+                    text: u.unit_name || u.unit_short_name || "-",
+                })
+            );
+        });
+        if (units.length) {
+            $unit.val(product.default_unit || product.unit_id || units[0].unit_id);
+        }
+    });
+
+    $(document).on("click", "#btn_add_sdo_product", function () {
+        var product = $("#sdo_product_sku").select2("data")[0];
+        var qty = parseInt($("#sdo_product_qty").val(), 10) || 0;
+        var unitId = parseInt($("#sdo_product_unit").val(), 10) || 0;
+        if (!product || !product.product_variant_id) {
+            notifikasi("error", "Produk wajib", "Pilih produk terlebih dahulu.");
+            return;
+        }
+        if (qty <= 0 || unitId <= 0) {
+            notifikasi("error", "Qty/Satuan wajib", "Isi qty dan satuan pengiriman.");
+            return;
+        }
+        var unitName = $("#sdo_product_unit option:selected").text() || "-";
+        var existing = deliveryRows.find(function (row) {
+            return (
+                String(row.product_variant_id) === String(product.product_variant_id) &&
+                String(row.unit_id) === String(unitId)
+            );
+        });
+        if (existing) {
+            existing.sdod_qty = (parseInt(existing.sdod_qty, 10) || 0) + qty;
+        } else {
+            deliveryRows.push({
+                product_variant_id: product.product_variant_id,
+                product_name: product.pr_name || product.product_name || "-",
+                product_variant_name: product.product_variant_name || "",
+                product_variant_sku: product.product_variant_sku || "",
+                sdod_sku: product.product_variant_sku || "",
+                sdod_qty: qty,
+                unit_id: unitId,
+                unit_name: unitName,
+                pr_unit: product.pr_unit || [],
+            });
+        }
+        $("#sdo_product_sku").val(null).trigger("change");
+        $("#sdo_product_qty").val(1);
+        $("#sdo_product_unit").empty();
+        refreshTableProduct(deliveryRows);
+    });
+
+    $(document).on("click", ".btn-remove-sdo-row", function () {
+        var idx = parseInt($(this).data("index"), 10);
+        if (isNaN(idx)) return;
+        deliveryRows.splice(idx, 1);
+        refreshTableProduct(deliveryRows);
     });
     
     function inisialisasi() {
@@ -256,15 +322,20 @@
 
     $(document).on('click', '.btnAddDn', function(){
         mode=1;
+        deliveryRows = [];
         $('#add_sales_delivery .modal-title').html("Tambah Catatan Pengiriman");
         $('#add_sales_delivery .form-control').val("");
         $('#sdo_date').val(moment().format('YYYY-MM-DD'));
         $('.is-invalid').removeClass('is-invalid');
         $('.row-acc').hide();
-        $('.btn-save-delivery').show();
+        $('.btn-save-delivery').show().html('Tambah Catatan Pengiriman');
         $('#sdo_receiver').empty();
+        $('#sdo_product_sku').val(null).trigger('change');
+        $('#sdo_product_qty').val(1);
+        $('#sdo_product_unit').empty();
+        $('.delivery-product-picker').show();
         tableSalesDelivery();
-        refreshTableProduct(data.items);
+        refreshTableProduct([]);
         $('#add_sales_delivery').modal("show");
     })
 
@@ -281,8 +352,8 @@
 
     function tableSalesDelivery(){
         if ($.fn.DataTable.isDataTable('#tableSalesDelivery')) {
-            tablePrModal = $('#tableSalesDelivery').DataTable();
-            return;
+            $('#tableSalesDelivery').DataTable().clear().destroy();
+            $('#tableSalesDelivery tbody').empty();
         }
         tablePrModal = $('#tableSalesDelivery').DataTable({
             bFilter: true,
@@ -302,11 +373,12 @@
                 }, 
             }, 
             columns: [ 
-                { data: "name", width: "28%" }, 
-                { data: "variant", width: "18%" }, 
-                { data: "sku", width: "22%" }, 
+                { data: "name", width: "24%" }, 
+                { data: "variant", width: "16%" }, 
+                { data: "sku", width: "18%" }, 
                 { data: "stock", width: "14%", className: "text-center" }, 
-                { data: "unit_display", width: "18%", className: "text-center", orderable: false }, 
+                { data: "unit_display", width: "16%", className: "text-center", orderable: false },
+                { data: "action", width: "12%", className: "text-center", orderable: false },
             ], 
             initComplete: (settings, json) => { 
                 $('.dataTables_filter').appendTo('#tableSearch'); 
@@ -318,27 +390,22 @@
 
     function refreshTableProduct(e){
         tablePrModal.clear().draw();
-        // Manipulasi data sebelum dimasukkan ke tabel
-        if(e){
-            console.log(e);
-            console.log(data);
-            
-            for (let i = 0; i < e.length; i++) {
-                const soLine = matchingSoLine(e[i]);
-                const unitName =
-                    e[i].unit_name || (soLine && soLine.unit_name) || "—";
-                e[i].variant =
-                    e[i].sod_variant || e[i].product_variant_name || "—";
-                e[i].stock = `<input type="number" class="form-control qtyDn text-center" index="${i + 1}" value="${e[i].sod_qty || e[i].sdod_qty}" min="0">`;
-                e[i].unit_display = `<span class="d-block py-2 text-center text-nowrap">${unitName}</span>`;
-                e[i].name = e[i].sod_nama || `${e[i].product_name} ${e[i].product_variant_name || ""}`.trim();
-                console.log(e[i])
-                e[i].sku = e[i].sod_sku || e[i].sdod_sku;
+        deliveryRows = Array.isArray(e) ? e.slice() : [];
+        if(deliveryRows.length){
+            for (let i = 0; i < deliveryRows.length; i++) {
+                const row = deliveryRows[i];
+                const unitName = row.unit_name || "—";
+                row.variant = row.sod_variant || row.product_variant_name || "—";
+                row.stock = `<input type="number" class="form-control qtyDn text-center" data-index="${i}" value="${row.sdod_qty || row.sod_qty || 1}" min="0">`;
+                row.unit_display = `<span class="d-block py-2 text-center text-nowrap">${unitName}</span>`;
+                row.name = row.sod_nama || `${row.product_name || ""} ${row.product_variant_name || ""}`.trim() || "—";
+                row.sku = row.sdod_sku || row.sod_sku || row.product_variant_sku || "—";
+                row.action = `<button type="button" class="btn btn-sm btn-outline-danger btn-remove-sdo-row" data-index="${i}"><i class="fe fe-trash-2"></i></button>`;
             }
-            tablePrModal.rows.add(e).draw();
+            tablePrModal.rows.add(deliveryRows).draw();
         }
 
-        feather.replace(); // biar icon feather muncul lagi
+        feather.replace();
     }
 
     // Refresh Summary & Input qty
@@ -439,29 +506,20 @@
 
     function insertDeliveryDetail(){
         detail_delivery = [];
-        $('#tableSalesDelivery tbody tr').each(function(index) {
-            var dataDelivery = $('#tableSalesDelivery').DataTable().row(this).data(); // pakai this saja
-            
-            //if (mode == 1) dataDelivery = dataDelivery.product_variant;
-            
-            let qty = parseInt($(this).find('.qtyDn').val()) || 0;
-            console.log(index);
-            const soLine = matchingSoLine(dataDelivery);
-            const unitId =
-                (soLine && soLine.unit_id) != null
-                    ? soLine.unit_id
-                    : dataDelivery.unit_id;
-
+        deliveryRows.forEach(function (row, index) {
+            var $input = $('#tableSalesDelivery tbody tr').eq(index).find('.qtyDn');
+            var qty = parseInt($input.val(), 10);
+            if (isNaN(qty)) qty = parseInt(row.sdod_qty, 10) || 0;
+            row.sdod_qty = qty;
             let item = {
-                ...dataDelivery,
-                product_variant_id: dataDelivery.product_variant_id,
-                sdod_sku: dataDelivery.product_variant_sku || dataDelivery.sod_sku,
+                product_variant_id: row.product_variant_id,
+                sdod_sku: row.sdod_sku || row.product_variant_sku || row.sod_sku || '',
                 sdod_qty: qty,
-                unit_id: unitId
+                unit_id: row.unit_id,
+                unit_name: row.unit_name,
             };
-            
-            if(mode==2){
-                item.sdod_id = dataDelivery.sdod_id;
+            if (mode == 2 && row.sdod_id) {
+                item.sdod_id = row.sdod_id;
             }
             detail_delivery.push(item);
         });
@@ -487,6 +545,11 @@
         };
 
         insertDeliveryDetail();
+        if (!detail_delivery.length) {
+            notifikasi('error', "Produk kosong", "Tambah minimal 1 produk untuk catatan pengiriman.");
+            ResetLoadingButton('.btn-save-delivery', mode == 1 ? 'Tambah Catatan Pengiriman' : 'Simpan perubahan');
+            return false;
+        }
         console.log(data.so_id);
         
         param = {
@@ -663,9 +726,13 @@
         $('#sdo_date').val(data.sdo_date);
         $('#sdo_phone').val(data.sdo_phone);
         $('#sdo_desc').val(data.sdo_desc);
+        $('#sdo_product_sku').val(null).trigger('change');
+        $('#sdo_product_qty').val(1);
+        $('#sdo_product_unit').empty();
+        $('.delivery-product-picker').toggle(data.status == 1);
 
         tableSalesDelivery();
-        refreshTableProduct(data.items);
+        refreshTableProduct(data.items || []);
         if(data.status == 1){
             $('.btn-save-delivery').show();
             if (canDeliveryApproval) {

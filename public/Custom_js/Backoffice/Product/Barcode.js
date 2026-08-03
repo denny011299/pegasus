@@ -97,7 +97,13 @@
         }
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
-            var title = (r.nama_produk || "-") + " " + (r.nama_varian || "");
+            var title = ((r.nama_produk || "-") + " " + (r.nama_varian || "")).trim();
+            if (r.item_type !== "supplies" && r.sku) {
+                title = r.sku + " | " + title;
+            }
+            var details = r.item_type === "supplies"
+                ? [r.sku || "-", r.barcode || r.sku || "-", fmtRp(r.harga || 0)]
+                : [r.barcode && r.barcode !== r.sku ? r.barcode : null, fmtRp(r.harga || 0)].filter(Boolean);
             $box.append(
                 "<div class='barcode-result-item p-2 border-bottom' style='cursor:pointer' data-json='" +
                     escHtml(JSON.stringify(r)) +
@@ -107,11 +113,7 @@
                     escHtml(title.trim()) +
                     "</div>" +
                     "<small class='text-muted'>" +
-                    escHtml(r.sku || "-") +
-                    " · " +
-                    escHtml(r.barcode || r.sku || "-") +
-                    " · " +
-                    escHtml(fmtRp(r.harga || 0)) +
+                    escHtml(details.join(" · ")) +
                     "</small>" +
                 "</div>"
             );

@@ -1,58 +1,89 @@
 [
-  { "Id": 1, "Modules": "Master", "SubModules": "Kategori" },
-  { "Id": 2, "Modules": "Master", "SubModules": "Satuan" },
-  { "Id": 3, "Modules": "Master", "SubModules": "Variasi" },
-  { "Id": 4, "Modules": "Master", "SubModules": "Gudang" },
-  { "Id": 5, "Modules": "Master", "SubModules": "Tipe Gudang" },
+    { "Id": 1, "Modules": "Master", "SubModules": "Kategori" },
+    { "Id": 2, "Modules": "Master", "SubModules": "Satuan" },
+    { "Id": 3, "Modules": "Master", "SubModules": "Variasi" },
 
-  { "Id": 6, "Modules": "Produk", "SubModules": "Daftar Produk" },
-  { "Id": 7, "Modules": "Produk", "SubModules": "Stok Produk" },
+    { "Id": 6, "Modules": "Produk", "SubModules": "Daftar Produk" },
+    { "Id": 7, "Modules": "Produk", "SubModules": "Stok Produk" },
+    { "Id": 8, "Modules": "Produk", "SubModules": "Safety Stock" },
 
-  { "Id": 8, "Modules": "Bahan Mentah", "SubModules": "Daftar Bahan Mentah" },
-  { "Id": 9, "Modules": "Bahan Mentah", "SubModules": "Stok Bahan Mentah" },
+    { "Id": 9, "Modules": "Bahan Mentah", "SubModules": "Daftar Bahan Mentah" },
+    { "Id": 10, "Modules": "Bahan Mentah", "SubModules": "Stok Bahan Mentah" },
 
-  { "Id": 10, "Modules": "Armada", "SubModules": "Armada" },
-  { "Id": 11, "Modules": "Pemasok", "SubModules": "Pemasok" },
+    { "Id": 11, "Modules": "Armada", "SubModules": "Armada" },
+    { "Id": 12, "Modules": "Pemasok", "SubModules": "Pemasok" },
 
-  { "Id": 12, "Modules": "Inventaris", "SubModules": "Produk Bermasalah" },
-  { "Id": 13, "Modules": "Inventaris", "SubModules": "Peringatan Stok Produk" },
-  { "Id": 14, "Modules": "Inventaris", "SubModules": "Peringatan Stok Bahan Mentah" },
-  { "Id": 15, "Modules": "Inventaris", "SubModules": "Stok Opname Produk" },
-  { "Id": 16, "Modules": "Inventaris", "SubModules": "Stok Opname Bahan Mentah" },
+    { "Id": 13, "Modules": "Inventaris", "SubModules": "Produk Bermasalah" },
+    {
+        "Id": 14,
+        "Modules": "Inventaris",
+        "SubModules": "Peringatan Stok Produk"
+    },
+    {
+        "Id": 15,
+        "Modules": "Inventaris",
+        "SubModules": "Peringatan Stok Bahan Mentah"
+    },
+    { "Id": 16, "Modules": "Inventaris", "SubModules": "Stok Opname Produk" },
+    {
+        "Id": 17,
+        "Modules": "Inventaris",
+        "SubModules": "Stok Opname Bahan Mentah"
+    },
+    { "Id": 18, "Modules": "Inventaris", "SubModules": "Stock Transfer" },
 
-  { "Id": 17, "Modules": "Pengiriman", "SubModules": "Pengiriman" },
-  { "Id": 18, "Modules": "Pembelian", "SubModules": "Pembelian" },
-  { "Id": 19, "Modules": "Tanda Terima PO", "SubModules": "Tanda Terima PO" },
+    { "Id": 19, "Modules": "Pengiriman", "SubModules": "Pengiriman" },
+    { "Id": 20, "Modules": "Pembelian", "SubModules": "Pembelian" },
+    { "Id": 21, "Modules": "Tanda Terima PO", "SubModules": "Tanda Terima PO" },
 
-  { "Id": 20, "Modules": "Produksi", "SubModules": "Resep Bahan Mentah" },
-  { "Id": 21, "Modules": "Produksi", "SubModules": "Produksi" },
+    { "Id": 22, "Modules": "Produksi", "SubModules": "Resep Bahan Mentah" },
+    { "Id": 23, "Modules": "Produksi", "SubModules": "Produksi" },
 
-  { "Id": 22, "Modules": "Akuntansi", "SubModules": "Bank Account" },
-  { "Id": 23, "Modules": "Akuntansi", "SubModules": "Hutang" },
-  { "Id": 24, "Modules": "Akuntansi", "SubModules": "Tanda Terima PO" },
-  { "Id": 25, "Modules": "Akuntansi", "SubModules": "Kategori Kas" },
-  { "Id": 26, "Modules": "Akuntansi", "SubModules": "Kas Operasional Admin" },
-  { "Id": 27, "Modules": "Akuntansi", "SubModules": "Kas Operasional Gudang" },
-  { "Id": 28, "Modules": "Akuntansi", "SubModules": "Kas Operasional Armada" },
-  { "Id": 29, "Modules": "Akuntansi", "SubModules": "Kas Operasional Sales" },
-  { "Id": 30, "Modules": "Akuntansi", "SubModules": "Kas" },
+    { "Id": 24, "Modules": "Akuntansi", "SubModules": "Bank Account" },
+    { "Id": 25, "Modules": "Akuntansi", "SubModules": "Hutang" },
+    { "Id": 26, "Modules": "Akuntansi", "SubModules": "Tanda Terima PO" },
+    { "Id": 27, "Modules": "Akuntansi", "SubModules": "Kategori Kas" },
+    { "Id": 28, "Modules": "Akuntansi", "SubModules": "Kas Operasional Admin" },
+    {
+        "Id": 29,
+        "Modules": "Akuntansi",
+        "SubModules": "Kas Operasional Gudang"
+    },
+    {
+        "Id": 30,
+        "Modules": "Akuntansi",
+        "SubModules": "Kas Operasional Armada"
+    },
+    { "Id": 31, "Modules": "Akuntansi", "SubModules": "Kas Operasional Sales" },
+    { "Id": 32, "Modules": "Akuntansi", "SubModules": "Kas" },
 
-  { "Id": 31, "Modules": "Laporan", "SubModules": "Pengelolaan Bahan Mentah" },
-  { "Id": 32, "Modules": "Laporan", "SubModules": "Retur Produk" },
-  { "Id": 33, "Modules": "Laporan", "SubModules": "Laporan Produksi" },
-  { "Id": 34, "Modules": "Laporan", "SubModules": "Untung & Rugi" },
-  { "Id": 35, "Modules": "Laporan", "SubModules": "Barang Masuk Keluar" },
+    {
+        "Id": 33,
+        "Modules": "Laporan",
+        "SubModules": "Pengelolaan Bahan Mentah"
+    },
+    { "Id": 34, "Modules": "Laporan", "SubModules": "Retur Produk" },
+    { "Id": 35, "Modules": "Laporan", "SubModules": "Laporan Produksi" },
+    { "Id": 36, "Modules": "Laporan", "SubModules": "Untung & Rugi" },
+    { "Id": 37, "Modules": "Laporan", "SubModules": "Barang Masuk Keluar" },
+    { "Id": 38, "Modules": "Laporan", "SubModules": "Laporan Stock Aging" },
 
-  { "Id": 36, "Modules": "Manajemen Pengguna", "SubModules": "Pengguna" },
-  { "Id": 37, "Modules": "Manajemen Pengguna", "SubModules": "Peran & Perizinan" },
+    { "Id": 39, "Modules": "Manajemen Pengguna", "SubModules": "Pengguna" },
+    {
+        "Id": 40,
+        "Modules": "Manajemen Pengguna",
+        "SubModules": "Peran & Perizinan"
+    },
 
-  { "Id": 38, "Modules": "Pengaturan", "SubModules": "Profil" },
-  { "Id": 39, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
+    { "Id": 41, "Modules": "Pengaturan", "SubModules": "Profil" },
+    { "Id": 42, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
 
-  { "Id": 40, "Modules": "Laporan", "SubModules": "Laporan Stock Aging" },
-
-  { "Id": 41, "Modules": "Integrasi", "SubModules": "Sinkronisasi" },
-  { "Id": 42, "Modules": "Integrasi", "SubModules": "Aplikasi Eksternal" },
-  { "Id": 43, "Modules": "Integrasi", "SubModules": "Dokumentasi API Eksternal" },
-  { "Id": 44, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
+    { "Id": 43, "Modules": "Integrasi", "SubModules": "Sinkronisasi" },
+    { "Id": 44, "Modules": "Integrasi", "SubModules": "Aplikasi Eksternal" },
+    {
+        "Id": 45,
+        "Modules": "Integrasi",
+        "SubModules": "Dokumentasi API Eksternal"
+    },
+    { "Id": 46, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
 ]

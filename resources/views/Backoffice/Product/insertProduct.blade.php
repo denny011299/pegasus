@@ -119,17 +119,26 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        <div class="table-responsive">
+                                        <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
 
-                                            <table class="table" id="productVariantTable">
-                                                <thead>
+                                            <table class="table table-center table-hover mb-0" id="productVariantTable" style="margin: 0;">
+                                                <thead style="background:#f1f5f9; border-bottom: 1px solid #e2e8f0;">
                                                     <tr>
-                                                        <td>Nama Variasi<span class="text-danger">*</span></td>
-                                                        <td>SKU<span class="text-danger">*</span></td>
-                                                        {{-- <td>Harga<span class="text-danger">*</span></td> --}}
-                                                        <td>Barcode</td>
-                                                        <td>Peringatan Stok<span class="text-danger">*</span></td>
-                                                        <td class="text-center">Aksi</td>
+                                                        <th style="width:250px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Nama Variasi<span class="text-danger">*</span></th>
+                                                        <th style="width:150px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">SKU<span class="text-danger">*</span></th>
+                                                        <th style="width:150px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Barcode</th>
+                                                        <th style="width:230px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">
+                                                            Peringatan Stok<span class="text-danger">*</span>
+                                                            <div class="small text-muted fw-normal alert-stock-wh-label" style="font-size:10px;line-height:1.2;text-transform:none;letter-spacing:0;"></div>
+                                                        </th>
+                                                        <th style="width:160px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Satuan Eceran</th>
+                                                        <th style="width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Isi / Pallet<br><small class="text-muted fw-normal" style="font-size:10px;text-transform:none;letter-spacing:0;">opsional, utk Produksi</small></th>
+                                                        <th class="col-safety-stock d-none" style="width:230px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">
+                                                            Safety Stock
+                                                            <div class="small text-muted fw-normal safety-stock-wh-label" style="font-size:10px;line-height:1.2;text-transform:none;letter-spacing:0;"></div>
+                                                        </th>
+                                                        <th style="width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Lead Time (Hari)</th>
+                                                        <th class="text-center" style="width:100px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Aksi</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="tbVariant">
@@ -201,8 +210,9 @@
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";
-        var mode="{{$mode}}";
-        var data=@json($data);
+        var mode = "{{ $mode }}";
+        var data = {!! json_encode($data) !!};
+        var canAccessSafetyStock = false;
     </script>
     <script src="{{asset('Custom_js/Backoffice/Product/insertProduct.js')}}?v={{time()}}"></script>
 @endsection

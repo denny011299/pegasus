@@ -3,12 +3,31 @@ var canAdd = true;
 var rowId = 0;
 var relasi =[];
 var modeRelasi=0;
+var canAccessSafetyStock = false;
 autocompleteVariant("#product_variant");
 autocompleteCategory("#product_category");
 autocompleteUnit("#product_unit");
 
+function refreshSafetyStockAccess() {
+    canAccessSafetyStock = typeof hasAccessAction === "function"
+        && hasAccessAction("Safety Stock", "edit");
+    var whName = typeof getActiveWarehouseName === "function" ? getActiveWarehouseName() : null;
+    var whLabel = whName
+        ? ("Gudang aktif: " + whName)
+        : "Mengikuti gudang aktif di header";
+    $(".alert-stock-wh-label").text(whLabel);
+    if (canAccessSafetyStock) {
+        $(".col-safety-stock").removeClass("d-none");
+        $(".cell-safety-stock").removeClass("d-none");
+        $(".safety-stock-wh-label").text(whLabel);
+    } else {
+        $(".col-safety-stock").addClass("d-none");
+        $(".cell-safety-stock").addClass("d-none");
+    }
+}
 
 $(document).ready(function() {
+    refreshSafetyStockAccess();
     $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
     if (mode == 1) {
         canAdd=true;
@@ -24,39 +43,35 @@ $(document).ready(function() {
         $('#product_category').empty().append(`<option value="${data.category_id}">${data.product_category}</option>`);
         $('#tbVariant').html("");
         data.pr_variant.forEach((element,index) => {
-            
             addRow(element.product_variant_name);
             $('.row-variant').last().find('.variant_sku').val(element.product_variant_sku);
-            // $('.row-variant').last().find('.variant_price').val(formatRupiah(element.product_variant_price));
             $('.row-variant').last().find('.variant_barcode').val(element.product_variant_barcode);
             $('.row-variant').last().find('.variant_id').val(element.product_variant_id);
             $('.row-variant').last().find('.variant_alert').val(element.product_variant_alert);
-          
-            
+            $('.row-variant').last().find('.variant_safety_stock').val(element.safety_stock ?? 0);
+            $('.row-variant').last().find('.variant_lead_time').val(element.lead_time_days ?? 0);
+            if (element.retail_unit) {
+                $('.row-variant').last().find('.unit_retail').val(element.retail_unit);
+            }
+            $('.row-variant').last().find('.variant_qty_per_pallet').val(element.qty_per_pallet || '');
         });
 
-        
         $('#product_unit').empty();
-        $('#unit_id').empty(); 
+        $('#unit_id').empty();
         data.pr_unit.forEach(element => {
             var newOption = new Option(element.unit_short_name, element.unit_id, true, true);
             $('#product_unit').append(newOption).trigger("change");
         });
         $('#unit_id').val(data.unit_id).trigger("change");
-        
+
         relasi = [];
         data.pr_variant.forEach((element,index) => {
             relasi.push([]);
-            console.log("------------------------------------");
-            console.log(element);
-            
             element.relasi.forEach(rl => {
-                console.log(rl);
-                
                 relasi[index].push({
                     ...rl,
                     pr_id: rl.pr_id,
-                    unit_id_1: rl.pr_unit_id_1, 
+                    unit_id_1: rl.pr_unit_id_1,
                     unit_value_1: rl.pr_unit_value_1,
                     unit_id_2: rl.pr_unit_id_2,
                     unit_value_2: rl.pr_unit_value_2,
@@ -64,13 +79,17 @@ $(document).ready(function() {
                 });
             });
             $('.unit_alert').eq(index).val(element.unit_id);
+            if (element.safety_unit_id) {
+                $('.unit_safety').eq(index).val(element.safety_unit_id);
+            }
+            if (element.retail_unit) {
+                $('.unit_retail').eq(index).val(element.retail_unit);
+            }
         });
-        console.log('----------------------------');
-        console.log(relasi);
-        
-        
     }
-})
+    refreshSafetyStockAccess();
+});
+
 function syncRelasi(idx) {
     relasi[idx].push({
         pvr_id : null,
@@ -79,8 +98,8 @@ function syncRelasi(idx) {
         unit_id_2: null,
         unit_value_2: 0,
     });
-
 }
+
 $('#unit_id').on('click', function() {
    $('.select2-search__field').remove();
 });
@@ -89,75 +108,109 @@ $('#unit_id').on('change', function() {
 });
 
 $(document).on('click','.btnAddRow',function(){
-    
+    var units;
+    var safetyUnits;
+    var retailUnits;
     if($('#product_variant').val()!=""&&$('#product_variant').val()!=null) {
         $('#tbVariant').html("")
         relasi = [];
-        var data = $('#product_variant').select2('data')[0];
-        data.name = JSON.parse(data.variant_attribute);
+        var sel = $('#product_variant').select2('data')[0];
+        sel.name = JSON.parse(sel.variant_attribute);
         $('#product_variant').empty();
-        data.name.forEach((element,idx) => {
-           
+        sel.name.forEach((element,idx) => {
             addRow(element,idx);
-             var units = $('.unit_alert').last();
+            units = $('.unit_alert').last();
             units.html("");
             dataRelasi.forEach(item => {
                 units.append(`<option value="${item.id}" >${item.text}</option>`);
             });
+            safetyUnits = $('.unit_safety').last();
+            safetyUnits.html("");
+            dataRelasi.forEach(item => {
+                safetyUnits.append(`<option value="${item.id}" >${item.text}</option>`);
+            });
+            retailUnits = $('.unit_retail').last();
+            retailUnits.html('<option value="">-</option>');
+            dataRelasi.forEach(item => {
+                retailUnits.append(`<option value="${item.id}">${item.text}</option>`);
+            });
             relasi.push([]);
         });
-        
-        
     }
-   else{ 
+   else{
         relasi.push([]);
         addRow();
-         var units = $('.unit_alert').last();
+        units = $('.unit_alert').last();
         units.html("");
         dataRelasi.forEach(item => {
             units.append(`<option value="${item.id}" >${item.text}</option>`);
         });
+        safetyUnits = $('.unit_safety').last();
+        safetyUnits.html("");
+        dataRelasi.forEach(item => {
+            safetyUnits.append(`<option value="${item.id}" >${item.text}</option>`);
+        });
+        retailUnits = $('.unit_retail').last();
+        retailUnits.html('<option value="">-</option>');
+        dataRelasi.forEach(item => {
+            retailUnits.append(`<option value="${item.id}">${item.text}</option>`);
+        });
     }
     if (mode==2) modeRelasi=1;
-   
-    units.val(units.find('option:first').val());
+
+    if (units && units.length) units.val(units.find('option:first').val());
+    if (safetyUnits && safetyUnits.length) safetyUnits.val(safetyUnits.find('option:first').val());
    if(mode==2) $(".btn-save").trigger("click");
+   refreshSafetyStockAccess();
 });
 
 function addRow(names="",idx=0) {
+    var safetyCellClass = canAccessSafetyStock ? "cell-safety-stock" : "cell-safety-stock d-none";
     $('#tbVariant').append(`
-        <tr class="row-variant">
-            <td><input type="text" class="form-control fill variant_name" name="" id="" placeholder="Masukan Nama" value="${names}"></td>
-            <td><input type="text" class="form-control fill variant_sku" name="" id="" placeholder="Masukan Sku"></td>
-            <td><input type="text" class="form-control variant_barcode" name="" id="" placeholder="Masukan Barcode"><input type="hidden" class="form-control variant_id" name="" id="" placeholder=""></td>
-            <td>
+        <tr class="row-variant align-middle" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+            <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_name" placeholder="Masukan Nama" value="${names}"></td>
+            <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_sku" placeholder="SKU"></td>
+            <td style="padding: 12px 16px;"><input type="text" class="form-control variant_barcode" placeholder="Barcode"><input type="hidden" class="form-control variant_id"></td>
+            <td style="padding: 12px 16px;">
                 <div class="input-group">
-                    <input type="text" class="form-control fill variant_alert" aria-describedby="basic-addon3">
-                    <select class="form-select ms-2 variant_alert_type fill unit_alert" aria-label="Default select example">
-                       
-                    </select>
+                    <input type="text" class="form-control fill variant_alert" placeholder="Qty">
+                    <select class="form-select variant_alert_type fill unit_alert"></select>
                 </div>
             </td>
-            <td class="text-center d-flex align-items-center text-center">
-                <a class="p-2 btn-action-icon btn_delete_row"  href="javascript:void(0);">
-                    <i data-feather="trash-2" class="feather-trash-2"></i>
+            <td style="padding: 12px 16px;">
+                <select class="form-select unit_retail">
+                    <option value="">-</option>
+                </select>
+            </td>
+            <td style="padding: 12px 16px;">
+                <input type="number" min="1" class="form-control number-only variant_qty_per_pallet" placeholder="Qty">
+            </td>
+            <td class="${safetyCellClass}" style="padding: 12px 16px;">
+                <div class="input-group">
+                    <input type="text" class="form-control variant_safety_stock nominal-only" placeholder="Qty" value="0">
+                    <select class="form-select unit_safety"></select>
+                </div>
+            </td>
+            <td style="padding: 12px 16px;">
+                <input type="number" min="0" step="1" class="form-control variant_lead_time" placeholder="Hari" value="0">
+            </td>
+            <td class="d-flex align-items-center justify-content-center" style="padding: 12px 16px; gap: 8px;">
+                <a class="btn_edit_relasi d-inline-flex align-items-center justify-content-center" index="${$('.row-variant').length}" href="javascript:void(0);" style="width: 32px; height: 32px; background: #eff6ff; color: #3b82f6; border-radius: 8px; transition: all 0.2s ease;" title="Atur Relasi">
+                    <i data-feather="git-merge" style="width: 16px; height: 16px;"></i>
                 </a>
-                <a class="p-2 btn-action-icon btn_edit_relasi ms-2 " index="${$('.row-variant').length}" href="javascript:void(0);">
-                    <i data-feather="git-merge" class="feather-git"></i>
+                <a class="btn_delete_row d-inline-flex align-items-center justify-content-center" href="javascript:void(0);" style="width: 32px; height: 32px; background: #fee2e2; color: #ef4444; border-radius: 8px; transition: all 0.2s ease;" title="Hapus Variasi">
+                    <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
                 </a>
             </td>
         </tr>
     `);
-
-        
-
     feather.replace();
     rowId++;
+    refreshSafetyStockAccess();
 }
 
 $(document).on("click",".btn-save",function(){
     LoadingButton(this);
-
     $('.is-invalid').removeClass('is-invalid');
 
     var url ="/insertProduct";
@@ -167,7 +220,6 @@ $(document).on("click",".btn-save",function(){
             if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
                 valid=-1;
                 $(this).addClass('is-invalid');
-                console.log(this)
             }
         });
     }
@@ -177,7 +229,7 @@ $(document).on("click",".btn-save",function(){
         ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk");
         return false;
     };
-    
+
     param = {
          product_name:$('#product_name').val(),
          category_id:$('#product_category').val(),
@@ -186,25 +238,30 @@ $(document).on("click",".btn-save",function(){
          modeRelasi:modeRelasi,
          _token:token
     };
-    
+
     var temp=[];
     $('.row-variant').each(function(){
         var variant = {
             variant_name: $(this).find('.variant_name').val(),
             variant_sku: $(this).find('.variant_sku').val(),
-            // variant_price: convertToAngka($(this).find('.variant_price').val()),
             variant_barcode: $(this).find('.variant_barcode').val(),
             variant_alert: $(this).find('.variant_alert').val(),
             product_variant_id: $(this).find('.variant_id').val(),
             unit_id: $(this).find('.unit_alert').val(),
+            retail_unit: $(this).find('.unit_retail').val() || null,
+            lead_time_days: Math.max(0, parseInt($(this).find('.variant_lead_time').val(), 10) || 0),
+            qty_per_pallet: $(this).find('.variant_qty_per_pallet').val(),
         };
+        if (canAccessSafetyStock) {
+            variant.safety_stock = $(this).find('.variant_safety_stock').val() || 0;
+            variant.safety_unit_id = $(this).find('.unit_safety').val() || null;
+        }
         temp.push(variant);
     });
 
     param.product_variant = JSON.stringify(temp);
     param.product_relasi = JSON.stringify(relasi);
-    console.log(relasi);
-    
+
     if(mode==2){
         url="/updateProduct";
         param.product_id = data.product_id;
@@ -215,10 +272,8 @@ $(document).on("click",".btn-save",function(){
         url:url,
         data: param,
         method:"post",
-        headers: {
-            'X-CSRF-TOKEN': token
-        },
-        success:function(e){      
+        headers: { 'X-CSRF-TOKEN': token },
+        success:function(e){
             ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
             if (e == 1){
                 if(modeRelasi==0){
@@ -259,26 +314,14 @@ $(document).on("click","#btnAddRowRelasi",function(){
         notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh sama");
         return false;
     }
-
-    var currentIndex = $('.row-relasi').length;
-    console.log("Menambahkan Baris ke-" + currentIndex + ": " + r1 + " - " + r2);
-    
     addRowRelasi(
-        {
-            pr_unit_id_1: r1, 
-            pr_unit_name_1: $('#relasi1 option:selected').text().trim()
-
-        },
-        {
-            pr_unit_id_2: r2, 
-            pr_unit_name_2: $('#relasi2 option:selected').text().trim()
-        }
+        { pr_unit_id_1: r1, pr_unit_name_1: $('#relasi1 option:selected').text().trim() },
+        { pr_unit_id_2: r2, pr_unit_name_2: $('#relasi2 option:selected').text().trim() }
     );
 });
 
 $(document).on("change","#product_unit",function(){
     dataRelasi = $(this).select2("data");
-    // Pengecekan apakah sudah selected atau belum
     var select = dataRelasi.length==1?1:$('#unit_id').val();
 
     $('#unit_id,#relasi1,#relasi2').html("");
@@ -289,40 +332,23 @@ $(document).on("change","#product_unit",function(){
 
     if(dataRelasi.length>1)$('#unit_id').val(select);
     else $('#unit_id').eq(select).prop('selected', true);
-
     $('#unit_id').trigger("change");
-    
-    if(canAdd==true){
-        
-        $('#tbRelasi').html("");
-        dataRelasi.forEach((element,index) => {
-           // if(index>0)addRowRelasi(dataRelasi[index-1],element); 
-        });
 
-    }
-    
-    if (dataRelasi.length == 1) {
+    if (dataRelasi.length == 1 || dataRelasi.length < 1) {
         $('#tbRelasi').html("");
+        if (dataRelasi.length < 1) $('#unit_id').val("");
     }
 
-    else if (dataRelasi.length < 1) {
-        $('#tbRelasi').html("");
-        $('#unit_id').val("");
-    }
-    $('.unit_alert').each(function() {
+    $('.unit_alert, .unit_safety, .unit_retail').each(function() {
         var units = $(this);
         var vl = units.val();
-        console.log(vl);
-        units.html("");
+        var isRetail = units.hasClass('unit_retail');
+        units.html(isRetail ? '<option value="">-</option>' : '');
         dataRelasi.forEach(item => {
             units.append(`<option value="${item.id}" ${vl==item.id?'selected':''}>${item.text}</option>`);
         });
-
-        if (vl != null && vl !== "") {
-            units.val(vl);
-        } else {
-            units.val(units.find('option:first').val());
-        }
+        if (vl != null && vl !== "") units.val(vl);
+        else if (!isRetail) units.val(units.find('option:first').val());
     });
 });
 
@@ -336,13 +362,7 @@ $(document).on("change",".unit_alert",function(){
     }
 });
 
-$('#unit_id').on('click', function() {
-   $('.select2-search__field').remove();
-});
-
 function addRowRelasi(element1,element2) {
-    console.log(element1);
-    
     $('#tbRelasi').append(`
         <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${dataRelasi[dataRelasi.length-1].pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : element2.pr_unit_id_2}">
             <td>
@@ -369,8 +389,8 @@ function addRowRelasi(element1,element2) {
                     <i class="fe fe-trash-2"></i>
                 </a>
             </td>
-        </tr>    
-    `);      
+        </tr>
+    `);
     feather.replace();
 }
 
@@ -378,13 +398,6 @@ $(document).on('click', '.btn_delete_relasi', function() {
     $(this).closest('tr').remove();
 });
 
-function cekKembar() {
-    relasi.forEach(element => {
-        element.forEach((item,index) => {
-            if(item.unit_id_1==item.unit_id_2) element.splice(index,1);
-        });
-    });
-}
 $(document).on("click",".btn_delete_row",function(){
     if($('.row-variant').length<2) {
         notifikasi('error', "Gagal Hapus", "Minimal 1 varian harus ada");
@@ -409,10 +422,7 @@ function reset() {
     `);
 }
 
-$(document).on('click', '.btn-back', function(){
-    history.go(-1);
-})
-
+$(document).on('click', '.btn-back', function(){ history.go(-1); })
 $(document).on('click', '.btn-clear', function(){
     $('.is-invalid').removeClass('is-invalid');
     $('.form-control').val("");
@@ -429,11 +439,7 @@ $(document).on('click', '#btnSaveRelasi', function(){
             $(this).addClass('is-invalid');
         }
     });
-    
-    if(valid==-1){
-        return false;
-    }
-    console.log(relasi[index]);
+    if(valid==-1) return false;
 
     relasi[index] = $('.row-relasi').map(function(idx, el) {
         var row = $(el);
@@ -446,15 +452,12 @@ $(document).on('click', '#btnSaveRelasi', function(){
             pr_unit_name_2: row.find('.unit_text_2').text().trim(),
             pr_id: row.find('.pr_id').val()
         };
-    }).get(); // .get() mengubah hasil map jQuery menjadi array murni
-
-    console.log("Data Relasi Terbaru:", relasi[index]);
+    }).get();
 
     if(mode == 1){
         $('#modalRelasi').modal('hide');
         notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Relasi Unit');
-    }
-    else{
+    } else {
         modeRelasi = 1;
         $(".btn-save").trigger("click");
     }
@@ -463,22 +466,10 @@ $(document).on('click', '#btnSaveRelasi', function(){
 $(document).on('click', '.btn_edit_relasi', function(){
     $('.is-invalid').removeClass('is-invalid');
     var index = $(this).attr('index');
-    console.log(index);
-    
     $('#btnSaveRelasi').attr('index',index);
-    /*
-    $('.unit2').each(function(indexRow) {
-        if(relasi[index][[indexRow]])$(this).val(relasi[index][indexRow].unit_value_2);
-        else  $(this).val(0);
-    });*/
-    console.log(relasi);
-    
     $('#tbRelasi').html("");
     if(relasi[index]) {
-        relasi[index].forEach((item, idx) => {
-            addRowRelasi(item, item); 
-        });
+        relasi[index].forEach((item) => { addRowRelasi(item, item); });
     }
-    
     $('#modalRelasi').modal('show');
-})
+});

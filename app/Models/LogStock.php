@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UnitStockSorter;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -18,18 +19,26 @@ class LogStock extends Model
     {
 
         $data = array_merge([
-            "log_notes"=>null,
-            "log_type"=>null,
-            "log_item_id"=>null,
-            "date"=>null,
-            "warehouse_id"=>null,
-            "limit"=>200,
+            "log_notes" => null,
+            "log_type" => null,
+            "log_item_id" => null,
+            "date" => null,
+            "warehouse_id" => null,
+            "limit" => 200,
         ], $data);
 
         $result = LogStock::where('status', '=', 1);
-        if($data['log_notes'])$result->where('log_notes','like','%'.$data["log_notes"].'%');
-        if($data["log_type"])$result->where('log_type','=',$data["log_type"]);
-        if($data["log_item_id"])$result->where('log_item_id','=',$data["log_item_id"]);
+        if ($data['log_notes']) $result->where('log_notes', 'like', '%' . $data["log_notes"] . '%');
+        if ($data["log_type"]) $result->where('log_type', '=', $data["log_type"]);
+        if ($data["log_item_id"]) $result->where('log_item_id', '=', $data["log_item_id"]);
+
+        $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) (Session::get('active_warehouse_id') ?? 0);
+        }
+        if ($warehouseId > 0) {
+            $this->applyWarehouseFilter($result, $warehouseId);
+        }
 
         $warehouseId = (int) ($data['warehouse_id'] ?? 0);
         if ($warehouseId <= 0) {
@@ -93,6 +102,8 @@ class LogStock extends Model
                 : '-';
         }
 
+        $this->attachMultiUnitSaldoTexts($rows, $data, $offset);
+
         if ($lazy) {
             return [
                 'data' => $rows->values(),
@@ -103,6 +114,167 @@ class LogStock extends Model
         }
 
         return $rows;
+    }
+
+    /**
+     * Saldo histori multi satuan (seperti kolom Stok di daftar).
+     * Dihitung dari stok sekarang + reverse mutasi log yang lebih baru.
+     */
+    protected function attachMultiUnitSaldoTexts($rows, array $data, int $offset): void
+    {
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $logType = (int) ($data['log_type'] ?? 0);
+        $itemId = (int) ($data['log_item_id'] ?? 0);
+        if ($itemId <= 0 || ! in_array($logType, [1, 2], true)) {
+            return;
+        }
+
+        $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) (Session::get('active_warehouse_id') ?? 0);
+        }
+        if ($warehouseId <= 0) {
+            return;
+        }
+
+        [$qtyByUnit, $unitNames, $orderedUnitIds] = $this->currentMultiUnitSnapshot($logType, $itemId, $warehouseId);
+        if ($orderedUnitIds === []) {
+            return;
+        }
+
+        // Reverse log yang lebih baru (di luar halaman lazy ini) supaya snapshot = saldo setelah baris pertama halaman.
+        if ($offset > 0) {
+            $newer = LogStock::where('status', 1)
+                ->where('log_type', $logType)
+                ->where('log_item_id', $itemId);
+            $this->applyWarehouseFilter($newer, $warehouseId);
+            if (! empty($data['date'])) {
+                if (is_array($data['date']) && count($data['date']) === 2) {
+                    $newer->whereBetween('log_date', [
+                        \Carbon\Carbon::parse($data['date'][0])->startOfDay(),
+                        \Carbon\Carbon::parse($data['date'][1])->endOfDay(),
+                    ]);
+                } else {
+                    $newer->whereDate('log_date', \Carbon\Carbon::parse($data['date'])->toDateString());
+                }
+            }
+            $newerRows = $newer->orderBy('created_at', 'desc')->orderBy('log_id', 'desc')
+                ->limit($offset)
+                ->get(['log_category', 'log_jumlah', 'unit_id']);
+            foreach ($newerRows as $newerRow) {
+                $this->reverseLogOnQtyMap($qtyByUnit, $newerRow);
+            }
+        }
+
+        foreach ($rows as $row) {
+            $displayMap = $qtyByUnit;
+            $rowUnitId = (int) ($row->unit_id ?? 0);
+            if ($rowUnitId > 0 && $row->log_saldo !== null && $row->log_saldo !== '') {
+                $displayMap[$rowUnitId] = (float) $row->log_saldo;
+            }
+            $row->log_saldo_text = $this->formatMultiUnitSaldo($displayMap, $orderedUnitIds, $unitNames);
+            $this->reverseLogOnQtyMap($qtyByUnit, $row);
+        }
+    }
+
+    protected function currentMultiUnitSnapshot(int $logType, int $itemId, int $warehouseId): array
+    {
+        if ($logType === 1) {
+            $stockRows = ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('product_variant_id', $itemId)
+                ->where('warehouse_id', $warehouseId)
+                ->get(['unit_id', 'ps_stock']);
+            $relations = ProductRelation::query()
+                ->where('status', 1)
+                ->where('product_variant_id', $itemId)
+                ->get(['pr_unit_id_1', 'pr_unit_id_2']);
+            $qtyKey = 'ps_stock';
+            $sortUnit1 = 'pr_unit_id_1';
+            $sortUnit2 = 'pr_unit_id_2';
+        } else {
+            $stockRows = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('supplies_id', $itemId)
+                ->where('warehouse_id', $warehouseId)
+                ->get(['unit_id', 'ss_stock']);
+            $relations = SuppliesRelation::query()
+                ->where('status', 1)
+                ->where('supplies_id', $itemId)
+                ->get(['su_id_1', 'su_id_2']);
+            $qtyKey = 'ss_stock';
+            $sortUnit1 = 'su_id_1';
+            $sortUnit2 = 'su_id_2';
+        }
+
+        if ($stockRows->isEmpty()) {
+            return [[], [], []];
+        }
+
+        $unitIds = $stockRows->pluck('unit_id')->map(fn($id) => (int) $id)->unique()->values()->all();
+        $units = Unit::whereIn('unit_id', $unitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id');
+        foreach ($stockRows as $stock) {
+            $unit = $units->get($stock->unit_id);
+            $stock->unit_name = $unit->unit_name ?? '-';
+            $stock->unit_short_name = $unit->unit_short_name ?? ($unit->unit_name ?? '-');
+        }
+
+        if ($relations->isNotEmpty()) {
+            $stockRows = UnitStockSorter::sort($stockRows, $relations, $sortUnit1, $sortUnit2);
+        }
+
+        $qtyByUnit = [];
+        $unitNames = [];
+        $orderedUnitIds = [];
+        foreach ($stockRows as $stock) {
+            $uid = (int) $stock->unit_id;
+            if ($uid <= 0 || isset($qtyByUnit[$uid])) {
+                continue;
+            }
+            $qtyByUnit[$uid] = (float) $stock->{$qtyKey};
+            $unitNames[$uid] = $stock->unit_name ?: '-';
+            $orderedUnitIds[] = $uid;
+        }
+
+        return [$qtyByUnit, $unitNames, $orderedUnitIds];
+    }
+
+    protected function reverseLogOnQtyMap(array &$qtyByUnit, object $log): void
+    {
+        $unitId = (int) ($log->unit_id ?? 0);
+        $qty = (float) ($log->log_jumlah ?? 0);
+        $category = (int) ($log->log_category ?? 0);
+        if ($unitId <= 0 || $qty == 0.0 || ! in_array($category, [1, 2], true)) {
+            return;
+        }
+        if (! array_key_exists($unitId, $qtyByUnit)) {
+            $qtyByUnit[$unitId] = 0.0;
+        }
+        // category 1 = masuk → reverse kurangi; 2 = keluar → reverse tambah
+        $qtyByUnit[$unitId] = round($qtyByUnit[$unitId] + ($category === 1 ? -$qty : $qty), 4);
+    }
+
+    protected function formatMultiUnitSaldo(array $qtyByUnit, array $orderedUnitIds, array $unitNames): string
+    {
+        $parts = [];
+        foreach ($orderedUnitIds as $unitId) {
+            // Clamp tampilan: reverse packing/legacy kadang neg momentarily
+            $qty = max(0, (float) ($qtyByUnit[$unitId] ?? 0));
+            $name = $unitNames[$unitId] ?? '-';
+            $parts[] = number_format(round($qty), 0, ',', '.') . ' ' . $name;
+        }
+        foreach ($qtyByUnit as $unitId => $qty) {
+            if (in_array((int) $unitId, $orderedUnitIds, true)) {
+                continue;
+            }
+            $name = $unitNames[$unitId] ?? (Unit::where('unit_id', $unitId)->value('unit_name') ?: '-');
+            $parts[] = number_format(round(max(0, (float) $qty)), 0, ',', '.') . ' ' . $name;
+        }
+
+        return $parts !== [] ? implode(', ', $parts) : '-';
     }
 
     /**
@@ -213,22 +385,74 @@ class LogStock extends Model
         $t->log_jumlah = $data["log_jumlah"];
         $t->unit_id = $data["unit_id"];
         $t->staff_id = Session::get('user')->staff_id ?? null;
-        if (Schema::hasColumn('log_stocks', 'warehouse_id') && array_key_exists('warehouse_id', $data)) {
-            $wid = (int) ($data['warehouse_id'] ?? 0);
-            $t->warehouse_id = $wid > 0 ? $wid : null;
+
+        $warehouseId = null;
+        if (Schema::hasColumn('log_stocks', 'warehouse_id')) {
+            if (array_key_exists('warehouse_id', $data)) {
+                $wid = (int) ($data['warehouse_id'] ?? 0);
+                $warehouseId = $wid > 0 ? $wid : null;
+            } elseif ((int) (Session::get('active_warehouse_id') ?? 0) > 0) {
+                $warehouseId = (int) Session::get('active_warehouse_id');
+            }
+            $t->warehouse_id = $warehouseId;
         }
+
+        if (Schema::hasColumn('log_stocks', 'log_saldo')) {
+            if (array_key_exists('log_saldo', $data) && $data['log_saldo'] !== null && $data['log_saldo'] !== '') {
+                $t->log_saldo = round((float) $data['log_saldo'], 4);
+            } else {
+                $t->log_saldo = $this->resolveCurrentSaldo([
+                    'log_type' => (int) ($data['log_type'] ?? 0),
+                    'log_item_id' => (int) ($data['log_item_id'] ?? 0),
+                    'unit_id' => (int) ($data['unit_id'] ?? 0),
+                    'warehouse_id' => $warehouseId,
+                ]);
+            }
+        }
+
         $t->save();
         return $t->log_id;
     }
 
     /**
-     * "oleh <nama staff sesi aktif>" — ditempel di akhir log_notes (setelah spasi
-     * pemisah milik pemanggil) agar Catatan menyebut siapa yang melakukan
-     * transaksi, selain kolom Staff yang sudah ada.
+     * Saldo stok saat ini setelah mutasi (produk / bahan).
+     * Dipakai otomatis jika caller tidak kirim log_saldo.
      */
-    public static function actorSuffix(): string
+    protected function resolveCurrentSaldo(array $ctx): ?float
     {
-        return 'oleh ' . (Session::get('user')->staff_name ?? '-');
+        $type = (int) ($ctx['log_type'] ?? 0);
+        $itemId = (int) ($ctx['log_item_id'] ?? 0);
+        $unitId = (int) ($ctx['unit_id'] ?? 0);
+        $warehouseId = (int) ($ctx['warehouse_id'] ?? 0);
+        if ($itemId <= 0 || $unitId <= 0) {
+            return null;
+        }
+
+        if ($type === 1) {
+            $q = ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('product_variant_id', $itemId)
+                ->where('unit_id', $unitId);
+            if ($warehouseId > 0 && Schema::hasColumn('product_stocks', 'warehouse_id')) {
+                $q->where('warehouse_id', $warehouseId);
+            }
+
+            return round((float) $q->sum('ps_stock'), 4);
+        }
+
+        if ($type === 2) {
+            $q = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('supplies_id', $itemId)
+                ->where('unit_id', $unitId);
+            if ($warehouseId > 0 && Schema::hasColumn('supplies_stocks', 'warehouse_id')) {
+                $q->where('warehouse_id', $warehouseId);
+            }
+
+            return round((float) $q->sum('ss_stock'), 4);
+        }
+
+        return null;
     }
 
     function getRawMaterialUsageReport($data = [])
@@ -726,7 +950,7 @@ class LogStock extends Model
             ];
         }
 
-        $ids = collect($totalsMerged)->pluck('supplies_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+        $ids = collect($totalsMerged)->pluck('supplies_id')->filter()->map(fn($id) => (int) $id)->unique()->values()->all();
 
         $pivotRows = DB::table('log_stocks as l')
             ->where('l.status', 1)
@@ -864,7 +1088,7 @@ class LogStock extends Model
             $productRows = $q->get();
             $productLogsByKey = self::fetchAgingLogsGrouped(
                 1,
-                $productRows->pluck('product_variant_id')->map(fn ($id) => (int) $id)->unique()->values()->all()
+                $productRows->pluck('product_variant_id')->map(fn($id) => (int) $id)->unique()->values()->all()
             );
 
             foreach ($productRows as $row) {
@@ -921,7 +1145,7 @@ class LogStock extends Model
             $bahanRows = $q->get();
             $bahanLogsByKey = self::fetchAgingLogsGrouped(
                 2,
-                $bahanRows->pluck('supplies_id')->map(fn ($id) => (int) $id)->unique()->values()->all()
+                $bahanRows->pluck('supplies_id')->map(fn($id) => (int) $id)->unique()->values()->all()
             );
 
             foreach ($bahanRows as $row) {

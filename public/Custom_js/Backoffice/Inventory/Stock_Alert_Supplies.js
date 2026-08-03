@@ -1,44 +1,11 @@
     var mode=1;
     var tableLow, tableOut;
 
-    function calcMinimOrderTwoUnits(stockItems, relation, alertQty, alertUnitId, stockQtyKey) {
-        if (!relation || !relation.length) {
-            return null;
-        }
-        var rel = relation[0];
-        var factor = parseFloat(rel.sr_value_2 || rel.pr_unit_value_2) || 1;
-        var parentId = parseInt(rel.pr_unit_id_1, 10);
-        var childId = parseInt(rel.pr_unit_id_2, 10);
-        var parentName = rel.pr_unit_name_1 || "";
-        var childName = rel.pr_unit_name_2 || "";
-
-        var stockParent = 0;
-        var stockChild = 0;
-        (stockItems || []).forEach(function (s) {
-            var uid = parseInt(s.unit_id, 10);
-            var qty = parseFloat(s[stockQtyKey]) || 0;
-            if (uid === parentId) {
-                stockParent = qty;
-                parentName = s.unit_name || s.unit_short_name || parentName;
-            } else if (uid === childId) {
-                stockChild = qty;
-                childName = s.unit_name || s.unit_short_name || childName;
-            }
-        });
-
-        alertQty = parseFloat(alertQty) || 0;
-        alertUnitId = parseInt(alertUnitId, 10);
-
-        var totalStockSmallest = stockParent * factor + stockChild;
-        var totalAlertSmallest = alertUnitId === childId ? alertQty : alertQty * factor;
-        var needed = Math.max(0, totalAlertSmallest - totalStockSmallest);
-        var neededParent = Math.floor(needed / factor);
-        var neededChild = needed % factor;
-
-        return neededParent + " " + parentName + ", " + neededChild + " " + childName;
-    }
-
     $(document).ready(function(){
+        var whName = typeof getActiveWarehouseName === "function" ? getActiveWarehouseName() : null;
+        $("#stock-alert-supplies-wh-label").text(
+            whName ? ("Gudang aktif: " + whName) : "Pilih gudang aktif di header terlebih dahulu"
+        );
         inisialisasi();
         refreshStockAlert();
         
@@ -103,11 +70,18 @@
     }
 
     function refreshStockAlert() {
+        var warehouseId = typeof getActiveWarehouseId === "function" ? getActiveWarehouseId() : null;
+        if (!warehouseId) {
+            tableLow.clear().draw();
+            tableOut.clear().draw();
+            return;
+        }
         $.ajax({
             url: "/getStockAlertSupplies",
             method: "get",
             data:{
-                mode:mode
+                mode:mode,
+                warehouse_id: warehouseId
             },
             success: function (e) {
                 if (!Array.isArray(e)) {
@@ -117,7 +91,9 @@
                 console.log("data");
                 e.forEach((item,index) => {
                     var def = -1;
-                    item.supplies_alert_text = item.supplies_alert+" " +item.default_unit;
+                    item.supplies_alert_text =
+                        item.reorder_point + " " + item.default_unit +
+                        `<div class="small text-muted">Rata-rata: ${formatLeadTimeQty(item.avg_daily)}/hari · Lead time: ${item.lead_time_days} hari · Safety: ${formatLeadTimeQty(item.safety_stock)}</div>`;
                     
                     var habis = 1;
                     if (item.stock && item.stock.length) {
@@ -158,89 +134,12 @@
                     item.action =
                         sas ||
                         '<span class="text-muted small">—</span>';
-                    // Asumsi 'item' adalah objek produk lengkap dengan relasi dan stok.
-                    // item.stock sudah diurutkan dari unit terbesar ke terkecil.
-
-                    let stocks = item.stock?.[0]?.ss_stock || 0;
-                    let unit_name = item.default_unit || item?.stock[0]?.unit_short_name;
-                    if (item.units.length === 2 && item.relation && item.relation.length === 1) {
-                        item.minim_order = calcMinimOrderTwoUnits(
-                            item.stock,
-                            item.relation,
-                            item.supplies_alert,
-                            item.supplies_default_unit,
-                            "ss_stock"
-                        );
-                    } else if (item.units.length <= 1) {
-                        // Logika untuk supplies dengan 1 unit
-                        let needed = Math.max(0, item.supplies_alert - stocks);
-                        item.minim_order = needed + " " + unit_name;
-                    } else {
-                        // Logika untuk supplies dengan banyak unit
-                        // 1. Konversi semua stok ke satuan terkecil (base unit)
-                        let totalStockInSmallestUnit = stocks;
-                        
-                        // Cari faktor konversi untuk setiap unit
-                        let conversionFactors = {};
-                        let tempFactor = 1;
-                        for (let i = item.units.length - 1; i >= 0; i--) {
-                            tempFactor *= item.units[i].unit_value;
-                            conversionFactors[item.units[i].unit_id] = tempFactor;
-                        }
-                        conversionFactors[item.supplies_default_unit] = 1;
-                        console.log(conversionFactors)
-
-                        for (const stockItem of item.stock) {
-                            let factor = conversionFactors[stockItem.unit_id] || 1;
-                            console.log(stockItem.unit_id);
-
-                            totalStockInSmallestUnit = stockItem.ss_stock + totalStockInSmallestUnit * factor;
-                        }
-                        
-                        // 2. Konversi supplies_alert ke satuan terkecil
-                        let totalAlertInSmallestUnit = item.supplies_alert;
-                        for (const relation of item.relation) {
-                            totalAlertInSmallestUnit *= relation.sr_value_2;
-                        }
-
-                        // 3. Hitung selisih dalam satuan terkecil
-                        let neededInSmallestUnit = totalAlertInSmallestUnit - totalStockInSmallestUnit;
-                        console.log("totalAlertInSmallestUnit : " + totalAlertInSmallestUnit);
-                        console.log("totalStockInSmallestUnit : " + totalStockInSmallestUnit);
-                        console.log("neededInSmallestUnit : " + neededInSmallestUnit);
-                        
-                        // 4. Konversi balik kekurangan ke format satuan yang paling efisien
-                        if (neededInSmallestUnit <= 0) {
-                            item.minim_order = item.stock.map(s => `0 ${s.unit_short_name}`).join(", ");
-                        } else {
-                            let resultText = [];
-                            let remainingNeeded = neededInSmallestUnit;
-                            // Loop dari relasi terbesar ke terkecil
-                            for (let i = item.relation.length - 1; i >= 0; i--) {
-                                const unitValue = item.relation[i].sr_value_2;
-                                const unitName = item.relation[i].pr_unit_name_2;
-                                
-                                let count = Math.floor(remainingNeeded % unitValue);
-                                console.log(count);
-                                
-                                if (count > 0) {
-                                    resultText.push(count + " " + unitName);
-                                }
-                                remainingNeeded  = Math.floor(remainingNeeded/unitValue);
-                            }
-                            
-                            if (remainingNeeded > 0) {
-                                resultText.push(remainingNeeded + " " + unit_name);
-                            }
-                            
-                            item.minim_order = resultText.reverse().join(", ");
-                        }
-                    }
+                    item.minim_order = `${formatLeadTimeQty(item.recommended_order)} ${item.default_unit}`;
 
                 });
                 console.log(e);
                 
-                let stockLow = e.filter(item => ((item.stock[0]?.ss_stock || 0) <= item.supplies_alert) && item.habis == -1);
+                let stockLow = e.filter(item => item.current_stock <= item.reorder_point && item.habis == -1);
                 let stockOut = e.filter(item => item.habis==1);
 
                 tableLow.clear().rows.add(stockLow).draw();
@@ -254,4 +153,9 @@
                 console.error("Gagal load:", err);
             }
         });
+    }
+
+    function formatLeadTimeQty(value) {
+        var number = parseFloat(value) || 0;
+        return Number.isInteger(number) ? number.toString() : number.toFixed(2).replace(/\.?0+$/, "");
     }

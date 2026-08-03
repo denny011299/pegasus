@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class SalesOrderDeliveryDetail extends Model
 {
@@ -26,71 +27,71 @@ class SalesOrderDeliveryDetail extends Model
         $result->orderBy("created_at", "asc");
         $result = $result->get();
 
-        foreach ($result as $key => $value) {
-
+        $hasUnitCol = Schema::hasColumn($this->getTable(), 'unit_id');
+        foreach ($result as $value) {
             $sv = ProductVariant::find($value->product_variant_id);
-            $s = Product::find($sv->product_id);
-            $value->product_name = $s->product_name;
-            $value->product_variant_name = $sv->product_variant_name;
+            $s = $sv ? Product::find($sv->product_id) : null;
+            $value->product_name = $s->product_name ?? '-';
+            $value->product_variant_name = $sv->product_variant_name ?? '-';
+            $value->product_variant_sku = $sv->product_variant_sku ?? ($value->sdod_sku ?? '-');
+            if ($hasUnitCol && $value->unit_id) {
+                $unit = Unit::find($value->unit_id);
+                $value->unit_name = $unit
+                    ? ($unit->unit_name ?? $unit->unit_short_name ?? '-')
+                    : '-';
+            } else {
+                $value->unit_name = '-';
+            }
         }
 
         return $result;
     }
 
+    /**
+     * Catatan pengiriman = rencana. Tidak memotong stok.
+     * Potong stok tetap di ACC Sales Order (SalesOrderStock).
+     */
     function insertSoDeliveryDetail($data)
     {
         $t = new SalesOrderDeliveryDetail();
         $t->sdo_id = $data["sdo_id"];
         $t->product_variant_id = $data["product_variant_id"];
-        $t->sdod_sku = $data["sdod_sku"];
-        $t->sdod_qty = $data["sdod_qty"];
-        $t->save();
-        $s = ProductVariant::find($data["product_variant_id"]);
-        $s = ProductStock::where("product_id", "=", $s->product_id)
-            ->where("unit_id", "=", $data["unit_id"])
-            ->where("status", "=", 1)
-            ->first();
-        if ($s) {
-            $s->ps_stock -= $data["sdod_qty"];
-            $s->save();
+        $t->sdod_sku = $data["sdod_sku"] ?? ($data["sku"] ?? '');
+        $t->sdod_qty = (int) ($data["sdod_qty"] ?? 0);
+        if (Schema::hasColumn($t->getTable(), 'unit_id')) {
+            $t->unit_id = ! empty($data["unit_id"]) ? (int) $data["unit_id"] : null;
         }
+        $t->status = 1;
+        $t->save();
 
         return $t->sdod_id;
     }
 
     function updateSoDeliveryDetail($data)
     {
-        $s = ProductVariant::find($data["product_variant_id"]);
-        $st = ProductStock::where("product_id", "=", $s->product_id)
-            ->where("unit_id", "=", $data["unit_id"])
-            ->where("status", "=", 1)
-            ->first();
-
         $t = SalesOrderDeliveryDetail::find($data["sdod_id"]);
-       
-            $st->ps_stock -= $t->sdod_qty;
-            $st->save();
+        if (! $t) {
+            return null;
+        }
 
-            $t->product_variant_id = $data["product_variant_id"];
-            $t->sdod_sku = $data["sku"];
-            $t->sdod_qty = $data["sdod_qty"];
-            $t->save();
+        $t->product_variant_id = $data["product_variant_id"];
+        $t->sdod_sku = $data["sdod_sku"] ?? ($data["sku"] ?? $t->sdod_sku);
+        $t->sdod_qty = (int) ($data["sdod_qty"] ?? $t->sdod_qty);
+        if (Schema::hasColumn($t->getTable(), 'unit_id') && array_key_exists('unit_id', $data)) {
+            $t->unit_id = ! empty($data["unit_id"]) ? (int) $data["unit_id"] : null;
+        }
+        $t->save();
 
-            //ditambah lagi
-            $st->ps_stock += $data["sdod_qty"];
-            $st->save();
-        
         return $t->sdod_id;
     }
 
     function deleteSoDeliveryDetail($data)
     {
         $t = SalesOrderDeliveryDetail::find($data["sdod_id"]);
-        $t->status = 0; // soft delete
+        if (! $t) {
+            return;
+        }
+        $t->status = 0;
         $t->save();
-
-        $s = ProductVariant::find($t->product_variant_id);
-        $s->product_variant_stock -= $t->sdod_qty;
-        $s->save();
     }
 }

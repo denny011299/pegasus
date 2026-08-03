@@ -116,18 +116,17 @@ class Production extends Model
             if ($diffDays < -4 && $value->status == 1) {
                 $requestAcc = new \Illuminate\Http\Request();
                 $requestAcc->merge(['production_id' => $value->production_id]);
-                
+
                 $resultAcc = (new ProductionController())->accProduction($requestAcc);
-                
-                // Cek apakah return 1 (sukses) atau bukan
-                $isSuccess = $resultAcc === 1;
-                if (!$isSuccess) {
-                    // Gagal, jalankan decline
-                    $newRequest = new \Illuminate\Http\Request();
-                    $newRequest->merge(['production_id' => $value->production_id]);
-                    (new ProductionController())->declineProduction($newRequest);
+
+                $isSuccess = $resultAcc === 1
+                    || ($resultAcc instanceof \Illuminate\Http\JsonResponse
+                        && (int) ($resultAcc->getData(true)['status'] ?? 0) === 1);
+                // Jangan auto-tolak kalau ACC gagal (mis. gudang eceran belum dipilih).
+                // Biarkan tetap Pending agar user bisa melengkapi/ACC manual.
+                if ($isSuccess) {
+                    return $this->getProduction($data);
                 }
-                return $this->getProduction($data);
             } else if ($diffDays < -4 && $value->status == 4) {
                 $this->accProduction($value);
                 return $this->getProduction($data);

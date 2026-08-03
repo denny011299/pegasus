@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Support\BatchLookup;
-use App\Models\Staff;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
 
@@ -25,7 +24,7 @@ class Product extends Model
         $result = Product::where("status", "=", 1);
 
         if ($data["product_name"]) {
-            $result->where("product_name", "like", "%".$data["product_name"]."%");
+            $result->where("product_name", "like", "%" . $data["product_name"] . "%");
         }
 
         if ($data["category_id"]) {
@@ -94,7 +93,7 @@ class Product extends Model
             $value->product_unit = json_decode($value->product_unit);
             $unitIds = (array) ($value->product_unit ?: []);
             $value->pr_unit = collect($unitIds)
-                ->map(fn ($id) => $unitsMap->get((int) $id))
+                ->map(fn($id) => $unitsMap->get((int) $id))
                 ->filter()
                 ->values();
             $value->pr_variant = ($variantsByProduct->get($value->product_id) ?? collect())
@@ -109,10 +108,12 @@ class Product extends Model
                 : '-';
         }
 
-        // Safety stock per gudang aktif (bukan dari product_variants global)
+        // Safety + peringatan stok per gudang aktif
         $warehouseId = ProductStock::resolveWarehouseId();
         if ($warehouseId && $variantIds !== []) {
-            $safetyMap = (new ProductStock())->getSafetyStockMapForWarehouse($warehouseId, $variantIds);
+            $stockModel = new ProductStock();
+            $safetyMap = $stockModel->getSafetyStockMapForWarehouse($warehouseId, $variantIds);
+            $alertMap = $stockModel->getAlertStockMapForWarehouse($warehouseId, $variantIds);
             foreach ($result as $value) {
                 foreach ($value->pr_variant as $variant) {
                     $vid = (int) $variant->product_variant_id;
@@ -122,6 +123,10 @@ class Product extends Model
                     } else {
                         $variant->safety_stock = 0;
                         $variant->safety_unit_id = null;
+                    }
+                    if (isset($alertMap[$vid])) {
+                        $variant->product_variant_alert = $alertMap[$vid]['alert_stock'];
+                        $variant->unit_id = $alertMap[$vid]['alert_unit_id'];
                     }
                 }
             }
@@ -140,7 +145,7 @@ class Product extends Model
         $t->status       = $data["status"] ?? 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
-       
+
         return $t->product_id;
     }
 
@@ -153,7 +158,7 @@ class Product extends Model
         $t->unit_id = $data["unit_id"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
-        
+
         return $t->product_id;
     }
 
@@ -167,5 +172,4 @@ class Product extends Model
         ProductVariant::where("product_id", "=", $data["product_id"])->update(["status" => 0]);
         ProductStock::where("product_id", "=", $data["product_id"])->update(["status" => 0]);
     }
-   
 }
