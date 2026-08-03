@@ -34,51 +34,6 @@
             top: 9.4vh;
             z-index: 3;
         }
-
-        .stock-opname-actions .btn {
-            width: 100%;
-        }
-
-        .stock-opname-fab {
-            position: fixed;
-            right: 20px;
-            bottom: 20px;
-            z-index: 1040;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        /* Layout tetap kolom sepanjang transisi collapse Bootstrap (baik saat
-           `.collapsing` maupun `.show`) — kalau cuma di-scope ke `.show`, saat
-           transisi elemen belum punya class itu dan tombolnya sempat jadi flex
-           row dulu sebelum "meloncat" ke kolom. `.collapse:not(.show)` bawaan
-           Bootstrap tetap menang (spesifisitasnya lebih tinggi) untuk keadaan
-           tertutup, jadi display:none saat idle tidak terganggu. */
-        .stock-opname-fab-menu {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-
-        .stock-opname-fab-menu .btn {
-            white-space: nowrap;
-            border-radius: 50px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
-        }
-
-        .stock-opname-fab-toggle {
-            width: 44px;
-            height: 44px;
-            padding: 0;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
-        }
     </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -154,21 +109,6 @@
                                     <div class="card-body p-3" style="padding: 15px !important">
                                         <label>Cari Bahan</label>
                                         <input type="text" class="form-control" id="filter_sup_name" placeholder="Cari Nama Bahan">
-
-                                        {{-- Desktop: tombol aksi ikut nempel di kartu pencarian --}}
-                                        <div class="stock-opname-actions d-none d-md-flex flex-column gap-2 mt-3">
-                                            @php
-                                                $akses = collect(json_decode(Session::get('user')->role_access));
-                                            @endphp
-                                            @if ($akses->firstWhere('name', 'Stok Opname Bahan Mentah') && in_array('others', $akses->firstWhere('name', 'Stok Opname Bahan Mentah')->akses))
-                                                <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
-                                                <button class="btn btn-success save-terima" style="display: none">Terima</button>
-                                            @endif
-                                            <button class="btn btn-outline-danger btn-delete-draft" style="display: none">Hapus Draft</button>
-                                            <button class="btn btn-outline-primary btn-save-draft">Simpan sebagai Draft</button>
-                                            <button class="btn btn-success btn-ajukan" style="display: none">Ajukan</button>
-                                            <button class="btn btn-primary btn-save">Tambah Stok Opname</button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -193,25 +133,15 @@
             </div>
             <!-- /Table -->
 
-            {{-- Mobile: tombol aksi jadi FAB (floating action button) di pojok kanan bawah --}}
-            <div class="stock-opname-fab d-md-none">
-                <div class="collapse stock-opname-fab-menu" id="stockOpnameFabMenu">
-                    @php
+            <div class="text-end mt-3">
+                @php
                         $akses = collect(json_decode(Session::get('user')->role_access));
-                    @endphp
-                    @if ($akses->firstWhere('name', 'Stok Opname Bahan Mentah') && in_array('others', $akses->firstWhere('name', 'Stok Opname Bahan Mentah')->akses))
-                        <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
-                        <button class="btn btn-success save-terima" style="display: none">Terima</button>
-                    @endif
-                    <button class="btn btn-outline-danger btn-delete-draft" style="display: none">Hapus Draft</button>
-                    <button class="btn btn-outline-primary btn-save-draft">Simpan sebagai Draft</button>
-                    <button class="btn btn-success btn-ajukan" style="display: none">Ajukan</button>
-                    <button class="btn btn-primary btn-save">Tambah Stok Opname</button>
-                </div>
-                <button type="button" class="btn btn-primary stock-opname-fab-toggle" data-bs-toggle="collapse"
-                    data-bs-target="#stockOpnameFabMenu" aria-expanded="false" aria-controls="stockOpnameFabMenu">
-                    <i class="fe fe-more-vertical"></i>
-                </button>
+                @endphp
+                @if ($akses->firstWhere('name', 'Stok Opname Bahan Mentah') && in_array('others', $akses->firstWhere('name', 'Stok Opname Bahan Mentah')->akses))
+                    <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
+                    <button class="btn btn-success save-terima" style="display: none">Terima</button>
+                @endif
+                <button class="btn btn-primary btn-save">Tambah Stok Opname</button>
             </div>
         </div>
     </div>
@@ -220,10 +150,10 @@
 
 @section('custom_js')
     <script>
-        var public = "{{ asset('') }}";
+        var public = "{{ asset('') }}";    
         var data = @json($data);
         var mode = @json($mode);
         var sessionUser = @json(Session::get('user'));
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js')}}?v=2"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js')}}?v=1"></script>
 @endsection

@@ -24,15 +24,15 @@ class CashGudang extends Model
         if($data["staff_id"]) $result->where('staff_id', '=', $data["staff_id"]);
 
         if ($data["dates"]) {
-            if (is_array($data["dates"])) {
-                $start = $data["dates"][0] ?? null;
-                $end = $data["dates"][1] ?? null;
+            if (is_array($data["dates"]) && count($data["dates"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
 
-                if ($start) $result->whereDate('cg_date', '>=', \Carbon\Carbon::parse($start)->toDateString());
-                if ($end) $result->whereDate('cg_date', '<=', \Carbon\Carbon::parse($end)->toDateString());
+                $result->whereDate('created_at', '>=', $startDate->toDateString())
+                        ->whereDate('created_at', '<=', $endDate->toDateString());
             } else {
                 $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
-                $result->whereDate('cg_date', $date);
+                $result->whereDate('created_at', $date);
             }
         }
 

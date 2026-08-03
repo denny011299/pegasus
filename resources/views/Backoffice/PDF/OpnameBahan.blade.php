@@ -47,12 +47,12 @@
         }
 
         /* STOCK rata tengah */
-        .items-table th:nth-child(2),
-        .items-table td:nth-child(2),
-        .items-table th:nth-child(3),
-        .items-table td:nth-child(3),
         .items-table th:nth-child(4),
-        .items-table td:nth-child(4) {
+        .items-table td:nth-child(4),
+        .items-table th:nth-child(5),
+        .items-table td:nth-child(5),
+        .items-table th:nth-child(6),
+        .items-table td:nth-child(6) {
             text-align: center;
         }
 
@@ -95,19 +95,17 @@
                 <tr>
                     <th>Bahan Mentah</th>
                     <th>Stock Sistem</th>
+                    {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
+                    @endif --}}
                     <th>Stock Real</th>
+                    {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
+                    @endif --}}
                     <th>Selisih</th>
+                    
                     <th>Catatan</th>
                 </tr>
             </thead>
             <tbody>
-                @php
-                    $fmtQty = fn (?string $s) => preg_replace_callback(
-                        '/(-?\d+)/',
-                        fn($m) => number_format((int)$m[1], 0, ',', '.'),
-                        (string)($s ?? '-')
-                    );
-                @endphp
                 @foreach ($detail as $item)
                     @php
                         $hasSelisih = false;
@@ -126,9 +124,16 @@
                     @endphp
                     <tr>
                         <td>{{ $item['supplies_name'] ?? '-' }}</td>
-                        <td style="{{ $highlight }}">{{ $fmtQty($item['stobd_system'] ?? null) }}</td>
-                        <td style="{{ $highlight }}">{{ $fmtQty($item['stobd_real'] ?? null) }}</td>
-                        <td style="{{ $highlight }}">{{ $fmtQty($item['stobd_selisih'] ?? null) }}</td>
+                        <td style="{{ $highlight }}">{{ $item['stobd_system'] ?? '-' }}</td>
+                        {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
+                        @endif --}}
+                        
+                        <td style="{{ $highlight }}">{{ $item['stobd_real'] ?? '-' }}</td>
+
+                        <td style="{{ $highlight }}">{{ $item['stobd_selisih'] ?? '-' }}</td>
+                        {{-- @if (\App\Helpers\AccessHelper::hasAccess('Show Selisih Stockopname', 'view'))
+                        @endif --}}
+                        
                         <td>{{ empty($item['stobd_notes']) ? '-' : $item['stobd_notes'] }}</td>
                     </tr>
                 @endforeach

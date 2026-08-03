@@ -589,7 +589,7 @@ class SupplierController extends Controller
                 'log_type'    => 2,
                 'log_category' => 1,
                 'log_item_id' => $sv->supplies_id,
-                'log_notes'  => "Pembelian bahan mentah " . $sup->supplier_name . " " . LogStock::actorSuffix(),
+                'log_notes'  => "Pembelian bahan mentah " . $sup->supplier_name,
                 'log_jumlah' => $value["pdod_qty"],
                 'unit_id'    => $value['unit_id'],
             ]);
@@ -670,7 +670,7 @@ class SupplierController extends Controller
                         'log_type'    => 2,
                         'log_category' => 2,
                         'log_item_id' => $sv->supplies_id,
-                        'log_notes'  => "Pembatalan pembelian bahan mentah " . $sup->supplier_name . " " . LogStock::actorSuffix(),
+                        'log_notes'  => "Pembatalan pembelian bahan mentah " . $sup->supplier_name,
                         'log_jumlah' => $value->pod_qty,
                         'unit_id'    => $value->unit_id,
                     ]);
@@ -800,7 +800,7 @@ class SupplierController extends Controller
                 'log_type'    => 2,
                 'log_category' => 2,
                 'log_item_id' => $sup->supplies_id,
-                'log_notes'  => 'Retur pembelian dari pembelian ' . $po->po_number . ' ' . LogStock::actorSuffix(),
+                'log_notes'  => 'Retur pembelian dari pembelian ' . $po->po_number,
                 'log_jumlah' => $value['pid_qty'],
                 'unit_id'    => $value['unit_id'],
             ]);
@@ -859,7 +859,7 @@ class SupplierController extends Controller
                 'log_type'    => 2,
                 'log_category' => 1,
                 'log_item_id' => $sup->supplies_id,
-                'log_notes'  => 'Pembatalan retur pembelian dari pembelian ' . $po->po_number . ' ' . LogStock::actorSuffix(),
+                'log_notes'  => 'Pembatalan retur pembelian dari pembelian ' . $po->po_number,
                 'log_jumlah' => $value['rsd_qty'],
                 'unit_id'    => $value['unit_id'],
             ]);

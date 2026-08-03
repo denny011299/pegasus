@@ -6,29 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('product_issues', function (Blueprint $table) {
-            $table->charset('utf8mb4');
-            $table->collation('utf8mb4_0900_ai_ci');
-
-            $table->integer('pi_id', true);
-            $table->string('pi_code', 10);
-            $table->integer('ref_num');
-            $table->integer('po_id');
-            $table->integer('pi_type')->nullable()->comment('1 = return, 2= damaged');
-            $table->integer('tipe_return')->comment('1 = Bahan Mentah, 2 = Produk');
-            $table->date('pi_date')->nullable();
+            $table->integerIncrements('pi_id');
+            $table->string('pi_code', 50);
+            $table->integer('pi_type')->comment('1 = return, 2 = damaged');
+            $table->integer('tipe_return');
+            $table->date('pi_date');
             $table->text('pi_notes');
-            $table->text('pi_img')->nullable();
             $table->integer('status')->default(1);
-            $table->timestamp('created_at')->nullable()->useCurrent();
-            $table->timestamp('updated_at')->nullable()->useCurrent()->useCurrentOnUpdate();
-            $table->integer('created_by')->nullable();
-            $table->integer('acc_by')->nullable();
+            $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('product_issues');

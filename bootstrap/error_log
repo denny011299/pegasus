@@ -1,0 +1,4 @@
+[28-Feb-2026 05:30:26 Asia/Jakarta] PHP Fatal error:  Uncaught Error: Class "Illuminate\Foundation\Application" not found in /home/okeh8644/public_html/pegasus.okejob.id/bootstrap/app.php:7
+Stack trace:
+#0 {main}
+  thrown in /home/okeh8644/public_html/pegasus.okejob.id/bootstrap/app.php on line 7

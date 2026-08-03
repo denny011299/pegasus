@@ -18,6 +18,7 @@ use App\Models\SuppliesRelation;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
+use App\Support\ProductionPendingStockRestorer;
 use GuzzleHttp\Psr7\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile as HttpUploadedFile;
@@ -488,12 +489,9 @@ class ProductionController extends Controller
      * ACC produksi (pending → approved).
      *
      * Alur keamanan stok (wajib dijaga):
-     * 1) pre-check SEMUA bahan tanpa mutasi
-     * 2) potong bahan + tambah produk + update status dalam 1 DB transaction
-     *
-     * Self-heal orphan TIDAK dijalankan otomatis di ACC (opname bisa sudah
-     * mengunci angka stok setelah potongan salah). Perbaikan massal hanya via:
-     * php artisan production:restore-pending-stock
+     * 1) self-heal log/stok orphan dari ACC gagal sebelumnya
+     * 2) pre-check SEMUA bahan tanpa mutasi
+     * 3) potong bahan + tambah produk + update status dalam 1 DB transaction
      *
      * Detail: docs/production-acc-stock-safety.md
      */
@@ -516,6 +514,13 @@ class ProductionController extends Controller
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
         }
+
+        // ACC gagal di tengah jalan bisa potong stok + tulis log meski status
+        // masih pending. Kembalikan dulu supaya pre-check tidak "stok kurang" palsu.
+        DB::transaction(function () use ($p) {
+            (new ProductionPendingStockRestorer())
+                ->revertProductionCode($p->production_code, withHistory: false);
+        });
 
         $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();
         $produk_tanpa_relasi = [];
@@ -887,22 +892,29 @@ class ProductionController extends Controller
                 }
 
                 // 3. Kurangi stok unit terbawah (Piece) sebesar kebutuhan
-                // (tanpa cekLog — lock log orphan pending sudah dibersihkan terpisah;
-                //  ACC dalam transaction harus selalu potong konsisten atau rollback)
                 $stokBawah = SuppliesStock::find($idPalingBawah);
-                $stokBawah->ss_stock = (int) ($virtualStock[$idPalingBawah]['current'] - $butuhTersedia);
-                $stokBawah->save();
+                $cekLog = LogStock::where('log_kode', $p->production_code)
+                    ->where('log_type', 2)
+                    ->where('log_category', 2)
+                    ->where('log_item_id', $suppliesId)
+                    ->where('unit_id', $stokBawah->unit_id)
+                    ->exists();
 
-                (new LogStock())->insertLog([
-                    'log_date'     => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
-                    'log_kode'     => $p->production_code,
-                    'log_type'     => 2,
-                    'log_category' => 2,
-                    'log_item_id'  => $suppliesId,
-                    'log_notes'    => "Pengurangan bahan untuk produksi " . LogStock::actorSuffix(),
-                    'log_jumlah'   => $butuhTersedia,
-                    'unit_id'      => $stokBawah->unit_id,
-                ]);
+                if (!$cekLog) {
+                    $stokBawah->ss_stock = (int)($virtualStock[$idPalingBawah]['current'] - $butuhTersedia);
+                    $stokBawah->save();
+
+                    (new LogStock())->insertLog([
+                        'log_date'     => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
+                        'log_kode'     => $p->production_code,
+                        'log_type'     => 2,
+                        'log_category' => 2,
+                        'log_item_id'  => $suppliesId,
+                        'log_notes'    => "Pengurangan bahan untuk produksi " . LogStock::actorSuffix(),
+                        'log_jumlah'   => $butuhTersedia,
+                        'unit_id'      => $stokBawah->unit_id,
+                    ]);
+                }
             } else {
                 // ← ditambahkan: sebelumnya silent skip tanpa pesan apapun
                 $s = Supplies::find($suppliesId);
@@ -1733,5 +1745,15 @@ class ProductionController extends Controller
         }
 
         return $invalid;
+    }
+
+    /**
+     * @deprecated Gunakan App\Support\ProductionPendingStockRestorer
+     * Tetap ada sebagai wrapper tipis bila ada pemanggilan lama.
+     */
+    private function revertPendingProductionStockMutations(string $productionCode): int
+    {
+        return (new ProductionPendingStockRestorer())
+            ->revertProductionCode($productionCode, withHistory: false);
     }
 }

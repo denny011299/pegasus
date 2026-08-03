@@ -2,18 +2,22 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
     /**
      * Seed the application's database.
-     *
-     * Restores the committed snapshot in database/seeders/data. Regenerate it
-     * with `php artisan seed:dump` and commit the JSON diff.
      */
     public function run(): void
     {
-        $this->call(SnapshotSeeder::class);
+        // User::factory(10)->create();
+
+        User::factory()->create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+        ]);
     }
 }

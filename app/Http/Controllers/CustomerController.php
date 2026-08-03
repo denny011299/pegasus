@@ -571,7 +571,7 @@ class CustomerController extends Controller
                 'log_type'     => 1,
                 'log_category' => 2,
                 'log_item_id'  => $value['product_variant_id'],
-                'log_notes'    => 'Pengiriman produk ' . LogStock::actorSuffix(),
+                'log_notes'    => 'Pengiriman produk',
                 'log_jumlah'   => $value['sod_qty'],
                 'unit_id'      => $value['unit_id'],
             ]);

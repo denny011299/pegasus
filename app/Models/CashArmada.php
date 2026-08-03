@@ -26,15 +26,15 @@ class CashArmada extends Model
         if($data["cash_id"]) $result->where('cash_id', '=', $data["cash_id"]);
 
         if ($data["dates"]) {
-            if (is_array($data["dates"])) {
-                $start = $data["dates"][0] ?? null;
-                $end = $data["dates"][1] ?? null;
+            if (is_array($data["dates"]) && count($data["dates"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
 
-                if ($start) $result->whereDate('cr_date', '>=', \Carbon\Carbon::parse($start)->toDateString());
-                if ($end) $result->whereDate('cr_date', '<=', \Carbon\Carbon::parse($end)->toDateString());
+                $result->whereDate('created_at', '>=', $startDate->toDateString())
+                        ->whereDate('created_at', '<=', $endDate->toDateString());
             } else {
                 $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
-                $result->whereDate('cr_date', $date);
+                $result->whereDate('created_at', $date);
             }
         }
 
@@ -86,24 +86,9 @@ class CashArmada extends Model
         ];
     }
 
-    /**
-     * Cari pembayaran berdasarkan referensi sistem eksternal.
-     *
-     * Dipakai External API untuk dua hal: menjawab GET, dan mengenali
-     * permintaan POST yang diulang supaya tidak membuat transaksi ganda.
-     * Baris terhapus (status 0) sengaja ikut terbaca — kalau sebuah referensi
-     * pernah dipakai, permintaan ulang tidak boleh diam-diam membuat kas baru.
-     */
-    function findByRefPaymentId($refPaymentId)
-    {
-        return CashArmada::where('ref_payment_id', '=', $refPaymentId)->first();
-    }
-
     function insertCashArmada($data)
     {
         $t = new CashArmada();
-        // Hanya terisi bila pembayaran datang lewat External API.
-        $t->ref_payment_id = $data["ref_payment_id"] ?? null;
         $t->customer_id = $data["customer_id"];
         $t->cash_id = $data["cash_id"];
         $t->cr_date = $data['cr_date'] ?? now();

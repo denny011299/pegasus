@@ -548,6 +548,10 @@
             margin-top: 0.35rem;
         }
 
+        .dash-scroll {
+            max-height: none;
+        }
+
         .dash-toolbar-period {
             display: block;
             margin-top: 0.35rem;

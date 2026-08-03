@@ -6,23 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('variants', function (Blueprint $table) {
-            $table->charset('utf8mb4');
-            $table->collation('utf8mb4_unicode_ci');
-
-            $table->increments('variant_id');
-            $table->string('variant_name', 250);
-            $table->string('variant_attribute', 250);
-            $table->integer('created_by')->nullable()->comment('staff_id');
-            $table->integer('acc_by')->nullable()->comment('staff_id');
+            $table->integerIncrements('variant_id');
+            $table->string('variant_name',250);
+            $table->string('variant_attribute',250);
             $table->integer('status')->default(1)->comment('1 = active, 0 = dead');
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('variants');
