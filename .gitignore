@@ -1,8 +1,11 @@
 *.log
+*.zip
 .DS_Store
 .env
 .env.backup
+.env.local
 .env.production
+.env.railway
 .phpactor.json
 .phpunit.result.cache
 /.fleet
@@ -38,3 +41,6 @@ routes.zip
 vendor.zip
 routes.zip
 vendor.zip
+/postman
+/.postman
+/cdocs
