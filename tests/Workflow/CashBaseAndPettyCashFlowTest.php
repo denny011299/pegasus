@@ -9,10 +9,12 @@ use Tests\TestCase;
 /**
  * See cdocs/testing/workflows/CASH_BASE_AND_PETTY_CASH_FLOW.md for the fully-traced flow this
  * asserts against. `/insertCash` is a simpler, standalone entry point with no `accept*`/`decline*`
- * route at all — unlike every other Kas Operasional flow traced so far. Petty Cash has no working
- * Workflow path to test at all — `/insertPettyCash` crashes 500 on every call (genuine migration
- * drift, `petty_cashes` is missing 4 columns the model writes to) — see
- * `tests/Regression/InsertPettyCashCrashesOnMissingColumnsTest.php` instead.
+ * route at all — unlike every other Kas Operasional flow traced so far.
+ *
+ * Petty Cash itself is DEPRECATED — confirmed 2026-08-02 the module is no longer used, by explicit
+ * user decision. It's still 100% broken (`/insertPettyCash` crashes 500 on every call — genuine
+ * migration drift, `petty_cashes` is missing 4 columns the model writes to), but this is
+ * deliberately NOT being fixed or tested. See `KNOWN_ISSUES.md`.
  */
 class CashBaseAndPettyCashFlowTest extends TestCase
 {

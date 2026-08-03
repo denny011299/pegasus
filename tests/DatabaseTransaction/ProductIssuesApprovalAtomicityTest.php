@@ -13,28 +13,26 @@ use Tests\TestCase;
 
 /**
  * See cdocs/testing/workflows/PRODUCT_ISSUES_FLOW.md and
- * cdocs/docs/flows/produk-bermasalah/FLOW.md for the fully-traced flow this documents. This is the
- * most severe atomicity bug found across this whole testing program — worse than the (now-fixed)
- * `accProduction` gap, because the status flip happens mid-loop, on the FIRST successful item, not
- * only at the very end.
+ * cdocs/docs/flows/produk-bermasalah/FLOW.md for the fully-traced flow this documents.
  *
- * `StockController::accProductIssues()` has no `DB::transaction()`. For a multi-item
- * `tipe_return = 1` approval, EVERY item's iteration ends by calling
- * `(new ProductIssues())->accProductIssues($data)` — which sets `product_issues.status = 2` —
- * unconditionally, inside the loop. If item 1 succeeds (stock deducted, log written, status
- * flipped to 2) and item 2 then fails its own stock-sufficiency guard, the method does
- * `return -1;` immediately. The client receives `-1` (read by the frontend as "nothing happened,
- * stock insufficient") but the document is left `status = 2` (accepted) with only item 1's stock
- * actually mutated — and because `status` is no longer `1`, the document can never be cleanly
- * retried through approve/decline again (the guard now reports "already processed").
+ * History: `StockController::accProductIssues()` used to have no `DB::transaction()`, and flipped
+ * `product_issues.status` to 2 (Approved) INSIDE the per-item loop rather than once at the end —
+ * the most severe atomicity bug found across this whole testing program, worse than the
+ * (already-fixed) `accProduction` gap because the status flip happened on the FIRST successful
+ * item, not only after everything succeeded. A second, independent bug lived in the same method:
+ * the log-writing step did `Supplier::find($sup->supplier_id)->supplier_name` with no null-guard,
+ * 500ing if a supplies_variant's supplier_id was null or pointed at a deleted supplier.
+ *
+ * FIXED 2026-08-03: both items' stock sufficiency AND supplier validity are now pre-checked
+ * (no mutation) for every line item before any mutation happens; the actual mutation loop is
+ * wrapped in `DB::transaction()`; and the status flip happens exactly once, after the loop
+ * completes, right before commit. This test now proves the two failure shapes end cleanly instead
+ * of characterizing the old crash/stuck-state behavior.
  *
  * Uses a fresh, isolated fixture (own Supplies + single-unit SuppliesStock, no SuppliesRelation)
  * to avoid `stockCheck()`'s insert-time unit-conversion side effects entirely — item B's stock is
  * deliberately drained AFTER a clean insert to simulate it being consumed elsewhere between insert
  * and approval, the same pattern already used for Sales Order/Production's own shortfall tests.
- *
- * Not fixed here — deferred per this project's "queue bugs, don't fix" policy. This test
- * characterizes the CURRENT behavior on purpose.
  */
 class ProductIssuesApprovalAtomicityTest extends TestCase
 {
@@ -43,7 +41,7 @@ class ProductIssuesApprovalAtomicityTest extends TestCase
     private const UNIT_ID = 9; // Piece
 
     /** @return array{variant: SuppliesVariant, stock: SuppliesStock} */
-    private function createSuppliesFixture(string $label, int $startingStock): array
+    private function createSuppliesFixture(string $label, int $startingStock, ?int $supplierId = null): array
     {
         $supplies = new Supplies();
         $supplies->supplies_name = "Atomicity Test Supplies $label";
@@ -52,15 +50,11 @@ class ProductIssuesApprovalAtomicityTest extends TestCase
         $supplies->status = 1;
         $supplies->save();
 
-        // accProductIssues's log-writing step unconditionally does
-        // Supplier::find($variant->supplier_id)->supplier_name with no null-guard — a real,
-        // separate finding (see KNOWN_ISSUES.md) not the one this test targets, so supplier_id
-        // must be a real row to avoid tripping over it here.
-        $supplierId = (int) DB::table('suppliers')->where('status', 1)->value('supplier_id');
+        $supplierId = $supplierId ?? (int) DB::table('suppliers')->where('status', 1)->value('supplier_id');
 
         $variant = new SuppliesVariant();
         $variant->supplies_id = $supplies->supplies_id;
-        $variant->supplier_id = $supplierId;
+        $variant->supplier_id = $supplierId ?: null;
         $variant->supplies_variant_name = "Atomicity Test Variant $label";
         $variant->supplies_variant_sku = 'WF-PI-ATOMIC-'.$label.'-'.uniqid();
         $variant->supplies_variant_barcode = 'WF-PI-BARCODE-'.$label.'-'.uniqid();
@@ -80,7 +74,7 @@ class ProductIssuesApprovalAtomicityTest extends TestCase
         return compact('variant', 'stock');
     }
 
-    public function test_item_two_failing_leaves_the_document_permanently_flipped_to_accepted_with_only_item_one_mutated(): void
+    public function test_item_two_failing_leaves_the_whole_document_unmutated_and_still_pending(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -125,42 +119,76 @@ class ProductIssuesApprovalAtomicityTest extends TestCase
 
         $accResponse = $this->post('/accProductIssues', ['pi_id' => $piId]);
 
-        // Documents current behavior: a bare -1, not a clean {status:-1, message:...} shape.
-        $this->assertSame('-1', $accResponse->getContent());
+        // FIXED: a clean, structured rejection — not a bare -1 — naming the actual shortfall.
+        $accResponse->assertStatus(200);
+        $accResponse->assertJson(['status' => -1]);
+        $this->assertStringContainsString('Atomicity Test Variant B', $accResponse->json('message'));
 
-        // Item A (processed first) is permanently, fully mutated.
+        // FIXED: item A is no longer mutated either — the pre-check runs for ALL items before ANY
+        // mutation, so item B's shortfall blocks the whole approval, not just its own iteration.
         $itemA['stock']->refresh();
-        $this->assertSame(100 - $qtyA, $itemA['stock']->ss_stock, "item A's stock deduction survives item B's later failure");
-        $this->assertDatabaseHas('log_stocks', [
-            'log_type' => 2,
-            'log_category' => 2,
-            'log_item_id' => $itemA['variant']->supplies_id,
-            'log_jumlah' => $qtyA,
-        ]);
+        $this->assertSame(100, $itemA['stock']->ss_stock, "item A's stock must NOT be touched when a later item fails pre-check");
 
-        // Item B is never touched beyond the manual drain above.
         $itemB['stock']->refresh();
-        $this->assertSame(2, $itemB['stock']->ss_stock, "item B's stock must be untouched by accProductIssues since its own guard rejected it");
+        $this->assertSame(2, $itemB['stock']->ss_stock, "item B's stock is untouched beyond the manual drain above");
 
-        // The real bug: the document is left status=2 (Accepted) despite the client receiving an
-        // error response and only HALF the items being mutated.
+        // FIXED: the document stays genuinely pending — not falsely flipped to Approved.
         $pi = ProductIssues::findOrFail($piId);
-        $this->assertSame(
-            2,
-            (int) $pi->status,
-            'BUG: the document is flipped to Accepted mid-loop, on item A\'s own iteration — not left pending like accPO/accProduction\'s (pre-fix) atomicity gaps'
-        );
+        $this->assertSame(1, (int) $pi->status, 'the document must remain pending, not flipped to Approved on a rejected approval');
 
-        // Confirms the document is now stuck: a repeat approve/decline both report "already
-        // processed" instead of allowing a clean retry or reversal.
+        // FIXED: since nothing was mutated and status is still pending, a repeat approve attempt
+        // hits the SAME clean shortage rejection again — not "already processed" — meaning the
+        // document is genuinely retryable once the real stock issue is resolved.
         $repeatAccResponse = $this->post('/accProductIssues', ['pi_id' => $piId]);
-        $repeatAccResponse->assertJson(['status' => -2]);
-        $repeatDeclineResponse = $this->post('/declineProductIssues', ['pi_id' => $piId]);
-        $repeatDeclineResponse->assertJson(['status' => -2]);
+        $repeatAccResponse->assertJson(['status' => -1]);
 
-        // Only one new log_stocks row exists (item A's) — item B never gets one.
-        $this->assertSame($logCountBefore + 1, DB::table('log_stocks')->count());
+        // No log_stocks rows at all — neither item was ever mutated.
+        $this->assertSame($logCountBefore, DB::table('log_stocks')->count());
         $itemBDetail = ProductIssuesDetail::where('pi_id', $piId)->where('item_id', $itemB['variant']->supplies_variant_id)->firstOrFail();
         $this->assertSame(1, (int) $itemBDetail->status, 'item B\'s detail row is untouched, still marked active');
+    }
+
+    public function test_a_missing_or_invalid_supplier_is_rejected_cleanly_instead_of_crashing(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        // supplier_id pointing at a row that doesn't exist — reproduces the null-guard crash
+        // (Supplier::find($sup->supplier_id)->supplier_name on a null find()) without needing to
+        // actually delete a real supplier.
+        $bogusSupplierId = ((int) DB::table('suppliers')->max('supplier_id')) + 1000;
+        $qty = 3;
+        $item = $this->createSuppliesFixture('BadSupplier', 100, $bogusSupplierId);
+
+        $insertResponse = $this->post('/insertProductIssues', [
+            'tipe_return' => 1,
+            'pi_type' => 2,
+            'pi_date' => now()->format('d-m-Y'),
+            'pi_notes' => 'DB transaction supplier null-guard test',
+            'items' => json_encode([[
+                'supplies_variant_id' => $item['variant']->supplies_variant_id,
+                'supplies_name' => 'Item with invalid supplier',
+                'unit_id' => self::UNIT_ID,
+                'pid_qty' => $qty,
+            ]]),
+        ]);
+        $insertResponse->assertStatus(200);
+        $piId = (int) ProductIssues::orderByDesc('pi_id')->value('pi_id');
+
+        $logCountBefore = DB::table('log_stocks')->count();
+
+        // FIXED: no 500 — a clean, structured rejection naming the item with the bad supplier.
+        $accResponse = $this->post('/accProductIssues', ['pi_id' => $piId]);
+        $accResponse->assertStatus(200);
+        $accResponse->assertJson(['status' => 0]);
+        $this->assertStringContainsString('supplier', strtolower($accResponse->json('message')));
+        $this->assertStringContainsString('Atomicity Test Variant BadSupplier', $accResponse->json('message'));
+
+        $item['stock']->refresh();
+        $this->assertSame(100, $item['stock']->ss_stock, 'no stock mutation should happen when the pre-check rejects a bad supplier');
+
+        $pi = ProductIssues::findOrFail($piId);
+        $this->assertSame(1, (int) $pi->status, 'the document must remain pending, not flipped to Approved');
+
+        $this->assertSame($logCountBefore, DB::table('log_stocks')->count());
     }
 }

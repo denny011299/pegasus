@@ -767,6 +767,9 @@ class ReportController extends Controller
     }
 
     // Report Petty Cash
+    // DEPRECATED (2026-08-02): Petty Cash is no longer used. insertPettyCash() below crashes on
+    // every call (petty_cashes is missing columns the model writes to) — not fixed, not tested,
+    // by explicit decision. See KNOWN_ISSUES.md.
     public function PettyCash(){
         return view('Backoffice.Reports.Petty_Cash');
     }
@@ -871,6 +874,7 @@ class ReportController extends Controller
 
         if ($data['jenis_input'] == "operasional"){
             $data['oc_transaksi'] = 0;
+            $data['ca_type'] = 2;
             $ca_id = (new CashAdmin())->insertCashAdmin($data);
 
             foreach ($item as $key => $value) {
@@ -878,7 +882,7 @@ class ReportController extends Controller
                 (new CashAdminDetail())->insertCashAdminDetail($value);
             }
         }
-        
+
         else if ($data['jenis_input'] == "saldo") {
             $data['ca_type'] = 1;
             (new CashAdmin())->insertCashAdmin($data);
@@ -923,6 +927,7 @@ class ReportController extends Controller
             $staff_name = Staff::find($data['staff_id'])->staff_name;
             $data['ca_notes'] = "Pengeluaran admin " . $staff_name;
             $data['ca_nominal'] = $total;
+            $data['ca_type'] = 2;
         }
 
         else if ($data['jenis_input'] == "saldo"){
@@ -1119,6 +1124,7 @@ class ReportController extends Controller
 
         if ($data['jenis_input'] == "operasional"){
             $data['oc_transaksi'] = 0;
+            $data['cg_type'] = 2;
             $cg_id = (new CashGudang())->insertCashGudang($data);
 
             foreach ($item as $key => $value) {
@@ -1126,8 +1132,9 @@ class ReportController extends Controller
                 (new CashGudangDetail())->insertCashGudangDetail($value);
             }
         }
-        
+
         else if ($data['jenis_input'] == "saldo") {
+            $data['cg_type'] = 1;
             (new CashGudang())->insertCashGudang($data);
         }
     }
@@ -1170,11 +1177,13 @@ class ReportController extends Controller
             $staff_name = Staff::find($data['staff_id'])->staff_name;
             $data['cg_notes'] = "Penyerahan kas armada dari gudang - " . $staff_name;
             $data['cg_nominal'] = $total;
+            $data['cg_type'] = 2;
         }
 
         else if ($data['jenis_input'] == "saldo"){
             $staff_name = Staff::find($data['staff_id'])->staff_name;
             $notes = $data['cg_notes'] . " dari gudang - " . $staff_name;
+            $data['cg_type'] = 1;
             // Pengajuan dana
             if ($data['oc_transaksi'] == 1){
                 $type = 3;

@@ -130,7 +130,6 @@
         var public = "{{ asset('') }}";
         var dummyLogo = "{{ URL::asset('/assets/img/profiles/avatar-10.jpg') }}";
         var data = @json($data);
-        data = data[0];
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Settings/Profiles.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Settings/Profiles.js')}}?v={{ time() }}"></script>
 @endsection

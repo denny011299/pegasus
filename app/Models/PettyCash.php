@@ -5,6 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
 
+/**
+ * DEPRECATED (2026-08-02): Petty Cash is no longer used. `insertPettyCash()` writes to
+ * `pc_description`/`pc_nominal`/`pc_type`/`cc_id`, none of which exist on `petty_cashes`, so it
+ * crashes on every call — not fixed, not tested, by explicit decision. See KNOWN_ISSUES.md.
+ */
 class PettyCash extends Model
 {
     protected $table = "petty_cashes";
