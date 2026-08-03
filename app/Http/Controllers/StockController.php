@@ -29,6 +29,7 @@ use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use function Symfony\Component\Clock\now;
 
