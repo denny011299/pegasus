@@ -72,6 +72,33 @@ function setProductionSaveVisible(visible, label) {
                     "</span>",
             );
         }
+        $destSelect2 = $dest.next(".select2-container");
+        if ($destSelect2.length) {
+            $destSelect2.show();
+        } else {
+            $dest.show();
+        }
+    } else {
+        $dest.val(null).trigger("change");
+        if ($destSelect2.length) {
+            $destSelect2.hide();
+        }
+        $dest.hide();
+        $badge.removeClass("d-none").addClass("d-flex");
+    }
+}
+
+function resetProductionApprovalActions() {
+    $("#addProduction #btn-terima, #addProduction #btn-tolak")
+        .addClass("d-none")
+        .removeClass("btn_acc_produksi btn_decline_produksi btn_acc btn_cancel")
+        .removeAttr("production_id");
+}
+
+function showProductionApprovalActions(action, productionId) {
+    resetProductionApprovalActions();
+    if (!hasAccessAction("Produksi", "others")) {
+        return;
     }
     if (visible) {
         $btn.removeClass("d-none").addClass("d-inline-flex");
@@ -111,10 +138,16 @@ function showProductionApprovalActions(action, productionId) {
     var $accept = $("#addProduction #btn-terima");
     var $decline = $("#addProduction #btn-tolak");
     if (action === "production") {
-        $accept.addClass("btn_acc_produksi").html('<i class="fe fe-check"></i> Terima Produksi');
-        $decline.addClass("btn_decline_produksi").html('<i class="fe fe-x"></i> Tolak');
+        $accept
+            .addClass("btn_acc_produksi")
+            .html('<i class="fe fe-check"></i> Terima Produksi');
+        $decline
+            .addClass("btn_decline_produksi")
+            .html('<i class="fe fe-x"></i> Tolak');
     } else if (action === "cancellation") {
-        $accept.addClass("btn_acc").html('<i class="fe fe-check"></i> Terima Pembatalan');
+        $accept
+            .addClass("btn_acc")
+            .html('<i class="fe fe-check"></i> Terima Pembatalan');
         $decline.addClass("btn_cancel").html('<i class="fe fe-x"></i> Tolak');
     } else {
         return;
@@ -575,11 +608,7 @@ function renderProductionAction(row) {
         prAct +=
             '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
-    if (
-        !isOldRow &&
-        status === 2 &&
-        hasAccessAction("Produksi", "delete")
-    ) {
+    if (!isOldRow && status === 2 && hasAccessAction("Produksi", "delete")) {
         prAct +=
             '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
     }
