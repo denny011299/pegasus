@@ -17,29 +17,32 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * See cdocs/testing/workflows/PRODUCTION_FLOW.md's "Cancel-request sub-flow" section for the
- * fully-traced flow this documents. `accDeleteProduction` (approving a request to cancel an
- * already-approved production) has NO `DB::transaction()` anywhere in its ~300-line body —
- * confirmed by grep, zero `DB::beginTransaction()`/`DB::transaction()` calls. This is the exact
- * same gap `accProduction` had before `main` commit `2d73633` fixed it — nobody applied the same
- * fix here.
+ * ✅ FIXED (2026-08-04): See cdocs/testing/workflows/PRODUCTION_FLOW.md's "Cancel-request
+ * sub-flow" section for the fully-traced flow this documents. `accDeleteProduction` (approving a
+ * request to cancel an already-approved production) used to have NO `DB::transaction()` anywhere
+ * in its ~300-line body — the exact same gap `accProduction` had before `main` commit `2d73633`
+ * fixed it, just not applied here yet.
  *
- * Trigger: the reversal's product-stock loop has the identical "ladder split" null-guard gap
- * already found and characterized for `accProduction` itself
+ * Trigger: the reversal's product-stock loop had the identical "ladder split" null-guard gap
+ * already found and fixed for `accProduction` itself
  * (`tests/Regression/ProductionOutputLadderNullGuardCrashTest.php`) — `$ps_depan->ps_stock -=
  * $kurangDos;` on a `ProductStock` row that doesn't exist at the larger unit. Unlike
  * `accProduction`'s pre-check, this method's own reversibility pre-check (lines ~1085-1135) only
- * verifies the COMBINED total across both unit levels is sufficient — it never confirms the
+ * verifies the COMBINED total across both unit levels is sufficient — it never confirmed the
  * specific larger-unit row the reversal is about to write to actually exists, so a product with
- * enough stock entirely at the smaller unit still passes the pre-check cleanly, then crashes in
- * the reversal loop that follows.
+ * enough stock entirely at the smaller unit passed the pre-check cleanly, then crashed in the
+ * reversal loop that followed.
+ *
+ * Fix: the whole reversal (product-stock loop, ingredient-restoration loop, and the
+ * `cancelProduction()`/`cancelProductionDetail()` status flips, moved to the END instead of the
+ * START) now runs inside one `DB::transaction()`. The product-stock loop's `ProductStock` lookups
+ * are null-guarded — a missing row can't be silently auto-provisioned here (there'd be nothing
+ * real to subtract from, unlike a fresh credit), so it's collected and rolled back with a clean
+ * `{status: 0, header: 'Gagal Batal Produksi', ...}` response instead of a 500.
  *
  * The production/detail rows here are seeded directly (bypassing `insertProduction`/
  * `accProduction`) to precisely control the "already approved" starting state this test needs —
  * the point of this test is `accDeleteProduction`'s own behavior, not re-verifying approval.
- *
- * Not fixed here — deferred per this project's "queue bugs, don't fix" policy. This test
- * characterizes the CURRENT behavior on purpose.
  */
 class ProductionCancelRequestAtomicityTest extends TestCase
 {
@@ -49,7 +52,7 @@ class ProductionCancelRequestAtomicityTest extends TestCase
     private const DOS_UNIT_ID = 7;
     private const WAREHOUSE_ID = 1;
 
-    public function test_a_mid_reversal_crash_leaves_the_production_permanently_cancelled_with_stock_left_inconsistent(): void
+    public function test_a_missing_larger_unit_stock_row_cleanly_rejects_the_reversal_instead_of_crashing(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -155,33 +158,35 @@ class ProductionCancelRequestAtomicityTest extends TestCase
 
         $accResponse = $this->post('/accDeleteProduction', ['production_id' => $production->production_id]);
 
-        // Documents current behavior: an uncaught error, not a clean {status:-1, ...} response.
-        $accResponse->assertStatus(500);
+        // Fixed: a clean, structured rejection instead of an uncaught 500.
+        $accResponse->assertOk();
+        $accResponse->assertJson(['status' => 0, 'header' => 'Gagal Batal Produksi']);
 
-        // BUG: despite the crash, the production is already permanently cancelled — status = 3
-        // was set (via cancelProduction()) before the stock reversal loop ever ran.
+        // Fixed: the whole reversal runs inside one DB::transaction() now, and the status flips
+        // moved to the end — a rejected reversal must leave the production exactly as it was
+        // (still pending cancel-request, status 4), not permanently cancelled.
         $production->refresh();
         $this->assertSame(
-            3,
+            4,
             (int) $production->status,
-            'BUG: cancelProduction() runs before the stock reversal, so the production is left cancelled despite the crash'
+            'a rejected reversal must not leave the production cancelled'
         );
 
-        // BUG: the Piece-level stock is left completely untouched — the crash happens before its
-        // own subtraction line is ever reached, since the DOS-level lookup crashes first.
+        // Fixed: the Piece-level stock must be completely untouched by the rejected reversal.
         $pieceStock->refresh();
-        $this->assertSame(20, $pieceStock->ps_stock, 'BUG: stock is left exactly as the original approval left it — neither reversed nor consistent with the now-cancelled status');
+        $this->assertSame(20, $pieceStock->ps_stock, 'a rejected reversal must not touch stock at all');
 
-        // The DOS-level row that crashed the lookup still doesn't exist — nothing created it.
+        // The DOS-level row still doesn't exist — the fix reports the gap, it doesn't paper over
+        // it by auto-creating a row (there'd be nothing real to subtract from).
         $this->assertSame(
             0,
             ProductStock::where('product_variant_id', $variant->product_variant_id)->where('unit_id', self::DOS_UNIT_ID)->count()
         );
 
-        // The ingredient restoration loop (which runs after the crashing product-stock loop) never
-        // ran either — supplies_stocks is untouched, neither restored nor left as a legitimate
-        // "still consumed" state matching a cancelled production.
+        // Fixed: the ingredient restoration loop must not have run either — the whole reversal is
+        // one atomic unit now, so a product-stock rejection must leave supplies_stocks untouched
+        // too, not partially restored.
         $suppliesStock->refresh();
-        $this->assertSame(1000, $suppliesStock->ss_stock, 'BUG: ingredient restoration never ran, since the crash happens earlier in the same request');
+        $this->assertSame(1000, $suppliesStock->ss_stock, 'a rejected reversal must not touch ingredient stock either');
     }
 }

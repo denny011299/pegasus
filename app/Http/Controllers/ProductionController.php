@@ -1234,10 +1234,14 @@ class ProductionController extends Controller
             ]);
         }
 
-        (new Production())->cancelProduction($data);
-        (new ProductionDetails())->cancelProductionDetail($data);
+        DB::beginTransaction();
+        try {
+        // Status flip dipindah ke akhir (setelah semua mutasi berhasil) — dulu dijalankan di sini,
+        // sebelum reversal, jadi production sudah permanen ber-status Batal walau reversal-nya
+        // sendiri crash di tengah jalan.
 
         // Stok produk
+        $produk_gagal_reversal = [];
         foreach ($p['items'] as $key => $value) {
             $b = Bom::find($value->bom_id);
             $jumlahKurang = intval($value['pd_qty']);
@@ -1255,6 +1259,15 @@ class ProductionController extends Controller
                     ->where("unit_id", $r->pr_unit_id_1)
                     ->where("status", 1)
                     ->first();
+                // Ditambahkan: dulu di-assign langsung tanpa null-check — pre-check di atas cuma
+                // memastikan stok GABUNGAN (piece + dos*rasio) cukup, tidak memastikan baris
+                // ProductStock di unit yang lebih besar ini benar-benar ada, jadi produk yang
+                // seluruh stoknya nyangkut di unit kecil crash di sini ("Attempt to assign
+                // property on null"). Sekarang dikumpulkan dan di-rollback dengan pesan jelas.
+                if (!$ps_depan) {
+                    $produk_gagal_reversal[] = $this->productLabelForReversalError($value['product_variant_id']);
+                    continue;
+                }
                 $ps_depan->ps_stock -= $kurangDos;
                 $ps_depan->save();
 
@@ -1274,6 +1287,10 @@ class ProductionController extends Controller
                         ->where("unit_id", $r->pr_unit_id_2)
                         ->where("status", 1)
                         ->first();
+                    if (!$ps_belakang) {
+                        $produk_gagal_reversal[] = $this->productLabelForReversalError($value['product_variant_id']);
+                        continue;
+                    }
                     $ps_belakang->ps_stock -= $sisaPiece;
                     $ps_belakang->save();
 
@@ -1294,6 +1311,10 @@ class ProductionController extends Controller
                     ->where("unit_id", $value["unit_id"])
                     ->where("status", 1)
                     ->first();
+                if (!$v) {
+                    $produk_gagal_reversal[] = $this->productLabelForReversalError($value['product_variant_id']);
+                    continue;
+                }
                 $v->ps_stock -= $jumlahKurang;
                 $v->save();
 
@@ -1308,6 +1329,17 @@ class ProductionController extends Controller
                     'unit_id'      => $value["unit_id"],
                 ]);
             }
+        }
+
+        if (count($produk_gagal_reversal) > 0) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Batal Produksi',
+                'message' => 'Baris stok produk tidak dapat ditemukan untuk: '
+                    . implode(', ', array_unique($produk_gagal_reversal))
+                    . '. Pembatalan dibatalkan, tidak ada perubahan data.',
+            ]);
         }
 
         // Hitung aggregatedRequirements dari data produksi yang sudah ada
@@ -1461,6 +1493,15 @@ class ProductionController extends Controller
                 ]);
             }
         }
+
+        (new Production())->cancelProduction($data);
+        (new ProductionDetails())->cancelProductionDetail($data);
+        DB::commit();
+        return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function getPemakaian(Request $req)
@@ -1570,11 +1611,28 @@ class ProductionController extends Controller
     }
 
     /**
+     * accDeleteProduction()'s stock-reversal loop: a missing ProductStock row here can't be
+     * auto-provisioned like ensureProductStockRow() does for a fresh credit (there'd be nothing
+     * real to subtract from), so it's reported as a clean rollback error instead — this just
+     * builds the "Product Variant Name" label for that message.
+     */
+    private function productLabelForReversalError(int $productVariantId): string
+    {
+        $pv = ProductVariant::find($productVariantId);
+        if (!$pv) {
+            return "id {$productVariantId}";
+        }
+        $product = Product::find($pv->product_id);
+        $label = trim(($product->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+
+        return $label !== '' ? $label : ($pv->product_variant_name ?? "id {$productVariantId}");
+    }
+
+    /**
      * Mirrors ensureSuppliesStockRows() below, on the finished-goods side: accProduction()'s
      * ladder-split output crediting needs a ProductStock row at the larger unit (pr_unit_id_1) to
      * exist before it can be credited — auto-provision it at 0 stock instead of crashing on a
-     * null lookup. Note: accDeleteProduction() has the identical unguarded lookup in its own
-     * reversal loop, not yet using this helper — see KNOWN_ISSUES.md.
+     * null lookup.
      */
     private function ensureProductStockRow(int $productVariantId, int $unitId)
     {
