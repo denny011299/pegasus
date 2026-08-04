@@ -205,17 +205,19 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
     }
 
     /**
-     * BUG (see KNOWN_ISSUES.md): `deleteInvoicePO()` calls `cekInvoice($t->po_id)` OUTSIDE its own
-     * `if ($t) { ... }` null-check — an invalid poi_id crashes instead of failing cleanly.
+     * ✅ FIXED (2026-08-04): `deleteInvoicePO()` used to call `cekInvoice($t->po_id)` OUTSIDE its
+     * own `if ($t) { ... }` null-check — an invalid poi_id crashed instead of failing cleanly. The
+     * `cekInvoice()` call is now inside the null-check, same as everywhere else this pattern
+     * appears in this codebase.
      */
-    public function test_deleting_an_invoice_with_an_invalid_id_crashes_instead_of_failing_cleanly(): void
+    public function test_deleting_an_invoice_with_an_invalid_id_fails_cleanly_instead_of_crashing(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $bogusPoiId = 999999;
         $response = $this->post('/deleteInvoicePO', ['poi_id' => $bogusPoiId, 'status' => -1]);
 
-        $response->assertStatus(500);
+        $response->assertOk();
     }
 
     /**
