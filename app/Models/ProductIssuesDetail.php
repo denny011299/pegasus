@@ -260,17 +260,29 @@ class ProductIssuesDetail extends Model
                 }
 
                 $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $m) {
-                    if (!isset($units[$targetKey + 1])) return false;
-                    $stokSekarang = $units[$targetKey]; 
-                    $stokAtas = $units[$targetKey + 1];
-                    
-                    if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) { 
-                        if (!$siapkanStok($targetKey + 1, $units)) return false; 
-                    }
-                    
+                    $stokSekarang = $units[$targetKey];
+
+                    // Dulu mencari "unit di atas" lewat posisi array ($units[$targetKey + 1]) —
+                    // hanya benar kalau baris SuppliesStock unit besar KEBETULAN dibuat sebelum
+                    // unit kecil (array diurutkan ss_id desc), tidak ada yang menjamin itu.
+                    // Sekarang mencari lewat SuppliesRelation::su_id_1 dulu (mirroring
+                    // ProductionController's $siapkanStok), baru cari index array yang
+                    // unit_id-nya cocok — posisi di array tidak lagi relevan.
                     $sr = SuppliesRelation::where('supplies_id', $m->supplies_id)->where('su_id_2', $stokSekarang->unit_id)->where('status', 1)->first();
-                    
-                    if ($sr && $virtualStock[$stokAtas->ss_id]['current'] > 0) {
+                    if (!$sr) return false;
+
+                    $keyAtas = null;
+                    foreach ($units as $idx => $stok) {
+                        if ($stok->unit_id == $sr->su_id_1) { $keyAtas = $idx; break; }
+                    }
+                    if ($keyAtas === null) return false;
+                    $stokAtas = $units[$keyAtas];
+
+                    if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
+                        if (!$siapkanStok($keyAtas, $units)) return false;
+                    }
+
+                    if ($virtualStock[$stokAtas->ss_id]['current'] > 0) {
                         $virtualStock[$stokAtas->ss_id]['current'] -= 1;
                         $hasilBongkar = (float)$sr['sr_value_2'];
                         $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
@@ -337,11 +349,28 @@ class ProductIssuesDetail extends Model
                 }
 
                 $siapkanStokProd = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStokProd, $itemId) {
-                    if (!isset($units[$targetKey + 1])) return false;
-                    $stokSekarang = $units[$targetKey]; $stokAtas = $units[$targetKey + 1];
-                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) { if (!$siapkanStokProd($targetKey + 1, $units)) return false; }
+                    $stokSekarang = $units[$targetKey];
+
+                    // Mirrors the fix in this same method's tipe_return==1 closure above: cari
+                    // "unit di atas" lewat ProductRelation::pr_unit_id_1 dulu, baru cari index
+                    // array yang unit_id-nya cocok — bukan lewat posisi array ($targetKey + 1),
+                    // yang cuma benar kalau baris ProductStock unit besar kebetulan dibuat lebih
+                    // dulu.
                     $sr = ProductRelation::where('product_variant_id', $itemId)->where('pr_unit_id_2', $stokSekarang->unit_id)->where('status', 1)->first();
-                    if ($sr && $virtualStock[$stokAtas->ps_id]['current'] > 0) {
+                    if (!$sr) return false;
+
+                    $keyAtas = null;
+                    foreach ($units as $idx => $stok) {
+                        if ($stok->unit_id == $sr->pr_unit_id_1) { $keyAtas = $idx; break; }
+                    }
+                    if ($keyAtas === null) return false;
+                    $stokAtas = $units[$keyAtas];
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
+                        if (!$siapkanStokProd($keyAtas, $units)) return false;
+                    }
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {
                         $virtualStock[$stokAtas->ps_id]['current'] -= 1;
                         $hasilBongkar = (float)$sr['pr_unit_value_2'];
                         $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
