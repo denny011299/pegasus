@@ -265,12 +265,15 @@
                     previous: '<i class="fa fa-angle-left"></i> '
                 },
             },
+            // Lebar kolom diatur lewat CSS (nth-child, lihat <style> di Production.blade.php) —
+            // supaya table-layout:fixed jadi satu-satunya sumber lebar, tidak tumpang tindih
+            // dengan width inline yang tadinya di-set di sini.
             columns: [
-                { data: "date", width: "15%" },
-                { data: "production_code", width: "15%" },
-                { data: "production_desc", width: "20%", defaultContent: "-" },
+                { data: "date" },
+                { data: "production_code" },
+                { data: "production_desc", defaultContent: "-" },
                 { data: "status_text" },
-                { data: "notes", defaultContent: "-", width: "30%"  },
+                { data: "notes", defaultContent: "-" },
                 { data: "created_by_name", defaultContent: "-" },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "cancel_requested_by_name", defaultContent: "-" },
@@ -1022,18 +1025,31 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         $('.btn-konfirmasi').html("Konfirmasi");
     })
 
-    $(document).on('click', '#btn-accept-production', function(){
-        LoadingButton(this);
+    // Dipakai baik oleh konfirmasi approve awal maupun konfirmasi "buat baris stok baru" di bawah
+    // — accProduction bisa membalas status:-3 kalau ada satuan ladder yang baris ProductStock-nya
+    // belum ada, sebelum mengubah apa pun. confirmCreateStock=true dikirim setelah user setuju.
+    function submitAccProduction(productionId, confirmCreateStock) {
+        LoadingButton($('.btn-konfirmasi'));
         $.ajax({
             url:"/accProduction",
             data:{
-                production_id:$('#btn-accept-production').attr('production_id'),
+                production_id: productionId,
+                confirm_create_stock: confirmCreateStock ? 1 : 0,
                 _token:token
             },
             method:"post",
             success:function(e){
                 if (e!=1){
                     if (typeof e === "object"){
+                        if (e.status == -3) {
+                            // Perlu konfirmasi tambahan: ada baris stok yang belum ada dan akan
+                            // dibuat dengan stok awal 0 kalau user melanjutkan.
+                            ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                            showModalKonfirmasi(e.message, "btn-confirm-create-stock-production");
+                            $('#btn-confirm-create-stock-production').attr("production_id", productionId);
+                            $('.btn-konfirmasi').html("Konfirmasi");
+                            return false;
+                        }
                         notifikasi('error', e.header, e.message);
                         if (e.status == -2) {
                             $('.modal').modal("hide");
@@ -1051,13 +1067,25 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
                     refreshProduction();
                     $('.modal').modal("hide");
                     notifikasi('success', "Berhasil Terima", "Berhasil Terima Produksi");
-                }                
+                }
             },
             error:function(e){
                 console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
             }
         });
+    }
+
+    $(document).on('click', '#btn-accept-production', function(){
+        // Baca lewat selector id (bukan $(this)) — .btn-konfirmasi juga dipakai tombol lain
+        // (mis. #modalDelete) sehingga showModalKonfirmasi() bisa menaruh id yang sama di lebih
+        // dari satu elemen; supaya konsisten dengan tempat penulisannya (juga lewat selector id),
+        // pembacaan production_id ikut lewat selector id juga.
+        submitAccProduction($('#btn-accept-production').attr('production_id'), false);
+    })
+
+    $(document).on('click', '#btn-confirm-create-stock-production', function(){
+        submitAccProduction($('#btn-confirm-create-stock-production').attr('production_id'), true);
     })
 
     $(document).on('click', '.btn_decline_produksi', function(){
