@@ -213,44 +213,6 @@ function updateTtUploadProgress(percent) {
         
     });
 
-    $(document).on("click","#generateTandaTerima",function(){
-        $('.invalid').removeClass('invalid');
-        var valid = 1;
-        if($('#select_supplier').val()==null||$('#select_supplier').val()==""){
-            $('.row-supplier .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        if($('#bank_kode').val()==null||$('#bank_kode').val()==""){
-             $('.row-rekening .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        
-        if(valid==-1){
-            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            return false;
-        };
-        var url = '/generateTandaTerima/'+$('#select_supplier').val()+"/"+$('#bank_kode').val();
-        $.ajax({
-            url:url,
-            method:"get",
-            success:function(e){
-                if(e==-1){
-                    notifikasi("error","Gagal Buat Surat Terima","Supplier tersebut tidak ada po selesai!")
-                }
-                else{
-                    refreshPurchaseOrder();
-                    window.location.href = '/viewTandaTerima/' + e;
-                }
-                $('#select_supplier').empty();
-                $('#bank_kode').empty();
-            },
-            error:function(e){
-                console.log(e);
-            }
-        });
-       
-    });
-
 $(document).on("change", "#image", function () {
     let file = this.files[0];
     if (!file) {

@@ -60,16 +60,16 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Variasi|view')->group(function () {
     });
     Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {
     });
@@ -660,9 +660,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tanda Terima PO|view')->group(function () {
         Route::get('/tt', [SupplierController::class, 'tt'])->name('tt');
         Route::get('/getTt', [SupplierController::class, 'getTt'])->name('getTt');
-        Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, 'generateTandaTerima'])->name('generateTandaTerima');
         Route::get('/generateTandaTerimaInvoice', [SupplierController::class, 'generateTandaTerimaInvoice'])->name('generateTandaTerimaInvoice');
-        Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('generateTandaTerima');
+        Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('viewTandaTerima');
     });
     Route::middleware('check.access:Tanda Terima PO|create')->group(function () {
         Route::post('/insertTt', [SupplierController::class, 'insertTt'])->name('insertTt');
