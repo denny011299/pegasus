@@ -671,9 +671,13 @@ $(document).on("click", "#btn-acc-sto", function () {
         },
         method: "post",
         success: function (e) {
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            if (typeof e === "object" && e !== null) {
+                notifikasi("error", e.header, e.message);
+                return false;
+            }
             $("#modalDelete .modal-body").html("");
             $(".modal").modal("hide");
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
             notifikasi(
                 "success",
                 "Berhasil Approve",

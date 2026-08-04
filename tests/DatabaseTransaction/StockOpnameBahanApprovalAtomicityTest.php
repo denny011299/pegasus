@@ -9,16 +9,10 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Mirrors tests/DatabaseTransaction/StockOpnameApprovalAtomicityTest.php exactly, one level down
- * (Bahan instead of Produk) — confirms the identical missing-transaction/null-guard gap exists on
- * this side too, not just assumed from the Produk-side finding.
- *
- * Trigger: `StockController::accStockOpnameBahan()` looks up `SuppliesStock` by `supplies_id` +
- * `unit_id` with no null-check (`StockController.php:481-498`). A second supplies line in the same
- * request carries a bogus `unit_id` that matches no stock row, so the lookup returns null. The
- * FIRST log_stocks insert reads `$s->ss_stock` — a read on null is only a PHP warning, not fatal —
- * but the very next line, `$s->ss_stock = $u['real_qty'];`, is a WRITE to a property on null,
- * which IS a fatal `Error` in PHP 8.
+ * ✅ FIXED (2026-08-04): Mirrors
+ * tests/DatabaseTransaction/StockOpnameApprovalAtomicityTest.php exactly, one level down (Bahan
+ * instead of Produk) — confirms the identical missing-transaction/null-guard fix applies on this
+ * side too, not just assumed from the Produk-side finding.
  */
 class StockOpnameBahanApprovalAtomicityTest extends TestCase
 {
@@ -38,7 +32,7 @@ class StockOpnameBahanApprovalAtomicityTest extends TestCase
         return (int) DB::table('staffs')->where('status', 1)->value('staff_id');
     }
 
-    public function test_a_mid_loop_failure_leaves_the_first_item_permanently_overwritten(): void
+    public function test_a_mid_loop_failure_is_now_cleanly_rejected_with_nothing_overwritten(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -88,31 +82,24 @@ class StockOpnameBahanApprovalAtomicityTest extends TestCase
             ]),
         ]);
 
-        // Documents current behavior: an uncaught error, not a clean {status:-1, ...} response.
-        $accResponse->assertStatus(500);
+        // Fixed: a clean, structured rejection instead of an uncaught 500.
+        $accResponse->assertOk();
+        $accResponse->assertJson(['status' => 0, 'header' => 'Gagal ACC']);
 
-        // Item A (processed first) is fully, permanently overwritten with its counted value.
+        // Fixed: item A must be untouched now — the whole loop runs in one transaction, so item
+        // B's missing stock row rolls item A's mutation back too.
         $stockA->refresh();
-        $this->assertSame($startingA - 1, $stockA->ss_stock, "the first item's stock is permanently overwritten despite the second item's later crash");
+        $this->assertSame($startingA, $stockA->ss_stock, "a rejected approval must not touch item A's stock at all");
 
-        // Item B is never touched — the crash happens before its own ss_stock write.
         $stockB->refresh();
-        $this->assertSame($startingB, $stockB->ss_stock, "the second (bogus-unit) item's stock is left completely untouched");
+        $this->assertSame($startingB, $stockB->ss_stock, "a rejected approval must not touch item B's stock either");
 
-        // Item A gets both of its log_stocks rows (before + after); item B's crash happens after
-        // its first (read-on-null) log row is already inserted, but before its stock write.
-        $this->assertGreaterThanOrEqual($logCountBefore + 2, DB::table('log_stocks')->count());
-        $this->assertDatabaseHas('log_stocks', [
-            'log_type' => 2,
-            'log_category' => 1,
-            'log_item_id' => $stockA->supplies_id,
-            'log_jumlah' => $startingA - 1,
-        ]);
+        // Fixed: no log_stocks rows survive a rolled-back approval.
+        $this->assertSame($logCountBefore, DB::table('log_stocks')->count(), 'a rejected approval must not leave any log_stocks rows behind');
 
-        // The document itself is left stuck: neither approved nor left in its prior pending shape
-        // cleanly — status was never flipped to 2, since the loop never reaches the end.
+        // The document remains pending — never flipped to approved.
         $stob = StockOpnameBahan::find($stobId);
-        $this->assertSame(1, (int) $stob->status, 'the opname is left pending, despite the first item already being permanently overwritten');
+        $this->assertSame(1, (int) $stob->status, 'a rejected approval must leave the opname pending');
         $this->assertNull($stob->acc_by);
     }
 }
