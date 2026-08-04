@@ -492,7 +492,8 @@
             <div class="modal-content ">
                 <div class="modal-header border-0 pb-0">
                     <div class="form-header modal-header-title  text-start mb-0">
-                        <h4 class="mb-0 modal-title">Tambah Produksi</h4>
+                        <h4 class="mb-0 modal-title d-inline-block">Tambah Produksi</h4>
+                        <span id="production_status_badge_header" class="ms-2" style="display:none;"></span>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
                     </button>
@@ -513,10 +514,42 @@
                                         <input type="text" class="form-control" id="production_desc" placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
-                                <div class="col-12" id="row-production-acc-by" style="display:none;">
+                                <div class="col-12" id="row-production-detail-info" style="display:none;">
+                                    <div class="row">
+                                        <div class="col-lg-6 col-12">
+                                            <div class="mb-3">
+                                                <label>Kode Produksi</label>
+                                                <input type="text" class="form-control" id="production_code_display" disabled>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6 col-12">
+                                            <div class="mb-3">
+                                                <label>Dibuat Oleh</label>
+                                                <input type="text" class="form-control" id="production_created_by_display" disabled>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6 col-12" id="row-production-acc-by" style="display:none;">
                                     <div class="mb-3">
-                                        <label>Disetujui/Ditolak Oleh</label>
+                                        <label>Diapprove Oleh</label>
                                         <input type="text" class="form-control" id="production_acc_by_name" disabled>
+                                    </div>
+                                </div>
+                                <div class="col-12" id="row-production-cancel-info" style="display:none;">
+                                    <div class="row">
+                                        <div class="col-lg-6 col-12">
+                                            <div class="mb-3">
+                                                <label>Pengajuan Batal Oleh</label>
+                                                <input type="text" class="form-control" id="production_cancel_requested_by_display" disabled>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6 col-12">
+                                            <div class="mb-3">
+                                                <label>Notes Pembatalan</label>
+                                                <input type="text" class="form-control" id="production_cancel_notes_display" disabled>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 {{-- <div class="col-lg-6"></div> --}}
