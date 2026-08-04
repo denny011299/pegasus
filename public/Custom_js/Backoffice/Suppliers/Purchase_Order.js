@@ -587,32 +587,8 @@
         });
     });
 
-    $(document).on("click","#generateTandaTerima",function(){
-        $('.invalid').removeClass('invalid');
-        var valid = 1;
-        if($('#select_supplier').val()==null||$('#select_supplier').val()==""){
-            $('.row-supplier .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        if($('#bank_kode').val()==null||$('#bank_kode').val()==""){
-             $('.row-rekening .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        
-        if(valid==-1){
-            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            return false;
-        };
 
 
-        var anchor = document.createElement('a');
-        anchor.href = '/generateTandaTerima/'+$('#select_supplier').val()+"/"+$('#bank_kode').val();
-        anchor.click();
-    });
-
-
-    
-    
 $(document).on('click', '#btn-foto-bukti', function() {
     rotationAngle = 0;
     camRotation = 0;

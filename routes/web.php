@@ -734,7 +734,6 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tanda Terima PO|view')->group(function () {
         Route::get('/tt', [SupplierController::class, 'tt'])->name('tt');
         Route::get('/getTt', [SupplierController::class, 'getTt'])->name('getTt');
-        Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, 'generateTandaTerima'])->name('generateTandaTerima');
         Route::get('/generateTandaTerimaInvoice', [SupplierController::class, 'generateTandaTerimaInvoice'])->name('generateTandaTerimaInvoice');
         Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('viewTandaTerima');
     });

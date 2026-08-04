@@ -359,47 +359,6 @@ class SupplierController extends Controller
     }
 
 
-    function generateTandaTerima($id,$kode) {
-        $param["supplier"] = Supplier::find($id); 
-        $param["data"] = PurchaseOrder::where('po_supplier','=',$id)->where('status','=',4)->where('pembayaran','=',0)
-        ->whereNull('tt_id')
-        ->get();
-        if(count($param["data"])<=0){
-            return -1;
-        }
-        $ada = -1;
-        foreach ($param["data"] as $key => $value) {
-            if($value["kodeTerima"]!=null) $ada=$value["kodeTerima"];
-        };
-        if($ada==-1)$ttid = (new PurchaseOrder())->generateTandaTerimaID($kode);
-        else $ttid = $ada;
-        date_default_timezone_set('Asia/Jakarta');
-        $tt = (new purchase_order_tt())->insertTt([
-            "tt_date"=> date('Y-m-d'),
-            "staff_name"=> Session::get('user')->staff_name,
-            "tt_kode"=> $ttid,
-            "supplier_id"=> $id,
-            "tt_total"=> 0,
-        ]);
-        $total = 0;
-        foreach ($param["data"] as $key => $value) {
-            $p = PurchaseOrder::find($value->po_id);
-            $p->tt_id = $tt;
-            $p->save();
-            $total += $p->po_total;
-        }
-        
-        $tt = purchase_order_tt::find($tt);
-        $tt->tt_total = $total;
-        $tt->save();
-        $param["tt"] = $tt;
-
-        $param = $this->mergePdfPrintMeta($param);
-        $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
-        //return $pdf->download('Tanda Terima'.$param["supplier"]["supplier_name"].'.pdf');
-        return $tt->tt_id;
-    }
-
     function generateTandaTerimaInvoice(Request $req) {
         $notValid = [];
         $notValidBank = [];
