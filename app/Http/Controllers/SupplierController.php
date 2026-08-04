@@ -187,7 +187,13 @@ class SupplierController extends Controller
         foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
             $p = PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->where('status','=',2)->get();
             $total =  PurchaseOrderDeliveryDetail::whereIn('pdo_id', $p->pluck('pdo_id'))->where('supplies_variant_id','=',$value['supplies_variant_id'])->sum('pdod_qty');
-            if($total+$value['pdod_qty']>$value["pdod_qty"] ){
+            // Dulu dibandingkan ke $value["pdod_qty"] sendiri (selalu true begitu $total>0) —
+            // sekarang dibandingkan ke jumlah pesanan asli di purchase_orders_details.pod_qty.
+            $ordered = PurchaseOrderDetail::where('po_id', '=', $data['po_id'])
+                ->where('supplies_variant_id', '=', $value['supplies_variant_id'])
+                ->where('status', '=', 1)
+                ->value('pod_qty') ?? 0;
+            if($total+$value['pdod_qty']>$ordered ){
                 array_push($bermasalah, $value['name']);
             }
         }
