@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Stock Transfer — FE
  * Autocomplete staff/gudang + input produk pola Pembelian (select / scan).
  * Pending: form default locked; unlock via Edit Data (butuh hak edit).
@@ -3250,11 +3250,11 @@ $(document).on("click", "#btn-reject-stock-transfer", function () {
 $(document).on("click", ".btnCancelKirimTransfer", function () {
     var id = $(this).attr("data-id");
     if (!id) return;
-    showModalKonfirmasi(
+    showModalDanger(
         "Cancel Kirim transfer ini? Stok akan dikembalikan ke gudang asal.",
         "btn-cancel-kirim-stock-transfer"
     );
-    $("#modalKonfirmasi #btn-cancel-kirim-stock-transfer").attr("data-id", id);
+    $("#modalDanger #btn-cancel-kirim-stock-transfer").attr("data-id", id);
 });
 
 $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
