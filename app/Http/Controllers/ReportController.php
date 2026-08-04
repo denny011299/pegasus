@@ -1270,10 +1270,40 @@ class ReportController extends Controller
             }
             $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
 
-            foreach ($cgd as $key => $value) {
-                $customer = Customer::find($value['customer_id']);
-                $customer->customer_saldo += $value['cgd_nominal'];
-                $customer->save();
+            // Ditambahkan: mutasi customer_saldo di bawah + insert CashArmada di
+            // CashGudang::acceptCashGudang() (dipanggil di akhir method ini) dulu tidak dibungkus
+            // transaction sama sekali — customer_id yang tidak valid di baris ke-N akan crash
+            // dengan sebagian baris sebelumnya sudah permanen menaikkan customer_saldo. Sekarang
+            // dicek dulu (tanpa mutasi) sebelum satu pun saldo disentuh, dan seluruh mutasi
+            // (loop ini + acceptCashGudang() di model) dibungkus satu DB::transaction() supaya
+            // gagal di tengah jalan tidak meninggalkan mutasi parsial.
+            $customer_invalid = [];
+            foreach ($cgd as $value) {
+                if (!Customer::find($value['customer_id'])) {
+                    $customer_invalid[] = "id {$value['customer_id']}";
+                }
+            }
+            if (count($customer_invalid) > 0) {
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal ACC",
+                    "message" => "Data pelanggan tidak ditemukan untuk: " . implode(', ', array_unique($customer_invalid)),
+                ]);
+            }
+
+            DB::beginTransaction();
+            try {
+                foreach ($cgd as $value) {
+                    $customer = Customer::find($value['customer_id']);
+                    $customer->customer_saldo += $value['cgd_nominal'];
+                    $customer->save();
+                }
+                $result = (new CashGudang())->acceptCashGudang($data);
+                DB::commit();
+                return $result;
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                throw $e;
             }
         } else {
             $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
