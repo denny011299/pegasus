@@ -55,6 +55,7 @@ class StockController extends Controller
             $value["sto_id"] = $id;
             (new StockOpnameDetail())->insertDetail($value);
         }
+        return response()->json(['status' => 1, 'sto_id' => $id]);
     }
 
     // function updateStockOpname(Request $req)
@@ -180,12 +181,44 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $sto = StockOpname::find($data['sto_id']);
+
+        // Ditambahkan: dulu tidak ada pengecekan status sama sekali (cuma is_draft di halaman
+        // insert) — beda dengan PO/SO/Production yang semuanya menolak kalau status != 1. Tanpa
+        // ini, approve ulang pada dokumen yang sudah disetujui diam-diam menimpa ps_stock lagi
+        // dengan real_qty apa pun yang dibawa request kedua.
+        if ($sto->status != 1) {
+            $staff = Staff::find($sto->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        DB::beginTransaction();
+        try {
+        $produk_gagal = [];
         foreach ($stod as $key => $value) {
             foreach ($value['units'] as $u) {
                 $s = ProductStock::where('product_variant_id', $value['product_variant_id'])
                     ->where('unit_id', $u['unit_id'])
                     ->first();
-                
+
+                // Ditambahkan: dulu di-assign langsung tanpa null-check — sebuah unit_id yang
+                // salah/tidak match menyebabkan crash "Attempt to assign property on null" di
+                // tengah loop, sementara item-item sebelumnya sudah kadung ditimpa permanen.
+                if (!$s) {
+                    $pv = ProductVariant::find($value['product_variant_id']);
+                    $namaProduk = '-';
+                    if ($pv) {
+                        $pr = Product::find($pv->product_id);
+                        $namaProduk = trim(($pr->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                        if ($namaProduk === '') $namaProduk = $pv->product_variant_name ?? '-';
+                    }
+                    if (!in_array($namaProduk, $produk_gagal, true)) $produk_gagal[] = $namaProduk;
+                    continue;
+                }
+
                 // Catat log
                 (new LogStock())->insertLog([
                     'log_date' => now(),
@@ -214,9 +247,25 @@ class StockController extends Controller
                 ]);
             }
         }
+
+        if (count($produk_gagal) > 0) {
+            DB::rollBack();
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal ACC",
+                "message" => "Baris stok tidak ditemukan untuk: " . implode(', ', $produk_gagal),
+            ]);
+        }
+
         $sto->status = 2;
         $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
+        DB::commit();
+        return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function tolakStockOpname(Request $req) {
@@ -269,6 +318,7 @@ class StockController extends Controller
             $value["stob_id"] = $id;
             (new StockOpnameDetailBahan())->insertDetail($value);
         }
+        return response()->json(['status' => 1, 'stob_id' => $id]);
     }
 
     function updateStockOpnameBahan(Request $req)
@@ -339,12 +389,34 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $stob = StockOpnameBahan::find($data['stob_id']);
+
+        // Mirrors accStockOpname()'s status guard above.
+        if ($stob->status != 1) {
+            $staff = Staff::find($stob->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        DB::beginTransaction();
+        try {
+        $bahan_gagal = [];
         foreach ($stod as $key => $value) {
             foreach ($value['sp_units'] as $u) {
                 $s = SuppliesStock::where('supplies_id', $value['supplies_id'])
                     ->where('unit_id', $u['unit_id'])
                     ->first();
-                
+
+                // Mirrors accStockOpname()'s null-guard above.
+                if (!$s) {
+                    $sup = Supplies::find($value['supplies_id']);
+                    $namaBahan = $sup->supplies_name ?? "id {$value['supplies_id']}";
+                    if (!in_array($namaBahan, $bahan_gagal, true)) $bahan_gagal[] = $namaBahan;
+                    continue;
+                }
+
                 // Catat log
                 (new LogStock())->insertLog([
                     'log_date' => now(),
@@ -373,9 +445,25 @@ class StockController extends Controller
                 ]);
             }
         }
+
+        if (count($bahan_gagal) > 0) {
+            DB::rollBack();
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal ACC",
+                "message" => "Baris stok tidak ditemukan untuk: " . implode(', ', $bahan_gagal),
+            ]);
+        }
+
         $stob->status = 2;
         $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $stob->save();
+        DB::commit();
+        return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function tolakStockOpnameBahan(Request $req) {
