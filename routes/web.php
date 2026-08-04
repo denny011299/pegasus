@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', [GeneralController::class, 'login'])->name('login');
 Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
 Route::middleware(checkLogin::class)->group(function () {
+    Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
+
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');
     })->name('index');

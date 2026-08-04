@@ -7,6 +7,7 @@ use App\Models\LogStock;
 use App\Models\Product;
 use App\Models\ProductStock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class GeneralController extends Controller
 {
@@ -15,12 +16,24 @@ class GeneralController extends Controller
         foreach ($p as $key => $value) {
             (new ProductStock())->syncStock($value->product_id);
         }
-        
+
     }
      function login() {
           return view('Login');
      }
-     
+
+     /**
+      * Dulu Logout cuma link ke /login tanpa pernah menghapus session — session yang "sudah
+      * logout" tetap valid (termasuk role_access lama kalau rolenya berubah) sampai expired
+      * alami. invalidate() membuang seluruh data session + regenerate session id, regenerateToken()
+      * menyegarkan CSRF token supaya form di halaman login berikutnya tidak memakai token basi.
+      */
+     function logout() {
+          Session::invalidate();
+          Session::regenerateToken();
+          return redirect('/login');
+     }
+
     // Wilayah
     public function Area(){
         return view('Backoffice.Area.Area');
