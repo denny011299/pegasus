@@ -610,6 +610,10 @@ class CustomerController extends Controller
         else return -1;
     }
 
+    // DEPRECATED (2026-08-04): Sales Order Delivery (getSoDelivery through declineSoDelivery
+    // below) is no longer used — its stock mutation double-counted what accSO() already deducts
+    // at SO-approval time. Confirmed by product owner as unused, not fixed, not tested. See
+    // KNOWN_ISSUES.md.
     function getSoDelivery(Request $req)
     {
         $data = (new SalesOrderDelivery())->getSoDelivery([
