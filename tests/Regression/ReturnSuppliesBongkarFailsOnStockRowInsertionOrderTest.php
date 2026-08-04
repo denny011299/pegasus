@@ -12,23 +12,26 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Bug: `ProductIssuesDetail::stockCheck()`'s bongkar closure (used by Return Supplies,
- * `SupplierController::insertReturnSupplies()`) finds "the next larger unit's stock row" via a
- * plain array index one position over (`$units[$targetKey + 1]`), NOT by matching
+ * ✅ FIXED (2026-08-05): `ProductIssuesDetail::stockCheck()`'s bongkar closure (used by Return
+ * Supplies, `SupplierController::insertReturnSupplies()`) used to find "the next larger unit's
+ * stock row" via a plain array index one position over (`$units[$targetKey + 1]`), NOT by matching
  * `SuppliesRelation::su_id_1` the way Production's own bongkar closure does
- * (`ProductionController.php`'s `$siapkanStok`, which explicitly searches for the unit matching
- * the relation). The stock rows are ordered by `ss_id DESC` (most-recently-created first) — so
- * this only works if the LARGER unit's `SuppliesStock` row happened to be created BEFORE the
- * smaller unit's row (see the passing counterpart,
- * `tests/Workflow/ReturnSuppliesBongkarFlowTest.php`). If the smaller unit's row was created
- * FIRST instead (equally plausible in real provisioning order — nothing enforces one order over
- * the other), the smaller unit's row ends up at the LAST index, `$targetKey + 1` runs off the end
- * of the array, and the bongkar closure returns `false` immediately without ever finding the
- * larger-unit row — even though the combined physical stock is more than sufficient.
- * `insertReturnSupplies` then rejects the return as `"Stok bahan tidak mencukupi"`, and touches no
- * stock at all. Confirmed 2026-08-02 while tracing
- * `cdocs/testing/workflows/RETURN_SUPPLIES_FLOW.md`. Deliberately deferred, not fixed. This test
- * characterizes the CURRENT (order-dependent failure) behavior on purpose.
+ * (`ProductionController.php`'s `$siapkanStok`). The stock rows are ordered by `ss_id DESC`
+ * (most-recently-created first) — so this only worked if the LARGER unit's `SuppliesStock` row
+ * happened to be created BEFORE the smaller unit's row (see the sibling,
+ * `tests/Workflow/ReturnSuppliesBongkarFlowTest.php`). If the smaller unit's row was created FIRST
+ * instead (equally plausible in real provisioning order), the smaller unit's row ended up at the
+ * LAST index, `$targetKey + 1` ran off the end of the array, and the bongkar closure returned
+ * `false` immediately without ever finding the larger-unit row — even though the combined physical
+ * stock was more than sufficient. `insertReturnSupplies` then rejected the return as `"Stok bahan
+ * tidak mencukupi"`, touching no stock at all.
+ *
+ * Fix: the closure now looks up `SuppliesRelation::su_id_1` for the current unit FIRST, then finds
+ * whichever array index holds that unit_id — matching Production's own `$siapkanStok` pattern
+ * exactly. Array position is no longer relevant. The identical bug shape was also found (and fixed
+ * in the same pass) in this method's sibling closure for `tipe_return == 2` (Retur Armada,
+ * `$siapkanStokProd` using `ProductStock`/`ProductRelation`) — not previously flagged in
+ * KNOWN_ISSUES.md, found while fixing this one.
  *
  * Real unit ids used (same ones as ProductionUnitConversionFlowTest, none renamed here):
  * 3 = Liter, 5 = Drum.
@@ -40,7 +43,7 @@ class ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest extends TestCase
     private const LITER = 3;
     private const DRUM = 5;
 
-    public function test_bongkar_is_wrongly_rejected_when_the_smaller_units_stock_row_was_created_first(): void
+    public function test_bongkar_now_succeeds_even_when_the_smaller_units_stock_row_was_created_first(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -118,15 +121,11 @@ class ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest extends TestCase
             ]]),
         ]);
 
-        $response->assertJson(['status' => -1]);
-        $response->assertJsonFragment(['message' => 'Stok bahan tidak mencukupi : '.$variant->supplies_variant_name]);
+        $response->assertStatus(200);
 
         $literStock->refresh();
         $drumStock->refresh();
-        $this->assertSame(50, $literStock->ss_stock, 'BUG: no bongkar attempted at all — stock is left completely untouched despite 1050 Liter-equivalent being available combined');
-        $this->assertSame(5, $drumStock->ss_stock);
-
-        $po->refresh();
-        $this->assertSame(1000000, (int) $po->po_total, 'the rejected return must not touch po_total either');
+        $this->assertSame(150, $literStock->ss_stock, '2 Drums broken down (50 + 400 = 450), then 300 deducted for the return = 150');
+        $this->assertSame(3, $drumStock->ss_stock, '2 of the 5 Drums were broken down to cover the shortfall, regardless of which row was created first');
     }
 }
