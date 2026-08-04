@@ -48,15 +48,27 @@ class ResolveOverdueProductionsCommand extends Command
             )
         );
 
-        $this->info(sprintf(
-            '%s pending: %d dicek (%d approved, %d declined). Cancel request: %d dicek (%d di-timeout).',
-            $dryRun ? 'Akan diproses —' : 'Selesai —',
-            $summary['pending_checked'],
-            $summary['pending_approved'],
-            $summary['pending_declined'],
-            $summary['cancel_checked'],
-            $summary['cancel_timed_out']
-        ));
+        if ($dryRun) {
+            // Ditambahkan: dry-run tidak pernah benar-benar memanggil accProduction(), jadi TIDAK
+            // TAHU apakah tiap item bakal berhasil di-approve atau malah gagal (mis. stok bahan
+            // kurang) — dulu baris ini tetap menampilkan "(0 approved, 0 declined)" seolah-olah itu
+            // hasil nyata, padahal tabel di atas sudah benar menampilkan "would auto-acc". Sekarang
+            // cuma melaporkan jumlah yang DITEMUKAN overdue, bukan pura-pura tahu hasil approve-nya.
+            $this->info(sprintf(
+                'Akan diproses — pending: %d ditemukan overdue. Cancel request: %d ditemukan overdue. Lihat kolom "action" di atas untuk detail per baris; jalankan tanpa --dry-run untuk memproses beneran.',
+                $summary['pending_checked'],
+                $summary['cancel_checked']
+            ));
+        } else {
+            $this->info(sprintf(
+                'Selesai — pending: %d dicek (%d approved, %d declined). Cancel request: %d dicek (%d di-timeout).',
+                $summary['pending_checked'],
+                $summary['pending_approved'],
+                $summary['pending_declined'],
+                $summary['cancel_checked'],
+                $summary['cancel_timed_out']
+            ));
+        }
 
         return self::SUCCESS;
     }

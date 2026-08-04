@@ -513,6 +513,12 @@
                                         <input type="text" class="form-control" id="production_desc" placeholder="Masukkan Keterangan">
                                     </div>
                                 </div>
+                                <div class="col-12" id="row-production-acc-by" style="display:none;">
+                                    <div class="mb-3">
+                                        <label>Disetujui/Ditolak Oleh</label>
+                                        <input type="text" class="form-control" id="production_acc_by_name" disabled>
+                                    </div>
+                                </div>
                                 {{-- <div class="col-lg-6"></div> --}}
                                 {{-- <div class="col-lg-6 col-12">
                                     <div class="mb-3">

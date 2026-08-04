@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductionController;
 use App\Models\Production;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Auto-timeout untuk produksi yang mangkrak lebih dari ~4 hari sejak production_date:
@@ -69,12 +70,14 @@ class ProductionOverdueAutoResolver
             $result = (new ProductionController())->accProduction($request);
 
             if ($result === 1) {
+                $this->markResolvedBySystem($production);
                 $summary['pending_approved']++;
                 $summary['details'][] = $this->detailRow($production, 'auto-approved');
             } else {
                 $declineRequest = new Request();
                 $declineRequest->merge(['production_id' => $production->production_id]);
                 (new ProductionController())->declineProduction($declineRequest);
+                $this->markResolvedBySystem($production);
                 $summary['pending_declined']++;
                 $summary['details'][] = $this->detailRow($production, 'auto-declined (acc failed)');
             }
@@ -93,11 +96,34 @@ class ProductionOverdueAutoResolver
             }
 
             (new Production())->accProduction(['production_id' => $production->production_id]);
+            $this->markResolvedBySystem($production);
             $summary['cancel_timed_out']++;
             $summary['details'][] = $this->detailRow($production, 'cancel request auto-rejected');
         }
 
         return $summary;
+    }
+
+    /**
+     * Tandai produksi ini sebagai diproses OTOMATIS oleh sistem, bukan aksi staf sungguhan —
+     * accProduction()/declineProduction() di atas tetap mengisi acc_by dari Session::get('user')
+     * kalau kebetulan ada session aktif (mis. auto-timeout ini terpicu lewat GET /getProduction
+     * saat seorang staf sedang membuka halaman list), jadi acc_by SENDIRI tidak bisa dipercaya
+     * untuk membedakan "staf yang benar-benar approve" dari "cuma kebetulan lagi buka halaman".
+     * Kolom ini eksplisit menandai itu, terlepas dari isi acc_by.
+     *
+     * Dibungkus Schema::hasColumn() supaya tetap aman kalau migration kolom ini belum ter-merge di
+     * branch/environment yang menjalankan kode ini — lihat migration
+     * 2026_08_05_010000_add_resolved_by_system_to_productions_table.
+     */
+    private function markResolvedBySystem(Production $production): void
+    {
+        if (!Schema::hasColumn('productions', 'resolved_by_system')) {
+            return;
+        }
+
+        $production->resolved_by_system = true;
+        $production->save();
     }
 
     private function isOverdue(string $productionDate, int $overdueAfterDays): bool

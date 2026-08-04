@@ -13,6 +13,7 @@ use App\Models\ProductionDetails;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Support\ProductionOverdueAutoResolver;
+use Illuminate\Support\Facades\Artisan;
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
@@ -140,6 +141,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
 
         $production->refresh();
         $this->assertSame(2, (int) $production->status, 'an overdue, resolvable production must be auto-approved');
+        $this->assertTrue((bool) $production->resolved_by_system, 'must be flagged as system-resolved, not attributed to a real staff action');
 
         $fx['productStock']->refresh();
         $this->assertSame(10, $fx['productStock']->ps_stock, 'the real accProduction() logic must have run, crediting finished-goods stock');
@@ -174,6 +176,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
 
         $production->refresh();
         $this->assertSame(3, (int) $production->status, 'a resolvable-check failure must fall back to auto-decline, not stay stuck pending');
+        $this->assertTrue((bool) $production->resolved_by_system, 'the auto-decline fallback must also be flagged as system-resolved');
     }
 
     public function test_an_overdue_cancel_request_is_auto_timed_out_back_to_approved(): void
@@ -192,6 +195,50 @@ class ProductionOverdueAutoResolverTest extends TestCase
 
         $production->refresh();
         $this->assertSame(2, (int) $production->status, 'an overdue cancel-request must time out back to approved, not stay pending forever');
+        $this->assertTrue((bool) $production->resolved_by_system, 'a timed-out cancel-request must also be flagged as system-resolved');
+    }
+
+    /**
+     * ✅ ADDED (2026-08-05): acc_by alone can't distinguish a real staff decision from an
+     * auto-timeout — accProduction()/declineProduction() still fill it from Session::get('user')
+     * if a session happens to be active (e.g. this auto-timeout fired while a staff member had the
+     * Produksi list open), which used to misattribute the automatic action to whoever was merely
+     * viewing the page. getProduction()'s acc_by_name now shows "Sistem (Auto-Timeout)" whenever
+     * resolved_by_system is set, regardless of whatever acc_by ended up holding.
+     */
+    public function test_getProduction_shows_system_auto_timeout_label_instead_of_the_viewing_staffs_name(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createFixture();
+        $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
+
+        // Simulates the misattribution scenario directly: an active session exists (this staff),
+        // yet the resolution is still a system auto-timeout.
+        (new ProductionOverdueAutoResolver())->resolveOverdue();
+        $production->refresh();
+        $this->assertNotNull($production->acc_by, 'acc_by is still filled from the active session, same as before — this is the raw value the fix must not rely on for display');
+
+        $rows = (new Production())->getProduction(['production_id' => $production->production_id]);
+        $row = $rows->firstOrFail();
+        $this->assertSame('Sistem (Auto-Timeout)', $row->acc_by_name, 'display must show the system label, not the session staff\'s real name, even though acc_by points at them');
+    }
+
+    public function test_getProduction_still_shows_the_real_staff_name_for_a_genuine_manual_decision(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createFixture();
+        $production = $this->createPendingProduction($fx, now()->toDateString());
+
+        $this->post('/accProduction', ['production_id' => $production->production_id])->assertOk();
+
+        $production->refresh();
+        $this->assertFalse((bool) $production->resolved_by_system, 'a real, on-time manual approval must not be flagged as system-resolved');
+
+        $rows = (new Production())->getProduction(['production_id' => $production->production_id]);
+        $row = $rows->firstOrFail();
+        $this->assertNotSame('Sistem (Auto-Timeout)', $row->acc_by_name, 'a genuine manual approval must show the real staff name, not the system label');
     }
 
     public function test_getProduction_still_triggers_the_same_auto_timeout_as_a_side_effect(): void
@@ -207,5 +254,41 @@ class ProductionOverdueAutoResolverTest extends TestCase
 
         $production->refresh();
         $this->assertSame(2, (int) $production->status, 'GET /getProduction must still auto-resolve overdue productions as a side effect');
+    }
+
+    /**
+     * ✅ FIXED (2026-08-05): the console command's dry-run summary line used to unconditionally
+     * print "(0 approved, 0 declined)" even when the table above correctly showed a "would
+     * auto-acc" row — dry-run never actually calls accProduction(), so it has no way to know
+     * whether an item would really succeed or get declined, and the 0/0 looked like a real (and
+     * wrong) outcome instead of "not attempted." The summary line now only reports how many
+     * overdue items were FOUND in dry-run mode, deferring outcome detail to the table's own
+     * per-row "action" column.
+     */
+    public function test_dry_run_summary_does_not_claim_a_fake_approved_declined_outcome(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createFixture();
+        $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
+
+        Artisan::call('production:resolve-overdue', ['--dry-run' => true]);
+        $dryRunOutput = Artisan::output();
+
+        $this->assertStringContainsString('would auto-acc', $dryRunOutput, 'the per-row table must still say what would happen');
+        $this->assertStringNotContainsString('approved', $dryRunOutput, 'dry-run must not claim a fake approved/declined outcome it never actually attempted');
+        $this->assertStringContainsString('1 ditemukan overdue', $dryRunOutput);
+
+        $production->refresh();
+        $this->assertSame(1, (int) $production->status, 'dry-run must never mutate anything');
+
+        Artisan::call('production:resolve-overdue');
+        $realRunOutput = Artisan::output();
+
+        $this->assertStringContainsString('auto-approved', $realRunOutput);
+        $this->assertStringContainsString('1 approved, 0 declined', $realRunOutput, 'a real run must still report the actual outcome');
+
+        $production->refresh();
+        $this->assertSame(2, (int) $production->status);
     }
 }

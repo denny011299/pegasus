@@ -195,6 +195,7 @@
         $('#btn-terima, #btn-tolak').hide();
         $("#production_date").val(getTodayStr()).prop('disabled', true);
         $('#addProduction').removeAttr("revision_source_production_id");
+        $('#row-production-acc-by').hide();
     })
 
     $(document).on('keyup', '#production_qty', function(){
@@ -460,6 +461,7 @@
             $('.btn-cancel').html("Batal");
             $('#addProduction').removeAttr("production_id");
             $('#addProduction').attr("revision_source_production_id", rowData.production_id);
+            $('#row-production-acc-by').hide();
             $('#addProduction').modal("show");
 
             params.delete("rev_production_id");
@@ -697,6 +699,16 @@
         $('#unit_id').html("");
         $('#production_date').val(data.production_date);
         $('#production_desc').val(data.production_desc).attr('disabled', true);
+
+        // Tampilkan siapa yang approve/tolak hanya kalau memang sudah diputuskan (status 2/3) dan
+        // ada nama untuk ditampilkan — acc_by_name juga bisa berisi "Sistem (Auto-Timeout)" kalau
+        // produksi ini di-auto-timeout, bukan diputuskan staf sungguhan.
+        if ((data.status == 2 || data.status == 3) && data.acc_by_name && data.acc_by_name !== '-') {
+            $('#production_acc_by_name').val(data.acc_by_name);
+            $('#row-production-acc-by').show();
+        } else {
+            $('#row-production-acc-by').hide();
+        }
 
         var total_dos = 0;
 
