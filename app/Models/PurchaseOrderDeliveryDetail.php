@@ -58,6 +58,10 @@ class PurchaseOrderDeliveryDetail extends Model
         return $t->pdod_id;
     }
 
+    // DEPRECATED (2026-08-04): only reachable via the deprecated manual PO Delivery workflow
+    // (SupplierController::updatePoDelivery()/accPoDelivery()/declinePoDelivery()) — accPO() never
+    // calls this (it only ever inserts, never updates, its auto-generated delivery). See
+    // KNOWN_ISSUES.md.
     function updatePoDeliveryDetail($data)
     {
         $s = SuppliesVariant::find($data["supplies_variant_id"]);
