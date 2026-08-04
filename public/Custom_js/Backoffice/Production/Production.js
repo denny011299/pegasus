@@ -229,11 +229,11 @@
 
         $('#unit_id').html("");
         data.pr_unit.forEach(element => {
-            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
+            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`)
         });
         $('#unit_id').val(data.default_unit || data.unit_id).trigger("change");
         $('#pi_unit option').first().prop('selected', true);
-        
+
         $('#production_qty').trigger('keyup');
     })
 
@@ -269,11 +269,11 @@
             // supaya table-layout:fixed jadi satu-satunya sumber lebar, tidak tumpang tindih
             // dengan width inline yang tadinya di-set di sini.
             columns: [
-                { data: "date" },
-                { data: "production_code" },
-                { data: "production_desc", defaultContent: "-" },
+                { data: "date", width: "15%" },
+                { data: "production_code", width: "15%" },
+                { data: "production_desc", width: "20%", defaultContent: "-" },
                 { data: "status_text" },
-                { data: "notes", defaultContent: "-" },
+                { data: "notes", defaultContent: "-", width: "30%"  },
                 { data: "created_by_name", defaultContent: "-" },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "cancel_requested_by_name", defaultContent: "-" },
@@ -300,7 +300,7 @@
                     e = e.original || [];
                 }
                 console.log(e);
-                table.clear().draw(); 
+                table.clear().draw();
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].production_date).format('D MMM YYYY');
@@ -495,13 +495,13 @@
         });
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
             return false;
         };
         if(moment($('#production_date').val()).isAfter(moment().add(1, 'days'), 'day')){
             $('#production_date').addClass('is-invalid');
             notifikasi('error', "Gagal Insert", 'Input tanggal maksimal 1 hari setelah hari ini');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
             return false;
         }
         if (items.length == 0){
@@ -528,9 +528,9 @@
             headers: {
                 'X-CSRF-TOKEN': token
             },
-            success:function(e){ 
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-                console.log(e.length);      
+            success:function(e){
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+                console.log(e.length);
                 if (e.status == 0){
                     notifikasi('error', e.header, e.message);
                     return false;
@@ -542,7 +542,7 @@
                 afterInsert();
             },
             error:function(a){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
                 console.log(a);
             }
         });
@@ -575,10 +575,10 @@
 
                 if (validQty == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", `Mohon cek stock ${bahanKurang.map(d => d).join(", ")}`);
-                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
                     return false;
                 } else{
-                    
+
             },
             error:function(e){
                 console.log(e)
@@ -676,7 +676,7 @@
         if (index !== undefined) {
             list_bahan.splice(index, 1);
         }
-        
+
         console.log(items)
         row.remove();
     });
@@ -748,7 +748,7 @@
         if (moment(data.production_date).isBefore(moment().subtract(3, 'days').format('YYYY-MM-DD'))) {
             $('#btn-terima, #btn-tolak').hide();
         }
-        
+
         $('.is-invalid').removeClass('is-invalid');
         $('.add, .btn-save, .btn_delete_row_pr').hide();
         $('.dos').show();
@@ -779,7 +779,7 @@
     function getBom(id, index = null) {
         // kalau index sudah ada, maka akan balik
         if (modeBahan == 1 && list_bahan[index] !== undefined) {
-            return; 
+            return;
         }
 
         $.ajax({
@@ -794,7 +794,7 @@
                         temp.push(detail.supplies_id);
                     });
                     list_bahan[index] = temp;
-                } 
+                }
                 else if (modeBahan == 2) {
                     $('#tableSupplies tbody').html("");
 
@@ -815,7 +815,7 @@
                             isChecked = current_list.some(id => parseInt(id) == parseInt(b.supplies_id));
                         }
                         let isDisabled = (mode == 3) ? 'disabled' : '';
-                        
+
                         $('#tableSupplies tbody').append(`
                             <tr class="row-bahan">
                                 <td class="text-center">
@@ -832,7 +832,7 @@
         });
     }
 
-    
+
 
     $(document).on('click', '.btn-save-bahan', function(){
         var index = parseInt($(this).attr('index'));
@@ -850,10 +850,10 @@
         } else {
             list_bahan[index] = temp;
         }
-        
+
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Mohon input minimal 1 bahan');
-            ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan"); 
+            ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan");
             return false;
         }
 
@@ -863,7 +863,7 @@
         notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Detail Bahan');
         ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan");
     });
-    
+
 
 //delete
 $(document).on("click", ".btn_delete", function () {
@@ -886,7 +886,7 @@ $(document).on("click", "#btn-delete-production", function () {
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
     console.log($('#delete_reason').val());
-    
+
     LoadingButton(this);
     $.ajax({
         url: "/deleteProduction",
@@ -1116,7 +1116,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
                 }
                 refreshProduction()
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pengajuan");
-                
+
             },
             error:function(e){
                 console.log(e);
@@ -1156,7 +1156,7 @@ $(document).on('click', '.LihatfotoProduksi', function(){
         method: "get",
         success: function (e) {
             console.log(e);
- 
+
             if(e.length > 0){
                 list_photo = e;
                 $('#modalViewPhoto .modal-footer').show();
