@@ -136,6 +136,16 @@ class SupplierController extends Controller
         else return -1;
     }
 
+    // DEPRECATED (2026-08-04): the manual/partial Purchase Order Delivery workflow (getPoDelivery
+    // through declinePoDelivery below) is no longer used — confirmed by product owner. It let a
+    // delivery batch flip purchase_orders.status to Approved with no stock check and no invoice
+    // creation (accPO is the only place that happens), permanently locking the PO out of accPO
+    // afterward. Not fixed, not tested. See KNOWN_ISSUES.md.
+    //
+    // NOT deprecated: accPO() (below) still calls PurchaseOrderDelivery::insertPoDelivery() and
+    // PurchaseOrderDeliveryDetail::insertPoDeliveryDetail() directly to record its own
+    // auto-generated, already-approved delivery — those two model methods stay fully active. Only
+    // the independent manual create/edit/approve/decline actions below are deprecated.
     function getPoDelivery(Request $req)
     {
         $data = (new PurchaseOrderDelivery())->getPoDelivery([
