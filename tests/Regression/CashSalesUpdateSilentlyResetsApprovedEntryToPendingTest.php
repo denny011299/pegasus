@@ -9,8 +9,9 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Mirrors tests/Regression/CashArmadaUpdateSilentlyResetsApprovedEntryToPendingTest.php — the same
- * bug shape, confirmed independently on `CashSales`.
+ * ✅ FIXED (2026-08-04): Mirrors
+ * tests/Regression/CashArmadaUpdateSilentlyResetsApprovedEntryToPendingTest.php — the same bug
+ * shape, confirmed independently on `CashSales`.
  *
  * `CashSales::updateCashSales()` has EXPLICIT status-revival logic, clearly written to handle one
  * specific case (a DECLINED, `status=3` entry being re-submitted should go back to pending):
@@ -22,31 +23,29 @@ use Tests\TestCase;
  *       $t->status = 1; // revived from declined
  *       ...
  *   } else {
- *       $t->status = $incomingStatus ?? 1;   // <-- catches status=2 (APPROVED) too, not just "else"
+ *       $t->status = $incomingStatus ?? 1;   // <-- caught status=2 (APPROVED) too, not just "else"
  *   }
  *
- * `ReportController::updateCashSales()` never sends a `status` field at all, so `$incomingStatus`
- * is always `null`. For an ALREADY-APPROVED (`status=2`) entry, the first branch is skipped
- * (incomingStatus is null) and the second branch's `=== 3` check also fails (current status is 2,
- * not 3) — falling through to the final `else`, which resets status to `1` anyway. The
- * status-revival logic that was clearly written to handle ONE case (reviving a decline) ends up
- * silently catching approved entries too. Confirmed 2026-08-02 alongside the CashArmada mirror —
- * deliberately deferred, not fixed.
+ * `ReportController::updateCashSales()` never sent a `status` field at all, so `$incomingStatus`
+ * was always `null`. For an ALREADY-APPROVED (`status=2`) entry, the first branch was skipped
+ * (incomingStatus is null) and the second branch's `=== 3` check also failed (current status is 2,
+ * not 3) — falling through to the final `else`, which reset status to `1` anyway. Worse than the
+ * CashArmada mirror: the controller ALSO unconditionally forced `$data['cs_aksi'] = 1` for the
+ * entire "saldo" branch regardless of the entry's original `cs_aksi`, so a re-accept after editing
+ * an approved entry didn't just double-apply the balance change — it could flip `acceptCashSales()`
+ * into the opposite branch and cancel the first accept out entirely.
  *
- * **Worse than the CashArmada mirror**: `updateCashSales()`'s controller ALSO unconditionally
- * forces `$data['cs_aksi'] = 1` for the entire "saldo" branch
- * (`ReportController.php:1683`), regardless of the entry's original `cs_aksi` (2 or 3). Combined
- * with the status reset, re-accepting an edited entry doesn't just double-apply the SAME balance
- * change — `cs_aksi` silently becoming `1` flips `acceptCashSales()` into its
- * `cs_type==1 && cs_aksi==1` branch (`+=` instead of the original `-=`), so the SECOND accept
- * moves the balance in the OPPOSITE direction from the first. This test characterizes the CURRENT
- * (direction-flipping) behavior, which is more severe than a simple double-apply.
+ * Fix: `updateCashSales()` now refuses outright with a clean `{status: -2, header: 'Gagal
+ * Update', ...}` response if the entry's current status isn't `1`, matching
+ * `acceptCashSales`/`declineCashSales`'s existing convention — the model's status-revival logic and
+ * the cs_aksi assignment are both unreachable for an approved entry now, since the controller never
+ * gets that far.
  */
 class CashSalesUpdateSilentlyResetsApprovedEntryToPendingTest extends TestCase
 {
     use ActingAsStaff;
 
-    public function test_updating_an_approved_saldo_entry_resets_it_to_pending_and_a_re_accept_double_applies_the_balance(): void
+    public function test_updating_an_approved_saldo_entry_is_now_cleanly_rejected_instead_of_resetting_to_pending(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -79,9 +78,9 @@ class CashSalesUpdateSilentlyResetsApprovedEntryToPendingTest extends TestCase
         $staff->refresh();
         $this->assertSame(1000000 - $nominal, (int) $staff->staff_saldo, 'first accept applies the balance mutation once');
 
-        // Editing the now-APPROVED entry — updateCashSales's revival logic was written for
-        // status=3 (declined), but its fallback else-branch also catches status=2 (approved).
-        $this->post('/updateCashSales', [
+        // Editing the now-APPROVED entry — must now be cleanly rejected before the model's
+        // status-revival logic or the controller's cs_aksi override are ever reached.
+        $updateResponse = $this->post('/updateCashSales', [
             'cs_id' => $cs->cs_id,
             'staff_id' => $staff->staff_id,
             'bank_id' => 0,
@@ -90,28 +89,26 @@ class CashSalesUpdateSilentlyResetsApprovedEntryToPendingTest extends TestCase
             'cs_type' => 1,
             'cs_notes' => 'Regression test saldo entry (edited)',
             'cs_nominal' => $nominal,
-        ])->assertStatus(200);
+        ]);
+        $updateResponse->assertOk();
+        $updateResponse->assertJson(['status' => -2, 'header' => 'Gagal Update']);
 
         $cs->refresh();
-        $this->assertSame(1, (int) $cs->status, 'BUG: updating an already-approved entry silently resets its status to pending — the revival logic meant for declined entries also catches approved ones');
-        $this->assertSame(1, (int) $cs->cs_aksi, 'BUG: updateCashSales unconditionally forces cs_aksi=1 for the saldo branch, silently overwriting the original cs_aksi=2');
+        $this->assertSame(2, (int) $cs->status, 'the entry must remain approved — the update must be rejected before any mutation');
+        $this->assertSame(2, (int) $cs->cs_aksi, 'cs_aksi must be untouched — the original value from insert must survive');
 
-        // staff_saldo itself is untouched by the update — nothing reverses the original accept.
         $staff->refresh();
-        $this->assertSame(1000000 - $nominal, (int) $staff->staff_saldo, 'the update itself does not touch staff_saldo at all');
+        $this->assertSame(1000000 - $nominal, (int) $staff->staff_saldo, 'still exactly one balance mutation from the original accept');
 
-        // The entry now LOOKS pending, so a second accept is accepted, not blocked.
+        // A second accept on the still-approved entry must be blocked outright, same as always.
         $reAcceptResponse = $this->post('/acceptCashSales', ['cash_id' => $cs->cash_id]);
-        $reAcceptResponse->assertStatus(200);
-
-        $cs->refresh();
-        $this->assertSame(2, (int) $cs->status);
+        $reAcceptResponse->assertJson(['status' => -2]);
 
         $staff->refresh();
         $this->assertSame(
-            1000000,
+            1000000 - $nominal,
             (int) $staff->staff_saldo,
-            'BUG: cs_aksi silently became 1, so acceptCashSales hits its cs_type==1 && cs_aksi==1 branch (+=) instead of the original -= branch — the second accept moves the balance the OPPOSITE direction, fully cancelling out the first accept rather than double-applying it'
+            'the balance must never double-apply or flip direction now that both update and re-accept are blocked'
         );
     }
 }
