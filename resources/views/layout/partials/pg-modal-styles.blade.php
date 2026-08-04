@@ -57,6 +57,39 @@
         color: #334155;
     }
 
+    /* ═══ PG Modal — Danger (merah: hapus / peringatan) ═══ */
+    .pg-modal--danger .modal-content {
+        border: none;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    .pg-modal--danger .modal-header {
+        background: linear-gradient(135deg, #991b1b 0%, #ef4444 100%);
+        border: 0;
+        padding: 18px 24px;
+    }
+    .pg-modal--danger .modal-title {
+        color: #fff;
+        font-weight: 700;
+    }
+    .pg-modal--danger .pg-modal-icon {
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .pg-modal--danger .pg-modal-icon i {
+        font-size: 18px;
+        color: #fff;
+    }
+    .pg-modal--danger .modal-body {
+        font-size: 14px;
+        color: #334155;
+    }
+
     /* ═══ Footer — semua tombol kanan, setema ═══ */
     .pg-modal-footer {
         display: flex;

@@ -338,28 +338,33 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   }
   //munculin modal delete
-  function showModalDelete(text, button_id) {
-    if ($('#modalDelete .modal-body').is(':empty')) {
-      $('#modalDelete .modal-body').html('<p id="text-delete" style="font-size:10pt"></p>');
+    function showModalDelete(text, button_id) {
+        if ($('#modalDelete .modal-body').is(':empty')) {
+            $('#modalDelete .modal-body').html('<p id="text-delete" style="font-size:10pt"></p>');
+        }
+        
+        $("#text-delete").html(text);
+        $("#modalDelete .btn-konfirmasi").attr("id", button_id);
+        $('#modalDelete').modal("show");
+    }
+      
+    function showModalKonfirmasi(text, button_id) {
+        //button id ini, id button ketika dikofrimasi delete
+        $("#text-konfirmasi").html(text);
+        $("#modalKonfirmasi .btn-konfirmasi").attr("id", button_id);
+        $('#modalKonfirmasi').modal("show");
     }
 
-    $("#text-delete").html(text);
-    // Scope ke modal delete saja — jangan set id di semua .btn-konfirmasi (bikin duplikat id)
-    $('#modalKonfirmasi .btn-konfirmasi').removeAttr('id');
-    $('#modalDelete .btn-konfirmasi').attr("id", button_id);
-    $('#modalDelete').modal("show");
-  }
-
-  function showModalKonfirmasi(text, button_id) {
-    $("#text-konfirmasi").html(text);
-    $('#modalDelete .btn-konfirmasi').removeAttr('id');
-    $('#modalKonfirmasi .btn-konfirmasi').attr("id", button_id);
-    $('#modalKonfirmasi').modal("show");
+  function showModalDanger(text, button_id) {
+    $("#text-danger").html(text);
+    $("#modalDanger .btn-konfirmasi").attr("id", button_id);
+    $('#modalDanger').modal("show");
   }
 
   $('.btn-cancel').on("click", function() {
     closeModalDelete();
     closeModalConfirm();
+    closeModalDanger();
   })
 
   function closeModalDelete() {
@@ -368,6 +373,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
   function closeModalConfirm() {
     $('#modalKonfirmasi').modal("hide");
+  }
+
+  function closeModalDanger() {
+    $('#modalDanger').modal("hide");
   }
 
   $(document).on('hidden.bs.modal', '#modalKonfirmasi', function () {
