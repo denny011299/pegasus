@@ -260,10 +260,6 @@
   <script src="{{ URL::asset('/assets/plugins/intltelinput/js/intlTelInput.js') }}"></script>
 @endif
 
-@if (!Route::is(['index-two', 'index-three', 'index-four', 'index-five']))
-  <!-- Theme Settings JS -->
-  <script src="{{ URL::asset('/assets/js/theme-settings.js') }}"></script>
-@endif
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Custom JS -->
 <script src="{{ URL::asset('/assets/js/script.js') }}"></script>
@@ -373,6 +369,14 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   function closeModalConfirm() {
     $('#modalKonfirmasi').modal("hide");
   }
+
+  $(document).on('hidden.bs.modal', '#modalKonfirmasi', function () {
+    $('#modalKonfirmasi .modal-title').text('Konfirmasi');
+    $('#modalKonfirmasi .btn-konfirmasi')
+      .removeClass('btn-danger pg-btn-confirm--danger')
+      .addClass('btn-success pg-btn-confirm')
+      .text('Konfirmasi');
+  });
 
   $(document).on('click', '#btn-kembali-photo', function() {
     $('#modalViewPhoto').modal('hide');
@@ -1005,6 +1009,47 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   }
 
+  function formatProductVariantSelect2Label(item) {
+    if (!item || item.loading) {
+      return item && item.text ? item.text : "";
+    }
+    var sku = String(item.product_variant_sku || "").trim();
+    var name = String(item.pr_name || "").trim();
+    var variant = String(item.product_variant_name || "").trim();
+    if (variant && name.indexOf(variant) === -1) {
+      name = (name + " " + variant).replace(/\s+/g, " ").trim();
+    }
+    if (sku && sku !== "-") {
+      return name ? (sku + " | " + name) : sku;
+    }
+    return name || item.text || "-";
+  }
+
+  function mapProductVariantSelect2Results(data) {
+    return {
+      results: $.map(data.data || [], function(item) {
+        item.text = formatProductVariantSelect2Label(item);
+        return item;
+      }),
+    };
+  }
+
+  function productVariantSelect2AjaxOptions(url) {
+    return {
+      url: url,
+      dataType: "json",
+      type: "post",
+      delay: 400,
+      data: function data(params) {
+        return {
+          "keyword": params.term,
+          '_token': $('meta[name="csrf-token"]').attr('content')
+        };
+      },
+      processResults: mapProductVariantSelect2Results,
+    };
+  }
+
   function autocompleteProductVariant(id, modalParent = null) {
     if ($(id).hasClass('select2-hidden-accessible')) {
       $(id).select2('destroy');
@@ -1012,25 +1057,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
     //search country dan city
     $(id).select2({
-      ajax: {
-        url: "/autocompleteProductVariant",
-        dataType: "json",
-        type: "post",
-        delay: 250,
-        data: function data(params) {
-          return {
-            "keyword": params.term,
-            '_token': $('meta[name="csrf-token"]').attr('content')
-          };
-        },
-        processResults: function processResults(data) {
-          return {
-            results: $.map(data.data, function(item) {
-              return item;
-            }),
-          };
-        },
-      },
+      ajax: productVariantSelect2AjaxOptions("/autocompleteProductVariant"),
       placeholder: "Pilih Produk",
       closeOnSelect: true,
       allowClear: true,
@@ -1046,25 +1073,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
     //search country dan city
     $(id).select2({
-      ajax: {
-        url: "/autocompleteProductVariants",
-        dataType: "json",
-        type: "post",
-        delay: 250,
-        data: function data(params) {
-          return {
-            "keyword": params.term,
-            '_token': $('meta[name="csrf-token"]').attr('content')
-          };
-        },
-        processResults: function processResults(data) {
-          return {
-            results: $.map(data.data, function(item) {
-              return item;
-            }),
-          };
-        },
-      },
+      ajax: productVariantSelect2AjaxOptions("/autocompleteProductVariants"),
       placeholder: "Pilih Produk",
       closeOnSelect: true,
       allowClear: true,

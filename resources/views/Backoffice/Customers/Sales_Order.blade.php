@@ -95,12 +95,19 @@
             background: rgba(255, 255, 255, 0.72) !important;
             box-shadow: none !important;
             z-index: 20;
-            display: flex !important;
             align-items: center;
             justify-content: center;
             color: #1e293b;
             font-weight: 600;
             font-size: 14px;
+        }
+
+        #tableSalesOrder-wrap:not(.is-loading) .dataTables_processing {
+            display: none !important;
+        }
+
+        #tableSalesOrder-wrap.is-loading .dataTables_processing {
+            display: flex !important;
         }
 
         #tableSalesOrder_wrapper .dataTables_processing > div {
@@ -597,7 +604,7 @@
     </div>
     <!-- /Page Wrapper -->
 
-    <div class="modal fade" id="customer-supply-return-modal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade pg-modal--form" id="customer-supply-return-modal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
                 <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
@@ -612,7 +619,12 @@
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body p-4 position-relative">
+                    <div class="pg-modal-loading" aria-live="polite" aria-busy="true">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span class="text-muted fw-semibold" style="font-size:13px;">Memuat data...</span>
+                    </div>
+                    <div class="pg-modal-body-content">
                     <input type="hidden" id="csr-id">
                     <div class="row g-3">
                         <div class="col-lg-3 col-md-6">
@@ -688,12 +700,13 @@
                             <tbody id="csr-lines"></tbody>
                         </table>
                     </div>
+                    </div>
                 </div>
-                <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2" style="border-radius:8px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
-                    <button type="button" class="btn btn-danger me-2 d-none align-items-center gap-2" id="csr-decline" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
-                    <button type="button" class="btn btn-success me-2 d-none align-items-center gap-2" id="csr-accept" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-check"></i> Terima</button>
-                    <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 ms-auto" id="csr-save" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                <div class="modal-footer pg-modal-footer">
+                    <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
+                    <button type="button" class="btn pg-btn-decline d-none" id="csr-decline"><i class="fe fe-x"></i> Tolak</button>
+                    <button type="button" class="btn pg-btn-accept d-none" id="csr-accept"><i class="fe fe-check"></i> Terima</button>
+                    <button type="button" class="btn pg-btn-save" id="csr-save">
                         <i class="fe fe-save"></i> Simpan Pengembalian
                     </button>
                 </div>
@@ -701,7 +714,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="customer-product-return-modal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade pg-modal--form" id="customer-product-return-modal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
                 <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
@@ -716,7 +729,12 @@
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body p-4 position-relative">
+                    <div class="pg-modal-loading" aria-live="polite" aria-busy="true">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <span class="text-muted fw-semibold" style="font-size:13px;">Memuat data...</span>
+                    </div>
+                    <div class="pg-modal-body-content">
                     <input type="hidden" id="cpr-id">
                     <div class="row g-3">
                         <div class="col-lg-3 col-md-6">
@@ -792,12 +810,13 @@
                             <tbody id="cpr-lines"></tbody>
                         </table>
                     </div>
+                    </div>
                 </div>
-                <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
-                    <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2" style="border-radius:8px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
-                    <button type="button" class="btn btn-danger me-2 d-none align-items-center gap-2" id="cpr-decline" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
-                    <button type="button" class="btn btn-success me-2 d-none align-items-center gap-2" id="cpr-accept" style="border-radius:8px;font-size:13px;font-weight:600;"><i class="fe fe-check"></i> Terima</button>
-                    <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 ms-auto" id="cpr-save" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                <div class="modal-footer pg-modal-footer">
+                    <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
+                    <button type="button" class="btn pg-btn-decline d-none" id="cpr-decline"><i class="fe fe-x"></i> Tolak</button>
+                    <button type="button" class="btn pg-btn-accept d-none" id="cpr-accept"><i class="fe fe-check"></i> Terima</button>
+                    <button type="button" class="btn pg-btn-save" id="cpr-save">
                         <i class="fe fe-save"></i> Simpan Pengembalian
                     </button>
                 </div>

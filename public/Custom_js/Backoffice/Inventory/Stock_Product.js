@@ -374,43 +374,125 @@
             .replace(/"/g, "&quot;");
     }
 
-    function renderRetailUnits(units, field) {
-        if (!units || !units.length) {
-            return '<div class="sretail-list-col">-</div>';
+    function renderProductNameCell(data, row) {
+        var name = data || "-";
+        var initials = name.substring(0, 2).toUpperCase();
+        var words = name.trim().split(/\s+/);
+        if (words.length >= 2) {
+            initials = (words[0][0] + words[1][0]).toUpperCase();
         }
-        var divs = units
-            .map(function (u) {
-                var text = "-";
-                if (field === "unit") {
-                    text = u.unit_name || "-";
-                } else if (field === "stock") {
-                    text = u.ps_stock_text != null ? String(u.ps_stock_text) : "0";
-                } else if (field === "safety") {
-                    text =
-                        u.ps_safety_stock_text != null
-                            ? String(u.ps_safety_stock_text)
-                            : u.ps_safety_stock != null
-                              ? String(u.ps_safety_stock)
-                              : "0";
-                    var isDash = text === "0" || text === "-";
+        var avatarHtml = row.image_url
+            ? '<img src="' +
+              escapeHtml(row.image_url) +
+              '" alt="' +
+              escapeHtml(name) +
+              '" style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0;">'
+            : '<div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;flex-shrink:0;">' +
+              escapeHtml(initials) +
+              "</div>";
+
+        return (
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+            avatarHtml +
+            '<span class="fw-semibold text-dark">' +
+            escapeHtml(name) +
+            "</span></div>"
+        );
+    }
+
+    function renderSkuBadge(data) {
+        return (
+            '<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">' +
+            escapeHtml(data || "-") +
+            "</span>"
+        );
+    }
+
+    function buildStockTableColumns() {
+        var columns = [
+            {
+                data: "product_variant_sku",
+                width: canViewSafetyStock ? "12%" : "15%",
+                render: function (data, type) {
+                    if (type !== "display") return data || "";
+                    return renderSkuBadge(data);
+                },
+            },
+            {
+                data: "pr_name",
+                width: canViewSafetyStock ? "16%" : "20%",
+                render: function (data, type, row) {
+                    if (type !== "display") return data;
+                    return renderProductNameCell(data, row);
+                },
+            },
+            {
+                data: "product_variant_name",
+                width: canViewSafetyStock ? "16%" : "20%",
+                render: function (data, type) {
+                    if (type !== "display") return data || "";
                     return (
-                        '<div class="sretail-list-item qty-item safety-cell-label d-flex align-items-center justify-content-center" style="cursor:pointer; min-height:20px;">' +
-                            '<span style="font-weight:500; color:#475569; display:inline-block; width:44px; text-align:center;">' + (isDash ? '-' : escapeHtml(text)) + '</span>' +
-                            '<i class="fe fe-edit-2 text-primary flex-shrink-0" style="font-size:12px; opacity:0.6;"></i>' +
-                        '</div>'
+                        '<span class="text-dark fw-medium">' +
+                        escapeHtml(data || "-") +
+                        "</span>"
                     );
-                }
-                var qtyCls = field === "unit" ? "" : " qty-item";
-                return (
-                    '<div class="sretail-list-item' +
-                    qtyCls +
-                    '">' +
-                    escapeHtml(text) +
-                    "</div>"
-                );
-            })
-            .join("");
-        return '<div class="sretail-list-col">' + divs + "</div>";
+                },
+            },
+            {
+                data: "product_category",
+                width: canViewSafetyStock ? "12%" : "15%",
+                render: function (data, type) {
+                    if (type !== "display") return data || "";
+                    return (
+                        '<div style="display:flex;align-items:center;gap:6px;">' +
+                        '<i class="fe fe-tag text-muted" style="font-size:14px;"></i>' +
+                        '<span class="text-dark">' +
+                        escapeHtml(data || "-") +
+                        "</span></div>"
+                    );
+                },
+            },
+            {
+                data: "warehouse_name",
+                width: canViewSafetyStock ? "12%" : "15%",
+                orderable: false,
+                searchable: false,
+                render: function (data, type) {
+                    if (type !== "display") return data || "";
+                    return (
+                        '<div style="display:flex;align-items:center;gap:6px;">' +
+                        '<i class="fe fe-home text-muted" style="font-size:14px;"></i>' +
+                        '<span class="fw-semibold text-dark">' +
+                        escapeHtml(data || "-") +
+                        "</span></div>"
+                    );
+                },
+            },
+            {
+                data: "product_variant_stock_text",
+                class: "fw-bold",
+                width: "15%",
+                orderable: false,
+                searchable: false,
+            },
+        ];
+
+        if (canViewSafetyStock) {
+            columns.push({
+                data: "product_variant_safety_text",
+                defaultContent: "-",
+                className: "fw-bold cell-safety",
+                width: "16%",
+                orderable: false,
+                searchable: false,
+                render: function (data, type) {
+                    if (type !== "display") return data || "-";
+                    return renderSafetyLabel(data || "-");
+                },
+            });
+        }
+
+        return columns;
     }
 
     // =========================
@@ -421,88 +503,8 @@
         $("#tableStockRetail-wrap").hide();
         ensureSafetyHeader($("#tableStock"), false);
 
-        var columns = [
-            { 
-                data: "product_variant_sku", 
-                width: canViewSafetyStock ? "12%" : "15%",
-                render: function (data) {
-                    return `<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">${data || "-"}</span>`;
-                }
-            },
-            { 
-                data: "pr_name", 
-                width: canViewSafetyStock ? "16%" : "20%",
-                render: function(data, type, row) {
-                    if (type !== "display") return data;
-                    var name = data || "-";
-                    var initials = name.substring(0, 2).toUpperCase();
-                    var words = name.trim().split(/\s+/);
-                    if (words.length >= 2) {
-                        initials = (words[0][0] + words[1][0]).toUpperCase();
-                    }
-                    var avatarHtml = row.image_url
-                        ? `<img src="${row.image_url}" alt="${escapeHtml(name)}" style="width:32px;height:32px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0;">`
-                        : `<div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:12px;flex-shrink:0;">${escapeHtml(initials)}</div>`;
-                    
-                    return `<div style="display:flex;align-items:center;gap:10px;">
-                                ${avatarHtml}
-                                <span class="fw-semibold text-dark">${escapeHtml(name)}</span>
-                            </div>`;
-                }
-            },
-            { 
-                data: "product_variant_name", 
-                width: canViewSafetyStock ? "16%" : "20%",
-                render: function(data) {
-                    return `<span class="text-dark fw-medium">${escapeHtml(data || "-")}</span>`;
-                }
-            },
-            { 
-                data: "product_category", 
-                width: canViewSafetyStock ? "12%" : "15%",
-                render: function(data) {
-                    return `<div style="display:flex;align-items:center;gap:6px;">
-                                <i class="fe fe-tag text-muted" style="font-size:14px;"></i>
-                                <span class="text-dark">${escapeHtml(data || "-")}</span>
-                            </div>`;
-                }
-            },
-            {
-                data: "warehouse_name",
-                width: canViewSafetyStock ? "12%" : "15%",
-                orderable: false,
-                searchable: false,
-                render: function(data) {
-                    return `<div style="display:flex;align-items:center;gap:6px;">
-                                <i class="fe fe-home text-muted" style="font-size:14px;"></i>
-                                <span class="fw-semibold text-dark">${escapeHtml(data || "-")}</span>
-                            </div>`;
-                }
-            },
-            {
-                data: "product_variant_stock_text",
-                class: "fw-bold",
-                width: "15%",
-                orderable: false,
-                searchable: false,
-            },
-        ];
-        if (canViewSafetyStock) {
-            columns.push({
-                data: "product_variant_safety_text",
-                defaultContent: "-",
-                className: "fw-bold cell-safety",
-                width: "16%",
-                orderable: false,
-                searchable: false,
-                render: function (data) {
-                    return renderSafetyLabel(data || "-");
-                },
-            });
-        }
-
         var opts = dtBaseOptions("Cari Produk", [[1, "asc"]]);
-        opts.columns = columns;
+        opts.columns = buildStockTableColumns();
         opts.initComplete = function () {
             moveSearchFilter();
             $("#tableStock-wrap").removeClass("dt-pending").addClass("dt-ready");
@@ -514,105 +516,15 @@
     }
 
     // =========================
-    // VIEW: Gudang Eceran
+    // VIEW: Gudang Eceran — layout sama gudang utama
     // =========================
     function inisialisasiRetail() {
         $("#tableStockRetail-wrap").show();
         $("#tableStock-wrap").hide();
-        ensureSafetyHeader($("#tableStockRetail"), true);
+        ensureSafetyHeader($("#tableStockRetail"), false);
 
-        var columns = [
-            {
-                data: null,
-                width: canViewSafetyStock ? "40%" : "50%",
-                orderable: true,
-                render: function (data, type, row) {
-                    if (type !== "display") {
-                        return (
-                            (row.product_variant_sku || "") +
-                            " " +
-                            (row.pr_name || "") +
-                            " " +
-                            (row.product_variant_name || "")
-                        );
-                    }
-                    var words = (row.pr_name || "P").trim().split(/\s+/);
-                    var initials =
-                        words.length >= 2
-                            ? (words[0][0] + words[1][0]).toUpperCase()
-                            : (row.pr_name || "P").substring(0, 2).toUpperCase();
-
-                    var avatarHtml = row.image_url
-                        ? '<img src="' + row.image_url + '" alt="' + escapeHtml(row.pr_name || "") + '">'
-                        : '<span class="sretail-avatar-initials">' + escapeHtml(initials) + "</span>";
-
-                    var variant = (row.product_variant_name || "").toString().trim();
-                    var category = (row.product_category || "").toString().trim();
-                    var sku = (row.product_variant_sku || "").toString().trim();
-                    var metaParts = [];
-                    if (variant) metaParts.push(variant);
-                    if (category) metaParts.push(category);
-
-                    return (
-                        '<div class="sretail-product-cell">' +
-                        '<div class="sretail-avatar">' +
-                        avatarHtml +
-                        "</div>" +
-                        '<div class="sretail-product-info">' +
-                        (sku
-                            ? '<span class="badge mb-1" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:4px 8px;font-size:11px;">' +
-                              escapeHtml(sku) +
-                              "</span>"
-                            : "") +
-                        '<span class="sretail-product-name">' +
-                        escapeHtml(row.pr_name || "-") +
-                        "</span>" +
-                        '<span class="sretail-product-meta">' +
-                        escapeHtml(metaParts.length ? metaParts.join(" · ") : "-") +
-                        "</span>" +
-                        "</div>" +
-                        "</div>"
-                    );
-                },
-            },
-            {
-                data: "units",
-                orderable: false,
-                searchable: false,
-                width: canViewSafetyStock ? "15%" : "20%",
-                render: function (units) {
-                    return renderRetailUnits(units, "unit");
-                },
-            },
-            {
-                data: "units",
-                orderable: false,
-                searchable: false,
-                className: "text-center",
-                width: canViewSafetyStock ? "22%" : "30%",
-                render: function (units) {
-                    return renderRetailUnits(units, "stock");
-                },
-            },
-        ];
-
-        if (canViewSafetyStock) {
-            columns.push({
-                data: "units",
-                orderable: false,
-                searchable: false,
-                className: "text-center cell-safety",
-                width: "23%",
-                render: function (units) {
-                    return renderRetailUnits(units, "safety");
-                },
-            });
-        } else {
-            $("#tableStockRetail thead th.col-safety").remove();
-        }
-
-        var opts = dtBaseOptions("Cari barang...", [[0, "asc"]]);
-        opts.columns = columns;
+        var opts = dtBaseOptions("Cari Produk", [[1, "asc"]]);
+        opts.columns = buildStockTableColumns();
         opts.autoWidth = false;
         opts.initComplete = function () {
             moveSearchFilter();

@@ -1110,6 +1110,36 @@ function isEmptyVal(v) {
     return v == null || v === "null" || v === "";
 }
 
+function resetRetailWarehouseSelect() {
+    var $sel = $("#retail_warehouse_id");
+    if (!$sel.length) return;
+    $sel.empty().val(null).prop("disabled", false);
+    if ($sel.hasClass("select2-hidden-accessible")) {
+        $sel.trigger("change.select2");
+    }
+}
+
+function fillRetailWarehouse(data) {
+    var $sel = $("#retail_warehouse_id");
+    if (!$sel.length) return;
+    $sel.empty();
+    var wid = parseInt(data && data.retail_warehouse_id, 10);
+    var wname = (data && data.retail_warehouse_name) || "";
+    if (wid > 0) {
+        $sel.append(
+            '<option value="' +
+                wid +
+                '" selected>' +
+                escapeHtmlSo(wname || "Gudang #" + wid) +
+                "</option>",
+        );
+    }
+    $sel.val(wid > 0 ? String(wid) : null);
+    if ($sel.hasClass("select2-hidden-accessible")) {
+        $sel.trigger("change.select2");
+    }
+}
+
 function cartNeedsRetailWarehouse() {
     return (products || []).some(function (p) {
         var retailUnit = parseInt(p.retail_unit || 0, 10);
@@ -1412,33 +1442,30 @@ function openSalesOrderEditModal(data) {
 }
 
 //edit
-$(document).on("click", ".btn_edit", function () {
-    var row = $("#tableSalesOrder")
-        .DataTable()
-        .row($(this).parents("tr"))
-        .data();
-    loadSalesOrderWithItems(row.so_id, openSalesOrderEditModal);
+$(document).on("click", "#tableSalesOrder-wrap .btn_edit", function (e) {
+    e.preventDefault();
+    var soId = parseInt($(this).attr("data-id"), 10);
+    if (!soId) return;
+    loadSalesOrderWithItems(soId, openSalesOrderEditModal);
 });
 
-$(document).on("click", ".btn_view", function () {
-    var row = $("#tableSalesOrder")
-        .DataTable()
-        .row($(this).parents("tr"))
-        .data();
-    loadSalesOrderWithItems(row.so_id, openSalesOrderDetailModal);
+$(document).on("click", "#tableSalesOrder-wrap .btn_view", function (e) {
+    e.preventDefault();
+    var soId = parseInt($(this).attr("data-id"), 10);
+    if (!soId) return;
+    loadSalesOrderWithItems(soId, openSalesOrderDetailModal);
 });
 
 //delete
-$(document).on("click", ".btn_delete", function () {
-    var data = $("#tableSalesOrder")
-        .DataTable()
-        .row($(this).parents("tr"))
-        .data(); //ambil data dari table
+$(document).on("click", "#tableSalesOrder-wrap .btn_delete", function (e) {
+    e.preventDefault();
+    var soId = parseInt($(this).attr("data-id"), 10);
+    if (!soId) return;
     showModalDelete(
         "Apakah yakin ingin menghapus pengiriman ini?",
         "btn-delete-sales",
     );
-    $("#btn-delete-sales").attr("so_id", data.so_id);
+    $("#btn-delete-sales").attr("so_id", soId);
 });
 
 $(document).on("click", "#btn-delete-sales", function () {

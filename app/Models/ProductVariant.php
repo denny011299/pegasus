@@ -101,6 +101,164 @@ class ProductVariant extends Model
     }
 
     /**
+     * Query ringan untuk Select2 autocomplete — tanpa stok, max N baris.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function searchForAutocomplete(array $data = [], int $limit = 30)
+    {
+        $data = array_merge([
+            'product_id' => null,
+            'search_product' => null,
+            'search' => null,
+        ], $data);
+
+        $limit = max(1, min($limit, 50));
+        $keyword = trim((string) ($data['search_product'] ?? ''));
+        $exact = trim((string) ($data['search'] ?? ''));
+
+        $query = self::query()
+            ->from('product_variants')
+            ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
+            ->leftJoin('categories as cat', 'cat.category_id', '=', 'pr.category_id')
+            ->where('product_variants.status', 1)
+            ->where('pr.status', 1);
+
+        if ($data['product_id']) {
+            $query->where('product_variants.product_id', (int) $data['product_id']);
+        }
+
+        if ($exact !== '') {
+            $query->where(function ($q) use ($exact) {
+                $q->where('product_variants.product_variant_sku', $exact)
+                    ->orWhere('product_variants.product_variant_barcode', $exact);
+            });
+        } elseif ($keyword !== '') {
+            $like = '%' . $keyword . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('pr.product_name', 'like', $like)
+                    ->orWhere('product_variants.product_variant_name', 'like', $like)
+                    ->orWhere('product_variants.product_variant_sku', 'like', $like);
+            });
+        }
+
+        $select = [
+            'product_variants.product_variant_id',
+            'product_variants.product_id',
+            'product_variants.product_variant_sku',
+            'product_variants.product_variant_name',
+            'product_variants.product_variant_barcode',
+            'product_variants.unit_id',
+            'product_variants.status as product_variant_status',
+            'pr.product_name as pr_name',
+            'pr.category_id',
+            'pr.product_unit as product_unit_ids',
+            'pr.unit_id as default_unit_id',
+            'pr.status as product_status',
+            'cat.category_name as product_category',
+        ];
+
+        if (Schema::hasColumn('product_variants', 'retail_unit')) {
+            $select[] = 'product_variants.retail_unit';
+        }
+        if (Schema::hasColumn('product_variants', 'qty_per_pallet')) {
+            $select[] = 'product_variants.qty_per_pallet';
+        }
+
+        $variants = $query
+            ->select($select)
+            ->orderBy('pr.product_name')
+            ->orderBy('product_variants.product_variant_id')
+            ->limit($limit)
+            ->get();
+
+        if ($variants->isEmpty()) {
+            return $variants;
+        }
+
+        $variantIds = $variants->pluck('product_variant_id')->all();
+        $unitIdMap = [];
+
+        foreach ($variants as $variant) {
+            foreach (json_decode($variant->product_unit_ids, true) ?: [] as $uid) {
+                $unitIdMap[(int) $uid] = true;
+            }
+            if ($variant->default_unit_id) {
+                $unitIdMap[(int) $variant->default_unit_id] = true;
+            }
+            if ($variant->unit_id) {
+                $unitIdMap[(int) $variant->unit_id] = true;
+            }
+        }
+
+        $relations = ProductRelation::query()
+            ->where('status', 1)
+            ->whereIn('product_variant_id', $variantIds)
+            ->orderBy('created_at')
+            ->get();
+
+        foreach ($relations as $relation) {
+            $unitIdMap[(int) $relation->pr_unit_id_1] = true;
+            $unitIdMap[(int) $relation->pr_unit_id_2] = true;
+        }
+
+        $units = $unitIdMap !== []
+            ? Unit::whereIn('unit_id', array_keys($unitIdMap))->get()->keyBy('unit_id')
+            : collect();
+
+        $relationsGrouped = $relations->groupBy('product_variant_id');
+
+        foreach ($variants as $variant) {
+            $unitIds = json_decode($variant->product_unit_ids, true) ?: [];
+            $prUnit = collect($unitIds)
+                ->map(function ($uid) use ($units) {
+                    $unit = $units->get((int) $uid);
+                    if (! $unit) {
+                        return null;
+                    }
+
+                    return [
+                        'unit_id' => (int) $unit->unit_id,
+                        'unit_name' => $unit->unit_name,
+                        'unit_short_name' => $unit->unit_short_name ?? $unit->unit_name,
+                    ];
+                })
+                ->filter()
+                ->values();
+
+            $variant->pr_unit = $prUnit->all();
+            $firstUnit = $prUnit->first();
+            $variant->product_unit = $firstUnit['unit_name'] ?? '-';
+
+            $defaultUnit = $units->get((int) $variant->default_unit_id);
+            $variant->default_unit = $variant->default_unit_id ? (int) $variant->default_unit_id : null;
+            $variant->default_unit_name = $defaultUnit?->unit_name;
+            $variant->default_unit_short_name = $defaultUnit?->unit_short_name;
+
+            $variantUnit = $units->get((int) $variant->unit_id);
+            $variant->unit_name = $variantUnit?->unit_name
+                ?? $defaultUnit?->unit_name
+                ?? '-';
+
+            $variant->relasi = ($relationsGrouped->get($variant->product_variant_id) ?? collect())
+                ->map(function ($relation) use ($units) {
+                    $u1 = $units->get((int) $relation->pr_unit_id_1);
+                    $u2 = $units->get((int) $relation->pr_unit_id_2);
+                    $relation->pr_unit_name_1 = $u1?->unit_short_name ?? '-';
+                    $relation->pr_unit_name_2 = $u2?->unit_short_name ?? '-';
+
+                    return $relation;
+                })
+                ->values()
+                ->all();
+
+            unset($variant->product_unit_ids);
+        }
+
+        return $variants;
+    }
+
+    /**
      * Same enrichment as getProductVariant(), but one round-trip for many IDs
      * (used by stock opname list to avoid N+1).
      *

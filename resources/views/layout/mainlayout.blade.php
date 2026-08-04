@@ -150,34 +150,6 @@
   </div>
 @endif
 <!-- /Main Wrapper -->
-@if (
-    !Route::is([
-        'index-two',
-        'index-three',
-        'index-four',
-        'index-five',
-        'signature-preview-invoice',
-        'mail-pay-invoice',
-        'pay-online',
-        'register',
-        'saas-login',
-        'invoice-subscription',
-        'saas-register',
-        'forgot-password',
-        'lock-screen',
-        'error-404',
-        'invoice-one-a',
-        'invoice-two',
-        'invoice-three',
-        'invoice-four-a',
-        'invoice-five',
-        'cashreceipt-1',
-        'cashreceipt-2',
-        'cashreceipt-3',
-        'cashreceipt-4',
-    ]))
-  @include('layout.partials.theme-settings')
-@endif
 
 @include('layout.partials.footer-scripts')
 <script>

@@ -1578,9 +1578,12 @@ class StockController extends Controller
 
             if ($viewMode === 'retail') {
                 $columns = [
-                    0 => 'pr.product_name',
+                    0 => 'product_variants.product_variant_sku',
                     1 => 'pr.product_name',
-                    2 => 'pr.product_name',
+                    2 => 'product_variants.product_variant_name',
+                    3 => 'cat.category_name',
+                    4 => 'pr.product_name',
+                    5 => 'pr.product_name',
                 ];
             } else {
                 $columns = [
