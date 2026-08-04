@@ -1,25 +1,35 @@
 <?php $page = 'production'; ?>
 @extends('layout.mainlayout')
-@section('content')
+@section('custom_css')
     <style>
         /* table-layout:fixed membuat lebar kolom (di bawah) benar-benar dipaksakan — tanpa ini,
-           max-width/word-wrap di satu kolom cuma "saran" dan teks panjang tanpa jeda bisa
-           meluber/tumpang tindih ke kolom sebelah (kolom Status jadi korban paling sering,
-           karena badge-nya kecil dan gampang ketiban teks Keterangan yang membanjir). */
+            max-width/word-wrap di satu kolom cuma "saran" dan teks panjang tanpa jeda bisa
+            meluber/tumpang tindih ke kolom sebelah (kolom Status jadi korban paling sering,
+            karena badge-nya kecil dan gampang ketiban teks Keterangan yang membanjir). */
         #tableProduction {
             width: 100% !important;
             table-layout: fixed;
             min-width: 1250px;
         }
+
+        #tableProduction th,
+        #tableProduction td {
+            white-space: normal !important;
+            word-wrap: break-word;
+            vertical-align: middle;
+            box-sizing: border-box;
+        }
+
         #tableProduction thead th {
-            color: #64748b !important;
+            color: #64748b;
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: .4px;
-            background: #f1f5f9 !important;
+            background: #f1f5f9;
             border-bottom: 1px solid #e2e8f0;
         }
+
         #tableProduction tbody td {
             color: #475569;
             font-size: 13px;
@@ -49,24 +59,79 @@
         #addProduction .select2-container {
             width: 100% !important;
         }
+
         #tableProduction td:last-child,
         #tableProduction th:last-child {
             white-space: nowrap !important;
-            width: 82px !important;
-            min-width: 82px;
-            text-align: center;
+            width: 100px !important;
         }
 
         #tableProduction td:last-child a {
             display: inline-flex !important;
             align-items: center;
         }
-        #tableProduction-wrap {
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
+
+        #tableProduction tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
         }
-        #tableProduction .btn-action-icon,
-        .btn-action-icon {
+
+        #tableProduction_wrapper .dataTables_scrollHead,
+        #tableProduction_wrapper .dataTables_scrollBody {
+            width: 100% !important;
+        }
+
+        #tableProduction-wrap {
+            position: relative;
+        }
+
+        #tableProduction_wrapper .dataTables_processing {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.72) !important;
+            box-shadow: none !important;
+            z-index: 20;
+            align-items: center;
+            justify-content: center;
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        #tableProduction-wrap:not(.is-loading) .dataTables_processing {
+            display: none !important;
+        }
+
+        #tableProduction-wrap.is-loading .dataTables_processing {
+            display: flex !important;
+        }
+
+        #tableProduction_wrapper .dataTables_processing > div {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+        }
+
+        #tableProduction-wrap.is-loading tbody {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        #tableProduction .btn-action-icon {
             width: 32px;
             height: 32px;
             display: inline-flex;
@@ -76,12 +141,18 @@
             transition: all 0.2s;
             text-decoration: none;
         }
-        #tableProduction .btn-action-icon:hover,
-        .btn-action-icon:hover {
+
+        #tableProduction .btn-action-icon:hover {
             transform: scale(1.05);
             opacity: 0.9;
         }
+
+        #addProduction .select2-container {
+            width: 100% !important;
+        }
     </style>
+@endsection
+@section('content')
     <!-- Page Wrapper -->
     <div class="page-wrapper">
         <div class="content container-fluid">
@@ -110,14 +181,14 @@
                             </a>
                         </div>
                     </div>
-                    <div class=" card-table">
+                    <div class="card card-table">
                         <div class="card-body">
                             <div class="table-responsive dt-pending" id="tableProduction-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 10% 11% 14% 9% 14% 12% 12% 12% 6%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 12% 11% 14% 10% 12% 13% 13% 13% 2%;">
                                         <span style="width:60%"></span>
                                         <span style="width:70%"></span>
                                         <span style="width:50%"></span>
@@ -126,20 +197,20 @@
                                         <span style="width:50%"></span>
                                         <span style="width:60%"></span>
                                         <span style="width:50%"></span>
-                                        <span style="width:60%"></span>
+                                        <span style="width:40%"></span>
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 10% 11% 14% 9% 14% 12% 12% 12% 6%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 12% 11% 14% 10% 12% 13% 13% 13% 2%;">
                                                 <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-badge" style="width:60%;justify-self:center"></span>
                                                 <span class="skel-text" style="width:60%"></span>
-                                                <span class="skel-text" style="width:60%"></span>
-                                                <span class="skel-text" style="width:80%"></span>
-                                                <span class="skel-text" style="width:40%"></span>
+                                                <span class="skel-badge" style="width:55%;justify-self:center"></span>
+                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-avatar" style="justify-self:start"></span>
+                                                <span class="skel-avatar" style="justify-self:start"></span>
+                                                <span class="skel-avatar" style="justify-self:start"></span>
                                                 <span class="skel-btn" style="justify-self:center"></span>
-                                                <span class="skel-text" style="width:80%"></span>
-                                                <span class="skel-text" style="width:40%"></span>
                                             </div>
                                         @endfor
                                     </div>
@@ -155,7 +226,7 @@
                                             <th>Dibuat Oleh</th>
                                             <th>Diapprove Oleh</th>
                                             <th>Pengajuan Batal Oleh</th>
-                                            <th class="text-center no-sort">Aksi</th>
+                                            <th class="no-sort text-center">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>

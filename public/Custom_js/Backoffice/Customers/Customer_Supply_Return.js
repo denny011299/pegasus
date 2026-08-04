@@ -391,7 +391,7 @@
                 "<td>" + esc(line.qty) + "</td>" +
                 "<td>" + esc(line.warehouse_name) + "</td>" +
                 '<td class="text-center">' + (csrMode === "view" ? "—" :
-                    '<a href="javascript:void(0);" class="btn-action-icon csr-remove-line" data-index="' + index + '" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>') +
+                    '<a href="javascript:void(0);" class="btn-action-icon btn_delete csr-remove-line" data-index="' + index + '" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>') +
                 "</td></tr>";
         });
         if (!html) html = '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada bahan ditambahkan.</td></tr>';
@@ -399,49 +399,70 @@
         if (typeof feather !== "undefined") feather.replace();
     }
 
-    function openRecord(id, mode) {
-        $.get("/customerSupplyReturns/" + id).done(function (record) {
-            resetModal();
-            csrMode = mode;
-            $("#csr-id").val(record.return_id);
-            $("#csr-date").val(String(record.return_date || "").slice(0, 10));
-            $("#csr-ref-number").val(record.ref_number || "");
-            $("#csr-notes").val(record.notes || "");
-            applyContext(record.context || {});
-            setCustomer(record.customer_id, record.customer_name);
-            csrLines = (record.details || []).map(function (detail) {
-                return {
-                    supplies_id: parseInt(detail.supplies_id, 10),
-                    supplies_name: detail.supplies_name,
-                    unit_id: parseInt(detail.unit_id, 10),
-                    unit_name: detail.unit_name || detail.unit_short_name || "-",
-                    warehouse_id: parseInt(detail.warehouse_id, 10),
-                    warehouse_name: detail.warehouse_name,
-                    qty: parseInt(detail.qty, 10),
-                };
-            });
-            renderLines();
-            if (record.proof_url) {
-                csrExistingProofUrl = record.proof_url;
-                refreshProofState();
-            }
+    function setCsrModalLoading(isLoading) {
+        $("#customer-supply-return-modal").toggleClass("is-loading", !!isLoading);
+    }
 
-            if (mode === "view") {
-                $("#customer-supply-return-modal .modal-title").text("Detail Pengembalian Bahan " + record.return_number);
-                $("#customer-supply-return-modal input, #customer-supply-return-modal textarea").prop("disabled", true);
-                $("#csr-customer,#csr-supply,#csr-unit,#csr-warehouse").prop("disabled", true);
-                $("#csr-btn-upload-proof").addClass("d-none");
-                $("#csr-line-form,#csr-save").addClass("d-none");
-                if (parseInt(record.status, 10) === 1 && can("others")) {
-                    $("#csr-accept,#csr-decline").removeClass("d-none");
+    function openRecord(id, mode) {
+        csrMode = mode;
+        setCsrModalLoading(true);
+        $("#customer-supply-return-modal .modal-title").text(
+            mode === "view" ? "Memuat detail pengembalian..." : "Memuat data pengembalian...",
+        );
+        $("#customer-supply-return-modal").modal("show");
+
+        $.get("/customerSupplyReturns/" + id)
+            .done(function (record) {
+                resetModal();
+                csrMode = mode;
+                $("#csr-id").val(record.return_id);
+                $("#csr-date").val(String(record.return_date || "").slice(0, 10));
+                $("#csr-ref-number").val(record.ref_number || "");
+                $("#csr-notes").val(record.notes || "");
+                applyContext(record.context || {});
+                setCustomer(record.customer_id, record.customer_name);
+                csrLines = (record.details || []).map(function (detail) {
+                    return {
+                        supplies_id: parseInt(detail.supplies_id, 10),
+                        supplies_name: detail.supplies_name,
+                        unit_id: parseInt(detail.unit_id, 10),
+                        unit_name: detail.unit_name || detail.unit_short_name || "-",
+                        warehouse_id: parseInt(detail.warehouse_id, 10),
+                        warehouse_name: detail.warehouse_name,
+                        qty: parseInt(detail.qty, 10),
+                    };
+                });
+                renderLines();
+                if (record.proof_url) {
+                    csrExistingProofUrl = record.proof_url;
+                    refreshProofState();
                 }
-            } else {
-                $("#customer-supply-return-modal .modal-title").text("Edit Pengembalian Bahan " + record.return_number);
-                $("#csr-save").text("Update Pengembalian");
-                $("#csr-btn-upload-proof").removeClass("d-none");
-            }
-            $("#customer-supply-return-modal").modal("show");
-        }).fail(notifyError);
+
+                if (mode === "view") {
+                    $("#customer-supply-return-modal .modal-title").text(
+                        "Detail Pengembalian Bahan " + record.return_number,
+                    );
+                    $("#customer-supply-return-modal input, #customer-supply-return-modal textarea").prop("disabled", true);
+                    $("#csr-customer,#csr-supply,#csr-unit,#csr-warehouse").prop("disabled", true);
+                    $("#csr-btn-upload-proof").addClass("d-none");
+                    $("#csr-line-form,#csr-save").addClass("d-none");
+                    if (parseInt(record.status, 10) === 1 && can("others")) {
+                        $("#csr-accept,#csr-decline").removeClass("d-none");
+                    }
+                } else {
+                    $("#customer-supply-return-modal .modal-title").text(
+                        "Edit Pengembalian Bahan " + record.return_number,
+                    );
+                    $("#csr-save").text("Update Pengembalian");
+                    $("#csr-btn-upload-proof").removeClass("d-none");
+                }
+                setCsrModalLoading(false);
+            })
+            .fail(function () {
+                setCsrModalLoading(false);
+                $("#customer-supply-return-modal").modal("hide");
+                notifyError();
+            });
     }
 
     function submitRecord() {
@@ -512,6 +533,9 @@
 
     $(function () {
         setupCustomerSelect();
+        $("#customer-supply-return-modal").on("hidden.bs.modal", function () {
+            setCsrModalLoading(false);
+        });
         $("#supply-return-tab").on("shown.bs.tab", function () {
             $(".btnAdd").addClass("d-none");
             initTable();

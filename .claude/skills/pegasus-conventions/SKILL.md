@@ -53,7 +53,7 @@ This is the most common task shape in this repo. Do these steps together, in thi
    `components/page-header.blade.php` (Add button), `components/search-filter.blade.php` (filter bar), and
    `components/modal-popup.blade.php` (add/edit modal), gated with `@roleCan('ModuleName','create')` for the
    Add button. Load the page's JS at the bottom: `<script src="{{asset('Custom_js/Backoffice/Area/X.js')}}"></script>`.
-5. **JS file** — `public/Custom_js/Backoffice/<Area>/X.js`, follow the skeleton in "AJAX / JS pattern" below.
+5. **JS file** — `public/Custom_js/Backoffice/<Area>/X.js` — ikuti **[docs/sop-ui-js-skeleton.md](../../docs/sop-ui-js-skeleton.md)**.
 6. **Sidebar** — add the module to `resources/views/layout/partials/sidebar.blade.php`: extend/add a
    `$showX` boolean via `$akses->firstWhere('name','ModuleName')`, wrap the `<li>` in `@if(...)`, active-state
    via `Request::is('routeUri')` (sidebar uses `Request::is`, not `Route::is` — that's the one place it differs).
@@ -64,7 +64,10 @@ This is the most common task shape in this repo. Do these steps together, in thi
    is the real enforcement, the other two are just UI hiding.
 
 ## AJAX / JS pattern (`public/Custom_js/Backoffice/**`)
-Standard file skeleton — copy this shape for new pages:
+
+**SOP lengkap:** [docs/sop-ui.md](../../docs/sop-ui.md) — skeleton JS, datatable loading, modal, autocomplete.
+
+Ringkasan file skeleton:
 ```js
 var mode = 1;       // 1 = insert, 2 = update
 var table;
@@ -109,6 +112,18 @@ function refreshX() {
 - New autocomplete/select2 fields: copy one of the ~25 existing `autocompleteX()` functions in
   `footer-scripts.blade.php` (POST to `/autocompleteX`, wire via `$(id).select2({ajax:{...}})`) — there is no
   shared factory, copy-paste-and-rename is the convention.
+- **Autocomplete produk varian (SOP)**: format label wajib `SKU | Nama Produk Varian`.
+  - Backend: `AutocompleteController::formatProductVariantLabel()` (`/autocompleteProductVariant`,
+    `/autocompleteProductVariants`, `/autocompleteBom`).
+  - Frontend: `formatProductVariantSelect2Label()` + `mapProductVariantSelect2Results()` di
+    `footer-scripts.blade.php` (dipakai `autocompleteProductVariant` & `autocompleteProductVariantOnly`).
+  - Nama = `pr_name` + `product_variant_name` (hindari duplikasi jika sudah tercampur).
+  - SKU kosong → tampilkan nama saja. Detail: `docs/sop-ui-autocomplete.md`.
+- **DataTable skeleton + spinner (SOP)**: wrapper `#tableX-wrap.dt-pending` + HTML `.dt-skeleton` di blade;
+  `initComplete` → `dt-ready`; refresh → toggle skeleton; server-side pakai `.is-loading` + abort XHR.
+  Detail: `docs/sop-ui-datatable.md`.
+- **Modal form (SOP)**: header gradient fixed, body scroll `#f8fafc`, footer `justify-content-end` semua tombol
+  di kanan (Batal → Simpan / Tolak → Transfer). Detail: `docs/sop-ui-modal.md` + rule `modal-footer-actions.mdc`.
 - Action-column icons: build via the global `roleIconView/roleIconEdit/roleIconDelete(moduleName, cssClass, extraAttrsHtml)`
   helpers (defined inline in `mainlayout.blade.php`), which internally check `hasAccessAction(moduleName, ability)`
   against `window.permissionList`/`window.userRoleId` and return `''` if not permitted — concatenate their

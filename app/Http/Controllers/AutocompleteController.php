@@ -190,7 +190,9 @@ class AutocompleteController extends Controller
     }
 
     /**
-     * Label dropdown produk+varian: "SKU | Nama Produk Nama Variasi"
+     * Label autocomplete produk varian (SOP): "SKU | Nama Produk Varian"
+     * - Nama = product_name + product_variant_name (spasi ganda dirapikan)
+     * - Jika SKU kosong / "-", tampilkan nama saja
      */
     private function formatProductVariantLabel($productName, $variantName = '', $sku = ''): string
     {
@@ -347,10 +349,9 @@ class AutocompleteController extends Controller
         }
 
         $p = new ProductVariant();
-        $results = $p->getProductVariant([
-            "search" => $keyword,
-        ]);
-        $this->attachProductDefaultUnits($results);
+        $results = $p->searchForAutocomplete([
+            'search' => $keyword,
+        ], 10);
 
         foreach ($results as $r) {
             $r->id = $r["product_variant_id"];
@@ -369,9 +370,9 @@ class AutocompleteController extends Controller
         $keyword = isset($req->keyword) ? $req->keyword : null;
 
         $p = new ProductVariant();
-        $data_city = $p->getProductVariant([
-            "product_id" => $req->product_id,
-            "search_product" => $keyword,
+        $data_city = $p->searchForAutocomplete([
+            'product_id' => $req->product_id,
+            'search_product' => $keyword,
         ]);
 
 
@@ -392,12 +393,10 @@ class AutocompleteController extends Controller
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
         $p = new ProductVariant();
-        $data_city = $p->getProductVariant([
-            "product_id" => $req->product_id,
-            "search_product" => $keyword,
+        $data_city = $p->searchForAutocomplete([
+            'product_id' => $req->product_id,
+            'search_product' => $keyword,
         ]);
-        $this->attachProductDefaultUnits($data_city);
-
 
         foreach ($data_city as $r) {
             $r->id = $r["product_variant_id"];

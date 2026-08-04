@@ -6,6 +6,7 @@ use App\Models\Bank;
 use App\Models\Role;
 use App\Models\Staff;
 use App\Models\User;
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Arr;
@@ -15,9 +16,28 @@ class UserController extends Controller
     function loginUser(Request $req)
     {
         $data = (new Staff())->getStaff($req->all());
-        if ($data === -1) return -1;
-        else if(count($data)>0){
-            Session::put("user",$data[0]);
+        if ($data === -1) {
+            return -1;
+        }
+
+        if (count($data) > 0) {
+            $user = $data[0];
+            Session::put('user', $user);
+
+            $lastWarehouseId = $user->last_active_warehouse_id ?? null;
+            if ($lastWarehouseId) {
+                $allowed = Warehouse::availableForUser($user);
+                $stillAllowed = $allowed->contains(fn ($wh) => (int) $wh->id === (int) $lastWarehouseId);
+                if ($stillAllowed) {
+                    Session::put('active_warehouse_id', (int) $lastWarehouseId);
+                } else {
+                    Session::forget('active_warehouse_id');
+                    Staff::where('staff_id', (int) $user->staff_id)
+                        ->update(['last_active_warehouse_id' => null]);
+                }
+            } else {
+                Session::forget('active_warehouse_id');
+            }
         }
 
         return $data;
@@ -33,14 +53,33 @@ class UserController extends Controller
     }
 
     function viewInsertStaff() {
-        $param["mode"] =1; // 1 = insert, 2 = update
-        $param["data"] =[];
+        $param["mode"] = 1;
+        $param["data"] = [
+            'staff_id' => null,
+            'staff_name' => '',
+            'staff_email' => '',
+            'staff_phone' => '',
+            'staff_address' => '',
+            'staff_username' => '',
+            'role_id' => null,
+            'role_name' => '',
+            'staff_warehouses' => [],
+        ];
+        $param["warehouses"] = Warehouse::allActive();
+        $param["roles"] = (new Role())->getRole();
         return view('Backoffice.User.insertStaff')->with($param);
     }
 
     function ViewUpdateStaff($id) {
-        $param["mode"]=2; // 1 = insert, 2 = update
-        $param["data"] = (new Staff())->getStaff(["staff_id"=>$id])[0];
+        $formData = (new Staff())->getStaffFormData($id);
+        if (!$formData) {
+            abort(404, 'Data staf tidak ditemukan');
+        }
+
+        $param["mode"] = 2;
+        $param["data"] = $formData;
+        $param["warehouses"] = Warehouse::allActive();
+        $param["roles"] = (new Role())->getRole();
         return view('Backoffice.User.insertStaff')->with($param);
     }
 

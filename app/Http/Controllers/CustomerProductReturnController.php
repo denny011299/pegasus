@@ -131,15 +131,17 @@ class CustomerProductReturnController extends Controller
                 'd.qty',
                 'p.product_name',
                 'pv.product_variant_name',
+                'pv.product_variant_sku',
                 'u.unit_name',
                 'u.unit_short_name',
                 'w.warehouse_name',
             ]);
 
         foreach ($details as $detail) {
-            $detail->product_label = trim(
-                ($detail->product_name ?: '-') .
-                ($detail->product_variant_name ? ' — ' . $detail->product_variant_name : '')
+            $detail->product_label = $this->formatProductVariantLabel(
+                $detail->product_name ?? '',
+                $detail->product_variant_name ?? '',
+                $detail->product_variant_sku ?? ''
             );
         }
 
@@ -397,6 +399,8 @@ class CustomerProductReturnController extends Controller
         $allowed = collect($context['products'])->keyBy('product_variant_id');
         $warehouseIds = collect($context['warehouses'])->pluck('id')->map(fn ($id) => (int) $id);
 
+        $warehousesById = collect($context['warehouses'])->keyBy('id');
+
         foreach ($details as $index => $detail) {
             $product = $allowed->get((int) $detail['product_variant_id']);
             if (! $product) {
@@ -407,6 +411,21 @@ class CustomerProductReturnController extends Controller
             }
             if (! $warehouseIds->contains((int) $detail['warehouse_id'])) {
                 throw ValidationException::withMessages(["details.$index.warehouse_id" => 'Gudang tujuan harus gudang aktif.']);
+            }
+            $warehouse = $warehousesById->get((int) $detail['warehouse_id']);
+            $isRetailWarehouse = $warehouse && (int) ($warehouse['is_main_warehouse'] ?? 1) === 0;
+            if ($isRetailWarehouse) {
+                $retailUnitId = (int) ($product['retail_unit'] ?? 0);
+                if ($retailUnitId <= 0) {
+                    throw ValidationException::withMessages([
+                        "details.$index.unit_id" => 'Produk tidak punya satuan eceran; tidak bisa dikembalikan ke gudang eceran.',
+                    ]);
+                }
+                if ((int) $detail['unit_id'] !== $retailUnitId) {
+                    throw ValidationException::withMessages([
+                        "details.$index.unit_id" => 'Gudang eceran wajib memakai satuan eceran produk (bukan DOS/jerigen).',
+                    ]);
+                }
             }
             if ((int) $detail['qty'] <= 0) {
                 throw ValidationException::withMessages(["details.$index.qty" => 'Qty harus lebih dari 0.']);
@@ -422,6 +441,7 @@ class CustomerProductReturnController extends Controller
             'pv.product_variant_id',
             'pv.product_id',
             'pv.product_variant_name',
+            'pv.product_variant_sku',
             'p.product_name',
             'p.product_unit',
         ];
@@ -487,16 +507,21 @@ class CustomerProductReturnController extends Controller
                 $unitIds->push($relation->pr_unit_id_1)->push($relation->pr_unit_id_2);
             }
 
-            $label = trim(
-                ($variant->product_name ?: '-') .
-                ($variant->product_variant_name ? ' — ' . $variant->product_variant_name : '')
+            $label = $this->formatProductVariantLabel(
+                $variant->product_name ?? '',
+                $variant->product_variant_name ?? '',
+                $variant->product_variant_sku ?? ''
             );
+
+            $retailUnitId = $hasRetailCol ? (int) ($variant->retail_unit ?? 0) : 0;
 
             return [
                 'product_variant_id' => (int) $variant->product_variant_id,
                 'product_id' => (int) $variant->product_id,
+                'product_variant_sku' => $variant->product_variant_sku,
                 'product_label' => $label,
                 'default_unit_id' => $defaultUnitId,
+                'retail_unit' => $retailUnitId > 0 ? $retailUnitId : null,
                 'units' => $unitIds->map(fn ($unitId) => $units->get((int) $unitId))
                     ->filter()
                     ->unique('unit_id')
@@ -509,10 +534,16 @@ class CustomerProductReturnController extends Controller
         })->values()->all();
 
         $warehouses = DB::table('warehouses as w')
+            ->leftJoin('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
             ->where('w.status', 1)
+            ->orderByDesc('wt.is_main_warehouse')
             ->orderBy('w.warehouse_name')
-            ->get(['w.id', 'w.warehouse_name'])
-            ->map(fn ($warehouse) => ['id' => (int) $warehouse->id, 'warehouse_name' => $warehouse->warehouse_name])
+            ->get(['w.id', 'w.warehouse_name', 'wt.is_main_warehouse'])
+            ->map(fn ($warehouse) => [
+                'id' => (int) $warehouse->id,
+                'warehouse_name' => $warehouse->warehouse_name,
+                'is_main_warehouse' => (int) ($warehouse->is_main_warehouse ?? 1),
+            ])
             ->values()->all();
 
         return [
@@ -596,5 +627,20 @@ class CustomerProductReturnController extends Controller
         $id = Session::get('user')->staff_id ?? null;
 
         return $id ? (int) $id : null;
+    }
+
+    private function formatProductVariantLabel($productName, $variantName = '', $sku = ''): string
+    {
+        $name = trim(preg_replace(
+            '/\s+/',
+            ' ',
+            trim((string) $productName).' '.trim((string) $variantName)
+        ));
+        $sku = trim((string) $sku);
+        if ($sku !== '' && $sku !== '-') {
+            return $name !== '' ? ($sku.' | '.$name) : $sku;
+        }
+
+        return $name !== '' ? $name : '-';
     }
 }

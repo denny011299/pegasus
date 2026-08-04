@@ -60,6 +60,75 @@ function resetProductionApprovalActions() {
         .removeAttr("production_id");
 }
 
+function setProductionSaveVisible(visible, label) {
+    var $btn = $("#addProduction .btn-save");
+    if (label) {
+        if ($btn.find(".btn-save-label").length) {
+            $btn.find(".btn-save-label").text(label);
+        } else {
+            $btn.html(
+                '<i class="fe fe-save"></i> <span class="btn-save-label">' +
+                    label +
+                    "</span>",
+            );
+        }
+        $destSelect2 = $dest.next(".select2-container");
+        if ($destSelect2.length) {
+            $destSelect2.show();
+        } else {
+            $dest.show();
+        }
+    } else {
+        $dest.val(null).trigger("change");
+        if ($destSelect2.length) {
+            $destSelect2.hide();
+        }
+        $dest.hide();
+        $badge.removeClass("d-none").addClass("d-flex");
+    }
+}
+
+function resetProductionApprovalActions() {
+    $("#addProduction #btn-terima, #addProduction #btn-tolak")
+        .addClass("d-none")
+        .removeClass("btn_acc_produksi btn_decline_produksi btn_acc btn_cancel")
+        .removeAttr("production_id");
+}
+
+function showProductionApprovalActions(action, productionId) {
+    resetProductionApprovalActions();
+    if (!hasAccessAction("Produksi", "others")) {
+        return;
+    }
+    if (visible) {
+        $btn.removeClass("d-none").addClass("d-inline-flex");
+    } else {
+        $btn.removeClass("d-inline-flex").addClass("d-none");
+    }
+}
+
+function setProductionModalMode(kind) {
+    var $modal = $("#addProduction");
+    $modal.removeClass("pg-modal--form pg-modal--confirm");
+    if (kind === "confirm") {
+        $modal.addClass("pg-modal--confirm");
+        $modal
+            .find(".modal-header")
+            .attr(
+                "style",
+                "background:linear-gradient(135deg,#064e3b 0%,#059669 100%);padding:18px 24px;",
+            );
+    } else {
+        $modal.addClass("pg-modal--form");
+        $modal
+            .find(".modal-header")
+            .attr(
+                "style",
+                "background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%);padding:18px 24px;",
+            );
+    }
+}
+
 function showProductionApprovalActions(action, productionId) {
     resetProductionApprovalActions();
     if (!hasAccessAction("Produksi", "others")) {
@@ -69,11 +138,17 @@ function showProductionApprovalActions(action, productionId) {
     var $accept = $("#addProduction #btn-terima");
     var $decline = $("#addProduction #btn-tolak");
     if (action === "production") {
-        $accept.addClass("btn_acc_produksi");
-        $decline.addClass("btn_decline_produksi");
+        $accept
+            .addClass("btn_acc_produksi")
+            .html('<i class="fe fe-check"></i> Terima Produksi');
+        $decline
+            .addClass("btn_decline_produksi")
+            .html('<i class="fe fe-x"></i> Tolak');
     } else if (action === "cancellation") {
-        $accept.addClass("btn_acc");
-        $decline.addClass("btn_cancel");
+        $accept
+            .addClass("btn_acc")
+            .html('<i class="fe fe-check"></i> Terima Pembatalan');
+        $decline.addClass("btn_cancel").html('<i class="fe fe-x"></i> Tolak');
     } else {
         return;
     }
@@ -86,6 +161,8 @@ function showProductionApprovalActions(action, productionId) {
 
 $("#addProduction").on("hidden.bs.modal", function () {
     resetProductionApprovalActions();
+    setProductionModalMode("form");
+    setProductionSaveVisible(true, "Simpan");
     if (!$("#modalBahan").hasClass("show")) {
         $(this)
             .removeAttr("production_id revision_source_production_id")
@@ -378,6 +455,7 @@ $(document).ready(function () {
 
 $(document).on("click", ".btnAdd", function () {
     resetProductionApprovalActions();
+    setProductionModalMode("form");
     mode = 1;
     modeBahan = 1;
     items = [];
@@ -390,10 +468,9 @@ $(document).on("click", ".btnAdd", function () {
     $(".is-invalid").removeClass("is-invalid");
     $("#unit_id").html("");
     $("#unit_id").append("<option selected>Pilih Satuan</option>");
-    $(".input_table, .add, .btn-save, .btn_delete_row_pr").show();
-    $(".btn-save").html('<i class="fe fe-save me-1"></i> Tambah Produksi');
+    $(".input_table, .add, .btn_delete_row_pr").show();
+    setProductionSaveVisible(true, "Tambah Produksi");
     $("#production_desc").attr("disabled", false);
-    $(".btn-save").show();
     $(".btn-cancel").html("Batal");
     $("#addProduction").modal("show");
     $(".dos").hide();
@@ -495,78 +572,199 @@ $(document).on(
     },
 );
 
+var productionXhr = null;
+
+function setProductionTableLoading(isLoading) {
+    var $wrap = $("#tableProduction-wrap");
+    if (!$wrap.length) return;
+    $wrap.toggleClass("is-loading", !!isLoading);
+}
+
+function renderProductionStatus(status) {
+    status = parseInt(status, 10);
+    if (status === 1) {
+        return '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>';
+    }
+    if (status === 2) {
+        return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Berhasil</span>';
+    }
+    if (status === 3) {
+        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Tolak</span>';
+    }
+    if (status === 4) {
+        return '<span class="badge" style="background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Menunggu Batal</span>';
+    }
+    return "-";
+}
+
+function renderProductionAction(row) {
+    var isOldRow = moment(row.production_date).isBefore(
+        moment().subtract(2, "days").format("YYYY-MM-DD"),
+    );
+    var prAct = "";
+    var status = parseInt(row.status, 10);
+
+    if (hasAccessAction("Produksi", "view")) {
+        prAct +=
+            '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+    }
+    if (!isOldRow && status === 2 && hasAccessAction("Produksi", "delete")) {
+        prAct +=
+            '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
+    }
+    if (isOldRow || (status !== 1 && status !== 2)) {
+        prAct = hasAccessAction("Produksi", "view")
+            ? '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>'
+            : "";
+    }
+
+    if (!prAct) {
+        return '<span class="text-muted small">—</span>';
+    }
+    return (
+        '<div class="d-flex justify-content-center align-items-center gap-2">' +
+        prAct +
+        "</div>"
+    );
+}
+
 function inisialisasi() {
     table = $("#tableProduction").DataTable({
+        processing: true,
+        deferRender: true,
         bFilter: true,
         sDom: "fBtlpi",
         lengthMenu: [10, 25, 50, 100],
-        ordering: false,
-        searching: false,
+        pageLength: 10,
+        ordering: true,
+        order: [],
+        autoWidth: false,
+        scrollX: false,
         language: {
             search: " ",
             sLengthMenu: "_MENU_",
             searchPlaceholder: "Cari Produksi",
             info: "_START_ - _END_ of _TOTAL_ items",
+            emptyTable: "Tidak ada data produksi",
+            zeroRecords: "Produksi tidak ditemukan",
+            processing:
+                '<div><span class="spinner-border spinner-border-sm text-primary" role="status"></span><span>Memuat produksi...</span></div>',
             paginate: {
                 next: ' <i class=" fa fa-angle-right"></i>',
                 previous: '<i class="fa fa-angle-left"></i> ',
             },
         },
-        // Lebar kolom diatur lewat CSS (nth-child, lihat <style> di Production.blade.php) —
-        // supaya table-layout:fixed jadi satu-satunya sumber lebar, tidak tumpang tindih
-        // dengan width inline yang tadinya di-set di sini.
         columns: [
-            { data: "date" },
-            { data: "production_code" },
-            { data: "production_desc", defaultContent: "-" },
-            { data: "status_text" },
-            { data: "notes", defaultContent: "-", width: "30%" },
+            {
+                data: "date",
+                width: "12%",
+                orderable: false,
+            },
+            {
+                data: "production_code",
+                width: "11%",
+                orderable: false,
+            },
+            {
+                data: "production_desc",
+                defaultContent: "-",
+                width: "14%",
+                orderable: false,
+                render: function (data) {
+                    if (!data || data === "-") {
+                        return '<span style="color:#64748b;">-</span>';
+                    }
+                    return data;
+                },
+            },
+            {
+                data: "status_text",
+                width: "11%",
+                className: "text-center",
+                orderable: false,
+            },
+            {
+                data: "notes",
+                defaultContent: "-",
+                width: "12%",
+                orderable: false,
+                render: function (data) {
+                    if (!data || data === "-") {
+                        return '<span style="color:#64748b;">-</span>';
+                    }
+                    return data;
+                },
+            },
             {
                 data: "created_by_name",
                 defaultContent: "-",
+                width: "12%",
+                orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
                         ? renderCreatedByName(data)
-                        : data;
+                        : data || "-";
                 },
             },
             {
                 data: "acc_by_name",
                 defaultContent: "-",
+                width: "12%",
+                orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
                         ? renderCreatedByName(data)
-                        : data;
+                        : data || "-";
                 },
             },
             {
                 data: "cancel_requested_by_name",
                 defaultContent: "-",
+                width: "12%",
+                orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
                         ? renderCreatedByName(data)
-                        : data;
+                        : data || "-";
                 },
             },
             {
                 data: "action",
                 className: "text-center align-middle",
-                width: "82px",
+                width: "4%",
+                orderable: false,
+                searchable: false,
             },
         ],
-        initComplete: (settings, json) => {
-            $(".dataTables_filter").appendTo("#tableSearch");
-            $(".dataTables_filter").appendTo(".search-input");
-            $(".dataTables_filter label").prepend(
-                '<i class="fa fa-search"></i> ',
-            );
+        initComplete: function () {
+            var $filter = $(".dataTables_filter").last();
+            $filter.appendTo("#tableSearch");
+            $filter.appendTo(".search-input");
+            if (!$filter.find("label .fa-search").length) {
+                $filter.find("label").prepend('<i class="fa fa-search"></i> ');
+            }
+            $("#tableProduction-wrap")
+                .removeClass("dt-pending")
+                .addClass("dt-ready");
+            if (table) table.columns.adjust();
+        },
+        drawCallback: function () {
+            setProductionTableLoading(false);
+            if (typeof feather !== "undefined") feather.replace();
+            if (table) table.columns.adjust();
         },
     });
 }
 
 function refreshProduction() {
+    if (productionXhr && productionXhr.readyState !== 4) {
+        productionXhr.abort();
+    }
+
     $("#tableProduction-wrap").removeClass("dt-ready").addClass("dt-pending");
-    $.ajax({
+    setProductionTableLoading(true);
+
+    productionXhr = $.ajax({
         url: "/getProduction",
         method: "get",
         data: {
@@ -577,88 +775,31 @@ function refreshProduction() {
             if (!Array.isArray(e)) {
                 e = e.original || [];
             }
-            console.log(e);
             table.clear().draw();
-            // Manipulasi data sebelum masuk ke tabel
             for (let i = 0; i < e.length; i++) {
                 e[i].date =
-                    `<div class="d-flex align-items-center gap-2"><div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;"><i class="fe fe-calendar"></i></div><span style="font-weight: 600; color: #334155; font-size: 13px;">${moment(e[i].production_date).format("DD MMM YYYY")}</span></div>`;
+                    `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;"><i class="fe fe-calendar"></i></div><span class="fw-semibold text-dark">${moment(e[i].production_date).format("D MMM YYYY")}</span></div>`;
                 if (e[i].production_code) {
                     e[i].production_code =
-                        `<span style="font-family: monospace; font-size: 12px; font-weight: 700; color: #0284c7; background: #f0f9ff; padding: 4px 8px; border-radius: 6px; border: 1px solid #e0f2fe;">${e[i].production_code}</span>`;
+                        `<span class="badge" style="background:#f0f9ff;color:#0284c7;border:1px solid #e0f2fe;padding:6px 10px;font-family:monospace;font-weight:700;">${e[i].production_code}</span>`;
                 }
-                const isOldRow = moment(e[i].production_date).isBefore(
-                    moment().subtract(2, "days").format("YYYY-MM-DD"),
-                );
-                let prAct = "";
-                if (hasAccessAction("Produksi", "view")) {
-                    prAct +=
-                        '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
-                }
-                if (
-                    !isOldRow &&
-                    e[i].status == 2 &&
-                    hasAccessAction("Produksi", "delete")
-                ) {
-                    prAct +=
-                        '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
-                }
-                if (isOldRow || (e[i].status != 1 && e[i].status != 2)) {
-                    prAct = hasAccessAction("Produksi", "view")
-                        ? '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>'
-                        : "";
-                }
-                e[i].action =
-                    (prAct
-                        ? '<div style="display:flex;gap:6px;justify-content:center;">' +
-                          prAct +
-                          "</div>"
-                        : "") || '<span class="text-muted small">—</span>';
-                // if(e[i].status == 3){
-
-                //      e[i].action = `
-                //         <button class="btn btn-sm btn-info btn-action-icon btn_view me-2"><i class="fa-solid fa-eye"></i></button>
-                //         <button class="btn btn-sm btn-danger btn-action-icon btn_cancel"><i class="fa-solid fa-x"></i></button>
-                //         <button class="btn btn-sm btn-success btn-action-icon btn_acc ms-2"><i class="fa-solid fa-check"></i></button>
-                //     `;
-                // } else if (e[i].status == 1){
-                //     e[i].action = `
-                //         <button class="btn btn-sm me-2 btn-info btn-action-icon btn_view"><i class="fa-solid fa-eye"></i></button>
-                //         <button class="btn btn-sm me-2 btn-success btn-action-icon btn_acc_produksi" data-bs-toggle="tooltip"
-                //         data-bs-placement="bottom" title="Terima"  production_id = "${e[i].production_id}" >
-                //             <i class="fa-solid fa-check"></i>
-                //         </button>
-                //         <button  class="btn btn-sm btn-danger btn-action-icon btn_decline_produksi" data-bs-toggle="tooltip"
-                //         data-bs-placement="bottom" title="Tolak"  production_id = "${e[i].production_id}" >
-                //             <i class="fa-solid fa-x"></i>
-                //         </button>
-                //     `;
-                // }
-                if (e[i].status == 1) {
-                    e[i].status_text =
-                        `<span class="badge" style="background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-clock me-1"></i> Pending</span>`;
-                } else if (e[i].status == 2) {
-                    e[i].status_text =
-                        `<span class="badge" style="background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-check-circle me-1"></i> Berhasil</span>`;
-                } else if (e[i].status == 3) {
-                    e[i].status_text =
-                        `<span class="badge" style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-x-circle me-1"></i> Tolak</span>`;
-                } else if (e[i].status == 4) {
-                    e[i].status_text =
-                        `<span class="badge" style="background: #fffbeb; color: #d97706; border: 1px solid #fde68a; font-size: 11px; padding: 5px 10px; border-radius: 6px;"><i class="fe fe-alert-circle me-1"></i> Menunggu Batal</span>`;
-                }
+                e[i].status_text = renderProductionStatus(e[i].status);
+                e[i].action = renderProductionAction(e[i]);
             }
 
             table.rows.add(e).draw();
-            feather.replace(); // Biar icon feather muncul lagi
+            if (table) table.columns.adjust();
+            if (typeof feather !== "undefined") feather.replace();
             $('[data-bs-toggle="tooltip"]').tooltip();
             openProductionRevisionFromDashboardLink();
             openProductionFromDashboardLink();
         },
         error: function (err) {
-            console.error("Gagal load kategori:", err);
+            if (err && err.statusText === "abort") return;
+            console.error("Gagal load produksi:", err);
         },
         complete: function () {
+            setProductionTableLoading(false);
             $("#tableProduction-wrap")
                 .removeClass("dt-pending")
                 .addClass("dt-ready");
@@ -757,8 +898,9 @@ function openProductionRevisionFromDashboardLink() {
         addRow(items);
         $("#total_dos").html(rowData.total_dos || 0);
         $(".is-invalid").removeClass("is-invalid");
-        $(".input_table, .add, .btn-save, .btn_delete_row_pr").show();
-        $(".btn-save").html('<i class="fe fe-save me-1"></i> Simpan Revisi');
+        setProductionModalMode("form");
+        $(".input_table, .add, .btn_delete_row_pr").show();
+        setProductionSaveVisible(true, "Simpan Revisi");
         $(".dos").show();
         $(".btn-cancel").html("Batal");
         $("#addProduction").removeAttr("production_id");
@@ -1160,9 +1302,21 @@ $(document).on("click", ".btn_view", function () {
     showProductionApprovalActions(approvalAction, data.production_id);
 
     $(".is-invalid").removeClass("is-invalid");
-    $(".input_table, .add, .btn-save, .btn_delete_row_pr").hide();
+    $(".input_table, .add, .btn_delete_row_pr").hide();
+    setProductionSaveVisible(false);
+    if (approvalAction) {
+        setProductionModalMode("confirm");
+        $("#addProduction .modal-title").html(
+            approvalAction === "cancellation"
+                ? "Konfirmasi Pembatalan Produksi"
+                : "Konfirmasi Produksi",
+        );
+    } else {
+        setProductionModalMode("form");
+        $("#addProduction .modal-title").html("Detail Produksi");
+    }
     $(".dos").show();
-    $(".btn-cancel").html("Kembali");
+    $(".btn-cancel").html("Batal");
     $("#production_date").prop("disabled", true);
     $("#addProduction").attr("production_id", data.production_id);
     $("#addProduction").removeAttr("revision_source_production_id");

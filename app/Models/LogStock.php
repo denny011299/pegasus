@@ -38,14 +38,12 @@ class LogStock extends Model
         }
         if ($warehouseId > 0) {
             $this->applyWarehouseFilter($result, $warehouseId);
-        }
-
-        $warehouseId = (int) ($data['warehouse_id'] ?? 0);
-        if ($warehouseId <= 0) {
-            $warehouseId = (int) (Session::get('active_warehouse_id') ?? 0);
-        }
-        if ($warehouseId > 0) {
-            $this->applyWarehouseFilter($result, $warehouseId);
+            $this->applyRetailProductUnitFilter(
+                $result,
+                $warehouseId,
+                (int) ($data['log_type'] ?? 0),
+                (int) ($data['log_item_id'] ?? 0)
+            );
         }
 
         if ($data["date"]) {
@@ -140,7 +138,14 @@ class LogStock extends Model
             return;
         }
 
-        [$qtyByUnit, $unitNames, $orderedUnitIds] = $this->currentMultiUnitSnapshot($logType, $itemId, $warehouseId);
+        $retailUnitId = $this->resolveRetailProductUnitFilter($warehouseId, $logType, $itemId);
+
+        [$qtyByUnit, $unitNames, $orderedUnitIds] = $this->currentMultiUnitSnapshot(
+            $logType,
+            $itemId,
+            $warehouseId,
+            $retailUnitId
+        );
         if ($orderedUnitIds === []) {
             return;
         }
@@ -151,6 +156,7 @@ class LogStock extends Model
                 ->where('log_type', $logType)
                 ->where('log_item_id', $itemId);
             $this->applyWarehouseFilter($newer, $warehouseId);
+            $this->applyRetailProductUnitFilter($newer, $warehouseId, $logType, $itemId);
             if (! empty($data['date'])) {
                 if (is_array($data['date']) && count($data['date']) === 2) {
                     $newer->whereBetween('log_date', [
@@ -180,14 +186,21 @@ class LogStock extends Model
         }
     }
 
-    protected function currentMultiUnitSnapshot(int $logType, int $itemId, int $warehouseId): array
-    {
+    protected function currentMultiUnitSnapshot(
+        int $logType,
+        int $itemId,
+        int $warehouseId,
+        ?int $onlyUnitId = null
+    ): array {
         if ($logType === 1) {
-            $stockRows = ProductStock::withoutGlobalScope('active_warehouse')
+            $stockQuery = ProductStock::withoutGlobalScope('active_warehouse')
                 ->where('status', 1)
                 ->where('product_variant_id', $itemId)
-                ->where('warehouse_id', $warehouseId)
-                ->get(['unit_id', 'ps_stock']);
+                ->where('warehouse_id', $warehouseId);
+            if ($onlyUnitId > 0) {
+                $stockQuery->where('unit_id', $onlyUnitId);
+            }
+            $stockRows = $stockQuery->get(['unit_id', 'ps_stock']);
             $relations = ProductRelation::query()
                 ->where('status', 1)
                 ->where('product_variant_id', $itemId)
@@ -287,14 +300,14 @@ class LogStock extends Model
         if ($hasWarehouseCol === null) {
             $hasWarehouseCol = Schema::hasColumn('log_stocks', 'warehouse_id');
         }
-        $isMain = $this->isMainWarehouse($warehouseId);
+        $isLegacyMain = $this->isLegacyMainWarehouse($warehouseId);
 
-        $query->where(function ($q) use ($warehouseId, $hasWarehouseCol, $isMain) {
+        $query->where(function ($q) use ($warehouseId, $hasWarehouseCol, $isLegacyMain) {
             if ($hasWarehouseCol) {
                 $q->where('log_stocks.warehouse_id', $warehouseId);
 
-                // Legacy non-ST (sebelum multi-gudang) — tampil di gudang utama saja
-                if ($isMain) {
+                // Legacy non-ST (sebelum multi-gudang) — hanya gudang utama asli (terlama)
+                if ($isLegacyMain) {
                     $q->orWhere(function ($legacy) {
                         $legacy->whereNull('log_stocks.warehouse_id')
                             ->where(function ($kode) {
@@ -329,19 +342,110 @@ class LogStock extends Model
         });
     }
 
-    protected function isMainWarehouse(int $warehouseId): bool
+    /**
+     * Gudang utama asli = gudang besar pertama (id terkecil, aktif) untuk menampung log legacy.
+     */
+    protected function legacyMainWarehouseId(): int
+    {
+        static $id = null;
+        if ($id !== null) {
+            return $id;
+        }
+
+        $id = (int) (DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->where('w.status', 1)
+            ->where('wt.is_main_warehouse', 1)
+            ->orderBy('w.id')
+            ->value('w.id') ?? 0);
+
+        return $id;
+    }
+
+    protected function isLegacyMainWarehouse(int $warehouseId): bool
+    {
+        $legacyId = $this->legacyMainWarehouseId();
+
+        return $legacyId > 0 && $warehouseId === $legacyId;
+    }
+
+    /**
+     * Gudang eceran: histori produk hanya satuan retail_unit varian.
+     *
+     * @return int|null unit_id filter, null = tidak difilter
+     */
+    protected function resolveRetailProductUnitFilter(int $warehouseId, int $logType, int $logItemId): ?int
+    {
+        if ($logType !== 1 || $logItemId <= 0) {
+            return null;
+        }
+        if ($this->warehouseIsMain($warehouseId) !== false) {
+            return null;
+        }
+
+        $retailUnitId = $this->retailUnitIdForProductVariant($logItemId);
+
+        return $retailUnitId > 0 ? $retailUnitId : null;
+    }
+
+    protected function applyRetailProductUnitFilter(
+        $query,
+        int $warehouseId,
+        int $logType,
+        int $logItemId
+    ): void {
+        $retailUnitId = $this->resolveRetailProductUnitFilter($warehouseId, $logType, $logItemId);
+        if ($retailUnitId === null) {
+            return;
+        }
+
+        $query->where('log_stocks.unit_id', $retailUnitId);
+    }
+
+    protected function retailUnitIdForProductVariant(int $productVariantId): int
+    {
+        static $cache = [];
+        if (array_key_exists($productVariantId, $cache)) {
+            return $cache[$productVariantId];
+        }
+
+        if (! Schema::hasColumn('product_variants', 'retail_unit')) {
+            $cache[$productVariantId] = 0;
+
+            return 0;
+        }
+
+        $cache[$productVariantId] = (int) (DB::table('product_variants')
+            ->where('product_variant_id', $productVariantId)
+            ->value('retail_unit') ?? 0);
+
+        return $cache[$productVariantId];
+    }
+
+    /**
+     * @return bool|null true = gudang utama, false = eceran, null = tidak ditemukan
+     */
+    protected function warehouseIsMain(int $warehouseId): ?bool
     {
         static $cache = [];
         if (array_key_exists($warehouseId, $cache)) {
             return $cache[$warehouseId];
         }
 
-        $cache[$warehouseId] = (int) DB::table('warehouses as w')
+        $row = DB::table('warehouses as w')
             ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
             ->where('w.id', $warehouseId)
-            ->where('wt.is_main_warehouse', 1)
-            ->limit(1)
-            ->count() > 0;
+            ->where('w.status', 1)
+            ->select('wt.is_main_warehouse')
+            ->first();
+
+        if (! $row) {
+            $cache[$warehouseId] = null;
+
+            return null;
+        }
+
+        $cache[$warehouseId] = (int) $row->is_main_warehouse === 1;
 
         return $cache[$warehouseId];
     }

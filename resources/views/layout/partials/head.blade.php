@@ -443,6 +443,8 @@
         }
     </style>
 
+    @include('layout.partials.pg-modal-styles')
+
     @if (!Route::is(['index-two', 'index-three', 'index-four', 'index-five']))
         <!-- Layout JS -->
         <script src="{{ asset('assets/js/layout.js') }}"></script>
