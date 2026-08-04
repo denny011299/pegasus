@@ -199,7 +199,11 @@ class Staff extends Model
         $t->staff_address = $data["staff_address"];
         $t->staff_username = $data["staff_username"];
 
-        // Password opsional: kosong = biarkan password lama
+        // Dulu membandingkan staff_password yang dikirim (password BARU dari form) terhadap hash
+        // LAMA via Hash::check(), lalu abort seluruh update (bukan cuma password) kalau tidak
+        // sama — jadi mengetik password baru yang sungguhan justru selalu gagal. Password hash-nya
+        // sendiri juga tidak pernah di-reassign di jalur manapun. Sekarang: kosong = password tidak
+        // diubah, terisi = di-hash dan disimpan sebagai password baru (sama seperti insertStaff()).
         if (!empty($data["staff_password"])) {
             $t->staff_password = Hash::make($data["staff_password"]);
         }
