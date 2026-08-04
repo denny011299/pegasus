@@ -4,6 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * DEPRECATED (2026-08-04): Sales Order Delivery is no longer used. Its detail-side stock mutation
+ * (SalesOrderDeliveryDetail::insertSoDeliveryDetail()) double-counted stock already deducted by
+ * CustomerController::accSO() at SO-approval time — confirmed by product owner as unused, not
+ * fixed, not tested. See KNOWN_ISSUES.md.
+ */
 class SalesOrderDelivery extends Model
 {
     protected $table = "sales_delivery_orders";
