@@ -84,6 +84,10 @@ class Production extends Model
             : collect();
 
         $relationCache = [];
+        // Schema::hasColumn dicek sekali di luar loop (bukan per-baris) — kolom ini mungkin belum
+        // ada di branch/environment yang menjalankan kode ini, lihat migration
+        // 2026_08_05_010000_add_resolved_by_system_to_productions_table.
+        $hasResolvedBySystemColumn = Schema::hasColumn('productions', 'resolved_by_system');
 
         foreach ($result as $key => $value) {
             $value->items = $detailsByProduction->get($value->production_id, collect())->values();
@@ -113,8 +117,17 @@ class Production extends Model
             }
             $value->total_dos = $dos;
             $value->created_by_name = $value->production_created_by ? ($staffMap[$value->production_created_by] ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
             $value->cancel_requested_by_name = $value->cancel_requested_by ? ($staffMap[$value->cancel_requested_by] ?? '-') : '-';
+
+            // acc_by tetap diisi dari Session::get('user') oleh accProduction()/declineProduction()
+            // walau yang benar-benar memprosesnya adalah auto-timeout (bukan staf yang kebetulan
+            // sedang buka halaman) — resolved_by_system, kalau ada, menang telak di atas acc_by
+            // untuk KEPERLUAN TAMPILAN, supaya user tidak salah kira staf tersebut yang approve.
+            if ($hasResolvedBySystemColumn && $value->resolved_by_system) {
+                $value->acc_by_name = 'Sistem (Auto-Timeout)';
+            } else {
+                $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
+            }
         }
         return $result;
     }

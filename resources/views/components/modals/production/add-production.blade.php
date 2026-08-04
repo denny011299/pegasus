@@ -33,6 +33,13 @@
                 <input type="text" class="form-control" id="production_desc"
                   placeholder="Masukkan Keterangan" style="font-size:14px;border-radius:8px;height:42px;">
               </div>
+              <div class="col-12" id="row-production-acc-by" style="display:none;">
+                <label class="text-muted mb-2"
+                  style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Disetujui/Ditolak
+                  Oleh</label>
+                <input type="text" class="form-control" id="production_acc_by_name" disabled
+                  style="font-size:14px;border-radius:8px;height:42px;">
+              </div>
             </div>
           </div>
 
