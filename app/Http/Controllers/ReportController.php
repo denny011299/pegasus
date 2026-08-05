@@ -1070,6 +1070,11 @@ class ReportController extends Controller
             $data["cg_img"] = $imageName;
         }
 
+        // "operasional" == entri "Kas Gudang" (lihat juga acceptCashGudang() di bawah): baris
+        // CashGudangDetail dibuat di bawah, cash_id SELALU 0 — entri ini tidak pernah muncul di
+        // halaman "Kas Besar" (/cash). "saldo" == entri "Kas Besar": tidak pernah punya baris
+        // CashGudangDetail sama sekali, tapi selalu punya cash_id sungguhan lewat Cash::insertCash()
+        // di bawah. Jangan disamakan/digabung, keduanya sengaja berbeda bentuk.
         if ($data['jenis_input'] == "operasional"){
             $total = 0;
             $item = json_decode($data['items'], true);
@@ -1143,6 +1148,21 @@ class ReportController extends Controller
     {
         $data = $req->all();
 
+        // Ditambahkan (2026-08-05): PM konfirmasi sekali status != 1 (sudah disetujui/ditolak),
+        // tidak ada prosedur lain yang boleh mengubah data ini lagi — acceptCashGudang() sudah
+        // memutasi customer_saldo + membuat CashArmada row dari cgd_nominal saat itu, jadi
+        // mengubah cg_nominal/detail baris setelahnya akan membuat kedua sisi tidak sinkron
+        // tanpa ada cara membalikkannya. Sama seperti guard updateCashArmada/updateCashSales.
+        $cash = CashGudang::find($data['cg_id']);
+        if ($cash && $cash->status != 1) {
+            $staff = Staff::find($cash->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Update",
+                "message" => "Pengajuan sudah disetujui/ditolak oleh " . $staff . ", data tidak bisa diubah lagi"
+            ]);
+        }
+
         if ($req->photo){
             // Ambil base64
             $image = $req->photo;
@@ -1164,7 +1184,6 @@ class ReportController extends Controller
         }
 
         $id = [];
-        $cash = CashGudang::find($data['cg_id']);
 
         if ($data['jenis_input'] == "operasional"){
             $total = 0;
@@ -1248,6 +1267,20 @@ class ReportController extends Controller
     {
         $data = $req->all();
         $ca = CashGudang::find($data['cg_id']);
+
+        // Ditambahkan (2026-08-05): guard yang sama dengan updateCashGudang() di atas — sekali
+        // disetujui/ditolak, acceptCashGudang() sudah memutasi customer_saldo + membuat CashArmada
+        // row, jadi menghapus dokumen ini tidak boleh lagi dimungkinkan (tidak ada cara membalikkan
+        // mutasi yang sudah terjadi).
+        if ($ca && $ca->status != 1) {
+            $staff = Staff::find($ca->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Hapus",
+                "message" => "Pengajuan sudah disetujui/ditolak oleh " . $staff . ", data tidak bisa dihapus lagi"
+            ]);
+        }
+
         (new CashGudang())->deleteCashGudang($data);
         // Kalau manajemen saldo, maka hapus dari kas juga
         if ($ca->cg_type == 1) (new Cash())->deleteCash($ca);
@@ -1257,66 +1290,87 @@ class ReportController extends Controller
     {
         $data = $req->all();
 
-        if (isset($data['cg_id'])){
-            $cg = CashGudang::find($data['cg_id']);
+        // Race-condition fix (2026-08-05): the "already accepted" status check used to be a
+        // plain read done well before any mutation — two near-simultaneous accept requests for
+        // the same cg_id/cash_id (double-click, a retried request) could both pass that check
+        // and both go on to mutate, double-crediting customer_saldo and inserting duplicate
+        // CashArmada rows. The whole read-check-mutate sequence now runs inside one
+        // DB::transaction() with lockForUpdate() on the CashGudang row itself, so a second
+        // concurrent request blocks on the lock until the first commits, then re-reads the
+        // already-flipped status and is refused cleanly instead of double-processing.
+        // PENTING (dikonfirmasi PM 2026-08-05, JANGAN "disatukan" lagi): isset($data['cg_id']) di
+        // sini BUKAN dua jalan menuju data yang sama — ini pembeda antara dua jenis entri yang
+        // berbeda:
+        //   - cg_id ADA  -> "Kas Gudang" (entri operasional, jenis_input == "operasional" di
+        //     insertCashGudang()/updateCashGudang()). Selalu punya baris CashGudangDetail, cash_id
+        //     SELALU 0 (tidak pernah dapat baris `cashes` sungguhan), makanya TIDAK PERNAH muncul
+        //     di halaman "Kas Besar" (/cash, Cash::getCash() query tabel `cashes` by cash_id asli).
+        //   - cg_id TIDAK ADA (hanya cash_id) -> "Kas Besar" (entri "saldo", jenis_input ==
+        //     "saldo"). Selalu punya baris `cashes` sungguhan lewat cash_id, dan TIDAK PERNAH
+        //     punya baris CashGudangDetail sama sekali.
+        // Karena keduanya tidak pernah overlap, loop customer_saldo + pembuatan CashArmada di
+        // bawah (yang hanya jalan kalau isset($data['cg_id'])) TIDAK PERNAH relevan untuk entri Kas
+        // Besar — bukan berarti Kas Besar "kelewatan" mutasi itu, memang tidak ada apa pun untuk
+        // dimutasi (CashGudangDetail-nya kosong). Lihat KNOWN_ISSUES.md "NOT A BUG: acceptCashGudang()'s
+        // cash_id-only path" untuk detail lengkap sebelum "memperbaiki" percabangan ini lagi.
+        DB::beginTransaction();
+        try {
+            if (isset($data['cg_id'])) {
+                $cg = CashGudang::where('cg_id', $data['cg_id'])->lockForUpdate()->first();
+            } else {
+                $cg = CashGudang::where('cash_id', $data['cash_id'])->lockForUpdate()->first();
+            }
 
-            if ($cg->status != 1) {
-                $staff = Staff::find($cg->acc_by)->staff_name;
+            if (!$cg || $cg->status != 1) {
+                DB::rollBack();
+                $staff = ($cg && $cg->acc_by) ? Staff::find($cg->acc_by) : null;
                 return response()->json([
                     "status" => -2,
                     "header" => "Gagal ACC",
-                    "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+                    "message" => "Pengajuan sudah diterima/ditolak oleh " . ($staff->staff_name ?? 'staff lain')
                 ]);
             }
-            $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
 
-            // Ditambahkan: mutasi customer_saldo di bawah + insert CashArmada di
-            // CashGudang::acceptCashGudang() (dipanggil di akhir method ini) dulu tidak dibungkus
-            // transaction sama sekali — customer_id yang tidak valid di baris ke-N akan crash
-            // dengan sebagian baris sebelumnya sudah permanen menaikkan customer_saldo. Sekarang
-            // dicek dulu (tanpa mutasi) sebelum satu pun saldo disentuh, dan seluruh mutasi
-            // (loop ini + acceptCashGudang() di model) dibungkus satu DB::transaction() supaya
-            // gagal di tengah jalan tidak meninggalkan mutasi parsial.
-            $customer_invalid = [];
-            foreach ($cgd as $value) {
-                if (!Customer::find($value['customer_id'])) {
-                    $customer_invalid[] = "id {$value['customer_id']}";
+            if (isset($data['cg_id'])) {
+                $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
+
+                // Ditambahkan: mutasi customer_saldo di bawah + insert CashArmada di
+                // CashGudang::acceptCashGudang() (dipanggil di akhir method ini) dulu tidak
+                // dibungkus transaction sama sekali — customer_id yang tidak valid di baris ke-N
+                // akan crash dengan sebagian baris sebelumnya sudah permanen menaikkan
+                // customer_saldo. Sekarang dicek dulu (tanpa mutasi) sebelum satu pun saldo
+                // disentuh, dan seluruh mutasi (loop ini + acceptCashGudang() di model) dibungkus
+                // satu DB::transaction() supaya gagal di tengah jalan tidak meninggalkan mutasi
+                // parsial.
+                $customer_invalid = [];
+                foreach ($cgd as $value) {
+                    if (!Customer::find($value['customer_id'])) {
+                        $customer_invalid[] = "id {$value['customer_id']}";
+                    }
                 }
-            }
-            if (count($customer_invalid) > 0) {
-                return response()->json([
-                    "status" => 0,
-                    "header" => "Gagal ACC",
-                    "message" => "Data pelanggan tidak ditemukan untuk: " . implode(', ', array_unique($customer_invalid)),
-                ]);
-            }
+                if (count($customer_invalid) > 0) {
+                    DB::rollBack();
+                    return response()->json([
+                        "status" => 0,
+                        "header" => "Gagal ACC",
+                        "message" => "Data pelanggan tidak ditemukan untuk: " . implode(', ', array_unique($customer_invalid)),
+                    ]);
+                }
 
-            DB::beginTransaction();
-            try {
                 foreach ($cgd as $value) {
                     $customer = Customer::find($value['customer_id']);
                     $customer->customer_saldo += $value['cgd_nominal'];
                     $customer->save();
                 }
-                $result = (new CashGudang())->acceptCashGudang($data);
-                DB::commit();
-                return $result;
-            } catch (\Throwable $e) {
-                DB::rollBack();
-                throw $e;
             }
-        } else {
-            $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
-            if ($cg->status != 1) {
-                $staff = Staff::find($cg->acc_by)->staff_name;
-                return response()->json([
-                    "status" => -2,
-                    "header" => "Gagal ACC",
-                    "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
-                ]);
-            }
+
+            $result = (new CashGudang())->acceptCashGudang($data);
+            DB::commit();
+            return $result;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
-        return (new CashGudang())->acceptCashGudang($data);
     }
 
     function declineCashGudang(Request $req)
