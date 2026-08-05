@@ -30,9 +30,17 @@ class ProductIssues extends Model
         
         if($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
-                // Jika date adalah array [start_date, end_date]]
-                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
-                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
+                // Diperbaiki (2026-08-06): dulu unconditional createFromFormat('d-m-Y', ...) —
+                // beda dengan cabang tanggal tunggal di bawah (yang sudah punya fallback
+                // hasFormat Y-m-d) dan dengan pattern yang sudah dipakai di method lain pada file
+                // ini sendiri (getArmadaReturnReport(), baris ~274-296). Sama persis bugnya, lihat
+                // KNOWN_ISSUES.md.
+                $startDate = \Carbon\Carbon::hasFormat($data["date"][0], 'Y-m-d')
+                    ? $data["date"][0]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
+                $endDate = \Carbon\Carbon::hasFormat($data["date"][1], 'Y-m-d')
+                    ? $data["date"][1]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
                 $result->whereBetween('created_at', [$startDate, $endDate]);
             } else {
                 // Jika date hanya satu nilai
@@ -181,6 +189,18 @@ class ProductIssues extends Model
     function deleteProductIssues($data)
     {
         $t = self::find($data["pi_id"]);
+        // DEAD CODE (confirmed 2026-08-02, marked 2026-08-06 per user decision — not revived, not
+        // removed, just flagged): `product_issues.ref_num` can never be nonzero via any live insert
+        // path today — StockController::insertProductIssue()'s validation block that would compute
+        // it is commented out, Product_Issues.js has `ref_num` commented out of its insert payload,
+        // and SupplierController::insertReturnSupplies() always hardcodes `ref_num => 0`. So this
+        // guard never actually triggers in practice. If `ref_num` is ever revived, note that
+        // SupplierController::deleteReturnSupplies() — the real, reachable Return Supplies delete
+        // path — calls this method but never checks its return value (only
+        // StockController::deleteProductIssue(), itself UI-unreachable, does), so reviving this
+        // guard without also fixing that caller would split-brain: the early `return -1` here
+        // would skip the `status = 3` line below, but the caller's own po_total/stock reversal
+        // would run anyway regardless. See KNOWN_ISSUES.md for the full trace.
         if (isset($t->ref_num) && $t->ref_num != 0){
             $inv = PurchaseOrderDetailInvoice::find($t->ref_num);
             $po = PurchaseOrder::find($inv->po_id);

@@ -42,7 +42,12 @@ class CashCategory extends Model
 
     function updateCashCategory($data)
     {
+        // Ditambahkan (2026-08-06): dulu tidak ada null-guard sama sekali — cc_id yang tidak
+        // valid/sudah dihapus crash 500 ("Attempt to assign property 'cc_name' on null") alih-alih
+        // gagal bersih. Mirror pattern yang sudah dipakai di StockOpname::updateStockOpname() dkk.
         $t = CashCategory::find($data["cc_id"]);
+        if (!$t) return null;
+
         $t->cc_name = $data["cc_name"];
         $t->cc_type = $data["cc_type"];
         $t->save();
@@ -51,8 +56,12 @@ class CashCategory extends Model
 
     function deleteCashCategory($data)
     {
+        // Sama seperti updateCashCategory() di atas — null-guard supaya cc_id yang tidak
+        // valid/sudah dihapus gagal diam-diam alih-alih crash 500.
         $t = CashCategory::find($data["cc_id"]);
-        $t->status = 0;
-        $t->save();
+        if ($t) {
+            $t->status = 0;
+            $t->save();
+        }
     }
 }

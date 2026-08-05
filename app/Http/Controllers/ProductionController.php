@@ -346,9 +346,15 @@ class ProductionController extends Controller
                 ];
             }
 
-            $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan) use (
+            $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan, $depth = 0) use (
                 &$virtualStock, &$logSummary, &$siapkanStok, $bd, $suppliesId
             ) {
+                // Ditambahkan (2026-08-06): depth guard — $keyAtas dicari lewat lookup relasi,
+                // jadi rantai SuppliesRelation yang sirkular bisa membuat rekursi ini jalan
+                // selamanya. Belum pernah tereproduksi dengan data nyata, murni defensive guard.
+                // Lihat KNOWN_ISSUES.md.
+                if ($depth >= 20) return false;
+
                 $stokSekarang = $units[$targetKey];
 
                 $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
@@ -378,7 +384,7 @@ class ProductionController extends Controller
                 $butuhDariAtas = (int) ceil($kekurangan / $nilaiKonversi);
 
                 if ($virtualStock[$stokAtas->ss_id]['current'] < $butuhDariAtas) {
-                    $siapkanStok($keyAtas, $units, $butuhDariAtas);
+                    $siapkanStok($keyAtas, $units, $butuhDariAtas, $depth + 1);
                 }
 
                 $bongkarSebenarnya = min($butuhDariAtas, (int) $virtualStock[$stokAtas->ss_id]['current']);
@@ -685,11 +691,16 @@ class ProductionController extends Controller
                 ];
             }
 
-            $siapkanStokCek = function ($targetKey, $units, $jumlahDibutuhkan) use (
+            $siapkanStokCek = function ($targetKey, $units, $jumlahDibutuhkan, $depth = 0) use (
                 &$virtualStock,
                 &$siapkanStokCek,
                 $bd
             ) {
+                // Depth guard — mirrors $siapkanStok() above, see its comment.
+                if ($depth >= 20) {
+                    return false;
+                }
+
                 $stokSekarang = $units[$targetKey];
                 $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
                     ->where('su_id_2', $stokSekarang->unit_id)
@@ -723,7 +734,7 @@ class ProductionController extends Controller
 
                 $butuhDariAtas = (int) ceil($kekurangan / $nilaiKonversi);
                 if ($virtualStock[$stokAtas->ss_id]['current'] < $butuhDariAtas) {
-                    $siapkanStokCek($keyAtas, $units, $butuhDariAtas);
+                    $siapkanStokCek($keyAtas, $units, $butuhDariAtas, $depth + 1);
                 }
 
                 $bongkarSebenarnya = min($butuhDariAtas, (int) $virtualStock[$stokAtas->ss_id]['current']);
@@ -857,9 +868,13 @@ class ProductionController extends Controller
                 ];
             }
 
-            $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan) use (
+            $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan, $depth = 0) use (
                 &$virtualStock, &$logSummary, &$siapkanStok, $bd, $suppliesId
             ) {
+                // Depth guard — mirrors the other $siapkanStok() in this controller, see its
+                // comment.
+                if ($depth >= 20) return false;
+
                 $stokSekarang = $units[$targetKey];
 
                 $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
@@ -893,7 +908,7 @@ class ProductionController extends Controller
                 // Kalau stok atas tidak cukup, coba bongkar dulu dari level
                 // yang lebih atas lagi (rekursif)
                 if ($virtualStock[$stokAtas->ss_id]['current'] < $butuhDariAtas) {
-                    $siapkanStok($keyAtas, $units, $butuhDariAtas);
+                    $siapkanStok($keyAtas, $units, $butuhDariAtas, $depth + 1);
                 }
 
                 $bongkarSebenarnya = min($butuhDariAtas, (int) $virtualStock[$stokAtas->ss_id]['current']);
