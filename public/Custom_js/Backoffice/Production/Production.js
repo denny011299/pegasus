@@ -571,9 +571,16 @@ function renderProductionAction(row) {
     var prAct = "";
     var status = parseInt(row.status, 10);
 
+    var btnStyleView =
+        "background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;flex-shrink:0;";
+    var btnStyleDelete =
+        "background:#fef2f2;border:1px solid #fecaca;color:#dc2626;flex-shrink:0;";
+
     if (hasAccessAction("Produksi", "view")) {
         prAct +=
-            '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+            '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="' +
+            btnStyleView +
+            '" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
     if (
         !isOldRow &&
@@ -581,11 +588,15 @@ function renderProductionAction(row) {
         hasAccessAction("Produksi", "delete")
     ) {
         prAct +=
-            '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
+            '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="' +
+            btnStyleDelete +
+            '" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
     }
     if (isOldRow || (status !== 1 && status !== 2)) {
         prAct = hasAccessAction("Produksi", "view")
-            ? '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>'
+            ? '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="' +
+              btnStyleView +
+              '" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>'
             : "";
     }
 
@@ -593,7 +604,7 @@ function renderProductionAction(row) {
         return '<span class="text-muted small">—</span>';
     }
     return (
-        '<div class="d-flex justify-content-center align-items-center gap-2">' +
+        '<div class="d-flex justify-content-center align-items-center" style="gap:8px;">' +
         prAct +
         "</div>"
     );

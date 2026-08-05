@@ -2,19 +2,48 @@
 
 Daftar perbaikan terkait stok, histori, dan konversi satuan. Update status saat selesai.
 
+## Alur Stock Transfer (keputusan bisnis)
+
+```
+Pending  →  Kirim  →  Terima (Terkirim)
+              │            │
+              │            └─ stok MASUK gudang tujuan
+              │               • tujuan UTAMA  → satuan kirim apa adanya (tanpa konversi)
+              │               • tujuan ECERAN → konversi ke retail_unit
+              │
+              └─ cek stok cukup di satuan yang dikirim
+                 lalu POTONG satuan itu (tanpa packing/rapikan)
+
+Cancel Kirim (hanya status Kirim, belum Terima):
+  → kembalikan stok gudang asal dari log Kirim
+  → gudang tujuan tidak berubah
+
+Setelah Terima: tidak ada Cancel Kirim.
+```
+
+| Arah | Kirim | Terima |
+|------|-------|--------|
+| Utama → Utama | Satuan dipilih, tanpa packing | Sama satuan |
+| Utama → Eceran | Boleh DOS/default | → `retail_unit` |
+| Eceran → Utama | Hanya Piece | Tetap Piece |
+
+**ST produksi** (`source_type=production`): hasil ACC masuk gudang asal; ST Pending ke eceran. Validator produksi (#8). Packing off di Kirim (#6).
+
+**Gudang eceran:** hanya `retail_unit`. Cleanup: `php artisan stock:cleanup-retail-units [--dry-run]` (#7).
+
 | # | Item | Status | Catatan |
 |---|------|--------|---------|
 | 1 | **Histori stok:** log legacy (`warehouse_id` NULL, non-ST) hanya di gudang utama asli (id terkecil, tipe gudang besar) — bukan semua gudang utama baru | ✅ Selesai | `LogStock::isLegacyMainWarehouse()` |
-| 2 | **Formatter qty konversi ST:** hilangkan noise desimal di FE (`14.0004`, `1.1667`) — simpan presisi di DB, tampilkan rapi | ⏳ Pending (root cause di `ps_stock` sudah diperbaiki, lihat #11) | `Stock_Transfer.js` → `formatTransferQty()` masih perlu dirapikan untuk noise tampilan murni (mis. `qty_received`/`converted_sent_qty` di FE) — root cause fisik (`ps_stock` pecahan saat Terima ke gudang utama) sudah dibereskan lewat item #11 (`splitWholeAndRemainder`). |
+| 2 | **Formatter qty konversi ST:** hilangkan noise desimal di FE (`14.0004`, `1.1667`) — simpan presisi di DB, tampilkan rapi | ⏳ Pending | `Stock_Transfer.js` → `formatTransferQty()` — root cause fisik Terima→utama (konversi ke default / pecahan) sudah diganti aturan #11 (terima satuan kirim apa adanya). |
 | 3 | **Histori gudang eceran:** filter log + saldo hanya `retail_unit` (jangan tampil DOS/Jerigen sisa data lama) | ✅ Selesai | `LogStock::applyRetailProductUnitFilter()` |
 | 4 | **Pengembalian produk → gudang eceran:** wajib satuan eceran saja (bukan DOS) | ✅ Selesai | FE + `CustomerProductReturnController::validateDetails()` |
 | 5 | **Produksi → gudang eceran:** ST Pending saat ACC; Kirim+Terima manual (bukan auto) | ❌ Dibatalkan | Auto Kirim+Terima pernah dicoba lalu di-revert — alur Pending→Kirim→Terima sengaja dipertahankan |
-| 6 | **ST produksi Kirim:** jangan repacking multi-satuan (noise log bahan/hasil packing) | ✅ Selesai | `shipStockTransfer`: `allow_packing=false` jika `source_type=production` |
+| 6 | **ST Kirim:** jangan packing/rapikan — potong satuan yang dipilih saja | ✅ Selesai | Semua Kirim: `allow_packing=false` + cek stok cukup di satuan kirim. |
 | 7 | **Gudang eceran diam-diam "bongkar" stok satuan besar (DOS/Jerigen) sisa data lama saat ST keluar** — melanggar aturan "eceran cuma pegang retail_unit"; log bongkar hasilnya malah disembunyikan oleh filter histori eceran (#3) | ✅ Selesai | `ProductUnitStock::warehouseIsMain()` + hardening di `totalAvailable()`/`checkItems()`/`deductQty()`: gudang eceran (`is_main_warehouse=0`) tidak pernah bongkar/pack lagi, `allowPacking` dipaksa `false` dan availability cuma menghitung stok di `targetUnitId` langsung. Data lama dibersihkan lewat `php artisan stock:cleanup-retail-units` (lihat Detail #7). |
 | 8 | **`updateStockTransfer` tidak mengoper flag produksi ke `validateTransferItems`** — beda dengan `shipStockTransfer`/`checkItems` di fungsi yang sama yang sudah benar mengoper `$isProductionTransfer` | ✅ Selesai | `StockTransferController::updateStockTransfer()` sekarang mengoper `$header->source_type === 'production'` ke `validateTransferItems()`, sama seperti `shipStockTransfer` |
-| 9 | **Cancel Kirim tidak mengembalikan komposisi satuan asli** — total nilai (dalam satuan terkecil) tetap konservasi, tapi jumlah per-satuan (mis. Dos vs Piece) berubah dari kondisi sebelum Kirim karena `deductQty` merepacking seluruh chain sedangkan restore cuma `addQty` ke satuan yang dikirim saja | ✅ Selesai | `StockTransferController::restoreSourceStock()` sekarang reverse net delta per (varian, satuan) dari `log_stocks` yang ditulis saat Kirim (`log_kode` = kode ST, gudang asal) — bukan cuma `addQty` ke satuan kirim. **Fix pendukung wajib:** `ProductUnitStock::deductPackedQty()` sebelumnya menulis log berdasar baseline "canonical repack tanpa deduksi" (`canonicalBefore`), bukan before/after asli — kalau komposisi sebelum Kirim belum canonical (mis. Dos=100/Piece=217, lihat contoh lama di Detail #9), jumlah yang ter-log tidak balance dengan pergerakan fisik `ps_stock`, jadi restore-nya salah. Sekarang log 1 baris per satuan yang berubah dari `plan['before']` vs `plan['after']` asli. |
-| 10 | **Belum ada automated test untuk Stock Transfer** (create/ship/accept/reject/cancel-kirim, matrix utama/eceran) | ✅ Selesai | `tests/Workflow/StockTransferWorkflowTest.php` (item #2, #3, #4 + hardening #7) + `tests/Unit/ProductUnitStockSplitTest.php` (div/mod split murni) |
-| 11 | **Terima ST ke gudang utama menyimpan pecahan** (mis. kirim 50 Piece, 1 Dos=12 Piece → tersimpan `4.1667 Dos`, lihat item #2 lama) | ✅ Selesai | `ProductUnitStock::splitWholeAndRemainder()` dipakai di `accStockTransfer` — hasil konversi dipecah jadi bagian bulat di satuan tujuan (`floor`) + sisa di satuan kirim/terkecil (mis. **4 Dos + 2 Piece**), tidak ada lagi `ps_stock` pecahan untuk kasus ini |
+| 9 | **Cancel Kirim** restore stok satuan yang dipotong | ✅ Selesai | Reverse net delta dari `log_stocks` Kirim; dengan #6 biasanya = balikin qty satuan kirim. |
+| 10 | **Belum ada automated test untuk Stock Transfer** (create/ship/accept/reject/cancel-kirim, matrix utama/eceran) | ✅ Selesai | `tests/Workflow/StockTransferWorkflowTest.php` |
+| 11 | **Matrix Terima real-case** — utama→utama & eceran→utama: satuan kirim apa adanya; utama→eceran: konversi ke `retail_unit` | ✅ Selesai | `resolveTransferUnits` + `accStockTransfer` tanpa split ke default. |
 
 ## Detail #7 (selesai)
 
@@ -56,11 +85,12 @@ Daftar perbaikan terkait stok, histori, dan konversi satuan. Update status saat 
 - **Fix pendukung wajib** (`ProductUnitStock::deductPackedQty`): sebelum fix ini, log yang ditulis saat packing memakai baseline "canonical repack tanpa deduksi" (`canonicalBefore`) untuk menghitung delta, bukan `plan['before']` vs `plan['after']` yang sebenarnya. Kalau komposisi sebelum Kirim **sudah** canonical (baseline = before, delta selalu 0), tidak ada log sama sekali untuk satuan selain satuan yang di-ship — padahal `ps_stock`-nya berubah (mis. contoh 5 Dos/2 Piece di test, Dos ikut turun tapi tidak pernah masuk log). Kalau **belum** canonical (contoh Dos=100/Piece=217 di atas), baseline `canonicalBefore` malah beda arah/besaran dari pergerakan fisik asli. Kedua kasus membuat net-delta-dari-log di atas jadi salah. **Sekarang:** log 1 baris per satuan yang delta-nya `plan['after'] - plan['before']` (asli) != 0 — jumlah log per satuan dijamin sama dengan pergerakan fisik `ps_stock`, sehingga net-delta reversal di atas akurat.
 - **Test:** `tests/Workflow/StockTransferWorkflowTest::test_cancel_kirim_restores_the_exact_pre_ship_unit_composition_after_packing` — ship 22 Piece dari 5 Dos + 2 Piece (unpack 2 Dos di tengah jalan), Cancel Kirim harus balik ke persis 5 Dos + 2 Piece.
 
-## Detail #11 (selesai)
+## Detail #11 (selesai — real-case matrix)
 
-- **Masalah:** ST utama→utama selalu konversi qty terima ke `defaultUnitId` tujuan (`resolveTransferUnits`); kirim 50 Piece dengan 1 Dos=12 Piece → `convertQty` hasil `4.1667` tersimpan literal di `product_stocks.ps_stock`.
-- **Fix** (`accStockTransfer` + `ProductUnitStock::splitWholeAndRemainder()`): qty yang diterima (dalam satuan kirim) dipecah div/mod — bagian bulat (`floor`) masuk ke satuan tujuan via satu `addQty`, sisanya (kalau ada) masuk lewat `addQty` kedua ke satuan kirim asal (atau satuan terkecil di chain kalau sisa itu tidak pas di satuan kirim). Kirim 50 Piece → tujuan menerima **4 Dos + 2 Piece**, tidak ada lagi `ps_stock` pecahan untuk kasus ini.
-- **Test:** `tests/Workflow/StockTransferWorkflowTest::test_receiving_into_a_main_warehouse_splits_into_whole_units_plus_remainder` (skenario 50 Piece / 1 Dos=12 persis dari spec) + `tests/Unit/ProductUnitStockSplitTest.php` (kalkulasi murni: exact multiple, sisa < 1 unit tujuan, unit sama, convert besar→kecil).
+- **Utama → Utama / Eceran → Utama:** Terima = satuan kirim (`sentUnitId`), tanpa `defaultUnitId` / tanpa `splitWholeAndRemainder`.
+- **Utama → Eceran:** Terima konversi ke `retail_unit`.
+- **Kirim:** selalu `allow_packing=false` — stok di satuan kirim harus cukup (tidak auto-bongkar DOS).
+- **Test:** `test_receiving_into_a_main_warehouse_keeps_sent_unit_without_conversion`, `test_receiving_into_retail_converts_to_retail_unit`, `test_cancel_kirim_restores_sent_unit_stock_without_packing`.
 
 ## Detail #1 (selesai)
 

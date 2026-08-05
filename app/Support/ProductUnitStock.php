@@ -968,6 +968,19 @@ class ProductUnitStock
         // stok dari net delta log per satuan; kalau baseline-nya bukan before/after asli, jumlah
         // per satuan di log tidak balance dan restore jadi salah (lihat backlog item #9).
         $logger = new LogStock();
+        $namesByUnit = self::unitNames($allUnitIds);
+        // Nama satuan HASIL konversi (yang qty-nya naik) — dipakai di catatan "bahan konversi
+        // ke satuan X" supaya user baca: DOS/Piece keluar karena digabung jadi Jerigen, bukan
+        // "bahan konversi ke satuan DOS" yang membingungkan.
+        $targetUnitNames = [];
+        foreach ($allUnitIds as $uid) {
+            $d = (float) ($plan['after'][$uid] ?? 0) - (float) ($plan['before'][$uid] ?? 0);
+            if ($d > 1e-9) {
+                $targetUnitNames[] = $namesByUnit[$uid] ?? '-';
+            }
+        }
+        $targetUnitLabel = $targetUnitNames[0] ?? ($namesByUnit[$unitId] ?? '-');
+
         foreach ($allUnitIds as $currentUnitId) {
             $before = (float) ($plan['before'][$currentUnitId] ?? 0);
             $after = (float) ($plan['after'][$currentUnitId] ?? 0);
@@ -975,17 +988,15 @@ class ProductUnitStock
             if (abs($delta) < 1e-9) {
                 continue;
             }
-            // Satuan yang diminta caller pakai catatan aslinya ($logNotes) hanya kalau memang
-            // berkurang (arah "keluar" yang sesuai); kalau net-nya malah naik (repacking
-            // menghasilkan lebih banyak di satuan ini), pakai catatan konversi generik supaya
-            // tidak kontradiktif dengan log_category (masuk).
+            // Primary outbound (qty yang benar-benar diminta caller) → $logNotes asli.
+            // Selain itu: masuk = hasil konversi ke satuan ini; keluar = bahan menuju $targetUnitLabel.
             $isPrimaryOutbound = $currentUnitId === $unitId && $delta < 0;
-            $unitName = self::unitNames([$currentUnitId])[$currentUnitId] ?? '-';
+            $unitName = $namesByUnit[$currentUnitId] ?? '-';
             $note = $isPrimaryOutbound
                 ? $logNotes
                 : ($delta > 0
                     ? 'Stock Transfer - konversi barang ke satuan ' . $unitName
-                    : 'Stock Transfer - bahan konversi ke satuan ' . $unitName);
+                    : 'Stock Transfer - bahan konversi ke satuan ' . $targetUnitLabel);
 
             $logger->insertLog([
                 'log_date' => now(),

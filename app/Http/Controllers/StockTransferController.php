@@ -1268,6 +1268,9 @@ class StockTransferController extends Controller
 
                 ProductUnitStock::clearCache();
                 $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
+                // Kirim = potong satuan di detail ST saja (cek stok cukup dulu).
+                // Tanpa packing/rapikan gudang. Konversi hanya di Terima, dan hanya
+                // kalau tujuan eceran (→ retail_unit). Tujuan utama = satuan kirim apa adanya.
                 $check = ProductUnitStock::checkItems(
                     (int) $lockedHeader->from_warehouse_id,
                     $this->applySourceAvailabilityMode($items, $sourceIsMain, $isProduction)
@@ -1278,7 +1281,6 @@ class StockTransferController extends Controller
                 }
 
                 $code = $lockedHeader->transfer_code;
-                $allowPacking = $sourceIsMain === true && ! $isProduction;
                 foreach ($items as $item) {
                     $cut = ProductUnitStock::deductQty(
                         (int) $lockedHeader->from_warehouse_id,
@@ -1287,7 +1289,7 @@ class StockTransferController extends Controller
                         (float) $item['qty'],
                         $code,
                         'Stock Transfer ' . $code . ' - keluar gudang asal',
-                        $allowPacking
+                        false
                     );
                     if (! $cut['ok']) {
                         throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
@@ -1451,43 +1453,22 @@ class StockTransferController extends Controller
                     }
 
                     if ($qtyReceived > 0) {
-                        // Div/mod: satuan tujuan gudang utama bisa lebih besar dari satuan kirim
-                        // (mis. kirim 50 Piece, 1 DOS=12 Piece) — jangan simpan pecahan
-                        // (4.1667 DOS), pecah jadi bagian bulat + sisa di satuan kirim/terkecil
-                        // (mis. 4 DOS + 2 Piece).
-                        $split = ProductUnitStock::splitWholeAndRemainder(
-                            $qtyReceivedInSentUnit,
-                            (int) $d->unit_id,
-                            $targetUnitId,
-                            (int) $d->product_variant_id
-                        );
-
+                        // Real case pergudangan: stok masuk tujuan dalam satuan yang
+                        // diputuskan resolveTransferUnits — ke gudang utama = satuan kirim
+                        // apa adanya (Piece tetap Piece, Jerigen tetap Jerigen), tanpa
+                        // di-repack ke default unit. Ke eceran = retail_unit (konversi
+                        // hanya di sini, karena eceran cuma pegang retail_unit).
                         $add = ProductUnitStock::addQty(
                             (int) $lockedHeader->to_warehouse_id,
                             (int) $d->product_id,
                             (int) $d->product_variant_id,
-                            $split['whole_unit_id'],
-                            $split['whole_qty'],
+                            $targetUnitId,
+                            $qtyReceived,
                             $code,
                             'Stock Transfer ' . $code . ' - masuk gudang tujuan'
                         );
                         if (! $add['ok']) {
                             throw new \RuntimeException($add['message'] ?? 'Gagal tambah stok tujuan');
-                        }
-
-                        if ($split['remainder_unit_id'] && $split['remainder_qty'] > 0) {
-                            $addRemainder = ProductUnitStock::addQty(
-                                (int) $lockedHeader->to_warehouse_id,
-                                (int) $d->product_id,
-                                (int) $d->product_variant_id,
-                                $split['remainder_unit_id'],
-                                $split['remainder_qty'],
-                                $code,
-                                'Stock Transfer ' . $code . ' - masuk gudang tujuan (sisa satuan kecil)'
-                            );
-                            if (! $addRemainder['ok']) {
-                                throw new \RuntimeException($addRemainder['message'] ?? 'Gagal tambah sisa stok tujuan');
-                            }
                         }
                     }
 
@@ -1948,8 +1929,12 @@ class StockTransferController extends Controller
             return ['error' => null, 'target_unit_id' => $sentUnitId];
         }
 
+        // Tujuan gudang utama: terima apa adanya sesuai satuan kirim (eceran→utama /
+        // utama→utama). Real case: barang tidak di-kardusin ulang / tidak diubah packaging
+        // saat masuk — kirim Piece tetap Piece, kirim Jerigen tetap Jerigen.
+        // Tujuan eceran: wajib retail_unit (eceran cuma pegang satuan eceran).
         if ($destinationIsMain) {
-            $targetUnitId = $defaultUnitId;
+            $targetUnitId = $sentUnitId;
         } else {
             if ($retailUnitId <= 0) {
                 return [
@@ -2076,7 +2061,10 @@ class StockTransferController extends Controller
     }
 
     /**
-     * Gudang retail menghitung stok dengan packing dua arah dalam satu chain.
+     * Mode cek/potong stok untuk gudang asal.
+     *
+     * Packing dimatikan: Kirim hanya memotong satuan di detail ST (stok di satuan
+     * itu harus cukup). Konversi antar-satuan hanya di Terima ke eceran.
      *
      * @param  array<int, array>  $items
      * @return array<int, array>
@@ -2086,10 +2074,8 @@ class StockTransferController extends Controller
         ?bool $sourceIsMain,
         bool $isProduction = false
     ): array {
-        return array_map(function ($item) use ($sourceIsMain, $isProduction) {
-            // Packing dua arah di gudang utama agar multi satuan bisa dibentuk dari stok default.
-            // ST produksi: potong satuan hasil apa adanya (tanpa repacking histori).
-            $item['allow_packing'] = $sourceIsMain === true && ! $isProduction;
+        return array_map(function ($item) {
+            $item['allow_packing'] = false;
             return $item;
         }, $items);
     }

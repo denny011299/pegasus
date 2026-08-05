@@ -14,15 +14,11 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Covers the four fixes from docs/backlog-stock-multi-gudang.md items #6-#9:
- * 1) Retail warehouses must not unpack non-retail units (ProductUnitStock hardening).
- * 2) `updateStockTransfer` must validate a pending production ST with the production
- *    unit rules (same flag `shipStockTransfer` already used).
- * 3) Cancel Kirim must restore the EXACT pre-ship unit composition, even when Kirim
- *    used packing/unpacking across the unit chain (`allow_packing=true`, main warehouse).
- * 4) Receiving into a main warehouse must split a non-exact conversion into whole
- *    target-unit qty + remainder in the smaller/sent unit, instead of storing a
- *    fractional `ps_stock` (e.g. 4 DOS + 2 Piece, not 4.1667 DOS).
+ * Stock Transfer real-case matrix (docs/backlog-stock-multi-gudang.md):
+ * - Main → Main: ship unit as-is, receive same unit (no conversion/packing).
+ * - Main → Retail: may ship DOS/default; Terima converts to retail_unit.
+ * - Retail → Main: retail ships Piece only; main receives Piece.
+ * - Kirim never auto-packs; Cancel Kirim restores sent-unit cut from logs.
  *
  * Real seed warehouse ids: 1 = Gudang Pusat (main), 2 = Gudang Eceran Toko (retail).
  * Real seed unit ids: 7 = DOS, 9 = Piece.
@@ -199,14 +195,11 @@ class StockTransferWorkflowTest extends TestCase
     }
 
     /**
-     * Item #3 — Cancel Kirim must restore the exact pre-ship unit composition, not just
-     * addQty in the sent unit. Ship 22 Piece from a main warehouse holding 5 DOS + 2 Piece
-     * (62 Piece-equivalent) forces `deductPackedQty` to unpack 2 DOS -> 24 Piece then
-     * deduct 22, leaving 3 DOS + 4 Piece. "DOS belum dibuka": Cancel Kirim must bring it
-     * back to exactly 5 DOS + 2 Piece, reversing the packing delta too (not just the 22
-     * Piece that was nominally shipped).
+     * Cancel Kirim restores the sent-unit stock cut. Kirim no longer auto-unpacks DOS
+     * to cover a Piece shortfall — stok di satuan kirim harus cukup. Ship 22 Piece from
+     * 30 Piece (+ unused DOS stock) → Cancel restores Piece to 30, DOS untouched.
      */
-    public function test_cancel_kirim_restores_the_exact_pre_ship_unit_composition_after_packing(): void
+    public function test_cancel_kirim_restores_sent_unit_stock_without_packing(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -215,7 +208,7 @@ class StockTransferWorkflowTest extends TestCase
         $mainWarehouse2 = $this->createSecondMainWarehouse();
 
         $dosStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::DOS_UNIT_ID, 5);
-        $pieceStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 2);
+        $pieceStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 30);
 
         $header = $this->createPendingTransfer(
             $fx['product'],
@@ -234,8 +227,8 @@ class StockTransferWorkflowTest extends TestCase
 
         $dosStock->refresh();
         $pieceStock->refresh();
-        $this->assertSame(3.0, (float) $dosStock->ps_stock, 'sanity check: 2 DOS were unpacked to cover the 22 Piece shortfall (5-2=3)');
-        $this->assertSame(4.0, (float) $pieceStock->ps_stock, 'sanity check: 2(2)+2 DOS x 12=26 available, 26-22=4 left');
+        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'Kirim Piece must not unpack/touch DOS');
+        $this->assertSame(8.0, (float) $pieceStock->ps_stock, '30 - 22 = 8 Piece left');
 
         $header->refresh();
         $this->assertSame(2, (int) $header->status, 'Kirim');
@@ -246,25 +239,75 @@ class StockTransferWorkflowTest extends TestCase
 
         $dosStock->refresh();
         $pieceStock->refresh();
-        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'Cancel Kirim must restore DOS to its exact pre-ship qty (DOS belum dibuka)');
-        $this->assertSame(2.0, (float) $pieceStock->ps_stock, 'Cancel Kirim must restore Piece to its exact pre-ship qty, not add the 22 shipped back on top');
+        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'DOS still untouched after Cancel Kirim');
+        $this->assertSame(30.0, (float) $pieceStock->ps_stock, 'Cancel Kirim restores the 22 Piece');
 
         $header->refresh();
         $this->assertSame(5, (int) $header->status, 'Cancel Kirim');
     }
 
     /**
-     * Item #4 — receiving into a MAIN destination warehouse must split a non-exact
-     * conversion into a whole target-unit qty + remainder in the sent unit, instead of
-     * storing a fractional `ps_stock`. Example straight from the user's spec: ship 50
-     * Piece, 1 DOS = 12 Piece -> destination must end up with 4 DOS + 2 Piece (not
-     * 4.1667 DOS).
+     * Main → retail: may ship in a larger unit (DOS), but Terima must land as retail_unit (Piece).
      */
-    public function test_receiving_into_a_main_warehouse_splits_into_whole_units_plus_remainder(): void
+    public function test_receiving_into_retail_converts_to_retail_unit(): void
     {
         $this->actingAsSuperAdminStaff();
 
-        // Default unit = DOS, so a main->main transfer's target unit resolves to DOS.
+        $fx = $this->createProductFixture(defaultUnitId: self::DOS_UNIT_ID, retailUnit: self::PIECE_UNIT_ID);
+        $this->createDosPieceRelation($fx['variant']);
+
+        $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::DOS_UNIT_ID, 2);
+
+        $header = $this->createPendingTransfer(
+            $fx['product'],
+            $fx['variant'],
+            self::MAIN_WAREHOUSE_ID,
+            self::RETAIL_WAREHOUSE_ID,
+            self::DOS_UNIT_ID,
+            2
+        );
+
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+        $this->post('/shipStockTransfer', ['id' => $header->st_id])->assertJson(['status' => 1]);
+
+        $this->withActiveWarehouse(self::RETAIL_WAREHOUSE_ID);
+        $this->post('/accStockTransfer', ['id' => $header->st_id])
+            ->assertStatus(200)
+            ->assertJson(['status' => 1]);
+
+        $destPiece = ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', self::RETAIL_WAREHOUSE_ID)
+            ->where('product_variant_id', $fx['variant']->product_variant_id)
+            ->where('unit_id', self::PIECE_UNIT_ID)
+            ->first();
+        $destDos = ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', self::RETAIL_WAREHOUSE_ID)
+            ->where('product_variant_id', $fx['variant']->product_variant_id)
+            ->where('unit_id', self::DOS_UNIT_ID)
+            ->first();
+
+        $this->assertNotNull($destPiece);
+        $this->assertSame(24.0, (float) $destPiece->ps_stock, '2 DOS x 12 Piece = 24 Piece at retail');
+        $this->assertTrue(
+            $destDos === null || (float) $destDos->ps_stock === 0.0,
+            'retail destination must not keep DOS stock'
+        );
+
+        $detail = StockTransferDetail::query()->where('st_id', $header->st_id)->first();
+        $this->assertSame(self::PIECE_UNIT_ID, (int) $detail->received_unit_id);
+        $this->assertSame(24.0, (float) $detail->qty_received);
+    }
+
+    /**
+     * Real case pergudangan: receiving into a MAIN destination keeps the shipped unit
+     * as-is (no repack to product default unit). Ship 50 Piece main→main → destination
+     * gets 50 Piece, not 4 DOS + 2 Piece / 4.1667 DOS.
+     */
+    public function test_receiving_into_a_main_warehouse_keeps_sent_unit_without_conversion(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        // Default unit = DOS — old behaviour would have forced receive into DOS.
         $fx = $this->createProductFixture(defaultUnitId: self::DOS_UNIT_ID);
         $this->createDosPieceRelation($fx['variant']);
         $mainWarehouse2 = $this->createSecondMainWarehouse();
@@ -302,10 +345,16 @@ class StockTransferWorkflowTest extends TestCase
             ->where('unit_id', self::PIECE_UNIT_ID)
             ->first();
 
-        $this->assertNotNull($destDos);
+        $this->assertTrue(
+            $destDos === null || (float) $destDos->ps_stock === 0.0,
+            'main destination must NOT auto-pack Piece into DOS'
+        );
         $this->assertNotNull($destPiece);
-        $this->assertSame(4.0, (float) $destDos->ps_stock, '50 Piece / 12 = 4 whole DOS');
-        $this->assertSame(2.0, (float) $destPiece->ps_stock, 'remainder of 50 Piece / 12 = 2 Piece, not folded into a fractional DOS');
+        $this->assertSame(50.0, (float) $destPiece->ps_stock, '50 Piece received as 50 Piece');
+
+        $detail = StockTransferDetail::query()->where('st_id', $header->st_id)->first();
+        $this->assertSame(self::PIECE_UNIT_ID, (int) $detail->received_unit_id);
+        $this->assertSame(50.0, (float) $detail->qty_received);
 
         $header->refresh();
         $this->assertSame(4, (int) $header->status, 'Terkirim');

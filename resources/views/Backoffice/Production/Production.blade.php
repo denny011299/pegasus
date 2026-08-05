@@ -34,7 +34,7 @@
         #tableProduction td:last-child,
         #tableProduction th:last-child {
             white-space: nowrap !important;
-            width: 110px !important;
+            width: 11% !important;
             min-width: 110px !important;
         }
 
@@ -42,7 +42,7 @@
             display: inline-flex !important;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
+            gap: 8px;
             flex-wrap: nowrap;
         }
 
@@ -170,7 +170,7 @@
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 12% 11% 14% 10% 12% 13% 13% 13% 2%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 11% 11% 13% 11% 11% 11% 11% 10% 11%;">
                                         <span style="width:60%"></span>
                                         <span style="width:70%"></span>
                                         <span style="width:50%"></span>
@@ -183,7 +183,7 @@
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 12% 11% 14% 10% 12% 13% 13% 13% 2%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 11% 11% 13% 11% 11% 11% 11% 10% 11%;">
                                                 <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-badge" style="width:60%;justify-self:center"></span>
                                                 <span class="skel-text" style="width:60%"></span>
