@@ -1039,7 +1039,13 @@ class StockController extends Controller
                 }
 
                 // Fungsi rekursif — cari unit atas via relasi, tidak bergantung index
-                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                $siapkanStok = function($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                    // Ditambahkan (2026-08-06): depth guard — $keyAtas dicari lewat lookup relasi,
+                    // jadi rantai ProductRelation yang sirkular bisa membuat rekursi ini jalan
+                    // selamanya sebelum sempat kembali ke while loop di bawah. Belum pernah
+                    // tereproduksi dengan data nyata, murni defensive guard. Lihat KNOWN_ISSUES.md.
+                    if ($depth >= 20) return false;
+
                     $stokSekarang = $units[$targetKey];
 
                     $sr = ProductRelation::where('product_variant_id', $variantId)
@@ -1063,7 +1069,7 @@ class StockController extends Controller
                     $stokAtas = $units[$keyAtas];
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
-                        if (!$siapkanStok($keyAtas, $units)) return false;
+                        if (!$siapkanStok($keyAtas, $units, $depth + 1)) return false;
                     }
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {

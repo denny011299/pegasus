@@ -259,7 +259,17 @@ class ProductIssuesDetail extends Model
                     if ($stok->unit_id == $data["unit_id"]) { $keyTarget = $idx; }
                 }
 
-                $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $m) {
+                $siapkanStok = function ($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStok, $m) {
+                    // Ditambahkan (2026-08-06): depth guard — $keyAtas dicari lewat lookup relasi
+                    // (bukan index array tetap seperti $targetKey+1), jadi kalau data
+                    // SuppliesRelation punya rantai unit sirkular (unit A "atas"-nya B, B
+                    // "atas"-nya A), rekursi ini bisa jalan selamanya sebelum sempat kembali ke
+                    // while loop di bawah yang punya $safety-nya sendiri. Belum pernah tereproduksi
+                    // dengan data nyata (semua rantai SuppliesRelation yang ditelusuri sejauh ini
+                    // bersih/acyclic) — ini murni defensive guard. Angka 20 mirror konvensi guard
+                    // serupa di tempat lain (lihat KNOWN_ISSUES.md).
+                    if ($depth >= 20) return false;
+
                     $stokSekarang = $units[$targetKey];
 
                     // Dulu mencari "unit di atas" lewat posisi array ($units[$targetKey + 1]) —
@@ -279,7 +289,7 @@ class ProductIssuesDetail extends Model
                     $stokAtas = $units[$keyAtas];
 
                     if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
-                        if (!$siapkanStok($keyAtas, $units)) return false;
+                        if (!$siapkanStok($keyAtas, $units, $depth + 1)) return false;
                     }
 
                     if ($virtualStock[$stokAtas->ss_id]['current'] > 0) {
@@ -348,7 +358,10 @@ class ProductIssuesDetail extends Model
                     if ($stok->unit_id == $data["unit_id"]) { $keyTarget = $idx; }
                 }
 
-                $siapkanStokProd = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStokProd, $itemId) {
+                $siapkanStokProd = function ($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStokProd, $itemId) {
+                    // Depth guard — mirrors the tipe_return==1 closure above, see its comment.
+                    if ($depth >= 20) return false;
+
                     $stokSekarang = $units[$targetKey];
 
                     // Mirrors the fix in this same method's tipe_return==1 closure above: cari
@@ -367,7 +380,7 @@ class ProductIssuesDetail extends Model
                     $stokAtas = $units[$keyAtas];
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
-                        if (!$siapkanStokProd($keyAtas, $units)) return false;
+                        if (!$siapkanStokProd($keyAtas, $units, $depth + 1)) return false;
                     }
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {
