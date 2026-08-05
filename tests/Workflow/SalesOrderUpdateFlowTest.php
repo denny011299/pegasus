@@ -4,6 +4,7 @@ namespace Tests\Workflow;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductRelation;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\SalesOrder;
@@ -23,6 +24,7 @@ class SalesOrderUpdateFlowTest extends TestCase
     use ActingAsStaff;
 
     private const UNIT_ID = 9; // Piece
+    private const DOS_UNIT_ID = 7; // Dos — see the ProductRelation fixture note in createFixture()
     private const WAREHOUSE_ID = 1;
 
     /** @return array{variant: ProductVariant, productStock: ProductStock} */
@@ -57,6 +59,22 @@ class SalesOrderUpdateFlowTest extends TestCase
         $productStock->ps_stock = $startingStock;
         $productStock->status = 1;
         $productStock->save();
+
+        // accSO()/updateSalesOrder() both require at least one ProductRelation row per variant
+        // before they'll touch stock at all ("Mohon masukkan relasi produk" otherwise) — every
+        // real product in this app has one (confirmed: zero product_relations rows in the seed
+        // data have a null pr_unit_id_1). DOS_UNIT_ID here is a placeholder upper unit this test
+        // never stocks or orders — it exists purely so this fixture matches the shape every real
+        // product actually has, see tests/Regression/SalesOrderUpdateRejectsNoOpEditOnFullyConsumedStockTest.php.
+        $relation = new ProductRelation();
+        $relation->product_variant_id = $variant->product_variant_id;
+        $relation->pr_unit_id_1 = self::DOS_UNIT_ID;
+        $relation->pr_unit_value_1 = 1;
+        $relation->pr_unit_id_2 = self::UNIT_ID;
+        $relation->pr_unit_value_2 = 12;
+        $relation->pr_default = 0;
+        $relation->status = 1;
+        $relation->save();
 
         return compact('variant', 'productStock');
     }

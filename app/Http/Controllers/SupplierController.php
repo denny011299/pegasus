@@ -810,6 +810,9 @@ class SupplierController extends Controller
         $po->po_total += $total;
         $po->save();
 
+        // Return value intentionally not checked here — see ProductIssues::deleteProductIssues()'s
+        // dead-code comment. Currently harmless (its ref_num guard never actually triggers today),
+        // but would need to change if that guard is ever revived.
         (new ProductIssues())->deleteProductIssues($rs);
         (new ReturnSupplies())->deleteReturnSupplies($data);
 

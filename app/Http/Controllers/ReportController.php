@@ -436,6 +436,14 @@ class ReportController extends Controller
     function insertCash(Request $req){
         $data = $req->all();
         $cash_id = (new Cash())->insertCash($data);
+        // DEAD CODE (confirmed 2026-08-02, marked 2026-08-06 per user decision — not revived, not
+        // removed, just flagged): the real frontend (Cash.js) has `cash_tujuan` commented out of
+        // the AJAX payload sent to /insertCash, so this whole admin/gudang auto-link branch never
+        // actually runs today. If the literal string "admin"/"gudang" were ever sent again, note
+        // that `Cash::insertCash()`'s own string→int mapping for `cash_tujuan` (the counterpart to
+        // this check) is ALSO commented out, and `cashes.cash_tujuan` is an integer column — so the
+        // `(new Cash())->insertCash($data)` call above would crash with a DB type error before
+        // execution ever reaches this branch at all. See KNOWN_ISSUES.md for the full trace.
         if (isset($data['cash_tujuan']) && $data['cash_tujuan'] != null) {
             if ($data['cash_tujuan'] == "admin"){
                 (new CashAdmin())->insertCashAdmin([

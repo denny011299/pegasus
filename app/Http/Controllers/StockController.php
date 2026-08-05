@@ -196,6 +196,9 @@ class StockController extends Controller
             'category_id' => $sto->category_id,
             'sto_notes'   => $sto->sto_notes,
             'status'      => $sto->status,
+            // Ditambahkan (2026-08-05): CreateStockOpname.js membaca data.is_draft/data.created_by
+            // untuk canEditDraft — sebelumnya keduanya tidak ada di array ini sama sekali, jadi
+            // selalu undefined di frontend (draft tidak pernah terdeteksi sebagai draft).
             'is_draft'    => (bool) $sto->is_draft,
             'created_by'  => $sto->created_by,
             'item'        => $items
@@ -252,6 +255,19 @@ class StockController extends Controller
             ($sto->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
         );
+
+        // Ditambahkan (2026-08-05): gerbang draft — kolom is_draft sudah ada di DB tapi baru
+        // sekarang benar-benar ditulis (lihat StockOpname::insertStockOpname()/updateStockOpname())
+        // dan baru sekarang ditegakkan di sini juga. Status berbeda dari guard status!=1 di bawah
+        // (-1 bukan -2) supaya frontend (CreateStockOpname.js) bisa membedakan "belum diajukan"
+        // dari "sudah diproses orang lain".
+        if ($sto->is_draft) {
+            return response()->json([
+                "status" => -1,
+                "header" => "Gagal ACC",
+                "message" => "Dokumen masih berupa draft — ajukan (submit) dokumen ini dulu sebelum bisa di-ACC",
+            ]);
+        }
 
         // Ditambahkan: dulu tidak ada pengecekan status sama sekali (cuma is_draft di halaman
         // insert) — beda dengan PO/SO/Production yang semuanya menolak kalau status != 1. Tanpa
@@ -553,6 +569,15 @@ class StockController extends Controller
             ($stob->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
         );
+
+        // Mirrors accStockOpname()'s draft gate above.
+        if ($stob->is_draft) {
+            return response()->json([
+                "status" => -1,
+                "header" => "Gagal ACC",
+                "message" => "Dokumen masih berupa draft — ajukan (submit) dokumen ini dulu sebelum bisa di-ACC",
+            ]);
+        }
 
         // Mirrors accStockOpname()'s status guard above.
         if ($stob->status != 1) {
@@ -1122,6 +1147,11 @@ class StockController extends Controller
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
 
+    // UI-unreachable (confirmed 2026-08-02) — this route's delete trigger icon is commented out in
+    // Product_Issues.js, on top of the original "MASIH NGEBUG" ("still buggy") note below. This is
+    // the one caller of ProductIssues::deleteProductIssues() that DOES check its -1 return value —
+    // see that method's dead-code comment for why the other, reachable caller doesn't need to
+    // (yet).
     function deleteProductIssue(Request $req) // MASIH NGEBUG
     {
         $data = $req->all();
@@ -1192,7 +1222,13 @@ class StockController extends Controller
                 }
 
                 // Fungsi rekursif — cari unit atas via relasi, tidak bergantung index
-                $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                $siapkanStok = function($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                    // Ditambahkan (2026-08-06): depth guard — $keyAtas dicari lewat lookup relasi,
+                    // jadi rantai ProductRelation yang sirkular bisa membuat rekursi ini jalan
+                    // selamanya sebelum sempat kembali ke while loop di bawah. Belum pernah
+                    // tereproduksi dengan data nyata, murni defensive guard. Lihat KNOWN_ISSUES.md.
+                    if ($depth >= 20) return false;
+
                     $stokSekarang = $units[$targetKey];
 
                     $sr = ProductRelation::where('product_variant_id', $variantId)
@@ -1216,7 +1252,7 @@ class StockController extends Controller
                     $stokAtas = $units[$keyAtas];
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
-                        if (!$siapkanStok($keyAtas, $units)) return false;
+                        if (!$siapkanStok($keyAtas, $units, $depth + 1)) return false;
                     }
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {
