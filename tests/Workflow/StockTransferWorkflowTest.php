@@ -247,6 +247,44 @@ class StockTransferWorkflowTest extends TestCase
     }
 
     /**
+     * Kirim must refuse to auto-unpack DOS when Piece stock alone is short.
+     * 10 Piece + 5 DOS is NOT enough to ship 22 Piece without bongkar.
+     */
+    public function test_ship_refuses_to_unpack_dos_when_sent_unit_stock_is_short(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createProductFixture(defaultUnitId: self::PIECE_UNIT_ID);
+        $this->createDosPieceRelation($fx['variant']);
+        $mainWarehouse2 = $this->createSecondMainWarehouse();
+
+        $dosStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::DOS_UNIT_ID, 5);
+        $pieceStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 10);
+
+        $header = $this->createPendingTransfer(
+            $fx['product'],
+            $fx['variant'],
+            self::MAIN_WAREHOUSE_ID,
+            (int) $mainWarehouse2->id,
+            self::PIECE_UNIT_ID,
+            22
+        );
+
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+
+        $this->post('/shipStockTransfer', ['id' => $header->st_id])
+            ->assertStatus(200)
+            ->assertJson(['status' => -1]);
+
+        $dosStock->refresh();
+        $pieceStock->refresh();
+        $header->refresh();
+        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'DOS must stay untouched when Kirim is refused');
+        $this->assertSame(10.0, (float) $pieceStock->ps_stock, 'Piece must stay untouched when Kirim is refused');
+        $this->assertSame(1, (int) $header->status, 'must remain Pending');
+    }
+
+    /**
      * Main → retail: may ship in a larger unit (DOS), but Terima must land as retail_unit (Piece).
      */
     public function test_receiving_into_retail_converts_to_retail_unit(): void

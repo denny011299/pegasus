@@ -1289,7 +1289,8 @@ class StockTransferController extends Controller
                         (float) $item['qty'],
                         $code,
                         'Stock Transfer ' . $code . ' - keluar gudang asal',
-                        false
+                        false,
+                        false // exact unit only — jangan bongkar DOS/ancestor
                     );
                     if (! $cut['ok']) {
                         throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
@@ -1725,6 +1726,7 @@ class StockTransferController extends Controller
                     abs($restoreQty),
                     $code,
                     $note,
+                    false,
                     false
                 );
             }
@@ -2063,8 +2065,9 @@ class StockTransferController extends Controller
     /**
      * Mode cek/potong stok untuk gudang asal.
      *
-     * Packing dimatikan: Kirim hanya memotong satuan di detail ST (stok di satuan
-     * itu harus cukup). Konversi antar-satuan hanya di Terima ke eceran.
+     * Packing + unpack dimatikan: Kirim hanya memotong satuan di detail ST (stok
+     * di satuan itu harus cukup; tidak auto-bongkar DOS). Konversi antar-satuan
+     * hanya di Terima ke eceran.
      *
      * @param  array<int, array>  $items
      * @return array<int, array>
@@ -2076,6 +2079,7 @@ class StockTransferController extends Controller
     ): array {
         return array_map(function ($item) {
             $item['allow_packing'] = false;
+            $item['allow_unpack'] = false;
             return $item;
         }, $items);
     }

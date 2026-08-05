@@ -187,14 +187,16 @@ class ProductUnitStock
 
     /**
      * Total stok tersedia setara di $targetUnitId.
-     * Mode normal: unit sama + bongkar ancestor. Mode packing: gabungkan seluruh
-     * stok satu chain dan floor ke unit target.
+     * Mode normal: unit sama + (opsional) bongkar ancestor. Mode packing: gabungkan
+     * seluruh stok satu chain dan floor ke unit target.
+     * $allowUnpack=false: hanya stok persis di $targetUnitId (dipakai ST Kirim).
      */
     public static function totalAvailable(
         int $warehouseId,
         int $productVariantId,
         int $targetUnitId,
-        bool $allowPacking = false
+        bool $allowPacking = false,
+        bool $allowUnpack = true
     ): float {
         $stocks = self::stocks($warehouseId, $productVariantId);
         if ($stocks->isEmpty()) {
@@ -204,6 +206,9 @@ class ProductUnitStock
         // Gudang eceran hanya boleh pegang retail_unit — jangan pernah bongkar sisa
         // data lama di satuan besar (DOS/Jerigen), meski packing diminta oleh caller.
         $isRetailWarehouse = self::warehouseIsMain($warehouseId) === false;
+        if ($isRetailWarehouse) {
+            $allowUnpack = false;
+        }
 
         if ($allowPacking && ! $isRetailWarehouse) {
             $stockByUnit = $stocks
@@ -232,8 +237,8 @@ class ProductUnitStock
                 continue;
             }
 
-            if ($isRetailWarehouse) {
-                // Sisa stok satuan lain (bukan retail_unit) di gudang eceran diabaikan, bukan dibongkar.
+            if (! $allowUnpack) {
+                // Exact unit only — sisa satuan lain diabaikan (ST Kirim / eceran).
                 continue;
             }
 
@@ -313,8 +318,11 @@ class ProductUnitStock
                 continue;
             }
 
-            $allowPacking = (bool) ($item['allow_packing'] ?? false)
-                && self::warehouseIsMain($warehouseId) !== false;
+            $isMainWarehouse = self::warehouseIsMain($warehouseId) !== false;
+            $allowPacking = (bool) ($item['allow_packing'] ?? false) && $isMainWarehouse;
+            // Default true agar SO/Production tetap boleh bongkar ancestor.
+            // ST Kirim set allow_unpack=false → stok harus cukup di satuan kirim.
+            $allowUnpack = (bool) ($item['allow_unpack'] ?? true) && $isMainWarehouse;
 
             if ($allowPacking) {
                 if (! isset($packingPools[$variantId])) {
@@ -346,7 +354,13 @@ class ProductUnitStock
                     $packingPools[$variantId]['used_smallest'] += $qty * $targetMultiplier;
                 }
             } else {
-                $available = self::totalAvailable($warehouseId, $variantId, $unitId);
+                $available = self::totalAvailable(
+                    $warehouseId,
+                    $variantId,
+                    $unitId,
+                    false,
+                    $allowUnpack
+                );
             }
             if ($available + 1e-9 < $qty) {
                 $shortages[] = [
@@ -513,7 +527,8 @@ class ProductUnitStock
         float $qty,
         string $logCode,
         string $logNotes = 'Stock Transfer - keluar',
-        bool $allowPacking = false
+        bool $allowPacking = false,
+        bool $allowUnpack = true
     ): array {
         if ($qty <= 0) {
             return ['ok' => true];
@@ -524,6 +539,7 @@ class ProductUnitStock
         $isRetailWarehouse = self::warehouseIsMain($warehouseId) === false;
         if ($isRetailWarehouse) {
             $allowPacking = false;
+            $allowUnpack = false;
         }
 
         $rows = ProductStock::withoutGlobalScope('active_warehouse')
@@ -629,12 +645,13 @@ class ProductUnitStock
         };
 
         if (($virtual[$unitId] ?? 0) + 1e-9 < $qty) {
-            if ($isRetailWarehouse) {
-                // Eceran: jangan bongkar dari satuan besar sisa data lama — stok retail_unit
-                // sendiri harus cukup.
+            if (! $allowUnpack) {
+                // Exact unit only (eceran / ST Kirim): jangan bongkar ancestor.
                 return [
                     'ok' => false,
-                    'message' => 'Stok satuan eceran tidak mencukupi (gudang eceran tidak boleh membongkar satuan besar)',
+                    'message' => $isRetailWarehouse
+                        ? 'Stok satuan eceran tidak mencukupi (gudang eceran tidak boleh membongkar satuan besar)'
+                        : 'Stok satuan kirim tidak mencukupi (Kirim tidak boleh membongkar satuan lain)',
                 ];
             }
             if (! $ensure($unitId, $qty)) {
