@@ -252,13 +252,10 @@ class ProductionController extends Controller
                     continue;
                 }
 
-                // ← ditambahkan: hitung pengali $qty dari satuan input user
-                //   ke satuan terkecil produk (dipakai khusus untuk bahan dos/pack)
-                foreach ($pr as $relasi) {
-                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
-                        $qty *= $relasi['pr_unit_value_2'];
-                    }
-                }
+                // Pengali $qty dari satuan input user ke satuan terkecil produk (dipakai
+                // khusus untuk bahan dos/pack) — bug #16: delegate to the fixed
+                // convertQtyToSmallestUnit() instead of re-multiplying every relation row here.
+                $qty = $this->convertQtyToSmallestUnit(1, (int) $value['unit_id'], (int) $value['product_variant_id']);
             }
 
             // Masukkan ke dalam array agregat berdasarkan supplies_id
@@ -608,13 +605,10 @@ class ProductionController extends Controller
                     continue;
                 }
 
-                // ← ditambahkan: hitung pengali $qty dari satuan input user
-                //   ke satuan terkecil produk (dipakai khusus bahan dos/pack)
-                foreach ($pr as $relasi) {
-                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
-                        $qty *= $relasi['pr_unit_value_2'];
-                    }
-                }
+                // Pengali $qty dari satuan input user ke satuan terkecil produk (dipakai
+                // khusus bahan dos/pack) — bug #16: delegate to the fixed
+                // convertQtyToSmallestUnit() instead of re-multiplying every relation row here.
+                $qty = $this->convertQtyToSmallestUnit(1, (int) $value['unit_id'], (int) $value['product_variant_id']);
             }
 
             // Masukkan ke dalam array agregat berdasarkan supplies_id
@@ -1364,18 +1358,12 @@ class ProductionController extends Controller
             $bdetail = BomDetail::where('bom_id', $value['bom_id'])->where('status', 1)->get();
             if (!$b) continue;
 
+            // Pengali $qty (dos/pack) — bug #16: delegate to the fixed
+            // convertQtyToSmallestUnit() instead of re-multiplying every relation row here, so
+            // this reversal path stays symmetric with insertProduction()/accProduction().
             $qty = 1;
             if ($b['unit_id'] != $value['unit_id']) {
-                $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
-                    ->where('status', 1)
-                    ->orderBy('pr_id', 'desc')
-                    ->get();
-
-                foreach ($pr as $relasi) {
-                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
-                        $qty *= $relasi['pr_unit_value_2'];
-                    }
-                }
+                $qty = $this->convertQtyToSmallestUnit(1, (int) $value['unit_id'], (int) $value['product_variant_id']);
             }
 
             $batchCount = $this->getBatchCount(
@@ -1593,16 +1581,31 @@ class ProductionController extends Controller
 
     private function convertQtyToSmallestUnit(int $qty, int $unitId, int $productVariantId): int
     {
-        $multiplier = 1;
+        // Bug #16: this used to fetch EVERY active product_relations row for the variant and
+        // multiply all of their pr_unit_value_2 together whenever the row's base unit wasn't
+        // $unitId — which is true for every sibling row when a product has more than one
+        // independent "big unit -> Piece" relation (e.g. DOS=20pcs, kg=5pcs, LTR=10pcs all
+        // mapping to Piece). That folded unrelated relations into the multiplier
+        // (20 * 5 * 10 = 1000) instead of picking the single relation that actually matches
+        // $unitId, producing a 100x+ raw-material overconsumption. Walk the chain one hop at a
+        // time instead, exactly like the already-correct convertSuppliesQtyToSmallestUnit()
+        // below — this also makes multi-level ladders (Sak -> DOS -> Piece) resolve correctly.
         $relations = ProductRelation::where('product_variant_id', $productVariantId)
             ->where('status', 1)
-            ->orderBy('pr_id', 'desc')
             ->get();
 
-        foreach ($relations as $relation) {
-            if ($relation['pr_unit_id_2'] != $unitId) {
-                $multiplier *= (int) $relation['pr_unit_value_2'];
+        $multiplier = 1;
+        $currentUnit = $unitId;
+        $guard = 0;
+
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_1 === (int) $currentUnit);
+            if (!$rel) {
+                break;
             }
+            $multiplier *= (int) $rel->pr_unit_value_2;
+            $currentUnit = (int) $rel->pr_unit_id_2;
         }
 
         return $qty * $multiplier;
