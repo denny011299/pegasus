@@ -58,16 +58,31 @@ class StockController extends Controller
         return response()->json(['status' => 1, 'sto_id' => $id]);
     }
 
-    // function updateStockOpname(Request $req)
-    // {
-    //     $data = $req->all();
-    //     $id = (new StockOpname())->updateStockOpname($data);
-    //     foreach (json_decode($req->item, true) as $key => $value) {
-    //         $value["sto_id"] = $id;
-    //         if (isset($value["stod_id"])) (new StockOpnameDetail())->updateDetail($value);
-    //         else (new StockOpnameDetail())->insertDetail($value);
-    //     }
-    // }
+    // Ditambahkan (2026-08-05): method ini sebelumnya di-comment-out seluruhnya — route
+    // POST /updateStockOpname sudah ada dan sudah dipanggil dari CreateStockOpname.js (baik mode
+    // edit biasa maupun canEditDraft), tapi memanggilnya crash 500 ("Call to undefined method")
+    // karena method-nya tidak ada. Diaktifkan kembali, mirror persis updateStockOpnameBahan() di
+    // bawah yang selama ini sudah aktif.
+    function updateStockOpname(Request $req)
+    {
+        $data = $req->all();
+        $id = (new StockOpname())->updateStockOpname($data);
+        foreach (json_decode($req->item, true) as $key => $value) {
+            $value["sto_id"] = $id;
+            if (isset($value["stod_id"])) (new StockOpnameDetail())->updateDetail($value);
+            else (new StockOpnameDetail())->insertDetail($value);
+        }
+    }
+
+    // Keluarkan dokumen dari mode draft — dipanggil dari tombol "Ajukan" (lihat
+    // CreateStockOpname.js), setelah insert/update terakhir sebagai draft berhasil. Status dokumen
+    // TIDAK berubah di sini (masih 1/pending) — accStockOpname() sendiri yang menolak selama
+    // is_draft masih true, method ini murni membuka gerbang itu.
+    function submitStockOpname(Request $req)
+    {
+        $data = $req->all();
+        return (new StockOpname())->submitStockOpname($data);
+    }
 
     function deleteStockOpname(Request $req)
     {
@@ -132,6 +147,11 @@ class StockController extends Controller
             'category_id' => $sto->category_id,
             'sto_notes'   => $sto->sto_notes,
             'status'      => $sto->status,
+            // Ditambahkan (2026-08-05): CreateStockOpname.js membaca data.is_draft/data.created_by
+            // untuk canEditDraft — sebelumnya keduanya tidak ada di array ini sama sekali, jadi
+            // selalu undefined di frontend (draft tidak pernah terdeteksi sebagai draft).
+            'is_draft'    => (bool) $sto->is_draft,
+            'created_by'  => $sto->created_by,
             'item'        => $items
         ];
 
@@ -181,6 +201,19 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $sto = StockOpname::find($data['sto_id']);
+
+        // Ditambahkan (2026-08-05): gerbang draft — kolom is_draft sudah ada di DB tapi baru
+        // sekarang benar-benar ditulis (lihat StockOpname::insertStockOpname()/updateStockOpname())
+        // dan baru sekarang ditegakkan di sini juga. Status berbeda dari guard status!=1 di bawah
+        // (-1 bukan -2) supaya frontend (CreateStockOpname.js) bisa membedakan "belum diajukan"
+        // dari "sudah diproses orang lain".
+        if ($sto->is_draft) {
+            return response()->json([
+                "status" => -1,
+                "header" => "Gagal ACC",
+                "message" => "Dokumen masih berupa draft — ajukan (submit) dokumen ini dulu sebelum bisa di-ACC",
+            ]);
+        }
 
         // Ditambahkan: dulu tidak ada pengecekan status sama sekali (cuma is_draft di halaman
         // insert) — beda dengan PO/SO/Production yang semuanya menolak kalau status != 1. Tanpa
@@ -332,6 +365,14 @@ class StockController extends Controller
         }
     }
 
+    // Mirrors submitStockOpname() above — see KNOWN_ISSUES.md "Stock Opname's draft feature is
+    // entirely non-functional".
+    function submitStockOpnameBahan(Request $req)
+    {
+        $data = $req->all();
+        return (new StockOpnameBahan())->submitStockOpnameBahan($data);
+    }
+
     function deleteStockOpnameBahan(Request $req)
     {
         $data = $req->all();
@@ -389,6 +430,15 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $stob = StockOpnameBahan::find($data['stob_id']);
+
+        // Mirrors accStockOpname()'s draft gate above.
+        if ($stob->is_draft) {
+            return response()->json([
+                "status" => -1,
+                "header" => "Gagal ACC",
+                "message" => "Dokumen masih berupa draft — ajukan (submit) dokumen ini dulu sebelum bisa di-ACC",
+            ]);
+        }
 
         // Mirrors accStockOpname()'s status guard above.
         if ($stob->status != 1) {
