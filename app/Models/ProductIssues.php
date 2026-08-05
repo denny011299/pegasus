@@ -30,9 +30,17 @@ class ProductIssues extends Model
         
         if($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
-                // Jika date adalah array [start_date, end_date]]
-                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
-                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
+                // Diperbaiki (2026-08-06): dulu unconditional createFromFormat('d-m-Y', ...) —
+                // beda dengan cabang tanggal tunggal di bawah (yang sudah punya fallback
+                // hasFormat Y-m-d) dan dengan pattern yang sudah dipakai di method lain pada file
+                // ini sendiri (getArmadaReturnReport(), baris ~274-296). Sama persis bugnya, lihat
+                // KNOWN_ISSUES.md.
+                $startDate = \Carbon\Carbon::hasFormat($data["date"][0], 'Y-m-d')
+                    ? $data["date"][0]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
+                $endDate = \Carbon\Carbon::hasFormat($data["date"][1], 'Y-m-d')
+                    ? $data["date"][1]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
                 $result->whereBetween('created_at', [$startDate, $endDate]);
             } else {
                 // Jika date hanya satu nilai
