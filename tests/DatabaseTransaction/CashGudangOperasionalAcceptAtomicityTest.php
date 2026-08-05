@@ -179,4 +179,81 @@ class CashGudangOperasionalAcceptAtomicityTest extends TestCase
             'source_cgd_id' => $cgdId,
         ]);
     }
+
+    public function test_updating_an_already_accepted_entry_is_refused_and_leaves_nominal_unchanged(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $customerA = Customer::where('status', 1)->orderBy('customer_id')->first();
+
+        $cgId = $this->insertOperasionalCashGudang([
+            ['customer_id' => $customerA->customer_id, 'cgd_nominal' => 50000, 'cgd_notes' => 'Test A'],
+        ]);
+        $this->post('/acceptCashGudang', ['cg_id' => $cgId])->assertOk();
+
+        $cgdId = (int) CashGudangDetail::where('cg_id', $cgId)->firstOrFail()->cgd_id;
+
+        // PM confirmed 2026-08-05: once approved/rejected, nothing may change the document again —
+        // updateCashGudang() must refuse, not silently apply the edit on top of an already-mutated
+        // customer_saldo/CashArmada pair.
+        $response = $this->post('/updateCashGudang', [
+            'cg_id' => $cgId,
+            'staff_id' => $this->staffId(),
+            'jenis_input' => 'operasional',
+            'photo' => '',
+            'items' => json_encode([
+                ['cgd_id' => $cgdId, 'customer_id' => $customerA->customer_id, 'cgd_nominal' => 999999, 'cgd_notes' => 'Edited after accept'],
+            ]),
+        ]);
+        $response->assertOk();
+        $response->assertJson(['status' => -2, 'header' => 'Gagal Update']);
+
+        $cgd = CashGudangDetail::findOrFail($cgdId);
+        $this->assertSame(50000, (int) $cgd->cgd_nominal, 'an already-accepted detail row must not be editable');
+    }
+
+    public function test_deleting_an_already_accepted_entry_is_refused(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $customerA = Customer::where('status', 1)->orderBy('customer_id')->first();
+
+        $cgId = $this->insertOperasionalCashGudang([
+            ['customer_id' => $customerA->customer_id, 'cgd_nominal' => 50000, 'cgd_notes' => 'Test A'],
+        ]);
+        $this->post('/acceptCashGudang', ['cg_id' => $cgId])->assertOk();
+
+        $response = $this->post('/deleteCashGudang', ['cg_id' => $cgId]);
+        $response->assertOk();
+        $response->assertJson(['status' => -2, 'header' => 'Gagal Hapus']);
+
+        $cg = CashGudang::findOrFail($cgId);
+        $this->assertSame(2, (int) $cg->status, 'an already-accepted document must not be soft-deleted');
+    }
+
+    public function test_updating_a_still_pending_entry_is_allowed(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $customerA = Customer::where('status', 1)->orderBy('customer_id')->first();
+
+        $cgId = $this->insertOperasionalCashGudang([
+            ['customer_id' => $customerA->customer_id, 'cgd_nominal' => 50000, 'cgd_notes' => 'Test A'],
+        ]);
+        $cgdId = (int) CashGudangDetail::where('cg_id', $cgId)->firstOrFail()->cgd_id;
+
+        $response = $this->post('/updateCashGudang', [
+            'cg_id' => $cgId,
+            'staff_id' => $this->staffId(),
+            'jenis_input' => 'operasional',
+            'photo' => '',
+            'items' => json_encode([
+                ['cgd_id' => $cgdId, 'customer_id' => $customerA->customer_id, 'cgd_nominal' => 70000, 'cgd_notes' => 'Edited while pending'],
+            ]),
+        ]);
+        $response->assertOk();
+
+        $cgd = CashGudangDetail::findOrFail($cgdId);
+        $this->assertSame(70000, (int) $cgd->cgd_nominal, 'a still-pending detail row must remain editable');
+    }
 }

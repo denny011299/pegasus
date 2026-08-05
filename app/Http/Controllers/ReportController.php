@@ -1143,6 +1143,21 @@ class ReportController extends Controller
     {
         $data = $req->all();
 
+        // Ditambahkan (2026-08-05): PM konfirmasi sekali status != 1 (sudah disetujui/ditolak),
+        // tidak ada prosedur lain yang boleh mengubah data ini lagi — acceptCashGudang() sudah
+        // memutasi customer_saldo + membuat CashArmada row dari cgd_nominal saat itu, jadi
+        // mengubah cg_nominal/detail baris setelahnya akan membuat kedua sisi tidak sinkron
+        // tanpa ada cara membalikkannya. Sama seperti guard updateCashArmada/updateCashSales.
+        $cash = CashGudang::find($data['cg_id']);
+        if ($cash && $cash->status != 1) {
+            $staff = Staff::find($cash->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Update",
+                "message" => "Pengajuan sudah disetujui/ditolak oleh " . $staff . ", data tidak bisa diubah lagi"
+            ]);
+        }
+
         if ($req->photo){
             // Ambil base64
             $image = $req->photo;
@@ -1164,7 +1179,6 @@ class ReportController extends Controller
         }
 
         $id = [];
-        $cash = CashGudang::find($data['cg_id']);
 
         if ($data['jenis_input'] == "operasional"){
             $total = 0;
@@ -1248,6 +1262,20 @@ class ReportController extends Controller
     {
         $data = $req->all();
         $ca = CashGudang::find($data['cg_id']);
+
+        // Ditambahkan (2026-08-05): guard yang sama dengan updateCashGudang() di atas — sekali
+        // disetujui/ditolak, acceptCashGudang() sudah memutasi customer_saldo + membuat CashArmada
+        // row, jadi menghapus dokumen ini tidak boleh lagi dimungkinkan (tidak ada cara membalikkan
+        // mutasi yang sudah terjadi).
+        if ($ca && $ca->status != 1) {
+            $staff = Staff::find($ca->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Hapus",
+                "message" => "Pengajuan sudah disetujui/ditolak oleh " . $staff . ", data tidak bisa dihapus lagi"
+            ]);
+        }
+
         (new CashGudang())->deleteCashGudang($data);
         // Kalau manajemen saldo, maka hapus dari kas juga
         if ($ca->cg_type == 1) (new Cash())->deleteCash($ca);
