@@ -7,6 +7,7 @@ use App\Models\ProductRelation;
 use App\Models\ProductStock;
 use App\Models\Unit;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 
 /**
@@ -26,10 +27,37 @@ class ProductUnitStock
     /** @var array<string, Collection> */
     protected static array $stocksCache = [];
 
+    /** @var array<int, bool|null> */
+    protected static array $warehouseIsMainCache = [];
+
     public static function clearCache(): void
     {
         self::$relationsCache = [];
         self::$stocksCache = [];
+        self::$warehouseIsMainCache = [];
+    }
+
+    /**
+     * @return bool|null true = gudang utama, false = eceran, null = tidak ditemukan
+     */
+    protected static function warehouseIsMain(int $warehouseId): ?bool
+    {
+        if ($warehouseId <= 0) {
+            return null;
+        }
+        if (array_key_exists($warehouseId, self::$warehouseIsMainCache)) {
+            return self::$warehouseIsMainCache[$warehouseId];
+        }
+
+        $row = DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->where('w.id', $warehouseId)
+            ->select('wt.is_main_warehouse')
+            ->first();
+
+        return self::$warehouseIsMainCache[$warehouseId] = $row
+            ? ((int) $row->is_main_warehouse === 1)
+            : null;
     }
 
     /**
@@ -173,7 +201,11 @@ class ProductUnitStock
             return 0.0;
         }
 
-        if ($allowPacking) {
+        // Gudang eceran hanya boleh pegang retail_unit — jangan pernah bongkar sisa
+        // data lama di satuan besar (DOS/Jerigen), meski packing diminta oleh caller.
+        $isRetailWarehouse = self::warehouseIsMain($warehouseId) === false;
+
+        if ($allowPacking && ! $isRetailWarehouse) {
             $stockByUnit = $stocks
                 ->groupBy(fn($row) => (int) $row->unit_id)
                 ->map(fn($rows) => (float) $rows->sum('ps_stock'))
@@ -197,6 +229,11 @@ class ProductUnitStock
 
             if ($fromUnitId === $targetUnitId) {
                 $total += $qty;
+                continue;
+            }
+
+            if ($isRetailWarehouse) {
+                // Sisa stok satuan lain (bukan retail_unit) di gudang eceran diabaikan, bukan dibongkar.
                 continue;
             }
 
@@ -276,7 +313,10 @@ class ProductUnitStock
                 continue;
             }
 
-            if ((bool) ($item['allow_packing'] ?? false)) {
+            $allowPacking = (bool) ($item['allow_packing'] ?? false)
+                && self::warehouseIsMain($warehouseId) !== false;
+
+            if ($allowPacking) {
                 if (! isset($packingPools[$variantId])) {
                     $totalSmallest = 0.0;
                     foreach (self::stocks($warehouseId, $variantId) as $stock) {
@@ -479,6 +519,13 @@ class ProductUnitStock
             return ['ok' => true];
         }
 
+        // Gudang eceran hanya boleh pegang retail_unit — dilarang packing/bongkar satuan
+        // besar (DOS/Jerigen) sisa data lama, walau caller minta allowPacking.
+        $isRetailWarehouse = self::warehouseIsMain($warehouseId) === false;
+        if ($isRetailWarehouse) {
+            $allowPacking = false;
+        }
+
         $rows = ProductStock::withoutGlobalScope('active_warehouse')
             ->where('status', 1)
             ->where('warehouse_id', $warehouseId)
@@ -582,6 +629,14 @@ class ProductUnitStock
         };
 
         if (($virtual[$unitId] ?? 0) + 1e-9 < $qty) {
+            if ($isRetailWarehouse) {
+                // Eceran: jangan bongkar dari satuan besar sisa data lama — stok retail_unit
+                // sendiri harus cukup.
+                return [
+                    'ok' => false,
+                    'message' => 'Stok satuan eceran tidak mencukupi (gudang eceran tidak boleh membongkar satuan besar)',
+                ];
+            }
             if (! $ensure($unitId, $qty)) {
                 return ['ok' => false, 'message' => 'Stok tidak mencukupi setelah konversi'];
             }
@@ -712,6 +767,139 @@ class ProductUnitStock
         return ['ok' => true, 'available' => $available, 'before' => $before, 'after' => $after];
     }
 
+    /**
+     * Pecah qty (dalam satuan $fromUnitId) menjadi bagian bulat di $toUnitId + sisa di satuan
+     * lebih kecil (utamakan $fromUnitId sendiri, fallback satuan dasar chain) — dipakai saat
+     * Terima ST ke gudang utama supaya stok tidak tersimpan pecahan (mis. 4.1667 DOS),
+     * melainkan 4 DOS + 2 Piece.
+     *
+     * @return array{whole_unit_id:int, whole_qty:float, remainder_unit_id:?int, remainder_qty:float}
+     */
+    public static function splitWholeAndRemainder(
+        float $qty,
+        int $fromUnitId,
+        int $toUnitId,
+        int $productVariantId
+    ): array {
+        if ($fromUnitId === $toUnitId || $qty <= 0) {
+            return [
+                'whole_unit_id' => $toUnitId,
+                'whole_qty' => max(0.0, $qty),
+                'remainder_unit_id' => null,
+                'remainder_qty' => 0.0,
+            ];
+        }
+
+        $unitIds = self::connectedUnitIds($productVariantId, $toUnitId);
+        if ($unitIds === [] || ! in_array($fromUnitId, $unitIds, true)) {
+            // Tidak se-chain (harusnya sudah divalidasi caller) — fallback convertQty polos.
+            return [
+                'whole_unit_id' => $toUnitId,
+                'whole_qty' => self::convertQty($qty, $fromUnitId, $toUnitId, $productVariantId),
+                'remainder_unit_id' => null,
+                'remainder_qty' => 0.0,
+            ];
+        }
+
+        $multipliers = [];
+        foreach ($unitIds as $unitId) {
+            $multipliers[$unitId] = self::toSmallestMultiplier($unitId, $productVariantId);
+        }
+
+        return self::splitWholeAndRemainderFromMultipliers($qty, $fromUnitId, $toUnitId, $multipliers);
+    }
+
+    /**
+     * Pure calculation entry point (tanpa akses DB) untuk verifikasi split div/mod.
+     *
+     * @param  array<int, float|int>  $multipliers  unit_id => berapa unit dasar (mis. DOS=>12, Piece=>1)
+     * @return array{whole_unit_id:int, whole_qty:float, remainder_unit_id:?int, remainder_qty:float}
+     */
+    public static function splitWholeAndRemainderFromMultipliers(
+        float $qty,
+        int $fromUnitId,
+        int $toUnitId,
+        array $multipliers
+    ): array {
+        if ($fromUnitId === $toUnitId || $qty <= 0) {
+            return [
+                'whole_unit_id' => $toUnitId,
+                'whole_qty' => max(0.0, $qty),
+                'remainder_unit_id' => null,
+                'remainder_qty' => 0.0,
+            ];
+        }
+
+        $fromMultiplier = (float) ($multipliers[$fromUnitId] ?? 0);
+        $toMultiplier = (float) ($multipliers[$toUnitId] ?? 0);
+        if ($fromMultiplier <= 0 || $toMultiplier <= 0) {
+            return [
+                'whole_unit_id' => $toUnitId,
+                'whole_qty' => 0.0,
+                'remainder_unit_id' => null,
+                'remainder_qty' => 0.0,
+            ];
+        }
+
+        $totalSmallest = $qty * $fromMultiplier;
+        $wholeQty = floor(($totalSmallest + 1e-6) / $toMultiplier);
+        $remainderSmallest = round($totalSmallest - ($wholeQty * $toMultiplier), 4);
+
+        if ($remainderSmallest <= 1e-6) {
+            return [
+                'whole_unit_id' => $toUnitId,
+                'whole_qty' => $wholeQty,
+                'remainder_unit_id' => null,
+                'remainder_qty' => 0.0,
+            ];
+        }
+
+        // Utamakan sisa di satuan kirim asal ("sisa 2 Piece") kalau pas habis di situ.
+        $remainderInFromUnit = $remainderSmallest / $fromMultiplier;
+        if (abs($remainderInFromUnit - round($remainderInFromUnit)) < 1e-6) {
+            return [
+                'whole_unit_id' => $toUnitId,
+                'whole_qty' => $wholeQty,
+                'remainder_unit_id' => $fromUnitId,
+                'remainder_qty' => round($remainderInFromUnit),
+            ];
+        }
+
+        // Fallback: satuan dengan multiplier terkecil di daftar (biasanya satuan dasar chain).
+        $smallestUnitId = null;
+        $smallestMultiplier = null;
+        foreach ($multipliers as $candidateUnitId => $multiplier) {
+            $multiplier = (float) $multiplier;
+            if ($multiplier <= 0) {
+                continue;
+            }
+            if ($smallestMultiplier === null || $multiplier < $smallestMultiplier) {
+                $smallestMultiplier = $multiplier;
+                $smallestUnitId = (int) $candidateUnitId;
+            }
+        }
+        if ($smallestUnitId !== null && $smallestMultiplier > 0) {
+            $remainderInSmallest = $remainderSmallest / $smallestMultiplier;
+            if (abs($remainderInSmallest - round($remainderInSmallest)) < 1e-6) {
+                return [
+                    'whole_unit_id' => $toUnitId,
+                    'whole_qty' => $wholeQty,
+                    'remainder_unit_id' => $smallestUnitId,
+                    'remainder_qty' => round($remainderInSmallest),
+                ];
+            }
+        }
+
+        // Tidak bisa dipecah bersih (chain nonstandar) — fallback aman: simpan sebagai
+        // pecahan di satuan tujuan (perilaku lama), jangan sampai qty hilang.
+        return [
+            'whole_unit_id' => $toUnitId,
+            'whole_qty' => $wholeQty + ($remainderSmallest / $toMultiplier),
+            'remainder_unit_id' => null,
+            'remainder_qty' => 0.0,
+        ];
+    }
+
     protected static function deductPackedQty(
         Collection $rows,
         int $warehouseId,
@@ -774,50 +962,44 @@ class ProductUnitStock
             }
         }
 
-        $targetMultiplier = self::toSmallestMultiplier($unitId, $productVariantId);
-        $canonicalBefore = self::packingPlan(
-            $stockByUnit,
-            $productVariantId,
-            $unitId,
-            0
-        )['after'];
+        // Log SATU baris per satuan yang benar-benar berubah, dari delta before→after ASLI
+        // (bukan "canonical repack" tanpa deduksi) — supaya jumlah log persis = pergerakan
+        // fisik ps_stock. Ini penting untuk Cancel Kirim (`restoreSourceStock`) yang me-reverse
+        // stok dari net delta log per satuan; kalau baseline-nya bukan before/after asli, jumlah
+        // per satuan di log tidak balance dan restore jadi salah (lihat backlog item #9).
         $logger = new LogStock();
         foreach ($allUnitIds as $currentUnitId) {
             $before = (float) ($plan['before'][$currentUnitId] ?? 0);
-            $packed = (float) ($canonicalBefore[$currentUnitId] ?? 0);
-            $delta = $packed - $before;
+            $after = (float) ($plan['after'][$currentUnitId] ?? 0);
+            $delta = $after - $before;
             if (abs($delta) < 1e-9) {
                 continue;
             }
+            // Satuan yang diminta caller pakai catatan aslinya ($logNotes) hanya kalau memang
+            // berkurang (arah "keluar" yang sesuai); kalau net-nya malah naik (repacking
+            // menghasilkan lebih banyak di satuan ini), pakai catatan konversi generik supaya
+            // tidak kontradiktif dengan log_category (masuk).
+            $isPrimaryOutbound = $currentUnitId === $unitId && $delta < 0;
+            $unitName = self::unitNames([$currentUnitId])[$currentUnitId] ?? '-';
+            $note = $isPrimaryOutbound
+                ? $logNotes
+                : ($delta > 0
+                    ? 'Stock Transfer - konversi barang ke satuan ' . $unitName
+                    : 'Stock Transfer - bahan konversi ke satuan ' . $unitName);
+
             $logger->insertLog([
                 'log_date' => now(),
                 'log_kode' => $logCode,
                 'log_type' => 1,
                 'log_category' => $delta > 0 ? 1 : 2,
                 'log_item_id' => $productVariantId,
-                'log_notes' => $delta > 0
-                    ? 'Stock Transfer - hasil packing satuan'
-                    : 'Stock Transfer - bahan packing satuan',
-                'log_jumlah' => abs($delta),
-                'log_saldo' => round((float) ($plan['after'][$currentUnitId] ?? 0), 4),
+                'log_notes' => $note,
+                'log_jumlah' => round(abs($delta), 4),
+                'log_saldo' => round($after, 4),
                 'unit_id' => $currentUnitId,
                 'warehouse_id' => $warehouseId,
             ]);
         }
-        $logger->insertLog([
-            'log_date' => now(),
-            'log_kode' => $logCode,
-            'log_type' => 1,
-            'log_category' => 2,
-            'log_item_id' => $productVariantId,
-            'log_notes' => $logNotes . ' (packing '
-                . number_format($qty * $targetMultiplier, 0, ',', '.')
-                . ' unit dasar)',
-            'log_jumlah' => $qty,
-            'log_saldo' => round((float) ($plan['after'][$unitId] ?? 0), 4),
-            'unit_id' => $unitId,
-            'warehouse_id' => $warehouseId,
-        ]);
 
         self::clearCache();
 

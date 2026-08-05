@@ -628,7 +628,7 @@ function inisialisasi() {
         columns: [
             {
                 data: "date",
-                width: "12%",
+                width: "11%",
                 orderable: false,
             },
             {
@@ -639,7 +639,7 @@ function inisialisasi() {
             {
                 data: "production_desc",
                 defaultContent: "-",
-                width: "14%",
+                width: "13%",
                 orderable: false,
                 render: function (data) {
                     if (!data || data === "-") {
@@ -657,7 +657,7 @@ function inisialisasi() {
             {
                 data: "notes",
                 defaultContent: "-",
-                width: "12%",
+                width: "11%",
                 orderable: false,
                 render: function (data) {
                     if (!data || data === "-") {
@@ -669,7 +669,7 @@ function inisialisasi() {
             {
                 data: "created_by_name",
                 defaultContent: "-",
-                width: "12%",
+                width: "11%",
                 orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
@@ -680,7 +680,7 @@ function inisialisasi() {
             {
                 data: "acc_by_name",
                 defaultContent: "-",
-                width: "12%",
+                width: "11%",
                 orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
@@ -691,7 +691,7 @@ function inisialisasi() {
             {
                 data: "cancel_requested_by_name",
                 defaultContent: "-",
-                width: "12%",
+                width: "10%",
                 orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
@@ -702,7 +702,7 @@ function inisialisasi() {
             {
                 data: "action",
                 className: "text-center align-middle",
-                width: "4%",
+                width: "11%",
                 orderable: false,
                 searchable: false,
             },

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LogStock;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Staff;
@@ -1088,10 +1089,12 @@ class StockTransferController extends Controller
         if ($items === []) {
             return response()->json(['status' => -1, 'message' => 'Tambahkan minimal 1 produk']);
         }
+        $isProductionTransfer = $header->source_type === 'production';
         $matrix = $this->validateTransferItems(
             $payload['from_warehouse_id'],
             $payload['to_warehouse_id'],
-            $items
+            $items,
+            $isProductionTransfer
         );
         if (! $matrix['ok']) {
             return response()->json(['status' => -1, 'message' => $matrix['message']]);
@@ -1111,11 +1114,13 @@ class StockTransferController extends Controller
                 }
 
                 ProductUnitStock::clearCache();
+                $isProductionTransfer = $header->source_type === 'production';
                 $check = ProductUnitStock::checkItems(
                     $payload['from_warehouse_id'],
                     $this->applySourceAvailabilityMode(
                         $items,
-                        $this->warehouseIsMain($payload['from_warehouse_id'])
+                        $this->warehouseIsMain($payload['from_warehouse_id']),
+                        $isProductionTransfer
                     )
                 );
                 if (! $check['ok']) {
@@ -1265,7 +1270,7 @@ class StockTransferController extends Controller
                 $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
                 $check = ProductUnitStock::checkItems(
                     (int) $lockedHeader->from_warehouse_id,
-                    $this->applySourceAvailabilityMode($items, $sourceIsMain)
+                    $this->applySourceAvailabilityMode($items, $sourceIsMain, $isProduction)
                 );
                 if (! $check['ok']) {
                     $names = array_map(fn ($s) => $s['label'], $check['shortages']);
@@ -1273,6 +1278,7 @@ class StockTransferController extends Controller
                 }
 
                 $code = $lockedHeader->transfer_code;
+                $allowPacking = $sourceIsMain === true && ! $isProduction;
                 foreach ($items as $item) {
                     $cut = ProductUnitStock::deductQty(
                         (int) $lockedHeader->from_warehouse_id,
@@ -1281,7 +1287,7 @@ class StockTransferController extends Controller
                         (float) $item['qty'],
                         $code,
                         'Stock Transfer ' . $code . ' - keluar gudang asal',
-                        $sourceIsMain === true
+                        $allowPacking
                     );
                     if (! $cut['ok']) {
                         throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
@@ -1445,17 +1451,43 @@ class StockTransferController extends Controller
                     }
 
                     if ($qtyReceived > 0) {
+                        // Div/mod: satuan tujuan gudang utama bisa lebih besar dari satuan kirim
+                        // (mis. kirim 50 Piece, 1 DOS=12 Piece) — jangan simpan pecahan
+                        // (4.1667 DOS), pecah jadi bagian bulat + sisa di satuan kirim/terkecil
+                        // (mis. 4 DOS + 2 Piece).
+                        $split = ProductUnitStock::splitWholeAndRemainder(
+                            $qtyReceivedInSentUnit,
+                            (int) $d->unit_id,
+                            $targetUnitId,
+                            (int) $d->product_variant_id
+                        );
+
                         $add = ProductUnitStock::addQty(
                             (int) $lockedHeader->to_warehouse_id,
                             (int) $d->product_id,
                             (int) $d->product_variant_id,
-                            $targetUnitId,
-                            $qtyReceived,
+                            $split['whole_unit_id'],
+                            $split['whole_qty'],
                             $code,
                             'Stock Transfer ' . $code . ' - masuk gudang tujuan'
                         );
                         if (! $add['ok']) {
                             throw new \RuntimeException($add['message'] ?? 'Gagal tambah stok tujuan');
+                        }
+
+                        if ($split['remainder_unit_id'] && $split['remainder_qty'] > 0) {
+                            $addRemainder = ProductUnitStock::addQty(
+                                (int) $lockedHeader->to_warehouse_id,
+                                (int) $d->product_id,
+                                (int) $d->product_variant_id,
+                                $split['remainder_unit_id'],
+                                $split['remainder_qty'],
+                                $code,
+                                'Stock Transfer ' . $code . ' - masuk gudang tujuan (sisa satuan kecil)'
+                            );
+                            if (! $addRemainder['ok']) {
+                                throw new \RuntimeException($addRemainder['message'] ?? 'Gagal tambah sisa stok tujuan');
+                            }
                         }
                     }
 
@@ -1620,26 +1652,104 @@ class StockTransferController extends Controller
         ]);
     }
 
+    /**
+     * Cancel Kirim: kembalikan stok gudang asal ke komposisi satuan PERSIS sebelum Kirim
+     * ("anggapannya DOS belum dibuka") — bukan cuma addQty ke satuan yang dikirim, karena
+     * Kirim bisa saja merepacking seluruh chain (bahan/hasil packing, bongkar/hasil bongkar).
+     * Caranya: reverse net delta per (varian, satuan) dari log Kirim (`log_kode` = kode ST ini,
+     * gudang = gudang asal) — ini menangkap semua baris log yang ditulis saat Kirim sekaligus,
+     * apapun bentuknya (packing atau non-packing).
+     */
     protected function restoreSourceStock(StockTransfer $header, string $reason): void
     {
         $details = StockTransferDetail::query()
             ->where('st_id', $header->st_id)
             ->where('status', 1)
             ->get();
+        if ($details->isEmpty()) {
+            return;
+        }
 
         $code = $header->transfer_code;
-        foreach ($details as $d) {
-            $add = ProductUnitStock::addQty(
-                (int) $header->from_warehouse_id,
-                (int) $d->product_id,
-                (int) $d->product_variant_id,
-                (int) $d->unit_id,
-                (float) $d->qty,
-                $code,
-                'Stock Transfer ' . $code . ' - kembalikan stok (' . $reason . ')'
-            );
-            if (! $add['ok']) {
-                throw new \RuntimeException($add['message'] ?? 'Gagal kembalikan stok');
+        $warehouseId = (int) $header->from_warehouse_id;
+        $variantIds = $details->pluck('product_variant_id')->map(fn ($id) => (int) $id)->unique()->values();
+        $productIdByVariant = $details->pluck('product_id', 'product_variant_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $shipLogs = LogStock::query()
+            ->where('status', 1)
+            ->where('log_type', 1)
+            ->where('log_kode', $code)
+            ->where('warehouse_id', $warehouseId)
+            ->whereIn('log_item_id', $variantIds)
+            ->get(['log_item_id', 'unit_id', 'log_category', 'log_jumlah']);
+
+        // Net delta per (varian, satuan) dari log Kirim: kategori 1 (masuk/hasil bongkar/hasil
+        // packing) = +, kategori 2 (keluar/bahan packing) = -.
+        $netDeltas = [];
+        foreach ($shipLogs as $log) {
+            $key = ((int) $log->log_item_id) . ':' . ((int) $log->unit_id);
+            $sign = (int) $log->log_category === 1 ? 1 : -1;
+            $netDeltas[$key] = ($netDeltas[$key] ?? 0.0) + $sign * (float) $log->log_jumlah;
+        }
+
+        if ($netDeltas === []) {
+            // Data lama / tanpa log Kirim (harusnya tidak terjadi) — fallback ke satuan yang dikirim saja.
+            foreach ($details as $d) {
+                $add = ProductUnitStock::addQty(
+                    $warehouseId,
+                    (int) $d->product_id,
+                    (int) $d->product_variant_id,
+                    (int) $d->unit_id,
+                    (float) $d->qty,
+                    $code,
+                    'Stock Transfer ' . $code . ' - kembalikan stok (' . $reason . ')'
+                );
+                if (! $add['ok']) {
+                    throw new \RuntimeException($add['message'] ?? 'Gagal kembalikan stok');
+                }
+            }
+
+            return;
+        }
+
+        foreach ($netDeltas as $key => $delta) {
+            if (abs($delta) < 1e-9) {
+                continue;
+            }
+            [$variantId, $unitId] = array_map('intval', explode(':', $key));
+            // Kirim mengurangi stok sumber secara agregat (delta bersih negatif); restore =
+            // kebalikannya. Satuan yang justru NAIK saat Kirim (hasil bongkar/hasil packing)
+            // di-restore dengan mengurangi lagi (persis reverse).
+            $restoreQty = round(-$delta, 4);
+            $productId = (int) ($productIdByVariant[$variantId] ?? 0);
+            $note = 'Stock Transfer ' . $code . ' - kembalikan stok (' . $reason . ', komposisi asli)';
+
+            if ($restoreQty > 0) {
+                $result = ProductUnitStock::addQty(
+                    $warehouseId,
+                    $productId,
+                    $variantId,
+                    $unitId,
+                    $restoreQty,
+                    $code,
+                    $note
+                );
+            } else {
+                $result = ProductUnitStock::deductQty(
+                    $warehouseId,
+                    $variantId,
+                    $unitId,
+                    abs($restoreQty),
+                    $code,
+                    $note,
+                    false
+                );
+            }
+
+            if (! ($result['ok'] ?? false)) {
+                throw new \RuntimeException($result['message'] ?? 'Gagal kembalikan stok (komposisi asli)');
             }
         }
     }
@@ -1971,11 +2081,15 @@ class StockTransferController extends Controller
      * @param  array<int, array>  $items
      * @return array<int, array>
      */
-    protected function applySourceAvailabilityMode(array $items, ?bool $sourceIsMain): array
-    {
-        return array_map(function ($item) use ($sourceIsMain) {
+    protected function applySourceAvailabilityMode(
+        array $items,
+        ?bool $sourceIsMain,
+        bool $isProduction = false
+    ): array {
+        return array_map(function ($item) use ($sourceIsMain, $isProduction) {
             // Packing dua arah di gudang utama agar multi satuan bisa dibentuk dari stok default.
-            $item['allow_packing'] = $sourceIsMain === true;
+            // ST produksi: potong satuan hasil apa adanya (tanpa repacking histori).
+            $item['allow_packing'] = $sourceIsMain === true && ! $isProduction;
             return $item;
         }, $items);
     }

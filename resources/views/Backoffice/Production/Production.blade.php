@@ -34,12 +34,22 @@
         #tableProduction td:last-child,
         #tableProduction th:last-child {
             white-space: nowrap !important;
-            width: 100px !important;
+            width: 110px !important;
+            min-width: 110px !important;
+        }
+
+        #tableProduction td:last-child .d-flex {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
         }
 
         #tableProduction td:last-child a {
             display: inline-flex !important;
             align-items: center;
+            flex-shrink: 0;
         }
 
         #tableProduction tbody tr {
@@ -111,6 +121,7 @@
             border-radius: 8px;
             transition: all 0.2s;
             text-decoration: none;
+            flex-shrink: 0;
         }
 
         #tableProduction .btn-action-icon:hover {
