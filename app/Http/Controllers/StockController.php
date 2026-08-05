@@ -969,6 +969,11 @@ class StockController extends Controller
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
 
+    // UI-unreachable (confirmed 2026-08-02) — this route's delete trigger icon is commented out in
+    // Product_Issues.js, on top of the original "MASIH NGEBUG" ("still buggy") note below. This is
+    // the one caller of ProductIssues::deleteProductIssues() that DOES check its -1 return value —
+    // see that method's dead-code comment for why the other, reachable caller doesn't need to
+    // (yet).
     function deleteProductIssue(Request $req) // MASIH NGEBUG
     {
         $data = $req->all();
