@@ -32,7 +32,16 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
-            scrollX: true,
+            // scrollX was removed (2026-08-05): DataTables 1.10's scroll feature clones/resizes
+            // the header and footer into separate synced-width tables, and it does not support
+            // colspan'd cells in that clone — this tfoot uses colspan="3"/"5" on both rows
+            // (Cash.blade.php), so with scrollX on, the footer's labels ("Total :", "Sisa Kas :",
+            // "Total Setoran :") and the values written by updateCashFooterTotals() below rendered
+            // misaligned/on the wrong row. The table is still wrapped in a Bootstrap
+            // `.table-responsive` div, so horizontal scrolling on narrow screens still works via
+            // plain CSS overflow — just not through DataTables' own scrollX cloning. Sibling table
+            // Cash_Operational.js uses the same tfoot-update JS pattern without scrollX and renders
+            // correctly; match that instead of re-enabling this.
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
