@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class CashArmada extends Model
@@ -114,6 +115,14 @@ class CashArmada extends Model
         $t->cr_img = $data["cr_img"] ?? null;
         $t->status = $data['status'] ?? 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
+        // Audit trail (2026-08-05): kalau row ini lahir dari CashGudang::acceptCashGudang(),
+        // catat cgd_id asalnya di sini supaya bisa ditelusuri balik — lihat migration
+        // 2026_08_05_020000_add_source_cgd_id_to_cash_armadas_table. Dibungkus Schema::hasColumn()
+        // supaya tetap aman kalau migration kolom ini belum ter-merge di branch/environment yang
+        // menjalankan kode ini.
+        if (isset($data['source_cgd_id']) && Schema::hasColumn('cash_armadas', 'source_cgd_id')) {
+            $t->source_cgd_id = $data['source_cgd_id'];
+        }
         $t->save();
         return $t->cr_id;
     }

@@ -1698,9 +1698,15 @@
             headers: {
                 'X-CSRF-TOKEN': token
             },
-            success:function(e){      
-                ResetLoadingButton(".btn-save-gudang", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");      
-                afterInsert();
+            success:function(e){
+                if (typeof e === "object"){
+                    notifikasi('error', e.header, e.message);
+                    ResetLoadingButton(".btn-save-gudang", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                    return false;
+                } else {
+                    ResetLoadingButton(".btn-save-gudang", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                    afterInsert();
+                }
             },
             error:function(e){
                 ResetLoadingButton(".btn-save-gudang", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
@@ -2411,6 +2417,10 @@
             method:"post",
             success:function(e){
                 ResetLoadingButton('#btn-delete-gudang', "Delete");
+                if (typeof e === "object"){
+                    notifikasi('error', e.header, e.message);
+                    return false;
+                }
                 $('.modal').modal("hide");
                 refreshCashGudang();
                 notifikasi('success', "Berhasil Delete", "Berhasil delete pengajuan");
