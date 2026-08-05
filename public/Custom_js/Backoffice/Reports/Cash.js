@@ -645,6 +645,13 @@
         console.log(tujuan);
         let url = "";
         if (tujuan == 1) url = "/acceptCashAdmin";
+        // tujuan == 2 (gudang): this page only ever knows the row's cash_id, never a cg_id — that's
+        // intentional, not missing data. This is the "Kas Besar" table, and only "saldo"-type
+        // CashGudang entries ever get a real cash_id/appear here (see
+        // ReportController::insertCashGudang()'s "saldo" branch); "operasional"-type ("Kas Gudang")
+        // entries always have cash_id = 0 and never show up in this table at all. On the backend,
+        // acceptCashGudang() uses isset($data['cg_id']) specifically to tell these two entry kinds
+        // apart — don't "fix" this call to also send a cg_id, there isn't one for this row's kind.
         else if (tujuan == 2) url = "/acceptCashGudang";
         else if (tujuan == 3) url = "/acceptCashArmada";
         else if (tujuan == 4) url = "/acceptCashSales";

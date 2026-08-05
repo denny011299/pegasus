@@ -111,6 +111,11 @@ class CashGudang extends Model
     {
         $uid = Session::get('user') ? Session::get('user')->staff_id : null;
         if (!isset($data['cg_id'])){
+            // Cabang "Kas Besar" (entri "saldo") — punya baris `cashes` sungguhan (`cash_id`), jadi
+            // status entri Cash-nya juga ikut di-flip di sini. Entri jenis ini TIDAK PERNAH punya
+            // baris CashGudangDetail (lihat insertCashGudang()), jadi loop CashArmada di bawah akan
+            // selalu jalan atas $detail kosong — itu memang disengaja, bukan celah. Jangan tambah
+            // mutasi customer_saldo di cabang ini tanpa konfirmasi PM lagi (lihat KNOWN_ISSUES.md).
             $t = CashGudang::where('cash_id', $data["cash_id"])->first();
             $t->status = 2;
             $t->acc_by = $uid;
@@ -120,6 +125,8 @@ class CashGudang extends Model
             $k->save();
             $t->save();
         } else {
+            // Cabang "Kas Gudang" (entri "operasional") — $detail di bawah SELALU berisi baris
+            // (lihat insertCashGudang()), ini yang benar-benar memicu insert CashArmada per baris.
             $t = CashGudang::find($data['cg_id']);
             $t->status = 2;
             $t->acc_by = $uid;

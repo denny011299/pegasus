@@ -1070,6 +1070,11 @@ class ReportController extends Controller
             $data["cg_img"] = $imageName;
         }
 
+        // "operasional" == entri "Kas Gudang" (lihat juga acceptCashGudang() di bawah): baris
+        // CashGudangDetail dibuat di bawah, cash_id SELALU 0 — entri ini tidak pernah muncul di
+        // halaman "Kas Besar" (/cash). "saldo" == entri "Kas Besar": tidak pernah punya baris
+        // CashGudangDetail sama sekali, tapi selalu punya cash_id sungguhan lewat Cash::insertCash()
+        // di bawah. Jangan disamakan/digabung, keduanya sengaja berbeda bentuk.
         if ($data['jenis_input'] == "operasional"){
             $total = 0;
             $item = json_decode($data['items'], true);
@@ -1293,6 +1298,21 @@ class ReportController extends Controller
         // DB::transaction() with lockForUpdate() on the CashGudang row itself, so a second
         // concurrent request blocks on the lock until the first commits, then re-reads the
         // already-flipped status and is refused cleanly instead of double-processing.
+        // PENTING (dikonfirmasi PM 2026-08-05, JANGAN "disatukan" lagi): isset($data['cg_id']) di
+        // sini BUKAN dua jalan menuju data yang sama — ini pembeda antara dua jenis entri yang
+        // berbeda:
+        //   - cg_id ADA  -> "Kas Gudang" (entri operasional, jenis_input == "operasional" di
+        //     insertCashGudang()/updateCashGudang()). Selalu punya baris CashGudangDetail, cash_id
+        //     SELALU 0 (tidak pernah dapat baris `cashes` sungguhan), makanya TIDAK PERNAH muncul
+        //     di halaman "Kas Besar" (/cash, Cash::getCash() query tabel `cashes` by cash_id asli).
+        //   - cg_id TIDAK ADA (hanya cash_id) -> "Kas Besar" (entri "saldo", jenis_input ==
+        //     "saldo"). Selalu punya baris `cashes` sungguhan lewat cash_id, dan TIDAK PERNAH
+        //     punya baris CashGudangDetail sama sekali.
+        // Karena keduanya tidak pernah overlap, loop customer_saldo + pembuatan CashArmada di
+        // bawah (yang hanya jalan kalau isset($data['cg_id'])) TIDAK PERNAH relevan untuk entri Kas
+        // Besar — bukan berarti Kas Besar "kelewatan" mutasi itu, memang tidak ada apa pun untuk
+        // dimutasi (CashGudangDetail-nya kosong). Lihat KNOWN_ISSUES.md "NOT A BUG: acceptCashGudang()'s
+        // cash_id-only path" untuk detail lengkap sebelum "memperbaiki" percabangan ini lagi.
         DB::beginTransaction();
         try {
             if (isset($data['cg_id'])) {
