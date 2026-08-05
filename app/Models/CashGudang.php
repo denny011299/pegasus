@@ -134,7 +134,10 @@ class CashGudang extends Model
                 "cr_nominal" => $value->cgd_nominal,
                 "cr_notes" => "Penyerahan kas dari gudang",
                 "cr_type" => 1,
-                "status" => 2
+                "status" => 2,
+                // Audit trail (2026-08-05): telusuri balik row ini ke baris cash_gudang_details
+                // asalnya — lihat migration 2026_08_05_020000_add_source_cgd_id_to_cash_armadas_table.
+                "source_cgd_id" => $value->cgd_id,
             ]);
         }
         return 1;

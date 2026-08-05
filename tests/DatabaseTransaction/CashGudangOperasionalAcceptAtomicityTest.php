@@ -4,8 +4,10 @@ namespace Tests\DatabaseTransaction;
 
 use App\Models\CashArmada;
 use App\Models\CashGudang;
+use App\Models\CashGudangDetail;
 use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
@@ -113,5 +115,68 @@ class CashGudangOperasionalAcceptAtomicityTest extends TestCase
             CashArmada::count(),
             'a rejected approval must not create any CashArmada rows at all'
         );
+    }
+
+    public function test_accepting_an_already_accepted_entry_is_refused_and_does_not_double_mutate(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $customerA = Customer::where('status', 1)->orderBy('customer_id')->first();
+        $startingA = $customerA->customer_saldo;
+
+        $cgId = $this->insertOperasionalCashGudang([
+            ['customer_id' => $customerA->customer_id, 'cgd_nominal' => 50000, 'cgd_notes' => 'Test A'],
+        ]);
+
+        $first = $this->post('/acceptCashGudang', ['cg_id' => $cgId]);
+        $first->assertOk();
+
+        $armadaCountAfterFirstAccept = CashArmada::count();
+        $customerA->refresh();
+        $this->assertSame($startingA + 50000, (int) $customerA->customer_saldo);
+
+        // Race-condition guard (2026-08-05): a second accept on the same cg_id — modeling a
+        // double-click or a retried request arriving after the first already committed — must be
+        // refused cleanly, not double-credit customer_saldo or insert a second CashArmada row.
+        $second = $this->post('/acceptCashGudang', ['cg_id' => $cgId]);
+        $second->assertOk();
+        $second->assertJson(['status' => -2, 'header' => 'Gagal ACC']);
+
+        $customerA->refresh();
+        $this->assertSame(
+            $startingA + 50000,
+            (int) $customerA->customer_saldo,
+            'a second accept on an already-accepted entry must not double-credit customer_saldo'
+        );
+        $this->assertSame(
+            $armadaCountAfterFirstAccept,
+            CashArmada::count(),
+            'a second accept on an already-accepted entry must not create a duplicate CashArmada row'
+        );
+    }
+
+    public function test_the_created_armada_row_is_tagged_with_its_source_cash_gudang_detail_for_audit(): void
+    {
+        if (!Schema::hasColumn('cash_armadas', 'source_cgd_id')) {
+            $this->markTestSkipped('source_cgd_id column not present on this schema.');
+        }
+
+        $this->actingAsSuperAdminStaff();
+
+        $customerA = Customer::where('status', 1)->orderBy('customer_id')->first();
+
+        $cgId = $this->insertOperasionalCashGudang([
+            ['customer_id' => $customerA->customer_id, 'cgd_nominal' => 50000, 'cgd_notes' => 'Test A'],
+        ]);
+        $cgdId = (int) CashGudangDetail::where('cg_id', $cgId)->firstOrFail()->cgd_id;
+
+        $response = $this->post('/acceptCashGudang', ['cg_id' => $cgId]);
+        $response->assertOk();
+
+        $this->assertDatabaseHas('cash_armadas', [
+            'customer_id' => $customerA->customer_id,
+            'cr_nominal' => 50000,
+            'source_cgd_id' => $cgdId,
+        ]);
     }
 }
