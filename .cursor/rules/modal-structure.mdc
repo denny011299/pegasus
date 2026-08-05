@@ -1,0 +1,26 @@
+---
+description: Jangan gabungkan ulang 49 modal terpisah ke modal-popup monolith
+globs: resources/views/components/modal-popup.blade.php,resources/views/components/modals/**/*.blade.php
+alwaysApply: false
+---
+
+# Modal file structure
+
+Modals sudah dipecah (commit `00b505e`):
+
+- `resources/views/components/modal-popup.blade.php` → **hanya** `@include` + style/shared gate (`~200` baris)
+- Isi modal → `resources/views/components/modals/**/*.blade.php` (**49 file**)
+
+## Saat merge / resolve conflict
+
+1. **Jangan** resolve dengan mengambil versi monolith (~4000+ baris) yang menelan semua modal kembali ke satu file.
+2. Kalau conflict di `modal-popup.blade.php`: pakai struktur **include** (pecahan), lalu sesuaikan isi di file `modals/...` yang relevan.
+3. Pastikan folder `resources/views/components/modals/` **tetap ada** di hasil merge (cek `git status` / `git ls-files` sebelum commit).
+4. Shared danger:
+   - `#modalDelete` → `pg-modal--danger` (`modals/shared/modal-delete.blade.php`)
+   - `#modalDanger` → `pg-modal--danger` (`modals/shared/modal-danger.blade.php`)
+   Jangan ubah ke `pg-modal--confirm`.
+
+## Footer
+
+Ikuti `.cursor/rules/modal-footer-actions.mdc` (semua tombol kanan, urutan Batal → aksi).
