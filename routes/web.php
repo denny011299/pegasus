@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AutocompleteController;
+use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerProductReturnController;
 use App\Http\Controllers\CustomerSupplyReturnController;
+use App\Http\Controllers\DeploymentCheckController;
 use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
@@ -22,6 +24,12 @@ Route::get('/login', [GeneralController::class, 'login'])->name('login');
 Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
+
+    // Internal dev-only pages: intentionally NOT in the sidebar and NOT gated by
+    // check.access/role_access -- protected only by checkLogin (must be a logged-in
+    // staff account). Only devs who know the URL (from reading this file) reach them.
+    Route::get('/system/changelog', [ChangelogController::class, 'index'])->name('system.changelog');
+    Route::get('/system/deployment-check', [DeploymentCheckController::class, 'index'])->name('system.deployment-check');
 
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');
