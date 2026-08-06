@@ -12,10 +12,19 @@ use Tests\TestCase;
 
 /**
  * See cdocs/testing/workflows/PURCHASE_ORDER_INVOICE_FLOW.md for the fully-traced flow this
- * asserts against — builds on the base PurchaseOrderFlowTest pilot. Covers the invoice-acceptance
- * over-payment guard and the purchase_orders.status 3/4 recalculation it drives, which is the
- * actual money-calculation logic in this flow. Tanda Terima Invoice grouping (a separate tracking
- * dimension, po.pembayaran) is a different, not-yet-built pilot.
+ * asserts against — builds on the base PurchaseOrderFlowTest pilot.
+ *
+ * Updated 2026-08-06 (GitHub issue #14, closes #14): `cekInvoice()` used to move
+ * `purchase_orders.status` to 3/4 ("belum lunas"/"lunas penuh") on every accept/decline/edit/delete
+ * of an invoice, with no guard on the invoice's own status. Per the PM's confirmed flow,
+ * `purchase_orders.status` only ever holds {1 menunggu konfirmasi, 2 disetujui, -1 ditolak} —
+ * "belum terbayar / menunggu tanda terima / terbayar" is driven entirely by `pembayaran`
+ * (1/3/2), a separate tracking dimension covered by `PURCHASE_ORDER_TANDA_TERIMA_FLOW.md`, not by
+ * this invoice-acceptance flow. `cekInvoice()` is now a documented no-op (see its docblock in
+ * `PurchaseOrderDetailInvoice.php`), so this suite asserts `purchase_orders.status` stays at 2
+ * (its post-`accPO` value) through every invoice accept/decline/edit/delete scenario below — the
+ * real money-calculation logic that remains is `purchase_order_detail_invoices.status` itself
+ * (2=accepted/0=declined) and `acceptInvoicePO`'s over-payment guard, both untouched by this fix.
  */
 class PurchaseOrderInvoiceFlowTest extends TestCase
 {
@@ -65,7 +74,7 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         return $poId;
     }
 
-    public function test_accepting_the_automatic_invoice_flips_po_status_to_fully_covered(): void
+    public function test_accepting_the_automatic_invoice_sets_invoice_status_without_touching_po_status(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -83,7 +92,7 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         $invoice->refresh();
         $po->refresh();
         $this->assertSame(2, (int) $invoice->status, 'accepting sets the invoice status to 2');
-        $this->assertSame(4, (int) $po->status, 'an accepted total equal to po_total flips PO status to 4 (fully covered)');
+        $this->assertSame(2, (int) $po->status, 'accepting an invoice no longer moves purchase_orders.status (closes #14) — it stays at 2, driven only by accPO/tolakPO');
     }
 
     public function test_accepting_a_second_invoice_that_would_exceed_po_total_is_rejected(): void
@@ -97,9 +106,10 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         // Accept the automatic invoice first — it already covers po_total in full.
         $this->post('/acceptInvoicePO', ['poi_id' => $invoice->poi_id, 'status' => 2])->assertOk();
         $po->refresh();
-        $this->assertSame(4, (int) $po->status);
+        $this->assertSame(2, (int) $po->status, 'po.status stays at 2 regardless of invoice acceptance (closes #14)');
 
-        // A second invoice for any positive amount must now be rejected on accept.
+        // A second invoice for any positive amount must now be rejected on accept — this guard is
+        // driven by summing purchase_order_detail_invoices.status=2 rows, independent of po.status.
         // insertInvoicePO's response is the PO's status, not the new invoice's id (see the flow
         // doc) — fetch the created row directly instead.
         $this->post('/insertInvoicePO', [
@@ -116,10 +126,10 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         $this->assertSame(1, (int) $secondInvoice->status, 'a rejected acceptance must leave the second invoice untouched');
 
         $po->refresh();
-        $this->assertSame(4, (int) $po->status, 'a rejected acceptance must not change PO status');
+        $this->assertSame(2, (int) $po->status, 'a rejected acceptance must not change PO status');
     }
 
-    public function test_declining_an_invoice_leaves_po_status_not_fully_covered(): void
+    public function test_declining_an_invoice_does_not_change_po_status(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -132,16 +142,16 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         $this->assertSame(0, (int) $invoice->status, 'declining sets the invoice status to 0');
 
         $po = PurchaseOrder::findOrFail($poId);
-        $this->assertSame(3, (int) $po->status, 'a declined (uncounted) invoice leaves the accepted total below po_total, so status becomes 3');
+        $this->assertSame(2, (int) $po->status, 'declining an invoice no longer changes purchase_orders.status (closes #14) — pembayaran, not status, tracks payment progress');
     }
 
     /**
-     * BUG (see KNOWN_ISSUES.md): `updateInvoicePO()` unconditionally calls `cekInvoice()` after
-     * saving, regardless of the invoice's own status. Editing a still-PENDING invoice (never
-     * accepted) re-triggers the same status recalculation acceptInvoicePO drives — moving
-     * purchase_orders.status away from 2 with no accept/decline action at all.
+     * ✅ FIXED (2026-08-06, closes #14): `updateInvoicePO()` still calls `cekInvoice()`
+     * unconditionally after saving, but `cekInvoice()` itself is now a no-op (see its docblock) —
+     * so editing a still-pending invoice (never accepted) can no longer move purchase_orders.status
+     * with no accept/decline action ever happening.
      */
-    public function test_editing_a_still_pending_invoice_flips_po_status_with_no_accept_action(): void
+    public function test_editing_a_still_pending_invoice_no_longer_touches_po_status(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -157,27 +167,22 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
             'po_id' => $poId,
             'poi_date' => now()->toDateString(),
             'poi_due' => now()->addDays(30)->toDateString(),
-            'poi_total' => $invoice->poi_total, // even an unchanged total re-triggers cekInvoice()
+            'poi_total' => $invoice->poi_total, // even an unchanged total re-triggers the (now no-op) cekInvoice()
         ])->assertOk();
 
         $invoice->refresh();
         $this->assertSame(1, (int) $invoice->status, 'the invoice itself is still pending — updateInvoicePO never touches status');
 
         $po->refresh();
-        $this->assertSame(
-            3,
-            (int) $po->status,
-            'BUG: merely editing a pending invoice flips purchase_orders.status away from 2, with no accept/decline ever called'
-        );
+        $this->assertSame(2, (int) $po->status, 'editing a pending invoice must not move purchase_orders.status');
     }
 
     /**
-     * BUG (see KNOWN_ISSUES.md): editing an ALREADY-ACCEPTED invoice's total downward
-     * retroactively re-runs cekInvoice(), which can flip purchase_orders.status back down from
-     * "fully covered" — a PO can silently regress from status 4 to status 3 purely by editing an
-     * invoice, without any new decline/reject action.
+     * ✅ FIXED (2026-08-06, closes #14): editing an already-accepted invoice's total downward used
+     * to retroactively regress purchase_orders.status from 4 back to 3 via cekInvoice(). Now that
+     * cekInvoice() is a no-op, po.status simply stays at 2 throughout.
      */
-    public function test_editing_an_accepted_invoices_total_downward_regresses_po_status(): void
+    public function test_editing_an_accepted_invoices_total_downward_no_longer_regresses_po_status(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -186,7 +191,7 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
 
         $this->post('/acceptInvoicePO', ['poi_id' => $invoice->poi_id, 'status' => 2])->assertOk();
         $po = PurchaseOrder::findOrFail($poId);
-        $this->assertSame(4, (int) $po->status, 'fully accepted, PO is fully covered');
+        $this->assertSame(2, (int) $po->status, 'accepting the invoice does not move po.status');
 
         $this->post('/updateInvoicePO', [
             'poi_id' => $invoice->poi_id,
@@ -197,11 +202,7 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         ])->assertOk();
 
         $po->refresh();
-        $this->assertSame(
-            3,
-            (int) $po->status,
-            'BUG: reducing an already-accepted invoice\'s total retroactively regresses the PO from fully-covered (4) back to partially-covered (3)'
-        );
+        $this->assertSame(2, (int) $po->status, 'reducing an already-accepted invoice\'s total must not regress purchase_orders.status');
     }
 
     /**
@@ -221,10 +222,10 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
     }
 
     /**
-     * Confirms the same cekInvoice side-effect also fires on delete: soft-deleting a still-pending
-     * invoice (never accepted) flips purchase_orders.status away from 2, same as editing one.
+     * ✅ FIXED (2026-08-06, closes #14): deleting a still-pending invoice used to also flip
+     * purchase_orders.status via the same cekInvoice() side effect as editing. Now it doesn't.
      */
-    public function test_deleting_a_still_pending_invoice_also_flips_po_status(): void
+    public function test_deleting_a_still_pending_invoice_no_longer_flips_po_status(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -240,6 +241,6 @@ class PurchaseOrderInvoiceFlowTest extends TestCase
         $this->assertSame(-1, (int) $invoice->status, 'deleteInvoicePO soft-deletes the invoice');
 
         $po->refresh();
-        $this->assertSame(3, (int) $po->status, 'BUG: deleting a pending invoice also flips PO status via the same cekInvoice() side effect');
+        $this->assertSame(2, (int) $po->status, 'deleting a pending invoice must not move purchase_orders.status');
     }
 }
