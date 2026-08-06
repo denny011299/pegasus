@@ -1,0 +1,14 @@
+﻿fase-2 file snapshot
+branch: fase-2
+commit: a5103d2e02e383f40c4c21bee7dccd359b541758
+short: a5103d2
+date: 2026-08-06 13:52:27
+copied_listed_files: 71
+controllers: 13
+models: 28
+support: 3
+modal_blade_files: 49
+sql_files: 0
+missing: 
+restore_controller: Copy-Item -Force docs/fase2-snapshots/a5103d2/app/Http/Controllers/StockTransferController.php app/Http/Controllers/StockTransferController.php
+restore_support: Copy-Item -Force docs/fase2-snapshots/a5103d2/app/Support/ProductUnitStock.php app/Support/ProductUnitStock.php

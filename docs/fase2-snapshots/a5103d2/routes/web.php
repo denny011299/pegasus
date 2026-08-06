@@ -1,0 +1,811 @@
+<?php
+
+use App\Http\Controllers\AutocompleteController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerProductReturnController;
+use App\Http\Controllers\CustomerSupplyReturnController;
+use App\Http\Controllers\ExternalApiController;
+use App\Http\Controllers\GeneralController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProductionController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\StockController;
+use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SynchronizationController;
+use App\Http\Controllers\UserController;
+use App\Http\Middleware\checkLogin;
+use Illuminate\Support\Facades\Route;
+
+Route::get('/login', [GeneralController::class, 'login'])->name('login');
+Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
+Route::middleware(checkLogin::class)->group(function () {
+    Route::get('/', function () {
+        return view('Backoffice.Dashboard.Dashboard-Admin');
+    })->name('index');
+    Route::get('/admin', function () {
+        return view('Backoffice.Dashboard.Dashboard-Admin');
+    })->name('dashboard-admin');
+
+    Route::post('/autocompleteCity', [AutocompleteController::class, 'autocompleteCity'])->name('autocompleteCity');
+    Route::post('/autocompleteProv', [AutocompleteController::class, 'autocompleteProv'])->name('autocompleteProv');
+    Route::post('/autocompleteArea', [AutocompleteController::class, 'autocompleteArea'])->name('autocompleteArea');
+    Route::post('/autocompleteDistrict', [AutocompleteController::class, 'autocompleteDistrict'])->name('autocompleteDistrict');
+    Route::post('/autocompleteCountry', [AutocompleteController::class, 'autocompleteCountry'])->name('autocompleteCountry');
+    Route::post('/autocompleteSubdistrict', [AutocompleteController::class, 'autocompleteSubdistrict'])->name('autocompleteSubdistrict');
+    Route::post('/autocompleteCategory', [AutocompleteController::class, 'autocompleteCategory'])->name('autocompleteCategory');
+    Route::post('/autocompleteUnit', [AutocompleteController::class, 'autocompleteUnit'])->name('autocompleteUnit');
+    Route::post('/autocompleteVariant', [AutocompleteController::class, 'autocompleteVariant'])->name('autocompleteVariant');
+    Route::post('/autocompleteBom', [AutocompleteController::class, 'autocompleteBom'])->name('autocompleteBom');
+    Route::post('/autocompleteProduct', [AutocompleteController::class, 'autocompleteProduct'])->name('autocompleteProduct');
+    Route::post('/autocompleteProductVariant', [AutocompleteController::class, 'autocompleteProductVariant'])->name('autocompleteProductVariant');
+    Route::post('/autocompleteProductVariants', [AutocompleteController::class, 'autocompleteProductVariants'])->name('autocompleteProductVariants');
+    Route::post('/autocompleteSupplies', [AutocompleteController::class, 'autocompleteSupplies'])->name('autocompleteSupplies');
+    Route::post('/autocompleteSuppliesVariant', [AutocompleteController::class, 'autocompleteSuppliesVariant'])->name('autocompleteSuppliesVariant');
+    Route::post('/autocompleteSuppliesVariantOnly', [AutocompleteController::class, 'autocompleteSuppliesVariantOnly'])->name('autocompleteSuppliesVariantOnly');
+    Route::post('/searchSuppliesVariantByScan', [AutocompleteController::class, 'searchSuppliesVariantByScan'])->name('searchSuppliesVariantByScan');
+    Route::post('/searchProductVariantByScan', [AutocompleteController::class, 'searchProductVariantByScan'])->name('searchProductVariantByScan');
+    Route::post('/autocompleteCustomer', [AutocompleteController::class, 'autocompleteCustomer'])->name('autocompleteCustomer');
+    Route::post('/autocompleteSupplier', [AutocompleteController::class, 'autocompleteSupplier'])->name('autocompleteSupplier');
+    Route::post('/autocompleteStaff', [AutocompleteController::class, 'autocompleteStaff'])->name('autocompleteStaff');
+    Route::post('/autocompleteStaffSales', [AutocompleteController::class, 'autocompleteStaffSales'])->name('autocompleteStaffSales');
+    Route::post('/autocompleteCashCategory', [AutocompleteController::class, 'autocompleteCashCategory'])->name('autocompleteCashCategory');
+    Route::post('/autocompleteRole', [AutocompleteController::class, 'autocompleteRole'])->name('autocompleteRole');
+    Route::post('/autocompleteRekening', [AutocompleteController::class, 'autocompleteRekening'])->name('autocompleteRekening');
+    Route::post('/autocompletePO', [AutocompleteController::class, 'autocompletePO'])->name('autocompletePO');
+    Route::post('/autocompleteSO', [AutocompleteController::class, 'autocompleteSO'])->name('autocompleteSO');
+    Route::get('/autocompleteWarehouseType', [AutocompleteController::class, 'autocompleteWarehouseType'])->name('autocompleteWarehouseType');
+    Route::post('/autocompleteWarehouseType', [AutocompleteController::class, 'autocompleteWarehouseType']);
+    Route::post('/autocompleteWarehouse', [AutocompleteController::class, 'autocompleteWarehouse'])->name('autocompleteWarehouse');
+
+    Route::middleware('check.access:Kategori|view')->group(function () {});
+    Route::middleware('check.access:Satuan|view')->group(function () {});
+    Route::middleware('check.access:Variasi|view')->group(function () {});
+    Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {});
+    Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {});
+    Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {});
+    Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {});
+    Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {});
+    Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {});
+    Route::middleware('check.access:Pengiriman|view')->group(function () {});
+    Route::middleware('check.access.any:Kategori Kas,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,Kas,view')->group(function () {});
+    Route::middleware('check.access:Peran & Perizinan|view')->group(function () {});
+    Route::middleware('check.access.any:Bank Account,Hutang,view')->group(function () {});
+    Route::middleware('check.access:Pembelian|view')->group(function () {});
+    Route::middleware('check.access:Pengiriman|view')->group(function () {});
+
+    Route::middleware('check.access:Kategori|view')->group(function () {
+        Route::get('/category', [ProductController::class, 'Category'])->name('category');
+        Route::get('/getCategory', [ProductController::class, 'getCategory'])->name('getCategory');
+    });
+    Route::middleware('check.access:Kategori|create')->group(function () {
+        Route::post('/insertCategory', [ProductController::class, 'insertCategory'])->name('insertCategory');
+    });
+    Route::middleware('check.access:Kategori|edit')->group(function () {
+        Route::post('/updateCategory', [ProductController::class, 'updateCategory'])->name('updateCategory');
+    });
+    Route::middleware('check.access:Kategori|delete')->group(function () {
+        Route::post('/deleteCategory', [ProductController::class, 'deleteCategory'])->name('deleteCategory');
+    });
+
+    Route::middleware('check.access:Satuan|view')->group(function () {
+        Route::get('/unit', [ProductController::class, 'Unit'])->name('unit');
+        Route::get('/getUnit', [ProductController::class, 'getUnit'])->name('getUnit');
+    });
+    Route::middleware('check.access:Satuan|create')->group(function () {
+        Route::post('/insertUnit', [ProductController::class, 'insertUnit'])->name('insertUnit');
+    });
+    Route::middleware('check.access:Satuan|edit')->group(function () {
+        Route::post('/updateUnit', [ProductController::class, 'updateUnit'])->name('updateUnit');
+    });
+    Route::middleware('check.access:Satuan|delete')->group(function () {
+        Route::post('/deleteUnit', [ProductController::class, 'deleteUnit'])->name('deleteUnit');
+    });
+
+    Route::middleware('check.access:Variasi|view')->group(function () {
+        Route::get('/variant', [ProductController::class, 'Variant'])->name('variant');
+        Route::get('/getVariant', [ProductController::class, 'getVariant'])->name('getVariant');
+    });
+    Route::middleware('check.access:Variasi|create')->group(function () {
+        Route::post('/insertVariant', [ProductController::class, 'insertVariant'])->name('insertVariant');
+    });
+    Route::middleware('check.access:Variasi|edit')->group(function () {
+        Route::post('/updateVariant', [ProductController::class, 'updateVariant'])->name('updateVariant');
+    });
+    Route::middleware('check.access:Variasi|delete')->group(function () {
+        Route::post('/deleteVariant', [ProductController::class, 'deleteVariant'])->name('deleteVariant');
+    });
+
+    // WAREHOUSE / GUDANG
+    Route::middleware('check.access:Gudang|view')->group(function () {
+        Route::get('/warehouse', [App\Http\Controllers\WarehouseController::class, 'Warehouse'])->name('warehouse');
+        Route::get('/getWarehouse', [App\Http\Controllers\WarehouseController::class, 'getWarehouse'])->name('getWarehouse');
+        Route::get('/getRetailWarehouse', [App\Http\Controllers\WarehouseController::class, 'getRetailWarehouse'])->name('getRetailWarehouse');
+    });
+    Route::middleware('check.access:Gudang|create')->group(function () {
+        Route::post('/insertWarehouse', [App\Http\Controllers\WarehouseController::class, 'insertWarehouse'])->name('insertWarehouse');
+    });
+    Route::middleware('check.access:Gudang|edit')->group(function () {
+        Route::post('/updateWarehouse', [App\Http\Controllers\WarehouseController::class, 'updateWarehouse'])->name('updateWarehouse');
+        Route::post('/updateWarehouseStatus', [App\Http\Controllers\WarehouseController::class, 'updateWarehouseStatus'])->name('updateWarehouseStatus');
+    });
+    Route::middleware('check.access:Gudang|delete')->group(function () {
+        Route::post('/deleteWarehouse', [App\Http\Controllers\WarehouseController::class, 'deleteWarehouse'])->name('deleteWarehouse');
+    });
+
+    // WAREHOUSE TYPE / TIPE GUDANG
+    Route::middleware('check.access:Tipe Gudang|view')->group(function () {
+        Route::get('/warehouse-type', [App\Http\Controllers\WarehouseController::class, 'WarehouseType'])->name('warehouse-type');
+        Route::get('/getWarehouseType', [App\Http\Controllers\WarehouseController::class, 'getWarehouseType'])->name('getWarehouseType');
+    });
+    Route::middleware('check.access:Tipe Gudang|create')->group(function () {
+        Route::post('/insertWarehouseType', [App\Http\Controllers\WarehouseController::class, 'insertWarehouseType'])->name('insertWarehouseType');
+    });
+    Route::middleware('check.access:Tipe Gudang|edit')->group(function () {
+        Route::post('/updateWarehouseType', [App\Http\Controllers\WarehouseController::class, 'updateWarehouseType'])->name('updateWarehouseType');
+    });
+    Route::middleware('check.access:Tipe Gudang|delete')->group(function () {
+        Route::post('/deleteWarehouseType', [App\Http\Controllers\WarehouseController::class, 'deleteWarehouseType'])->name('deleteWarehouseType');
+    });
+
+    Route::post('/setActiveWarehouse', [App\Http\Controllers\WarehouseController::class, 'setActiveWarehouse'])->name('setActiveWarehouse');
+    Route::post('/set-active-warehouse', [App\Http\Controllers\WarehouseController::class, 'setActiveWarehouse'])->name('set-active-warehouse');
+
+    Route::middleware('check.access:Untung & Rugi|view')->group(function () {
+        Route::get('/profitLoss', [ReportController::class, 'ProfitLoss'])->name('profitLoss');
+        Route::get('/getProfit', [ReportController::class, 'getProfit'])->name('getProfit');
+        Route::get('/getLoss', [ReportController::class, 'getLoss'])->name('getLoss');
+    });
+
+    Route::middleware('check.access:Stok Opname Produk|view')->group(function () {
+        Route::get('/stockOpname', [StockController::class, 'StockOpname'])->name('stockOpname');
+        Route::get('/getStockOpname', [StockController::class, 'getStockOpname'])->name('getStockOpname');
+        Route::get('/generateStockOpname/{id}', [StockController::class, 'generateStockOpname'])->name('generateStockOpname');
+        Route::get('/detailStockOpname/{id}', [StockController::class, 'DetailStockOpname'])->name('detailStockOpname');
+        Route::get('/getDetailStockOpname', [StockController::class, 'getDetailStockOpname'])->name('getDetailStockOpname');
+    });
+    Route::middleware('check.access:Stok Opname Produk|create')->group(function () {
+        Route::post('/insertStockOpname', [StockController::class, 'insertStockOpname'])->name('insertStockOpname');
+        Route::post('/insertDetailStockOpname', [StockController::class, 'insertDetailStockOpname'])->name('insertDetailStockOpname');
+    });
+    Route::middleware('check.access:Stok Opname Produk|edit')->group(function () {
+        Route::post('/updateStockOpname', [StockController::class, 'updateStockOpname'])->name('updateStockOpname');
+        Route::post('/updateDetailStockOpname', [StockController::class, 'updateDetailStockOpname'])->name('updateDetailStockOpname');
+        Route::post('/submitStockOpname', [StockController::class, 'submitStockOpname'])->name('submitStockOpname');
+    });
+    Route::middleware('check.access:Stok Opname Produk|delete')->group(function () {
+        Route::post('/deleteStockOpname', [StockController::class, 'deleteStockOpname'])->name('deleteStockOpname');
+        Route::post('/deleteDetailStockOpname', [StockController::class, 'deleteDetailStockOpname'])->name('deleteDetailStockOpname');
+    });
+    Route::middleware('check.access:Stok Opname Produk|others')->group(function () {
+        Route::post('/accStockOpname', [StockController::class, 'accStockOpname'])->name('accStockOpname');
+        Route::post('/tolakStockOpname', [StockController::class, 'tolakStockOpname'])->name('tolakStockOpname');
+    });
+
+    // Stock Transfer (scaffold — logic menyusul setelah UI Gemini)
+    Route::middleware('check.access:Stock Transfer|view')->group(function () {
+        Route::get('/stockTransfer', [StockTransferController::class, 'index'])->name('stockTransfer');
+        Route::get('/reportStockTransfer', [StockTransferController::class, 'logsPage'])->name('reportStockTransfer');
+        Route::get('/getStockTransfer', [StockTransferController::class, 'getStockTransfer'])->name('getStockTransfer');
+        Route::get('/getStockTransferDetail', [StockTransferController::class, 'getStockTransferDetail'])->name('getStockTransferDetail');
+        Route::get('/getTransferSourceStock', [StockTransferController::class, 'getTransferSourceStock'])->name('getTransferSourceStock');
+        Route::get('/getStockTransferLogs', [StockTransferController::class, 'getStockTransferLogs'])->name('getStockTransferLogs');
+        Route::post('/checkTransferStock', [StockTransferController::class, 'checkTransferStock'])->name('checkTransferStock');
+    });
+    Route::post('/getTransferRetailUnitSetup', [StockTransferController::class, 'getTransferRetailUnitSetup'])->name('getTransferRetailUnitSetup');
+    Route::post('/saveTransferRetailUnit', [StockTransferController::class, 'saveTransferRetailUnit'])->name('saveTransferRetailUnit');
+    Route::middleware('check.access:Stock Transfer|create')->group(function () {
+        Route::post('/insertStockTransfer', [StockTransferController::class, 'insertStockTransfer'])->name('insertStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|edit')->group(function () {
+        Route::post('/updateStockTransfer', [StockTransferController::class, 'updateStockTransfer'])->name('updateStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|delete')->group(function () {
+        Route::post('/deleteStockTransfer', [StockTransferController::class, 'deleteStockTransfer'])->name('deleteStockTransfer');
+    });
+    Route::middleware('check.access:Stock Transfer|others')->group(function () {
+        Route::post('/shipStockTransfer', [StockTransferController::class, 'shipStockTransfer'])->name('shipStockTransfer');
+        Route::post('/accStockTransfer', [StockTransferController::class, 'accStockTransfer'])->name('accStockTransfer');
+        Route::post('/rejectStockTransfer', [StockTransferController::class, 'rejectStockTransfer'])->name('rejectStockTransfer');
+        Route::post('/cancelKirimStockTransfer', [StockTransferController::class, 'cancelKirimStockTransfer'])->name('cancelKirimStockTransfer');
+    });
+
+    Route::middleware('check.access:Stok Opname Bahan Mentah|view')->group(function () {
+        Route::get('/stockOpnameBahan', [StockController::class, 'StockOpnameBahan'])->name('stockOpnameBahan');
+        Route::get('/getStockOpnameBahan', [StockController::class, 'getStockOpnameBahan'])->name('getStockOpnameBahan');
+        Route::get('/generateStockOpnameBahan/{id}', [StockController::class, 'generateStockOpnameBahan'])->name('generateStockOpnameBahan');
+        Route::get('/detailStockOpnameBahan/{id}', [StockController::class, 'DetailStockOpnameBahan'])->name('detailStockOpnameBahan');
+        Route::get('/getDetailStockOpnameBahan', [StockController::class, 'getDetailStockOpnameBahan'])->name('getDetailStockOpnameBahan');
+    });
+    Route::middleware('check.access:Stok Opname Bahan Mentah|create')->group(function () {
+        Route::post('/insertStockOpnameBahan', [StockController::class, 'insertStockOpnameBahan'])->name('insertStockOpnameBahan');
+        Route::post('/insertDetailStockOpnameBahan', [StockController::class, 'insertDetailStockOpnameBahan'])->name('insertDetailStockOpnameBahan');
+    });
+    Route::middleware('check.access:Stok Opname Bahan Mentah|edit')->group(function () {
+        Route::post('/updateStockOpnameBahan', [StockController::class, 'updateStockOpnameBahan'])->name('updateStockOpnameBahan');
+        Route::post('/updateDetailStockOpnameBahan', [StockController::class, 'updateDetailStockOpnameBahan'])->name('updateDetailStockOpnameBahan');
+        Route::post('/submitStockOpnameBahan', [StockController::class, 'submitStockOpnameBahan'])->name('submitStockOpnameBahan');
+    });
+    Route::middleware('check.access:Stok Opname Bahan Mentah|delete')->group(function () {
+        Route::post('/deleteStockOpnameBahan', [StockController::class, 'deleteStockOpnameBahan'])->name('deleteStockOpnameBahan');
+        Route::post('/deleteDetailStockOpnameBahan', [StockController::class, 'deleteDetailStockOpnameBahan'])->name('deleteDetailStockOpnameBahan');
+    });
+    Route::middleware('check.access:Stok Opname Bahan Mentah|others')->group(function () {
+        Route::post('/accStockOpnameBahan', [StockController::class, 'accStockOpnameBahan'])->name('accStockOpnameBahan');
+        Route::post('/tolakStockOpnameBahan', [StockController::class, 'tolakStockOpnameBahan'])->name('tolakStockOpnameBahan');
+    });
+
+    Route::middleware('check.access:Peringatan Stok Produk|view')->group(function () {
+        Route::get('/stockAlert', [StockController::class, 'StockAlert'])->name('stockAlert');
+        Route::get('/getStockAlert', [StockController::class, 'getStockAlert'])->name('getStockAlert');
+    });
+    Route::middleware('check.access:Peringatan Stok Produk|create')->group(function () {
+        Route::post('/insertStockAlert', [StockController::class, 'insertStockAlert'])->name('insertStockAlert');
+    });
+    Route::middleware('check.access:Peringatan Stok Produk|edit')->group(function () {
+        Route::post('/updateStockAlert', [StockController::class, 'updateStockAlert'])->name('updateStockAlert');
+    });
+    Route::middleware('check.access:Peringatan Stok Produk|delete')->group(function () {
+        Route::post('/deleteStockAlert', [StockController::class, 'deleteStockAlert'])->name('deleteStockAlert');
+    });
+
+    Route::middleware('check.access:Peringatan Stok Bahan Mentah|view')->group(function () {
+        Route::get('/stockAlertSupplies', [StockController::class, 'StockAlertSupplies'])->name('stockAlertSupplies');
+        Route::get('/getStockAlertSupplies', [StockController::class, 'getStockAlertSupplies'])->name('getStockAlertSupplies');
+    });
+    Route::middleware('check.access:Peringatan Stok Bahan Mentah|create')->group(function () {
+        Route::post('/insertStockAlertSupplies', [StockController::class, 'insertStockAlertSupplies'])->name('insertStockAlertSupplies');
+    });
+    Route::middleware('check.access:Peringatan Stok Bahan Mentah|edit')->group(function () {
+        Route::post('/updateStockAlertSupplies', [StockController::class, 'updateStockAlertSupplies'])->name('updateStockAlertSupplies');
+    });
+    Route::middleware('check.access:Peringatan Stok Bahan Mentah|delete')->group(function () {
+        Route::post('/deleteStockAlertSupplies', [StockController::class, 'deleteStockAlertSupplies'])->name('deleteStockAlertSupplies');
+    });
+
+    Route::middleware('check.access:Produk Bermasalah|view')->group(function () {
+        Route::get('/productIssue', [StockController::class, 'ProductIssue'])->name('productIssue');
+        Route::get('/getProductIssue', [StockController::class, 'getProductIssue'])->name('getProductIssue');
+    });
+    Route::middleware('check.access:Produk Bermasalah|create')->group(function () {
+        Route::post('/insertProductIssues', [StockController::class, 'insertProductIssue'])->name('insertProductIssue');
+    });
+    Route::middleware('check.access:Produk Bermasalah|edit')->group(function () {
+        Route::post('/updateProductIssues', [StockController::class, 'updateProductIssue'])->name('updateProductIssue');
+    });
+    Route::middleware('check.access:Produk Bermasalah|delete')->group(function () {
+        Route::post('/deleteProductIssues', [StockController::class, 'deleteProductIssue'])->name('deleteProductIssue');
+    });
+    Route::middleware('check.access:Produk Bermasalah|others')->group(function () {
+        Route::post('/accProductIssues', [StockController::class, 'accProductIssues'])->name('accProductIssues');
+        Route::post('/declineProductIssues', [StockController::class, 'declineProductIssues'])->name('declineProductIssues');
+    });
+
+    Route::middleware('check.access:Barang Masuk Keluar|view')->group(function () {
+        Route::get('/inwardOutward', [ReportController::class, 'InwardOutward'])->name('inwardOutward');
+        Route::get('/getInwardOutward', [ReportController::class, 'getInwardOutward'])->name('getInwardOutward');
+    });
+
+    Route::middleware('check.access:Hutang|view')->group(function () {
+        Route::get('/payReceive', [ReportController::class, 'PayReceive'])->name('payReceive');
+        Route::get('/checkHutang', [ReportController::class, 'checkHutang'])->name('checkHutang');
+        Route::get('/generateHutang', [ReportController::class, 'generateHutang'])->name('generateHutang');
+    });
+
+    Route::middleware('check.access:Pengiriman|view')->group(function () {
+        Route::get('/salesOrder', [CustomerController::class, 'SalesOrder'])->name('salesOrder');
+        Route::get('/getSalesOrder', [CustomerController::class, 'getSalesOrder'])->name('getSalesOrder');
+        Route::get('/salesOrderDetail/{id}', [CustomerController::class, 'SalesOrderDetail'])->name('salesOrderDetail');
+        Route::get('/getSoDelivery', [CustomerController::class, 'getSoDelivery'])->name('getSoDelivery');
+        Route::get('/getSoInvoice', [CustomerController::class, 'getSoInvoice'])->name('getSoInvoice');
+        Route::get('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'index'])->name('customerSupplyReturns.index');
+        Route::get('/customerSupplyReturns/context', [CustomerSupplyReturnController::class, 'context'])->name('customerSupplyReturns.context');
+        Route::get('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'show'])->name('customerSupplyReturns.show');
+        Route::get('/customerProductReturns', [CustomerProductReturnController::class, 'index'])->name('customerProductReturns.index');
+        Route::get('/customerProductReturns/context', [CustomerProductReturnController::class, 'context'])->name('customerProductReturns.context');
+        Route::get('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'show'])->name('customerProductReturns.show');
+    });
+    Route::middleware('check.access:Pengiriman|create')->group(function () {
+        Route::post('/insertSalesOrder', [CustomerController::class, 'insertSalesOrder'])->name('insertSalesOrder');
+        Route::post('/insertSoDelivery', [CustomerController::class, 'insertSoDelivery'])->name('insertSoDelivery');
+        Route::post('/insertInvoiceSO', [CustomerController::class, 'insertInvoiceSO'])->name('insertInvoiceSO');
+        Route::post('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'store'])->name('customerSupplyReturns.store');
+        Route::post('/customerProductReturns', [CustomerProductReturnController::class, 'store'])->name('customerProductReturns.store');
+    });
+    Route::middleware('check.access:Pengiriman|edit')->group(function () {
+        Route::post('/updateSalesOrder', [CustomerController::class, 'updateSalesOrder'])->name('updateSalesOrder');
+        Route::post('/updateSalesOrderDetail', [CustomerController::class, 'updateSalesOrderDetail'])->name('updateSalesOrderDetail');
+        Route::post('/updateSoDelivery', [CustomerController::class, 'updateSoDelivery'])->name('updateSoDelivery');
+        Route::post('/updateInvoiceSO', [CustomerController::class, 'updateInvoiceSO'])->name('updateInvoiceSO');
+        Route::post('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'update'])->name('customerSupplyReturns.update');
+        Route::post('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'update'])->name('customerProductReturns.update');
+    });
+    Route::middleware('check.access:Pengiriman|delete')->group(function () {
+        Route::post('/deleteSalesOrder', [CustomerController::class, 'deleteSalesOrder'])->name('deleteSalesOrder');
+        Route::post('/deleteSoDelivery', [CustomerController::class, 'deleteSoDelivery'])->name('deleteSoDelivery');
+        Route::post('/deleteInvoiceSO', [CustomerController::class, 'deleteInvoiceSO'])->name('deleteInvoiceSO');
+        Route::post('/customerSupplyReturns/{returnId}/delete', [CustomerSupplyReturnController::class, 'destroy'])->name('customerSupplyReturns.destroy');
+        Route::post('/customerProductReturns/{returnId}/delete', [CustomerProductReturnController::class, 'destroy'])->name('customerProductReturns.destroy');
+    });
+    Route::middleware('check.access:Pengiriman|others')->group(function () {
+        Route::post('/accSO', [CustomerController::class, 'accSO'])->name('accSO');
+        Route::post('/declineSO', [CustomerController::class, 'declineSO'])->name('declineSO');
+        Route::post('/accSoDelivery', [CustomerController::class, 'accSoDelivery'])->name('accSoDelivery');
+        Route::post('/declineSoDelivery', [CustomerController::class, 'declineSoDelivery'])->name('declineSoDelivery');
+        Route::post('/acceptInvoiceSO', [CustomerController::class, 'acceptInvoiceSO'])->name('acceptInvoiceSO');
+        Route::post('/declineInvoiceSO', [CustomerController::class, 'declineInvoiceSO'])->name('declineInvoiceSO');
+        Route::post('/customerSupplyReturns/{returnId}/accept', [CustomerSupplyReturnController::class, 'accept'])->name('customerSupplyReturns.accept');
+        Route::post('/customerSupplyReturns/{returnId}/decline', [CustomerSupplyReturnController::class, 'decline'])->name('customerSupplyReturns.decline');
+        Route::post('/customerProductReturns/{returnId}/accept', [CustomerProductReturnController::class, 'accept'])->name('customerProductReturns.accept');
+        Route::post('/customerProductReturns/{returnId}/decline', [CustomerProductReturnController::class, 'decline'])->name('customerProductReturns.decline');
+    });
+
+    Route::middleware('check.access:Pembelian|view')->group(function () {
+        Route::get('/purchaseOrder', [SupplierController::class, 'PurchaseOrder'])->name('purchaseOrder');
+        Route::get('/searchSupplies', [SupplierController::class, 'searchSupplies'])->name('searchSupplies');
+        Route::get('/purchaseOrderDetail/{id}', [SupplierController::class, 'PurchaseOrderDetail'])->name('purchaseOrderDetail');
+        Route::get('/getPurchaseOrder', [SupplierController::class, 'getPurchaseOrder'])->name('getPurchaseOrder');
+        Route::get('/getPurchaseOrderDetail', [SupplierController::class, 'getPurchaseOrderDetail'])->name('getPurchaseOrderDetail');
+        Route::get('/getPoDelivery', [SupplierController::class, 'getPoDelivery'])->name('getPoDelivery');
+        Route::get('/getPoInvoice', [SupplierController::class, 'getPoInvoice'])->name('getPoInvoice');
+        Route::get('/getPoReceipt', [SupplierController::class, 'getPoReceipt'])->name('getPoReceipt');
+        Route::get('/getReturnSupplies', [SupplierController::class, 'getReturnSupplies'])->name('getReturnSupplies');
+    });
+    Route::middleware('check.access:Pembelian|create')->group(function () {
+        Route::post('/insertPurchaseOrder', [SupplierController::class, 'insertPurchaseOrder'])->name('insertPurchaseOrder');
+        Route::post('/insertInvoicePO', [SupplierController::class, 'insertInvoicePO'])->name('insertInvoicePO');
+        Route::post('/insertReturnSupplies', [SupplierController::class, 'insertReturnSupplies'])->name('insertReturnSupplies');
+    });
+    Route::middleware('check.access:Pembelian|edit')->group(function () {
+        Route::post('/updatePurchaseOrderDetail', [SupplierController::class, 'updatePurchaseOrderDetail'])->name('updatePurchaseOrderDetail');
+        Route::post('/updatePoDelivery', [SupplierController::class, 'updatePoDelivery'])->name('updatePoDelivery');
+        Route::post('/updateInvoicePO', [SupplierController::class, 'updateInvoicePO'])->name('updateInvoicePO');
+        Route::post('/updateReturnSupplies', [SupplierController::class, 'updateReturnSupplies'])->name('updateReturnSupplies');
+    });
+    Route::middleware('check.access:Pembelian|delete')->group(function () {
+        Route::post('/deletePurchaseOrder', [SupplierController::class, 'deletePurchaseOrder'])->name('deletePurchaseOrder');
+        Route::post('/deletePoDelivery', [SupplierController::class, 'deletePoDelivery'])->name('deletePoDelivery');
+        Route::post('/deleteInvoicePO', [SupplierController::class, 'deleteInvoicePO'])->name('deleteInvoicePO');
+        Route::post('/deleteReturnSupplies', [SupplierController::class, 'deleteReturnSupplies'])->name('deleteReturnSupplies');
+    });
+    Route::middleware('check.access:Pembelian|others')->group(function () {
+        Route::post('/accPO', [SupplierController::class, 'accPO'])->name('accPO');
+        Route::post('/tolakPO', [SupplierController::class, 'tolakPO'])->name('tolakPO');
+        Route::post('/acceptInvoicePO', [SupplierController::class, 'acceptInvoicePO'])->name('acceptInvoicePO');
+        Route::post('/declineInvoicePO', [SupplierController::class, 'declineInvoicePO'])->name('declineInvoicePO');
+        Route::post('/accPoDelivery', [SupplierController::class, 'accPoDelivery'])->name('accPoDelivery');
+        Route::post('/declinePoDelivery', [SupplierController::class, 'declinePoDelivery'])->name('declinePoDelivery');
+        Route::post('/pelunasanPurchaseOrder', [SupplierController::class, 'pelunasanPurchaseOrder'])->name('pelunasanPurchaseOrder');
+    });
+
+    Route::middleware('check.access.any:Pembelian,Hutang,view')->group(function () {
+        Route::get('/purchaseOrderDetailHutang/{id}', [SupplierController::class, 'PurchaseOrderDetailHutang'])->name('purchaseOrderDetailHutang');
+    });
+
+    Route::middleware('check.access:Daftar Produk|view')->group(function () {
+        Route::get('/product', [ProductController::class, 'Product'])->name('product');
+        Route::get('/getProduct', [ProductController::class, 'getProduct'])->name('getProduct');
+        Route::get('/getProductVariant', [ProductController::class, 'getProductVariant'])->name('getProductVariant');
+        Route::get('/barcodePrint', [ProductController::class, 'BarcodePrint'])->name('barcodePrint');
+        Route::get('/getBarcodeProducts', [ProductController::class, 'getBarcodeProducts'])->name('getBarcodeProducts');
+        Route::post('/printBarcodePdf', [ProductController::class, 'printBarcodePdf'])->name('printBarcodePdf');
+    });
+    Route::middleware('check.access:Daftar Produk|create')->group(function () {
+        Route::get('/insertProduct', [ProductController::class, 'viewInsertProduct'])->name('viewInsertProduct');
+        Route::post('/insertProduct', [ProductController::class, 'insertProduct'])->name('insertProduct');
+    });
+    Route::middleware('check.access:Daftar Produk|edit')->group(function () {
+        Route::get('/updateProduct/{id}', [ProductController::class, 'ViewUpdateProduct'])->name('ViewUpdateProduct');
+        Route::post('/updateProduct', [ProductController::class, 'updateProduct'])->name('updateProduct');
+    });
+    Route::middleware('check.access:Daftar Produk|delete')->group(function () {
+        Route::post('/deleteProduct', [ProductController::class, 'deleteProduct'])->name('deleteProduct');
+    });
+
+    Route::middleware('check.access:Stok Produk|view')->group(function () {
+        Route::get('/stockProduct', [StockController::class, 'Stock'])->name('stockProduct');
+        Route::get('/getStock', [StockController::class, 'getStock'])->name('getStock');
+    });
+    Route::middleware('check.access:Safety Stock|edit')->group(function () {
+        Route::post('/updateProductSafetyStock', [StockController::class, 'updateProductSafetyStock'])->name('updateProductSafetyStock');
+        Route::post('/transferSafetyToStock', [StockController::class, 'transferSafetyToStock'])->name('transferSafetyToStock');
+    });
+
+    Route::middleware('check.access:Daftar Bahan Mentah|view')->group(function () {
+        Route::get('/supplies', [ProductController::class, 'Supplies'])->name('supplies');
+        Route::get('/getSupplies', [ProductController::class, 'getSupplies'])->name('getSupplies');
+        Route::get('/getSuppliesVariant', [ProductController::class, 'getSuppliesVariant'])->name('getSuppliesVariant');
+    });
+    Route::middleware('check.access:Daftar Bahan Mentah|create')->group(function () {
+        Route::post('/insertSupplies', [ProductController::class, 'insertSupplies'])->name('insertSupplies');
+        Route::post('/insertSuppliesUnit', [ProductController::class, 'insertSuppliesUnit'])->name('insertSuppliesUnit');
+        Route::post('/insertSuppliesRelation', [ProductController::class, 'insertSuppliesRelation'])->name('insertSuppliesRelation');
+    });
+    Route::middleware('check.access:Daftar Bahan Mentah|edit')->group(function () {
+        Route::post('/updateSupplies', [ProductController::class, 'updateSupplies'])->name('updateSupplies');
+    });
+    Route::middleware('check.access:Daftar Bahan Mentah|delete')->group(function () {
+        Route::post('/deleteSupplies', [ProductController::class, 'deleteSupplies'])->name('deleteSupplies');
+    });
+
+    Route::middleware('check.access:Stok Bahan Mentah|view')->group(function () {
+        Route::get('/stockSupplies', [StockController::class, 'StockSupplies'])->name('stockSupplies');
+        Route::get('/getStockSupplies', [StockController::class, 'getStockSupplies'])->name('getStockSupplies');
+    });
+
+    Route::middleware('check.access:Peran & Perizinan|view')->group(function () {
+        Route::get('/role', [UserController::class, 'role'])->name('role');
+        Route::get('/getRole', [UserController::class, 'getRole'])->name('getRole');
+        Route::get('/permission/{id}', [UserController::class, 'permission'])->name('permission');
+        Route::get('/dashboardWidgets/{id}', [UserController::class, 'dashboardWidgets'])->name('dashboardWidgets');
+        Route::get('/getPermission', [UserController::class, 'getPermission'])->name('getPermission');
+        Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
+    });
+    Route::middleware('check.access:Peran & Perizinan|create')->group(function () {
+        Route::post('/insertRole', [UserController::class, 'insertRole'])->name('insertRole');
+        Route::post('/insertPermission', [UserController::class, 'insertPermission'])->name('insertPermission');
+    });
+    Route::middleware('check.access:Peran & Perizinan|edit')->group(function () {
+        Route::post('/updateRole', [UserController::class, 'updateRole'])->name('updateRole');
+        Route::post('/updateRoleName', [UserController::class, 'updateRoleName'])->name('updateRoleName');
+        Route::post('/updatePermission', [UserController::class, 'updatePermission'])->name('updatePermission');
+        Route::post('/updateDashboardWidgets', [UserController::class, 'updateDashboardWidgets'])->name('updateDashboardWidgets');
+    });
+    Route::middleware('check.access:Peran & Perizinan|delete')->group(function () {
+        Route::post('/deleteRole', [UserController::class, 'deleteRole'])->name('deleteRole');
+        Route::post('/deletePermission', [UserController::class, 'deletePermission'])->name('deletePermission');
+    });
+
+    Route::middleware('check.access:Pengguna|view')->group(function () {
+        Route::get('/staff', [UserController::class, 'staff'])->name('staff');
+        Route::get('/staffDetail/{id}', [UserController::class, 'staffDetail'])->name('staffDetail');
+        Route::get('/getStaff', [UserController::class, 'getStaff'])->name('getStaff');
+    });
+    Route::middleware('check.access:Pengguna|create')->group(function () {
+        Route::get('/insertStaff', [UserController::class, 'viewInsertStaff'])->name('viewInsertStaff');
+        Route::post('/insertStaff', [UserController::class, 'insertStaff'])->name('insertStaff');
+    });
+    Route::middleware('check.access:Pengguna|edit')->group(function () {
+        Route::get('/updateStaff/{id}', [UserController::class, 'ViewUpdateStaff'])->name('ViewUpdateStaff');
+        Route::post('/updateStaff', [UserController::class, 'updateStaff'])->name('updateStaff');
+    });
+    Route::middleware('check.access:Pengguna|delete')->group(function () {
+        Route::post('/deleteStaff', [UserController::class, 'deleteStaff'])->name('deleteStaff');
+    });
+
+    Route::middleware('check.access:Armada|view')->group(function () {
+        Route::get('/customer', [CustomerController::class, 'customer'])->name('customer');
+        Route::get('/customerDetail/{id}', [CustomerController::class, 'customerDetail'])->name('customerDetail');
+        Route::get('/getCustomer', [CustomerController::class, 'getCustomer'])->name('getCustomer');
+    });
+    Route::middleware('check.access:Armada|create')->group(function () {
+        Route::get('/insertCustomer', [CustomerController::class, 'viewInsertCustomer'])->name('viewInsertCustomer');
+        Route::post('/insertCustomer', [CustomerController::class, 'insertCustomer'])->name('insertCustomer');
+    });
+    Route::middleware('check.access:Armada|edit')->group(function () {
+        Route::get('/updateCustomer/{id}', [CustomerController::class, 'ViewUpdateCustomer'])->name('ViewUpdateCustomer');
+        Route::post('/updateCustomer', [CustomerController::class, 'updateCustomer'])->name('updateCustomer');
+    });
+    Route::middleware('check.access:Armada|delete')->group(function () {
+        Route::post('/deleteCustomer', [CustomerController::class, 'deleteCustomer'])->name('deleteCustomer');
+    });
+
+    Route::get('/getDashboardExecutiveWidgets', [ReportController::class, 'getDashboardExecutiveWidgets'])->name('getDashboardExecutiveWidgets');
+    Route::get('/getDashboardOverview', [ReportController::class, 'getDashboardOverview'])->name('getDashboardOverview');
+    Route::post('/dismissDashboardQueueItem', [ReportController::class, 'dismissDashboardQueueItem'])->name('dismissDashboardQueueItem');
+
+    Route::middleware('check.access:Pengelolaan Bahan Mentah|view')->group(function () {
+        Route::get('/reportBahanBaku', [ReportController::class, 'reportBahanBaku'])->name('reportBahanBaku');
+        Route::get('/getDashboardPemakaianBahan', [ReportController::class, 'getDashboardPemakaianBahan'])->name('getDashboardPemakaianBahan');
+        Route::get('/getReportPemakaianBahan', [ReportController::class, 'getReportPemakaianBahan'])->name('getReportPemakaianBahan');
+        Route::get('/generateReportPemakaianBahanPdf', [ReportController::class, 'generateReportPemakaianBahanPdf'])->name('generateReportPemakaianBahanPdf');
+    });
+
+    Route::middleware('check.access.any:Pengelolaan Bahan Mentah,Pembelian,view')->group(function () {
+        Route::get('/getDashboardProcurementEstimate', [ReportController::class, 'getDashboardProcurementEstimate'])->name('getDashboardProcurementEstimate');
+    });
+
+    Route::middleware('check.access.any:Stok Opname Produk,Stok Opname Bahan Mentah,view')->group(function () {
+        Route::get('/reportSelisihOpname', [ReportController::class, 'reportSelisihOpname'])->name('reportSelisihOpname');
+        Route::get('/getReportSelisihOpname', [ReportController::class, 'getReportSelisihOpname'])->name('getReportSelisihOpname');
+        Route::get('/generateReportSelisihOpnamePdf', [ReportController::class, 'generateReportSelisihOpnamePdf'])->name('generateReportSelisihOpnamePdf');
+    });
+
+    Route::middleware('check.access:Laporan Produksi|view')->group(function () {
+        Route::get('/reportProduksi', [ReportController::class, 'reportProduksi'])->name('reportProduksi');
+        Route::get('/getReportProduksi', [ReportController::class, 'getReportProduksi'])->name('getReportProduksi');
+        Route::get('/generateReportProduksiPdf', [ReportController::class, 'generateReportProduksiPdf'])->name('generateReportProduksiPdf');
+        Route::get('/reportEfisiensiProduksi', [ReportController::class, 'reportEfisiensiProduksi'])->name('reportEfisiensiProduksi');
+        Route::get('/getReportEfisiensiProduksi', [ReportController::class, 'getReportEfisiensiProduksi'])->name('getReportEfisiensiProduksi');
+        Route::get('/generateReportEfisiensiProduksiPdf', [ReportController::class, 'generateReportEfisiensiProduksiPdf'])->name('generateReportEfisiensiProduksiPdf');
+    });
+
+    Route::middleware('check.access:Retur Produk|view')->group(function () {
+        Route::get('/ProductReturn', [ReportController::class, 'ProductReturn'])->name('ProductReturn');
+        Route::get('/getReportReturn', [ReportController::class, 'getReportReturn'])->name('getReportReturn');
+        Route::get('/generateReportReturnPdf', [ReportController::class, 'generateReportReturnPdf'])->name('generateReportReturnPdf');
+        Route::get('/reportReturProdukArmada', [ReportController::class, 'reportReturProdukArmada'])->name('reportReturProdukArmada');
+        Route::get('/getReportReturProdukArmada', [ReportController::class, 'getReportReturProdukArmada'])->name('getReportReturProdukArmada');
+        Route::get('/generateReportReturProdukArmadaPdf', [ReportController::class, 'generateReportReturProdukArmadaPdf'])->name('generateReportReturProdukArmadaPdf');
+    });
+
+    Route::middleware('check.access:Laporan Stock Aging|view')->group(function () {
+        Route::get('/reportStockAging', [ReportController::class, 'reportStockAging'])->name('reportStockAging');
+        Route::get('/getReportStockAging', [ReportController::class, 'getReportStockAging'])->name('getReportStockAging');
+        Route::get('/generateReportStockAgingPdf', [ReportController::class, 'generateReportStockAgingPdf'])->name('generateReportStockAgingPdf');
+    });
+
+    Route::middleware('check.access:Kas|view')->group(function () {
+        Route::get('/cash', [ReportController::class, 'Cash'])->name('cash');
+        Route::get('/getCash', [ReportController::class, 'getCash'])->name('getCash');
+        Route::get('/reportCashOut', [ReportController::class, 'ReportCashOut'])->name('reportCashOut');
+        Route::get('/getReportCashOut', [ReportController::class, 'getReportCashOut'])->name('getReportCashOut');
+        Route::get('/pettyCash', [ReportController::class, 'PettyCash'])->name('pettyCash');
+        Route::get('/getPettyCash', [ReportController::class, 'getPettyCash'])->name('getPettyCash');
+    });
+    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,any')->group(function () {
+        Route::get('/getCashAdmin', [ReportController::class, 'getCashAdmin'])->name('getCashAdmin');
+    });
+    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,any')->group(function () {
+        Route::get('/getCashGudang', [ReportController::class, 'getCashGudang'])->name('getCashGudang');
+    });
+    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,any')->group(function () {
+        Route::get('/getCashArmada', [ReportController::class, 'getCashArmada'])->name('getCashArmada');
+    });
+    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,any')->group(function () {
+        Route::get('/getCashSales', [ReportController::class, 'getCashSales'])->name('getCashSales');
+    });
+    Route::get('/operationalCash', [ReportController::class, 'OperationalCash'])->name('operationalCash');
+    Route::middleware('check.access:Kas|create')->group(function () {
+        Route::post('/insertCash', [ReportController::class, 'insertCash'])->name('insertCash');
+        Route::post('/insertPettyCash', [ReportController::class, 'insertPettyCash'])->name('insertPettyCash');
+    });
+    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,create')->group(function () {
+        Route::post('/insertCashAdmin', [ReportController::class, 'insertCashAdmin'])->name('insertCashAdmin');
+    });
+    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,create')->group(function () {
+        Route::post('/insertCashGudang', [ReportController::class, 'insertCashGudang'])->name('insertCashGudang');
+    });
+    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,create')->group(function () {
+        Route::post('/insertCashArmada', [ReportController::class, 'insertCashArmada'])->name('insertCashArmada');
+    });
+    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,create')->group(function () {
+        Route::post('/insertCashSales', [ReportController::class, 'insertCashSales'])->name('insertCashSales');
+    });
+    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,edit')->group(function () {
+        Route::post('/updateCashAdmin', [ReportController::class, 'updateCashAdmin'])->name('updateCashAdmin');
+    });
+    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,edit')->group(function () {
+        Route::post('/updateCashGudang', [ReportController::class, 'updateCashGudang'])->name('updateCashGudang');
+    });
+    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,edit')->group(function () {
+        Route::post('/updateCashArmada', [ReportController::class, 'updateCashArmada'])->name('updateCashArmada');
+    });
+    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,edit')->group(function () {
+        Route::post('/updateCashSales', [ReportController::class, 'updateCashSales'])->name('updateCashSales');
+    });
+    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,delete')->group(function () {
+        Route::post('/deleteCashAdmin', [ReportController::class, 'deleteCashAdmin'])->name('deleteCashAdmin');
+    });
+    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,delete')->group(function () {
+        Route::post('/deleteCashGudang', [ReportController::class, 'deleteCashGudang'])->name('deleteCashGudang');
+    });
+    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,delete')->group(function () {
+        Route::post('/deleteCashArmada', [ReportController::class, 'deleteCashArmada'])->name('deleteCashArmada');
+    });
+    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,delete')->group(function () {
+        Route::post('/deleteCashSales', [ReportController::class, 'deleteCashSales'])->name('deleteCashSales');
+    });
+    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,others')->group(function () {
+        Route::post('/acceptCashAdmin', [ReportController::class, 'acceptCashAdmin'])->name('acceptCashAdmin');
+        Route::post('/declineCashAdmin', [ReportController::class, 'declineCashAdmin'])->name('declineCashAdmin');
+    });
+    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,others')->group(function () {
+        Route::post('/acceptCashGudang', [ReportController::class, 'acceptCashGudang'])->name('acceptCashGudang');
+        Route::post('/declineCashGudang', [ReportController::class, 'declineCashGudang'])->name('declineCashGudang');
+    });
+    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,others')->group(function () {
+        Route::post('/acceptCashArmada', [ReportController::class, 'acceptCashArmada'])->name('acceptCashArmada');
+        Route::post('/declineCashArmada', [ReportController::class, 'declineCashArmada'])->name('declineCashArmada');
+    });
+    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,others')->group(function () {
+        Route::post('/acceptCashSales', [ReportController::class, 'acceptCashSales'])->name('acceptCashSales');
+        Route::post('/declineCashSales', [ReportController::class, 'declineCashSales'])->name('declineCashSales');
+    });
+
+    Route::middleware('check.access:Pemasok|view')->group(function () {
+        Route::get('/getSupplier', [SupplierController::class, 'getSupplier'])->name('getSupplier');
+        Route::get('/supplier', [SupplierController::class, 'supplier'])->name('supplier');
+        Route::get('/supplierDetail/{id}', [SupplierController::class, 'supplierDetail'])->name('supplierDetail');
+    });
+    Route::middleware('check.access:Pemasok|create')->group(function () {
+        Route::get('/insertSupplier', [SupplierController::class, 'ViewInsertSupplier'])->name('ViewInsertSupplier');
+        Route::post('/insertSupplier', [SupplierController::class, 'insertSupplier'])->name('insertSupplier');
+    });
+    Route::middleware('check.access:Pemasok|edit')->group(function () {
+        Route::get('/updateSupplier/{id}', [SupplierController::class, 'ViewUpdateSupplier'])->name('ViewUpdateSupplier');
+        Route::post('/updateSupplier', [SupplierController::class, 'updateSupplier'])->name('updateSupplier');
+    });
+    Route::middleware('check.access:Pemasok|delete')->group(function () {
+        Route::post('/deleteSupplier', [SupplierController::class, 'deleteSupplier'])->name('deleteSupplier');
+    });
+
+    Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {
+        Route::get('/bom', [ProductionController::class, 'bom'])->name('bom');
+        Route::get('/getBom', [ProductionController::class, 'getBom'])->name('getBom');
+    });
+    Route::middleware('check.access:Resep Bahan Mentah|create')->group(function () {
+        Route::post('/insertBom', [ProductionController::class, 'insertBom'])->name('insertBom');
+    });
+    Route::middleware('check.access:Resep Bahan Mentah|edit')->group(function () {
+        Route::post('/updateBom', [ProductionController::class, 'updateBom'])->name('updateBom');
+    });
+    Route::middleware('check.access:Resep Bahan Mentah|delete')->group(function () {
+        Route::post('/deleteBom', [ProductionController::class, 'deleteBom'])->name('deleteBom');
+    });
+
+    Route::middleware('check.access:Produksi|view')->group(function () {
+        Route::get('/production', [ProductionController::class, 'production'])->name('production');
+        Route::get('/getProduction', [ProductionController::class, 'getProduction'])->name('getProduction');
+        Route::get('/getPemakaian', [ProductionController::class, 'getPemakaian'])->name('getPemakaian');
+        Route::get('/getFotoProduksi', [ProductionController::class, 'getFotoProduksi'])->name('getFotoProduksi');
+    });
+    Route::middleware('check.access:Produksi|create')->group(function () {
+        Route::post('/insertProduction', [ProductionController::class, 'insertProduction'])->name('insertProduction');
+    });
+    Route::middleware('check.access:Produksi|edit')->group(function () {
+        Route::post('/updateProduction', [ProductionController::class, 'updateProduction'])->name('updateProduction');
+        Route::post('/uploadPhotoProduksi', [ProductionController::class, 'uploadPhotoProduksi'])->name('uploadPhotoProduksi');
+    });
+    Route::middleware('check.access:Produksi|delete')->group(function () {
+        Route::post('/deleteProduction', [ProductionController::class, 'deleteProduction'])->name('deleteProduction');
+    });
+    Route::middleware('check.access:Produksi|others')->group(function () {
+        Route::post('/accProduction', [ProductionController::class, 'accProduction'])->name('accProduction');
+        Route::post('/declineProduction', [ProductionController::class, 'declineProduction'])->name('declineProduction');
+        Route::post('/accDeleteProduction', [ProductionController::class, 'accDeleteProduction'])->name('accDeleteProduction');
+        Route::post('/tolakDeleteProduction', [ProductionController::class, 'tolakDeleteProduction'])->name('tolakDeleteProduction');
+    });
+
+    Route::middleware('check.access:Pengaturan|view')->group(function () {
+        Route::get('/testing', [GeneralController::class, 'testing'])->name('testing');
+        Route::get('/settings', [SettingController::class, 'Settings'])->name('settings');
+        Route::post('/getSetting', [SettingController::class, 'getSetting'])->name('getSetting');
+    });
+    Route::middleware('check.access:Pengaturan|create')->group(function () {
+        Route::post('/insertSetting', [SettingController::class, 'insertSetting'])->name('insertSetting');
+    });
+    Route::middleware('check.access:Pengaturan|edit')->group(function () {
+        Route::post('/updateSetting', [SettingController::class, 'updateSetting'])->name('updateSetting');
+    });
+
+    Route::middleware('check.access:Profil|view')->group(function () {
+        Route::get('/profiles', [SettingController::class, 'Profiles'])->name('profiles');
+    });
+    Route::middleware('check.access:Profil|edit')->group(function () {
+        Route::post('/updateProfile', [SettingController::class, 'updateProfile'])->name('updateProfile');
+    });
+
+    Route::middleware('check.access.any:Kategori,Satuan,Variasi,view')->group(function () {
+        Route::get('/area', [GeneralController::class, 'Area'])->name('area');
+        Route::get('/getArea', [GeneralController::class, 'getArea'])->name('getArea');
+    });
+    Route::middleware('check.access.any:Kategori,Satuan,Variasi,create')->group(function () {
+        Route::post('/insertArea', [GeneralController::class, 'insertArea'])->name('insertArea');
+    });
+    Route::middleware('check.access.any:Kategori,Satuan,Variasi,edit')->group(function () {
+        Route::post('/updateArea', [GeneralController::class, 'updateArea'])->name('updateArea');
+    });
+    Route::middleware('check.access.any:Kategori,Satuan,Variasi,delete')->group(function () {
+        Route::post('/deleteArea', [GeneralController::class, 'deleteArea'])->name('deleteArea');
+    });
+
+    Route::middleware('check.access:Kategori Kas|view')->group(function () {
+        Route::get('/cashCategory', [ReportController::class, 'CashCategory'])->name('cashCategory');
+        Route::get('/getCashCategory', [ReportController::class, 'getCashCategory'])->name('getCashCategory');
+    });
+    Route::middleware('check.access:Kategori Kas|create')->group(function () {
+        Route::post('/insertCashCategory', [ReportController::class, 'insertCashCategory'])->name('insertCashCategory');
+    });
+    Route::middleware('check.access:Kategori Kas|edit')->group(function () {
+        Route::post('/updateCashCategory', [ReportController::class, 'updateCashCategory'])->name('updateCashCategory');
+    });
+    Route::middleware('check.access:Kategori Kas|delete')->group(function () {
+        Route::post('/deleteCashCategory', [ReportController::class, 'deleteCashCategory'])->name('deleteCashCategory');
+    });
+
+    Route::middleware('check.access:Bank Account|view')->group(function () {
+        Route::get('/bank', [UserController::class, 'bank'])->name('bank');
+        Route::get('/getBank', [UserController::class, 'getBank'])->name('getBank');
+    });
+    Route::middleware('check.access:Bank Account|create')->group(function () {
+        Route::post('/insertBank', [UserController::class, 'insertBank'])->name('insertBank');
+    });
+    Route::middleware('check.access:Bank Account|edit')->group(function () {
+        Route::post('/updateBank', [UserController::class, 'updateBank'])->name('updateBank');
+    });
+    Route::middleware('check.access:Bank Account|delete')->group(function () {
+        Route::post('/deleteBank', [UserController::class, 'deleteBank'])->name('deleteBank');
+    });
+
+    Route::middleware('check.access:Tanda Terima PO|view')->group(function () {
+        Route::get('/tt', [SupplierController::class, 'tt'])->name('tt');
+        Route::get('/getTt', [SupplierController::class, 'getTt'])->name('getTt');
+        Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, 'generateTandaTerima'])->name('generateTandaTerima');
+        Route::get('/generateTandaTerimaInvoice', [SupplierController::class, 'generateTandaTerimaInvoice'])->name('generateTandaTerimaInvoice');
+        Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('viewTandaTerima');
+    });
+    Route::middleware('check.access:Tanda Terima PO|create')->group(function () {
+        Route::post('/insertTt', [SupplierController::class, 'insertTt'])->name('insertTt');
+        Route::post('/insertPoDelivery', [SupplierController::class, 'insertPoDelivery'])->name('insertPoDelivery');
+    });
+    Route::middleware('check.access:Tanda Terima PO|edit')->group(function () {
+        Route::post('/updateTt', [SupplierController::class, 'updateTt'])->name('updateTt');
+    });
+    Route::middleware('check.access:Tanda Terima PO|delete')->group(function () {
+        Route::post('/deleteTt', [SupplierController::class, 'deleteTt'])->name('deleteTt');
+    });
+    Route::middleware('check.access:Tanda Terima PO|others')->group(function () {
+        Route::post('/accTt', [SupplierController::class, 'accTt'])->name('accTt');
+        Route::post('/declineTt', [SupplierController::class, 'declineTt'])->name('declineTt');
+    });
+
+    // Pusat Sinkronisasi — daftar alur, wizard, dan eksekusi per langkah.
+    Route::middleware('check.access:Sinkronisasi|view')->group(function () {
+        Route::get('/synchronization', [SynchronizationController::class, 'center'])->name('synchronization');
+        Route::get('/synchronization/{flow}', [SynchronizationController::class, 'wizard'])->name('synchronizationWizard');
+        Route::get('/synchronization/{flow}/status', [SynchronizationController::class, 'status'])->name('synchronizationStatus');
+    });
+    Route::middleware('check.access:Sinkronisasi|others')->group(function () {
+        Route::post('/synchronization/{flow}/{step}/execute', [SynchronizationController::class, 'execute'])->name('synchronizationExecute');
+    });
+
+    // Platform API Eksternal — halaman administrasi di modul Integrasi.
+    // Endpoint yang dipakai sistem pihak ketiga TIDAK ada di sini; jalurnya
+    // terpisah di routes/api.php + routes/external-api/ dan dijaga API Key,
+    // bukan session.
+    Route::middleware('check.access:Aplikasi Eksternal|view')->group(function () {
+        Route::get('/externalApplication', [ExternalApiController::class, 'externalApplication'])->name('externalApplication');
+        Route::get('/externalApplication/{id}', [ExternalApiController::class, 'externalApplicationDetail'])->name('externalApplicationDetail');
+        Route::get('/getExternalApplication', [ExternalApiController::class, 'getExternalApplication'])->name('getExternalApplication');
+        Route::get('/getExternalApiKey', [ExternalApiController::class, 'getExternalApiKey'])->name('getExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|create')->group(function () {
+        Route::post('/insertExternalApplication', [ExternalApiController::class, 'insertExternalApplication'])->name('insertExternalApplication');
+        Route::post('/insertExternalApiKey', [ExternalApiController::class, 'insertExternalApiKey'])->name('insertExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|edit')->group(function () {
+        Route::post('/updateExternalApplication', [ExternalApiController::class, 'updateExternalApplication'])->name('updateExternalApplication');
+        Route::post('/updateExternalApiKey', [ExternalApiController::class, 'updateExternalApiKey'])->name('updateExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|delete')->group(function () {
+        Route::post('/deleteExternalApplication', [ExternalApiController::class, 'deleteExternalApplication'])->name('deleteExternalApplication');
+        Route::post('/deleteExternalApiKey', [ExternalApiController::class, 'deleteExternalApiKey'])->name('deleteExternalApiKey');
+    });
+    Route::middleware('check.access:Aplikasi Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApplication', [ExternalApiController::class, 'toggleExternalApplication'])->name('toggleExternalApplication');
+        Route::post('/revokeExternalApiKey', [ExternalApiController::class, 'revokeExternalApiKey'])->name('revokeExternalApiKey');
+    });
+
+    // Dokumentasi dipecah per modul: /externalApiDocumentation adalah halaman
+    // Umum, dan tiap kelompok endpoint punya halamannya sendiri di bawahnya.
+    // Satu rute berparameter melayani seluruh kelompok, jadi kelompok baru
+    // tidak perlu rute tambahan.
+    Route::middleware('check.access:Dokumentasi API Eksternal|view')->group(function () {
+        Route::get('/externalApiDocumentation', [ExternalApiController::class, 'externalApiDocumentation'])->name('externalApiDocumentation');
+        Route::get('/externalApiDocumentation/{group}', [ExternalApiController::class, 'externalApiDocumentation'])->name('externalApiDocumentationGroup');
+    });
+
+    Route::middleware('check.access:Log API Eksternal|view')->group(function () {
+        Route::get('/externalApiLog', [ExternalApiController::class, 'externalApiLog'])->name('externalApiLog');
+        Route::get('/getExternalApiLog', [ExternalApiController::class, 'getExternalApiLog'])->name('getExternalApiLog');
+        Route::get('/getExternalApiLogSummary', [ExternalApiController::class, 'getExternalApiLogSummary'])->name('getExternalApiLogSummary');
+    });
+    Route::middleware('check.access:Log API Eksternal|delete')->group(function () {
+        Route::post('/deleteExternalApiLog', [ExternalApiController::class, 'deleteExternalApiLog'])->name('deleteExternalApiLog');
+    });
+    Route::middleware('check.access:Log API Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApiLogging', [ExternalApiController::class, 'toggleExternalApiLogging'])->name('toggleExternalApiLogging');
+    });
+});

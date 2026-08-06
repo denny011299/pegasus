@@ -1,0 +1,15 @@
+﻿---
+description: Sebelum merge/rebase yang menyentuh fase-2, load inventaris + jalankan verifier anti-hilang
+globs: resources/views/components/modal-popup.blade.php,resources/views/components/modals/**/*.blade.php,app/Support/ProductUnitStock.php,app/Http/Controllers/StockTransferController.php,public/Custom_js/Backoffice/Inventory/Stock_Transfer.js
+alwaysApply: false
+---
+
+# fase-2 merge inventory
+
+Saat user minta **merge**, **rebase**, atau resolve conflict yang menyentuh stok multi-gudang / ST / produksi / modal:
+
+1. Baca dulu `docs/fase2-merge-inventory.md`.
+2. Jalankan `php docs/scripts/verify-fase2-inventory.php` **sebelum** dan **sesudah** merge.
+3. Kalau conflict di modal: ikuti `.cursor/rules/modal-structure.mdc` (jangan kembalikan monolith).
+4. Jangan drop tanpa konfirmasi: retail setup inline ST, `allow_packing=false` di Kirim, matrix Terima, CSR/CPR, `pg-modal` styles, folder `components/modals/**`.
+5. Jangan reintroduce auto Kirim+Terima ST produksi (backlog #5 dibatalkan).

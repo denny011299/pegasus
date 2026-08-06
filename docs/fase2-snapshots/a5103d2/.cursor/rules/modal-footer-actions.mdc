@@ -1,0 +1,19 @@
+---
+description: Urutan dan posisi tombol aksi di footer modal harus seragam
+alwaysApply: true
+---
+
+# Modal Footer Actions
+
+Semua tombol aksi modal **satu kelompok di kanan** (`justify-content-end`), jangan pisah Batal di kiri dan aksi di kanan.
+
+## Urutan (kiri → kanan dalam grup kanan)
+
+- Form simpan: **Batal**, **Simpan**
+- Alur ACC / kirim: **Batal**, **Tolak** (jika ada), **Kirim/Transfer/Terima**
+- Konfirmasi generik: **Batal**, **Konfirmasi**
+
+## Jangan
+
+- `justify-content-between` yang menaruh Batal jauh di kiri
+- Urutan Simpan lalu Batal, atau Transfer lalu Tolak lalu Batal
