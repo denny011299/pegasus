@@ -137,8 +137,8 @@
         <div class="modal-footer pg-modal-footer">
           <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel btn-cancel">Batal</button>
           @if (in_array('others', $akses->firstWhere('name', 'Produksi')->akses))
-            <button type="button" id="btn-tolak" class="btn pg-btn-decline d-none btn_decline"><i class="fe fe-x"></i> Tolak</button>
-            <button type="button" id="btn-terima" class="btn pg-btn-accept d-none btn_acc"><i class="fe fe-check"></i> Terima Produksi</button>
+            <button type="button" id="btn-tolak" class="btn pg-btn-decline d-none btn_decline"><i class="fe fe-x me-1"></i>Tolak</button>
+            <button type="button" id="btn-terima" class="btn pg-btn-accept d-none btn_acc"><i class="fe fe-check-circle me-1"></i>Terima Produksi</button>
           @endif
           <button type="button" class="btn pg-btn-save btn-save" id="btn-tambah-pesanan">
             <i class="fe fe-save"></i> <span class="btn-save-label">Simpan</span>

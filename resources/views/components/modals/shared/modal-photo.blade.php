@@ -38,7 +38,7 @@
 
         <div class="d-flex gap-2 m-0" id="preview-actions" style="display: none !important;">
           <button type="button" class="btn btn-light border" id="retakeBtn"><i class="fe fe-refresh-ccw me-1"></i> Ulangi</button>
-          <button type="button" class="btn pg-btn-accept" id="uploadBtn"><i class="fe fe-check me-1"></i> Gunakan Foto</button>
+          <button type="button" class="btn pg-btn-accept" id="uploadBtn"><i class="fe fe-check-circle me-1"></i>Gunakan Foto</button>
         </div>
       </div>
     </div>

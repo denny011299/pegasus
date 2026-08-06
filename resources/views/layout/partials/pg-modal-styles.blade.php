@@ -10,6 +10,16 @@
         border: 0;
         padding: 18px 24px;
     }
+    .pg-modal--form .modal-title {
+        color: #ffffff;
+        font-weight: 700;
+    }
+    .pg-modal--form .modal-subtitle {
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-size: 13px;
+        margin-top: 4px;
+        display: block;
+    }
     .pg-modal--form .pg-modal-icon {
         width: 40px;
         height: 40px;
@@ -38,6 +48,12 @@
     .pg-modal--confirm .modal-title {
         color: #fff;
         font-weight: 700;
+    }
+    .pg-modal--confirm .modal-subtitle {
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-size: 13px;
+        margin-top: 4px;
+        display: block;
     }
     .pg-modal--confirm .pg-modal-icon {
         width: 40px;
@@ -71,6 +87,12 @@
     .pg-modal--danger .modal-title {
         color: #fff;
         font-weight: 700;
+    }
+    .pg-modal--danger .modal-subtitle {
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-size: 13px;
+        margin-top: 4px;
+        display: block;
     }
     .pg-modal--danger .pg-modal-icon {
         width: 40px;
@@ -149,9 +171,9 @@
         align-items: center;
         justify-content: center;
         gap: 6px;
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #ef4444;
+        background: linear-gradient(135deg, #f87171, #ef4444);
+        color: #fff;
+        border: none;
         border-radius: 8px;
         padding: 9px 20px;
         font-size: 13px;
@@ -159,11 +181,17 @@
         min-width: 130px;
         height: 42px;
         line-height: 1;
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.28);
     }
     .pg-btn-decline:hover {
-        background: #fee2e2;
-        border-color: #fca5a5;
-        color: #dc2626;
+        color: #fff;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        box-shadow: 0 4px 14px rgba(220, 38, 38, 0.32);
+    }
+    .pg-btn-decline:disabled,
+    .pg-btn-decline.disabled {
+        opacity: 0.55;
+        pointer-events: none;
     }
     .pg-btn-accept,
     .pg-btn-confirm {
@@ -200,13 +228,23 @@
     }
 
     /* ═══ Modal body loading (view/edit fetch) ═══ */
-    .pg-modal--form.is-loading .pg-modal-loading {
+    .pg-modal--form.is-loading .pg-modal-loading,
+    .pg-modal--confirm.is-loading .pg-modal-loading {
         display: flex;
     }
     .pg-modal--form.is-loading .pg-modal-body-content,
-    .pg-modal--form.is-loading .pg-modal-footer {
+    .pg-modal--form.is-loading .pg-modal-footer,
+    .pg-modal--confirm.is-loading .pg-modal-body-content,
+    .pg-modal--confirm.is-loading .pg-modal-footer {
         visibility: hidden;
-        pointer-events: none;
+        pointer-events: none !important;
+    }
+    .pg-modal--form.is-loading .pg-modal-footer .btn,
+    .pg-modal--form.is-loading .btn-enable-edit-transfer,
+    .pg-modal--confirm.is-loading .pg-modal-footer .btn,
+    .pg-modal--confirm.is-loading .btn-enable-edit-transfer {
+        pointer-events: none !important;
+        opacity: 0.55;
     }
     .pg-modal-loading {
         display: none;

@@ -1968,6 +1968,19 @@ function setTransferFormLocked(locked) {
     syncTransferModalChrome();
 }
 
+function setTransferModalMode(kind) {
+    var $modal = $("#add_stock_transfer");
+    var $icon = $modal.find(".pg-modal-icon i").first();
+    $modal.removeClass("pg-modal--form pg-modal--confirm");
+    if (kind === "confirm") {
+        $modal.addClass("pg-modal--confirm");
+        $icon.attr("class", "fe fe-check-circle");
+    } else {
+        $modal.addClass("pg-modal--form");
+        $icon.attr("class", "fe fe-shuffle");
+    }
+}
+
 function syncTransferModalChrome() {
     var isCreate = mode === 1;
     var isEditing = mode === 2 && !transferFormLocked;
@@ -1980,6 +1993,7 @@ function syncTransferModalChrome() {
     var $transfer = $("#add_stock_transfer .btn-acc-transfer");
 
     if (isCreate) {
+        setTransferModalMode("form");
         $title.text("Buat Stock Transfer");
         $sub.text("Pindahkan stok antar gudang / toko");
         $editBtn.addClass("d-none").removeClass("d-inline-flex");
@@ -1987,6 +2001,8 @@ function syncTransferModalChrome() {
         $reject.addClass("d-none").removeClass("d-inline-flex");
         $transfer.addClass("d-none").removeClass("d-inline-flex");
     } else if (isViewing) {
+        // Konfirmasi pending: header hijau (setema ACC / Transfer)
+        setTransferModalMode("confirm");
         $title.text("Detail Stock Transfer");
         $sub.text(
             transferCanEdit
@@ -2010,6 +2026,7 @@ function syncTransferModalChrome() {
             $transfer.addClass("d-none").removeClass("d-inline-flex");
         }
     } else if (isEditing) {
+        setTransferModalMode("form");
         $title.text("Edit Stock Transfer");
         $sub.text("Ubah data lalu simpan. Batal = batalkan edit.");
         $editBtn.addClass("d-none").removeClass("d-inline-flex");
@@ -2037,12 +2054,18 @@ $(document).on("click", ".btnAdd", function () {
     if (!$("#add_stock_transfer").length) return;
     $("#add_stock_transfer").removeAttr("data-id");
     $("#add_stock_transfer").removeAttr("data-source-type");
+    setTransferModalLoading(false);
     resetTransferForm();
     initTransferAutocompletes();
     setDefaultSender();
     setDefaultFromWarehouse();
     setTransferFormLocked(false);
     $("#add_stock_transfer").modal("show");
+});
+
+$(document).on("hidden.bs.modal", "#add_stock_transfer", function () {
+    transferDetailLoadSeq++;
+    setTransferModalLoading(false);
 });
 
 $(document).on("change", "#transfer_from_warehouse_id, #transfer_to_warehouse_id", function () {
@@ -2841,19 +2864,54 @@ function fillSelectOption($el, id, text) {
     $el.val(String(id)).trigger("change");
 }
 
+function setTransferModalLoading(isLoading) {
+    var $modal = $("#add_stock_transfer");
+    var loading = !!isLoading;
+    $modal.toggleClass("is-loading", loading);
+    $modal
+        .find(
+            ".pg-modal-footer .btn, .btn-enable-edit-transfer, .btn-save-transfer, .btn-acc-transfer, .btn-reject-transfer, .btn-cancel-transfer"
+        )
+        .prop("disabled", loading)
+        .attr("aria-disabled", loading ? "true" : "false");
+    if (loading) {
+        // Sembunyikan aksi proses sampai data siap (Batal ikut disabled, tetap ada di DOM)
+        $modal.find(".btn-acc-transfer, .btn-reject-transfer, .btn-save-transfer, .btn-enable-edit-transfer")
+            .addClass("d-none")
+            .removeClass("d-inline-flex");
+    }
+}
+
+var transferDetailLoadSeq = 0;
+
 function loadTransferDetailForEdit(id) {
+    if (!$("#add_stock_transfer").length) return;
+
+    var loadSeq = ++transferDetailLoadSeq;
+    mode = 2;
+    resetTransferForm();
+    initTransferAutocompletes();
+    $("#add_stock_transfer").attr("data-id", id);
+    $("#add_stock_transfer").removeAttr("data-source-type");
+    syncTransferEditActions(false, false, false);
+    setTransferFormLocked(true);
+    $("#add_stock_transfer .modal-title").text("Detail Stock Transfer");
+    $("#add_stock_transfer .transfer-modal-subtitle").text("Memuat data...");
+    setTransferModalLoading(true);
+    $("#add_stock_transfer").modal("show");
+
     $.ajax({
         url: "/getStockTransferDetail",
         method: "get",
         data: { id: id },
         success: function (res) {
+            if (loadSeq !== transferDetailLoadSeq) return;
             if (!res || !res.id) {
+                setTransferModalLoading(false);
+                $("#add_stock_transfer").modal("hide");
                 if (typeof toastr !== "undefined") toastr.error("", "Data transfer tidak ditemukan");
                 return;
             }
-            mode = 2;
-            resetTransferForm();
-            initTransferAutocompletes();
             $("#add_stock_transfer").attr("data-id", res.id);
             $("#add_stock_transfer").attr("data-source-type", res.source_type || "");
             $("#transfer_date").val(res.transfer_date);
@@ -2893,9 +2951,12 @@ function loadTransferDetailForEdit(id) {
             );
             snapshotTransferForm();
             setTransferFormLocked(true);
-            $("#add_stock_transfer").modal("show");
+            setTransferModalLoading(false);
         },
         error: function () {
+            if (loadSeq !== transferDetailLoadSeq) return;
+            setTransferModalLoading(false);
+            $("#add_stock_transfer").modal("hide");
             if (typeof toastr !== "undefined") toastr.error("", "Gagal memuat detail");
         },
     });

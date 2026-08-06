@@ -704,8 +704,8 @@
                 </div>
                 <div class="modal-footer pg-modal-footer">
                     <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
-                    <button type="button" class="btn pg-btn-decline d-none" id="csr-decline"><i class="fe fe-x"></i> Tolak</button>
-                    <button type="button" class="btn pg-btn-accept d-none" id="csr-accept"><i class="fe fe-check"></i> Terima</button>
+                    <button type="button" class="btn pg-btn-decline d-none" id="csr-decline"><i class="fe fe-x me-1"></i>Tolak</button>
+                    <button type="button" class="btn pg-btn-accept d-none" id="csr-accept"><i class="fe fe-check-circle me-1"></i>Terima</button>
                     <button type="button" class="btn pg-btn-save" id="csr-save">
                         <i class="fe fe-save"></i> Simpan Pengembalian
                     </button>
@@ -814,8 +814,8 @@
                 </div>
                 <div class="modal-footer pg-modal-footer">
                     <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
-                    <button type="button" class="btn pg-btn-decline d-none" id="cpr-decline"><i class="fe fe-x"></i> Tolak</button>
-                    <button type="button" class="btn pg-btn-accept d-none" id="cpr-accept"><i class="fe fe-check"></i> Terima</button>
+                    <button type="button" class="btn pg-btn-decline d-none" id="cpr-decline"><i class="fe fe-x me-1"></i>Tolak</button>
+                    <button type="button" class="btn pg-btn-accept d-none" id="cpr-accept"><i class="fe fe-check-circle me-1"></i>Terima</button>
                     <button type="button" class="btn pg-btn-save" id="cpr-save">
                         <i class="fe fe-save"></i> Simpan Pengembalian
                     </button>

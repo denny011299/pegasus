@@ -161,7 +161,7 @@
               <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
               @if (in_array('others', $akses->firstWhere('name', 'Pengiriman')->akses))
                 <button type="button" class="btn pg-btn-decline btn_decline d-none"><i class="fe fe-x me-1"></i>Tolak</button>
-                <button type="button" class="btn pg-btn-accept btn_acc d-none"><i class="fe fe-check me-1"></i>Terima</button>
+                <button type="button" class="btn pg-btn-accept btn_acc d-none"><i class="fe fe-check-circle me-1"></i>Terima</button>
               @endif
               <button type="button" class="btn pg-btn-save paid-continue-btn btn-save">
                 <i class="fe fe-save me-1"></i><span id="btn_save_text">Tambah Pengiriman</span>

@@ -12,6 +12,19 @@
         return typeof hasAccessAction === "function" && hasAccessAction("Pengiriman", action);
     }
 
+    function setCprModalMode(kind) {
+        var $modal = $("#customer-product-return-modal");
+        var $icon = $modal.find(".pg-modal-icon i");
+        $modal.removeClass("pg-modal--form pg-modal--confirm");
+        if (kind === "confirm") {
+            $modal.addClass("pg-modal--confirm");
+            $icon.attr("class", "fe fe-check-circle");
+        } else {
+            $modal.addClass("pg-modal--form");
+            $icon.attr("class", "fe fe-box");
+        }
+    }
+
     function esc(value) {
         return $("<div>").text(value == null ? "" : value).html();
     }
@@ -369,6 +382,7 @@
         $("#cpr-save").removeClass("d-none").text("Simpan Pengembalian");
         $("#cpr-btn-upload-proof").removeClass("d-none border-danger text-danger");
         $("#cpr-accept,#cpr-decline").addClass("d-none");
+        setCprModalMode("form");
         $("#customer-product-return-modal .modal-title").text("Tambah Pengembalian Produk Jadi");
         $("#customer-product-return-modal input, #customer-product-return-modal textarea").prop("readonly", false).prop("disabled", false);
         setupCustomerSelect();
@@ -523,6 +537,12 @@
                     $("#cpr-line-form,#cpr-save").addClass("d-none");
                     if (parseInt(record.status, 10) === 1 && can("others")) {
                         $("#cpr-accept,#cpr-decline").removeClass("d-none");
+                        setCprModalMode("confirm");
+                        $("#customer-product-return-modal .modal-title").text(
+                            "Konfirmasi Pengembalian Produk " + record.return_number,
+                        );
+                    } else {
+                        setCprModalMode("form");
                     }
                 } else {
                     $("#customer-product-return-modal .modal-title").text(

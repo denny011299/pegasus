@@ -82,11 +82,14 @@ function setProductionSaveVisible(visible, label) {
 
 function setProductionModalMode(kind) {
     var $modal = $("#addProduction");
+    var $icon = $modal.find(".pg-modal-icon i");
     $modal.removeClass("pg-modal--form pg-modal--confirm");
     if (kind === "confirm") {
         $modal.addClass("pg-modal--confirm");
+        $icon.attr("class", "fe fe-check-circle");
     } else {
         $modal.addClass("pg-modal--form");
+        $icon.attr("class", "fe fe-layers");
     }
 }
 
@@ -99,11 +102,11 @@ function showProductionApprovalActions(action, productionId) {
     var $accept = $("#addProduction #btn-terima");
     var $decline = $("#addProduction #btn-tolak");
     if (action === "production") {
-        $accept.addClass("btn_acc_produksi").html('<i class="fe fe-check"></i> Terima Produksi');
-        $decline.addClass("btn_decline_produksi").html('<i class="fe fe-x"></i> Tolak');
+        $accept.addClass("btn_acc_produksi").html('<i class="fe fe-check-circle me-1"></i>Terima Produksi');
+        $decline.addClass("btn_decline_produksi").html('<i class="fe fe-x me-1"></i>Tolak');
     } else if (action === "cancellation") {
-        $accept.addClass("btn_acc").html('<i class="fe fe-check"></i> Terima Pembatalan');
-        $decline.addClass("btn_cancel").html('<i class="fe fe-x"></i> Tolak');
+        $accept.addClass("btn_acc").html('<i class="fe fe-check-circle me-1"></i>Terima Pembatalan');
+        $decline.addClass("btn_cancel").html('<i class="fe fe-x me-1"></i>Tolak');
     } else {
         return;
     }
@@ -1535,7 +1538,7 @@ $(document).on("click", ".btn_cancel", function () {
         "Apakah yakin ingin Tolak pembatalan produksi ini?",
         "btn-cancel-delete-production",
     );
-    $(".btn-konfirmasi").html("Konfirmasi Batal Produksi");
+    $(".btn-konfirmasi").html('<i class="fe fe-check-circle me-1"></i>Konfirmasi Batal Produksi');
     $("#btn-cancel-delete-production").attr("production_id", production_id);
 });
 
@@ -1554,7 +1557,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
             $("#modalDelete .modal-body").html(
                 `<p id="text-delete" style="font-size:10pt"></p>`,
             );
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi Batal Produksi');
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
@@ -1564,7 +1567,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
             );
         },
         error: function (e) {
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi Batal Produksi");
+            ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi Batal Produksi');
             console.log(e);
         },
     });
@@ -1579,7 +1582,7 @@ $(document).on("click", ".btn_acc_produksi", function () {
         "btn-accept-production",
     );
     $("#btn-accept-production").attr("production_id", production_id);
-    $(".btn-konfirmasi").html("Konfirmasi");
+    $(".btn-konfirmasi").html('<i class="fe fe-check-circle me-1"></i>Konfirmasi');
 });
 
 // Dipakai baik oleh konfirmasi approve awal maupun konfirmasi "buat baris stok baru" di bawah
@@ -1602,7 +1605,7 @@ function submitAccProduction(productionId, confirmCreateStock) {
                     if (e.status == -3) {
                         // Perlu konfirmasi tambahan: ada baris stok yang belum ada dan akan
                         // dibuat dengan stok awal 0 kalau user melanjutkan.
-                        ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+                        ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
                         showModalKonfirmasi(
                             e.message,
                             "btn-confirm-create-stock-production",
@@ -1611,7 +1614,7 @@ function submitAccProduction(productionId, confirmCreateStock) {
                             "production_id",
                             productionId,
                         );
-                        $(".btn-konfirmasi").html("Konfirmasi");
+                        $(".btn-konfirmasi").html('<i class="fe fe-check-circle me-1"></i>Konfirmasi');
                         return false;
                     }
                     notifikasi("error", e.header, e.message);
@@ -1619,10 +1622,10 @@ function submitAccProduction(productionId, confirmCreateStock) {
                         $(".modal").modal("hide");
                         refreshProduction();
                     }
-                    ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+                    ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
                     return false;
                 } else {
-                    ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+                    ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
                     notifikasi(
                         "error",
                         "Gagal Update",
@@ -1630,7 +1633,7 @@ function submitAccProduction(productionId, confirmCreateStock) {
                     );
                 }
             } else {
-                ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+                ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
                 refreshProduction();
                 $(".modal").modal("hide");
                 notifikasi(
@@ -1642,7 +1645,7 @@ function submitAccProduction(productionId, confirmCreateStock) {
         },
         error: function (e) {
             console.log(e);
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
         },
     });
 }
@@ -1674,7 +1677,7 @@ $(document).on("click", ".btn_decline_produksi", function () {
         "btn-decline-production",
     );
     $("#btn-decline-production").attr("production_id", production_id);
-    $(".btn-konfirmasi").html("Konfirmasi");
+    $(".btn-konfirmasi").html('<i class="fe fe-check-circle me-1"></i>Konfirmasi');
 });
 
 $(document).on("click", "#btn-decline-production", function () {
@@ -1687,7 +1690,7 @@ $(document).on("click", "#btn-decline-production", function () {
         },
         method: "post",
         success: function (e) {
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
             $(".modal").modal("hide");
             if (e.status == -2) {
                 notifikasi("error", e.header, e.message);
@@ -1699,7 +1702,7 @@ $(document).on("click", "#btn-decline-production", function () {
         },
         error: function (e) {
             console.log(e);
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
         },
     });
 });

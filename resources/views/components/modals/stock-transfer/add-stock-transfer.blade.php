@@ -21,7 +21,12 @@
         </div>
 
         {{-- ── BODY (scrollable only) ── --}}
-        <div class="modal-body p-0 flex-grow-1" style="overflow-y: auto; min-height: 0; background:#f8fafc;">
+        <div class="modal-body p-0 flex-grow-1 position-relative" style="overflow-y: auto; min-height: 0; background:#f8fafc;">
+          <div class="pg-modal-loading" aria-live="polite" aria-busy="true">
+            <div class="spinner-border text-primary" role="status"></div>
+            <span class="text-muted fw-semibold" style="font-size:13px;">Memuat data...</span>
+          </div>
+          <div class="pg-modal-body-content">
           {{-- ROUTE PANEL --}}
           <div class="border-bottom position-relative" style="background:#f8fafc; padding: 16px 24px;">
             <button class="btn btn-light position-absolute" type="button" data-bs-toggle="collapse"
@@ -234,6 +239,7 @@
               </table>
             </div>
           </div>
+          </div>{{-- /.pg-modal-body-content --}}
         </div>
 
         {{-- ── FOOTER: semua aksi di kanan — Batal, Tolak, Simpan/Transfer ── --}}

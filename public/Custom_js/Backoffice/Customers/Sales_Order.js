@@ -20,9 +20,23 @@ autocompleteProductVariantOnly("#so_sku", "#add_sales_order .modal-content");
 // Bootstrap d-inline-flex uses !important; toggle via d-none / d-inline-flex
 function hideSoAccButtons() {
     $(".btn_acc, .btn_decline").removeClass("d-inline-flex").addClass("d-none");
+    setSoModalMode("form");
 }
 function showSoAccButtons() {
     $(".btn_acc, .btn_decline").removeClass("d-none").addClass("d-inline-flex");
+    setSoModalMode("confirm");
+}
+function setSoModalMode(kind) {
+    var $modal = $("#add_sales_order");
+    var $icon = $modal.find(".pg-modal-icon i");
+    $modal.removeClass("pg-modal--form pg-modal--confirm");
+    if (kind === "confirm") {
+        $modal.addClass("pg-modal--confirm");
+        $icon.attr("class", "fe fe-check-circle");
+    } else {
+        $modal.addClass("pg-modal--form");
+        $icon.attr("class", "fe fe-shopping-cart");
+    }
 }
 function hideSoSaveButton() {
     $(".btn-save").removeClass("d-inline-flex").addClass("d-none");
@@ -294,6 +308,7 @@ function openSalesOrderDetailModal(data) {
     if (data.status == 1) {
         if (soHasAccess("Pengiriman", "others")) {
             showSoAccButtons();
+            $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman");
         } else {
             hideSoAccButtons();
         }

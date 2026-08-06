@@ -12,6 +12,19 @@
         return typeof hasAccessAction === "function" && hasAccessAction("Pengiriman", action);
     }
 
+    function setCsrModalMode(kind) {
+        var $modal = $("#customer-supply-return-modal");
+        var $icon = $modal.find(".pg-modal-icon i");
+        $modal.removeClass("pg-modal--form pg-modal--confirm");
+        if (kind === "confirm") {
+            $modal.addClass("pg-modal--confirm");
+            $icon.attr("class", "fe fe-check-circle");
+        } else {
+            $modal.addClass("pg-modal--form");
+            $icon.attr("class", "fe fe-package");
+        }
+    }
+
     function esc(value) {
         return $("<div>").text(value == null ? "" : value).html();
     }
@@ -367,6 +380,7 @@
         $("#csr-save").removeClass("d-none").text("Simpan Pengembalian");
         $("#csr-btn-upload-proof").removeClass("d-none border-danger text-danger");
         $("#csr-accept,#csr-decline").addClass("d-none");
+        setCsrModalMode("form");
         $("#customer-supply-return-modal .modal-title").text("Tambah Pengembalian Bahan Mentah");
         $("#customer-supply-return-modal input, #customer-supply-return-modal textarea").prop("readonly", false).prop("disabled", false);
         setupCustomerSelect();
@@ -448,6 +462,12 @@
                     $("#csr-line-form,#csr-save").addClass("d-none");
                     if (parseInt(record.status, 10) === 1 && can("others")) {
                         $("#csr-accept,#csr-decline").removeClass("d-none");
+                        setCsrModalMode("confirm");
+                        $("#customer-supply-return-modal .modal-title").text(
+                            "Konfirmasi Pengembalian Bahan " + record.return_number,
+                        );
+                    } else {
+                        setCsrModalMode("form");
                     }
                 } else {
                     $("#customer-supply-return-modal .modal-title").text(
