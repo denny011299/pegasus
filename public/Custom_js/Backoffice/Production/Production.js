@@ -85,20 +85,8 @@ function setProductionModalMode(kind) {
     $modal.removeClass("pg-modal--form pg-modal--confirm");
     if (kind === "confirm") {
         $modal.addClass("pg-modal--confirm");
-        $modal
-            .find(".modal-header")
-            .attr(
-                "style",
-                "background:linear-gradient(135deg,#064e3b 0%,#059669 100%);padding:18px 24px;",
-            );
     } else {
         $modal.addClass("pg-modal--form");
-        $modal
-            .find(".modal-header")
-            .attr(
-                "style",
-                "background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%);padding:18px 24px;",
-            );
     }
 }
 
@@ -124,6 +112,7 @@ function showProductionApprovalActions(action, productionId) {
         .add($decline)
         .attr("production_id", productionId)
         .removeClass("d-none");
+    setProductionModalMode("confirm");
 }
 
 $("#addProduction").on("hidden.bs.modal", function () {

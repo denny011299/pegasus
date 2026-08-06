@@ -1,17 +1,17 @@
-  <div class="modal fade custom-modal" id="modal_safety_stock" data-bs-backdrop="static"
-    data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-      <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
-        <div class="modal-header border-0"
-          style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+<div class="modal fade custom-modal pg-modal--form" id="modal_safety_stock" data-bs-backdrop="static"
+    data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
+      <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none; max-height: 92vh;">
+
+        {{-- ── HEADER ── --}}
+        <div class="modal-header">
           <div class="d-flex align-items-center gap-3">
-            <div
-              style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <i class="fe fe-shield text-white" style="font-size:18px;"></i>
+            <div class="pg-modal-icon">
+              <i class="fe fe-shield"></i>
             </div>
             <div>
-              <h5 class="mb-0 text-white fw-bold modal-title">Safety Stock</h5>
-              <p class="text-white-50 mb-0 mt-1" id="safety_modal_subtitle" style="font-size:13px;"></p>
+              <h5 class="mb-0 fw-bold modal-title">Safety Stock</h5>
+              <small class="text-muted modal-subtitle" id="safety_modal_subtitle"></small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -87,9 +87,9 @@
             </button>
           </div>
         </div>
-        <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
-          <button type="button" class="btn btn-back cancel-btn" data-bs-dismiss="modal"
-            style="border-radius:8px; font-size:13px; font-weight:600;">Tutup</button>
+        {{-- ── FOOTER ── --}}
+        <div class="modal-footer pg-modal-footer">
+          <button type="button" class="btn pg-btn-cancel cancel-btn" data-bs-dismiss="modal">Tutup</button>
         </div>
       </div>
     </div>

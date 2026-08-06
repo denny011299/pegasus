@@ -1,18 +1,17 @@
-  <div class="modal modal-xl custom-modal fade" id="add_sales_order" role="dialog" data-bs-backdrop="static"
-    data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-      <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
-        <div class="modal-header border-0"
-          style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+<div class="modal fade custom-modal pg-modal--form" id="add_sales_order" data-bs-backdrop="static"
+    data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
+      <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none; max-height: 92vh;">
+
+        {{-- ── HEADER ── --}}
+        <div class="modal-header">
           <div class="d-flex align-items-center gap-3">
-            <div
-              style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <i class="fe fe-truck text-white" style="font-size:18px;"></i>
+            <div class="pg-modal-icon">
+              <i class="fe fe-shopping-cart"></i>
             </div>
             <div>
-              <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengiriman</h5>
-              <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Pilih armada, tanggal, dan produk yang
-                akan dikirim</small>
+              <h5 class="mb-0 fw-bold modal-title">Sales Order</h5>
+              <small class="text-muted modal-subtitle">Buat penjualan produk jadi ke pelanggan</small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -77,41 +76,6 @@
                   </div>
                 </div>
                 <div class="col-12 row pe-0">
-                  {{-- <div class="col-lg-4 col-md-6 col-12">
-                                        <div class="input-block">
-                                            <label>Diskon</label>
-                                            <div class="input-group mb-3">
-                                                <input type="text" class="form-control  number-only" id="so_discount"
-                                                placeholder="Input Diskon" value="0">
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-4 col-md-6 col-12">
-                                        <div class="input-block">
-                                            <label>PPN</label>
-                                            <div class="input-group mb-3">
-                                                <input type="text" class="form-control  number-only" id="so_ppn"
-                                                placeholder="Input PPN" value="0">
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-4 col-md-12 col-12">
-                                        <div class="input-block mb-3">
-                                            <label>Biaya Pengiriman</label>
-                                            <div class="input-group mb-3">
-                                                <span class="input-group-text">Rp </span>
-                                                <input type="text" class="form-control  number-only nominal_only" id="so_cost" value="0" placeholder="Input Biaya Pengiriman">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-4 col-md-6 col-12">
-                                        <div class="input-block mb-3">
-                                            <label>No. Invoice</label>
-                                            <input id="so_invoice_no" class="form-control" value="{{ $data['so_invoice_no'] || '-' }}" disabled>
-                                        </div>
-                                    </div> --}}
                 </div>
                 <div class="col-12 row pe-0 mb-4 align-items-end">
                   <div class="col-lg-6 col-md-12 col-12 pe-0">
@@ -149,7 +113,6 @@
                     </div>
                   </div>
                   <div class="col-lg-6 col-md-12 col-12 pe-0">
-                    <!-- JS will inject Qty, Satuan, and Tambah Produk here -->
                   </div>
                 </div>
                 <div class="col-12 mb-3">
@@ -189,49 +152,19 @@
                       </tbody>
                     </table>
                   </div>
-                  {{-- <div class="col-12 row pt-3">
-                                    <div class="col-lg-6 col-md-6 col-12"></div>
-                                    <div class="col-lg-6 col-md-6 col-12">
-                                        <div class="d-flex justify-content-between">
-                                            <p>Total</p>
-                                            <p id="value_total">0</p>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <p>Ppn</p>
-                                            <p id="value_ppn">0</p>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <p>Diskon</p>
-                                            <p id="value_discount">0</p>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <p>Biaya Pengiriman</p>
-                                            <p id="value_cost">0</p>
-                                        </div>
-                                        <div class="d-flex justify-content-between">
-                                            <b>Grand Total</b>
-                                            <b id="value_grand">0</b>
-                                        </div>
-                                    </div>
-                                </div> --}}
                 </div>
               </div>
             </div>
           </div>
-            <div class="modal-footer border-top pt-3 pb-3 px-4" style="background:#f8fafc;">
-              <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2"
-                style="border-radius:8px; font-size:13px; font-weight:600; color:#64748b;">Batal</button>
+            {{-- ── FOOTER ── --}}
+            <div class="modal-footer pg-modal-footer">
+              <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
               @if (in_array('others', $akses->firstWhere('name', 'Pengiriman')->akses))
-                <button type="button" class="btn btn-danger me-2 btn_decline d-none align-items-center gap-2"
-                  style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-x"></i> Tolak</button>
-                <button type="button" class="btn btn-success me-2 btn_acc d-none align-items-center gap-2"
-                  style="border-radius:8px; font-size:13px; font-weight:600;"><i class="fe fe-check"></i>
-                  Terima</button>
+                <button type="button" class="btn pg-btn-decline btn_decline d-none"><i class="fe fe-x me-1"></i>Tolak</button>
+                <button type="button" class="btn pg-btn-accept btn_acc d-none"><i class="fe fe-check me-1"></i>Terima</button>
               @endif
-              <button type="button"
-                class="btn btn-primary paid-continue-btn btn-save d-inline-flex align-items-center gap-2 ms-auto"
-                style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 24px;font-size:13px;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
-                <i class="fe fe-save"></i> <span id="btn_save_text">Tambah Pengiriman</span>
+              <button type="button" class="btn pg-btn-save paid-continue-btn btn-save">
+                <i class="fe fe-save me-1"></i><span id="btn_save_text">Tambah Pengiriman</span>
               </button>
             </div>
         </form>

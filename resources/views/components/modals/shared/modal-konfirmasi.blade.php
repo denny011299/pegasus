@@ -13,7 +13,7 @@
       </div>
       <div class="modal-footer pg-modal-footer">
         <button type="button" class="btn pg-btn-cancel btn-cancel">Batal</button>
-        <button type="button" class="btn pg-btn-confirm btn-success btn-konfirmasi">Konfirmasi</button>
+        <button type="button" class="btn pg-btn-confirm btn-konfirmasi">Konfirmasi</button>
       </div>
     </div>
   </div>

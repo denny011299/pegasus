@@ -1,20 +1,19 @@
-  <div class="modal modal-lg custom-modal fade" id="accept_stock_transfer" role="dialog" data-bs-backdrop="static"
+<div class="modal modal-lg custom-modal fade pg-modal--confirm" id="accept_stock_transfer" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: 90vw;">
-      <form action="#" id="formAcceptStockTransfer" class="modal-content"
-        style="border-radius:16px;overflow:hidden;border:none;">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
+      <form action="#" id="formAcceptStockTransfer" class="modal-content d-flex flex-column"
+        style="border-radius: 16px; overflow: hidden; border: none; max-height: 90vh;">
 
         {{-- ── HEADER ── --}}
-        <div class="modal-header border-0"
-          style="background:linear-gradient(135deg,#064e3b 0%,#059669 100%);padding:18px 24px;">
+        <div class="modal-header">
           <div class="d-flex align-items-center gap-3">
-            <div
-              style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <i class="fe fe-check-circle text-white" style="font-size:18px;"></i>
+            <div class="pg-modal-icon">
+              <i class="fe fe-check-circle"></i>
             </div>
             <div>
-              <h5 class="mb-0 text-white fw-bold">Terima Stock Transfer</h5>
-              <small class="text-white-50">Konfirmasi penerimaan barang</small>
+              <h5 class="mb-0 fw-bold modal-title">Terima Stock Transfer</h5>
+              <small class="text-muted accept-modal-subtitle">Konfirmasi penerimaan produk dan stok akan
+                bertambah</small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -175,15 +174,10 @@
           </div>
         </div>
 
-        {{-- ── FOOTER: Batal, Terima (kanan) ── --}}
-        <div class="modal-footer border-top d-flex justify-content-end align-items-center gap-2"
-          style="background:#f8fafc;padding:14px 24px;">
-          <button type="button" data-bs-dismiss="modal" class="btn"
-            style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;min-width:130px;height:42px;">Batal</button>
-          <button type="button"
-            class="btn btn-accept-transfer d-inline-flex align-items-center justify-content-center gap-2"
-            style="background:linear-gradient(135deg,#059669,#16a34a);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:150px;height:42px;box-shadow:0 4px 12px rgba(5,150,105,.3);"><i
-              class="fe fe-check-circle me-1"></i>Terima Transfer</button>
+        {{-- ── FOOTER ── --}}
+        <div class="modal-footer pg-modal-footer">
+          <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
+          <button type="button" class="btn pg-btn-accept btn-accept-transfer"><i class="fe fe-check-circle me-1"></i>Terima Transfer</button>
         </div>
 
       </form>

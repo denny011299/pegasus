@@ -1,18 +1,17 @@
-  <div class="modal fade custom-modal" id="add_stock_product" data-bs-backdrop="static"
-    data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
-      <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
-        <div class="modal-header border-0"
-          style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+  <div class="modal fade custom-modal pg-modal--form" id="add_stock_product" data-bs-backdrop="static"
+    data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
+      <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none; max-height: 92vh;">
+
+        {{-- ── HEADER ── --}}
+        <div class="modal-header">
           <div class="d-flex align-items-center gap-3">
-            <div
-              style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <i class="fe fe-clock text-white" style="font-size:18px;"></i>
+            <div class="pg-modal-icon">
+              <i class="fe fe-clock"></i>
             </div>
             <div>
-              <h5 class="mb-0 text-white fw-bold modal-title">Riwayat Stok Produk</h5>
-              <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Lihat rekam jejak aktivitas
-                produk</small>
+              <h5 class="mb-0 fw-bold modal-title">Riwayat Stok Produk</h5>
+              <small class="text-muted modal-subtitle">Detail mutasi dan penyesuaian stok produk</small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -78,15 +77,13 @@
               </div>
             </div>
           </div>
-          <div class="modal-footer border-top d-flex justify-content-end align-items-center"
-            style="background:#f8fafc; padding: 16px 24px; min-height: 70px;">
-            <button type="button" data-bs-dismiss="modal"
-              class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2"
-              style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:140px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3); margin-bottom: 0;">
-              Selesai
-            </button>
-          </div>
         </form>
+        {{-- ── FOOTER ── --}}
+        <div class="modal-footer pg-modal-footer">
+          <button type="button" data-bs-dismiss="modal" class="btn pg-btn-save btn-save">
+            Selesai
+          </button>
+        </div>
       </div>
     </div>
   </div>

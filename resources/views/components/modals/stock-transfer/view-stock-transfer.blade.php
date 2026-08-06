@@ -1,19 +1,17 @@
-  <div class="modal modal-lg custom-modal fade" id="view_stock_transfer" role="dialog" data-bs-backdrop="static"
+<div class="modal modal-lg custom-modal fade pg-modal--form" id="view_stock_transfer" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl"
-      style="max-width: 90vw; max-height: 92vh; margin: 1rem auto;">
-      <div class="modal-content d-flex flex-column"
-        style="border-radius: 16px; overflow: hidden; border: none; max-height: 92vh;">
-        <div class="modal-header border-0 flex-shrink-0"
-          style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: 90vw;">
+      <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
+
+        {{-- ── HEADER ── --}}
+        <div class="modal-header">
           <div class="d-flex align-items-center gap-3">
-            <div
-              style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <i class="fe fe-file-text text-white" style="font-size:18px;"></i>
+            <div class="pg-modal-icon">
+              <i class="fe fe-file-text"></i>
             </div>
             <div>
-              <h5 class="mb-0 text-white fw-bold modal-title">View Stock Transfer</h5>
-              <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Detail data transfer stok</small>
+              <h5 class="mb-0 fw-bold modal-title">Detail Stock Transfer</h5>
+              <small class="text-muted">Informasi lengkap pengiriman stok</small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -169,10 +167,11 @@
             </table>
           </div>
         </div>
-        <div class="modal-footer border-top flex-shrink-0" style="background:#f8fafc; padding:14px 24px;">
-          <button type="button" data-bs-dismiss="modal" class="btn"
-            style="background:#f1f5f9; border:1px solid #e2e8f0; color:#475569; border-radius: 8px; font-weight: 600; padding: 9px 24px; font-size: 13px;">Tutup</button>
+        {{-- ── FOOTER: Tutup ── --}}
+        <div class="modal-footer pg-modal-footer">
+          <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Tutup</button>
         </div>
+
       </div>
     </div>
   </div>

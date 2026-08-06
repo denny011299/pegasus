@@ -1,18 +1,16 @@
-  <div class="modal modal-lg custom-modal fade" id="add_warehouse_type" role="dialog" data-bs-backdrop="static"
+<div class="modal modal-lg custom-modal fade pg-modal--form" id="add_warehouse_type" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-      <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content d-flex flex-column" style="border-radius:16px;overflow:hidden;border:none;">
         {{-- ── HEADER ── --}}
-        <div class="modal-header border-0"
-          style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+        <div class="modal-header">
           <div class="d-flex align-items-center gap-3">
-            <div
-              style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <i class="fe fe-tag text-white" style="font-size:18px;"></i>
+            <div class="pg-modal-icon">
+              <i class="fe fe-tag"></i>
             </div>
             <div>
-              <h5 class="mb-0 text-white fw-bold modal-title">Tambah Tipe Gudang</h5>
-              <small class="text-white-50">Kelola kategori / tipe gudang</small>
+              <h5 class="mb-0 fw-bold modal-title">Tambah Tipe Gudang / Toko</h5>
+              <small class="text-muted modal-subtitle">Input data tipe gudang baru</small>
             </div>
           </div>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -55,15 +53,11 @@
           </div>
 
           {{-- ── FOOTER ── --}}
-          <div class="modal-footer border-top" style="background:#f8fafc;padding:14px 24px;">
-            <button type="button" data-bs-dismiss="modal" class="btn"
-              style="border:1px solid #e2e8f0;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:600;color:#64748b;">Batal</button>
-            <button type="button"
-              class="btn btn-save d-inline-flex align-items-center justify-content-center gap-2"
-              style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:160px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);"><i
-                class="fe fe-save me-1"></i>Simpan Tipe Gudang</button>
-          </div>
-        </form>
-      </div>
+        <div class="modal-footer pg-modal-footer">
+          <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
+          <button type="button" class="btn pg-btn-save btn-save"><i class="fe fe-save me-1"></i>Simpan Tipe Gudang</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>

@@ -1,4 +1,4 @@
-﻿<?php $page = 'sales_order'; ?>
+<?php $page = 'sales_order'; ?>
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
@@ -607,14 +607,14 @@
     <div class="modal fade pg-modal--form" id="customer-supply-return-modal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                <div class="modal-header">
                     <div class="d-flex align-items-center gap-3">
-                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                            <i class="fe fe-package text-white" style="font-size:18px;"></i>
+                        <div class="pg-modal-icon">
+                            <i class="fe fe-package"></i>
                         </div>
                         <div>
-                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengembalian Bahan Mentah</h5>
-                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Bahan mentah atau kemasan kosong dari armada</small>
+                            <h5 class="mb-0 fw-bold modal-title">Tambah Pengembalian Bahan Mentah</h5>
+                            <small class="text-muted mb-0 mt-1" style="font-size:13px;">Bahan mentah atau kemasan kosong dari armada</small>
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -717,14 +717,14 @@
     <div class="modal fade pg-modal--form" id="customer-product-return-modal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-centered">
             <div class="modal-content border-0 rounded-4">
-                <div class="modal-header border-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 18px 24px;">
+                <div class="modal-header">
                     <div class="d-flex align-items-center gap-3">
-                        <div style="width:40px;height:40px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                            <i class="fe fe-box text-white" style="font-size:18px;"></i>
+                        <div class="pg-modal-icon">
+                            <i class="fe fe-box"></i>
                         </div>
                         <div>
-                            <h5 class="mb-0 text-white fw-bold modal-title">Tambah Pengembalian Produk Jadi</h5>
-                            <small class="text-white-50 mb-0 mt-1" style="font-size:13px;">Produk jadi dari armada ke gudang</small>
+                            <h5 class="mb-0 fw-bold modal-title">Tambah Pengembalian Produk Jadi</h5>
+                            <small class="text-muted mb-0 mt-1" style="font-size:13px;">Produk jadi dari armada ke gudang</small>
                         </div>
                     </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -824,37 +824,47 @@
         </div>
     </div>
 
-    <div class="modal fade" id="csr-photo-preview-modal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade pg-modal--form" id="csr-photo-preview-modal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 overflow-hidden">
-                <div class="modal-header border-0 text-white" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">
-                    <h5 class="modal-title text-white"><i class="fe fe-image me-2"></i>Bukti Foto Pengembalian</h5>
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="pg-modal-icon">
+                            <i class="fe fe-image"></i>
+                        </div>
+                        <h5 class="mb-0 fw-bold modal-title">Bukti Foto Pengembalian</h5>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body bg-light text-center p-3">
                     <img id="csr-proof-preview" class="img-fluid rounded" style="max-height:65vh;object-fit:contain;" alt="Bukti pengembalian">
                 </div>
-                <div class="modal-footer">
-                    <a id="csr-proof-download" class="btn btn-outline-primary" download><i class="fe fe-download me-1"></i>Download</a>
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                <div class="modal-footer pg-modal-footer">
+                    <button type="button" class="btn pg-btn-cancel" data-bs-dismiss="modal">Tutup</button>
+                    <a id="csr-proof-download" class="btn pg-btn-save" download><i class="fe fe-download me-1"></i>Download</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="cpr-photo-preview-modal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal fade pg-modal--form" id="cpr-photo-preview-modal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 rounded-4 overflow-hidden">
-                <div class="modal-header border-0 text-white" style="background:linear-gradient(135deg,#1e3a8a,#3b82f6);">
-                    <h5 class="modal-title text-white"><i class="fe fe-image me-2"></i>Bukti Foto Pengembalian Produk</h5>
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="pg-modal-icon">
+                            <i class="fe fe-image"></i>
+                        </div>
+                        <h5 class="mb-0 fw-bold modal-title">Bukti Foto Pengembalian Produk</h5>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body bg-light text-center p-3">
                     <img id="cpr-proof-preview" class="img-fluid rounded" style="max-height:65vh;object-fit:contain;" alt="Bukti pengembalian produk">
                 </div>
-                <div class="modal-footer">
-                    <a id="cpr-proof-download" class="btn btn-outline-primary" download><i class="fe fe-download me-1"></i>Download</a>
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Tutup</button>
+                <div class="modal-footer pg-modal-footer">
+                    <button type="button" class="btn pg-btn-cancel" data-bs-dismiss="modal">Tutup</button>
+                    <a id="cpr-proof-download" class="btn pg-btn-save" download><i class="fe fe-download me-1"></i>Download</a>
                 </div>
             </div>
         </div>
