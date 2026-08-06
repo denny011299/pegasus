@@ -38,7 +38,11 @@
                                     </span>
                                     <div class="staff-details-cont">
                                         <h6>Nama</h6>
-                                        <p>{{ $data["staff_first_name"] . ' ' . $data["staff_last_name"] }}</p>
+                                        {{-- staffs.staff_name is a single combined column, no staff_first_name/
+                                             staff_last_name split exists on this table (confirmed via
+                                             Schema::getColumnListing) -- those keys were always undefined,
+                                             showing a blank name for every staff. --}}
+                                        <p>{{ $data["staff_name"] }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -116,7 +120,10 @@
                                     </span>
                                     <div class="staff-details-cont">
                                         <h6>Jabatan</h6>
-                                        <p>{{$data["staff_position"]}}</p>
+                                        {{-- staffs has no staff_position column -- "Jabatan" (position) here means
+                                             the staff's role, already attached by Staff::getStaff() as role_name,
+                                             the same source Manajemen Pengguna's own edit-staff page uses. --}}
+                                        <p>{{ $data["role_name"] ?? '-' }}</p>
                                     </div>
                                 </div>
                             </div>
