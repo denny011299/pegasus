@@ -37,6 +37,22 @@ return [
     'releases' => [
 
         [
+            'date' => '2026-08-07',
+            'title' => 'Fase 1 - Change log & pengecekan deployment, perbaikan Detail Staff',
+            'changes' => [
+                'Halaman Change Log ini (/system/changelog) dan halaman Deployment Check (/system/deployment-check) ditambahkan -- keduanya untuk membantu memastikan upload manual ke server tidak ada file yang ketinggalan. Keduanya internal (tidak ada di sidebar, hanya perlu login).',
+                'Halaman error sekarang bisa mendeteksi dan menyebutkan file yang kemungkinan belum ter-upload (view/class/file yang hilang) ketika terjadi crash, khusus untuk staff yang sedang login.',
+                [
+                    'text' => 'Halaman Detail Staff (Manajemen Pengguna) tidak lagi menampilkan Nama dan Jabatan kosong -- keduanya sekarang menampilkan data yang benar.',
+                    'refs' => [26],
+                ],
+                [
+                    'text' => 'Issue lama soal konfirmasi stok produksi ketika baris stok satuan besar belum ada ternyata sudah diperbaiki sejak awal Agustus -- ditutup.',
+                    'refs' => [7],
+                ],
+            ],
+        ],
+        [
             'date' => '2026-08-06',
             'title' => 'Fase 1 - Perbaikan bug lanjutan (Agustus 2026, berjalan)',
             'changes' => [
