@@ -224,9 +224,10 @@ class ProductionController extends Controller
                 ]);
             }
 
-            // Pengali konversi BOM vs Input User (dalam satuan terkecil produk)
-            $qty = 1;
-            if ($bom['unit_id'] != $value['unit_id']) {
+            // Pengecekan unit produksi punya relasi yang tersambung ke satuan resep atau tidak
+            // (dos/pack di bawah butuh ini; getBatchCount() sendiri sudah aman lewat
+            // convertQtyToSmallestUnit()'s fail-safe kalau tidak tersambung).
+            if ($bom['unit_id'] != $value['unit_id']){
                 $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
@@ -262,11 +263,6 @@ class ProductionController extends Controller
                     if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
                     continue;
                 }
-
-                // Pengali $qty dari satuan input user ke satuan terkecil produk (dipakai
-                // khusus untuk bahan dos/pack) — bug #16: delegate to the fixed
-                // convertQtyToSmallestUnit() instead of re-multiplying every relation row here.
-                $qty = $this->convertQtyToSmallestUnit(1, (int) $value['unit_id'], (int) $value['product_variant_id']);
             }
 
             // Masukkan ke dalam array agregat berdasarkan supplies_id
@@ -297,10 +293,17 @@ class ProductionController extends Controller
                         ->where('status', 1)
                         ->first();
 
+                    // Diperbaiki (2026-08-06): dulu pakai convertQtyToSmallestUnit(), yang jalan
+                    // sampai unit paling bawah di rantai relasi — salah kalau rantainya lebih dari
+                    // satu tingkat (satuan resep belum tentu unit paling bawah). Sekarang berhenti
+                    // TEPAT di satuan resep ($bom['unit_id']) — lihat convertQtyBetweenUnits().
                     $nilaiIsiDos = $relasiKonversi ? $relasiKonversi->pr_unit_value_2 : 1;
-                    $totalPcs    = ($bom['unit_id'] != $value['unit_id'])
-                        ? $value['pd_qty'] * $qty
-                        : $value['pd_qty'];
+                    $totalPcs    = $this->convertQtyBetweenUnits(
+                        (int) $value['pd_qty'],
+                        (int) $value['unit_id'],
+                        (int) $bom['unit_id'],
+                        (int) $value['product_variant_id']
+                    );
                     $jumlahDos      = floor($totalPcs / $nilaiIsiDos);
                     $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
                 } else {
@@ -577,9 +580,10 @@ class ProductionController extends Controller
                 ]);
             }
 
-            // Logika pencarian pengali konversi (BOM vs Input User)
-            $qty = 1; // ← dipakai khusus untuk perhitungan bahan dos/pack di bawah
-            if ($bom['unit_id'] != $value['unit_id']) {
+            // Pengecekan unit produksi punya relasi yang tersambung ke satuan resep atau tidak
+            // (dos/pack di bawah butuh ini; getBatchCount() sendiri sudah aman lewat
+            // convertQtyToSmallestUnit()'s fail-safe kalau tidak tersambung).
+            if ($bom['unit_id'] != $value['unit_id']){
                 $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
@@ -615,11 +619,6 @@ class ProductionController extends Controller
                     if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
                     continue;
                 }
-
-                // Pengali $qty dari satuan input user ke satuan terkecil produk (dipakai
-                // khusus bahan dos/pack) — bug #16: delegate to the fixed
-                // convertQtyToSmallestUnit() instead of re-multiplying every relation row here.
-                $qty = $this->convertQtyToSmallestUnit(1, (int) $value['unit_id'], (int) $value['product_variant_id']);
             }
 
             // Masukkan ke dalam array agregat berdasarkan supplies_id
@@ -642,10 +641,15 @@ class ProductionController extends Controller
                         ->where('status', 1)
                         ->first();
 
+                    // Diperbaiki (2026-08-06): lihat comment di convertQtyBetweenUnits() —
+                    // berhenti tepat di satuan resep, bukan sampai unit paling bawah rantai.
                     $nilaiIsiDos = $relasiKonversi ? $relasiKonversi->pr_unit_value_2 : 1;
-                    $totalPcs    = ($bom['unit_id'] != $value['unit_id'])
-                        ? $value['pd_qty'] * $qty
-                        : $value['pd_qty'];
+                    $totalPcs    = $this->convertQtyBetweenUnits(
+                        (int) $value['pd_qty'],
+                        (int) $value['unit_id'],
+                        (int) $bom['unit_id'],
+                        (int) $value['product_variant_id']
+                    );
                     $jumlahDos      = floor($totalPcs / $nilaiIsiDos);
                     $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
                 } else {
@@ -1303,14 +1307,6 @@ class ProductionController extends Controller
             $bdetail = BomDetail::where('bom_id', $value['bom_id'])->where('status', 1)->get();
             if (!$b) continue;
 
-            // Pengali $qty (dos/pack) — bug #16: delegate to the fixed
-            // convertQtyToSmallestUnit() instead of re-multiplying every relation row here, so
-            // this reversal path stays symmetric with insertProduction()/accProduction().
-            $qty = 1;
-            if ($b['unit_id'] != $value['unit_id']) {
-                $qty = $this->convertQtyToSmallestUnit(1, (int) $value['unit_id'], (int) $value['product_variant_id']);
-            }
-
             $batchCount = $this->getBatchCount(
                 (int) $value['pd_qty'],
                 (int) $value['unit_id'],
@@ -1331,10 +1327,16 @@ class ProductionController extends Controller
                         ->where('status', 1)
                         ->first();
 
+                    // Diperbaiki (2026-08-06): lihat comment di convertQtyBetweenUnits() —
+                    // berhenti tepat di satuan resep, bukan sampai unit paling bawah rantai. Ini
+                    // membuat reversal ini simetris dengan insertProduction()/accProduction().
                     $nilaiIsiDos = $relasiKonversi ? $relasiKonversi->pr_unit_value_2 : 1;
-                    $totalPcs    = ($b['unit_id'] != $value['unit_id'])
-                        ? $value['pd_qty'] * $qty
-                        : $value['pd_qty'];
+                    $totalPcs    = $this->convertQtyBetweenUnits(
+                        (int) $value['pd_qty'],
+                        (int) $value['unit_id'],
+                        (int) $b['unit_id'],
+                        (int) $value['product_variant_id']
+                    );
                     $jumlahDos      = floor($totalPcs / $nilaiIsiDos);
                     $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
                 } else {
@@ -1556,6 +1558,51 @@ class ProductionController extends Controller
         }
 
         return $qty * $multiplier;
+    }
+
+    /**
+     * Diperbaiki (2026-08-06): dulu perhitungan "kemasan besar" (dos/pack) di bawah memakai
+     * convertQtyToSmallestUnit(), yang SELALU jalan sampai unit paling bawah di rantai relasi —
+     * padahal yang dibutuhkan di sana adalah qty dalam satuan RESEP (`$bom['unit_id']`), yang
+     * belum tentu unit paling bawah kalau rantainya lebih dari satu tingkat (mis. Dos->Pcs->Liter,
+     * resep pakai Pcs — bukan Liter). Contoh nyata bedanya: 1 Dos = 12 Pcs, 1 Pcs = 2 Liter. Resep
+     * "Dos Karton isi 12 Pcs" butuh qty dalam satuan Pcs (12), tapi convertQtyToSmallestUnit()
+     * jalan terus sampai Liter (12*2=24) — floor(24/12)=2 dos yang dianggap terpakai, padahal yang
+     * benar floor(12/12)=1. Method ini berhenti TEPAT di $toUnitId, bukan di dasar rantai.
+     *
+     * Fail-safe: kalau $toUnitId tidak pernah ketemu sambil turun dari $fromUnitId (seharusnya
+     * tidak terjadi untuk produk yang relasinya sudah tersambung benar, lihat validasi "$ada" di
+     * pemanggil), kembalikan $qty apa adanya (anggap 1:1) daripada mengalikan dengan faktor yang
+     * sebenarnya tidak berhubungan.
+     */
+    private function convertQtyBetweenUnits(int $qty, int $fromUnitId, int $toUnitId, int $productVariantId): int
+    {
+        if ($fromUnitId === $toUnitId) {
+            return $qty;
+        }
+
+        $relations = ProductRelation::where('product_variant_id', $productVariantId)
+            ->where('status', 1)
+            ->get();
+
+        $multiplier = 1;
+        $currentUnit = $fromUnitId;
+        $guard = 0;
+
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_1 === (int) $currentUnit);
+            if (!$rel) {
+                return $qty;
+            }
+            $multiplier *= (int) $rel->pr_unit_value_2;
+            $currentUnit = (int) $rel->pr_unit_id_2;
+            if ($currentUnit === $toUnitId) {
+                return $qty * $multiplier;
+            }
+        }
+
+        return $qty;
     }
 
     private function getBatchCount(
