@@ -1,6 +1,6 @@
 {
-    "generated_at": "2026-08-06T23:47:35+07:00",
-    "commit": "2de6056b7a310f8d4619061262325eef5a819206",
+    "generated_at": "2026-08-07T00:11:47+07:00",
+    "commit": "0923c35cf96d829374bac909dd0e992abe818c94",
     "branch": "fase1/bug-hunt-06082026",
     "file_count": 2627,
     "files": {
@@ -2534,7 +2534,7 @@
         "resources/views/Backoffice/User/Role.blade.php": "a40f2c5c2c16f22d0c81aa658572c8ced7ab4f93",
         "resources/views/Backoffice/User/Staff.blade.php": "1ad67ad998d2a1567f26258e7daef5c62152d48e",
         "resources/views/Backoffice/User/insertStaff.blade.php": "ab70882b008a01441cf3f862e16d36f90404ec73",
-        "resources/views/Backoffice/User/staffDetails.blade.php": "73497f956673dbf7b3ee18f78f6a58baea66932e",
+        "resources/views/Backoffice/User/staffDetails.blade.php": "f2d80b4e72df01538a638f41e68a5ed804be895a",
         "resources/views/Backoffice/UserManagement/Department.blade.php": "61e96bfa25b707142880166fcb968e8e3097b617",
         "resources/views/Backoffice/UserManagement/Permissions.blade.php": "caad41a248af6463fb3eb81b9c096fd90cb3d739",
         "resources/views/Backoffice/UserManagement/RolesPermissions.blade.php": "a9b930e98b6f05a0515252f9751439d4697eac58",
