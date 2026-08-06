@@ -363,17 +363,30 @@ class SupplierController extends Controller
         $notValid = [];
         $notValidBank = [];
         $valid = [];
+        // Ditambahkan (2026-08-06, GitHub issue #18): dulu grouping hanya memvalidasi bank_id yang
+        // sama, tidak pernah supplier_id — dua supplier berbeda yang kebetulan pakai bank yang sama
+        // bisa lolos digabung ke satu batch Tanda Terima yang sama, dan supplier_id yang tersimpan
+        // di batch itu hanya mengikuti supplier dari invoice TERAKHIR di loop (bukan representasi
+        // yang benar untuk seluruh batch). PM mengonfirmasi (2026-08-06): grouping harus berdasarkan
+        // KEDUANYA, bank_id DAN supplier_id.
+        $notValidSupplier = [];
         $bank_id = 0;
+        $supplier_id = 0;
         $param["supplier"] ="";
         foreach ($req->poi_id as $key => $value) {
             $p = PurchaseOrderDetailInvoice::find($value);
             $po = PurchaseOrder::find($p->po_id);
             $s = Supplier::find($po->po_supplier);
             $param["supplier"] = $s;
-            if ($key == 0) $bank_id = $s->bank_id;
-            else {
+            if ($key == 0) {
+                $bank_id = $s->bank_id;
+                $supplier_id = $s->supplier_id;
+            } else {
                 if ($bank_id != $s->bank_id){
                     array_push($notValidBank, $p->poi_code);
+                }
+                if ($supplier_id != $s->supplier_id){
+                    array_push($notValidSupplier, $p->poi_code);
                 }
             }
             if($po->pembayaran!=1||$po->tt_id !=null){
@@ -393,6 +406,12 @@ class SupplierController extends Controller
             return [
                 "status"=>-1,
                 "message"=>"Data berikut memiliki bank yang berbeda : ".implode(", ",$notValidBank)
+            ];
+        }
+        if(count($notValidSupplier)>0){
+            return [
+                "status"=>-1,
+                "message"=>"Data berikut memiliki supplier yang berbeda : ".implode(", ",$notValidSupplier)
             ];
         }
 
