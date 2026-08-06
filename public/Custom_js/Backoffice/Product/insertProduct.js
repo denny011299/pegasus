@@ -259,21 +259,44 @@ $(document).on("click","#btnAddRowRelasi",function(){
         notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh sama");
         return false;
     }
+    // Rantai harus berurutan: begitu sudah ada baris, sisi kiri wajib = sisi kanan baris
+    // terakhir (dikunci lewat refreshRelasiUnitOptions()), dan sisi kanan tidak boleh unit yang
+    // sudah pernah dipakai di rantai ini — cek ulang di sini sebagai jaga-jaga kalau opsi yang
+    // seharusnya disabled itu tetap ke-submit.
+    var existingRows = $('#tbRelasi .row-relasi');
+    if (existingRows.length > 0) {
+        var expectedLeft = String(existingRows.last().attr('right'));
+        if (String(r1) !== expectedLeft) {
+            notifikasi('error', "Gagal Tambah", "Unit sisi kiri harus melanjutkan dari unit sisi kanan relasi sebelumnya");
+            return false;
+        }
+        var usedUnitIds = [];
+        existingRows.each(function () {
+            usedUnitIds.push(String($(this).attr('left')));
+            usedUnitIds.push(String($(this).attr('right')));
+        });
+        if (usedUnitIds.indexOf(String(r2)) !== -1) {
+            notifikasi('error', "Gagal Tambah", "Unit ini sudah dipakai pada rantai relasi sebelumnya");
+            return false;
+        }
+    }
 
     var currentIndex = $('.row-relasi').length;
     console.log("Menambahkan Baris ke-" + currentIndex + ": " + r1 + " - " + r2);
-    
+
     addRowRelasi(
         {
-            pr_unit_id_1: r1, 
+            pr_unit_id_1: r1,
             pr_unit_name_1: $('#relasi1 option:selected').text().trim()
 
         },
         {
-            pr_unit_id_2: r2, 
+            pr_unit_id_2: r2,
             pr_unit_name_2: $('#relasi2 option:selected').text().trim()
         }
     );
+    $('#relasi2').val('');
+    refreshRelasiUnitOptions();
 });
 
 $(document).on("change","#product_unit",function(){
@@ -340,11 +363,45 @@ $('#unit_id').on('click', function() {
    $('.select2-search__field').remove();
 });
 
+// Ditambahkan (2026-08-06): relasi unit produk HARUS membentuk satu rantai berurutan
+// (mis. Dos->Pcs->Liter), bukan pasangan bebas — kalau tidak, konversi satuan-terkecil di
+// backend (ProductionController::convertQtyToSmallestUnit()) bisa salah hitung. Dulu user bebas
+// pilih pasangan unit mana pun di #relasi1/#relasi2 setiap klik "Tambah Relasi", tidak ada yang
+// menjamin pasangan baru itu nyambung ke pasangan sebelumnya. Sekarang begitu sudah ada minimal 1
+// baris, sisi kiri (#relasi1, unit yang lebih besar) OTOMATIS dikunci ke sisi kanan (unit yang
+// lebih kecil) dari baris TERAKHIR — user hanya perlu pilih unit berikutnya di sisi kanan. Unit
+// yang sudah dipakai di rantai (kiri maupun kanan mana pun) juga disingkirkan dari pilihan sisi
+// kanan supaya rantai tidak bisa memutar balik ke unit yang sudah dipakai.
+function refreshRelasiUnitOptions() {
+    var rows = $('#tbRelasi .row-relasi');
+    var usedUnitIds = [];
+    rows.each(function () {
+        usedUnitIds.push(String($(this).attr('left')));
+        usedUnitIds.push(String($(this).attr('right')));
+    });
+
+    if (rows.length > 0) {
+        var lockedUnitId = String(rows.last().attr('right'));
+        $('#relasi1').val(lockedUnitId).prop('disabled', true);
+    } else {
+        $('#relasi1').prop('disabled', false);
+    }
+
+    $('#relasi2 option').each(function () {
+        var opt = $(this);
+        var isUsed = usedUnitIds.indexOf(String(opt.val())) !== -1;
+        opt.prop('disabled', isUsed);
+    });
+    if (usedUnitIds.indexOf(String($('#relasi2').val())) !== -1) {
+        $('#relasi2').val('');
+    }
+}
+
 function addRowRelasi(element1,element2) {
     console.log(element1);
     
     $('#tbRelasi').append(`
-        <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${dataRelasi[dataRelasi.length-1].pr_unit_id_2 ? dataRelasi[dataRelasi.length-1].pr_unit_id_2 : element2.pr_unit_id_2}">
+        <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${element2.pr_unit_id_2 ? element2.pr_unit_id_2 : element2.id}">
             <td>
                 <div class="input-group">
                     <input type="text" class="form-control nominal-only unit1 fill" value="1"
@@ -376,6 +433,7 @@ function addRowRelasi(element1,element2) {
 
 $(document).on('click', '.btn_delete_relasi', function() {
     $(this).closest('tr').remove();
+    refreshRelasiUnitOptions();
 });
 
 function cekKembar() {
@@ -476,9 +534,11 @@ $(document).on('click', '.btn_edit_relasi', function(){
     $('#tbRelasi').html("");
     if(relasi[index]) {
         relasi[index].forEach((item, idx) => {
-            addRowRelasi(item, item); 
+            addRowRelasi(item, item);
         });
     }
-    
+    $('#relasi2').val('');
+    refreshRelasiUnitOptions();
+
     $('#modalRelasi').modal('show');
 })
