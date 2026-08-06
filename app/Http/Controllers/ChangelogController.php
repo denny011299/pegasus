@@ -17,10 +17,9 @@ class ChangelogController extends Controller
      */
     public function index()
     {
-        $releases = config('changelog.releases', []);
-
         return view('Backoffice.System.Changelog', [
-            'releases' => $releases,
+            'releases' => config('changelog.releases', []),
+            'repoUrl' => rtrim(config('changelog.repo_url', ''), '/'),
         ]);
     }
 }

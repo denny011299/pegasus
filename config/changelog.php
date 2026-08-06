@@ -17,9 +17,22 @@
  * (karena belum ada catatan manual sebelumnya) dan dirangkum per bulan --
  * bukan satu entri per commit. Mulai sekarang, tiap rilis ke production
  * sebaiknya punya entrinya sendiri (tidak perlu menunggu akhir bulan).
+ *
+ * Setiap item di 'changes' boleh berupa:
+ *   - string biasa, misal: 'Perbaikan tampilan dashboard.'
+ *   - array kalau ada issue/PR GitHub terkait, misal:
+ *       ['text' => 'Perbaikan tampilan dashboard.', 'refs' => [18, 25]]
+ *     'refs' cukup diisi nomornya saja (issue ATAU PR, keduanya dari nomor
+ *     yang sama di GitHub) -- halaman akan otomatis membuatnya jadi link
+ *     ke {repo_url}/issues/{nomor}, yang otomatis redirect ke halaman PR
+ *     kalau nomornya ternyata PR, bukan issue.
  */
 
 return [
+
+    // Dipakai untuk membangun link "#123" -> {repo_url}/issues/123 di setiap
+    // change yang punya 'refs'. Ganti kalau repo GitHub-nya pindah/berganti nama.
+    'repo_url' => 'https://github.com/denny011299/pegasus',
 
     'releases' => [
 
@@ -27,26 +40,47 @@ return [
             'date' => '2026-08-06',
             'title' => 'Fase 1 - Perbaikan bug lanjutan (Agustus 2026, berjalan)',
             'changes' => [
-                'Tanda Terima sekarang wajib mengelompokkan invoice berdasarkan supplier DAN bank yang sama -- sebelumnya dua supplier berbeda yang kebetulan pakai bank yang sama bisa tergabung dalam satu Tanda Terima.',
-                'Aksi pada Invoice PO tidak lagi menimpa status purchase_orders secara tidak sengaja.',
-                'Konversi satuan dos/pack diperbaiki agar mengikuti urutan rantai relasi satuan yang benar (tidak lagi terbalik-balik).',
-                'Perbaikan besar: produksi dengan produk yang punya relasi multi-satuan tidak lagi menghabiskan bahan baku 100x lebih banyak dari seharusnya.',
-                'Berbagai crash fix dan pengerasan (hardening) tambahan hasil bug hunt fase 1 (validasi input, guard status, dsb).',
-                'Modal pemisahan (separation modal) dari fase 2 diimplementasikan.',
-                'Produksi yang otomatis diselesaikan sistem karena lewat batas waktu (auto-timeout) sekarang ditandai jelas di tampilan, dan proses cek overdue dijadwalkan otomatis lewat scheduler Laravel.',
+                [
+                    'text' => 'Tanda Terima sekarang wajib mengelompokkan invoice berdasarkan supplier DAN bank yang sama -- sebelumnya dua supplier berbeda yang kebetulan pakai bank yang sama bisa tergabung dalam satu Tanda Terima.',
+                    'refs' => [18, 25],
+                ],
+                [
+                    'text' => 'Aksi pada Invoice PO tidak lagi menimpa status purchase_orders secara tidak sengaja.',
+                    'refs' => [14, 24],
+                ],
+                [
+                    'text' => 'Konversi satuan dos/pack diperbaiki agar mengikuti urutan rantai relasi satuan yang benar (tidak lagi terbalik-balik).',
+                    'refs' => [22],
+                ],
+                [
+                    'text' => 'Perbaikan besar: produksi dengan produk yang punya relasi multi-satuan tidak lagi menghabiskan bahan baku 100x lebih banyak dari seharusnya.',
+                    'refs' => [16, 17],
+                ],
+                [
+                    'text' => 'Berbagai crash fix dan pengerasan (hardening) tambahan hasil bug hunt fase 1 (validasi input, guard status, dsb).',
+                    'refs' => [21],
+                ],
             ],
         ],
         [
             'date' => '2026-08-05',
             'title' => 'Fase 1 - Perbaikan bug lanjutan',
             'changes' => [
-                'Kas Gudang: efek samping ke saldo customer/Kas Armada diperketat supaya tidak salah hitung.',
+                [
+                    'text' => 'Kas Gudang: efek samping ke saldo customer/Kas Armada diperketat supaya tidak salah hitung (TOCTOU lock saat accept, guard blokir edit/delete setelah accept, kolom audit-trail baru).',
+                    'refs' => [13],
+                ],
                 'Staff::updateStaff() diperbaiki -- sebelumnya ganti password staff tidak benar-benar tersimpan.',
                 'Retur Supplies / bongkar Retur Armada diperbaiki -- hasilnya sempat bisa berbeda tergantung urutan insert baris stok.',
                 'Path lama generateTandaTerima (yang sudah digantikan generateTandaTerimaInvoice) dihapus dari kode.',
                 'Invoice Sales Order sekarang punya guard supaya tidak bisa dibayar melebihi tagihan (over-payment), menyamai perilaku Purchase Order.',
                 'Migrasi database dirapikan ulang sampai cocok dengan skema yang benar-benar berjalan di server.',
                 'Konfirmasi PM: perilaku "boleh saldo minus" pada kas & keterkaitan Kas Gudang/Armada memang disengaja, bukan bug -- diputuskan tetap seperti itu.',
+                [
+                    'text' => 'Modal pemisahan (separation modal) dari fase 2 diimplementasikan.',
+                    'refs' => [12],
+                ],
+                'Produksi yang otomatis diselesaikan sistem karena lewat batas waktu (auto-timeout) sekarang ditandai jelas di tampilan, dan proses cek overdue dijadwalkan otomatis lewat scheduler Laravel.',
             ],
         ],
         [

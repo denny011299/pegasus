@@ -27,7 +27,20 @@
                             @if (!empty($release['changes']))
                                 <ul class="mb-0" style="list-style: disc; padding-left: 1.2rem;">
                                     @foreach ($release['changes'] as $change)
-                                        <li style="list-style: disc;">{{ $change }}</li>
+                                        {{-- Each item is either a plain string, or ['text' => ..., 'refs' => [issue/PR numbers]]
+                                             -- see the format note at the top of config/changelog.php. --}}
+                                        @php
+                                            $text = is_array($change) ? ($change['text'] ?? '') : $change;
+                                            $refs = is_array($change) ? ($change['refs'] ?? []) : [];
+                                        @endphp
+                                        <li style="list-style: disc;">
+                                            {{ $text }}
+                                            @if (!empty($refs) && $repoUrl)
+                                                @foreach ($refs as $ref)
+                                                    <a href="{{ $repoUrl }}/issues/{{ $ref }}" target="_blank" rel="noopener noreferrer">#{{ $ref }}</a>{{ !$loop->last ? ' ' : '' }}
+                                                @endforeach
+                                            @endif
+                                        </li>
                                     @endforeach
                                 </ul>
                             @endif
