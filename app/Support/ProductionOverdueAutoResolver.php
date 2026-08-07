@@ -69,7 +69,17 @@ class ProductionOverdueAutoResolver
             $request->merge(['production_id' => $production->production_id]);
             $result = (new ProductionController())->accProduction($request);
 
-            if ($result === 1) {
+            // accProduction() doesn't always return bare 1 on success on this branch — when the
+            // production's output stays in the same warehouse it produced in (no Stock Transfer
+            // needed), it returns a JsonResponse with status:1 instead. A strict `=== 1` check
+            // (correct on main, where accProduction() has no Stock Transfer branching) misreads
+            // that as a failure and falls through to auto-decline. Same check this branch's own
+            // now-removed inline predecessor used in Production::getProduction().
+            $isSuccess = $result === 1
+                || ($result instanceof \Illuminate\Http\JsonResponse
+                    && (int) ($result->getData(true)['status'] ?? 0) === 1);
+
+            if ($isSuccess) {
                 $this->markResolvedBySystem($production);
                 $summary['pending_approved']++;
                 $summary['details'][] = $this->detailRow($production, 'auto-approved');

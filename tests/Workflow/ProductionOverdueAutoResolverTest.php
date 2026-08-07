@@ -130,6 +130,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_an_overdue_pending_production_with_enough_stock_is_auto_approved(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
@@ -150,6 +151,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_a_pending_production_not_yet_overdue_is_left_untouched(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $production = $this->createPendingProduction($fx, now()->subDays(2)->toDateString());
@@ -165,6 +167,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_an_overdue_pending_production_with_insufficient_stock_is_auto_declined(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture(startingSuppliesStock: 1); // far short of the 20 needed for pdQty=10
         $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
@@ -182,6 +185,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_an_overdue_cancel_request_is_auto_timed_out_back_to_approved(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
@@ -209,6 +213,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_getProduction_shows_system_auto_timeout_label_instead_of_the_viewing_staffs_name(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
@@ -227,6 +232,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_getProduction_still_shows_the_real_staff_name_for_a_genuine_manual_decision(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $production = $this->createPendingProduction($fx, now()->toDateString());
@@ -244,6 +250,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_getProduction_still_triggers_the_same_auto_timeout_as_a_side_effect(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
@@ -268,6 +275,7 @@ class ProductionOverdueAutoResolverTest extends TestCase
     public function test_dry_run_summary_does_not_claim_a_fake_approved_declined_outcome(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $production = $this->createPendingProduction($fx, now()->subDays(5)->toDateString());
