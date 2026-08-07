@@ -1502,7 +1502,7 @@
                                             <a href="{{ url('settings') }}"><span>Settings</span></a>
                                         </li>
                                         <li>
-                                            <a href="{{ url('login') }}"><span>Logout</span></a>
+                                            <a href="{{ route('logout') }}"><span>Logout</span></a>
                                         </li>
                                     </ul>
                                 </li>

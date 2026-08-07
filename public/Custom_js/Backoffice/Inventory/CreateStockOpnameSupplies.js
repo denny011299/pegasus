@@ -733,9 +733,12 @@ $(document).on("click", "#btn-acc-stob", function () {
         },
         method: "post",
         success: function (e) {
-            console.log("masuk");
-            $("#modalDelete .modal-body").html("");
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            if (typeof e === "object" && e !== null) {
+                notifikasi("error", e.header, e.message);
+                return false;
+            }
+            $("#modalDelete .modal-body").html("");
             $(".modal").modal("hide");
             notifikasi(
                 "success",

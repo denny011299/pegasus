@@ -131,8 +131,8 @@ class PurchaseOrderDetailInvoice extends Model
         if ($t) {
             $t->status=-1;
             $t->save(); // hard delete
+            $this->cekInvoice($t->po_id);
         }
-        $this->cekInvoice($t->po_id);
     }
     // === DELETE ===
     function changeStatusInvoicePO($data)

@@ -9,12 +9,10 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Mirrors tests/Regression/StockOpnameRepeatApprovalIsNotIdempotentTest.php — that test's own
- * docblock already predicted "and its accStockOpnameBahan() mirror" but left it unverified. This
- * confirms it directly: `accStockOpnameBahan()` only guards on `is_draft`, never `status`, so
- * calling approve again on an already-approved (`status=2`) document is accepted exactly like the
- * first call, silently re-overwriting `ss_stock` with whatever `real_qty` the second request
- * carries, with no idempotency guard or lock.
+ * ✅ FIXED (2026-08-04): Mirrors
+ * tests/Regression/StockOpnameRepeatApprovalIsNotIdempotentTest.php — the same bug shape,
+ * confirmed independently on `accStockOpnameBahan()`. Now refuses outright with a clean
+ * `{status: -2, header: 'Gagal ACC', ...}` response if the document's status isn't `1`.
  */
 class StockOpnameBahanRepeatApprovalIsNotIdempotentTest extends TestCase
 {
@@ -66,7 +64,7 @@ class StockOpnameBahanRepeatApprovalIsNotIdempotentTest extends TestCase
         ])->assertStatus(200);
     }
 
-    public function test_approving_an_already_approved_opname_again_silently_re_overwrites_stock(): void
+    public function test_approving_an_already_approved_opname_again_is_now_cleanly_rejected(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -83,24 +81,35 @@ class StockOpnameBahanRepeatApprovalIsNotIdempotentTest extends TestCase
 
         $logCountAfterFirstApproval = DB::table('log_stocks')->count();
 
-        // Calling approve a SECOND time on the same, already-approved (status=2) document is
-        // accepted exactly like the first call — no `status` guard exists.
-        $this->approve($stock, $stobId, $startingStock - 20);
+        // Calling approve a SECOND time on the same, already-approved (status=2) document must
+        // now be cleanly rejected, matching PO/SO/Production's status guard.
+        $secondResponse = $this->post('/accStockOpnameBahan', [
+            'stob_id' => $stobId,
+            'item' => json_encode([[
+                'supplies_id' => $stock->supplies_id,
+                'sp_units' => [[
+                    'unit_id' => $stock->unit_id,
+                    'real_qty' => $startingStock - 20,
+                ]],
+            ]]),
+        ]);
+        $secondResponse->assertOk();
+        $secondResponse->assertJson(['status' => -2, 'header' => 'Gagal ACC']);
 
         $stob->refresh();
-        $this->assertSame(2, (int) $stob->status, 'status is unconditionally re-set to 2, indistinguishable from a first approval');
+        $this->assertSame(2, (int) $stob->status, 'status must remain approved, not silently re-set');
 
         $stock->refresh();
         $this->assertSame(
-            $startingStock - 20,
+            $startingStock - 5,
             $stock->ss_stock,
-            'repeat approval silently re-overwrites stock with whatever real_qty the second request carries'
+            'a rejected repeat approval must not touch stock at all'
         );
 
         $this->assertSame(
-            $logCountAfterFirstApproval + 2,
+            $logCountAfterFirstApproval,
             DB::table('log_stocks')->count(),
-            'each approval call writes 2 more log_stocks rows (before/after), even on a repeat call'
+            'a rejected repeat approval must not write any log_stocks rows'
         );
     }
 }

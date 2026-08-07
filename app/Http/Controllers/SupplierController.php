@@ -136,6 +136,16 @@ class SupplierController extends Controller
         else return -1;
     }
 
+    // DEPRECATED (2026-08-04): the manual/partial Purchase Order Delivery workflow (getPoDelivery
+    // through declinePoDelivery below) is no longer used — confirmed by product owner. It let a
+    // delivery batch flip purchase_orders.status to Approved with no stock check and no invoice
+    // creation (accPO is the only place that happens), permanently locking the PO out of accPO
+    // afterward. Not fixed, not tested. See KNOWN_ISSUES.md.
+    //
+    // NOT deprecated: accPO() (below) still calls PurchaseOrderDelivery::insertPoDelivery() and
+    // PurchaseOrderDeliveryDetail::insertPoDeliveryDetail() directly to record its own
+    // auto-generated, already-approved delivery — those two model methods stay fully active. Only
+    // the independent manual create/edit/approve/decline actions below are deprecated.
     function getPoDelivery(Request $req)
     {
         $data = (new PurchaseOrderDelivery())->getPoDelivery([
@@ -187,7 +197,13 @@ class SupplierController extends Controller
         foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
             $p = PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->where('status','=',2)->get();
             $total =  PurchaseOrderDeliveryDetail::whereIn('pdo_id', $p->pluck('pdo_id'))->where('supplies_variant_id','=',$value['supplies_variant_id'])->sum('pdod_qty');
-            if($total+$value['pdod_qty']>$value["pdod_qty"] ){
+            // Dulu dibandingkan ke $value["pdod_qty"] sendiri (selalu true begitu $total>0) —
+            // sekarang dibandingkan ke jumlah pesanan asli di purchase_orders_details.pod_qty.
+            $ordered = PurchaseOrderDetail::where('po_id', '=', $data['po_id'])
+                ->where('supplies_variant_id', '=', $value['supplies_variant_id'])
+                ->where('status', '=', 1)
+                ->value('pod_qty') ?? 0;
+            if($total+$value['pdod_qty']>$ordered ){
                 array_push($bermasalah, $value['name']);
             }
         }

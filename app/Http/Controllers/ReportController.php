@@ -1415,6 +1415,22 @@ class ReportController extends Controller
     {
         $data = $req->all();
 
+        // Ditambahkan: dulu tidak ada pengecekan status sama sekali, sementara
+        // acceptCashArmada/declineCashArmada sudah menolak kalau status != 1. Tanpa ini,
+        // updateCashArmada() diam-diam mengembalikan entry yang sudah di-ACC kembali ke status
+        // pending (lihat CashArmada::updateCashArmada()), padahal customer_saldo dari accept
+        // sebelumnya tidak pernah dibalik — accept kedua jadi menerapkan mutasi saldo yang sama
+        // dua kali.
+        $existing = CashArmada::find($data['cr_id']);
+        if ($existing && $existing->status != 1) {
+            $staff = Staff::find($existing->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Update",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
         $id = [];
         $customer = Customer::find($data['customer_id'])->customer_notes;
 
@@ -1673,6 +1689,23 @@ class ReportController extends Controller
     function updateCashSales(Request $req)
     {
         $data = $req->all();
+
+        // Ditambahkan: same gap as updateCashArmada above — acceptCashSales/declineCashSales
+        // already refuse if status != 1, but updateCashSales() never checked at all. Worse here:
+        // CashSales::updateCashSales()'s status-revival logic (meant only for reviving a declined
+        // entry back to pending) also silently catches an already-APPROVED entry, and this
+        // controller unconditionally forces cs_aksi based on oc_transaksi — so a re-accept after
+        // editing an approved entry doesn't just double-apply the balance change, it can flip
+        // acceptCashSales() into the opposite branch and cancel the first accept out entirely.
+        $existing = CashSales::find($data['cs_id']);
+        if ($existing && $existing->status != 1) {
+            $staff = Staff::find($existing->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Update",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
 
         $id = [];
         $sales = Staff::find($data['staff_id']);

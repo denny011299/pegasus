@@ -1262,9 +1262,16 @@ class ProductionController extends Controller
             ]);
         }
 
-        (new Production())->cancelProduction($data);
-        (new ProductionDetails())->cancelProductionDetail($data);
-
+        // Ditambahkan: seluruh reversal (stok produk, pengembalian bahan, dan status flip)
+        // sekarang jalan dalam satu DB::transaction(). Dulu tidak ada transaksi sama sekali,
+        // dan cancelProduction()/cancelProductionDetail() dipanggil DI AWAL sebelum reversal
+        // stok berjalan — kalau loop reversal di bawah gagal di tengah jalan (mis. deductQty()
+        // salah satu item gagal), produksi sudah kadung ditandai batal padahal stoknya belum
+        // benar-benar direversal semua. Status flip dipindah ke akhir supaya itu tidak lagi bisa
+        // terjadi, dan sebuah exception di tengah jalan (bukan cuma error terkontrol) sekarang
+        // roll back semuanya alih-alih meninggalkan reversal setengah jalan.
+        DB::beginTransaction();
+        try {
         // Stok produk
         foreach ($outputTotals as $output) {
             $cut = ProductUnitStock::deductQty(
@@ -1276,6 +1283,7 @@ class ProductionController extends Controller
                 'Pembatalan produksi ' . $p->production_code
             );
             if (! $cut['ok']) {
+                DB::rollBack();
                 return response()->json([
                     "status"  => -1,
                     "message" => $cut['message'] ?? 'Gagal membatalkan stok hasil produksi.',
@@ -1432,6 +1440,18 @@ class ProductionController extends Controller
                     'unit_id'      => $stokBawah->unit_id,
                 ]);
             }
+        }
+
+        // Status flip pindah ke sini (dulu di paling awal, sebelum reversal stok berjalan
+        // sama sekali) — lihat catatan di awal blok transaksi.
+        (new Production())->cancelProduction($data);
+        (new ProductionDetails())->cancelProductionDetail($data);
+
+        DB::commit();
+        return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
 
