@@ -152,7 +152,7 @@ class CustomerSupplyReturnController extends Controller
             $record = DB::transaction(function () use ($data, $details, $newProofPath) {
                 $this->validateDetails($details);
                 $record = CustomerSupplyReturn::create([
-                    'return_number' => 'PCR' . now()->format('ymdHis') . strtoupper(Str::random(4)),
+                    'return_number' => (new CustomerSupplyReturn())->generateReturnNumber(),
                     'so_id' => null,
                     'customer_id' => $data['customer_id'],
                     'return_date' => $data['return_date'],
@@ -195,7 +195,6 @@ class CustomerSupplyReturnController extends Controller
                 $this->validateDetails($details);
                 $oldProofPath = $record->proof_path;
                 $record->fill([
-                    'so_id' => null,
                     'customer_id' => $data['customer_id'],
                     'return_date' => $data['return_date'],
                     'ref_number' => $data['ref_number'] ?: null,

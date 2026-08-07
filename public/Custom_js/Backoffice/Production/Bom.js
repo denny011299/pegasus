@@ -7,9 +7,10 @@
     var table;
     var bahan = [];
     var activeProductData = null;
+    var bomXhr = null;
+
     $(document).ready(function(){
         inisialisasi();
-        refreshBom();
     });
 
     $(document).on('change','#supplies_id',function(){
@@ -86,101 +87,167 @@
         bahan = [];
     });
     
-    function inisialisasi() {
-        table = $('#tableBom').DataTable({
-            bFilter: true,
-            sDom: 'fBtlpi',
-            lengthMenu: [10, 25, 50, 100],
-            ordering: true,
-            autoWidth: false,
-            scrollX: true,
-            searching: false,
-            language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
-                searchPlaceholder: "Cari Resep",
-                info: "_START_ - _END_ of _TOTAL_ items",
-                paginate: {
-                    next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
-                },
+    function setBomTableLoading(isLoading) {
+        var $wrap = $("#tableBom-wrap");
+        if (!$wrap.length) return;
+        $wrap.toggleClass("is-loading", !!isLoading);
+    }
+
+    function bindBomLoadingEvents($table) {
+        $table
+            .on("preXhr.dt", function () {
+                setBomTableLoading(true);
+            })
+            .on("xhr.dt", function () {
+                setTimeout(function () {
+                    setBomTableLoading(false);
+                }, 0);
+            });
+    }
+
+    function buildBomActionHtml(row) {
+        var html =
+            roleIconEdit(
+                "Resep Bahan Mentah",
+                "me-2 btn-action-icon p-2 btn_edit",
+                'data-bs-target="#edit-category"'
+            ) +
+            roleIconDelete(
+                "Resep Bahan Mentah",
+                "p-2 btn-action-icon btn_delete",
+                'data-id="' + (row.bom_id || "") + '" href="javascript:void(0);"'
+            );
+        return html || '<span class="text-muted small">—</span>';
+    }
+
+    function bomAjax(data, callback) {
+        if (bomXhr && bomXhr.readyState !== 4) {
+            bomXhr.abort();
+        }
+
+        bomXhr = $.ajax({
+            url: "/getBom",
+            type: "GET",
+            data: $.extend({}, data, {
+                product_id: $("#filter_product_id").val() || "",
+                supplies_id: $("#filter_supplies_id").val() || "",
+            }),
+            beforeSend: function () {
+                setBomTableLoading(true);
             },
-            columns: [
-                { data: "product_sku", width: '10%' },
-                { data: "product_name", width: "20%" },
-                { data: "supplies", width: '35%' },
-                { data: "unit_text", width: '10%' },
-                { data: "created_by_name", defaultContent: "-", width: '12%' , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
-                { data: "action", class: "text-center align-middle", width: "13" },
-            ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            success: function (json) {
+                callback(json);
+            },
+            error: function (err) {
+                if (err && err.statusText === "abort") return;
+                console.error("Gagal load bom:", err);
+                callback({
+                    draw: data.draw,
+                    recordsTotal: 0,
+                    recordsFiltered: 0,
+                    data: [],
+                });
+            },
+            complete: function (xhr, status) {
+                if (status === "abort") return;
+                setBomTableLoading(false);
             },
         });
+    }
+
+    function inisialisasi() {
+        var $bomTable = $("#tableBom");
+
+        table = $bomTable.DataTable({
+            processing: true,
+            serverSide: true,
+            deferRender: true,
+            autoWidth: false,
+            scrollX: false,
+            bFilter: true,
+            sDom: "fBtlpi",
+            lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
+            ordering: true,
+            order: [[1, "asc"]],
+            searchDelay: 400,
+            language: {
+                search: " ",
+                sLengthMenu: "_MENU_",
+                searchPlaceholder: "Cari Resep",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                emptyTable: "Tidak ada resep bahan mentah",
+                zeroRecords: "Resep tidak ditemukan",
+                paginate: {
+                    next: ' <i class=" fa fa-angle-right"></i>',
+                    previous: '<i class="fa fa-angle-left"></i> ',
+                },
+            },
+            ajax: function (data, callback) {
+                bomAjax(data, callback);
+            },
+            columns: [
+                { data: "product_sku", width: "12%" },
+                { data: "product_name", width: "22%" },
+                { data: "supplies", width: "28%", orderable: false },
+                { data: "unit_text", width: "12%" },
+                {
+                    data: "created_by_name",
+                    defaultContent: "-",
+                    width: "14%",
+                    render: function (data) {
+                        return typeof renderCreatedByName === "function"
+                            ? renderCreatedByName(data)
+                            : data;
+                    },
+                },
+                {
+                    data: null,
+                    className: "text-center align-middle",
+                    width: "12%",
+                    orderable: false,
+                    searchable: false,
+                    render: function (data, type, row) {
+                        return buildBomActionHtml(row);
+                    },
+                },
+            ],
+            initComplete: function () {
+                $("#tableBom-wrap").removeClass("dt-pending").addClass("dt-ready");
+                var $filter = $(".dataTables_filter").last();
+                $filter.appendTo("#tableSearch");
+                $filter.appendTo(".search-input");
+                if (!$filter.find("label .fa-search").length) {
+                    $filter.find("label").prepend('<i class="fa fa-search"></i> ');
+                }
+                this.api().columns.adjust();
+                setBomTableLoading(false);
+            },
+            drawCallback: function () {
+                setBomTableLoading(false);
+                feather.replace();
+                if (table) table.columns.adjust();
+            },
+        });
+
+        bindBomLoadingEvents($bomTable);
     }
 
     function refreshBom() {
-        $.ajax({
-            url: "/getBom",
-            method: "get",
-            data: {
-                product_id: $('#filter_product_id').val(),
-                supplies_id: $('#filter_supplies_id').val(),
-                with_details: true,
-            },
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                console.log(e);
-                table.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    e[i].bom_date = moment(e[i].created_at).format('D MMM YYYY');
-                    console.log(e[i]);
-                    e[i].unit_text = e[i].bom_qty + " " + e[i].unit_name;
-                    var bo =
-                        roleIconEdit(
-                            "Resep Bahan Mentah",
-                            "me-2 btn-action-icon p-2 btn_edit",
-                            'data-bs-target="#edit-category"'
-                        ) +
-                        roleIconDelete(
-                            "Resep Bahan Mentah",
-                            "p-2 btn-action-icon btn_delete",
-                            'data-id="' +
-                                e[i].bom_id +
-                                '" href="javascript:void(0);"'
-                        );
-                    e[i].action =
-                        bo ||
-                        '<span class="text-muted small">—</span>';
-                    e[i].details.sort(function(a, b) {
-                        return (a.supplies_name || '').localeCompare(b.supplies_name || '', 'id', { sensitivity: 'base' });
-                    });
-                    e[i].supplies = e[i].details.map(d => d.supplies_name).join(", ");
-
-                }
-
-                table.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                console.error("Gagal load bom:", err);
-            }
-        });
+        if (!table) return;
+        table.ajax.reload(null, false);
     }
 
-    $(document).on('change', '#filter_product_id, #filter_supplies_id', function () {
-        refreshBom();
+    $(document).on("change", "#filter_product_id, #filter_supplies_id", function () {
+        if (!table) return;
+        table.ajax.reload(null, true);
     });
 
-    $(document).on('click', '.btn-clear', function () {
-        $('#filter_product_id').empty();
-        $('#filter_supplies_id').empty();
-        refreshBom();
+    $(document).on("click", ".btn-clear", function () {
+        $("#filter_product_id").empty();
+        $("#filter_supplies_id").empty();
+        if (!table) return;
+        table.ajax.reload(null, true);
     });
 
     $(document).on("click",".btn-save",function(){

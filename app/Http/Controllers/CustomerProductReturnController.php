@@ -164,7 +164,7 @@ class CustomerProductReturnController extends Controller
             $record = DB::transaction(function () use ($data, $details, $newProofPath) {
                 $this->validateDetails($details);
                 $record = CustomerProductReturn::create([
-                    'return_number' => 'PPR' . now()->format('ymdHis') . strtoupper(Str::random(4)),
+                    'return_number' => (new CustomerProductReturn())->generateReturnNumber(),
                     'customer_id' => $data['customer_id'],
                     'return_date' => $data['return_date'],
                     'ref_number' => $data['ref_number'] ?: null,

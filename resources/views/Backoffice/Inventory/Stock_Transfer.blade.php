@@ -38,8 +38,49 @@
         #add_stock_transfer #tableTransferItems .transfer-row-stock-error:hover > td {
             background: #ffe4e6;
         }
+        #add_stock_transfer #tableTransferItems .col-stock-asal {
+            width: 110px;
+            max-width: 140px;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        #add_stock_transfer #tableTransferItems .col-qty-unit {
+            vertical-align: middle;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-qty-unit-wrap {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            min-width: 0;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-qty {
+            width: 78px;
+            flex: 0 0 78px;
+            max-width: 78px;
+            font-size: 14px;
+            height: 34px;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-unit-wrap {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-stock-check-spinner {
+            width: 1rem;
+            height: 1rem;
+            border-width: 0.15em;
+            vertical-align: middle;
+        }
+        #add_stock_transfer #tableTransferItems .transfer-unit {
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+            height: 34px;
+        }
         #add_stock_transfer #tableTransferItems .transfer-retail-unit {
-            min-width: 180px;
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+            height: 34px;
             border-color: #ef4444;
             background-color: #fff;
             color: #7f1d1d;
@@ -51,6 +92,7 @@
             color: #b91c1c;
             font-size: 11px;
             line-height: 1.3;
+            white-space: normal;
         }
         #add_stock_transfer .transfer-product-panel {
             background: #fff;

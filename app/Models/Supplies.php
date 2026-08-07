@@ -52,6 +52,110 @@ class Supplies extends Model
         });
     }
 
+    /**
+     * Query ringan untuk Select2 autocomplete bahan mentah — aktif saja, paginated.
+     * Sertakan units + supplies_relasi (tanpa stok/varian/supplier) agar modal BOM/Production tetap jalan.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{data: \Illuminate\Support\Collection, more: bool}
+     */
+    public function searchForAutocomplete(array $data = [], int $limit = 30): array
+    {
+        $data = array_merge([
+            'search' => null,
+            'page' => 1,
+        ], $data);
+
+        $limit = max(1, min((int) $limit, 50));
+        $page = max(1, (int) ($data['page'] ?? 1));
+        $offset = ($page - 1) * $limit;
+
+        $query = self::query()
+            ->where('status', 1);
+
+        $search = trim((string) ($data['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $query->where(function ($q) use ($like) {
+                $q->where('supplies_name', 'like', $like)
+                    ->orWhere('supplies_desc', 'like', $like);
+            });
+        }
+
+        $rows = $query
+            ->select([
+                'supplies_id',
+                'supplies_name',
+                'supplies_desc',
+                'supplies_unit',
+                'supplies_default_unit',
+                'supplies_alert',
+                'status',
+            ])
+            ->orderBy('supplies_name')
+            ->orderBy('supplies_id')
+            ->offset($offset)
+            ->limit($limit + 1)
+            ->get();
+
+        $more = $rows->count() > $limit;
+        $rows = $more ? $rows->take($limit)->values() : $rows->values();
+
+        if ($rows->isEmpty()) {
+            return ['data' => $rows, 'more' => false];
+        }
+
+        $decodeUnit = fn ($val) => is_array($val) ? $val : (json_decode($val ?? '[]', true) ?: []);
+        $ids = $rows->pluck('supplies_id')->all();
+
+        $allUnitIds = [];
+        foreach ($rows as $row) {
+            foreach ($decodeUnit($row->getAttributes()['supplies_unit'] ?? null) as $uid) {
+                $allUnitIds[(int) $uid] = true;
+            }
+        }
+
+        $relations = SuppliesRelation::where('status', 1)
+            ->whereIn('supplies_id', $ids)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        foreach ($relations as $rel) {
+            $allUnitIds[(int) $rel->su_id_1] = true;
+            $allUnitIds[(int) $rel->su_id_2] = true;
+        }
+
+        $unitsMap = $allUnitIds !== []
+            ? Unit::whereIn('unit_id', array_keys($allUnitIds))->get()->keyBy('unit_id')
+            : collect();
+
+        foreach ($relations as $rel) {
+            $u1 = $unitsMap->get($rel->su_id_1);
+            $u2 = $unitsMap->get($rel->su_id_2);
+            $rel->pr_unit_id_1 = $u1 ? $u1->unit_id : $rel->su_id_1;
+            $rel->pr_unit_name_1 = $u1 ? $u1->unit_short_name : '-';
+            $rel->pr_unit_id_2 = $u2 ? $u2->unit_id : $rel->su_id_2;
+            $rel->pr_unit_name_2 = $u2 ? $u2->unit_short_name : '-';
+        }
+
+        $relationsBySupply = $relations->groupBy('supplies_id');
+
+        foreach ($rows as $row) {
+            $unitArr = $decodeUnit($row->getAttributes()['supplies_unit'] ?? null);
+            $row->supplies_unit = $unitArr;
+            $row->units = collect($unitArr)
+                ->map(fn ($uid) => $unitsMap->get((int) $uid))
+                ->filter()
+                ->values();
+            $row->supplies_relasi = $relationsBySupply->get($row->supplies_id, collect())->values();
+            $row->supplies_default_unit = $row->supplies_default_unit
+                ? (int) $row->supplies_default_unit
+                : null;
+        }
+
+        return ['data' => $rows, 'more' => $more];
+    }
+
     // Khusus untuk stock opname bahan — isi field sama seperti getSupplies(), tapi query digabung (tanpa N+1).
     public function getSuppliesBulk(array $suppliesIds)
     {

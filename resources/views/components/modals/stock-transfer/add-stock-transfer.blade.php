@@ -198,35 +198,32 @@
               </button>
             </div>
             <div class="table-responsive" style="min-height:240px; background:#fff;">
-              <table class="table table-hover mb-0" id="tableTransferItems" style="font-size:14px;">
+              <table class="table table-hover mb-0" id="tableTransferItems" style="font-size:14px; table-layout:fixed; width:100%;">
                 <thead style="background:#f1f5f9;">
                   <tr>
                     <th
-                      style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">
+                      style="width: 24%; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 12px;">
                       Produk</th>
                     <th
-                      style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">
+                      style="width: 16%; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 12px;">
                       Varian</th>
                     <th
-                      style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">
+                      style="width: 12%; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 12px;">
                       SKU</th>
                     <th
-                      style="color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">
+                      style="width: 110px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 8px;">
                       Stok Asal</th>
                     <th
-                      style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">
-                      Jumlah</th>
-                    <th
-                      style="width: 150px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">
-                      Satuan</th>
+                      style="width: 220px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 8px;">
+                      Qty / Satuan</th>
                     <th class="no-sort text-center"
-                      style="width: 80px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;">
+                      style="width: 56px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 8px;">
                       Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr class="empty-row">
-                    <td colspan="7" class="text-center py-5">
+                    <td colspan="6" class="text-center py-5">
                       <div style="color:#94a3b8;">
                         <i class="fe fe-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>
                         <div class="fw-semibold" style="font-size:14px;">Belum ada produk</div>

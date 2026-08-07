@@ -2,6 +2,8 @@
     { "Id": 1, "Modules": "Master", "SubModules": "Kategori" },
     { "Id": 2, "Modules": "Master", "SubModules": "Satuan" },
     { "Id": 3, "Modules": "Master", "SubModules": "Variasi" },
+    { "Id": 4, "Modules": "Master", "SubModules": "Gudang" },
+    { "Id": 5, "Modules": "Master", "SubModules": "Tipe Gudang" },
 
     { "Id": 6, "Modules": "Produk", "SubModules": "Daftar Produk" },
     { "Id": 7, "Modules": "Produk", "SubModules": "Stok Produk" },

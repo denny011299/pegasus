@@ -31,6 +31,7 @@ $files = [
     'public/Custom_js/Backoffice/Customers/Sales_Order.js',
     'public/Custom_js/Backoffice/Customers/Customer_Supply_Return.js',
     'public/Custom_js/Backoffice/Customers/Customer_Product_Return.js',
+    'public/Custom_js/Backoffice/Customers/Customer_Return.js',
     'public/Custom_js/Backoffice/Reports/ReportStockTransfer.js',
     'resources/views/Backoffice/Inventory/Stock_Transfer.blade.php',
     'resources/views/Backoffice/Warehouse/Warehouse.blade.php',

@@ -14,8 +14,8 @@ Pending  â†’  Kirim  â†’  Terima (Terkirim)
               â”‚               â€¢ tujuan UTAMA  â†’ satuan kirim apa adanya (tanpa konversi)
               â”‚               â€¢ tujuan ECERAN â†’ konversi ke retail_unit
               â”‚
-              â””â”€ cek stok cukup di satuan yang dikirim
-                 lalu POTONG satuan itu (tanpa packing/rapikan)
+              â””â”€ cek stok ekuivalen (utama: boleh unpack ancestor)
+                 lalu potong; packing/rapikan tetap OFF
 
 Cancel Kirim (hanya status Kirim, belum Terima):
   â†’ kembalikan stok gudang asal dari log Kirim
@@ -26,7 +26,7 @@ Setelah Terima: tidak ada Cancel Kirim.
 
 | Arah | Kirim | Terima |
 |------|-------|--------|
-| Utama â†’ Utama | Satuan dipilih, tanpa packing | Sama satuan |
+| Utama â†’ Utama | Satuan dipilih; unpack ancestor OK, packing OFF | Sama satuan |
 | Utama â†’ Eceran | Boleh DOS/default | â†’ `retail_unit` |
 | Eceran â†’ Utama | Hanya Piece | Tetap Piece |
 
@@ -41,10 +41,10 @@ Setelah Terima: tidak ada Cancel Kirim.
 | 3 | **Histori gudang eceran:** filter log + saldo hanya `retail_unit` (jangan tampil DOS/Jerigen sisa data lama) | âœ… Selesai | `LogStock::applyRetailProductUnitFilter()` |
 | 4 | **Pengembalian produk â†’ gudang eceran:** wajib satuan eceran saja (bukan DOS) | âœ… Selesai | FE + `CustomerProductReturnController::validateDetails()` |
 | 5 | **Produksi â†’ gudang eceran:** ST Pending saat ACC; Kirim+Terima manual (bukan auto) | âŒ Dibatalkan | Auto Kirim+Terima pernah dicoba lalu di-revert â€” alur Pendingâ†’Kirimâ†’Terima sengaja dipertahankan |
-| 6 | **ST Kirim:** jangan packing/rapikan â€” potong satuan yang dipilih saja | âœ… Selesai | Semua Kirim: `allow_packing=false` + cek stok cukup di satuan kirim. |
+| 6 | **ST Kirim:** packing/rapikan OFF; gudang utama boleh unpack ancestor | âœ… Selesai | Semua Kirim: `allow_packing=false`. Utama: `allow_unpack=true` (cek + potong ekuivalen). Eceran: unpack OFF. |
 | 7 | **Gudang eceran diam-diam "bongkar" stok satuan besar (DOS/Jerigen) sisa data lama saat ST keluar** â€” melanggar aturan "eceran cuma pegang retail_unit"; log bongkar hasilnya malah disembunyikan oleh filter histori eceran (#3) | âœ… Selesai | `ProductUnitStock::warehouseIsMain()` + hardening di `totalAvailable()`/`checkItems()`/`deductQty()`: gudang eceran (`is_main_warehouse=0`) tidak pernah bongkar/pack lagi, `allowPacking` dipaksa `false` dan availability cuma menghitung stok di `targetUnitId` langsung. Data lama dibersihkan lewat `php artisan stock:cleanup-retail-units` (lihat Detail #7). |
 | 8 | **`updateStockTransfer` tidak mengoper flag produksi ke `validateTransferItems`** â€” beda dengan `shipStockTransfer`/`checkItems` di fungsi yang sama yang sudah benar mengoper `$isProductionTransfer` | âœ… Selesai | `StockTransferController::updateStockTransfer()` sekarang mengoper `$header->source_type === 'production'` ke `validateTransferItems()`, sama seperti `shipStockTransfer` |
-| 9 | **Cancel Kirim** restore stok satuan yang dipotong | âœ… Selesai | Reverse net delta dari `log_stocks` Kirim; dengan #6 biasanya = balikin qty satuan kirim. |
+| 9 | **Cancel Kirim** restore stok satuan yang dipotong | âœ… Selesai | Reverse net delta dari `log_stocks` Kirim (termasuk log unpack ancestor). |
 | 10 | **Belum ada automated test untuk Stock Transfer** (create/ship/accept/reject/cancel-kirim, matrix utama/eceran) | âœ… Selesai | `tests/Workflow/StockTransferWorkflowTest.php` |
 | 11 | **Matrix Terima real-case** â€” utamaâ†’utama & eceranâ†’utama: satuan kirim apa adanya; utamaâ†’eceran: konversi ke `retail_unit` | âœ… Selesai | `resolveTransferUnits` + `accStockTransfer` tanpa split ke default. |
 
@@ -92,8 +92,8 @@ Setelah Terima: tidak ada Cancel Kirim.
 
 - **Utama â†’ Utama / Eceran â†’ Utama:** Terima = satuan kirim (`sentUnitId`), tanpa `defaultUnitId` / tanpa `splitWholeAndRemainder`.
 - **Utama â†’ Eceran:** Terima konversi ke `retail_unit`.
-- **Kirim:** selalu `allow_packing=false` â€” stok di satuan kirim harus cukup (tidak auto-bongkar DOS).
-- **Test:** `test_receiving_into_a_main_warehouse_keeps_sent_unit_without_conversion`, `test_receiving_into_retail_converts_to_retail_unit`, `test_cancel_kirim_restores_sent_unit_stock_without_packing`.
+- **Kirim:** `allow_packing=false`; gudang utama `allow_unpack=true` (bongkar ancestor bila stok satuan kirim kurang); eceran unpack OFF.
+- **Test:** `test_receiving_into_a_main_warehouse_keeps_sent_unit_without_conversion`, `test_receiving_into_retail_converts_to_retail_unit`, `test_cancel_kirim_restores_sent_unit_stock_without_packing`, `test_ship_unpacks_ancestor_when_sent_unit_stock_is_short`.
 
 ## Detail #1 (selesai)
 
@@ -116,12 +116,12 @@ Setelah Terima: tidak ada Cancel Kirim.
 - **Kebutuhan bisnis:** ACC produksi hanya buat ST **Pending** (status 1); stok hasil masuk gudang asal. User wajib **Kirim** lalu **Terima** manual agar stok masuk histori gudang eceran.
 - **Catatan:** Auto Kirim+Terima via `completeProductionTransfer()` pernah ditambahkan lalu **di-revert** â€” jangan reintroduce tanpa persetujuan eksplisit.
 
-## Detail #6 (selesai)
+## Detail #6 (selesai â€” update unpack)
 
-- **Masalah:** Kirim ST hasil produksi (mis. 100 Piece â†’ gudang eceran) menulis banyak log `bahan packing satuan` / `hasil packing satuan` untuk DOS/Jerigen di histori gudang utama â€” membingungkan, padahal stok hasil produksi sudah masuk sebagai Piece.
-- **Penyebab:** `shipStockTransfer` memakai `allow_packing=true` untuk semua gudang utama, sehingga `deductPackedQty` merapikan ulang seluruh komposisi multi-satuan di gudang.
-- **Fix:** ST `source_type=production` potong satuan detail ST langsung (`allow_packing=false`). Repacking tetap untuk ST manual antar gudang utama.
-- **UX log packing (ST manual):** catatan repacking pakai nama satuan tujuan â€” `konversi barang ke satuan {X}` (masuk) / `bahan konversi ke satuan {X}` (keluar bahan), bukan generic "packing satuan".
+- **Masalah (awal):** Kirim ST hasil produksi menulis banyak log packing/rapikan di gudang utama.
+- **Fix packing:** semua Kirim `allow_packing=false` (tidak merapikan seluruh gudang).
+- **Update unpack:** gudang utama source `allow_unpack=true` â€” cek + Kirim boleh bongkar ancestor (mis. Jerigenâ†’DOS, DOSâ†’Piece) agar available ekuivalen; eceran tetap unpack OFF. Packing tetap OFF.
+- **FE/API:** `sourceSnapshot.available_qty`, `checkTransferStock`, dan `shipStockTransfer` memakai mode yang sama.
 
 ## Referensi kode
 

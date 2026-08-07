@@ -553,6 +553,22 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     return String(v) === '1';
   }
 
+  function getMainWarehouseEl() {
+    return document.querySelector('.warehouse-dropdown-item[data-is-main="1"]');
+  }
+
+  function getMainWarehouseId() {
+    var el = getMainWarehouseEl();
+    return el ? el.getAttribute('data-id') : null;
+  }
+
+  function getMainWarehouseName() {
+    var el = getMainWarehouseEl();
+    if (!el) return null;
+    var span = el.querySelector('span');
+    return span ? span.textContent.trim() : null;
+  }
+
   /** 'main' | 'retail' | null */
   function getStockViewMode() {
     var isMain = isActiveMainWarehouse();
@@ -815,18 +831,24 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         url: "/autocompleteBom",
         dataType: "json",
         type: "post",
-        delay: 250,
+        delay: 300,
         data: function data(params) {
           return {
             "keyword": params.term,
+            "page": params.page || 1,
+            "limit": 30,
             '_token': $('meta[name="csrf-token"]').attr('content')
           };
         },
-        processResults: function processResults(data) {
+        processResults: function processResults(data, params) {
+          params.page = params.page || 1;
           return {
-            results: $.map(data.data, function(item) {
+            results: $.map(data.data || [], function(item) {
               return item;
             }),
+            pagination: {
+              more: !!(data.pagination && data.pagination.more)
+            }
           };
         },
       },
@@ -883,18 +905,24 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         url: "/autocompleteSupplies",
         dataType: "json",
         type: "post",
-        delay: 250,
+        delay: 300,
         data: function data(params) {
           return {
             "keyword": params.term,
+            "page": params.page || 1,
+            "limit": 30,
             '_token': $('meta[name="csrf-token"]').attr('content')
           };
         },
-        processResults: function processResults(data) {
+        processResults: function processResults(data, params) {
+          params.page = params.page || 1;
           return {
-            results: $.map(data.data, function(item) {
+            results: $.map(data.data || [], function(item) {
               return item;
             }),
+            pagination: {
+              more: !!(data.pagination && data.pagination.more)
+            }
           };
         },
       },
@@ -1530,6 +1558,61 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     closeCameraModal();
   });
 
+  function getCameraErrorMessage(err) {
+    if (!err || !err.name) {
+      return "Tidak bisa mengakses kamera. Pastikan izin kamera aktif di browser.";
+    }
+    if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+      return "Izin kamera ditolak. Aktifkan akses kamera untuk situs ini di pengaturan browser.";
+    }
+    if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+      return "Kamera tidak ditemukan pada perangkat ini.";
+    }
+    if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+      return "Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.";
+    }
+    if (err.name === "OverconstrainedError") {
+      return "Pengaturan kamera tidak didukung perangkat ini.";
+    }
+    if (err.name === "SecurityError") {
+      return "Akses kamera diblokir. Buka aplikasi lewat HTTPS atau localhost.";
+    }
+    return "Tidak bisa mengakses kamera. Pastikan izin kamera aktif di browser.";
+  }
+
+  function attachCameraStream(video, stream) {
+    currentStream = stream;
+    video.srcObject = stream;
+    video.muted = true;
+    return video.play().catch(function(playErr) {
+      console.warn("Preview kamera menunggu modal siap:", playErr);
+    });
+  }
+
+  function isCameraPreviewActive() {
+    return $("#modalPhoto").hasClass("show") && $("#camera").is(":visible") && !$("#preview-box").is(":visible");
+  }
+
+  function ensureCameraPreviewPlaying() {
+    var video = document.getElementById("video");
+    if (!video || !isCameraPreviewActive()) return Promise.resolve(false);
+
+    if (currentStream) {
+      if (video.srcObject !== currentStream) {
+        video.srcObject = currentStream;
+      }
+      video.muted = true;
+      if (!video.paused && video.readyState >= 2) {
+        return Promise.resolve(true);
+      }
+      return video.play().catch(function() {
+        return startCamera();
+      });
+    }
+
+    return startCamera();
+  }
+
   // =========================
   // START CAMERA FUNCTION
   // =========================
@@ -1545,9 +1628,12 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       return Promise.resolve(false);
     }
 
-    // Stop camera old stream
     if (currentStream) {
-      currentStream.getTracks().forEach(t => t.stop());
+      currentStream.getTracks().forEach(function(t) {
+        t.stop();
+      });
+      currentStream = null;
+      video.srcObject = null;
     }
 
     return navigator.mediaDevices.getUserMedia({
@@ -1556,21 +1642,28 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             ideal: "environment"
           }
         }
-      }).catch(() => {
+      }).catch(function() {
         return navigator.mediaDevices.getUserMedia({
           video: true
         });
       })
-      .then(stream => {
-        currentStream = stream;
-        video.srcObject = stream;
+      .then(function(stream) {
+        return attachCameraStream(video, stream);
       })
       .catch(function(err) {
         console.error("Tidak bisa akses kamera:", err);
-        notifikasi("error", "Gagal Kamera", "Tidak bisa akses kamera. Pastikan izin kamera aktif.");
+        notifikasi("error", "Gagal Kamera", getCameraErrorMessage(err));
         return false;
       });
   }
+
+  $("#modalPhoto").on("shown.bs.modal", function() {
+    ensureCameraPreviewPlaying();
+  });
+
+  $("#modalPhoto").on("hidden.bs.modal", function() {
+    stopCameraStream();
+  });
 
   // =========================
   // WHEN OPEN MODAL

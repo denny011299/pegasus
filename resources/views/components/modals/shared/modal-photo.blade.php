@@ -18,7 +18,7 @@
           <canvas id="canvas" style="display:none;"></canvas>
           <div id="camera" class="w-100 text-center"
             style="background: #000; border-radius: 12px; overflow: hidden; position: relative; min-height: 240px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);">
-            <video id="video" autoplay playsinline
+            <video id="video" autoplay playsinline muted
               style="width: 100%; max-height: 60vh; object-fit: cover;"></video>
           </div>
           <div id="preview-box" class="w-100 text-center"

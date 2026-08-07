@@ -18,7 +18,7 @@ use Tests\TestCase;
  * - Main → Main: ship unit as-is, receive same unit (no conversion/packing).
  * - Main → Retail: may ship DOS/default; Terima converts to retail_unit.
  * - Retail → Main: retail ships Piece only; main receives Piece.
- * - Kirim never auto-packs; Cancel Kirim restores sent-unit cut from logs.
+ * - Kirim: packing OFF; main source may unpack ancestors; Cancel restores from logs.
  *
  * Real seed warehouse ids: 1 = Gudang Pusat (main), 2 = Gudang Eceran Toko (retail).
  * Real seed unit ids: 7 = DOS, 9 = Piece.
@@ -195,9 +195,9 @@ class StockTransferWorkflowTest extends TestCase
     }
 
     /**
-     * Cancel Kirim restores the sent-unit stock cut. Kirim no longer auto-unpacks DOS
-     * to cover a Piece shortfall — stok di satuan kirim harus cukup. Ship 22 Piece from
-     * 30 Piece (+ unused DOS stock) → Cancel restores Piece to 30, DOS untouched.
+     * Cancel Kirim restores sent-unit cut when Piece stock alone covers the ship
+     * (no unpack needed). Ship 22 Piece from 30 Piece (+ unused DOS) → Cancel
+     * restores Piece to 30, DOS untouched.
      */
     public function test_cancel_kirim_restores_sent_unit_stock_without_packing(): void
     {
@@ -227,7 +227,7 @@ class StockTransferWorkflowTest extends TestCase
 
         $dosStock->refresh();
         $pieceStock->refresh();
-        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'Kirim Piece must not unpack/touch DOS');
+        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'Kirim Piece must not unpack/touch DOS when Piece alone is enough');
         $this->assertSame(8.0, (float) $pieceStock->ps_stock, '30 - 22 = 8 Piece left');
 
         $header->refresh();
@@ -247,10 +247,11 @@ class StockTransferWorkflowTest extends TestCase
     }
 
     /**
-     * Kirim must refuse to auto-unpack DOS when Piece stock alone is short.
-     * 10 Piece + 5 DOS is NOT enough to ship 22 Piece without bongkar.
+     * Main source may unpack ancestors on Kirim (packing still OFF).
+     * 10 Piece + 5 DOS (1 DOS = 12 Piece) can ship 22 Piece by unpacking 1 DOS.
+     * Cancel Kirim must restore exact pre-ship composition via log net delta.
      */
-    public function test_ship_refuses_to_unpack_dos_when_sent_unit_stock_is_short(): void
+    public function test_ship_unpacks_ancestor_when_sent_unit_stock_is_short(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -274,13 +275,76 @@ class StockTransferWorkflowTest extends TestCase
 
         $this->post('/shipStockTransfer', ['id' => $header->st_id])
             ->assertStatus(200)
+            ->assertJson(['status' => 1]);
+
+        $dosStock->refresh();
+        $pieceStock->refresh();
+        $header->refresh();
+        // Unpack 1 DOS → +12 Piece, then ship 22: DOS 4, Piece 0.
+        $this->assertSame(4.0, (float) $dosStock->ps_stock, '1 DOS unpacked to cover Piece shortfall');
+        $this->assertSame(0.0, (float) $pieceStock->ps_stock, '10 + 12 - 22 = 0 Piece');
+        $this->assertSame(2, (int) $header->status, 'Kirim');
+
+        $check = $this->post('/checkTransferStock', [
+            'from_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'to_warehouse_id' => (int) $mainWarehouse2->id,
+            'items' => [[
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'unit_id' => self::PIECE_UNIT_ID,
+                'qty' => 50,
+                'label' => 'short after ship',
+            ]],
+        ])->assertStatus(200)->json();
+        $this->assertFalse($check['ok'] ?? true);
+        $available = (float) ($check['shortages'][0]['available'] ?? -1);
+        // Remaining: 4 DOS × 12 = 48 Piece equivalent.
+        $this->assertEqualsWithDelta(48.0, $available, 1e-6);
+
+        $this->post('/cancelKirimStockTransfer', ['id' => $header->st_id])
+            ->assertStatus(200)
+            ->assertJson(['status' => 1]);
+
+        $dosStock->refresh();
+        $pieceStock->refresh();
+        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'Cancel restores pre-ship DOS');
+        $this->assertSame(10.0, (float) $pieceStock->ps_stock, 'Cancel restores pre-ship Piece');
+    }
+
+    /**
+     * Even with unpack, Kirim refuses when ancestor equivalent is still short.
+     * 1 Piece + 1 DOS (=12) cannot cover 20 Piece.
+     */
+    public function test_ship_refuses_when_ancestor_equivalent_still_short(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createProductFixture(defaultUnitId: self::PIECE_UNIT_ID);
+        $this->createDosPieceRelation($fx['variant']);
+        $mainWarehouse2 = $this->createSecondMainWarehouse();
+
+        $dosStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::DOS_UNIT_ID, 1);
+        $pieceStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 1);
+
+        $header = $this->createPendingTransfer(
+            $fx['product'],
+            $fx['variant'],
+            self::MAIN_WAREHOUSE_ID,
+            (int) $mainWarehouse2->id,
+            self::PIECE_UNIT_ID,
+            20
+        );
+
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+
+        $this->post('/shipStockTransfer', ['id' => $header->st_id])
+            ->assertStatus(200)
             ->assertJson(['status' => -1]);
 
         $dosStock->refresh();
         $pieceStock->refresh();
         $header->refresh();
-        $this->assertSame(5.0, (float) $dosStock->ps_stock, 'DOS must stay untouched when Kirim is refused');
-        $this->assertSame(10.0, (float) $pieceStock->ps_stock, 'Piece must stay untouched when Kirim is refused');
+        $this->assertSame(1.0, (float) $dosStock->ps_stock);
+        $this->assertSame(1.0, (float) $pieceStock->ps_stock);
         $this->assertSame(1, (int) $header->status, 'must remain Pending');
     }
 

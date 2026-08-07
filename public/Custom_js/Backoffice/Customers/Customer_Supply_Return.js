@@ -112,11 +112,16 @@
 
     function actionButtons(row) {
         var html = '<div class="d-flex justify-content-center align-items-center gap-2">';
+        var status = parseInt(row.status, 10);
+        var pending = status === 1;
         var canView = can("view");
-        var canEdit = parseInt(row.status, 10) === 1 && can("edit");
-        var canDelete = parseInt(row.status, 10) === 1 && can("delete");
+        var canConfirm = pending && can("others");
+        var canEdit = pending && can("edit");
+        var canDelete = pending && can("delete");
 
-        if (canView) {
+        if (canConfirm) {
+            html += '<a class="btn-action-icon csr-confirm" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#059669;" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
+        } else if (canView) {
             html += '<a class="btn-action-icon csr-view" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
         }
         if (canEdit) {
@@ -126,7 +131,7 @@
             html += '<a class="btn-action-icon csr-delete" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
         }
         html += '</div>';
-        if (!canView && !canEdit && !canDelete) {
+        if (!canConfirm && !canView && !canEdit && !canDelete) {
             return '<span class="text-muted small">—</span>';
         }
         return html;
@@ -694,7 +699,7 @@
             $("#customer-supply-return-modal").modal("show");
         });
         $("#csr-save").on("click", submitRecord);
-        $(document).on("click", ".csr-view", function () { openRecord($(this).data("id"), "view"); });
+        $(document).on("click", ".csr-view, .csr-confirm", function () { openRecord($(this).data("id"), "view"); });
         $(document).on("click", ".csr-edit", function () { openRecord($(this).data("id"), "edit"); });
         $(document).on("click", ".csr-delete", function () {
             var id = $(this).data("id");

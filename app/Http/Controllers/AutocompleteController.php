@@ -167,26 +167,30 @@ class AutocompleteController extends Controller
     public function autocompleteBom(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
+        $page = max(1, (int) ($req->page ?? 1));
+        $limit = min(50, max(1, (int) ($req->limit ?? 30)));
 
-        $p = new Bom();
-        $data_city = $p->getBom([
-            "search" => $keyword,
-        ]);
+        $result = (new Bom())->searchForAutocomplete([
+            'search' => $keyword,
+            'page' => $page,
+        ], $limit);
 
-
-        foreach ($data_city as $r) {
-            $r->id = $r["bom_id"];
+        foreach ($result['data'] as $r) {
+            $r->id = $r['bom_id'];
             // product_name sudah = nama produk + varian
             $r->text = $this->formatProductVariantLabel(
-                $r["product_name"] ?? '',
+                $r['product_name'] ?? '',
                 '',
-                $r["product_variant_sku"] ?? ($r["product_sku"] ?? '')
+                $r['product_variant_sku'] ?? ($r['product_sku'] ?? '')
             );
-        };
+        }
 
-        echo json_encode(array(
-            "data" => $data_city
-        ));
+        return response()->json([
+            'data' => $result['data'],
+            'pagination' => [
+                'more' => (bool) $result['more'],
+            ],
+        ]);
     }
 
     /**
@@ -267,21 +271,25 @@ class AutocompleteController extends Controller
     public function autocompleteSupplies(Request $req)
     {
         $keyword = isset($req->keyword) ? $req->keyword : null;
+        $page = max(1, (int) ($req->page ?? 1));
+        $limit = min(50, max(1, (int) ($req->limit ?? 30)));
 
-        $p = new Supplies();
-        $data_city = $p->getSupplies([
-            "supplies_name" => $keyword,
+        $result = (new Supplies())->searchForAutocomplete([
+            'search' => $keyword,
+            'page' => $page,
+        ], $limit);
+
+        foreach ($result['data'] as $r) {
+            $r->id = $r['supplies_id'];
+            $r->text = $r['supplies_name'];
+        }
+
+        return response()->json([
+            'data' => $result['data'],
+            'pagination' => [
+                'more' => (bool) $result['more'],
+            ],
         ]);
-
-
-        foreach ($data_city as $r) {
-            $r->id = $r["supplies_id"];
-            $r->text = $r["supplies_name"];
-        };
-
-        echo json_encode(array(
-            "data" => $data_city
-        ));
     }
 
 

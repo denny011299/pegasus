@@ -11,6 +11,7 @@ class CustomerSupplyReturn extends Model
 
     protected $fillable = [
         'return_number',
+        'return_group',
         'so_id',
         'customer_id',
         'return_date',
@@ -26,4 +27,12 @@ class CustomerSupplyReturn extends Model
         'return_date' => 'date:Y-m-d',
         'status' => 'integer',
     ];
+
+    /** Nomor urut: PBM0001, PBM0002, ... */
+    public function generateReturnNumber(): string
+    {
+        $id = (int) (self::max('return_id') ?? 0) + 1;
+
+        return 'PBM' . str_pad((string) $id, 4, '0', STR_PAD_LEFT);
+    }
 }

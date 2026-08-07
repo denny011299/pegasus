@@ -180,7 +180,7 @@ Panduan restore: `docs/fase2-snapshots/README.md`
 
 Salin dari backlog — verifikasi lewat test + code review:
 
-1. **Kirim ST:** `allow_packing=false`; stok di satuan kirim harus cukup (utama **tidak** auto-unpack DOS).
+1. **Kirim ST:** `allow_packing=false`; gudang utama `allow_unpack=true` (bongkar ancestor); eceran unpack OFF.
 2. **Terima utama:** satuan = satuan kirim (tanpa konversi ke default).
 3. **Terima eceran:** konversi ke `retail_unit`.
 4. **Eceran:** tidak pernah unpack satuan besar; cleanup via artisan.

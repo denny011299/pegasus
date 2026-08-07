@@ -70,7 +70,7 @@
                         class="text-center">Keluar</th>
                       <th
                         style="width:12%; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 10px 24px;"
-                        class="text-center">Saldo</th>
+                        class="text-center">Sisa</th>
                     </tr>
                   </thead>
                   <tbody></tbody>
@@ -80,8 +80,8 @@
           </div>
           {{-- ── FOOTER ── --}}
           <div class="modal-footer pg-modal-footer">
-            <button type="button" data-bs-dismiss="modal" class="btn pg-btn-save btn-save">
-              Selesai
+            <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">
+              Tutup
             </button>
           </div>
         </form>

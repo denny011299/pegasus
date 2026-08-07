@@ -21,6 +21,7 @@
 /public/storage
 /public/customer_product_returns/
 /public/customer_supply_returns/
+/public/customer_returns/
 /storage/*.key
 /storage/pail
 /vendor
@@ -47,3 +48,5 @@ vendor.zip
 /.postman
 /cdocs
 /docs/sop-*.md
+
+/storage/backups/

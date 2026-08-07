@@ -95,6 +95,7 @@
 @endif
 @if (Route::is(['production']))
   @include('components.modals.production.add-production')
+  @include('components.modals.production.fix-recipe-bom')
 @endif
 @if (Route::is(['supplies']))
   <!-- modal -->

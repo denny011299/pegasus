@@ -154,11 +154,14 @@ class ProductUnitStock
             }
 
             $direct = (float) ($directByUnit->get($unitId) ?? 0);
-            // Packing dua arah hanya untuk gudang utama multi-satuan.
+            // stock_text / ps_stock = komposisi fisik per satuan.
+            // available_qty = ekuivalen (utama: + unpack ancestor; eceran: exact).
+            // Packing/rapikan tetap OFF.
             $available = self::totalAvailable(
                 $warehouseId,
                 $productVariantId,
                 $unitId,
+                false,
                 $sourceIsMain
             );
             $units[] = [
@@ -175,7 +178,7 @@ class ProductUnitStock
             'stock_text' => $units === []
                 ? '0'
                 : collect($units)->map(fn($unit) => number_format(
-                    (float) $unit['available_qty'],
+                    (float) $unit['ps_stock'],
                     0,
                     ',',
                     '.'
@@ -189,7 +192,7 @@ class ProductUnitStock
      * Total stok tersedia setara di $targetUnitId.
      * Mode normal: unit sama + (opsional) bongkar ancestor. Mode packing: gabungkan
      * seluruh stok satu chain dan floor ke unit target.
-     * $allowUnpack=false: hanya stok persis di $targetUnitId (dipakai ST Kirim).
+     * $allowUnpack=false: hanya stok persis di $targetUnitId (eceran / exact-unit).
      */
     public static function totalAvailable(
         int $warehouseId,
@@ -321,7 +324,7 @@ class ProductUnitStock
             $isMainWarehouse = self::warehouseIsMain($warehouseId) !== false;
             $allowPacking = (bool) ($item['allow_packing'] ?? false) && $isMainWarehouse;
             // Default true agar SO/Production tetap boleh bongkar ancestor.
-            // ST Kirim set allow_unpack=false → stok harus cukup di satuan kirim.
+            // ST Kirim utama: allow_unpack=true; eceran dipaksa false di bawah.
             $allowUnpack = (bool) ($item['allow_unpack'] ?? true) && $isMainWarehouse;
 
             if ($allowPacking) {
@@ -646,12 +649,12 @@ class ProductUnitStock
 
         if (($virtual[$unitId] ?? 0) + 1e-9 < $qty) {
             if (! $allowUnpack) {
-                // Exact unit only (eceran / ST Kirim): jangan bongkar ancestor.
+                // Exact unit only (eceran / caller mematikan unpack).
                 return [
                     'ok' => false,
                     'message' => $isRetailWarehouse
                         ? 'Stok satuan eceran tidak mencukupi (gudang eceran tidak boleh membongkar satuan besar)'
-                        : 'Stok satuan kirim tidak mencukupi (Kirim tidak boleh membongkar satuan lain)',
+                        : 'Stok satuan kirim tidak mencukupi',
                 ];
             }
             if (! $ensure($unitId, $qty)) {
