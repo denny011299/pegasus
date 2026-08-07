@@ -50,9 +50,10 @@
                 },
             },
             columns: [
-                { data: "product_name_text", width: "30%", defaultContent: "—" },
-                { data: "product_category", width: "15%", defaultContent: "—" },
-                { data: "product_variant_sku", width: "15%", defaultContent: "—" },
+                { data: "product_name_text", width: "26%", defaultContent: "—" },
+                { data: "product_category", width: "12%", defaultContent: "—" },
+                { data: "product_variant_sku", width: "12%", defaultContent: "—" },
+                { data: "min_order_text", width: "14%", defaultContent: "—" },
                 { data: "product_alert_text", width: "30%", defaultContent: "—" },
             ],
             initComplete: function (settings) {
@@ -95,7 +96,14 @@
                     item.product_alert_text =
                         item.reorder_point + " " + item.product_unit +
                         `<div class="small text-muted">Rata-rata: ${formatLeadTimeQty(item.avg_daily)}/hari · Lead time: ${item.lead_time_days} hari · Safety: ${formatLeadTimeQty(item.safety_stock)}</div>`;
-                    
+                    // Pemesanan Min. = max(0, Peringatan Stok − Stok saat ini)
+                    var minOrderQty = Math.max(
+                        0,
+                        (parseFloat(item.product_variant_alert) || 0) - (parseFloat(item.current_stock) || 0)
+                    );
+                    item.min_order_text =
+                        formatLeadTimeQty(minOrderQty) + " " + (item.product_unit || "");
+
                     var habis = 1;
                     if (item.stock && item.stock.length) {
                         item.stock.forEach((element,index) => {

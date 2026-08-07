@@ -4,7 +4,7 @@
     <style>
         .stock-alert-table {
             width: 100% !important;
-            min-width: 960px;
+            min-width: 1100px;
             table-layout: fixed;
         }
         .stock-alert-table th,
@@ -16,18 +16,23 @@
         }
         .stock-alert-table th:nth-child(1),
         .stock-alert-table td:nth-child(1) {
-            width: 30% !important;
+            width: 26% !important;
         }
         .stock-alert-table th:nth-child(2),
         .stock-alert-table td:nth-child(2) {
-            width: 15% !important;
+            width: 12% !important;
         }
         .stock-alert-table th:nth-child(3),
         .stock-alert-table td:nth-child(3) {
-            width: 15% !important;
+            width: 12% !important;
         }
         .stock-alert-table th:nth-child(4),
         .stock-alert-table td:nth-child(4) {
+            width: 14% !important;
+            white-space: nowrap !important;
+        }
+        .stock-alert-table th:nth-child(5),
+        .stock-alert-table td:nth-child(5) {
             width: 30% !important;
         }
         .stock-alert-table td.dataTables_empty {
@@ -83,6 +88,7 @@
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
+                                                    <th>Pemesanan Min.</th>
                                                     <th>Stok Minimum Rekomendasi</th>
                                                 </tr>
                                             </thead>
@@ -100,6 +106,7 @@
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
+                                                    <th>Pemesanan Min.</th>
                                                     <th>Stok Minimum Rekomendasi</th>
                                                 </tr>
                                             </thead>
@@ -125,5 +132,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=6"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=7"></script>
 @endsection

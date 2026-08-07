@@ -30,6 +30,7 @@
             },
             columns: [
                 { data: "supplies_name", width: "35%" },
+                { data: "min_order_text", width: "25%", defaultContent: "—" },
                 { data: "supplies_alert_text", width: "40%" },
             ],
             initComplete: (settings, json) => {
@@ -57,6 +58,7 @@
             autoWidth: false,
             columns: [
                 { data: "supplies_name", width: "35%" },
+                { data: "min_order_text", width: "25%", defaultContent: "—" },
                 { data: "supplies_alert_text", width: "40%" },
             ],
             initComplete: (settings, json) => {
@@ -92,7 +94,14 @@
                     item.supplies_alert_text =
                         item.reorder_point + " " + item.default_unit +
                         `<div class="small text-muted">Rata-rata: ${formatLeadTimeQty(item.avg_daily)}/hari · Lead time: ${item.lead_time_days} hari · Safety: ${formatLeadTimeQty(item.safety_stock)}</div>`;
-                    
+                    // Pemesanan Min. = max(0, supplies_alert − Stok saat ini)
+                    var minOrderQty = Math.max(
+                        0,
+                        (parseFloat(item.supplies_alert) || 0) - (parseFloat(item.current_stock) || 0)
+                    );
+                    item.min_order_text =
+                        formatLeadTimeQty(minOrderQty) + " " + (item.default_unit || "");
+
                     var habis = 1;
                     if (item.stock && item.stock.length) {
                         item.stock.forEach((element, index) => {
@@ -114,8 +123,6 @@
                         item.stock[def] = tmp;
                     }
                     
-                    // item.product = `<img src="${public+item.stal_image}" class="me-2" style="width:30px">`+item.stal_name;
-                    // item.min_order = `${item.supplies_alert - item.supplies_variant_stock} ${item.product_unit}`;
                     var sas =
                         roleIconEdit(
                             "Peringatan Stok Bahan Mentah",

@@ -195,7 +195,8 @@ class StockAlertSupplies extends Model
             $value->safety_stock = $safety;
             $value->reorder_point = $reorderPoint;
             $value->recommended_order = round($recommended, 4);
-            $value->minim_order = round($recommended, 4);
+            // Pemesanan Min. = max(0, supplies_alert − Stok saat ini)
+            $value->minim_order = round(max(0, (float) ($value->supplies_alert ?? 0) - $currentStock), 4);
             $value->supplier_options = $supplierOptions;
         }
         

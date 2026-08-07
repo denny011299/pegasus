@@ -2,51 +2,40 @@
 
 @section('content')
 <style>
-    @media (max-width: 767.98px) {
-    /* Target tabel variasi di halaman update product */
-    #productVariantTable input.form-control {
-        /* Memaksa input memiliki lebar minimum agar tidak terlalu kecil */
-        min-width: 150px; 
+    /* Variasi Produk: overflow-x + min-width agar kolom tidak tercrush */
+    #productVariantTableWrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
-    
-    /* Memastikan sel (td) tabel tidak terlalu menekan konten */
+    #productVariantTable {
+        min-width: 1400px;
+        width: 100%;
+        margin: 0;
+        table-layout: auto;
+    }
+    #productVariantTable th,
     #productVariantTable td {
-        white-space: nowrap; /* Mencegah teks/input membungkus, memaksa scroll horizontal */
-        padding-left: 5px !important;
-        padding-right: 5px !important;
-    }
-
-    /* Memastikan header tabel juga tidak membungkus */
-    #productVariantTable th {
         white-space: nowrap;
+        vertical-align: middle;
     }
-      /* 2. Paksa Input Group untuk TIDAK MEMBUNGKUS */
+    #productVariantTable th:nth-child(1),
+    #productVariantTable td:nth-child(1) {
+        min-width: 200px;
+    }
+    #productVariantTable th:nth-child(2),
+    #productVariantTable td:nth-child(2) {
+        min-width: 140px;
+    }
+    #productVariantTable .variant_name {
+        min-width: 180px;
+    }
+    #productVariantTable .variant_sku {
+        min-width: 130px;
+    }
     #productVariantTable .input-group {
-        /* KUNCI: Memaksa elemen flex (input dan span) tetap sejajar */
         flex-wrap: nowrap !important;
-        /* Memastikan input group punya lebar minimum yang cukup */
-        min-width: 120px; 
+        min-width: 160px;
     }
-
-    /* 3. Atur Lebar Input Angka sekecil mungkin agar span satuan (kg) mendapat tempat */
-    #productVariantTable .input-group input.form-control {
-        min-width: 40px; 
-        /* Pastikan input mengisi sisa ruang setelah satuan */
-        width: 100%; 
-    }
-
-    /* 4. Pastikan span satuan (kg) tidak terpotong */
-    #productVariantTable .input-group .input-group-text {
-        min-width: 30px; 
-        padding: 0.375rem 0.5rem; /* Sesuaikan padding agar terlihat bagus */
-    }
-
-    /* Opsional: Memperbaiki tampilan input group di kolom yang hanya berisi input group */
-    #productVariantTable td:has(.input-group) {
-        /* Menghilangkan padding yang berlebihan di sel, memberikan ruang lebih ke input group */
-        padding: 0.5rem !important;
-    }
-}
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -119,26 +108,26 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                                        <div class="table-responsive" id="productVariantTableWrap" style="border: 1px solid #e2e8f0; border-radius: 8px;">
 
-                                            <table class="table table-center table-hover mb-0" id="productVariantTable" style="margin: 0;">
+                                            <table class="table table-center table-hover mb-0" id="productVariantTable">
                                                 <thead style="background:#f1f5f9; border-bottom: 1px solid #e2e8f0;">
                                                     <tr>
-                                                        <th style="width:250px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Nama Variasi<span class="text-danger">*</span></th>
-                                                        <th style="width:150px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">SKU<span class="text-danger">*</span></th>
-                                                        <th style="width:150px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Barcode</th>
-                                                        <th style="width:230px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">
+                                                        <th style="min-width:200px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Nama Variasi<span class="text-danger">*</span></th>
+                                                        <th style="min-width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">SKU<span class="text-danger">*</span></th>
+                                                        <th style="min-width:150px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Barcode</th>
+                                                        <th style="min-width:230px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">
                                                             Peringatan Stok<span class="text-danger">*</span>
                                                             <div class="small text-muted fw-normal alert-stock-wh-label" style="font-size:10px;line-height:1.2;text-transform:none;letter-spacing:0;"></div>
                                                         </th>
-                                                        <th style="width:160px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Satuan Eceran</th>
-                                                        <th style="width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Isi / Pallet<br><small class="text-muted fw-normal" style="font-size:10px;text-transform:none;letter-spacing:0;">opsional, utk Produksi</small></th>
-                                                        <th class="col-safety-stock d-none" style="width:230px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">
+                                                        <th style="min-width:160px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Satuan Eceran</th>
+                                                        <th style="min-width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Isi / Pallet<br><small class="text-muted fw-normal" style="font-size:10px;text-transform:none;letter-spacing:0;">opsional, utk Produksi</small></th>
+                                                        <th class="col-safety-stock d-none" style="min-width:230px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">
                                                             Safety Stock
                                                             <div class="small text-muted fw-normal safety-stock-wh-label" style="font-size:10px;line-height:1.2;text-transform:none;letter-spacing:0;"></div>
                                                         </th>
-                                                        <th style="width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Lead Time (Hari)</th>
-                                                        <th class="text-center" style="width:100px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Aksi</th>
+                                                        <th style="min-width:140px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Lead Time (Hari)</th>
+                                                        <th class="text-center" style="min-width:100px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.4px; padding: 12px 16px;">Aksi</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="tbVariant">

@@ -199,7 +199,8 @@ class StockAlert extends Model
                 'reorder_point' => $reorderPoint,
                 'current_stock' => round($currentStock, 4),
                 'recommended_order' => round($recommendedOrder, 4),
-                'minim_order' => round($recommendedOrder, 4),
+                // Pemesanan Min. = max(0, Peringatan Stok − Stok saat ini)
+                'minim_order' => round(max(0, $alertQty - $currentStock), 4),
             ];
 
             $result->push($item);
