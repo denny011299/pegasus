@@ -164,6 +164,7 @@ class BongkarRecursionDepthGuardTest extends TestCase
     public function test_production_ingredient_bongkar_does_not_hang_on_a_circular_supplies_relation_chain(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(1);
 
         $category = new Category();
         $category->category_name = 'Circular Relation Depth Guard Category';

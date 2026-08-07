@@ -77,6 +77,7 @@ class ProductionRawMaterialOverconsumptionOnMultiUnitRelationTest extends TestCa
     public function test_producing_in_a_unit_with_multiple_sibling_relations_consumes_the_correct_amount(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $category = new Category();
         $category->category_name = 'Issue 16 Regression Category';
@@ -220,6 +221,7 @@ class ProductionRawMaterialOverconsumptionOnMultiUnitRelationTest extends TestCa
     public function test_producing_with_a_proper_multi_level_unit_chain_consumes_the_correct_amount(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $category = new Category();
         $category->category_name = 'Chain Regression Category';
@@ -359,6 +361,7 @@ class ProductionRawMaterialOverconsumptionOnMultiUnitRelationTest extends TestCa
     public function test_kemasan_besar_packaging_material_matches_convertqtytosmallestunits_existing_behavior_on_a_multi_level_chain(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $category = new Category();
         $category->category_name = 'Kemasan Besar Chain Regression Category';

@@ -48,6 +48,7 @@ class SalesOrderUpdateRejectsNoOpEditOnFullyConsumedStockTest extends TestCase
     public function test_editing_an_approved_so_that_fully_consumed_stock_succeeds_on_a_no_op_qty(): void
     {
         $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $category = new Category();
         $category->category_name = 'SO Update Regression Category';
