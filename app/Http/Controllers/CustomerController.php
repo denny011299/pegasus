@@ -501,6 +501,17 @@ class CustomerController extends Controller
     function acceptInvoiceSO(Request $req)
     {
         $data = $req->all();
-        return (new SalesOrderDetailInvoice())->changeStatusInvoiceSO($data);
+        // Ditambahkan: dulu tidak ada guard sama sekali — menerima 2+ invoice yang gabungan
+        // totalnya melebihi so_total selalu berhasil. Mirroring acceptInvoicePO's pattern exactly
+        // (SupplierController.php): jumlahkan invoice yang sudah diterima (status=2) + invoice
+        // ini sendiri, tolak kalau melebihi so_total.
+        $soi = SalesOrderDetailInvoice::find($data["soi_id"]);
+        $total = SalesOrderDetailInvoice::where("so_id", "=", $soi->so_id)->where("status", "=", 2)->sum("soi_total");
+        $so = SalesOrder::find($soi->so_id);
+        if ($total + $soi->soi_total <= $so->so_total) {
+            return (new SalesOrderDetailInvoice())->changeStatusInvoiceSO($data);
+        } else {
+            return -1;
+        }
     }
 }

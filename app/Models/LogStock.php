@@ -15,6 +15,16 @@ class LogStock extends Model
     public $timestamps = true;
     public $incrementing = true;
 
+    /**
+     * "oleh <nama staff sesi aktif>" — ditempel di akhir log_notes (setelah spasi
+     * pemisah milik pemanggil) agar Catatan menyebut siapa yang melakukan
+     * transaksi, selain kolom Staff yang sudah ada.
+     */
+    public static function actorSuffix(): string
+    {
+        return 'oleh ' . (Session::get('user')->staff_name ?? '-');
+    }
+
     function getLog($data = [])
     {
 

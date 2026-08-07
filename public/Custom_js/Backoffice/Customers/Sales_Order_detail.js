@@ -972,9 +972,17 @@
             },
             method:"post",
             success:function(e){
+                ResetLoadingButton(btn, 'Setujui');
+                if(e==-1){
+                    notifikasi(
+                        "error",
+                        "Gagal Setujui",
+                        "Melebihi Sisa Pembayaran"
+                    );
+                    return false;
+                }
                 $('.modal').modal("hide");
                 refreshInvoice();
-                ResetLoadingButton(btn, 'Setujui');
                 notifikasi('success', "Berhasil Accept", "Berhasil accept invoice");
             },
             error:function(e){
@@ -983,7 +991,7 @@
             }
         });
     });
-    
+
     $(document).on("click","#btnAddTerima",function(){
         $('#modalTerima').modal("show");
     });
