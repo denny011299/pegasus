@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use App\Http\Controllers\ProductionController;
 use App\Models\Staff;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -19,13 +17,20 @@ class Production extends Model
 
     function getProduction($data = [])
     {
+        // Dulu dijalankan inline di tengah loop tampilan di bawah — jadi cuma memproses baris
+        // yang kebetulan lolos filter request GET yang sedang berjalan. Sekarang query
+        // independen lewat ProductionOverdueAutoResolver (juga dipakai
+        // `php artisan production:resolve-overdue`) — comment-out baris ini kalau nanti mau
+        // auto-timeout HANYA berjalan lewat cron, bukan di setiap load halaman list.
+        (new \App\Support\ProductionOverdueAutoResolver())->resolveOverdue();
+
         $data = array_merge([
             "date" => null,
             "report" => null,
             "production_id" => null,
             "created_at" => null,
             "status" => null
-        ], $data);  
+        ], $data);
 
         // status header produksi: 1 = pending, 2 = berhasil, 3 = tolak (4 = menunggu batal — jarang, bukan salah satu tiga utama)
         if ($data["report"] == null) $result = Production::where('status', '>=', 1);
@@ -79,6 +84,10 @@ class Production extends Model
             : collect();
 
         $relationCache = [];
+        // Schema::hasColumn dicek sekali di luar loop (bukan per-baris) — kolom ini mungkin belum
+        // ada di branch/environment yang menjalankan kode ini, lihat migration
+        // 2026_08_05_010000_add_resolved_by_system_to_productions_table.
+        $hasResolvedBySystemColumn = Schema::hasColumn('productions', 'resolved_by_system');
 
         foreach ($result as $key => $value) {
             $value->items = $detailsByProduction->get($value->production_id, collect())->values();
@@ -108,30 +117,16 @@ class Production extends Model
             }
             $value->total_dos = $dos;
             $value->created_by_name = $value->production_created_by ? ($staffMap[$value->production_created_by] ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
             $value->cancel_requested_by_name = $value->cancel_requested_by ? ($staffMap[$value->cancel_requested_by] ?? '-') : '-';
 
-            // Kalau misal ada yang sudah 3 hari lebih dan statusnya masih menunggu approve, maka auto ACC
-            $productionDate = Carbon::parse($value->production_date);
-            $diffDays = Carbon::now()->diffInDays($productionDate, false); 
-
-            if ($diffDays < -4 && $value->status == 1) {
-                $requestAcc = new \Illuminate\Http\Request();
-                $requestAcc->merge(['production_id' => $value->production_id]);
-
-                $resultAcc = (new ProductionController())->accProduction($requestAcc);
-
-                $isSuccess = $resultAcc === 1
-                    || ($resultAcc instanceof \Illuminate\Http\JsonResponse
-                        && (int) ($resultAcc->getData(true)['status'] ?? 0) === 1);
-                // Jangan auto-tolak kalau ACC gagal (mis. gudang eceran belum dipilih).
-                // Biarkan tetap Pending agar user bisa melengkapi/ACC manual.
-                if ($isSuccess) {
-                    return $this->getProduction($data);
-                }
-            } else if ($diffDays < -4 && $value->status == 4) {
-                $this->accProduction($value);
-                return $this->getProduction($data);
+            // acc_by tetap diisi dari Session::get('user') oleh accProduction()/declineProduction()
+            // walau yang benar-benar memprosesnya adalah auto-timeout (bukan staf yang kebetulan
+            // sedang buka halaman) — resolved_by_system, kalau ada, menang telak di atas acc_by
+            // untuk KEPERLUAN TAMPILAN, supaya user tidak salah kira staf tersebut yang approve.
+            if ($hasResolvedBySystemColumn && $value->resolved_by_system) {
+                $value->acc_by_name = 'Sistem (Auto-Timeout)';
+            } else {
+                $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
             }
         }
         return $result;

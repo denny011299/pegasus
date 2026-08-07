@@ -435,6 +435,7 @@ $(document).on("click", ".btnAdd", function () {
     $(".dos").hide();
     $("#production_date").val(getTodayStr()).prop("disabled", true);
     $("#addProduction").removeAttr("revision_source_production_id");
+    $("#row-production-acc-by").hide();
 });
 
 $(document).on("keyup", "#production_qty", function () {
@@ -882,6 +883,7 @@ function openProductionRevisionFromDashboardLink() {
             "revision_source_production_id",
             rowData.production_id,
         );
+        $("#row-production-acc-by").hide();
         $("#addProduction").modal("show");
 
         params.delete("rev_production_id");
@@ -1231,6 +1233,36 @@ $(document).on("click", ".btn_view", function () {
     $("#unit_id").html("");
     $("#production_date").val(data.production_date);
     $("#production_desc").val(data.production_desc).attr("disabled", true);
+
+    // Info umum (Kode Produksi/Dibuat Oleh) — selalu tampil di mode lihat detail. Status
+    // ditampilkan sebagai badge di header modal, bukan field terpisah.
+    $('#production_code_display').val(data.production_code);
+    $('#production_created_by_display').val(data.created_by_name || '-');
+    $('#row-production-detail-info').show();
+    $('#production_status_badge_header').html(data.status_text || '').show();
+
+    // "Dibatalkan" dibedakan dari sekadar "Tolak" lewat cancel_requested_by — hanya terisi
+    // kalau produksi ini pernah lewat alur pengajuan batal (status 4) lalu disetujui
+    // pembatalannya (berakhir di status 3 juga, sama seperti tolak langsung dari pending, tapi
+    // beda alur). Notes Pembatalan pakai kolom `notes` yang sama dipakai declineProduction().
+    var isDibatalkan = data.status == 3 && data.cancel_requested_by;
+
+    // Diapprove Oleh: HANYA untuk status Berhasil (2) — acc_by_name bisa berisi "Sistem
+    // (Auto-Timeout)" kalau produksi ini di-auto-timeout, bukan diputuskan staf sungguhan.
+    if (data.status == 2 && data.acc_by_name && data.acc_by_name !== '-') {
+        $('#production_acc_by_name').val(data.acc_by_name);
+        $('#row-production-acc-by').show();
+    } else {
+        $('#row-production-acc-by').hide();
+    }
+
+    if (isDibatalkan) {
+        $('#production_cancel_requested_by_display').val(data.cancel_requested_by_name || '-');
+        $('#production_cancel_notes_display').val(data.notes || '-');
+        $('#row-production-cancel-info').show();
+    } else {
+        $('#row-production-cancel-info').hide();
+    }
 
     var total_dos = 0;
 
