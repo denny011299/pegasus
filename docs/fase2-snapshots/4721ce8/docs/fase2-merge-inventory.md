@@ -3,7 +3,7 @@
 **Tujuan:** catalog semua kerja fase multi-gudang / ST / produksi / modal SOP, supaya sebelum & sesudah merge ke `main` (atau rebase) agent/manusia bisa **cek cepat** mana yang hilang.
 
 **Branch sumber kebenaran:** `fase-2` (= tip yang sudah di-push ke `fase2/main`)  
-**Snapshot tip saat dokumen ini ditulis:** `4721ce8`  
+**Snapshot tip saat dokumen ini ditulis:** `a5103d2`  
 **Dokumen terkait:**
 - `docs/backlog-stock-multi-gudang.md` — keputusan bisnis ST + backlog #1–#11
 - `docs/production-acc-stock-safety.md` — ACC produksi + ST Pending

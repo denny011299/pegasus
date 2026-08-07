@@ -1,0 +1,1513 @@
+<?php
+
+namespace App\Models;
+
+use App\Support\UnitStockSorter;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Session;
+
+class LogStock extends Model
+{
+    protected $table = "log_stocks";
+    protected $primaryKey = "log_id";
+    public $timestamps = true;
+    public $incrementing = true;
+
+    function getLog($data = [])
+    {
+
+        $data = array_merge([
+            "log_notes" => null,
+            "log_type" => null,
+            "log_item_id" => null,
+            "date" => null,
+            "warehouse_id" => null,
+            "limit" => 200,
+        ], $data);
+
+        $result = LogStock::where('status', '=', 1);
+        if ($data['log_notes']) $result->where('log_notes', 'like', '%' . $data["log_notes"] . '%');
+        if ($data["log_type"]) $result->where('log_type', '=', $data["log_type"]);
+        if ($data["log_item_id"]) $result->where('log_item_id', '=', $data["log_item_id"]);
+
+        $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) (Session::get('active_warehouse_id') ?? 0);
+        }
+        if ($warehouseId > 0) {
+            $this->applyWarehouseFilter($result, $warehouseId);
+            $this->applyRetailProductUnitFilter(
+                $result,
+                $warehouseId,
+                (int) ($data['log_type'] ?? 0),
+                (int) ($data['log_item_id'] ?? 0)
+            );
+        }
+
+        if ($data["date"]) {
+            if (is_array($data["date"]) && count($data["date"]) === 2) {
+                $startDate = \Carbon\Carbon::parse($data["date"][0])->startOfDay();
+                $endDate   = \Carbon\Carbon::parse($data["date"][1])->endOfDay();
+
+                $result->whereBetween('log_date', [$startDate, $endDate]);
+            } else {
+                $date = \Carbon\Carbon::parse($data["date"])->toDateString();
+                $result->whereDate('log_date', $date);
+            }
+        }
+
+        $result->orderBy('created_at', 'desc')->orderBy('log_id', 'desc');
+
+        $lazy = filter_var($data['lazy'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $offset = max(0, (int) ($data['offset'] ?? 0));
+        $limit = (int) ($data['limit'] ?? ($lazy ? 30 : 200));
+        $limit = min(max(1, $limit), $lazy ? 100 : 500);
+
+        if ($lazy) {
+            $result->offset($offset)->limit($limit + 1);
+        } elseif ($limit > 0) {
+            $result->limit($limit);
+        }
+
+        $rows = $result->get();
+        $hasMore = false;
+        if ($lazy && $rows->count() > $limit) {
+            $hasMore = true;
+            $rows = $rows->take($limit)->values();
+        }
+
+        if ($rows->isEmpty()) {
+            return $lazy
+                ? ['data' => [], 'has_more' => false, 'offset' => $offset, 'limit' => $limit]
+                : $rows;
+        }
+
+        $unitIds = $rows->pluck('unit_id')->filter()->unique()->values()->all();
+        $staffIds = $rows->pluck('staff_id')->filter()->unique()->values()->all();
+        $units = $unitIds !== []
+            ? Unit::whereIn('unit_id', $unitIds)->pluck('unit_name', 'unit_id')
+            : collect();
+        $staffs = $staffIds !== []
+            ? Staff::whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id')
+            : collect();
+
+        foreach ($rows as $value) {
+            $value->unit_name = $units->get($value->unit_id) ?? '-';
+            $value->staff_name = $value->staff_id
+                ? ($staffs->get($value->staff_id) ?? '-')
+                : '-';
+        }
+
+        $this->attachMultiUnitSaldoTexts($rows, $data, $offset);
+
+        if ($lazy) {
+            return [
+                'data' => $rows->values(),
+                'has_more' => $hasMore,
+                'offset' => $offset,
+                'limit' => $limit,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Saldo histori multi satuan (seperti kolom Stok di daftar).
+     * Dihitung dari stok sekarang + reverse mutasi log yang lebih baru.
+     */
+    protected function attachMultiUnitSaldoTexts($rows, array $data, int $offset): void
+    {
+        if ($rows->isEmpty()) {
+            return;
+        }
+
+        $logType = (int) ($data['log_type'] ?? 0);
+        $itemId = (int) ($data['log_item_id'] ?? 0);
+        if ($itemId <= 0 || ! in_array($logType, [1, 2], true)) {
+            return;
+        }
+
+        $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) (Session::get('active_warehouse_id') ?? 0);
+        }
+        if ($warehouseId <= 0) {
+            return;
+        }
+
+        $retailUnitId = $this->resolveRetailProductUnitFilter($warehouseId, $logType, $itemId);
+
+        [$qtyByUnit, $unitNames, $orderedUnitIds] = $this->currentMultiUnitSnapshot(
+            $logType,
+            $itemId,
+            $warehouseId,
+            $retailUnitId
+        );
+        if ($orderedUnitIds === []) {
+            return;
+        }
+
+        // Reverse log yang lebih baru (di luar halaman lazy ini) supaya snapshot = saldo setelah baris pertama halaman.
+        if ($offset > 0) {
+            $newer = LogStock::where('status', 1)
+                ->where('log_type', $logType)
+                ->where('log_item_id', $itemId);
+            $this->applyWarehouseFilter($newer, $warehouseId);
+            $this->applyRetailProductUnitFilter($newer, $warehouseId, $logType, $itemId);
+            if (! empty($data['date'])) {
+                if (is_array($data['date']) && count($data['date']) === 2) {
+                    $newer->whereBetween('log_date', [
+                        \Carbon\Carbon::parse($data['date'][0])->startOfDay(),
+                        \Carbon\Carbon::parse($data['date'][1])->endOfDay(),
+                    ]);
+                } else {
+                    $newer->whereDate('log_date', \Carbon\Carbon::parse($data['date'])->toDateString());
+                }
+            }
+            $newerRows = $newer->orderBy('created_at', 'desc')->orderBy('log_id', 'desc')
+                ->limit($offset)
+                ->get(['log_category', 'log_jumlah', 'unit_id']);
+            foreach ($newerRows as $newerRow) {
+                $this->reverseLogOnQtyMap($qtyByUnit, $newerRow);
+            }
+        }
+
+        foreach ($rows as $row) {
+            $displayMap = $qtyByUnit;
+            $rowUnitId = (int) ($row->unit_id ?? 0);
+            if ($rowUnitId > 0 && $row->log_saldo !== null && $row->log_saldo !== '') {
+                $displayMap[$rowUnitId] = (float) $row->log_saldo;
+            }
+            $row->log_saldo_text = $this->formatMultiUnitSaldo($displayMap, $orderedUnitIds, $unitNames);
+            $this->reverseLogOnQtyMap($qtyByUnit, $row);
+        }
+    }
+
+    protected function currentMultiUnitSnapshot(
+        int $logType,
+        int $itemId,
+        int $warehouseId,
+        ?int $onlyUnitId = null
+    ): array {
+        if ($logType === 1) {
+            $stockQuery = ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('product_variant_id', $itemId)
+                ->where('warehouse_id', $warehouseId);
+            if ($onlyUnitId > 0) {
+                $stockQuery->where('unit_id', $onlyUnitId);
+            }
+            $stockRows = $stockQuery->get(['unit_id', 'ps_stock']);
+            $relations = ProductRelation::query()
+                ->where('status', 1)
+                ->where('product_variant_id', $itemId)
+                ->get(['pr_unit_id_1', 'pr_unit_id_2']);
+            $qtyKey = 'ps_stock';
+            $sortUnit1 = 'pr_unit_id_1';
+            $sortUnit2 = 'pr_unit_id_2';
+        } else {
+            $stockRows = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('supplies_id', $itemId)
+                ->where('warehouse_id', $warehouseId)
+                ->get(['unit_id', 'ss_stock']);
+            $relations = SuppliesRelation::query()
+                ->where('status', 1)
+                ->where('supplies_id', $itemId)
+                ->get(['su_id_1', 'su_id_2']);
+            $qtyKey = 'ss_stock';
+            $sortUnit1 = 'su_id_1';
+            $sortUnit2 = 'su_id_2';
+        }
+
+        if ($stockRows->isEmpty()) {
+            return [[], [], []];
+        }
+
+        $unitIds = $stockRows->pluck('unit_id')->map(fn($id) => (int) $id)->unique()->values()->all();
+        $units = Unit::whereIn('unit_id', $unitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id');
+        foreach ($stockRows as $stock) {
+            $unit = $units->get($stock->unit_id);
+            $stock->unit_name = $unit->unit_name ?? '-';
+            $stock->unit_short_name = $unit->unit_short_name ?? ($unit->unit_name ?? '-');
+        }
+
+        if ($relations->isNotEmpty()) {
+            $stockRows = UnitStockSorter::sort($stockRows, $relations, $sortUnit1, $sortUnit2);
+        }
+
+        $qtyByUnit = [];
+        $unitNames = [];
+        $orderedUnitIds = [];
+        foreach ($stockRows as $stock) {
+            $uid = (int) $stock->unit_id;
+            if ($uid <= 0 || isset($qtyByUnit[$uid])) {
+                continue;
+            }
+            $qtyByUnit[$uid] = (float) $stock->{$qtyKey};
+            $unitNames[$uid] = $stock->unit_name ?: '-';
+            $orderedUnitIds[] = $uid;
+        }
+
+        return [$qtyByUnit, $unitNames, $orderedUnitIds];
+    }
+
+    protected function reverseLogOnQtyMap(array &$qtyByUnit, object $log): void
+    {
+        $unitId = (int) ($log->unit_id ?? 0);
+        $qty = (float) ($log->log_jumlah ?? 0);
+        $category = (int) ($log->log_category ?? 0);
+        if ($unitId <= 0 || $qty == 0.0 || ! in_array($category, [1, 2], true)) {
+            return;
+        }
+        if (! array_key_exists($unitId, $qtyByUnit)) {
+            $qtyByUnit[$unitId] = 0.0;
+        }
+        // category 1 = masuk → reverse kurangi; 2 = keluar → reverse tambah
+        $qtyByUnit[$unitId] = round($qtyByUnit[$unitId] + ($category === 1 ? -$qty : $qty), 4);
+    }
+
+    protected function formatMultiUnitSaldo(array $qtyByUnit, array $orderedUnitIds, array $unitNames): string
+    {
+        $parts = [];
+        foreach ($orderedUnitIds as $unitId) {
+            // Clamp tampilan: reverse packing/legacy kadang neg momentarily
+            $qty = max(0, (float) ($qtyByUnit[$unitId] ?? 0));
+            $name = $unitNames[$unitId] ?? '-';
+            $parts[] = number_format(round($qty), 0, ',', '.') . ' ' . $name;
+        }
+        foreach ($qtyByUnit as $unitId => $qty) {
+            if (in_array((int) $unitId, $orderedUnitIds, true)) {
+                continue;
+            }
+            $name = $unitNames[$unitId] ?? (Unit::where('unit_id', $unitId)->value('unit_name') ?: '-');
+            $parts[] = number_format(round(max(0, (float) $qty)), 0, ',', '.') . ' ' . $name;
+        }
+
+        return $parts !== [] ? implode(', ', $parts) : '-';
+    }
+
+    /**
+     * Histori stok per gudang aktif.
+     * Stock Transfer: gudang asal → keluar/bongkar; gudang tujuan → masuk (tidak campur).
+     */
+    protected function applyWarehouseFilter($query, int $warehouseId): void
+    {
+        static $hasWarehouseCol = null;
+        if ($hasWarehouseCol === null) {
+            $hasWarehouseCol = Schema::hasColumn('log_stocks', 'warehouse_id');
+        }
+        $isLegacyMain = $this->isLegacyMainWarehouse($warehouseId);
+
+        $query->where(function ($q) use ($warehouseId, $hasWarehouseCol, $isLegacyMain) {
+            if ($hasWarehouseCol) {
+                $q->where('log_stocks.warehouse_id', $warehouseId);
+
+                // Legacy non-ST (sebelum multi-gudang) — hanya gudang utama asli (terlama)
+                if ($isLegacyMain) {
+                    $q->orWhere(function ($legacy) {
+                        $legacy->whereNull('log_stocks.warehouse_id')
+                            ->where(function ($kode) {
+                                $kode->whereNull('log_stocks.log_kode')
+                                    ->orWhere('log_stocks.log_kode', 'not like', 'ST%');
+                            });
+                    });
+                }
+
+                // Legacy ST tanpa warehouse_id
+                $q->orWhere(function ($legacy) use ($warehouseId) {
+                    $legacy->whereNull('log_stocks.warehouse_id')
+                        ->where('log_stocks.log_kode', 'like', 'ST%')
+                        ->where(function ($st) use ($warehouseId) {
+                            $this->scopeStockTransferBelongsToWarehouse($st, $warehouseId);
+                        });
+                });
+
+                return;
+            }
+
+            // Belum ada kolom warehouse_id: non-ST tetap tampil; ST difilter per gudang
+            $q->where(function ($nonSt) {
+                $nonSt->whereNull('log_stocks.log_kode')
+                    ->orWhere('log_stocks.log_kode', 'not like', 'ST%');
+            })->orWhere(function ($st) use ($warehouseId) {
+                $st->where('log_stocks.log_kode', 'like', 'ST%')
+                    ->where(function ($inner) use ($warehouseId) {
+                        $this->scopeStockTransferBelongsToWarehouse($inner, $warehouseId);
+                    });
+            });
+        });
+    }
+
+    /**
+     * Gudang utama asli = gudang besar pertama (id terkecil, aktif) untuk menampung log legacy.
+     */
+    protected function legacyMainWarehouseId(): int
+    {
+        static $id = null;
+        if ($id !== null) {
+            return $id;
+        }
+
+        $id = (int) (DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->where('w.status', 1)
+            ->where('wt.is_main_warehouse', 1)
+            ->orderBy('w.id')
+            ->value('w.id') ?? 0);
+
+        return $id;
+    }
+
+    protected function isLegacyMainWarehouse(int $warehouseId): bool
+    {
+        $legacyId = $this->legacyMainWarehouseId();
+
+        return $legacyId > 0 && $warehouseId === $legacyId;
+    }
+
+    /**
+     * Gudang eceran: histori produk hanya satuan retail_unit varian.
+     *
+     * @return int|null unit_id filter, null = tidak difilter
+     */
+    protected function resolveRetailProductUnitFilter(int $warehouseId, int $logType, int $logItemId): ?int
+    {
+        if ($logType !== 1 || $logItemId <= 0) {
+            return null;
+        }
+        if ($this->warehouseIsMain($warehouseId) !== false) {
+            return null;
+        }
+
+        $retailUnitId = $this->retailUnitIdForProductVariant($logItemId);
+
+        return $retailUnitId > 0 ? $retailUnitId : null;
+    }
+
+    protected function applyRetailProductUnitFilter(
+        $query,
+        int $warehouseId,
+        int $logType,
+        int $logItemId
+    ): void {
+        $retailUnitId = $this->resolveRetailProductUnitFilter($warehouseId, $logType, $logItemId);
+        if ($retailUnitId === null) {
+            return;
+        }
+
+        $query->where('log_stocks.unit_id', $retailUnitId);
+    }
+
+    protected function retailUnitIdForProductVariant(int $productVariantId): int
+    {
+        static $cache = [];
+        if (array_key_exists($productVariantId, $cache)) {
+            return $cache[$productVariantId];
+        }
+
+        if (! Schema::hasColumn('product_variants', 'retail_unit')) {
+            $cache[$productVariantId] = 0;
+
+            return 0;
+        }
+
+        $cache[$productVariantId] = (int) (DB::table('product_variants')
+            ->where('product_variant_id', $productVariantId)
+            ->value('retail_unit') ?? 0);
+
+        return $cache[$productVariantId];
+    }
+
+    /**
+     * @return bool|null true = gudang utama, false = eceran, null = tidak ditemukan
+     */
+    protected function warehouseIsMain(int $warehouseId): ?bool
+    {
+        static $cache = [];
+        if (array_key_exists($warehouseId, $cache)) {
+            return $cache[$warehouseId];
+        }
+
+        $row = DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->where('w.id', $warehouseId)
+            ->where('w.status', 1)
+            ->select('wt.is_main_warehouse')
+            ->first();
+
+        if (! $row) {
+            $cache[$warehouseId] = null;
+
+            return null;
+        }
+
+        $cache[$warehouseId] = (int) $row->is_main_warehouse === 1;
+
+        return $cache[$warehouseId];
+    }
+
+    /**
+     * ST: asal = aktif → keluar/bongkar/kembalikan; tujuan = aktif → masuk saja.
+     */
+    protected function scopeStockTransferBelongsToWarehouse($query, int $warehouseId): void
+    {
+        $query->whereExists(function ($sub) use ($warehouseId) {
+            $sub->select(DB::raw(1))
+                ->from('stock_transfers as st')
+                ->whereColumn('st.transfer_code', 'log_stocks.log_kode')
+                ->where(function ($w) use ($warehouseId) {
+                    $w->where(function ($asal) use ($warehouseId) {
+                        $asal->where('st.from_warehouse_id', $warehouseId)
+                            ->where(function ($n) {
+                                $n->where('log_stocks.log_notes', 'like', '%keluar gudang asal%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%kembalikan stok%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%bongkar%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%hasil bongkar%')
+                                    ->orWhere('log_stocks.log_notes', 'like', '%koreksi edit%');
+                            });
+                    })->orWhere(function ($tujuan) use ($warehouseId) {
+                        $tujuan->where('st.to_warehouse_id', $warehouseId)
+                            ->where('log_stocks.log_notes', 'like', '%masuk gudang tujuan%');
+                    });
+                });
+        });
+    }
+
+    function insertLog($data)
+    {
+        $t = new LogStock();
+        $t->log_date = $data["log_date"];
+        $t->log_kode = $data["log_kode"];
+        $t->log_type = $data["log_type"];
+        $t->log_category = $data["log_category"];
+        $t->log_item_id = $data["log_item_id"];
+        $t->log_notes = $data["log_notes"];
+        $t->log_jumlah = $data["log_jumlah"];
+        $t->unit_id = $data["unit_id"];
+        $t->staff_id = Session::get('user')->staff_id ?? null;
+
+        $warehouseId = null;
+        if (Schema::hasColumn('log_stocks', 'warehouse_id')) {
+            if (array_key_exists('warehouse_id', $data)) {
+                $wid = (int) ($data['warehouse_id'] ?? 0);
+                $warehouseId = $wid > 0 ? $wid : null;
+            } elseif ((int) (Session::get('active_warehouse_id') ?? 0) > 0) {
+                $warehouseId = (int) Session::get('active_warehouse_id');
+            }
+            $t->warehouse_id = $warehouseId;
+        }
+
+        if (Schema::hasColumn('log_stocks', 'log_saldo')) {
+            if (array_key_exists('log_saldo', $data) && $data['log_saldo'] !== null && $data['log_saldo'] !== '') {
+                $t->log_saldo = round((float) $data['log_saldo'], 4);
+            } else {
+                $t->log_saldo = $this->resolveCurrentSaldo([
+                    'log_type' => (int) ($data['log_type'] ?? 0),
+                    'log_item_id' => (int) ($data['log_item_id'] ?? 0),
+                    'unit_id' => (int) ($data['unit_id'] ?? 0),
+                    'warehouse_id' => $warehouseId,
+                ]);
+            }
+        }
+
+        $t->save();
+        return $t->log_id;
+    }
+
+    /**
+     * Saldo stok saat ini setelah mutasi (produk / bahan).
+     * Dipakai otomatis jika caller tidak kirim log_saldo.
+     */
+    protected function resolveCurrentSaldo(array $ctx): ?float
+    {
+        $type = (int) ($ctx['log_type'] ?? 0);
+        $itemId = (int) ($ctx['log_item_id'] ?? 0);
+        $unitId = (int) ($ctx['unit_id'] ?? 0);
+        $warehouseId = (int) ($ctx['warehouse_id'] ?? 0);
+        if ($itemId <= 0 || $unitId <= 0) {
+            return null;
+        }
+
+        if ($type === 1) {
+            $q = ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('product_variant_id', $itemId)
+                ->where('unit_id', $unitId);
+            if ($warehouseId > 0 && Schema::hasColumn('product_stocks', 'warehouse_id')) {
+                $q->where('warehouse_id', $warehouseId);
+            }
+
+            return round((float) $q->sum('ps_stock'), 4);
+        }
+
+        if ($type === 2) {
+            $q = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('status', 1)
+                ->where('supplies_id', $itemId)
+                ->where('unit_id', $unitId);
+            if ($warehouseId > 0 && Schema::hasColumn('supplies_stocks', 'warehouse_id')) {
+                $q->where('warehouse_id', $warehouseId);
+            }
+
+            return round((float) $q->sum('ss_stock'), 4);
+        }
+
+        return null;
+    }
+
+    function getRawMaterialUsageReport($data = [])
+    {
+        $data = array_merge([
+            "date" => null,
+            "supplier_id" => null,
+            "supplies_id" => null
+        ], $data);
+
+        $query = DB::table('log_stocks as l')
+            ->leftJoin('supplies as s', 's.supplies_id', '=', 'l.log_item_id')
+            ->leftJoin('units as u', 'u.unit_id', '=', 'l.unit_id')
+            ->leftJoin('productions as p', 'p.production_code', '=', 'l.log_kode')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
+            ->select(
+                'l.log_id',
+                'l.log_date',
+                'l.log_kode',
+                'l.log_item_id',
+                'l.log_jumlah',
+                'l.log_notes',
+                'u.unit_name',
+                's.supplies_name',
+                'p.production_date'
+            );
+
+        if ($data["date"]) {
+            if (is_array($data["date"]) && count($data["date"]) === 2) {
+                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->startOfDay();
+                $endDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->endOfDay();
+                $query->whereBetween('l.log_date', [$startDate, $endDate]);
+            } else {
+                $date = $data["date"];
+                if (!\Carbon\Carbon::hasFormat($data["date"], 'Y-m-d')) {
+                    $date = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"])->format('Y-m-d');
+                }
+                $query->whereDate('l.log_date', $date);
+            }
+        }
+
+        if ($data["supplies_id"]) {
+            $query->where('l.log_item_id', $data["supplies_id"]);
+        }
+
+        if ($data["supplier_id"]) {
+            $supplierSupplies = DB::table('supplies_variants')
+                ->where('supplier_id', $data["supplier_id"])
+                ->pluck('supplies_id')
+                ->unique()
+                ->toArray();
+
+            if (count($supplierSupplies) <= 0) return [];
+            $query->whereIn('l.log_item_id', $supplierSupplies);
+        }
+
+        $rows = $query->orderBy('l.log_date', 'desc')->orderBy('l.log_id', 'desc')->get();
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            $key = $row->log_item_id;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = [
+                    "supplies_id" => $row->log_item_id,
+                    "item_name" => $row->supplies_name ?? '-',
+                    "supplier_summary" => "-",
+                    "transaction_count" => 0,
+                    "details" => []
+                ];
+            }
+
+            $grouped[$key]["transaction_count"] += 1;
+            $qty = (int) $row->log_jumlah;
+            if (stripos((string) ($row->log_notes ?? ''), 'Pengembalian stok bahan akibat pembatalan produksi') !== false) {
+                $qty = -abs($qty);
+            }
+            $grouped[$key]["details"][] = [
+                "production_date" => $row->production_date ?: date('Y-m-d', strtotime($row->log_date)),
+                "log_date" => $row->log_date,
+                "production_code" => $row->log_kode,
+                "qty" => $qty,
+                "unit_name" => $row->unit_name,
+                "notes" => $row->log_notes,
+            ];
+        }
+
+        if (count($grouped) > 0) {
+            $suppliesIds = array_keys($grouped);
+            $supplierRows = DB::table('supplies_variants as sv')
+                ->leftJoin('suppliers as sp', 'sp.supplier_id', '=', 'sv.supplier_id')
+                ->whereIn('sv.supplies_id', $suppliesIds)
+                ->where('sv.status', 1)
+                ->select('sv.supplies_id', 'sp.supplier_name')
+                ->distinct()
+                ->get();
+
+            $supplierMap = [];
+            foreach ($supplierRows as $srow) {
+                if (empty($srow->supplier_name)) continue;
+                if (!isset($supplierMap[$srow->supplies_id])) $supplierMap[$srow->supplies_id] = [];
+                $supplierMap[$srow->supplies_id][$srow->supplier_name] = true;
+            }
+
+            foreach ($grouped as $suppliesId => $item) {
+                $names = isset($supplierMap[$suppliesId]) ? array_keys($supplierMap[$suppliesId]) : [];
+                $grouped[$suppliesId]["supplier_summary"] = count($names) > 0 ? implode(', ', $names) : "-";
+            }
+        }
+
+        return array_values($grouped);
+    }
+
+    /**
+     * Dashboard pemakaian bahan: agregat per bulan (grafik & KPI, tanpa prediksi).
+     * Net qty mengikuti logika getRawMaterialUsageReport (keluar produksi positif, pembatalan negatif).
+     *
+     * @param  array{months?:int, supplies_id?:int|null, supplier_id?:int|null}  $data
+     * @return array<string, mixed>
+     */
+    function getRawMaterialUsageMonthlyDashboard($data = [])
+    {
+        $data = array_merge([
+            'months' => 12,
+            'supplies_id' => null,
+            'supplier_id' => null,
+        ], $data);
+
+        $months = max(3, min(24, (int) $data['months']));
+        $end = \Carbon\Carbon::now()->endOfMonth();
+        $start = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+
+        $supplierSupplies = null;
+        if ($data['supplier_id']) {
+            $supplierSupplies = DB::table('supplies_variants')
+                ->where('supplier_id', $data['supplier_id'])
+                ->pluck('supplies_id')
+                ->unique()
+                ->filter()
+                ->values()
+                ->all();
+            if (count($supplierSupplies) === 0) {
+                return self::emptyRawMaterialUsageDashboard($start, $end, $months);
+            }
+        }
+
+        $base = DB::table('log_stocks as l')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
+            ->whereBetween('l.log_date', [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 23:59:59')]);
+
+        if ($data['supplies_id']) {
+            $base->where('l.log_item_id', (int) $data['supplies_id']);
+        }
+        if ($supplierSupplies !== null) {
+            $base->whereIn('l.log_item_id', $supplierSupplies);
+        }
+
+        $monthly = (clone $base)
+            ->selectRaw("DATE_FORMAT(l.log_date, '%Y-%m') as ym")
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', ['%Pengembalian stok bahan akibat pembatalan produksi%'])
+            ->selectRaw('COUNT(*) as txn_count')
+            ->groupBy(DB::raw("DATE_FORMAT(l.log_date, '%Y-%m')"))
+            ->orderBy('ym')
+            ->get()
+            ->keyBy('ym');
+
+        $ymKeys = [];
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $ymKeys[] = $cursor->format('Y-m');
+            $cursor->addMonth();
+        }
+
+        $netSeries = [];
+        $txnSeries = [];
+        $chartLabels = [];
+        foreach ($ymKeys as $ym) {
+            $row = $monthly->get($ym);
+            $netSeries[] = $row ? (float) $row->net_qty : 0.0;
+            $txnSeries[] = $row ? (int) $row->txn_count : 0;
+            try {
+                $chartLabels[] = \Carbon\Carbon::createFromFormat('Y-m', $ym)->locale('id')->translatedFormat('M Y');
+            } catch (\Throwable $e) {
+                $chartLabels[] = $ym;
+            }
+        }
+
+        $n = count($netSeries);
+
+        $thisMonth = \Carbon\Carbon::now()->format('Y-m');
+        $prevMonth = \Carbon\Carbon::now()->copy()->subMonth()->format('Y-m');
+        $thisRow = $monthly->get($thisMonth);
+        $prevRow = $monthly->get($prevMonth);
+        $thisNet = $thisRow ? (float) $thisRow->net_qty : ($n >= 1 ? $netSeries[$n - 1] : 0.0);
+        $prevNet = $prevRow ? (float) $prevRow->net_qty : 0.0;
+        $momPct = $prevNet != 0.0 ? round((($thisNet - $prevNet) / $prevNet) * 100, 1) : null;
+
+        $thisTxn = $thisRow ? (int) $thisRow->txn_count : ($n >= 1 ? $txnSeries[$n - 1] : 0);
+        $prevTxn = $prevRow ? (int) $prevRow->txn_count : 0;
+        $momTxnPct = $prevTxn > 0 ? round((($thisTxn - $prevTxn) / $prevTxn) * 100, 1) : null;
+
+        $topCandidates = (clone $base)
+            ->leftJoin('supplies as s', 's.supplies_id', '=', 'l.log_item_id')
+            ->leftJoin('units as du', 'du.unit_id', '=', 's.supplies_default_unit')
+            ->select('l.log_item_id as supplies_id', 's.supplies_name as name')
+            ->selectRaw(
+                "MAX(COALESCE(NULLIF(TRIM(du.unit_short_name), ''), NULLIF(TRIM(du.unit_name), ''), '-')) as unit_label"
+            )
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', ['%Pengembalian stok bahan akibat pembatalan produksi%'])
+            ->groupBy('l.log_item_id', 's.supplies_name')
+            ->orderByDesc('net_qty')
+            ->limit(120)
+            ->get();
+
+        [$topKemasan, $topBahan] = self::splitTopMaterialsByPackagingHeuristic($topCandidates->all(), 8);
+
+        $lowStockCount = (int) DB::table('supplies')
+            ->where('status', 1)
+            ->where('supplies_alert', '>', 0)
+            ->whereRaw(
+                '(SELECT COALESCE(SUM(ss_stock), 0) FROM supplies_stocks ss WHERE ss.supplies_id = supplies.supplies_id AND ss.status = 1) < supplies.supplies_alert'
+            )
+            ->count();
+
+        return [
+            'range' => [
+                'start' => $start->toDateString(),
+                'end' => $end->toDateString(),
+            ],
+            'months' => $months,
+            'disclaimer' => 'Grafik: total qty net log per bulan. Tabel top & estimasi: angka + satuan default master (supplies). Pisah kemasan vs lainnya dari pola nama. Rincian di laporan bahan baku.',
+            'series' => [
+                'labels' => $chartLabels,
+                'ym_keys' => $ymKeys,
+                'net_qty' => $netSeries,
+                'txn_count' => $txnSeries,
+            ],
+            'kpis' => [
+                'this_month_net' => $thisNet,
+                'prev_month_net' => $prevNet,
+                'mom_net_pct' => $momPct,
+                'this_month_txn' => $thisTxn,
+                'prev_month_txn' => $prevTxn,
+                'mom_txn_pct' => $momTxnPct,
+                'window_net_total' => round(array_sum($netSeries), 2),
+                'window_txn_total' => array_sum($txnSeries),
+            ],
+            'top_materials_kemasan' => $topKemasan,
+            'top_materials_bahan' => $topBahan,
+            'low_stock_count' => $lowStockCount,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function emptyRawMaterialUsageDashboard(\Carbon\Carbon $start, \Carbon\Carbon $end, int $months)
+    {
+        return [
+            'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+            'months' => $months,
+            'disclaimer' => 'Tidak ada bahan untuk supplier yang dipilih.',
+            'series' => ['labels' => [], 'ym_keys' => [], 'net_qty' => [], 'txn_count' => []],
+            'kpis' => [
+                'this_month_net' => 0,
+                'prev_month_net' => 0,
+                'mom_net_pct' => null,
+                'this_month_txn' => 0,
+                'prev_month_txn' => 0,
+                'mom_txn_pct' => null,
+                'window_net_total' => 0,
+                'window_txn_total' => 0,
+            ],
+            'top_materials_kemasan' => [],
+            'top_materials_bahan' => [],
+            'low_stock_count' => 0,
+        ];
+    }
+
+    /**
+     * Heuristik: kemasan / wadah / penunjang (botol, jerigen, tutup, sticker, …) vs sisa nama.
+     * Mengandalkan pola pada nama master (supplies_name); tidak memakai kolom kategori DB.
+     */
+    private static function suppliesNameLooksLikePackaging(?string $name): bool
+    {
+        if ($name === null || $name === '') {
+            return false;
+        }
+        $n = mb_strtolower($name, 'UTF-8');
+
+        $pattern = '/(' .
+            'botol|tutup|penutup|tutup\s*tumpul|closure|cap\\b|lid\\b|' .
+            'jerigen|jurigen|jerrycan|\\bgalon\\b|\\bibc\\b|sumpel|penyumbat|' .
+            'sticker|stiker|stickers|label|etiket|hang[\\s\\-]*tag|' .
+            'kardus|karton|\\bdus\\b|\\bdos\\b|inner\\s*master|master\\s*box|' .
+            'kemasan|packing|pembungkus|wrapper|wrapping|' .
+            'pouch|sachet|tube|kaleng|vial|ampul|' .
+            'shrink|sleeve|segel|lakban|isolasi|isolatif|' .
+            'foam|gabus|bubble|pipet|dropper|spray|pump|nozzle|' .
+            'paper\\s*cup|\\bcup\\b|gelas\\s*plastik|kantong\\s*plastik|plastik\\s*roll|' .
+            '\\bpet\\b|\\bhdpe\\b|\\bpp\\b' .
+            ')/iu';
+
+        return (bool) preg_match($pattern, $n);
+    }
+
+    /**
+     * @param  array<int, object>  $orderedCandidates  baris supplies_id, name, net_qty — sudah urut net_qty desc
+     * @return array{0: array<int, array<string, mixed>>, 1: array<int, array<string, mixed>>}
+     */
+    private static function splitTopMaterialsByPackagingHeuristic(array $orderedCandidates, int $limitEach): array
+    {
+        $kemasan = [];
+        $bahan = [];
+        foreach ($orderedCandidates as $r) {
+            $name = is_object($r) ? ($r->name ?? '') : ($r['name'] ?? '');
+            $unitRaw = trim((string) (is_object($r) ? ($r->unit_label ?? '') : ($r['unit_label'] ?? '')));
+            $unit = ($unitRaw !== '' && $unitRaw !== '-') ? $unitRaw : '-';
+            $entry = [
+                'supplies_id' => (int) (is_object($r) ? $r->supplies_id : $r['supplies_id']),
+                'name' => is_object($r) ? ($r->name ?? '-') : ($r['name'] ?? '-'),
+                'net_qty' => round((float) (is_object($r) ? $r->net_qty : $r['net_qty']), 2),
+                'unit' => $unit,
+            ];
+            if (self::suppliesNameLooksLikePackaging($name)) {
+                if (count($kemasan) < $limitEach) {
+                    $kemasan[] = $entry;
+                }
+            } elseif (count($bahan) < $limitEach) {
+                $bahan[] = $entry;
+            }
+        }
+
+        return [$kemasan, $bahan];
+    }
+
+    /**
+     * @param  \stdClass  $t  supplies_id, name, net_qty
+     * @param  array<int, string>  $ymKeys
+     * @param  array<int, array<string, float>>  $pivot
+     * @param  \Illuminate\Support\Collection<int, mixed>  $stockById
+     * @return array<string, mixed>
+     */
+    private static function buildProcurementEstimateRow(object $t, array $ymKeys, array $pivot, $stockById, int $months): array
+    {
+        $sid = (int) $t->supplies_id;
+        $series = [];
+        foreach ($ymKeys as $ym) {
+            $series[] = isset($pivot[$sid][$ym]) ? (float) $pivot[$sid][$ym] : 0.0;
+        }
+        $forecast = self::forecastNetQtyFromMonthlySeries($series);
+        $windowTotal = (float) $t->net_qty;
+        $avgPerMonth = round($windowTotal / $months, 2);
+        $stok = isset($stockById[$sid]) ? (float) $stockById[$sid] : 0.0;
+        $gap = max(0.0, round($forecast - $stok, 2));
+
+        $unitRaw = trim((string) ($t->unit_label ?? ''));
+        $unit = ($unitRaw !== '' && $unitRaw !== '-') ? $unitRaw : '-';
+
+        return [
+            'supplies_id' => $sid,
+            'name' => $t->name ?? '-',
+            'unit' => $unit,
+            'window_total' => round($windowTotal, 2),
+            'avg_per_month' => $avgPerMonth,
+            'estimate_next_month' => $forecast,
+            'stock_agg' => round($stok, 2),
+            'gap_to_buy' => $gap,
+        ];
+    }
+
+    /**
+     * Perkiraan qty net bulan berikutnya dari deret bulanan (sama seperti rumus dashboard lama).
+     *
+     * @param  array<int, float>  $series
+     */
+    private static function forecastNetQtyFromMonthlySeries(array $series): float
+    {
+        $n = count($series);
+        if ($n === 0) {
+            return 0.0;
+        }
+        $last3 = array_slice($series, -min(3, $n));
+        $avg3 = array_sum($last3) / count($last3);
+        $trend = $n >= 2 ? ($series[$n - 1] - $series[$n - 2]) : 0.0;
+
+        return max(0.0, round($avg3 + 0.35 * $trend, 2));
+    }
+
+    /**
+     * Estimasi pembelian bahan mentah bulan depan: bahan dengan pemakaian produksi tertinggi (dari log),
+     * perkiraan per bahan = rata-rata 3 bulan terakhir + 0,35 × tren bulan terakhir.
+     *
+     * @param  array{months?:int, top?:int}  $data
+     * @return array<string, mixed>
+     */
+    function getProcurementEstimateProductionMaterials(array $data = []): array
+    {
+        $data = array_merge([
+            'months' => 6,
+            'top' => 12,
+        ], $data);
+
+        $months = max(3, min(24, (int) $data['months']));
+        $top = max(5, min(40, (int) $data['top']));
+        $end = \Carbon\Carbon::now()->endOfMonth();
+        $start = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+
+        $ymKeys = [];
+        $cursor = $start->copy();
+        while ($cursor->lte($end)) {
+            $ymKeys[] = $cursor->format('Y-m');
+            $cursor->addMonth();
+        }
+
+        $cancelLike = '%Pengembalian stok bahan akibat pembatalan produksi%';
+
+        $allTotals = DB::table('log_stocks as l')
+            ->leftJoin('supplies as s', 's.supplies_id', '=', 'l.log_item_id')
+            ->leftJoin('units as du', 'du.unit_id', '=', 's.supplies_default_unit')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->whereNotNull('l.log_item_id')
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
+            ->whereBetween('l.log_date', [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 23:59:59')])
+            ->select('l.log_item_id as supplies_id', 's.supplies_name as name')
+            ->selectRaw(
+                "MAX(COALESCE(NULLIF(TRIM(du.unit_short_name), ''), NULLIF(TRIM(du.unit_name), ''), '-')) as unit_label"
+            )
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', [$cancelLike])
+            ->groupBy('l.log_item_id', 's.supplies_name')
+            ->orderByDesc('net_qty')
+            ->limit(200)
+            ->get();
+
+        if ($allTotals->isEmpty()) {
+            return [
+                'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+                'months' => $months,
+                'next_month_label' => '-',
+                'rows_kemasan' => [],
+                'rows_bahan' => [],
+                'disclaimer' => 'Belum ada log pemakaian bahan untuk produksi di rentang ini.',
+            ];
+        }
+
+        $totalsKemasan = [];
+        $totalsBahan = [];
+        foreach ($allTotals as $row) {
+            if (self::suppliesNameLooksLikePackaging($row->name ?? '')) {
+                if (count($totalsKemasan) < $top) {
+                    $totalsKemasan[] = $row;
+                }
+            } elseif (count($totalsBahan) < $top) {
+                $totalsBahan[] = $row;
+            }
+        }
+
+        $totalsMerged = array_merge($totalsKemasan, $totalsBahan);
+        if ($totalsMerged === []) {
+            return [
+                'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+                'months' => $months,
+                'next_month_label' => '-',
+                'rows_kemasan' => [],
+                'rows_bahan' => [],
+                'disclaimer' => 'Belum ada log pemakaian bahan untuk produksi di rentang ini.',
+            ];
+        }
+
+        $ids = collect($totalsMerged)->pluck('supplies_id')->filter()->map(fn($id) => (int) $id)->unique()->values()->all();
+
+        $pivotRows = DB::table('log_stocks as l')
+            ->where('l.status', 1)
+            ->where('l.log_type', 2)
+            ->whereNotNull('l.log_item_id')
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('l.log_category', 2)
+                        ->where('l.log_notes', 'like', '%Pengurangan bahan untuk produksi%');
+                })->orWhere(function ($q3) {
+                    $q3->where('l.log_category', 1)
+                        ->where('l.log_notes', 'like', '%Pengembalian stok bahan akibat pembatalan produksi%');
+                });
+            })
+            ->whereBetween('l.log_date', [$start->format('Y-m-d 00:00:00'), $end->format('Y-m-d 23:59:59')])
+            ->whereIn('l.log_item_id', $ids)
+            ->select('l.log_item_id as supplies_id')
+            ->selectRaw("DATE_FORMAT(l.log_date, '%Y-%m') as ym")
+            ->selectRaw('SUM(CASE WHEN l.log_notes LIKE ? THEN -ABS(l.log_jumlah) ELSE l.log_jumlah END) as net_qty', [$cancelLike])
+            ->groupBy('l.log_item_id', DB::raw("DATE_FORMAT(l.log_date, '%Y-%m')"))
+            ->orderBy('supplies_id')
+            ->orderBy('ym')
+            ->get();
+
+        $pivot = [];
+        foreach ($pivotRows as $pr) {
+            $sid = (int) $pr->supplies_id;
+            if (! isset($pivot[$sid])) {
+                $pivot[$sid] = [];
+            }
+            $pivot[$sid][$pr->ym] = (float) $pr->net_qty;
+        }
+
+        $stockById = DB::table('supplies_stocks')
+            ->where('status', 1)
+            ->whereIn('supplies_id', $ids)
+            ->selectRaw('supplies_id, SUM(ss_stock) as qty')
+            ->groupBy('supplies_id')
+            ->pluck('qty', 'supplies_id');
+
+        $nextMonth = \Carbon\Carbon::now()->copy()->addMonth()->startOfMonth();
+        try {
+            $nextLabel = $nextMonth->locale('id')->monthName . ' ' . $nextMonth->year;
+        } catch (\Throwable $e) {
+            $nextLabel = $nextMonth->format('Y-m');
+        }
+
+        $rowsKemasan = [];
+        foreach ($totalsKemasan as $t) {
+            $rowsKemasan[] = self::buildProcurementEstimateRow($t, $ymKeys, $pivot, $stockById, $months);
+        }
+        $rowsBahan = [];
+        foreach ($totalsBahan as $t) {
+            $rowsBahan[] = self::buildProcurementEstimateRow($t, $ymKeys, $pivot, $stockById, $months);
+        }
+
+        return [
+            'range' => ['start' => $start->toDateString(), 'end' => $end->toDateString()],
+            'months' => $months,
+            'next_month_label' => $nextLabel,
+            'rows_kemasan' => $rowsKemasan,
+            'rows_bahan' => $rowsBahan,
+            'disclaimer' => 'Estimasi dari log produksi; satuan = default master per baris. Bukan perintah pembelian formal.',
+        ];
+    }
+
+    /**
+     * Laporan stock aging: FIFO per (log_type, item, unit) dari log_stocks.
+     * log_category 1 = masuk, 2 = keluar (sesuai pemakaian di StockController / SupplierController / Produksi).
+     * Baris Stock Opname diabaikan (bukan delta FIFO).
+     *
+     * @param  array{type?:string,item_id?:mixed,as_of?:string|null}  $data
+     * @return array<int, array<string, mixed>>
+     */
+    function getStockAgingReport($data = [])
+    {
+        $data = array_merge([
+            'type' => 'all',
+            'item_id' => null,
+            'as_of' => null,
+        ], $data);
+
+        $type = strtolower((string) $data['type']);
+        if (!in_array($type, ['all', 'product', 'bahan'], true)) {
+            $type = 'all';
+        }
+
+        $asOf = \Carbon\Carbon::now()->startOfDay();
+        if (!empty($data['as_of'])) {
+            $raw = trim((string) $data['as_of']);
+            if (\Carbon\Carbon::hasFormat($raw, 'Y-m-d')) {
+                $asOf = \Carbon\Carbon::createFromFormat('Y-m-d', $raw)->startOfDay();
+            } elseif (\Carbon\Carbon::hasFormat($raw, 'd-m-Y')) {
+                $asOf = \Carbon\Carbon::createFromFormat('d-m-Y', $raw)->startOfDay();
+            } else {
+                try {
+                    $asOf = \Carbon\Carbon::parse($raw)->startOfDay();
+                } catch (\Throwable $e) {
+                    $asOf = \Carbon\Carbon::now()->startOfDay();
+                }
+            }
+        }
+
+        $lastHargaSub = DB::table('purchase_orders_details as pod')
+            ->join('supplies_variants as sv', 'sv.supplies_variant_id', '=', 'pod.supplies_variant_id')
+            ->where('pod.status', 1)
+            ->select('sv.supplies_id', DB::raw('MAX(pod.pod_harga) as last_harga'))
+            ->groupBy('sv.supplies_id');
+
+        $out = [];
+
+        if ($type === 'all' || $type === 'product') {
+            $q = DB::table('product_stocks as ps')
+                ->join('product_variants as pv', 'pv.product_variant_id', '=', 'ps.product_variant_id')
+                ->join('products as p', 'p.product_id', '=', 'pv.product_id')
+                ->join('units as u', 'u.unit_id', '=', 'ps.unit_id')
+                ->where('ps.status', 1)
+                ->where('pv.status', 1)
+                ->where('ps.ps_stock', '>', 0)
+                ->select(
+                    'ps.product_variant_id',
+                    'ps.unit_id',
+                    'ps.ps_stock',
+                    'ps.created_at as ps_created_at',
+                    'p.product_name',
+                    'pv.product_variant_name',
+                    'pv.product_variant_price',
+                    'u.unit_name'
+                );
+
+            if ($type === 'product' && !empty($data['item_id'])) {
+                $q->where('ps.product_variant_id', (int) $data['item_id']);
+            }
+
+            $productRows = $q->get();
+            $productLogsByKey = self::fetchAgingLogsGrouped(
+                1,
+                $productRows->pluck('product_variant_id')->map(fn($id) => (int) $id)->unique()->values()->all()
+            );
+
+            foreach ($productRows as $row) {
+                $logKey = (int) $row->product_variant_id . '|' . (int) $row->unit_id;
+                $logs = $productLogsByKey[$logKey] ?? collect();
+
+                $layers = self::simulateFifoLayers($logs, (float) $row->ps_stock, $row->ps_created_at);
+                $m = self::metricsFromFifoLayers($layers, $asOf);
+
+                $qty = (float) $row->ps_stock;
+                $price = (float) ($row->product_variant_price ?? 0);
+                $out[] = [
+                    'sumber' => 'produk',
+                    'product_variant_id' => (int) $row->product_variant_id,
+                    'supplies_id' => null,
+                    'item_label' => trim(($row->product_name ?? '') . ' ' . ($row->product_variant_name ?? '')),
+                    'variant_name' => (string) ($row->product_variant_name ?? ''),
+                    'unit_name' => (string) ($row->unit_name ?? ''),
+                    'qty' => $qty,
+                    'qty_display' => (string) (int) round($qty),
+                    'weighted_age_days' => $m['weighted_age_days'],
+                    'oldest_layer_date' => $m['oldest_layer_date'],
+                    'bucket' => $m['bucket'],
+                    'unit_price' => $price,
+                    'stock_value' => round($qty * $price, 2),
+                ];
+            }
+        }
+
+        if ($type === 'all' || $type === 'bahan') {
+            $q = DB::table('supplies_stocks as ss')
+                ->join('supplies as s', 's.supplies_id', '=', 'ss.supplies_id')
+                ->leftJoinSub($lastHargaSub, 'lh', function ($join) {
+                    $join->on('lh.supplies_id', '=', 'ss.supplies_id');
+                })
+                ->join('units as u', 'u.unit_id', '=', 'ss.unit_id')
+                ->where('ss.status', 1)
+                ->where('s.status', 1)
+                ->where('ss.ss_stock', '>', 0)
+                ->select(
+                    'ss.supplies_id',
+                    'ss.unit_id',
+                    'ss.ss_stock',
+                    'ss.created_at as ss_created_at',
+                    's.supplies_name',
+                    DB::raw('COALESCE(lh.last_harga,0) as last_harga'),
+                    'u.unit_name'
+                );
+
+            if ($type === 'bahan' && !empty($data['item_id'])) {
+                $q->where('ss.supplies_id', (int) $data['item_id']);
+            }
+
+            $bahanRows = $q->get();
+            $bahanLogsByKey = self::fetchAgingLogsGrouped(
+                2,
+                $bahanRows->pluck('supplies_id')->map(fn($id) => (int) $id)->unique()->values()->all()
+            );
+
+            foreach ($bahanRows as $row) {
+                $logKey = (int) $row->supplies_id . '|' . (int) $row->unit_id;
+                $logs = $bahanLogsByKey[$logKey] ?? collect();
+
+                $layers = self::simulateFifoLayers($logs, (float) $row->ss_stock, $row->ss_created_at);
+                $m = self::metricsFromFifoLayers($layers, $asOf);
+
+                $qty = (float) $row->ss_stock;
+                $price = (float) ($row->last_harga ?? 0);
+                $out[] = [
+                    'sumber' => 'bahan',
+                    'product_variant_id' => null,
+                    'supplies_id' => (int) $row->supplies_id,
+                    'item_label' => (string) ($row->supplies_name ?? ''),
+                    'variant_name' => '',
+                    'unit_name' => (string) ($row->unit_name ?? ''),
+                    'qty' => $qty,
+                    'qty_display' => (string) (int) round($qty),
+                    'weighted_age_days' => $m['weighted_age_days'],
+                    'oldest_layer_date' => $m['oldest_layer_date'],
+                    'bucket' => $m['bucket'],
+                    'unit_price' => $price,
+                    'stock_value' => round($qty * $price, 2),
+                ];
+            }
+        }
+
+        usort($out, function ($a, $b) {
+            $ba = (float) ($b['weighted_age_days'] ?? 0);
+            $aa = (float) ($a['weighted_age_days'] ?? 0);
+            if ($ba !== $aa) {
+                return $ba <=> $aa;
+            }
+
+            return strcmp((string) ($a['item_label'] ?? ''), (string) ($b['item_label'] ?? ''));
+        });
+
+        return $out;
+    }
+
+    /**
+     * Ambil log stok aging sekaligus (hindari N+1 per baris stok).
+     *
+     * @param  array<int>  $itemIds
+     * @return array<string, \Illuminate\Support\Collection<int, object>>
+     */
+    private static function fetchAgingLogsGrouped(int $logType, array $itemIds): array
+    {
+        $itemIds = array_values(array_unique(array_filter(array_map('intval', $itemIds))));
+        if ($itemIds === []) {
+            return [];
+        }
+
+        $grouped = [];
+        $logs = DB::table('log_stocks')
+            ->where('status', 1)
+            ->where('log_type', $logType)
+            ->whereIn('log_item_id', $itemIds)
+            ->whereRaw("COALESCE(log_notes,'') NOT LIKE ?", ['%Stock Opname%'])
+            ->orderBy('log_date', 'asc')
+            ->orderBy('log_id', 'asc')
+            ->get(['log_item_id', 'unit_id', 'log_date', 'log_category', 'log_jumlah']);
+
+        foreach ($logs as $log) {
+            $key = (int) $log->log_item_id . '|' . (int) $log->unit_id;
+            if (!isset($grouped[$key])) {
+                $grouped[$key] = collect();
+            }
+            $grouped[$key]->push($log);
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, object>  $logsOrdered
+     * @return array<int, array{qty: float, date: \Carbon\Carbon, synthetic?: bool}>
+     */
+    private static function simulateFifoLayers($logsOrdered, float $targetStock, $createdAtFallback): array
+    {
+        $layers = [];
+        foreach ($logsOrdered as $row) {
+            $qty = abs((float) ($row->log_jumlah ?? 0));
+            if ($qty < 0.0000001) {
+                continue;
+            }
+            $d = \Carbon\Carbon::parse($row->log_date);
+            $cat = (int) ($row->log_category ?? 0);
+            if ($cat === 1) {
+                self::fifoPush($layers, $qty, $d);
+            } elseif ($cat === 2) {
+                self::fifoConsume($layers, $qty);
+            }
+        }
+
+        $sum = 0.0;
+        foreach ($layers as $l) {
+            $sum += (float) $l['qty'];
+        }
+
+        if ($sum < $targetStock - 0.0001) {
+            $gap = $targetStock - $sum;
+            $fb = null;
+            if ($createdAtFallback) {
+                try {
+                    $fb = \Carbon\Carbon::parse($createdAtFallback)->startOfDay();
+                } catch (\Throwable $e) {
+                    $fb = null;
+                }
+            }
+            if ($fb === null) {
+                $fb = \Carbon\Carbon::now()->startOfDay();
+            }
+            array_unshift($layers, ['qty' => $gap, 'date' => $fb, 'synthetic' => true]);
+        } elseif ($sum > $targetStock + 0.0001) {
+            $over = $sum - $targetStock;
+            for ($i = count($layers) - 1; $i >= 0 && $over > 0.0001; $i--) {
+                $take = min((float) $layers[$i]['qty'], $over);
+                $layers[$i]['qty'] = (float) $layers[$i]['qty'] - $take;
+                $over -= $take;
+                if ($layers[$i]['qty'] < 0.0001) {
+                    array_splice($layers, $i, 1);
+                }
+            }
+        }
+
+        return array_values(array_filter($layers, function ($l) {
+            return ((float) $l['qty']) > 0.0001;
+        }));
+    }
+
+    /**
+     * @param  array<int, array{qty: float, date: \Carbon\Carbon, synthetic?: bool}>  $layers
+     * @return array{weighted_age_days: float, oldest_layer_date: ?string, bucket: string}
+     */
+    private static function metricsFromFifoLayers(array $layers, \Carbon\Carbon $asOf): array
+    {
+        if (count($layers) === 0) {
+            return [
+                'weighted_age_days' => 0.0,
+                'oldest_layer_date' => null,
+                'bucket' => '-',
+            ];
+        }
+
+        $as = $asOf->copy()->startOfDay();
+        $oldest = null;
+
+        foreach ($layers as $l) {
+            $ld = $l['date']->copy()->startOfDay();
+            if ($oldest === null || $ld->lt($oldest)) {
+                $oldest = $ld->copy();
+            }
+        }
+
+        // Rumus dasar aging:
+        // Umur stok = Tanggal hari ini(as_of) - Tanggal masuk.
+        // Karena FIFO disimulasikan, tanggal masuk yang dipakai adalah layer tertua
+        // yang masih tersisa setelah konsumsi stok keluar.
+        $ageDays = 0;
+        if ($oldest !== null && $oldest->lte($as)) {
+            $ageDays = (int) $oldest->diffInDays($as, true);
+        }
+
+        return [
+            // Key dipertahankan untuk kompatibilitas frontend/dashboard lama.
+            'weighted_age_days' => (float) $ageDays,
+            'oldest_layer_date' => $oldest ? $oldest->toDateString() : null,
+            'bucket' => self::agingBucketFromDays($ageDays),
+        ];
+    }
+
+    private static function agingBucketFromDays(int $d): string
+    {
+        if ($d <= 30) {
+            return '0-30 hari';
+        }
+        if ($d <= 60) {
+            return '31-60 hari';
+        }
+        if ($d <= 90) {
+            return '61-90 hari';
+        }
+        if ($d <= 180) {
+            return '91-180 hari';
+        }
+
+        return '>180 hari';
+    }
+
+    /**
+     * Bucket per baris laporan aging (sama dengan kolom `bucket` di getStockAgingReport).
+     * Pakai field `bucket` bila ada; jangan mengklasifikasi ulang dari weighted_age_days saja
+     * karena nilai itu dibulatkan 1 desimal sehingga bisa beda dengan pembulatan internal FIFO.
+     */
+    public static function stockAgingReportBucketOrFallback(array $r): string
+    {
+        $reportBucket = trim((string) ($r['bucket'] ?? ''));
+        if ($reportBucket !== '' && $reportBucket !== '-') {
+            return $reportBucket;
+        }
+
+        return self::agingBucketFromDays((int) round((float) ($r['weighted_age_days'] ?? 0)));
+    }
+
+    /**
+     * Empat kelompok ringkasan dashboard: gabung 91–180 dan >180 menjadi ">90 hari"
+     * agar jumlahnya sama dengan menjumlahkan baris laporan aging pada tanggal yang sama.
+     */
+    public static function dashboardFourBucketKeyFromAgingRow(array $r): string
+    {
+        $reportBucket = self::stockAgingReportBucketOrFallback($r);
+        if (in_array($reportBucket, ['91-180 hari', '>180 hari'], true)) {
+            return '>90 hari';
+        }
+        if (in_array($reportBucket, ['0-30 hari', '31-60 hari', '61-90 hari'], true)) {
+            return $reportBucket;
+        }
+
+        $fallback = self::agingBucketFromDays((int) round((float) ($r['weighted_age_days'] ?? 0)));
+        if (in_array($fallback, ['91-180 hari', '>180 hari'], true)) {
+            return '>90 hari';
+        }
+        if (in_array($fallback, ['0-30 hari', '31-60 hari', '61-90 hari'], true)) {
+            return $fallback;
+        }
+
+        return '0-30 hari';
+    }
+
+    /**
+     * @param  array<int, array{qty: float, date: \Carbon\Carbon, synthetic?: bool}>  $layers
+     */
+    private static function fifoPush(array &$layers, float $qty, \Carbon\Carbon $date): void
+    {
+        if ($qty < 0.0000001) {
+            return;
+        }
+        $layers[] = ['qty' => $qty, 'date' => $date->copy()];
+    }
+
+    /**
+     * @param  array<int, array{qty: float, date: \Carbon\Carbon, synthetic?: bool}>  $layers
+     */
+    private static function fifoConsume(array &$layers, float $qtyOut): void
+    {
+        $remain = $qtyOut;
+        while ($remain > 0.0000001 && count($layers) > 0) {
+            $head = &$layers[0];
+            $take = min((float) $head['qty'], $remain);
+            $head['qty'] = (float) $head['qty'] - $take;
+            $remain -= $take;
+            if ($head['qty'] < 0.0000001) {
+                array_shift($layers);
+            }
+            unset($head);
+        }
+    }
+}
