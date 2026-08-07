@@ -123,6 +123,10 @@ class StockOpname extends Model
         $t->staff_id = $data['staff_id'];
         $t->category_id = $data['category_id'];
         $t->sto_notes = $data['sto_notes'] ?? null;
+        // Ditambahkan (2026-08-05): kolom is_draft sudah ada di DB sejak 2026-07-31 (lihat
+        // KNOWN_ISSUES.md "Stock Opname's draft feature is entirely non-functional") tapi tidak
+        // pernah diisi di sini — frontend (CreateStockOpname.js) sudah selalu mengirim ini,
+        // backend-nya yang belum menyimpannya.
         $t->is_draft = ! empty($data['is_draft']);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
@@ -142,6 +146,8 @@ class StockOpname extends Model
         $t->staff_id = $data['staff_id'];
         $t->category_id = $data['category_id'];
         $t->sto_notes = $data['sto_notes'] ?? null;
+        // Sama seperti insertStockOpname(): kalau request ini tidak membawa is_draft sama sekali,
+        // pertahankan nilai yang sudah ada (jangan diam-diam keluar dari draft/masuk ke draft).
         if (array_key_exists('is_draft', $data)) {
             $t->is_draft = ! empty($data['is_draft']);
         }

@@ -145,18 +145,34 @@ class PurchaseOrderDetailInvoice extends Model
        $this->cekInvoice($t->po_id);
     }
 
+    /**
+     * Dinonaktifkan (2026-08-06, GitHub issue #14): dulu method ini men-set purchase_orders.status
+     * jadi 3 ("belum lunas") atau 4 ("lunas penuh") berdasarkan total invoice yang sudah diterima —
+     * dipanggil dari updateInvoicePO/deleteInvoicePO/changeStatusInvoicePO SETIAP kali sebuah invoice
+     * diedit/dihapus/diterima/ditolak, tanpa syarat apa pun.
+     *
+     * Dikonfirmasi oleh PM (2026-08-06): alur status PO yang benar hanya berisi 3 nilai —
+     * status=1 (menunggu konfirmasi) -> status=2 (disetujui) -> status=-1 (ditolak), dan progres
+     * "belum terbayar / menunggu tanda terima / terbayar" SEPENUHNYA dikendalikan oleh kolom
+     * `pembayaran` (1/3/2), bukan oleh `status`. Nilai status=3/4 yang ditulis di sini tidak pernah
+     * ada dalam alur itu — write-nya murni mengotori `purchase_orders.status` di luar domain
+     * {1, 2, -1} yang jadi asumsi di tempat lain, dengan 2 akibat nyata:
+     *   1. `SupplierController::tolakPO()` hanya membalik supplies_stocks kalau `status == 2` —
+     *      begitu status jadi 3/4, membatalkan PO itu TIDAK membalik stok yang sudah ditambah
+     *      accPO, walau permintaan pembatalannya sendiri tetap "berhasil".
+     *   2. `Purchase_Order_Detail.js`'s tombol Batalkan/Terima hanya muncul untuk status 1 atau 2 —
+     *      begitu status jadi 3/4, tombolnya hilang sama sekali, jadi staff tidak bisa lagi menolak
+     *      PO yang menurut alur PM seharusnya masih boleh (belum terbayar/menunggu tanda terima
+     *      -> ditolak).
+     *
+     * Method ini dipertahankan (bukan dihapus) karena masih dipanggil dari 3 tempat — tapi sekarang
+     * sengaja tidak melakukan apa pun, supaya updateInvoicePO/deleteInvoicePO/changeStatusInvoicePO
+     * tidak lagi bisa memindahkan purchase_orders.status sama sekali. Total invoice yang sudah
+     * diterima tetap bisa dihitung ulang kapan pun lewat query yang sama kalau nanti dibutuhkan
+     * untuk field terpisah — lihat cdocs/testing/KNOWN_ISSUES.md.
+     */
     function cekInvoice($po_id) {
-        
-        $total = PurchaseOrderDetailInvoice::where("po_id","=",$po_id)->where("status","=",2)->sum("poi_total");
-        $po = PurchaseOrder::find($po_id);
-        if($total<$po->po_total){
-            $po->status = 3;
-            $po->save();
-        }
-        else{
-            $po->status = 4;
-            $po->save();
-        }
+        // Sengaja kosong — lihat docblock di atas.
     }
 
     function generateInvoicePurchaseOrderID()
