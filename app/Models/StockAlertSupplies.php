@@ -176,8 +176,9 @@ class StockAlertSupplies extends Model
 
             $leadTime = max(0, (int) ($value->lead_time_days ?? 0));
             $safety = max(0, (int) ($value->safety_stock ?? 0));
+            // Strict client spec: rekomendasi = titik pesan ulang saja (tanpa kurangi stok).
             $reorderPoint = (int) ceil(($avgDaily * $leadTime) + $safety);
-            $recommended = max(0, $reorderPoint - $currentStock);
+            $recommended = $reorderPoint;
             $supplierOptions = ($variants->get($value->supplies_id) ?? collect())
                 ->map(fn ($variant) => [
                     'supplies_variant_id' => (int) $variant->supplies_variant_id,

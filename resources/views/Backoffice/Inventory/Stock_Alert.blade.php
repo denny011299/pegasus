@@ -28,11 +28,7 @@
         }
         .stock-alert-table th:nth-child(4),
         .stock-alert-table td:nth-child(4) {
-            width: 25% !important;
-        }
-        .stock-alert-table th:nth-child(5),
-        .stock-alert-table td:nth-child(5) {
-            width: 15% !important;
+            width: 30% !important;
         }
         .stock-alert-table td.dataTables_empty {
             width: auto !important;
@@ -88,7 +84,6 @@
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
                                                     <th>Stok Minimum Rekomendasi</th>
-                                                    <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -106,7 +101,6 @@
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
                                                     <th>Stok Minimum Rekomendasi</th>
-                                                    <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

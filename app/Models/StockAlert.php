@@ -175,8 +175,9 @@ class StockAlert extends Model
 
             $avgDaily = max(0, $salesQty) / 30;
             $leadTimeDays = max(0, (int) ($first->lead_time_days ?? 0));
+            // Strict client spec: rekomendasi = titik pesan ulang saja (tanpa kurangi stok).
             $reorderPoint = (int) ceil(($avgDaily * $leadTimeDays) + max(0, $safetyStock));
-            $recommendedOrder = max(0, $reorderPoint - $currentStock);
+            $recommendedOrder = $reorderPoint;
             $item = (object) [
                 'product_variant_id' => $vid,
                 'product_id' => (int) $first->pv_product_id,

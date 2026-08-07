@@ -49,6 +49,20 @@ class Production extends Model
             }
         }
 
+        if (! $data['production_id'] && $data['report'] === null) {
+            $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+            if ($activeWh <= 0) {
+                return collect();
+            }
+            if (Schema::hasColumn('production_details', 'destination_warehouse_id')) {
+                $result->whereIn('production_id', function ($query) use ($activeWh) {
+                    $query->select('production_id')
+                        ->from('production_details')
+                        ->where('destination_warehouse_id', $activeWh);
+                });
+            }
+        }
+
         $result->orderByRaw('FIELD(status, 1, 4, 2, 3)')
             ->orderBy('production_date', 'desc')
             ->orderBy('production_id', 'desc');

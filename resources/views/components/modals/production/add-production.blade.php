@@ -121,8 +121,11 @@
                     $prodDestWhName = $prodDestWh
                       ? ($prodDestWh->warehouse_name ?? $prodDestWh->name ?? '')
                       : '';
+                    $isActiveMainWh = $prodDestWh
+                      && isset($prodDestWh->type)
+                      && (int) ($prodDestWh->type->is_main_warehouse ?? 0) === 1;
                     $prodMainWhName = $prodDestWhName;
-                    if (isset($warehouses)) {
+                    if (! $isActiveMainWh && isset($warehouses)) {
                         $prodMainWh = collect($warehouses)->first(function ($wh) {
                             return isset($wh->type) && (int) $wh->type->is_main_warehouse === 1;
                         });

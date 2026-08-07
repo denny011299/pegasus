@@ -53,8 +53,7 @@
                 { data: "product_name_text", width: "30%", defaultContent: "—" },
                 { data: "product_category", width: "15%", defaultContent: "—" },
                 { data: "product_variant_sku", width: "15%", defaultContent: "—" },
-                { data: "product_alert_text", width: "25%", defaultContent: "—" },
-                { data: "minim_order", width: "15%", defaultContent: "—" },
+                { data: "product_alert_text", width: "30%", defaultContent: "—" },
             ],
             initComplete: function (settings) {
                 prepareStockAlertFilter(settings);
@@ -117,7 +116,6 @@
                         item.stock[def] =tmp;
                     }
                     
-                    item.min_order = `${formatLeadTimeQty(item.recommended_order)} ${item.product_unit}`;
                     var sa =
                         roleIconEdit(
                             "Peringatan Stok Produk",
@@ -134,11 +132,15 @@
                     item.action =
                         sa ||
                         '<span class="text-muted small">—</span>';
-                    item.minim_order = item.min_order;
                 });
                 console.log(e);
                 
-                let stockLow = e.filter(item => item.current_stock <= item.reorder_point && item.habis == -1);
+                // Stok rendah = menyentuh/melewati Peringatan Stok manual (ps_alert_stock).
+                // Kolom "Stok Minimum Rekomendasi" tetap rumus lead time (reorder_point).
+                let stockLow = e.filter(item =>
+                    item.current_stock <= (parseFloat(item.product_variant_alert) || 0) &&
+                    item.habis == -1
+                );
                 let stockOut = e.filter(item => item.habis==1);
 
                 tableLow.clear().rows.add(stockLow).draw();

@@ -72,7 +72,7 @@ class StockController extends Controller
     {
         $data = $req->all();
         $id =  (new StockOpname())->insertStockOpname($data);
-        foreach (json_decode($req->item, true) as $key => $value) {
+        foreach (json_decode($req->item, true) ?? [] as $key => $value) {
             $value["sto_id"] = $id;
             (new StockOpnameDetail())->insertDetail($value);
         }

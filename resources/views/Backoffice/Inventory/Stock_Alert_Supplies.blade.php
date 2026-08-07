@@ -65,7 +65,6 @@
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
                                                     <th>Stok Minimum Rekomendasi</th>
-                                                    <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -81,7 +80,6 @@
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
                                                     <th>Stok Minimum Rekomendasi</th>
-                                                    <th>Pemesanan Min.</th>
                                                 </tr>
                                             </thead>
                                             <tbody>

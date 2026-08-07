@@ -30,8 +30,7 @@
             },
             columns: [
                 { data: "supplies_name", width: "35%" },
-                { data: "supplies_alert_text", width: "20%" },
-                { data: "minim_order", width: "20%" },
+                { data: "supplies_alert_text", width: "40%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -58,8 +57,7 @@
             autoWidth: false,
             columns: [
                 { data: "supplies_name", width: "35%" },
-                { data: "supplies_alert_text", width: "20%" },
-                { data: "minim_order", width: "20%" },
+                { data: "supplies_alert_text", width: "40%" },
             ],
             initComplete: (settings, json) => {
                 $('.dataTables_filter').appendTo('#tableSearch');
@@ -134,12 +132,15 @@
                     item.action =
                         sas ||
                         '<span class="text-muted small">—</span>';
-                    item.minim_order = `${formatLeadTimeQty(item.recommended_order)} ${item.default_unit}`;
-
                 });
                 console.log(e);
                 
-                let stockLow = e.filter(item => item.current_stock <= item.reorder_point && item.habis == -1);
+                // Stok rendah = menyentuh/melewati supplies_alert manual.
+                // Kolom "Stok Minimum Rekomendasi" tetap rumus lead time (reorder_point).
+                let stockLow = e.filter(item =>
+                    item.current_stock <= (parseFloat(item.supplies_alert) || 0) &&
+                    item.habis == -1
+                );
                 let stockOut = e.filter(item => item.habis==1);
 
                 tableLow.clear().rows.add(stockLow).draw();

@@ -264,7 +264,8 @@ function syncTransferSaveButton() {
     }
     $btn.prop(
         "disabled",
-        hasPendingTransferRows() ||
+        isTransferWarehouseRouteInvalid() ||
+            hasPendingTransferRows() ||
             retailUnitValidationPending > 0 ||
             stockValidationPending > 0 ||
             hasMissingRetailUnitRows() ||
@@ -676,8 +677,20 @@ function loadTransferDraftStock(raw, done) {
             updateTransferDraftAvailable();
         }
         $("#btn_add_transfer_product").prop("disabled", transferDraft.defaultUnitInvalid);
-        if (transferDraft.defaultUnitInvalid && typeof toastr !== "undefined") {
-            toastr.error("", $("#transfer_stock_available").text());
+        if (transferDraft.defaultUnitInvalid) {
+            if (isRetailUnitSetupRequired(stock, raw)) {
+                prepareRetailUnitForTransfer(raw, true, function (ok) {
+                    if (
+                        !ok &&
+                        runId === transferDraftRun &&
+                        typeof toastr !== "undefined"
+                    ) {
+                        toastr.error("", $("#transfer_stock_available").text());
+                    }
+                });
+            } else if (typeof toastr !== "undefined") {
+                toastr.error("", $("#transfer_stock_available").text());
+            }
         }
         if (typeof done === "function") {
             done(
@@ -688,26 +701,42 @@ function loadTransferDraftStock(raw, done) {
     });
 }
 
-function validateWarehousesDifferent() {
-    var fromId = $("#transfer_from_warehouse_id").val();
-    var toId = $("#transfer_to_warehouse_id").val();
-    $("#transfer_from_warehouse_id, #transfer_to_warehouse_id")
+function clearTransferWarehouseFieldInvalid($select) {
+    $select.removeClass("is-invalid");
+    $select
         .next(".select2-container")
         .find(".select2-selection")
-        .removeClass("is-invalid");
+        .removeClass("is-invalid is-invalids");
+}
 
-    if (fromId && toId && String(fromId) === String(toId)) {
-        $("#transfer_to_warehouse_id")
-            .next(".select2-container")
-            .find(".select2-selection")
-            .addClass("is-invalid");
+function markTransferToWarehouseInvalid() {
+    var $to = $("#transfer_to_warehouse_id");
+    $to.addClass("is-invalid");
+    $to.next(".select2-container").find(".select2-selection").addClass("is-invalid is-invalids");
+}
+
+function isTransferWarehouseRouteInvalid() {
+    var fromId = $("#transfer_from_warehouse_id").val();
+    var toId = $("#transfer_to_warehouse_id").val();
+    return !!(fromId && toId && String(fromId) === String(toId));
+}
+
+function validateWarehousesDifferent() {
+    clearTransferWarehouseFieldInvalid($("#transfer_from_warehouse_id"));
+    clearTransferWarehouseFieldInvalid($("#transfer_to_warehouse_id"));
+
+    if (isTransferWarehouseRouteInvalid()) {
+        markTransferToWarehouseInvalid();
         if (typeof toastr !== "undefined") {
             toastr.warning("", "Gudang tujuan tidak boleh sama dengan gudang asal");
         } else if (typeof notifikasi === "function") {
             notifikasi("warning", "Validasi", "Gudang tujuan tidak boleh sama dengan gudang asal");
         }
+        $("#btn_add_transfer_product").prop("disabled", true);
+        syncTransferSaveButton();
         return false;
     }
+    syncTransferSaveButton();
     return true;
 }
 
@@ -719,27 +748,42 @@ function selectedTransferWarehouseIsMain(selector) {
     return parseInt(selected[0].is_main_warehouse, 10) === 1;
 }
 
+function isRetailUnitSetupRequired(stock, raw) {
+    if (selectedTransferWarehouseIsMain("#transfer_to_warehouse_id") !== false) return false;
+    if (raw && parseInt(raw.retail_unit, 10) > 0) return false;
+    var msg = String((stock && stock.message) || "").toLowerCase();
+    return msg.indexOf("satuan eceran") !== -1;
+}
+
 function transferRetailContext(item) {
+    var mode =
+        transferItems.indexOf(item) === -1 && transferDraft.raw === item ? "draft" : "row";
     return {
         item: item,
+        mode: mode,
         variantId: parseInt(item.product_variant_id || item.id, 10),
         fromId: $("#transfer_from_warehouse_id").val(),
         toId: $("#transfer_to_warehouse_id").val(),
         routeRun: transferRouteRun,
+        draftRun: transferDraftRun,
     };
 }
 
 function isCurrentRetailContext(context) {
-    return (
-        context &&
-        transferItems.indexOf(context.item) !== -1 &&
-        context.routeRun === transferRouteRun &&
-        String($("#transfer_from_warehouse_id").val() || "") === String(context.fromId || "") &&
-        String($("#transfer_to_warehouse_id").val() || "") === String(context.toId || "")
-    );
+    if (!context || context.routeRun !== transferRouteRun) return false;
+    if (
+        String($("#transfer_from_warehouse_id").val() || "") !== String(context.fromId || "") ||
+        String($("#transfer_to_warehouse_id").val() || "") !== String(context.toId || "")
+    ) {
+        return false;
+    }
+    if (context.mode === "draft") {
+        return context.draftRun === transferDraftRun && transferDraft.raw === context.item;
+    }
+    return transferItems.indexOf(context.item) !== -1;
 }
 
-function applySavedRetailUnit(item, retailUnitId) {
+function applySavedRetailUnit(item, retailUnitId, context) {
     transferItems.forEach(function (rowItem) {
         if (String(rowItem.product_variant_id) !== String(item.product_variant_id)) return;
         rowItem.retail_unit = retailUnitId;
@@ -748,8 +792,14 @@ function applySavedRetailUnit(item, retailUnitId) {
         rowItem.retail_error = null;
         validateOptimisticTransferRow(rowItem, false);
     });
-    refreshTransferItemsTable();
-    syncTransferSaveButton();
+    if (context && context.mode === "draft" && transferDraft.raw === item) {
+        item.retail_unit = retailUnitId;
+        transferDraft.defaultUnitInvalid = false;
+        loadTransferDraftStock(item);
+    } else {
+        refreshTransferItemsTable();
+        syncTransferSaveButton();
+    }
 }
 
 function saveRetailUnitForTransfer(item, unitId, context) {
@@ -770,7 +820,7 @@ function saveRetailUnitForTransfer(item, unitId, context) {
         if (!res || res.status !== 1) {
             throw new Error((res && res.message) || "Gagal menyimpan satuan eceran");
         }
-        applySavedRetailUnit(item, res.retail_unit_id);
+        applySavedRetailUnit(item, res.retail_unit_id, context);
         return res;
     });
 }
@@ -798,7 +848,11 @@ function promptRetailUnitForTransfer(item, context) {
         title: "Satuan eceran belum diatur",
         html:
             "Pilih satuan eceran untuk <strong>" +
-            escapeHtml((item.product_name || "") + " " + (item.product_variant_name || "")) +
+            escapeHtml(
+                (item.product_name || item.pr_name || "") +
+                    " " +
+                    (item.product_variant_name || "")
+            ) +
             "</strong>.",
         input: "select",
         inputOptions: options,
@@ -826,6 +880,10 @@ function promptRetailUnitForTransfer(item, context) {
     }).then(function () {
         delete retailSetupPrompts[variantKey];
         if (!isCurrentRetailContext(context) || item.retail_unit) return;
+        if (context.mode === "draft") {
+            transferDraft.defaultUnitInvalid = true;
+            return;
+        }
         item.retail_invalid = true;
         refreshTransferItemsTable();
         syncTransferSaveButton();
@@ -1802,6 +1860,13 @@ function addTransferDraft() {
         if (typeof toastr !== "undefined") toastr.info("", "Sedang memuat satuan/stok produk...");
         return;
     }
+    if (
+        transferDraft.defaultUnitInvalid &&
+        isRetailUnitSetupRequired(transferDraft.stock, raw)
+    ) {
+        prepareRetailUnitForTransfer(raw, true);
+        return;
+    }
     var selectedUnit =
         draftUnitById($("#transfer_unit_input").val()) ||
         (function () {
@@ -1945,6 +2010,7 @@ function resetTransferForm() {
     resetTransferSkuSelect();
     refreshTransferItemsTable();
     $(".is-invalid").removeClass("is-invalid");
+    $(".is-invalids").removeClass("is-invalids");
     syncTransferModalChrome();
 }
 
@@ -2649,10 +2715,9 @@ $(document).on("click", ".btn-save-transfer", function () {
 
     // reset validation
     $("#transfer_date").removeClass("is-invalid");
-    $("#transfer_sender_id, #transfer_from_warehouse_id, #transfer_to_warehouse_id")
-        .next(".select2-container")
-        .find(".select2-selection")
-        .removeClass("is-invalid");
+    clearTransferWarehouseFieldInvalid($("#transfer_sender_id"));
+    clearTransferWarehouseFieldInvalid($("#transfer_from_warehouse_id"));
+    clearTransferWarehouseFieldInvalid($("#transfer_to_warehouse_id"));
 
     var sender = $("#transfer_sender_id").val();
     var fromId = $("#transfer_from_warehouse_id").val();
@@ -2661,15 +2726,23 @@ $(document).on("click", ".btn-save-transfer", function () {
 
     var valid = true;
     if (!sender) {
-        $("#transfer_sender_id").next(".select2-container").find(".select2-selection").addClass("is-invalid");
+        $("#transfer_sender_id").addClass("is-invalid");
+        $("#transfer_sender_id")
+            .next(".select2-container")
+            .find(".select2-selection")
+            .addClass("is-invalid is-invalids");
         valid = false;
     }
     if (!fromId) {
-        $("#transfer_from_warehouse_id").next(".select2-container").find(".select2-selection").addClass("is-invalid");
+        $("#transfer_from_warehouse_id").addClass("is-invalid");
+        $("#transfer_from_warehouse_id")
+            .next(".select2-container")
+            .find(".select2-selection")
+            .addClass("is-invalid is-invalids");
         valid = false;
     }
     if (!toId) {
-        $("#transfer_to_warehouse_id").next(".select2-container").find(".select2-selection").addClass("is-invalid");
+        markTransferToWarehouseInvalid();
         valid = false;
     }
     if (!date) {
@@ -2900,9 +2973,9 @@ $(document).on("click", ".btn-reject-transfer", function () {
     );
 });
 
-// Remove invalid class on change
-$(document).on("change", "#transfer_sender_id, #transfer_from_warehouse_id, #transfer_to_warehouse_id", function() {
-    $(this).next(".select2-container").find(".select2-selection").removeClass("is-invalid");
+// Remove invalid class on change (warehouse fields re-validated by validateWarehousesDifferent)
+$(document).on("change", "#transfer_sender_id", function () {
+    clearTransferWarehouseFieldInvalid($(this));
 });
 $(document).on("change", "#transfer_date", function() {
     $(this).removeClass("is-invalid");

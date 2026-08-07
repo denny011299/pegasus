@@ -3,6 +3,13 @@
 @section('custom_css')
     {{-- GEMINI: isi style modal / tabel transfer di sini bila perlu --}}
     <style>
+        #add_stock_transfer .select2-container--default .select2-selection.is-invalid,
+        #add_stock_transfer .select2-container--default .select2-selection.is-invalids,
+        #add_stock_transfer .select2-container--default .select2-selection--single.is-invalid,
+        #add_stock_transfer .select2-container--default .select2-selection--single.is-invalids {
+            border-color: #dc3545 !important;
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15) !important;
+        }
         #tableStockTransfer-wrap {
             border: 1px solid #e2e8f0;
             border-radius: 8px;

@@ -22,6 +22,32 @@ function productionMainWarehouseName() {
     return "Gudang utama";
 }
 
+/** Gudang tujuan non-eceran: aktif jika gudang aktif = utama, else gudang utama pertama. */
+function productionNonRetailDestinationName() {
+    if (typeof isActiveMainWarehouse === "function" && isActiveMainWarehouse() === true) {
+        var activeName = productionActiveWarehouseName();
+        if (activeName) return activeName;
+    }
+    return productionMainWarehouseName();
+}
+
+function productionNonRetailDestinationId() {
+    if (typeof isActiveMainWarehouse === "function" && isActiveMainWarehouse() === true) {
+        if (typeof getActiveWarehouseId === "function") {
+            var activeId = parseInt(getActiveWarehouseId() || 0, 10);
+            if (activeId > 0) return activeId;
+        }
+        var wh = window.activeWarehouse || {};
+        var fromWindow = parseInt(wh.id || wh.warehouse_id || 0, 10);
+        if (fromWindow > 0) return fromWindow;
+    }
+    if (typeof getMainWarehouseId === "function") {
+        var mainId = parseInt(getMainWarehouseId() || 0, 10);
+        if (mainId > 0) return mainId;
+    }
+    return 0;
+}
+
 function productionActiveWarehouseName() {
     // Live dari top-bar (footer-scripts), lalu window.activeWarehouse, lalu fallback
     if (typeof getActiveWarehouseName === "function") {
@@ -43,7 +69,7 @@ function syncProductionDestinationControl() {
     var $destSelect2 = $dest.next(".select2-container");
 
     $badge.find("span").text(
-        isRetail ? productionActiveWarehouseName() : productionMainWarehouseName(),
+        isRetail ? productionActiveWarehouseName() : productionNonRetailDestinationName(),
     );
 
     if (isRetail) {
@@ -271,6 +297,9 @@ function hideProductionPreserveDraft() {
 
 function stashPendingProductionAdd(tempBom) {
     var product = tempBom || ($("#product_id").select2("data")[0] || {});
+    var isRetailOutput =
+        parseInt(product.retail_unit || 0, 10) > 0 &&
+        parseInt($("#unit_id").val() || 0, 10) === parseInt(product.retail_unit, 10);
     var destData = $("#production_destination_warehouse_id").hasClass(
         "select2-hidden-accessible",
     )
@@ -281,10 +310,12 @@ function stashPendingProductionAdd(tempBom) {
         product_variant_id: product.product_variant_id || null,
         qty: $("#production_qty").val(),
         unit_id: $("#unit_id").val(),
-        destination_warehouse_id:
-            $("#production_destination_warehouse_id").val() || null,
-        destination_warehouse_name:
-            destData.text || productionActiveWarehouseName(),
+        destination_warehouse_id: isRetailOutput
+            ? $("#production_destination_warehouse_id").val() || null
+            : productionNonRetailDestinationId() || null,
+        destination_warehouse_name: isRetailOutput
+            ? destData.text || productionActiveWarehouseName()
+            : productionNonRetailDestinationName(),
     };
 }
 
@@ -937,10 +968,12 @@ function continueAddProduct(tempBom) {
     }
 
     var temp = $("#product_id").select2("data")[0];
-    var destinationId = parseInt(
-        $("#production_destination_warehouse_id").val() || 0,
-        10,
-    );
+    var isRetailOutput =
+        parseInt(temp.retail_unit || 0, 10) > 0 &&
+        parseInt(resolved.unit_id || 0, 10) === parseInt(temp.retail_unit, 10);
+    var destinationId = isRetailOutput
+        ? parseInt($("#production_destination_warehouse_id").val() || 0, 10)
+        : productionNonRetailDestinationId();
     var idx = -1;
     items.forEach(function (element) {
         if (
@@ -1002,10 +1035,9 @@ function continueAddProduct(tempBom) {
             destination_warehouse_id: destinationId || null,
             destination_warehouse_name:
                 destinationData.text ||
-                (parseInt(resolved.unit_id || 0, 10) === parseInt(temp.retail_unit || 0, 10) &&
-                parseInt(temp.retail_unit || 0, 10) > 0
+                (isRetailOutput
                     ? productionActiveWarehouseName()
-                    : productionMainWarehouseName()),
+                    : productionNonRetailDestinationName()),
             bom_id: temp.bom_id,
         };
         items.push(data);
@@ -1721,7 +1753,7 @@ function addRow(e) {
                     <td style="font-weight: 600; color: #334155;">${element.product_name}</td>
                     <td class="text-center" style="font-weight: 700; color: #1e293b;">${formatRupiah(element.pd_qty)}</td>
                     <td style="color: #64748b;">${element.unit_name}</td>
-                    <td><span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;"><i class="fe fe-map-pin me-1"></i>${element.destination_warehouse_name || (parseInt(element.retail_unit || 0, 10) > 0 && parseInt(element.unit_id || 0, 10) === parseInt(element.retail_unit || 0, 10) ? productionActiveWarehouseName() : productionMainWarehouseName())}</span></td>
+                    <td><span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;"><i class="fe fe-map-pin me-1"></i>${element.destination_warehouse_name || (parseInt(element.retail_unit || 0, 10) > 0 && parseInt(element.unit_id || 0, 10) === parseInt(element.retail_unit || 0, 10) ? productionActiveWarehouseName() : productionNonRetailDestinationName())}</span></td>
                     <td class="text-center align-middle">
                         ${btnAct}
                     </td>

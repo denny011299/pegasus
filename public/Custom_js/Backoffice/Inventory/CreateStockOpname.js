@@ -579,7 +579,7 @@ function insertData(options) {
             window.location.href = "/stockOpname";
         },
         error: function (e) {
-            toastr.success("", "Terjadi Kesalahan Saat Tambah Stok Opname");
+            toastr.error("", "Terjadi Kesalahan Saat Tambah Stok Opname");
             ResetLoadingButton(btnSelector, doneText);
             console.log(e);
         },
