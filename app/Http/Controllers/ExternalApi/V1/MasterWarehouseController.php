@@ -24,6 +24,12 @@ use Illuminate\Validation\ValidationException;
  * pembuatan baris stok 0 otomatis untuk gudang baru. Controller ini hanya
  * menerjemahkan bentuk permintaan/respons API dan tidak menduplikasi logika
  * bisnisnya.
+ *
+ * tipe_id/tipe_nama pada create dan update bersifat upsert terhadap
+ * warehouse_types, lihat upsertWarehouseType(). Karena warehouse_types
+ * dipakai bersama oleh seluruh gudang, rename lewat satu panggilan create/
+ * update gudang ikut mengubah nama tipe itu untuk semua gudang lain yang
+ * memakai tipe_id yang sama — ini efek yang disengaja, bukan kebocoran.
  */
 class MasterWarehouseController extends Controller
 {
@@ -57,6 +63,8 @@ class MasterWarehouseController extends Controller
     {
         $data = $this->validatePayload($request);
 
+        $this->upsertWarehouseType((int) $data['tipe_id'], $data['tipe_nama']);
+
         $result = (new Warehouse())->insertWarehouse([
             'warehouse_name' => $data['nama'],
             'warehouse_type_id' => $data['tipe_id'],
@@ -84,6 +92,8 @@ class MasterWarehouseController extends Controller
         }
 
         $data = $this->validatePayload($request);
+
+        $this->upsertWarehouseType((int) $data['tipe_id'], $data['tipe_nama']);
 
         $result = (new Warehouse())->updateWarehouse([
             'id' => $gudang_id,
@@ -139,40 +149,93 @@ class MasterWarehouseController extends Controller
     /**
      * Seluruh field wajib diisi, baik pada create maupun update.
      *
-     * tipe_nama tidak tersimpan sebagai kolom sendiri — namanya selalu
-     * diturunkan dari relasi ke warehouse_types lewat tipe_id. Karena itu
-     * tipe_nama di sini diperlakukan sebagai konfirmasi dari pemanggil, bukan
-     * sumber data: nilainya wajib sama persis (tanpa peduli besar/kecil
-     * huruf) dengan nama tipe gudang yang sebenarnya untuk tipe_id yang
-     * dikirim, kalau tidak permintaan ditolak. Ini mencegah salah kirim
-     * tipe_id yang lolos tanpa disadari pemanggil.
+     * tipe_id/tipe_nama tidak lagi diverifikasi kecocokannya di sini — lihat
+     * upsertWarehouseType(), dipanggil terpisah setelah validasi ini supaya
+     * pesan error kegagalan format field (tipe_id bukan angka, dsb.) tetap
+     * lolos lewat validation_failed standar sebelum upsert dicoba.
      *
      * @return array<string, mixed>
      */
     private function validatePayload(Request $request): array
     {
-        $data = $request->validate([
+        return $request->validate([
             'nama' => ['required', 'string', 'max:250'],
             'tipe_nama' => ['required', 'string', 'max:250'],
-            'tipe_id' => ['required', 'integer'],
+            'tipe_id' => ['required', 'integer', 'min:1'],
             'alamat' => ['required', 'string'],
         ]);
+    }
 
-        $type = WarehouseType::active()->find($data['tipe_id']);
+    /**
+     * Upsert tipe gudang: tipe_id menentukan baris, tipe_nama menentukan isi.
+     *
+     * - tipe_id sudah ada di warehouse_types (aktif atau tidak) -> nama tipe
+     *   itu DIGANTI menjadi tipe_nama kalau berbeda. Ini rename, bukan tipe
+     *   baru, dan berlaku untuk seluruh gudang lain yang memakai tipe_id yang
+     *   sama — bukan cuma gudang yang sedang dibuat/diubah di panggilan ini.
+     * - tipe_id belum ada -> dibuat baris warehouse_types baru dengan id
+     *   PERSIS tipe_id yang dikirim (bukan id auto-increment berikutnya),
+     *   supaya gudang yang dibuat/diubah sesudah ini benar-benar memakai
+     *   tipe_id yang diminta pemanggil, bukan id lain yang kebetulan
+     *   dihasilkan sistem.
+     *
+     * Nama tipe (baik hasil rename maupun tipe baru) tetap wajib unik di
+     * antara tipe gudang aktif lain, sama seperti pembuatan tipe lewat
+     * halaman admin.
+     */
+    private function upsertWarehouseType(int $tipeId, string $tipeNama): WarehouseType
+    {
+        $tipeNama = trim($tipeNama);
+        $type = WarehouseType::find($tipeId);
 
-        if (! $type) {
-            $this->fail('tipe_id', 'Tipe gudang dengan tipe_id '.$data['tipe_id'].' tidak ditemukan atau tidak aktif.');
+        if ($type) {
+            if (trim((string) $type->warehouse_type_name) === $tipeNama) {
+                return $type;
+            }
+
+            if ($type->isDuplicateName($tipeNama, $type->id)) {
+                $this->fail('tipe_nama', 'Nama tipe gudang "'.$tipeNama.'" sudah dipakai tipe gudang lain.');
+            }
+
+            $type->warehouse_type_name = $tipeNama;
+            $type->save();
+
+            return $type;
         }
 
-        if (mb_strtolower(trim($type->warehouse_type_name)) !== mb_strtolower(trim($data['tipe_nama']))) {
-            $this->fail(
-                'tipe_nama',
-                'tipe_nama "'.$data['tipe_nama'].'" tidak sesuai dengan nama tipe gudang untuk tipe_id '
-                    .$data['tipe_id'].' ("'.$type->warehouse_type_name.'").',
-            );
+        if ((new WarehouseType())->isDuplicateName($tipeNama)) {
+            $this->fail('tipe_nama', 'Nama tipe gudang "'.$tipeNama.'" sudah dipakai tipe gudang lain.');
         }
 
-        return $data;
+        $type = new WarehouseType();
+        $type->id = $tipeId;
+        $type->warehouse_type_name = $tipeNama;
+        $type->is_main_warehouse = 0;
+        $type->status = 1;
+        $type->created_by = null;
+
+        try {
+            $type->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan dengan tipe_id baru yang sama, nyaris bersamaan:
+            // keduanya sama-sama tidak menemukan baris di atas, lalu primary
+            // key menolak yang kalah cepat. Perlakukan sebagai upsert biasa
+            // terhadap baris yang barusan dibuat request lain, bukan galat.
+            $existing = WarehouseType::find($tipeId);
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            $type = $existing;
+
+            if (trim((string) $type->warehouse_type_name) !== $tipeNama) {
+                $type->warehouse_type_name = $tipeNama;
+                $type->save();
+            }
+        }
+
+        return $type;
     }
 
     private function fail(string $field, string $message): void

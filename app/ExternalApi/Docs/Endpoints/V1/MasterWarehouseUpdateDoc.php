@@ -50,8 +50,8 @@ class MasterWarehouseUpdateDoc extends ApiEndpointDoc
     {
         return [
             ['name' => 'nama', 'type' => 'string', 'required' => true, 'description' => 'Nama gudang. Harus unik di antara gudang aktif lain (di luar gudang ini sendiri).'],
-            ['name' => 'tipe_nama', 'type' => 'string', 'required' => true, 'description' => 'Nama tipe gudang. Wajib sama persis (tanpa peduli besar/kecil huruf) dengan nama tipe gudang yang sebenarnya untuk tipe_id yang dikirim — dipakai sebagai konfirmasi, bukan disimpan.'],
-            ['name' => 'tipe_id', 'type' => 'integer', 'required' => true, 'description' => 'id tipe gudang, lihat GET /master/warehouse_types.'],
+            ['name' => 'tipe_nama', 'type' => 'string', 'required' => true, 'description' => 'Nama tipe gudang. Bersifat upsert bersama tipe_id: kalau tipe_id sudah ada, nama tipe itu diganti menjadi tipe_nama ini; kalau belum ada, dipakai sebagai nama tipe baru. Harus unik di antara tipe gudang aktif lain.'],
+            ['name' => 'tipe_id', 'type' => 'integer', 'required' => true, 'description' => 'id tipe gudang. Kalau sudah ada di sistem Pegasus, gudang ini memakai tipe tersebut dan tipe_nama menggantikan namanya. Kalau belum ada, dibuatkan tipe gudang baru dengan id ini juga (bukan id yang di-generate sistem).'],
             ['name' => 'alamat', 'type' => 'string', 'required' => true, 'description' => 'Alamat gudang.'],
         ];
     }
@@ -84,7 +84,7 @@ class MasterWarehouseUpdateDoc extends ApiEndpointDoc
     {
         return [
             ['code' => 'not_found', 'http_status' => 404, 'message' => 'Gudang dengan gudang_id tersebut tidak ditemukan (termasuk yang sudah dihapus).'],
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'Salah satu field wajib kosong, atau tipe_nama tidak sesuai dengan tipe_id yang dikirim.'],
+            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'Salah satu field wajib kosong, atau tipe_nama sudah dipakai tipe gudang lain (rename ditolak).'],
             ['code' => 'duplicate_name', 'http_status' => 422, 'message' => 'Nama gudang sudah dipakai gudang aktif lain.'],
         ];
     }
@@ -94,6 +94,8 @@ class MasterWarehouseUpdateDoc extends ApiEndpointDoc
         return [
             'Keempat field body wajib diisi meski hanya satu yang berubah — tidak ada partial update.',
             'Gudang berstatus Non-Aktif tetap bisa diubah (sama seperti halaman admin); yang tidak ditemukan hanya gudang yang sudah dihapus.',
+            'tipe_id/tipe_nama bersifat upsert, bukan sekadar rujukan: mengirim tipe_id yang sudah dipakai gudang lain dengan tipe_nama yang berbeda akan MENGGANTI nama tipe itu untuk seluruh gudang yang memakainya, bukan cuma gudang yang sedang diubah di panggilan ini.',
+            'Kirim tipe_nama yang sama persis dengan nama tipe yang sudah ada (lihat GET /master/warehouses) kalau tidak bermaksud mengganti namanya.',
         ];
     }
 }
