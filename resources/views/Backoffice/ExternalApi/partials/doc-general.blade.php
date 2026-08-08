@@ -21,7 +21,7 @@
                 @foreach ($groups as $group)
                     <div class="col-md-6">
                         <a class="extapi-module-card"
-                            href="{{ url('externalApiDocumentation/' . $group['key']) . (count($versions) > 1 ? '?version=' . urlencode($version) : '') }}">
+                            href="{{ route($docRoute['group'], $group['key']) . (count($versions) > 1 ? '?version=' . urlencode($version) : '') }}">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div>
                                     <h6 class="mb-1">{{ $group['title'] }}</h6>

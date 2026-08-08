@@ -14,7 +14,7 @@
                 <p class="text-muted mb-0">
                     {{ count($current['endpoints']) }} endpoint pada versi {{ $version }}.
                     Seluruhnya memerlukan API Key — lihat
-                    <a href="{{ url('externalApiDocumentation') }}#authentication">Umum → Autentikasi</a>.
+                    <a href="{{ route($docRoute['index']) }}#authentication">Umum → Autentikasi</a>.
                 </p>
             </div>
             <pre class="extapi-code mb-0 mt-2">{{ $baseUrl }}</pre>

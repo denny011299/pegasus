@@ -21,6 +21,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [GeneralController::class, 'login'])->name('login');
 Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
+
+// Dokumentasi API Eksternal — versi publik, tanpa login. Sama persis dengan
+// /externalApiDocumentation (lihat check.access:Dokumentasi API Eksternal|view
+// di bawah), hanya view & chrome-nya beda (tanpa sidebar/topbar admin). Isinya
+// bukan rahasia: hanya struktur endpoint & contoh, bukan API Key sungguhan.
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/api-docs', [ExternalApiController::class, 'publicApiDocumentation'])->name('apiDocsPublic');
+    Route::get('/api-docs/{group}', [ExternalApiController::class, 'publicApiDocumentation'])->name('apiDocsPublicGroup');
+});
+
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');

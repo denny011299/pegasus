@@ -112,6 +112,8 @@
         'cashreceipt-2',
         'cashreceipt-3',
         'cashreceipt-4',
+        'apiDocsPublic',
+        'apiDocsPublicGroup',
     ]))
   @include('layout.partials.header')
 @endif
@@ -137,6 +139,8 @@
         'cashreceipt-2',
         'cashreceipt-3',
         'cashreceipt-4',
+        'apiDocsPublic',
+        'apiDocsPublicGroup',
     ]))
   @include('layout.partials.sidebar')
 @endif
