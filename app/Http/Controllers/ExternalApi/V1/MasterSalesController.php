@@ -9,7 +9,6 @@ use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 /**
  * Data master sales untuk sistem eksternal (API-002 lanjutan).
@@ -145,35 +144,70 @@ class MasterSalesController extends Controller
     }
 
     /**
-     * PATCH /api/external/v1/master/sales/{staff_id}
+     * PATCH /api/external/v1/master/sales/connect
      *
-     * {staff_id} di sini KEBALIKANNYA dari PUT/DELETE: id internal Pegasus,
-     * bukan external_ref_id — dipakai untuk menghubungkan staf yang sudah
-     * ada (dibuat lewat halaman admin, sudah berperan Sales) dengan rujukan
-     * milik sistem pemanggil, tanpa perlu membuat baris baru.
+     * Bentuk jamak: satu permintaan boleh menghubungkan banyak staf
+     * sekaligus lewat body.connections (array). Setiap butir berisi
+     * staff_id (id internal Pegasus — KEBALIKANNYA dari PUT/DELETE, lihat
+     * catatan kelas) dan map_staff_id (rujukan yang mau dipasang), dipakai
+     * untuk menghubungkan staf yang sudah ada (dibuat lewat halaman admin,
+     * sudah berperan Sales) dengan rujukan milik sistem pemanggil, tanpa
+     * perlu membuat baris baru.
      *
-     * Menimpa link yang sudah ada diperbolehkan. Kalau map_staff_id yang
-     * dikirim sedang dipegang staf LAIN, rujukan itu dilepas dulu dari staf
-     * itu (external_ref_id-nya jadi null) sebelum dipasang ke staf ini —
-     * "dipindah", bukan ditolak sebagai duplikat — supaya keunikan
-     * external_ref_id tetap terjaga tanpa membuat pemanggil harus melepas
-     * link lama secara manual lebih dulu.
+     * Setiap butir diproses independen (bukan atomik satu transaksi
+     * besar): butir yang datanya salah tidak menggagalkan butir lain dalam
+     * permintaan yang sama. Respons berupa daftar hasil per butir, masing-
+     * masing menandai berhasil/gagal sendiri-sendiri lewat success.
+     *
+     * Menimpa link yang sudah ada pada staf tujuan diperbolehkan. Kalau
+     * map_staff_id yang dikirim sedang dipegang staf LAIN, rujukan itu
+     * dilepas dulu dari staf itu (external_ref_id-nya jadi null) sebelum
+     * dipasang ke staf tujuan — "dipindah", bukan ditolak sebagai duplikat
+     * — supaya keunikan external_ref_id tetap terjaga tanpa pemanggil harus
+     * melepas link lama secara manual lebih dulu.
      */
-    public function patch(Request $request, int $staff_id): JsonResponse
+    public function connect(Request $request): JsonResponse
     {
-        $staff = Staff::find($staff_id);
-
-        if ($staff === null || ! $this->isManagedSales($staff)) {
-            return $this->notFoundByInternalIdError($staff_id);
-        }
-
         $data = $request->validate([
-            'map_staff_id' => ['required', 'string', 'max:191'],
+            'connections' => ['required', 'array', 'min:1'],
+            'connections.*.staff_id' => ['required', 'integer', 'min:1'],
+            'connections.*.map_staff_id' => ['required', 'string', 'max:191'],
         ]);
-        $mapStaffId = trim($data['map_staff_id']);
+
+        $results = array_map(
+            fn (array $item) => $this->connectOne((int) $item['staff_id'], (string) $item['map_staff_id']),
+            $data['connections'],
+        );
+
+        $successCount = count(array_filter($results, static fn ($r) => $r['success']));
+
+        return ApiResponse::success($results, [
+            'total' => count($results),
+            'success' => $successCount,
+            'failed' => count($results) - $successCount,
+        ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function connectOne(int $staffId, string $rawMapStaffId): array
+    {
+        $mapStaffId = trim($rawMapStaffId);
 
         if ($mapStaffId === '') {
-            $this->fail('map_staff_id', 'map_staff_id tidak boleh kosong.');
+            return $this->connectFailure($staffId, $rawMapStaffId, ApiResponse::ERROR_VALIDATION, 'map_staff_id tidak boleh kosong.');
+        }
+
+        $staff = Staff::find($staffId);
+
+        if ($staff === null || ! $this->isManagedSales($staff)) {
+            return $this->connectFailure(
+                $staffId,
+                $mapStaffId,
+                ApiResponse::ERROR_NOT_FOUND,
+                'Staf dengan id '.$staffId.' tidak ditemukan atau bukan sales aktif.',
+            );
         }
 
         DB::transaction(function () use ($staff, $mapStaffId) {
@@ -185,7 +219,25 @@ class MasterSalesController extends Controller
             $staff->save();
         });
 
-        return ApiResponse::success($this->present($staff->fresh()));
+        return [
+            'staff_id' => $staffId,
+            'map_staff_id' => $mapStaffId,
+            'success' => true,
+            'data' => $this->present($staff->fresh()),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function connectFailure(int $staffId, string $mapStaffId, string $code, string $message): array
+    {
+        return [
+            'staff_id' => $staffId,
+            'map_staff_id' => $mapStaffId,
+            'success' => false,
+            'error' => ['code' => $code, 'message' => $message],
+        ];
     }
 
     /* ------------------------------------------------------------------ */
@@ -305,11 +357,6 @@ class MasterSalesController extends Controller
         return (int) $roleIds->first();
     }
 
-    private function fail(string $field, string $message): void
-    {
-        throw ValidationException::withMessages([$field => [$message]]);
-    }
-
     /* ------------------------------------------------------------------ */
     /* Respons                                                             */
     /* ------------------------------------------------------------------ */
@@ -394,14 +441,6 @@ class MasterSalesController extends Controller
         );
     }
 
-    private function notFoundByInternalIdError(int $staffId): JsonResponse
-    {
-        return ApiResponse::error(
-            ApiResponse::ERROR_NOT_FOUND,
-            'Staf dengan id '.$staffId.' tidak ditemukan atau bukan sales aktif.',
-            404,
-        );
-    }
 
     private function duplicateRefError(string $refId): JsonResponse
     {
