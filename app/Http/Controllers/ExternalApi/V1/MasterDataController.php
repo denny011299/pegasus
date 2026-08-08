@@ -5,7 +5,6 @@ namespace App\Http\Controllers\ExternalApi\V1;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\CashCategory;
-use App\Models\Unit;
 use App\Models\WarehouseType;
 
 /**
@@ -14,11 +13,12 @@ use App\Models\WarehouseType;
  * Hanya baca. Tidak ada pembuatan, perubahan, maupun penghapusan lewat jalur
  * ini — perubahan data master tetap dilakukan lewat halaman admin.
  *
- * Pengecualian: gudang (warehouses) dan sales sekarang juga punya
- * create/update/delete lewat External API (API-002 lanjutan). Endpoint-
- * endpoint itu sengaja ditaruh di controller terpisah, masing-masing
- * MasterWarehouseController dan MasterSalesController, supaya controller ini
- * tetap murni baca-saja seperti didokumentasikan di sini.
+ * Pengecualian: gudang (warehouses), sales, dan satuan (units) sekarang
+ * juga punya create/update/delete lewat External API (API-001/API-002
+ * lanjutan). Endpoint-endpoint itu sengaja ditaruh di controller terpisah,
+ * masing-masing MasterWarehouseController, MasterSalesController, dan
+ * MasterUnitController, supaya controller ini tetap murni baca-saja seperti
+ * didokumentasikan di sini.
  *
  * Autentikasi, pencatatan permintaan, dan bentuk respons seluruhnya diurus
  * lapisan platform (SPEC-001), jadi controller ini benar-benar hanya memilih
@@ -31,28 +31,6 @@ use App\Models\WarehouseType;
  */
 class MasterDataController extends Controller
 {
-    /**
-     * GET /api/external/v1/master/units
-     *
-     * Nama field mengikuti kontrak satuan yang sudah ada pada dokumen
-     * integrasi PMO (§8.1 pada 202607260130-product-sync-flow.design.md),
-     * supaya kedua sistem memakai istilah yang sama.
-     */
-    public function units()
-    {
-        $units = (new Unit())->getUnitForExternalApi();
-
-        return ApiResponse::success(
-            $units->map(static fn ($unit) => [
-                'unit_id' => (int) $unit->unit_id,
-                'ref_unit_id' => $unit->ref_unit_id !== null ? (int) $unit->ref_unit_id : null,
-                'unit_name' => (string) $unit->unit_name,
-                'unit_short_name' => (string) $unit->unit_short_name,
-            ])->all(),
-            ['total' => $units->count()],
-        );
-    }
-
     /**
      * GET /api/external/v1/master/cash_categories
      *

@@ -140,6 +140,10 @@ return [
     'docs' => [
         // API-001 — Data Master
         \App\ExternalApi\Docs\Endpoints\V1\MasterUnitListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitLinkDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterCashCategoryListDoc::class,
 
         // API-002 — Data Master (batch 2)

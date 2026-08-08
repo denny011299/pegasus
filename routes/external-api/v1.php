@@ -3,6 +3,7 @@
 use App\Http\Controllers\ExternalApi\V1\CashPaymentController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
+use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,7 +34,19 @@ use Illuminate\Support\Facades\Route;
  */
 Route::prefix('master')->name('master.')->group(function () {
     // API-001
-    Route::get('/units', [MasterDataController::class, 'units'])->name('units');
+    //
+    // {ref_unit_id} pada PUT/DELETE units adalah id satuan yang sama pada
+    // sistem PMO (units.ref_unit_id), bukan id internal Pegasus. PATCH
+    // /units/connect terpisah dari situ: menghubungkan banyak satuan
+    // sekaligus (body.connections), tiap butir memakai id internal Pegasus.
+    // Lihat catatan kelas MasterUnitController — termasuk kenapa kolom yang
+    // sama juga ditulis Pusat Sinkronisasi (SyncUnitStep), disengaja.
+    Route::get('/units', [MasterUnitController::class, 'index'])->name('units');
+    Route::post('/units', [MasterUnitController::class, 'store'])->name('units.store');
+    Route::put('/units/{ref_unit_id}', [MasterUnitController::class, 'update'])->name('units.update');
+    Route::delete('/units/{ref_unit_id}', [MasterUnitController::class, 'destroy'])->name('units.destroy');
+    Route::patch('/units/connect', [MasterUnitController::class, 'connect'])->name('units.connect');
+
     Route::get('/cash_categories', [MasterDataController::class, 'cashCategories'])->name('cashCategories');
 
     // API-002
