@@ -31,10 +31,8 @@ class MasterWarehouseController extends Controller
      * GET /api/external/v1/master/warehouses
      *
      * Mengikuti kontrak API-002 (nama, tipe_nama, tipe_id, alamat) ditambah
-     * id gudang. gudang_id dan id sengaja dikembalikan berdampingan: id
-     * sudah dipakai pemanggil yang ada sejak sebelum endpoint create/update/
-     * delete ini ditambahkan, sedangkan gudang_id menyamakan penamaan dengan
-     * field yang dikembalikan tiga endpoint baru itu.
+     * gudang_id, memakai nama field yang sama dengan yang dikembalikan
+     * endpoint create/update/delete gudang.
      */
     public function index(): JsonResponse
     {
@@ -42,7 +40,6 @@ class MasterWarehouseController extends Controller
 
         return ApiResponse::success(
             $warehouses->map(static fn ($warehouse) => [
-                'id' => (int) $warehouse->id,
                 'gudang_id' => (int) $warehouse->id,
                 'nama' => (string) $warehouse->warehouse_name,
                 'tipe_nama' => (string) ($warehouse->type->warehouse_type_name ?? ''),
