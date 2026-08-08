@@ -2,7 +2,11 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-
+        /* Theme default .tab-content padding-top: 32px — tighten gap under Pengiriman/Pengembalian tabs */
+        .tab-content {
+            padding-top: 0px !important;
+            margin-top: 10px !important;
+        }
 
         #add_sales_order #so_qty_input {
             text-align: center;

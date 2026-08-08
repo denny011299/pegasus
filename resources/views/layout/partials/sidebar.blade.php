@@ -20,14 +20,14 @@
     }
 
     /* ── Logo / Brand area ── */
-    .sidebar .logo-box {
+    #sidebar .logo-box {
         background: transparent !important;
         border-bottom: 1px solid rgba(255,255,255,0.07) !important;
         padding: 16px 20px !important;
     }
 
     /* ── Section Titles ── */
-    .sidebar-menu .menu-title {
+    #sidebar .sidebar-menu .menu-title {
         color: #475569 !important;
         font-size: 10px !important;
         font-weight: 800 !important;
@@ -37,12 +37,12 @@
         margin: 0 !important;
         line-height: 1;
     }
-    .sidebar-menu .menu-title span {
+    #sidebar .sidebar-menu .menu-title span {
         color: inherit !important;
     }
 
     /* ── Menu Items ── */
-    .sidebar-menu li > a {
+    #sidebar .sidebar-menu li > a {
         display: flex !important;
         align-items: center !important;
         border-radius: 10px !important;
@@ -58,8 +58,8 @@
     }
 
     /* Icons */
-    .sidebar-menu li > a > i,
-    .sidebar-menu li > a > svg {
+    #sidebar .sidebar-menu li > a > i,
+    #sidebar .sidebar-menu li > a > svg {
         flex-shrink: 0;
         width: 18px !important;
         min-width: 18px !important;
@@ -72,7 +72,7 @@
     }
 
     /* Span text */
-    .sidebar-menu li > a > span {
+    #sidebar .sidebar-menu li > a > span {
         flex: 1;
         white-space: nowrap;
         overflow: hidden;
@@ -80,7 +80,7 @@
     }
 
     /* Arrow */
-    .sidebar-menu li > a > .menu-arrow {
+    #sidebar .sidebar-menu li > a > .menu-arrow {
         margin-left: auto !important;
         font-size: 10px !important;
         color: #475569 !important;
@@ -89,53 +89,53 @@
     }
 
     /* Hover */
-    .sidebar-menu li > a:hover {
+    #sidebar .sidebar-menu li > a:hover {
         background: #f1f5f9 !important;
         color: #000000 !important;
     }
-    .sidebar-menu li > a:hover > i,
-    .sidebar-menu li > a:hover > svg {
+    #sidebar .sidebar-menu li > a:hover > i,
+    #sidebar .sidebar-menu li > a:hover > svg {
         color: #2563eb !important;
     }
-    .sidebar-menu li > a:hover > .menu-arrow {
+    #sidebar .sidebar-menu li > a:hover > .menu-arrow {
         color: #2563eb !important;
     }
 
     /* ── ACTIVE STATE — glowing pill ── */
-    .sidebar-menu li > a.active {
+    #sidebar .sidebar-menu li > a.active {
         background: #eff6ff !important;
         color: #1e40af !important;
         font-weight: 800 !important;
         box-shadow:
             inset 3px 0 0 0 #3b82f6 !important;
     }
-    .sidebar-menu li > a.active > i,
-    .sidebar-menu li > a.active > svg {
+    #sidebar .sidebar-menu li > a.active > i,
+    #sidebar .sidebar-menu li > a.active > svg {
         color: #2563eb !important;
     }
-    .sidebar-menu li > a.active > .menu-arrow {
+    #sidebar .sidebar-menu li > a.active > .menu-arrow {
         color: #2563eb !important;
     }
 
     /* Remove default before/after decorations */
-    .sidebar-menu li > a::before,
-    .sidebar-menu li > a::after,
-    .sidebar-menu li > a.active::before,
-    .sidebar-menu li > a.active::after {
+    #sidebar .sidebar-menu li > a::before,
+    #sidebar .sidebar-menu li > a::after,
+    #sidebar .sidebar-menu li > a.active::before,
+    #sidebar .sidebar-menu li > a.active::after {
         display: none !important;
         content: none !important;
     }
 
     /* Submenu open — rotate arrow */
-    .sidebar-menu li.submenu.active > a > .menu-arrow,
-    .sidebar-menu li.submenu > a[aria-expanded="true"] > .menu-arrow {
+    #sidebar .sidebar-menu li.submenu.active > a > .menu-arrow,
+    #sidebar .sidebar-menu li.submenu > a[aria-expanded="true"] > .menu-arrow {
         transform: rotate(90deg);
         color: #60a5fa !important;
     }
 
     /* ── Submenu List ── */
-    .sidebar-menu .submenu > ul,
-    .sidebar-menu .submenu > div > ul {
+    #sidebar .sidebar-menu .submenu > ul,
+    #sidebar .sidebar-menu .submenu > div > ul {
         border-left: 2px solid #e2e8f0 !important;
         margin: 2px 0 4px 24px !important;
         padding: 4px 0 4px 10px !important;
@@ -143,7 +143,7 @@
     }
 
     /* Submenu items */
-    .sidebar-menu .submenu ul li > a {
+    #sidebar .sidebar-menu .submenu ul li > a {
         padding: 8px 10px !important;
         font-size: 13px !important;
         color: #334155 !important;
@@ -156,16 +156,16 @@
         position: relative;
         transition: all 0.15s ease !important;
     }
-    .sidebar-menu .submenu ul li > a::before,
-    .sidebar-menu .submenu ul li > a::after {
+    #sidebar .sidebar-menu .submenu ul li > a::before,
+    #sidebar .sidebar-menu .submenu ul li > a::after {
         display: none !important;
         content: none !important;
     }
-    .sidebar-menu .submenu ul li > a:hover {
+    #sidebar .sidebar-menu .submenu ul li > a:hover {
         background: transparent !important;
         color: #2563eb !important;
     }
-    .sidebar-menu .submenu ul li > a.active {
+    #sidebar .sidebar-menu .submenu ul li > a.active {
         background: transparent !important;
         color: #1e40af !important;
         font-weight: 800 !important;
@@ -173,7 +173,7 @@
     }
 
     /* Active submenu dot indicator */
-    .sidebar-menu .submenu ul li > a.active::before {
+    #sidebar .sidebar-menu .submenu ul li > a.active::before {
         display: block !important;
         content: '' !important;
         position: absolute;
@@ -185,6 +185,102 @@
         background: #3b82f6;
         border-radius: 50%;
         box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+    }
+
+    /* =============================================
+       MINI / COLLAPSED SIDEBAR — icon rail polish
+       (body.mini-sidebar without hover expand-menu)
+       ============================================= */
+    @media (min-width: 991.98px) {
+        body.mini-sidebar:not(.expand-menu) #sidebar.sidebar {
+            border-right: 1px solid #cbd5e1 !important;
+            box-shadow: 4px 0 24px rgba(15, 23, 42, 0.09) !important;
+        }
+
+        body.mini-sidebar:not(.expand-menu) #sidebar .logo-box {
+            padding: 14px 8px !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+        }
+
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu {
+            padding: 14px 10px 28px !important;
+        }
+
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu > ul {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 4px !important;
+        }
+
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a {
+            justify-content: center !important;
+            width: 44px !important;
+            height: 44px !important;
+            min-height: 44px !important;
+            max-width: 44px !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            gap: 0 !important;
+            border-radius: 12px !important;
+        }
+
+        /* Kill theme's offset that pushes icons off-center */
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu > ul > li > a i,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu > ul > li > a svg,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a > i,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a > svg {
+            margin: 0 !important;
+            margin-left: 0 !important;
+            width: 20px !important;
+            min-width: 20px !important;
+            height: 20px !important;
+            font-size: 17px !important;
+            color: #475569 !important;
+        }
+
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a > .menu-arrow,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a > span {
+            display: none !important;
+        }
+
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a:hover > i,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a:hover > svg {
+            color: #1e40af !important;
+        }
+
+        /* Active: soft navy tint, no inset bar */
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a.active {
+            background: rgba(30, 58, 95, 0.1) !important;
+            color: #1e3a5f !important;
+            box-shadow: none !important;
+            font-weight: 600 !important;
+        }
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a.active > i,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a.active > svg {
+            color: #1e3a5f !important;
+        }
+
+        /* Parent of open/active submenu also reads as selected in rail */
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li.submenu.active > a,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li.submenu > a.subdrop {
+            background: rgba(30, 58, 95, 0.1) !important;
+            color: #1e3a5f !important;
+            box-shadow: none !important;
+        }
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li.submenu.active > a > i,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li.submenu.active > a > svg,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li.submenu > a.subdrop > i,
+        body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li.submenu > a.subdrop > svg {
+            color: #1e3a5f !important;
+        }
     }
 </style>
 

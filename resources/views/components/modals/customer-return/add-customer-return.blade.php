@@ -108,7 +108,7 @@
                     <input type="hidden" id="cr-doc-key">
                     
                     {{-- HEADER METADATA --}}
-                    <div class="mb-4">
+                    <div class="mb-2">
                         <div class="row g-3">
                             <div class="col-lg-3 col-md-6">
                                 <label class="form-label text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;">Tanggal <span class="text-danger">*</span></label>
@@ -145,7 +145,7 @@
                         </div>
                     </div>
 
-                    <hr class="mb-4" style="border-color:#e2e8f0;">
+                    <hr class="mb-3" style="border-color:#e2e8f0;">
 
                     @php
                         $crActiveWh = $activeWarehouse ?? null;
@@ -163,7 +163,7 @@
                         }
                     @endphp
                     {{-- Compact add strip --}}
-                    <div id="cr-add-strip" class="mb-4">
+                    <div id="cr-add-strip" class="mb-2">
                         <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-2">
                             <ul class="nav nav-tabs cr-item-type-tabs" role="tablist" aria-label="Tipe item">
                                 <li class="nav-item" role="presentation">
@@ -221,11 +221,11 @@
                         </div>
                     </div>
 
-                    <hr class="mb-4" style="border-color:#e2e8f0;">
+                    <hr class="mb-3" style="border-color:#e2e8f0;">
 
                     {{-- Shared item list --}}
                     <div class="mb-2" id="cr-items-pane">
-                        <div class="d-flex align-items-center gap-2 py-1 mb-2">
+                        <div class="d-flex align-items-center gap-2 mb-2">
                             <span class="fw-bold text-dark" style="font-size:14px;">Daftar Item</span>
                             <span class="badge ms-auto px-2 py-1" id="cr-total-count" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;">0 item</span>
                         </div>

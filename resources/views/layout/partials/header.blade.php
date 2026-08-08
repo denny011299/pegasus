@@ -112,7 +112,7 @@
 
 @if (!Route::is(['index-three', 'index-four', 'index-five']))
     @if (!Route::is(['index-two']))
-        <div class="header header-one" style="background-color: #102c5c">
+        <div class="header header-one custom-premium-header">
     @endif
     @if (Route::is(['index-two']))
         <div class="header header-two">
