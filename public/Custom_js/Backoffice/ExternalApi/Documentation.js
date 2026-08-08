@@ -7,8 +7,8 @@ $(document).ready(function () {
 $(document).on('change', '#docVersion', function () {
     var version = encodeURIComponent($(this).val());
     var path = docGroupKey
-        ? '/externalApiDocumentation/' + encodeURIComponent(docGroupKey)
-        : '/externalApiDocumentation';
+        ? docBasePath + '/' + encodeURIComponent(docGroupKey)
+        : docBasePath;
 
     window.location.href = path + '?version=' + version;
 });

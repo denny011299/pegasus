@@ -30,7 +30,7 @@
         <ul class="extapi-toc-list">
             <li>
                 <a class="{{ $isUmum ? 'active' : '' }}"
-                    href="{{ url('externalApiDocumentation') . $versionQuery }}">
+                    href="{{ route($docRoute['index']) . $versionQuery }}">
                     <i class="fe fe-book-open me-1"></i> Umum
                 </a>
             </li>
@@ -38,7 +38,7 @@
                 @php $isActive = $current !== null && $current['key'] === $group['key']; @endphp
                 <li>
                     <a class="{{ $isActive ? 'active' : '' }}"
-                        href="{{ url('externalApiDocumentation/' . $group['key']) . $versionQuery }}">
+                        href="{{ route($docRoute['group'], $group['key']) . $versionQuery }}">
                         <i class="fe fe-layers me-1"></i> {{ $group['title'] }}
                         <span class="badge badge-soft-secondary ms-1">{{ count($group['endpoints']) }}</span>
                     </a>
