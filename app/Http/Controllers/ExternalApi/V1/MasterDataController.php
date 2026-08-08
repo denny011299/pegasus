@@ -5,9 +5,6 @@ namespace App\Http\Controllers\ExternalApi\V1;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\CashCategory;
-use App\Models\Staff;
-use App\Models\Unit;
-use App\Models\Warehouse;
 use App\Models\WarehouseType;
 
 /**
@@ -16,39 +13,24 @@ use App\Models\WarehouseType;
  * Hanya baca. Tidak ada pembuatan, perubahan, maupun penghapusan lewat jalur
  * ini — perubahan data master tetap dilakukan lewat halaman admin.
  *
+ * Pengecualian: gudang (warehouses), sales, dan satuan (units) sekarang
+ * juga punya create/update/delete lewat External API (API-001/API-002
+ * lanjutan). Endpoint-endpoint itu sengaja ditaruh di controller terpisah,
+ * masing-masing MasterWarehouseController, MasterSalesController, dan
+ * MasterUnitController, supaya controller ini tetap murni baca-saja seperti
+ * didokumentasikan di sini.
+ *
  * Autentikasi, pencatatan permintaan, dan bentuk respons seluruhnya diurus
  * lapisan platform (SPEC-001), jadi controller ini benar-benar hanya memilih
  * data dan menyusun bentuk keluarannya.
  *
- * Kedua endpoint sengaja tidak menerima parameter apa pun. Tabelnya kecil
- * (belasan sampai puluhan baris) dan spesifikasi API-001 secara tegas
- * mengeluarkan penyaringan, pencarian, dan paginasi dari lingkupnya — jadi
- * respons selalu berupa daftar utuh data aktif.
+ * Endpoint di controller ini sengaja tidak menerima parameter apa pun.
+ * Tabelnya kecil (belasan sampai puluhan baris) dan spesifikasi API-001
+ * secara tegas mengeluarkan penyaringan, pencarian, dan paginasi dari
+ * lingkupnya — jadi respons selalu berupa daftar utuh data aktif.
  */
 class MasterDataController extends Controller
 {
-    /**
-     * GET /api/external/v1/master/units
-     *
-     * Nama field mengikuti kontrak satuan yang sudah ada pada dokumen
-     * integrasi PMO (§8.1 pada 202607260130-product-sync-flow.design.md),
-     * supaya kedua sistem memakai istilah yang sama.
-     */
-    public function units()
-    {
-        $units = (new Unit())->getUnitForExternalApi();
-
-        return ApiResponse::success(
-            $units->map(static fn ($unit) => [
-                'unit_id' => (int) $unit->unit_id,
-                'ref_unit_id' => $unit->ref_unit_id !== null ? (int) $unit->ref_unit_id : null,
-                'unit_name' => (string) $unit->unit_name,
-                'unit_short_name' => (string) $unit->unit_short_name,
-            ])->all(),
-            ['total' => $units->count()],
-        );
-    }
-
     /**
      * GET /api/external/v1/master/cash_categories
      *
@@ -71,31 +53,6 @@ class MasterDataController extends Controller
     }
 
     /**
-     * GET /api/external/v1/master/warehouses
-     *
-     * Mengikuti kontrak API-002 (nama, tipe_nama, tipe_id, alamat) ditambah id
-     * gudang. Kontrak aslinya tidak menyebut id, padahal tanpa itu pemanggil
-     * hanya bisa membaca daftarnya dan tidak punya pegangan untuk merujuk satu
-     * gudang tertentu — nama pun bisa berubah sewaktu-waktu. Penambahan ini
-     * disetujui pemilik produk.
-     */
-    public function warehouses()
-    {
-        $warehouses = (new Warehouse())->getWarehouseForExternalApi();
-
-        return ApiResponse::success(
-            $warehouses->map(static fn ($warehouse) => [
-                'id' => (int) $warehouse->id,
-                'nama' => (string) $warehouse->warehouse_name,
-                'tipe_nama' => (string) ($warehouse->type->warehouse_type_name ?? ''),
-                'tipe_id' => (int) $warehouse->warehouse_type_id,
-                'alamat' => $warehouse->warehouse_address,
-            ])->all(),
-            ['total' => $warehouses->count()],
-        );
-    }
-
-    /**
      * GET /api/external/v1/master/warehouse_types
      *
      * Kontrak API-002 menyebut hanya dua field: nama dan status. status tetap
@@ -111,33 +68,6 @@ class MasterDataController extends Controller
                 'status' => (int) $type->status,
             ])->all(),
             ['total' => $types->count()],
-        );
-    }
-
-    /**
-     * GET /api/external/v1/master/sales
-     *
-     * Sales adalah staf yang perannya mengandung kata "sales". Spesifikasi
-     * API-002 tidak menetapkan bentuk keluaran untuk endpoint ini, jadi
-     * bentuknya diturunkan dari kolom yang ada — dan staff_id memakai nama
-     * yang sama dengan yang diminta endpoint pembayaran kas (API-005), supaya
-     * hasil endpoint ini bisa langsung dipakai di sana.
-     */
-    public function sales()
-    {
-        $sales = (new Staff())->getSalesForExternalApi();
-
-        return ApiResponse::success(
-            $sales->map(static fn ($staff) => [
-                'staff_id' => (int) $staff->staff_id,
-                'nama' => (string) $staff->staff_name,
-                'kode' => $staff->staff_code,
-                'email' => $staff->staff_email,
-                'telepon' => $staff->staff_phone,
-                'alamat' => $staff->staff_address,
-                'role' => (string) $staff->role_name,
-            ])->all(),
-            ['total' => $sales->count()],
         );
     }
 }

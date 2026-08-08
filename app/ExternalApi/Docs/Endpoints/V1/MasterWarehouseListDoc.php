@@ -48,14 +48,14 @@ class MasterWarehouseListDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 [
-                    'id' => 1,
+                    'gudang_id' => 1,
                     'nama' => 'Gudang Surabaya',
                     'tipe_nama' => 'Gol A',
                     'tipe_id' => 1,
                     'alamat' => 'Jl. Surabaya',
                 ],
                 [
-                    'id' => 2,
+                    'gudang_id' => 2,
                     'nama' => 'Jakarta Warehouse',
                     'tipe_nama' => 'Gol A',
                     'tipe_id' => 1,
@@ -72,7 +72,7 @@ class MasterWarehouseListDoc extends ApiEndpointDoc
     {
         return [
             'Endpoint ini tidak menerima parameter apa pun. Seluruh gudang aktif selalu dikembalikan sekaligus.',
-            'id adalah id gudang pada sistem Pegasus dan merupakan pegangan yang stabil untuk merujuk satu gudang. Pakai id ini, bukan nama, karena nama gudang bisa berubah.',
+            'gudang_id adalah id gudang pada sistem Pegasus dan merupakan pegangan yang stabil untuk merujuk satu gudang, dipakai sebagai path parameter pada endpoint ubah dan hapus gudang. Pakai gudang_id, bukan nama, karena nama gudang bisa berubah.',
             'Hanya gudang berstatus Aktif yang muncul. Gudang yang dinonaktifkan atau dihapus tidak ikut, jadi gudang yang hilang dari daftar berarti sudah tidak berlaku.',
             'alamat boleh bernilai null bila gudang memang belum diisi alamatnya.',
             'tipe_nama diambil lewat relasi ke tipe gudang, bukan disalin, sehingga selalu mengikuti nama tipe yang berlaku saat ini.',

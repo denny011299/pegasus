@@ -140,12 +140,23 @@ return [
     'docs' => [
         // API-001 — Data Master
         \App\ExternalApi\Docs\Endpoints\V1\MasterUnitListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitLinkDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterCashCategoryListDoc::class,
 
         // API-002 — Data Master (batch 2)
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseTypeListDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesLinkDoc::class,
 
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
