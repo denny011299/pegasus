@@ -74,19 +74,22 @@
                     previous: '<i class="fa fa-angle-left"></i> ',
                 },
             },
-            // Order MUST match thead: Nama Produk | Kategori | SKU | Pemesanan Min. | Stok Minimum Rekomendasi
+            // Order MUST match thead:
+            // Nama Produk | Kategori | SKU | Peringatan Stok | Pemesanan Min. | Stok Minimum Rekomendasi
             columns: [
-                { data: "product_name_text", width: "26%", defaultContent: "—" },
-                { data: "product_category", width: "12%", defaultContent: "—" },
-                { data: "product_variant_sku", width: "12%", defaultContent: "—" },
-                { data: "min_order_text", width: "14%", defaultContent: "—" },
-                { data: "product_alert_text", width: "30%", defaultContent: "—" },
+                { data: "product_name_text", width: "22%", defaultContent: "—" },
+                { data: "product_category", width: "10%", defaultContent: "—" },
+                { data: "product_variant_sku", width: "10%", defaultContent: "—" },
+                { data: "master_alert_text", width: "14%", defaultContent: "—" },
+                { data: "min_order_text", width: "18%", defaultContent: "—" },
+                { data: "product_alert_text", width: "26%", defaultContent: "—" },
             ],
             initComplete: function (settings) {
                 prepareStockAlertFilter(settings);
             },
             drawCallback: function () {
                 setStockAlertTableLoading(false);
+                if (typeof feather !== "undefined") feather.replace();
             },
         });
     }
@@ -125,25 +128,60 @@
                 if (!Array.isArray(e)) {
                     e = e.original || [];
                 }
+                if (e.length) console.log("[SA] getStockAlert first item min_order:", e[0].min_order, "| minim_order:", e[0].minim_order);
                 e.forEach(function (item) {
                     var def = -1;
                     item.product_name_text = item.product_name + " " + item.product_variant_name;
+
+                    // 1) Peringatan Stok (master) — read-only
+                    item.master_alert_text =
+                        '<span class="fw-semibold">' +
+                        formatLeadTimeQty(item.product_variant_alert) +
+                        " " +
+                        (item.product_unit || "") +
+                        "<\/span>";
+
+                    // 3) Stok Minimum Rekomendasi (rumus lead time)
                     item.product_alert_text =
                         item.reorder_point +
                         " " +
                         item.product_unit +
                         `<div class="small text-muted">Rata-rata: ${formatLeadTimeQty(item.avg_daily)}/hari · Lead time: ${item.lead_time_days} hari · Safety: ${formatLeadTimeQty(item.safety_stock)}</div>`;
-                    // Pemesanan Min. = max(0, product_variant_alert − current_stock); prefer backend minim_order
-                    var minOrderQty =
+
+                    // 2) Pemesanan Min. tampil = max(0, threshold − stok);
+                    //    threshold = ps_min_order (manual) ?? peringatan stok
+                    var alertQty = parseFloat(item.product_variant_alert) || 0;
+                    var currentStock = parseFloat(item.current_stock) || 0;
+                    var orderThreshold =
+                        item.min_order != null && item.min_order !== ""
+                            ? parseFloat(item.min_order) || 0
+                            : alertQty;
+                    var calculatedMinOrder =
                         item.minim_order != null && item.minim_order !== ""
                             ? parseFloat(item.minim_order) || 0
-                            : Math.max(
-                                  0,
-                                  (parseFloat(item.product_variant_alert) || 0) -
-                                      (parseFloat(item.current_stock) || 0)
-                              );
+                            : Math.max(0, orderThreshold - currentStock);
+                    var isManual = !!item.min_order_is_manual;
                     item.min_order_text =
-                        formatLeadTimeQty(minOrderQty) + " " + (item.product_unit || "");
+                        '<div class="d-flex align-items-center gap-2">' +
+                        '<span class="fw-semibold">' + formatLeadTimeQty(calculatedMinOrder) + ' ' + (item.product_unit || '') + '<\/span>' +
+                        '<button type="button" class="btn btn-link p-0 ms-1 btn-edit-min-order" style="font-size:13px;line-height:1;color:#6c757d;" ' +
+                            'data-product-id="' + item.product_id + '" ' +
+                            'data-variant-id="' + item.product_variant_id + '" ' +
+                            'data-min-order="' + orderThreshold + '" ' +
+                            'data-calculated-min-order="' + calculatedMinOrder + '" ' +
+                            'data-current-stock="' + currentStock + '" ' +
+                            'data-alert-qty="' + alertQty + '" ' +
+                            'data-unit-id="' + item.unit_id + '" ' +
+                            'data-unit-name="' + (item.product_unit || '') + '" ' +
+                            'data-product-name="' + (item.product_name + ' ' + item.product_variant_name).trim() + '" ' +
+                            'data-warehouse-id="' + item.warehouse_id + '" ' +
+                            'title="Edit dasar pemesanan min.">' +
+                            '<i data-feather="edit-2" style="width:13px;height:13px;"><\/i>' +
+                        '<\/button>' +
+                        '<\/div>' +
+                        (isManual
+                            ? '<div class="small text-muted" style="margin-top:2px;">Dasar manual: ' + formatLeadTimeQty(orderThreshold) + ' ' + (item.product_unit || '') + '<\/div>'
+                            : '');
 
                     var habis = 1;
                     if (item.stock && item.stock.length) {
@@ -216,3 +254,152 @@
         var number = parseFloat(value) || 0;
         return Number.isInteger(number) ? number.toString() : number.toFixed(2).replace(/\.?0+$/, "");
     }
+
+    // ── Modal Edit Pemesanan Min. ──────────────────────────────────────────
+    $(document).on("click", ".btn-edit-min-order", function () {
+        var $btn = $(this);
+        $("#emo-product-name").text($btn.data("product-name") || "—");
+        $("#emo-min-order").val($btn.data("min-order") || 0);
+        $("#emo-min-order-unit").val($btn.data("unit-name") || "");
+        $("#emo-product-id").val($btn.data("product-id") || "");
+        $("#emo-variant-id").val($btn.data("variant-id") || "");
+        $("#emo-unit-id").val($btn.data("unit-id") || "");
+        $("#emo-warehouse-id").val($btn.data("warehouse-id") || "");
+        var unitName = $btn.data("unit-name") || "";
+        var stock = parseFloat($btn.data("current-stock")) || 0;
+        var alertQty = parseFloat($btn.data("alert-qty")) || 0;
+        $("#emo-calculated-hint").text(
+            "Tampil = dasar − stok (" +
+                formatLeadTimeQty(stock) +
+                "). Kosongkan override → pakai peringatan stok (" +
+                formatLeadTimeQty(alertQty) +
+                " " +
+                unitName +
+                ")."
+        );
+        var modal = new bootstrap.Modal(document.getElementById("modal-edit-min-order"));
+        modal.show();
+    });
+
+    $("#emo-save-btn").on("click", function () {
+        var minOrder = parseInt($("#emo-min-order").val(), 10);
+        if (isNaN(minOrder) || minOrder < 0) {
+            notifikasi("error", "Peringatan", "Nilai pemesanan minimum tidak valid.");
+            return;
+        }
+
+        var $btn = $(this);
+        var $spinner = $("#emo-save-spinner");
+        $btn.prop("disabled", true);
+        $spinner.removeClass("d-none");
+
+        var postDataMO = {
+                _token: $('meta[name="csrf-token"]').attr("content"),
+                product_id: $("#emo-product-id").val(),
+                product_variant_id: $("#emo-variant-id").val(),
+                min_order: minOrder,
+                min_order_unit_id: $("#emo-unit-id").val(),
+                warehouse_id: $("#emo-warehouse-id").val(),
+            };
+        console.log("[EMO] Kirim updateMinOrder:", postDataMO);
+
+        $.ajax({
+            url: "/updateMinOrder",
+            method: "POST",
+            data: postDataMO,
+            success: function (res) {
+                console.log("[EMO] Response updateMinOrder:", res);
+                if (!res.success) {
+                    notifikasi("error", "Gagal", res.message || "Gagal menyimpan pemesanan minimum.");
+                    return;
+                }
+                var modal = bootstrap.Modal.getInstance(document.getElementById("modal-edit-min-order"));
+                if (modal) modal.hide();
+
+                refreshStockAlert();
+
+                Swal.fire({
+                    icon: "success",
+                    title: "Berhasil",
+                    text: res.message || "Pemesanan minimum berhasil diperbarui.",
+                    confirmButtonText: "OK",
+                    confirmButtonColor: "#3b82f6",
+                });
+            },
+            error: function (err) {
+                var msg =
+                    err.responseJSON && err.responseJSON.message
+                        ? err.responseJSON.message
+                        : "Gagal menyimpan pemesanan minimum.";
+                notifikasi("error", "Gagal", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", false);
+                $spinner.addClass("d-none");
+            },
+        });
+    });
+
+    // ── Modal Edit Stok Alert ──────────────────────────────────────────────
+    $(document).on("click", ".btn-edit-stok-alert", function () {
+        var $btn = $(this);
+        $("#esa-product-name").text($btn.data("product-name") || "—");
+        $("#esa-alert-stock").val($btn.data("alert-stock") || 0);
+        $("#esa-alert-unit").val($btn.data("unit-name") || "");
+        $("#esa-product-id").val($btn.data("product-id") || "");
+        $("#esa-variant-id").val($btn.data("variant-id") || "");
+        $("#esa-unit-id").val($btn.data("unit-id") || "");
+        $("#esa-warehouse-id").val($btn.data("warehouse-id") || "");
+        var modal = new bootstrap.Modal(document.getElementById("modal-edit-stok-alert"));
+        modal.show();
+    });
+
+    $("#esa-save-btn").on("click", function () {
+        var alertStock = parseInt($("#esa-alert-stock").val(), 10);
+        if (isNaN(alertStock) || alertStock < 0) {
+            notifikasi('error', "Peringatan", 'Nilai stok alert tidak valid.');
+            return;
+        }
+
+        var $btn = $(this);
+        var $spinner = $("#esa-save-spinner");
+        $btn.prop("disabled", true);
+        $spinner.removeClass("d-none");
+
+        var postData = {
+                _token: $('meta[name="csrf-token"]').attr("content"),
+                product_id:          $("#esa-product-id").val(),
+                product_variant_id:  $("#esa-variant-id").val(),
+                alert_stock:         alertStock,
+                alert_unit_id:       $("#esa-unit-id").val(),
+                warehouse_id:        $("#esa-warehouse-id").val(),
+            };
+
+        $.ajax({
+            url: "/updateStockAlert",
+            method: "POST",
+            data: postData,
+            success: function (res) {
+                var modal = bootstrap.Modal.getInstance(document.getElementById("modal-edit-stok-alert"));
+                if (modal) modal.hide();
+
+                refreshStockAlert();
+
+                var swalResult = Swal.fire({
+                    icon: "success",
+                    title: "Berhasil",
+                    text: res.message || "Peringatan stok berhasil diperbarui.",
+                    confirmButtonText: "OK",
+                    confirmButtonColor: "#3b82f6",
+                });
+            },
+            error: function (err) {
+                var msg = (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : "Gagal menyimpan stok alert.";
+                notifikasi('error', "Gagal", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", false);
+                $spinner.addClass("d-none");
+            },
+        });
+    });
