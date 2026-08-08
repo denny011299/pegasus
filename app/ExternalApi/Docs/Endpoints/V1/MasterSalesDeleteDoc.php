@@ -36,13 +36,13 @@ class MasterSalesDeleteDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Menghapus sales (soft delete).';
+        return 'Menghapus sales (soft delete), dicari lewat staff_id (rujukan milik sistem Anda sendiri, bukan id Pegasus).';
     }
 
     public function pathParameters(): array
     {
         return [
-            ['name' => 'staff_id', 'type' => 'integer', 'required' => true, 'description' => 'id sales yang akan dihapus, lihat GET /master/sales.'],
+            ['name' => 'staff_id', 'type' => 'string', 'required' => true, 'description' => 'id milik sistem Anda sendiri untuk sales yang akan dihapus (BUKAN id Pegasus).'],
         ];
     }
 
@@ -51,7 +51,7 @@ class MasterSalesDeleteDoc extends ApiEndpointDoc
         return [
             'success' => true,
             'data' => [
-                'staff_id' => 2,
+                'staff_id' => '2',
             ],
         ];
     }
@@ -59,15 +59,16 @@ class MasterSalesDeleteDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'staff_id tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sudah dihapus sebelumnya).'],
+            ['code' => 'not_found', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sudah dihapus sebelumnya).'],
         ];
     }
 
     public function notes(): array
     {
         return [
+            'staff_id pada path adalah rujukan milik sistem Anda sendiri (external_ref_id), BUKAN id Pegasus.',
             'Ini soft delete: status staf diubah menjadi 0, bukan baris yang dihapus dari basis data — sama seperti penghapusan lewat halaman admin (Pengguna).',
-            'staff_id yang sudah dihapus lewat endpoint ini tidak bisa dibuat ulang lewat POST /master/sales dengan id yang sama — baris dengan id itu tetap ada (soft deleted) dan endpoint ini hanya mengelola staf yang statusnya aktif.',
+            'Rujukan (staff_id) TIDAK dilepas oleh operasi ini — baris staf lama masih memegangnya, hanya berstatus nonaktif. Karena itu staff_id yang sudah dihapus lewat endpoint ini tidak bisa dipakai lagi lewat POST /master/sales (ditolak duplicate_ref_id), dan tidak muncul lagi lewat GET /master/sales.',
             'Endpoint ini HANYA boleh menghapus staf yang berperan Sales (dan masih aktif) — staff_id yang menunjuk staf lain dijawab not_found, bukan diizinkan menghapus staf itu.',
             'Akun login (staff_username/staff_password), riwayat transaksi, dan saldo staf tidak ikut dihapus atau diubah.',
         ];

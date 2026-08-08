@@ -43,10 +43,15 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::delete('/warehouses/{gudang_id}', [MasterWarehouseController::class, 'destroy'])->name('warehouses.destroy');
     Route::get('/warehouse_types', [MasterDataController::class, 'warehouseTypes'])->name('warehouseTypes');
 
+    // {staff_id} pada PUT/DELETE adalah external_ref_id (rujukan sistem
+    // pemanggil). Pada PATCH, {staff_id} justru id internal Pegasus — dipakai
+    // untuk menghubungkan staf yang sudah ada dengan rujukan eksternal. Lihat
+    // catatan kelas MasterSalesController.
     Route::get('/sales', [MasterSalesController::class, 'index'])->name('sales');
     Route::post('/sales', [MasterSalesController::class, 'store'])->name('sales.store');
     Route::put('/sales/{staff_id}', [MasterSalesController::class, 'update'])->name('sales.update');
     Route::delete('/sales/{staff_id}', [MasterSalesController::class, 'destroy'])->name('sales.destroy');
+    Route::patch('/sales/{staff_id}', [MasterSalesController::class, 'patch'])->name('sales.patch');
 });
 
 /*

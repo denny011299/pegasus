@@ -58,6 +58,7 @@ class Staff extends Model
                 'staffs.staff_id',
                 'staffs.staff_name',
                 'staffs.staff_code',
+                'staffs.external_ref_id',
                 'staffs.staff_email',
                 'staffs.staff_phone',
                 'staffs.staff_address',

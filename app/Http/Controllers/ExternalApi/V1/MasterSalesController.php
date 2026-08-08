@@ -8,6 +8,8 @@ use App\Models\Role;
 use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Data master sales untuk sistem eksternal (API-002 lanjutan).
@@ -19,17 +21,25 @@ use Illuminate\Http\Request;
  * "Sales" bukan tabel tersendiri, melainkan staf (staffs) yang perannya
  * bernama "sales" (lihat Staff::getSalesForExternalApi()). Karena itu
  * endpoint ini HANYA boleh menyentuh staf yang perannya cocok dan masih
- * berstatus aktif — lihat isManagedSales(). staff_id yang menunjuk staf lain
- * (Admin, Direksi, dst.) atau staf yang sudah dihapus lewat endpoint ini
- * diperlakukan sebagai not_found, BUKAN diizinkan mengubah/menimpa peran
- * atau profil staf itu. Ini sengaja: pemanggil luar tidak boleh bisa
- * mengubah staf yang bukan urusannya walau staff_id yang dikirim valid dan
- * memang ada di sistem.
+ * berstatus aktif — lihat isManagedSales(). staff_id internal yang menunjuk
+ * staf lain (Admin, Direksi, dst.) atau staf yang sudah dihapus lewat
+ * endpoint ini diperlakukan sebagai not_found, BUKAN diizinkan mengubah/
+ * menimpa profil staf itu.
  *
- * Staf baru yang dibuat lewat endpoint ini TIDAK mendapat staff_username
- * atau staff_password (dibiarkan null) — baris yang dibuat adalah profil
- * sinkron dari sistem luar, bukan akun login ke Pegasus. Kedua kolom itu
- * memang nullable di basis data.
+ * DUA id yang berbeda dipakai di sini, jangan tertukar:
+ *   - staffs.staff_id  : id asli Pegasus, auto-increment, tidak pernah
+ *                        ditentukan pemanggil.
+ *   - external_ref_id  : id milik sistem pemanggil sendiri (nullable,
+ *                        unik). Inilah yang disebut "staff_id" pada BODY
+ *                        create dan pada PATH ubah/hapus — sengaja memakai
+ *                        nama yang sama dengan field di respons GET
+ *                        (lihat presentRow()), tapi maknanya rujukan
+ *                        eksternal, BUKAN staffs.staff_id.
+ *
+ * Staf baru yang dibuat lewat POST TIDAK mendapat staff_username atau
+ * staff_password (dibiarkan null) — baris yang dibuat adalah profil sinkron
+ * dari sistem luar, bukan akun login ke Pegasus. Kedua kolom itu memang
+ * nullable di basis data.
  */
 class MasterSalesController extends Controller
 {
@@ -49,36 +59,41 @@ class MasterSalesController extends Controller
     /**
      * POST /api/external/v1/master/sales
      *
-     * Upsert seperti tipe_id pada gudang: staff_id yang sudah ada (dan
-     * masih berperan sales aktif) diperbarui di tempat; staff_id yang belum
-     * ada dibuatkan staf baru dengan id PERSIS yang dikirim (bukan id
-     * auto-increment berikutnya), berperan Sales.
+     * Selalu membuat baris staf baru (id Pegasus-nya auto-increment, tidak
+     * pernah ditentukan pemanggil) dengan external_ref_id = body.staff_id.
+     * Bukan upsert: external_ref_id yang sudah dipakai sales lain ditolak
+     * sebagai duplicate_ref_id — pakai PUT (ubah) untuk memperbarui sales
+     * yang rujukannya sudah ada, atau PATCH untuk menghubungkan rujukan ke
+     * staf Pegasus yang sudah ada.
      */
     public function store(Request $request): JsonResponse
     {
-        $data = $this->validatePayload($request, true);
-        $staffId = (int) $data['staff_id'];
+        $data = $this->validateCreatePayload($request);
+        $refId = (string) $data['staff_id'];
 
-        $existing = Staff::find($staffId);
-
-        if ($existing !== null) {
-            if (! $this->isManagedSales($existing)) {
-                return $this->notFoundError($staffId);
-            }
-
-            $this->applyPayload($existing, $data);
-            $existing->save();
-
-            return ApiResponse::success($this->present($existing));
+        if (Staff::where('external_ref_id', $refId)->exists()) {
+            return $this->duplicateRefError($refId);
         }
 
         $staff = new Staff();
-        $staff->staff_id = $staffId;
+        $staff->external_ref_id = $refId;
         $staff->role_id = $this->salesRoleId();
         $staff->status = 1;
         $staff->created_by = null;
         $this->applyPayload($staff, $data);
-        $staff->save();
+
+        try {
+            $staff->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan dengan external_ref_id baru yang sama, nyaris
+            // bersamaan: keduanya sama-sama tidak menemukan baris di atas,
+            // lalu unique index menolak yang kalah cepat.
+            if (Staff::where('external_ref_id', $refId)->exists()) {
+                return $this->duplicateRefError($refId);
+            }
+
+            throw $e;
+        }
 
         return ApiResponse::success($this->present($staff), [], 201);
     }
@@ -86,19 +101,20 @@ class MasterSalesController extends Controller
     /**
      * PUT /api/external/v1/master/sales/{staff_id}
      *
-     * Beda dengan POST: staff_id di sini murni rujukan, tidak pernah
-     * membuat staf baru. staff_id yang tidak ditemukan (atau ditemukan tapi
+     * {staff_id} di sini adalah external_ref_id (rujukan sistem pemanggil),
+     * BUKAN id internal Pegasus — lihat catatan kelas. Tidak pernah membuat
+     * sales baru; external_ref_id yang tidak ditemukan (atau ditemukan tapi
      * bukan sales aktif) selalu dijawab not_found.
      */
-    public function update(Request $request, int $staff_id): JsonResponse
+    public function update(Request $request, string $staff_id): JsonResponse
     {
-        $staff = Staff::find($staff_id);
+        $staff = $this->findManagedByRef($staff_id);
 
-        if ($staff === null || ! $this->isManagedSales($staff)) {
-            return $this->notFoundError($staff_id);
+        if ($staff === null) {
+            return $this->notFoundByRefError($staff_id);
         }
 
-        $data = $this->validatePayload($request, false);
+        $data = $this->validateProfilePayload($request);
         $this->applyPayload($staff, $data);
         $staff->save();
 
@@ -108,20 +124,68 @@ class MasterSalesController extends Controller
     /**
      * DELETE /api/external/v1/master/sales/{staff_id}
      *
-     * Soft delete (status = 0), memakai ulang Staff::deletestaff() — sama
-     * persis dengan yang dipakai halaman admin (UserController::deleteStaff).
+     * {staff_id} adalah external_ref_id, sama seperti PUT. Soft delete
+     * (status = 0), memakai ulang Staff::deletestaff() — sama persis
+     * dengan yang dipakai halaman admin (UserController::deleteStaff).
+     * external_ref_id TIDAK dilepas oleh operasi ini, jadi id yang sudah
+     * dihapus lewat endpoint ini tidak bisa dipakai ulang lewat POST
+     * (baris lama masih memegangnya, hanya berstatus nonaktif).
      */
-    public function destroy(int $staff_id): JsonResponse
+    public function destroy(string $staff_id): JsonResponse
+    {
+        $staff = $this->findManagedByRef($staff_id);
+
+        if ($staff === null) {
+            return $this->notFoundByRefError($staff_id);
+        }
+
+        (new Staff())->deletestaff(['staff_id' => $staff->staff_id]);
+
+        return ApiResponse::success(['staff_id' => $staff_id]);
+    }
+
+    /**
+     * PATCH /api/external/v1/master/sales/{staff_id}
+     *
+     * {staff_id} di sini KEBALIKANNYA dari PUT/DELETE: id internal Pegasus,
+     * bukan external_ref_id — dipakai untuk menghubungkan staf yang sudah
+     * ada (dibuat lewat halaman admin, sudah berperan Sales) dengan rujukan
+     * milik sistem pemanggil, tanpa perlu membuat baris baru.
+     *
+     * Menimpa link yang sudah ada diperbolehkan. Kalau map_staff_id yang
+     * dikirim sedang dipegang staf LAIN, rujukan itu dilepas dulu dari staf
+     * itu (external_ref_id-nya jadi null) sebelum dipasang ke staf ini —
+     * "dipindah", bukan ditolak sebagai duplikat — supaya keunikan
+     * external_ref_id tetap terjaga tanpa membuat pemanggil harus melepas
+     * link lama secara manual lebih dulu.
+     */
+    public function patch(Request $request, int $staff_id): JsonResponse
     {
         $staff = Staff::find($staff_id);
 
         if ($staff === null || ! $this->isManagedSales($staff)) {
-            return $this->notFoundError($staff_id);
+            return $this->notFoundByInternalIdError($staff_id);
         }
 
-        (new Staff())->deletestaff(['staff_id' => $staff_id]);
+        $data = $request->validate([
+            'map_staff_id' => ['required', 'string', 'max:191'],
+        ]);
+        $mapStaffId = trim($data['map_staff_id']);
 
-        return ApiResponse::success(['staff_id' => $staff_id]);
+        if ($mapStaffId === '') {
+            $this->fail('map_staff_id', 'map_staff_id tidak boleh kosong.');
+        }
+
+        DB::transaction(function () use ($staff, $mapStaffId) {
+            Staff::where('external_ref_id', $mapStaffId)
+                ->where('staff_id', '!=', $staff->staff_id)
+                ->update(['external_ref_id' => null]);
+
+            $staff->external_ref_id = $mapStaffId;
+            $staff->save();
+        });
+
+        return ApiResponse::success($this->present($staff->fresh()));
     }
 
     /* ------------------------------------------------------------------ */
@@ -129,30 +193,50 @@ class MasterSalesController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
-     * staff_id hanya wajib pada body POST — pada PUT nilainya berasal dari
-     * path, bukan body (lihat update()).
-     *
-     * nama_belakang dan alamat bersifat nullable: kalau tidak dikirim,
-     * nilainya disimpan/ditimpa jadi null/kosong, bukan mempertahankan
-     * nilai lama — body selalu dianggap representasi penuh staf ini, sama
-     * seperti endpoint gudang.
+     * staff_id (POST) adalah external_ref_id, boleh dikirim sebagai angka
+     * atau teks (sistem lain bisa punya id alfanumerik) — divalidasi lewat
+     * closure, bukan aturan 'string', supaya angka JSON polos seperti pada
+     * contoh (staff_id: 2) tetap diterima dan disimpan sebagai teks.
      *
      * @return array<string, mixed>
      */
-    private function validatePayload(Request $request, bool $requireStaffId): array
+    private function validateCreatePayload(Request $request): array
     {
         $rules = [
+            'staff_id' => ['required', function (string $attribute, $value, \Closure $fail) {
+                if (! is_string($value) && ! is_int($value)) {
+                    $fail('staff_id wajib berupa teks atau angka.');
+                }
+            }],
+        ] + $this->profileRules();
+
+        return $request->validate($rules);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validateProfilePayload(Request $request): array
+    {
+        return $request->validate($this->profileRules());
+    }
+
+    /**
+     * nama_belakang dan alamat bersifat nullable: kalau tidak dikirim,
+     * nilainya disimpan/ditimpa jadi null/kosong, bukan mempertahankan
+     * nilai lama — body selalu dianggap representasi penuh sales ini, sama
+     * seperti endpoint gudang.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function profileRules(): array
+    {
+        return [
             'nama_depan' => ['required', 'string', 'max:120'],
             'nama_belakang' => ['nullable', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255'],
             'alamat' => ['nullable', 'string'],
         ];
-
-        if ($requireStaffId) {
-            $rules['staff_id'] = ['required', 'integer', 'min:1'];
-        }
-
-        return $request->validate($rules);
     }
 
     /**
@@ -191,6 +275,13 @@ class MasterSalesController extends Controller
             ->exists();
     }
 
+    private function findManagedByRef(string $refId): ?Staff
+    {
+        $staff = Staff::where('external_ref_id', $refId)->first();
+
+        return ($staff !== null && $this->isManagedSales($staff)) ? $staff : null;
+    }
+
     /**
      * id peran "Sales" dipakai saat membuat staf baru lewat POST.
      *
@@ -214,12 +305,20 @@ class MasterSalesController extends Controller
         return (int) $roleIds->first();
     }
 
+    private function fail(string $field, string $message): void
+    {
+        throw ValidationException::withMessages([$field => [$message]]);
+    }
+
     /* ------------------------------------------------------------------ */
     /* Respons                                                             */
     /* ------------------------------------------------------------------ */
 
     /**
-     * Bentuk respons create/update: hanya field yang dikelola endpoint ini.
+     * Bentuk respons create/update/patch: id internal Pegasus DAN
+     * external_ref_id sekaligus, supaya pemanggil yang baru membuat sales
+     * lewat POST bisa tahu id internalnya tanpa panggilan GET terpisah
+     * (dibutuhkan seandainya nanti perlu PATCH).
      *
      * @return array<string, mixed>
      */
@@ -228,7 +327,8 @@ class MasterSalesController extends Controller
         [$namaDepan, $namaBelakang] = $this->splitName((string) $staff->staff_name);
 
         return [
-            'staff_id' => (int) $staff->staff_id,
+            'id' => (int) $staff->staff_id,
+            'staff_id' => $staff->external_ref_id,
             'nama_depan' => $namaDepan,
             'nama_belakang' => $namaBelakang,
             'email' => $staff->staff_email,
@@ -237,11 +337,10 @@ class MasterSalesController extends Controller
     }
 
     /**
-     * Bentuk respons daftar (GET): field lama (nama, kode, telepon, role)
-     * dipertahankan supaya pemanggil yang sudah ada tidak putus, ditambah
-     * nama_depan/nama_belakang supaya sejalan dengan bentuk create/update —
-     * sama seperti gudang_id ditambahkan berdampingan dengan id pada daftar
-     * gudang.
+     * Bentuk respons daftar (GET). id = id internal Pegasus (dulu bernama
+     * staff_id sebelum endpoint create/update/delete/patch ini ada);
+     * staff_id sekarang berarti external_ref_id, boleh null kalau staf itu
+     * belum pernah dihubungkan ke sistem eksternal mana pun.
      *
      * @return array<string, mixed>
      */
@@ -250,7 +349,8 @@ class MasterSalesController extends Controller
         [$namaDepan, $namaBelakang] = $this->splitName((string) $staff->staff_name);
 
         return [
-            'staff_id' => (int) $staff->staff_id,
+            'id' => (int) $staff->staff_id,
+            'staff_id' => $staff->external_ref_id,
             'nama' => (string) $staff->staff_name,
             'nama_depan' => $namaDepan,
             'nama_belakang' => $namaBelakang,
@@ -285,12 +385,30 @@ class MasterSalesController extends Controller
         return [$parts[0], $parts[1] ?? null];
     }
 
-    private function notFoundError(int $staffId): JsonResponse
+    private function notFoundByRefError(string $refId): JsonResponse
     {
         return ApiResponse::error(
             ApiResponse::ERROR_NOT_FOUND,
-            'Sales dengan staff_id '.$staffId.' tidak ditemukan.',
+            'Sales dengan staff_id (external_ref_id) "'.$refId.'" tidak ditemukan.',
             404,
+        );
+    }
+
+    private function notFoundByInternalIdError(int $staffId): JsonResponse
+    {
+        return ApiResponse::error(
+            ApiResponse::ERROR_NOT_FOUND,
+            'Staf dengan id '.$staffId.' tidak ditemukan atau bukan sales aktif.',
+            404,
+        );
+    }
+
+    private function duplicateRefError(string $refId): JsonResponse
+    {
+        return ApiResponse::error(
+            'duplicate_ref_id',
+            'staff_id (external_ref_id) "'.$refId.'" sudah dipakai sales lain.',
+            422,
         );
     }
 }

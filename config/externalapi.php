@@ -152,6 +152,7 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesCreateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesUpdateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesLinkDoc::class,
 
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,

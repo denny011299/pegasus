@@ -36,13 +36,13 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengubah data sales yang sudah ada. Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Berbeda dengan POST, PUT tidak pernah membuat sales baru.';
+        return 'Mengubah data sales yang sudah ada, dicari lewat staff_id (rujukan milik sistem Anda sendiri, bukan id Pegasus). Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Tidak pernah membuat sales baru.';
     }
 
     public function pathParameters(): array
     {
         return [
-            ['name' => 'staff_id', 'type' => 'integer', 'required' => true, 'description' => 'id sales yang akan diubah, lihat GET /master/sales.'],
+            ['name' => 'staff_id', 'type' => 'string', 'required' => true, 'description' => 'id milik sistem Anda sendiri untuk sales yang akan diubah (BUKAN id Pegasus) — nilai yang sama dengan field staff_id pada GET /master/sales atau yang dikirim saat POST/PATCH.'],
         ];
     }
 
@@ -71,7 +71,8 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
         return [
             'success' => true,
             'data' => [
-                'staff_id' => 2,
+                'id' => 105,
+                'staff_id' => '2',
                 'nama_depan' => 'Willian',
                 'nama_belakang' => 'Hartanto',
                 'email' => 'wilha.h@gmail.com',
@@ -83,7 +84,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'staff_id tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sales yang sudah dihapus).'],
+            ['code' => 'not_found', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sales yang sudah dihapus).'],
             ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'nama_depan atau email kosong/tidak valid.'],
         ];
     }
@@ -91,6 +92,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
+            'staff_id pada path adalah rujukan milik sistem Anda sendiri (external_ref_id), BUKAN id Pegasus — endpoint yang path parameternya id Pegasus adalah PATCH /master/sales/{id}.',
             'nama_depan dan email wajib diisi meski hanya satu yang berubah; nama_belakang dan alamat boleh dikosongkan.',
             'Body selalu dianggap representasi penuh sales ini: nama_belakang/alamat yang tidak dikirim disimpan sebagai kosong, bukan mempertahankan nilai lama.',
             'Endpoint ini HANYA boleh menyentuh staf yang berperan Sales (dan aktif) — staff_id yang menunjuk staf lain dijawab not_found, bukan diizinkan mengubah data staf itu.',
