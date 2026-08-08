@@ -149,6 +149,9 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseTypeListDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesDeleteDoc::class,
 
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,

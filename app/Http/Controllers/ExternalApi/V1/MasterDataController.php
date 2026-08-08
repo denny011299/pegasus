@@ -5,7 +5,6 @@ namespace App\Http\Controllers\ExternalApi\V1;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\CashCategory;
-use App\Models\Staff;
 use App\Models\Unit;
 use App\Models\WarehouseType;
 
@@ -15,10 +14,11 @@ use App\Models\WarehouseType;
  * Hanya baca. Tidak ada pembuatan, perubahan, maupun penghapusan lewat jalur
  * ini — perubahan data master tetap dilakukan lewat halaman admin.
  *
- * Pengecualian: gudang (warehouses) sekarang juga punya create/update/delete
- * lewat External API (API-002 lanjutan). Endpoint-endpoint itu sengaja
- * ditaruh di controller terpisah, MasterWarehouseController, supaya
- * controller ini tetap murni baca-saja seperti didokumentasikan di sini.
+ * Pengecualian: gudang (warehouses) dan sales sekarang juga punya
+ * create/update/delete lewat External API (API-002 lanjutan). Endpoint-
+ * endpoint itu sengaja ditaruh di controller terpisah, masing-masing
+ * MasterWarehouseController dan MasterSalesController, supaya controller ini
+ * tetap murni baca-saja seperti didokumentasikan di sini.
  *
  * Autentikasi, pencatatan permintaan, dan bentuk respons seluruhnya diurus
  * lapisan platform (SPEC-001), jadi controller ini benar-benar hanya memilih
@@ -90,33 +90,6 @@ class MasterDataController extends Controller
                 'status' => (int) $type->status,
             ])->all(),
             ['total' => $types->count()],
-        );
-    }
-
-    /**
-     * GET /api/external/v1/master/sales
-     *
-     * Sales adalah staf yang perannya mengandung kata "sales". Spesifikasi
-     * API-002 tidak menetapkan bentuk keluaran untuk endpoint ini, jadi
-     * bentuknya diturunkan dari kolom yang ada — dan staff_id memakai nama
-     * yang sama dengan yang diminta endpoint pembayaran kas (API-005), supaya
-     * hasil endpoint ini bisa langsung dipakai di sana.
-     */
-    public function sales()
-    {
-        $sales = (new Staff())->getSalesForExternalApi();
-
-        return ApiResponse::success(
-            $sales->map(static fn ($staff) => [
-                'staff_id' => (int) $staff->staff_id,
-                'nama' => (string) $staff->staff_name,
-                'kode' => $staff->staff_code,
-                'email' => $staff->staff_email,
-                'telepon' => $staff->staff_phone,
-                'alamat' => $staff->staff_address,
-                'role' => (string) $staff->role_name,
-            ])->all(),
-            ['total' => $sales->count()],
         );
     }
 }

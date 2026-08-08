@@ -48,6 +48,8 @@ class MasterSalesListDoc extends ApiEndpointDoc
                 [
                     'staff_id' => 20,
                     'nama' => 'Bisma',
+                    'nama_depan' => 'Bisma',
+                    'nama_belakang' => null,
                     'kode' => null,
                     'email' => 'bisma@contoh.com',
                     'telepon' => '08123456789',
@@ -57,6 +59,8 @@ class MasterSalesListDoc extends ApiEndpointDoc
                 [
                     'staff_id' => 26,
                     'nama' => 'Sales Counter',
+                    'nama_depan' => 'Sales',
+                    'nama_belakang' => 'Counter',
                     'kode' => null,
                     'email' => null,
                     'telepon' => null,
@@ -76,9 +80,10 @@ class MasterSalesListDoc extends ApiEndpointDoc
             'Endpoint ini tidak menerima parameter apa pun.',
             'Sales bukan tabel tersendiri: yang dikembalikan adalah staf yang nama perannya mengandung kata "sales". Penyaringan memakai nama peran, bukan id peran, sehingga peran baru yang mengandung kata itu otomatis ikut terbawa.',
             'Hanya staf berstatus aktif yang muncul.',
-            'staff_id di sini adalah nilai yang diminta endpoint Pembayaran Kas pada field staff_id ketika payment_type bernilai 2.',
+            'staff_id di sini adalah nilai yang diminta endpoint Pembayaran Kas pada field staff_id ketika payment_type bernilai 2, dan yang dipakai sebagai path parameter pada endpoint ubah (PUT) dan hapus (DELETE) sales.',
+            'nama_depan dan nama_belakang adalah hasil pemisahan otomatis dari nama (dipisah pada spasi pertama), disertakan supaya sejalan dengan bentuk body create/update sales. Untuk staf yang namanya terdiri lebih dari dua kata dan tidak pernah dibuat/diubah lewat endpoint create/update sales, pemisahan ini bisa saja tidak sama dengan pembagian depan/belakang yang sebenarnya — staffs.staff_name memang cuma satu kolom gabungan.',
             'role berisi nama peran staf yang bersangkutan apa adanya seperti tersimpan di Pegasus, misalnya "Sales".',
-            'kode, email, telepon, dan alamat boleh bernilai null bila datanya memang belum diisi di Pegasus.',
+            'kode, email, telepon, alamat, dan nama_belakang boleh bernilai null bila datanya memang belum diisi di Pegasus.',
             'Kata sandi, nama pengguna, saldo staf, dan hak akses tidak pernah dikembalikan.',
             'Urutan daftar bersifat tetap.',
         ];

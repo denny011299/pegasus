@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ExternalApi\V1\CashPaymentController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
+use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,7 +42,11 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::put('/warehouses/{gudang_id}', [MasterWarehouseController::class, 'update'])->name('warehouses.update');
     Route::delete('/warehouses/{gudang_id}', [MasterWarehouseController::class, 'destroy'])->name('warehouses.destroy');
     Route::get('/warehouse_types', [MasterDataController::class, 'warehouseTypes'])->name('warehouseTypes');
-    Route::get('/sales', [MasterDataController::class, 'sales'])->name('sales');
+
+    Route::get('/sales', [MasterSalesController::class, 'index'])->name('sales');
+    Route::post('/sales', [MasterSalesController::class, 'store'])->name('sales.store');
+    Route::put('/sales/{staff_id}', [MasterSalesController::class, 'update'])->name('sales.update');
+    Route::delete('/sales/{staff_id}', [MasterSalesController::class, 'destroy'])->name('sales.destroy');
 });
 
 /*
