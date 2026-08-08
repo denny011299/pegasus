@@ -144,6 +144,9 @@ return [
 
         // API-002 — Data Master (batch 2)
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseTypeListDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesListDoc::class,
 

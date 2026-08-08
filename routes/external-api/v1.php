@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ExternalApi\V1\CashPaymentController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
+use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,7 +36,10 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::get('/cash_categories', [MasterDataController::class, 'cashCategories'])->name('cashCategories');
 
     // API-002
-    Route::get('/warehouses', [MasterDataController::class, 'warehouses'])->name('warehouses');
+    Route::get('/warehouses', [MasterWarehouseController::class, 'index'])->name('warehouses');
+    Route::post('/warehouses', [MasterWarehouseController::class, 'store'])->name('warehouses.store');
+    Route::put('/warehouses/{gudang_id}', [MasterWarehouseController::class, 'update'])->name('warehouses.update');
+    Route::delete('/warehouses/{gudang_id}', [MasterWarehouseController::class, 'destroy'])->name('warehouses.destroy');
     Route::get('/warehouse_types', [MasterDataController::class, 'warehouseTypes'])->name('warehouseTypes');
     Route::get('/sales', [MasterDataController::class, 'sales'])->name('sales');
 });
