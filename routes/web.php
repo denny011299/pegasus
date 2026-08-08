@@ -246,6 +246,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Peringatan Stok Produk|edit')->group(function () {
         Route::post('/updateStockAlert', [StockController::class, 'updateStockAlert'])->name('updateStockAlert');
+        Route::post('/updateMinOrder', [StockController::class, 'updateMinOrder'])->name('updateMinOrder');
     });
     Route::middleware('check.access:Peringatan Stok Produk|delete')->group(function () {
         Route::post('/deleteStockAlert', [StockController::class, 'deleteStockAlert'])->name('deleteStockAlert');
@@ -260,6 +261,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Peringatan Stok Bahan Mentah|edit')->group(function () {
         Route::post('/updateStockAlertSupplies', [StockController::class, 'updateStockAlertSupplies'])->name('updateStockAlertSupplies');
+        Route::post('/updateMinOrderSupplies', [StockController::class, 'updateMinOrderSupplies'])->name('updateMinOrderSupplies');
     });
     Route::middleware('check.access:Peringatan Stok Bahan Mentah|delete')->group(function () {
         Route::post('/deleteStockAlertSupplies', [StockController::class, 'deleteStockAlertSupplies'])->name('deleteStockAlertSupplies');

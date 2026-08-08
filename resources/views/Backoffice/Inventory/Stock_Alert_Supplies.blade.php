@@ -10,11 +10,13 @@
             padding-top: 0 !important;
         }
 
-        #tableStockAlertLow, #tableStockAlertOut {
+        #tableStockAlertLow,
+        #tableStockAlertOut {
             width: 100% !important;
-            min-width: 900px;
+            min-width: 1000px;
         }
-        #tableStockAlertLow td, #tableStockAlertOut td {
+        #tableStockAlertLow td,
+        #tableStockAlertOut td {
             white-space: normal !important;
             word-wrap: break-word;
             vertical-align: middle;
@@ -22,7 +24,11 @@
         #tableStockAlertLow th:nth-child(2),
         #tableStockAlertOut th:nth-child(2),
         #tableStockAlertLow td:nth-child(2),
-        #tableStockAlertOut td:nth-child(2) {
+        #tableStockAlertOut td:nth-child(2),
+        #tableStockAlertLow th:nth-child(3),
+        #tableStockAlertOut th:nth-child(3),
+        #tableStockAlertLow td:nth-child(3),
+        #tableStockAlertOut td:nth-child(3) {
             white-space: nowrap !important;
         }
 
@@ -93,6 +99,18 @@
             opacity: 0.45;
             pointer-events: none;
         }
+
+        .btn-edit-stok-alert-supplies,
+        .btn-edit-min-order-supplies {
+            opacity: 0.5;
+            transition: opacity 0.15s, color 0.15s;
+            vertical-align: middle;
+        }
+        .btn-edit-stok-alert-supplies:hover,
+        .btn-edit-min-order-supplies:hover {
+            opacity: 1;
+            color: #3b82f6 !important;
+        }
     </style>
 @endsection
 @section('content')
@@ -140,15 +158,17 @@
                                             <div style="padding: 16px 25px;">
                                                 <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                             </div>
-                                            <div class="dt-skeleton-head" style="grid-template-columns: 35% 25% 40%;">
+                                            <div class="dt-skeleton-head" style="grid-template-columns: 28% 18% 24% 30%;">
                                                 <span style="width:60%"></span>
                                                 <span style="width:50%"></span>
+                                                <span style="width:55%"></span>
                                                 <span style="width:70%"></span>
                                             </div>
                                             <div class="dt-skeleton-body">
                                                 @for ($i = 0; $i < 5; $i++)
-                                                    <div class="dt-skeleton-row" style="grid-template-columns: 35% 25% 40%;">
+                                                    <div class="dt-skeleton-row" style="grid-template-columns: 28% 18% 24% 30%;">
                                                         <span class="skel-text" style="width:70%"></span>
+                                                        <span class="skel-text" style="width:55%"></span>
                                                         <span class="skel-badge" style="width:55%;justify-self:center"></span>
                                                         <span class="skel-text" style="width:80%"></span>
                                                     </div>
@@ -159,6 +179,7 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
+                                                    <th>Peringatan Stok</th>
                                                     <th>Pemesanan Min.</th>
                                                     <th>Stok Minimum Rekomendasi</th>
                                                 </tr>
@@ -175,15 +196,17 @@
                                             <div style="padding: 16px 25px;">
                                                 <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                             </div>
-                                            <div class="dt-skeleton-head" style="grid-template-columns: 35% 25% 40%;">
+                                            <div class="dt-skeleton-head" style="grid-template-columns: 28% 18% 24% 30%;">
                                                 <span style="width:60%"></span>
                                                 <span style="width:50%"></span>
+                                                <span style="width:55%"></span>
                                                 <span style="width:70%"></span>
                                             </div>
                                             <div class="dt-skeleton-body">
                                                 @for ($i = 0; $i < 5; $i++)
-                                                    <div class="dt-skeleton-row" style="grid-template-columns: 35% 25% 40%;">
+                                                    <div class="dt-skeleton-row" style="grid-template-columns: 28% 18% 24% 30%;">
                                                         <span class="skel-text" style="width:70%"></span>
+                                                        <span class="skel-text" style="width:55%"></span>
                                                         <span class="skel-badge" style="width:55%;justify-self:center"></span>
                                                         <span class="skel-text" style="width:80%"></span>
                                                     </div>
@@ -194,6 +217,7 @@
                                             <thead class="thead-light">
                                                 <tr>
                                                     <th>Nama Bahan Mentah</th>
+                                                    <th>Peringatan Stok</th>
                                                     <th>Pemesanan Min.</th>
                                                     <th>Stok Minimum Rekomendasi</th>
                                                 </tr>
@@ -214,11 +238,100 @@
         </div>
     </div>
     <!-- /Page Wrapper -->
+
+    <!-- Modal Edit Pemesanan Min. Bahan -->
+    <div class="modal fade custom-modal pg-modal--form" id="modal-edit-min-order-supplies" tabindex="-1" aria-labelledby="modalEditMinOrderSuppliesLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="pg-modal-icon">
+                            <i class="fe fe-shopping-cart"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold modal-title" id="modalEditMinOrderSuppliesLabel">Edit Pemesanan Min.</h5>
+                            <small class="modal-subtitle">Atur jumlah pembelian minimum ke supplier</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-4">
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-semibold mb-1" style="font-size:11px; text-transform:uppercase; letter-spacing:.4px;">Nama Bahan</label>
+                        <div class="fw-semibold" id="emos-supplies-name" style="font-size:14px; color:#0f172a;">—</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-8">
+                            <label class="form-label fw-semibold" style="font-size:12px;" for="emos-min-order">Dasar Pemesanan Min.</label>
+                            <input type="number" id="emos-min-order" class="form-control" min="0" step="1" placeholder="0" style="border-radius:8px;">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold" style="font-size:12px;">Satuan</label>
+                            <input type="text" id="emos-min-order-unit" class="form-control" readonly style="background:#f1f5f9; border-radius:8px; color:#64748b;">
+                        </div>
+                    </div>
+                    <div class="small text-muted mt-3" id="emos-calculated-hint" style="font-size:12px;"></div>
+                    <input type="hidden" id="emos-supplies-id">
+                </div>
+                <div class="modal-footer pg-modal-footer">
+                    <button type="button" class="btn pg-btn-cancel" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn pg-btn-save" id="emos-save-btn">
+                        <span id="emos-save-spinner" class="spinner-border spinner-border-sm me-1 d-none" role="status"></span>
+                        Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Peringatan Stok Bahan -->
+    <div class="modal fade custom-modal pg-modal--form" id="modal-edit-stok-alert-supplies" tabindex="-1" aria-labelledby="modalEditStokAlertSuppliesLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="pg-modal-icon">
+                            <i class="fe fe-bell"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold modal-title" id="modalEditStokAlertSuppliesLabel">Edit Peringatan Stok</h5>
+                            <small class="modal-subtitle">Atur jumlah minimum stok yang memicu peringatan</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-4">
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-semibold mb-1" style="font-size:11px; text-transform:uppercase; letter-spacing:.4px;">Nama Bahan</label>
+                        <div class="fw-semibold" id="esas-supplies-name" style="font-size:14px; color:#0f172a;">—</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-8">
+                            <label class="form-label fw-semibold" style="font-size:12px;" for="esas-alert-stock">Peringatan Stok</label>
+                            <input type="number" id="esas-alert-stock" class="form-control" min="0" step="1" placeholder="0" style="border-radius:8px;">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold" style="font-size:12px;">Satuan</label>
+                            <input type="text" id="esas-alert-unit" class="form-control" readonly style="background:#f1f5f9; border-radius:8px; color:#64748b;">
+                        </div>
+                    </div>
+                    <input type="hidden" id="esas-supplies-id">
+                </div>
+                <div class="modal-footer pg-modal-footer">
+                    <button type="button" class="btn pg-btn-cancel" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn pg-btn-save" id="esas-save-btn">
+                        <span id="esas-save-spinner" class="spinner-border spinner-border-sm me-1 d-none" role="status"></span>
+                        Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert_Supplies.js')}}?v=8"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert_Supplies.js')}}?v=12"></script>
 @endsection
