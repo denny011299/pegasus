@@ -212,7 +212,7 @@ class StockAlertSupplies extends Model
             $value->warehouse_id = (int) $warehouseId;
             $value->avg_daily = round($avgDaily, 4);
             $value->current_stock = round($currentStock, 4);
-            $value->lead_time_days = $leadTimeDays;
+            $value->lead_time_days = $leadTime;
             $value->safety_stock = round($safety, 4);
             $value->reorder_point = $reorderPoint;
             $value->recommended_order = round($recommended, 4);
