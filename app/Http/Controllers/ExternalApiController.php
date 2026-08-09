@@ -147,6 +147,28 @@ class ExternalApiController extends Controller
      */
     public function externalApiDocumentation(Request $req, ?string $group = null)
     {
+        return $this->renderApiDocumentation($req, $group, 'Backoffice.ExternalApi.Documentation', [
+            'index' => 'externalApiDocumentation',
+            'group' => 'externalApiDocumentationGroup',
+        ]);
+    }
+
+    /**
+     * Sama seperti externalApiDocumentation(), tapi diakses tanpa login —
+     * untuk pengembang pihak ketiga yang belum/tidak punya akun Pegasus.
+     * View-nya sendiri (Public.ApiDocumentation) yang tidak memuat sidebar
+     * admin; isi (partials doc-nav/doc-general/doc-group) sama persis.
+     */
+    public function publicApiDocumentation(Request $req, ?string $group = null)
+    {
+        return $this->renderApiDocumentation($req, $group, 'Public.ApiDocumentation', [
+            'index' => 'apiDocsPublic',
+            'group' => 'apiDocsPublicGroup',
+        ]);
+    }
+
+    private function renderApiDocumentation(Request $req, ?string $group, string $view, array $docRoute)
+    {
         $versions = $this->docs->versions();
         $version = $req->get('version');
 
@@ -165,7 +187,7 @@ class ExternalApiController extends Controller
             }
         }
 
-        return view('Backoffice.ExternalApi.Documentation', [
+        return view($view, [
             'groups' => $groups,
             'current' => $current,
             'versions' => $versions,
@@ -174,6 +196,7 @@ class ExternalApiController extends Controller
             'baseUrl' => ExternalApiPath::baseUrl($version),
             'keyHeader' => $this->keys->header(),
             'platformErrors' => PlatformErrors::all(),
+            'docRoute' => $docRoute,
         ]);
     }
 

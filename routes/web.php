@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerProductReturnController;
 use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\CustomerSupplyReturnController;
+use App\Http\Controllers\DeployController;
 use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
@@ -21,6 +22,35 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [GeneralController::class, 'login'])->name('login');
 Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
+
+// Dokumentasi API Eksternal — versi publik, tanpa login. Sama persis dengan
+// /externalApiDocumentation (lihat check.access:Dokumentasi API Eksternal|view
+// di bawah), hanya view & chrome-nya beda (tanpa sidebar/topbar admin). Isinya
+// bukan rahasia: hanya struktur endpoint & contoh, bukan API Key sungguhan.
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/api-docs', [ExternalApiController::class, 'publicApiDocumentation'])->name('apiDocsPublic');
+    Route::get('/api-docs/{group}', [ExternalApiController::class, 'publicApiDocumentation'])->name('apiDocsPublicGroup');
+});
+
+// Deploy runner untuk shared hosting tanpa SSH/terminal (lihat DeployController
+// dan cdocs/docs/deploy-shared-hosting.md). Sengaja di luar checkLogin — proteksi
+// murni via DEPLOY_TOKEN acak di .env, bukan session. Rate-limited ketat karena
+// endpoint ini bisa dipakai untuk brute-force token kalau tidak dibatasi.
+Route::middleware('throttle:10,1')->prefix('deploy')->group(function () {
+    Route::get('/migrate', [DeployController::class, 'migrate'])->name('deploy.migrate');
+    Route::get('/migrate-status', [DeployController::class, 'status'])->name('deploy.migrateStatus');
+    Route::get('/optimize-clear', [DeployController::class, 'optimizeClear'])->name('deploy.optimizeClear');
+    Route::get('/console', [DeployController::class, 'console'])->name('deploy.console');
+});
+
+// Seed/fresh are data-destructive (truncate/drop tables) — POST-only so a
+// leaked link, crawler, or browser prefetch can never trigger them via GET,
+// and rate-limited tighter than the read/migrate routes above.
+Route::middleware('throttle:5,1')->prefix('deploy')->group(function () {
+    Route::post('/seed', [DeployController::class, 'seedSnapshot'])->name('deploy.seed');
+    Route::post('/fresh-empty', [DeployController::class, 'freshEmpty'])->name('deploy.freshEmpty');
+});
+
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');

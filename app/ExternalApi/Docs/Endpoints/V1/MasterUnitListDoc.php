@@ -51,20 +51,20 @@ class MasterUnitListDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 [
-                    'unit_id' => 1,
+                    'id' => 1,
                     'ref_unit_id' => null,
                     'unit_name' => 'Kilogram',
                     'unit_short_name' => 'kg',
                 ],
                 [
-                    'unit_id' => 2,
+                    'id' => 2,
                     'ref_unit_id' => null,
                     'unit_name' => 'Jerigen',
                     'unit_short_name' => 'jerigen',
                 ],
                 [
-                    'unit_id' => 7,
-                    'ref_unit_id' => null,
+                    'id' => 7,
+                    'ref_unit_id' => 1042,
                     'unit_name' => 'DOS',
                     'unit_short_name' => 'DOS',
                 ],
@@ -80,7 +80,8 @@ class MasterUnitListDoc extends ApiEndpointDoc
         return [
             'Endpoint ini tidak menerima parameter apa pun. Seluruh satuan aktif selalu dikembalikan sekaligus.',
             'Hanya satuan berstatus aktif yang muncul. Satuan yang dihapus di Pegasus akan hilang dari daftar ini — perlakukan satuan yang tidak lagi muncul sebagai satuan yang sudah tidak berlaku.',
-            'unit_id adalah id pada sistem Pegasus. ref_unit_id adalah id satuan yang sama pada sistem PMO, dan bernilai null selama satuan tersebut belum pernah dicocokkan lewat Pusat Sinkronisasi.',
+            'id adalah id pada sistem Pegasus, dipakai sebagai field id pada tiap butir body PATCH /master/units/connect. ref_unit_id adalah id satuan yang sama pada sistem PMO, boleh null selama satuan tersebut belum pernah dihubungkan lewat POST/PATCH endpoint ini atau Pusat Sinkronisasi — dan dipakai sebagai path parameter pada PUT/DELETE /master/units.',
+            'ref_unit_id sekaligus ditulis Pusat Sinkronisasi (menarik data satuan dari PMO). POST/PUT/PATCH pada grup endpoint ini adalah jalur tulis kedua ke kolom yang sama — disengaja, keduanya melayani sistem yang sama (PMO); siapa yang menulis terakhir yang berlaku.',
             'unit_short_name adalah singkatan yang tampil di layar stok, misalnya "kg". Nilainya tidak pernah kosong.',
             'Urutan daftar bersifat tetap, sehingga dua permintaan berturut-turut atas data yang sama menghasilkan urutan yang sama.',
         ];
