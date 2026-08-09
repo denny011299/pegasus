@@ -57,6 +57,28 @@
         gap: 10px;
     }
 
+    /* Fix for Mini-Sidebar (Collapsed) Mode */
+    body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a {
+        justify-content: center !important;
+        padding: 12px 10px !important;
+    }
+    body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a > i,
+    body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a > svg {
+        margin: 0 !important;
+    }
+
+    /* Stronger Active State for Mini-Sidebar */
+    body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a.active {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%) !important;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4) !important;
+        border-radius: 12px !important;
+        border: none !important;
+    }
+    body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a.active > i,
+    body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a.active > svg {
+        color: #ffffff !important;
+    }
+
     /* Icons */
     #sidebar .sidebar-menu li > a > i,
     #sidebar .sidebar-menu li > a > svg {
@@ -136,7 +158,7 @@
     /* ── Submenu List ── */
     #sidebar .sidebar-menu .submenu > ul,
     #sidebar .sidebar-menu .submenu > div > ul {
-        border-left: 2px solid #e2e8f0 !important;
+        border-left: 2px solid #bfdbfe !important;
         margin: 2px 0 4px 24px !important;
         padding: 4px 0 4px 10px !important;
         list-style: none;
@@ -144,27 +166,30 @@
 
     /* Submenu items */
     #sidebar .sidebar-menu .submenu ul li > a {
-        padding: 8px 10px !important;
+        padding: 8px 12px !important;
         font-size: 13px !important;
         color: #334155 !important;
         font-weight: 500 !important;
-        border-radius: 7px !important;
-        margin-bottom: 1px !important;
+        border-radius: 8px !important;
+        margin-bottom: 2px !important;
         display: flex !important;
         align-items: center !important;
         box-shadow: none !important;
         position: relative;
-        transition: all 0.15s ease !important;
+        transition: all 0.2s ease !important;
+        background: transparent !important;
     }
     #sidebar .sidebar-menu .submenu ul li > a::before,
     #sidebar .sidebar-menu .submenu ul li > a::after {
         display: none !important;
         content: none !important;
     }
+    /* Hover */
     #sidebar .sidebar-menu .submenu ul li > a:hover {
         background: transparent !important;
         color: #2563eb !important;
     }
+    /* Active Submenu Item */
     #sidebar .sidebar-menu .submenu ul li > a.active {
         background: transparent !important;
         color: #1e40af !important;
