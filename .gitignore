@@ -50,3 +50,11 @@ vendor.zip
 /docs/sop-*.md
 
 /storage/backups/
+
+pegasuso_pegasus.sql
+
+# Raw .sql dumps dropped at the repo root as snapshot:import-sql input (e.g.
+# "Database baru.sql"). Never meant to be committed themselves — see
+# database/seeders/README.md. The generated snapshot under
+# database/seeders/{data,snapshots/<name>}/*.json is what gets committed.
+/*.sql

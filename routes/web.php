@@ -41,6 +41,7 @@ Route::middleware('throttle:10,1')->prefix('deploy')->group(function () {
     Route::get('/migrate-status', [DeployController::class, 'status'])->name('deploy.migrateStatus');
     Route::get('/optimize-clear', [DeployController::class, 'optimizeClear'])->name('deploy.optimizeClear');
     Route::get('/console', [DeployController::class, 'console'])->name('deploy.console');
+    Route::get('/snapshots', [DeployController::class, 'snapshots'])->name('deploy.snapshots');
 });
 
 // Seed/fresh are data-destructive (truncate/drop tables) — POST-only so a

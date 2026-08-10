@@ -1,0 +1,605 @@
+[
+    {
+        "cc_id": 1,
+        "cc_name": "Uang Setoran Kustomer",
+        "cc_type": "Masuk",
+        "status": 1,
+        "created_by": null,
+        "created_at": "2025-10-22 15:25:21",
+        "updated_at": "2026-05-07 09:14:05"
+    },
+    {
+        "cc_id": 2,
+        "cc_name": "Uang Makan",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": null,
+        "created_at": "2025-10-22 15:25:27",
+        "updated_at": "2026-04-20 14:30:23"
+    },
+    {
+        "cc_id": 3,
+        "cc_name": "BBM",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": null,
+        "created_at": "2025-10-22 15:25:36",
+        "updated_at": "2026-04-27 14:17:59"
+    },
+    {
+        "cc_id": 4,
+        "cc_name": "kas testing",
+        "cc_type": "Credit 2",
+        "status": 0,
+        "created_by": null,
+        "created_at": "2025-10-23 06:24:35",
+        "updated_at": "2025-10-23 06:25:08"
+    },
+    {
+        "cc_id": 5,
+        "cc_name": "kas testing",
+        "cc_type": "Debit",
+        "status": 0,
+        "created_by": null,
+        "created_at": "2025-12-09 15:45:22",
+        "updated_at": "2025-12-09 15:45:33"
+    },
+    {
+        "cc_id": 6,
+        "cc_name": "Hotel",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": null,
+        "created_at": "2025-12-18 05:35:44",
+        "updated_at": "2026-04-20 14:30:01"
+    },
+    {
+        "cc_id": 7,
+        "cc_name": "kas testing",
+        "cc_type": "Credit 1",
+        "status": 0,
+        "created_by": null,
+        "created_at": "2025-12-24 03:48:59",
+        "updated_at": "2025-12-24 03:49:14"
+    },
+    {
+        "cc_id": 8,
+        "cc_name": "E Tol",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-04-20 14:30:29",
+        "updated_at": "2026-04-21 11:15:12"
+    },
+    {
+        "cc_id": 9,
+        "cc_name": "Satpam",
+        "cc_type": "Keluar",
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-04-20 14:30:50",
+        "updated_at": "2026-05-07 09:13:56"
+    },
+    {
+        "cc_id": 10,
+        "cc_name": "Izin",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-04-20 14:32:51",
+        "updated_at": "2026-04-20 14:32:51"
+    },
+    {
+        "cc_id": 11,
+        "cc_name": "Galon",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-04-21 11:15:05",
+        "updated_at": "2026-04-21 11:15:05"
+    },
+    {
+        "cc_id": 12,
+        "cc_name": "Uang Mingguan",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-04-27 14:18:10",
+        "updated_at": "2026-04-27 14:18:10"
+    },
+    {
+        "cc_id": 13,
+        "cc_name": "Parkir",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-04-27 14:20:03",
+        "updated_at": "2026-04-27 14:20:03"
+    },
+    {
+        "cc_id": 14,
+        "cc_name": "Kuli / Krani",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 17,
+        "created_at": "2026-04-28 10:21:48",
+        "updated_at": "2026-04-28 10:21:48"
+    },
+    {
+        "cc_id": 15,
+        "cc_name": "SATPAM",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-07 09:14:37",
+        "updated_at": "2026-05-07 09:14:37"
+    },
+    {
+        "cc_id": 16,
+        "cc_name": "PAK WANDI SORE",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 18,
+        "created_at": "2026-05-08 09:27:23",
+        "updated_at": "2026-05-08 09:27:23"
+    },
+    {
+        "cc_id": 17,
+        "cc_name": "BAYAR EXP",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 18,
+        "created_at": "2026-05-08 11:14:09",
+        "updated_at": "2026-05-08 11:14:09"
+    },
+    {
+        "cc_id": 18,
+        "cc_name": "UANG MUAT SORE",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 18,
+        "created_at": "2026-05-08 11:14:29",
+        "updated_at": "2026-05-08 11:14:29"
+    },
+    {
+        "cc_id": 19,
+        "cc_name": "anak produksi",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 17,
+        "created_at": "2026-05-09 08:25:05",
+        "updated_at": "2026-05-09 08:25:05"
+    },
+    {
+        "cc_id": 20,
+        "cc_name": "Uang pir + IL",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 17,
+        "created_at": "2026-05-09 10:31:53",
+        "updated_at": "2026-05-09 10:31:53"
+    },
+    {
+        "cc_id": 21,
+        "cc_name": "Santoso",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 17,
+        "created_at": "2026-05-09 11:22:15",
+        "updated_at": "2026-05-09 11:22:15"
+    },
+    {
+        "cc_id": 22,
+        "cc_name": "Maestro",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 17,
+        "created_at": "2026-05-09 11:22:48",
+        "updated_at": "2026-05-09 11:22:48"
+    },
+    {
+        "cc_id": 23,
+        "cc_name": "MINGGUAN ADM",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-05-09 17:29:20",
+        "updated_at": "2026-05-09 17:29:20"
+    },
+    {
+        "cc_id": 24,
+        "cc_name": "GANTI BAN",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 18,
+        "created_at": "2026-05-11 08:56:59",
+        "updated_at": "2026-05-11 08:56:59"
+    },
+    {
+        "cc_id": 25,
+        "cc_name": "kernet",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 17,
+        "created_at": "2026-05-11 08:59:29",
+        "updated_at": "2026-05-11 08:59:29"
+    },
+    {
+        "cc_id": 26,
+        "cc_name": "SETOR TF",
+        "cc_type": "Keluar",
+        "status": 0,
+        "created_by": 17,
+        "created_at": "2026-05-11 11:12:51",
+        "updated_at": "2026-05-12 15:31:53"
+    },
+    {
+        "cc_id": 27,
+        "cc_name": "P5 UD METRO MOTOR",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 17,
+        "created_at": "2026-05-11 14:50:10",
+        "updated_at": "2026-05-11 14:50:10"
+    },
+    {
+        "cc_id": 28,
+        "cc_name": "SERVICE BENGKEL",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-05-12 15:10:56",
+        "updated_at": "2026-05-12 15:10:56"
+    },
+    {
+        "cc_id": 29,
+        "cc_name": "Penyesuaian Kas Sales/Armada (KELUAR)",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-05-12 17:20:24",
+        "updated_at": "2026-05-12 18:43:10"
+    },
+    {
+        "cc_id": 30,
+        "cc_name": "PENYESUIAN KAS ARMADA/SALES (MASUK)",
+        "cc_type": "Masuk",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-05-12 18:42:56",
+        "updated_at": "2026-05-12 18:42:56"
+    },
+    {
+        "cc_id": 31,
+        "cc_name": "sewa motor",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-18 17:03:06",
+        "updated_at": "2026-05-18 17:03:06"
+    },
+    {
+        "cc_id": 32,
+        "cc_name": "bus",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-18 17:06:22",
+        "updated_at": "2026-05-18 17:06:22"
+    },
+    {
+        "cc_id": 33,
+        "cc_name": "ojek",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-18 17:06:56",
+        "updated_at": "2026-05-18 17:06:56"
+    },
+    {
+        "cc_id": 34,
+        "cc_name": "ADM",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-18 17:09:51",
+        "updated_at": "2026-05-18 17:09:51"
+    },
+    {
+        "cc_id": 35,
+        "cc_name": "pompa ban",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-19 10:10:20",
+        "updated_at": "2026-05-19 10:10:20"
+    },
+    {
+        "cc_id": 36,
+        "cc_name": "lampu+pitingan",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-28 13:20:28",
+        "updated_at": "2026-05-28 13:20:28"
+    },
+    {
+        "cc_id": 37,
+        "cc_name": "KIR",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-05-30 09:32:12",
+        "updated_at": "2026-05-30 09:32:12"
+    },
+    {
+        "cc_id": 38,
+        "cc_name": "GAJI SALES",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 10,
+        "created_at": "2026-06-02 15:35:33",
+        "updated_at": "2026-06-02 15:35:33"
+    },
+    {
+        "cc_id": 39,
+        "cc_name": "PETUGAS SPBU",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-03 09:37:44",
+        "updated_at": "2026-06-03 09:37:44"
+    },
+    {
+        "cc_id": 40,
+        "cc_name": "CONTAINER",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-04 08:01:47",
+        "updated_at": "2026-06-04 08:01:47"
+    },
+    {
+        "cc_id": 41,
+        "cc_name": "PENGELUARAN NR",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-08 08:34:08",
+        "updated_at": "2026-06-08 08:34:08"
+    },
+    {
+        "cc_id": 42,
+        "cc_name": "PENGELUARAN DIKA",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-08 08:34:17",
+        "updated_at": "2026-06-08 08:34:17"
+    },
+    {
+        "cc_id": 43,
+        "cc_name": "PENGELUARAN BISMA",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-08 08:34:29",
+        "updated_at": "2026-06-08 08:34:29"
+    },
+    {
+        "cc_id": 44,
+        "cc_name": "PENGELUARAN BAGAS",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-08 08:36:58",
+        "updated_at": "2026-06-08 08:36:58"
+    },
+    {
+        "cc_id": 45,
+        "cc_name": "TAMBAL BAN",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-15 10:38:28",
+        "updated_at": "2026-06-15 10:38:28"
+    },
+    {
+        "cc_id": 46,
+        "cc_name": "PENGELUARAN SAIFUL",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-15 14:15:07",
+        "updated_at": "2026-06-15 14:15:07"
+    },
+    {
+        "cc_id": 47,
+        "cc_name": "UANG LEMBUR",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-06-22 11:48:15",
+        "updated_at": "2026-06-22 11:48:15"
+    },
+    {
+        "cc_id": 48,
+        "cc_name": "SEWA KOS",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-06 15:06:53",
+        "updated_at": "2026-07-06 15:06:53"
+    },
+    {
+        "cc_id": 49,
+        "cc_name": "PENGELUARAN SAEFUL",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-06 16:34:00",
+        "updated_at": "2026-07-06 16:34:00"
+    },
+    {
+        "cc_id": 50,
+        "cc_name": "Timba+kuas",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-11 08:36:33",
+        "updated_at": "2026-07-11 08:36:33"
+    },
+    {
+        "cc_id": 51,
+        "cc_name": "P5 SANTOSO ( 1943 )",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-11 10:53:48",
+        "updated_at": "2026-07-11 10:53:48"
+    },
+    {
+        "cc_id": 52,
+        "cc_name": "P5 LOAK MTR ( 402 )",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-11 10:54:18",
+        "updated_at": "2026-07-11 10:54:18"
+    },
+    {
+        "cc_id": 53,
+        "cc_name": "BIAYA PETI",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-13 09:49:04",
+        "updated_at": "2026-07-13 09:49:04"
+    },
+    {
+        "cc_id": 54,
+        "cc_name": "CEK BAN",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-13 10:17:34",
+        "updated_at": "2026-07-13 10:17:34"
+    },
+    {
+        "cc_id": 55,
+        "cc_name": "MUAT PIR",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-24 09:16:15",
+        "updated_at": "2026-07-24 09:16:15"
+    },
+    {
+        "cc_id": 56,
+        "cc_name": "TUKANG",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-24 09:16:25",
+        "updated_at": "2026-07-24 09:16:25"
+    },
+    {
+        "cc_id": 57,
+        "cc_name": "LAS",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-24 09:16:32",
+        "updated_at": "2026-07-24 09:16:32"
+    },
+    {
+        "cc_id": 58,
+        "cc_name": "p5",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-27 11:39:07",
+        "updated_at": "2026-07-27 11:39:07"
+    },
+    {
+        "cc_id": 59,
+        "cc_name": "ONGKOS PALET",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-28 09:03:21",
+        "updated_at": "2026-07-28 09:03:21"
+    },
+    {
+        "cc_id": 60,
+        "cc_name": "FILTER SOLAR",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-07-30 08:59:48",
+        "updated_at": "2026-07-30 08:59:48"
+    },
+    {
+        "cc_id": 61,
+        "cc_name": "BONGKAR PASANG BAN",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-08-03 10:14:06",
+        "updated_at": "2026-08-03 10:14:06"
+    },
+    {
+        "cc_id": 62,
+        "cc_name": "SPARE PART",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-08-03 10:32:47",
+        "updated_at": "2026-08-03 10:32:47"
+    },
+    {
+        "cc_id": 63,
+        "cc_name": "ONGKOS BONGKAR PASANG KOPLING BAWAH",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-08-03 10:33:34",
+        "updated_at": "2026-08-03 10:33:34"
+    },
+    {
+        "cc_id": 64,
+        "cc_name": "ONGKOS BONGKAR RODA",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-08-03 13:10:10",
+        "updated_at": "2026-08-03 13:10:10"
+    },
+    {
+        "cc_id": 65,
+        "cc_name": "ONGKOS DINAMO + LAMPU",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-08-03 13:10:25",
+        "updated_at": "2026-08-03 13:10:25"
+    },
+    {
+        "cc_id": 66,
+        "cc_name": "SNEPRING",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-08-07 10:48:24",
+        "updated_at": "2026-08-07 10:48:24"
+    },
+    {
+        "cc_id": 67,
+        "cc_name": "TIMBA + TAMPAR",
+        "cc_type": "Keluar",
+        "status": 1,
+        "created_by": 16,
+        "created_at": "2026-08-07 10:48:36",
+        "updated_at": "2026-08-07 10:48:36"
+    }
+]
