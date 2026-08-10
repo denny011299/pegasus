@@ -89,7 +89,8 @@
                 feather.replace();
             },
             error:function(e){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -139,7 +140,8 @@
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Variasi" : "Update Variasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -195,6 +197,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

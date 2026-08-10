@@ -57,10 +57,10 @@
             method: "get",
             data: { bom_id: bomId, with_details: 1 },
             success: function (response) {
-                callback(response && response[0] ? response[0] : null);
+                callback(response && response[0] ? response[0] : null, false);
             },
-            error: function () {
-                callback(null);
+            error: function (xhr) {
+                callback(null, handlePermissionError(xhr));
             }
         });
     }
@@ -369,6 +369,7 @@
                 openProductionFromDashboardLink();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
         });
@@ -551,6 +552,7 @@
             },
             error:function(a){
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+                if (handlePermissionError(a)) return;
                 console.log(a);
             }
         });
@@ -665,10 +667,12 @@
         }
 
         LoadingButton('.btn-add-product');
-        loadBomForValidation(tempBom.bom_id, function (fullBom) {
+        loadBomForValidation(tempBom.bom_id, function (fullBom, permissionHandled) {
             ResetLoadingButton('.btn-add-product', '+');
             if (!fullBom) {
-                notifikasi('error', 'Gagal Memuat Resep', 'Tidak dapat memuat detail resep. Silakan coba lagi.');
+                if (!permissionHandled) {
+                    notifikasi('error', 'Gagal Memuat Resep', 'Tidak dapat memuat detail resep. Silakan coba lagi.');
+                }
                 return;
             }
             continueAddProduct(fullBom);
@@ -866,6 +870,9 @@
                     });
                 }
                 console.log(list_bahan);
+            },
+            error: function (xhr) {
+                handlePermissionError(xhr);
             }
         });
     }
@@ -947,6 +954,7 @@ $(document).on("click", "#btn-delete-production", function () {
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -1002,6 +1010,7 @@ $(document).on("click", "#btn-acc-delete-production", function () {
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -1046,6 +1055,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi Batal Produksi");
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -1108,8 +1118,9 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
                 }
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     }
@@ -1157,8 +1168,9 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
 
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     })
@@ -1208,6 +1220,7 @@ $(document).on('click', '.LihatfotoProduksi', function(){
             $('#modalViewPhoto').modal('show');
         },
         error: function (e) {
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });

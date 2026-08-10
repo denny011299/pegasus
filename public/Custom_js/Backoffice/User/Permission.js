@@ -123,6 +123,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save", 'Perbarui');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

@@ -191,6 +191,7 @@
                 }, 100);
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kas:", err);
             }
         });
@@ -616,6 +617,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save", mode == 1?"Tambah Pencatatan" : "Update Pencatatan");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -686,6 +688,7 @@
             },
             error:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -723,6 +726,7 @@
             },
             error:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

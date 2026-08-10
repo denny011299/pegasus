@@ -270,6 +270,21 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             text: deskripsi,
         });
     }
+    /**
+     * Panggil ini di awal setiap ajax error callback (terutama di popup) supaya pesan
+     * 403 (ditolak middleware permission) konsisten di seluruh aplikasi dan tidak
+     * membocorkan modul/permission apa yang kurang ke user.
+     * Return true kalau sudah ditangani (403) — caller tinggal `return` tanpa
+     * menampilkan notifikasi generiknya sendiri. Return false untuk error lain,
+     * silakan lanjut pakai handling yang sudah ada di masing-masing pemanggil.
+     */
+    function handlePermissionError(xhr) {
+        if (xhr && xhr.status === 403) {
+            notifikasi('error', 'Akses Ditolak', 'Anda tidak memiliki akses terhadap aksi ini, mohon hubungi Admin!');
+            return true;
+        }
+        return false;
+    }
        //munculin modal delete
     function showModalDelete(text, button_id) {
         if ($('#modalDelete .modal-body').is(':empty')) {

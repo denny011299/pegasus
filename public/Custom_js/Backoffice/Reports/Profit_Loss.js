@@ -74,6 +74,7 @@
                 tableProfit.clear().rows.add(e).draw();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             }
         });
@@ -93,6 +94,7 @@
                 tableLoss.clear().rows.add(e).draw();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             }
         });

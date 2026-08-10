@@ -164,6 +164,7 @@ function refreshReturArmada() {
             if (typeof feather !== 'undefined') feather.replace();
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error('Gagal load laporan retur armada:', err);
         },
     });

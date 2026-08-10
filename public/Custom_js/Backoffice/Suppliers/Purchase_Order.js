@@ -160,7 +160,8 @@
 
                 $('#po_scan_barcode').val('').focus();
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 toastr.error('', 'Gagal mencari produk');
                 $('#po_scan_barcode').val('').focus();
             }
@@ -388,6 +389,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load so:", err);
             }
         });
@@ -527,7 +529,8 @@
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -582,6 +585,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

@@ -82,6 +82,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
         });
@@ -130,6 +131,7 @@
             },
             error:function(e){
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori" : "Update Kategori");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -181,6 +183,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

@@ -124,6 +124,7 @@ $(document).on("click", ".btn-save", function () {
         error: function (xhr) {
             // Re-enable button
             ResetLoadingButton(".btn-save", mode == 1?"Tambah Staff" : "Update Staff");
+            if (handlePermissionError(xhr)) return;
             console.log(xhr);
         },
     });
