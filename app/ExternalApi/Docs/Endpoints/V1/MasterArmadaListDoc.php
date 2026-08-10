@@ -44,6 +44,8 @@ class MasterArmadaListDoc extends ApiEndpointDoc
         return [
             ['name' => 'page', 'type' => 'integer', 'required' => false, 'description' => 'Nomor halaman. Kalau parameter ini tidak dikirim sama sekali, seluruh armada aktif dikembalikan sekaligus tanpa paginasi.'],
             ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'description' => 'Jumlah baris per halaman, hanya berlaku kalau page dikirim. Default 20, maksimum 100.'],
+            ['name' => 'sort', 'type' => 'string', 'required' => false, 'description' => 'Urutan kustom, format "kunci:arah" dipisah koma, mis. "customer_code:asc,created_at:desc". Kunci yang sah: id, customer_code, customer_pic, customer_pic_phone, customer_notes, created_at, updated_at. arah: asc atau desc. Kunci/arah lain dilewati diam-diam, bukan galat.'],
+            ['name' => 'search', 'type' => 'string', 'required' => false, 'description' => 'Kata kunci, dicocokkan %LIKE% pada customer_code, customer_pic, customer_pic_phone, ATAU customer_notes.'],
         ];
     }
 
@@ -85,6 +87,7 @@ class MasterArmadaListDoc extends ApiEndpointDoc
             'id adalah id pelanggan pada sistem Pegasus (customers.customer_id) — hanya untuk referensi, tidak dipakai sebagai path parameter di endpoint mana pun pada modul ini.',
             'customer_code adalah id UNIVERSAL untuk armada ini: kalau dibuat lewat POST endpoint ini, nilainya persis yang dikirim pemanggil; kalau dibuat lewat halaman admin, nilainya di-generate otomatis Pegasus (format "CUSxxxx"). Dipakai sebagai path parameter pada PUT dan DELETE /armada.',
             'customer_pic, customer_pic_phone, dan customer_notes boleh bernilai null bila datanya memang belum diisi. customer_notes adalah tempat konvensi "nomor polisi (nama)" tersimpan, mis. "W 9518 PG (Agus)".',
+            '?sort= menggantikan urutan bawaan sepenuhnya begitu ada satu saja kunci yang sah; kalau seluruh kunci yang dikirim tidak dikenal, urutan bawaan (dibuat lebih dulu → id) tetap berlaku.',
             'Urutan daftar bersifat tetap (diurutkan berdasarkan waktu pembuatan, lalu id), sehingga dua permintaan berturut-turut atas data yang sama menghasilkan urutan yang sama.',
         ];
     }

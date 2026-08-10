@@ -43,7 +43,7 @@ class CashCategory extends Model
      *
      * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
      * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
-     * HandlesOptionalPagination, tanpa menduplikasi penyaringan/urutan di
+     * HandlesListQueryParams, tanpa menduplikasi penyaringan/urutan di
      * dua tempat.
      */
     function getCashCategoryForExternalApi()

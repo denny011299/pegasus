@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesOptionalPagination;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +34,7 @@ use Illuminate\Validation\ValidationException;
  */
 class MasterWarehouseController extends Controller
 {
-    use HandlesOptionalPagination;
+    use HandlesListQueryParams;
 
     /**
      * GET /api/external/v1/master/warehouses
@@ -43,9 +43,14 @@ class MasterWarehouseController extends Controller
      * gudang_id, memakai nama field yang sama dengan yang dikembalikan
      * endpoint create/update/delete gudang.
      *
-     * Paginasi opsional: kirim ?page= (dan ?per_page= bila perlu) untuk
-     * mengaktifkannya. Tanpa itu, seluruh gudang aktif dikembalikan
-     * sekaligus — lihat HandlesOptionalPagination.
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: gudang_id,
+     * nama, tipe_id, alamat, created_at, updated_at. tipe_nama SENGAJA
+     * tidak bisa dipakai untuk ?sort=/?search= — nilainya diambil lewat
+     * relasi ke warehouse_types (eager load), bukan kolom pada tabel
+     * warehouses sendiri, jadi kunci tipe_nama pada ?sort= otomatis
+     * dilewati seperti kunci tak dikenal lainnya. ?search= mencari di nama
+     * dan alamat.
      */
     public function index(Request $request): JsonResponse
     {
@@ -59,6 +64,16 @@ class MasterWarehouseController extends Controller
                 'tipe_id' => (int) $warehouse->warehouse_type_id,
                 'alamat' => $warehouse->warehouse_address,
             ],
+            sortable: [
+                'gudang_id' => 'id',
+                'nama' => 'warehouse_name',
+                'tipe_id' => 'warehouse_type_id',
+                'alamat' => 'warehouse_address',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+            ],
+            searchable: ['warehouse_name', 'warehouse_address'],
+            tieBreaker: 'id',
         );
     }
 

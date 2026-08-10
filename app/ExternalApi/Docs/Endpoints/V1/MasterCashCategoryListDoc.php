@@ -48,6 +48,8 @@ class MasterCashCategoryListDoc extends ApiEndpointDoc
         return [
             ['name' => 'page', 'type' => 'integer', 'required' => false, 'description' => 'Nomor halaman. Kalau parameter ini tidak dikirim sama sekali, seluruh kategori kas aktif dikembalikan sekaligus tanpa paginasi.'],
             ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'description' => 'Jumlah baris per halaman, hanya berlaku kalau page dikirim. Default 20, maksimum 100.'],
+            ['name' => 'sort', 'type' => 'string', 'required' => false, 'description' => 'Urutan kustom, format "kunci:arah" dipisah koma, mis. "cc_name:asc". Kunci yang sah: cc_id, cc_name, cc_type, created_at, updated_at. arah: asc atau desc. Kunci/arah lain dilewati diam-diam, bukan galat.'],
+            ['name' => 'search', 'type' => 'string', 'required' => false, 'description' => 'Kata kunci, dicocokkan %LIKE% pada cc_name.'],
         ];
     }
 
@@ -88,6 +90,7 @@ class MasterCashCategoryListDoc extends ApiEndpointDoc
             'Bentuk meta selalu sama, dipaginasi maupun tidak: total, per_page, current_page, next_page_exists, total_page. Tanpa ?page=, current_page selalu 1, total_page selalu 1, dan next_page_exists selalu false — satu halaman berisi semua kategori kas aktif.',
             'Hanya kategori berstatus aktif yang muncul. Kategori yang dihapus di Pegasus akan hilang dari daftar ini.',
             'cc_type menyatakan arah arus kas dan pada data aktif hanya bernilai "Masuk" atau "Keluar". Nilainya berupa teks, bukan angka, dan huruf besar-kecilnya mengikuti apa adanya seperti tersimpan di Pegasus.',
+            '?sort= menggantikan urutan bawaan sepenuhnya begitu ada satu saja kunci yang sah; kalau seluruh kunci yang dikirim tidak dikenal, urutan bawaan tetap berlaku.',
             'Urutan daftar bersifat tetap, sehingga dua permintaan berturut-turut atas data yang sama menghasilkan urutan yang sama.',
         ];
     }
