@@ -1,0 +1,87 @@
+<?php
+
+namespace App\ExternalApi\Docs\Endpoints\V1;
+
+use App\ExternalApi\Docs\ApiEndpointDoc;
+
+/**
+ * Dokumentasi GET /api/external/v1/master/armada (API-002 lanjutan).
+ */
+class MasterArmadaListDoc extends ApiEndpointDoc
+{
+    public function key(): string
+    {
+        return 'master-armada';
+    }
+
+    public function title(): string
+    {
+        return 'Daftar Armada';
+    }
+
+    public function method(): string
+    {
+        return 'GET';
+    }
+
+    public function path(): string
+    {
+        return '/master/armada';
+    }
+
+    public function group(): string
+    {
+        return 'master';
+    }
+
+    public function description(): string
+    {
+        return 'Mengambil daftar armada yang berstatus aktif. "Armada" adalah baris pada tabel pelanggan Pegasus yang mewakili kendaraan (nomor polisi dicatat di customer_notes) — bukan tabel tersendiri. Paginasi bersifat opsional.';
+    }
+
+    public function queryParameters(): array
+    {
+        return [
+            ['name' => 'page', 'type' => 'integer', 'required' => false, 'description' => 'Nomor halaman. Kalau parameter ini tidak dikirim sama sekali, seluruh armada aktif dikembalikan sekaligus tanpa paginasi.'],
+            ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'description' => 'Jumlah baris per halaman, hanya berlaku kalau page dikirim. Default 20, maksimum 100.'],
+        ];
+    }
+
+    public function responseExample(): array
+    {
+        return [
+            'success' => true,
+            'data' => [
+                [
+                    'id' => 12,
+                    'customer_code' => 'ARM-JKT-001',
+                    'customer_pic' => 'Agus',
+                    'customer_pic_phone' => '08123456789',
+                    'customer_notes' => 'W 9518 PG (Agus)',
+                ],
+                [
+                    'id' => 13,
+                    'customer_code' => 'CUS0013',
+                    'customer_pic' => null,
+                    'customer_pic_phone' => null,
+                    'customer_notes' => null,
+                ],
+            ],
+            'meta' => [
+                'total' => 2,
+            ],
+        ];
+    }
+
+    public function notes(): array
+    {
+        return [
+            'Tanpa ?page=, seluruh armada aktif dikembalikan sekaligus dan meta hanya berisi total — sama seperti endpoint data master lain. Dengan ?page=, bentuk meta berubah menjadi meta.pagination (page, per_page, total, total_pages), mengikuti standar paginasi platform.',
+            'Hanya armada berstatus aktif yang muncul. Armada yang dihapus lewat DELETE /master/armada (atau dinonaktifkan lewat halaman admin) hilang dari daftar ini.',
+            'id adalah id pelanggan pada sistem Pegasus (customers.customer_id) — hanya untuk referensi, tidak dipakai sebagai path parameter di endpoint mana pun pada modul ini.',
+            'customer_code adalah id UNIVERSAL untuk armada ini: kalau dibuat lewat POST endpoint ini, nilainya persis yang dikirim pemanggil; kalau dibuat lewat halaman admin, nilainya di-generate otomatis Pegasus (format "CUSxxxx"). Dipakai sebagai path parameter pada PUT dan DELETE /master/armada.',
+            'customer_pic, customer_pic_phone, dan customer_notes boleh bernilai null bila datanya memang belum diisi. customer_notes adalah tempat konvensi "nomor polisi (nama)" tersimpan, mis. "W 9518 PG (Agus)".',
+            'Urutan daftar bersifat tetap (diurutkan berdasarkan waktu pembuatan, lalu id), sehingga dua permintaan berturut-turut atas data yang sama menghasilkan urutan yang sama.',
+        ];
+    }
+}

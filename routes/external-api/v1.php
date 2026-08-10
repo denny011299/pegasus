@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ExternalApi\V1\CashPaymentController;
+use App\Http\Controllers\ExternalApi\V1\MasterArmadaController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
 use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
@@ -66,6 +67,18 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::put('/sales/{staff_id}', [MasterSalesController::class, 'update'])->name('sales.update');
     Route::delete('/sales/{staff_id}', [MasterSalesController::class, 'destroy'])->name('sales.destroy');
     Route::patch('/sales/connect', [MasterSalesController::class, 'connect'])->name('sales.connect');
+
+    // Data Armada — "armada" bukan tabel tersendiri, baris tabel customers
+    // yang sama dengan pelanggan biasa (lihat catatan kelas
+    // MasterArmadaController). {customer_code} pada PUT/DELETE adalah id
+    // universal yang ditentukan pemanggil sendiri saat POST. TIDAK ADA
+    // endpoint connect di sini — customer_code selalu sudah terisi otomatis
+    // untuk setiap pelanggan, jadi tidak ada baris "belum tersambung" yang
+    // perlu dihubungkan belakangan seperti pada sales/satuan.
+    Route::get('/armada', [MasterArmadaController::class, 'index'])->name('armada');
+    Route::post('/armada', [MasterArmadaController::class, 'store'])->name('armada.store');
+    Route::put('/armada/{customer_code}', [MasterArmadaController::class, 'update'])->name('armada.update');
+    Route::delete('/armada/{customer_code}', [MasterArmadaController::class, 'destroy'])->name('armada.destroy');
 });
 
 /*
