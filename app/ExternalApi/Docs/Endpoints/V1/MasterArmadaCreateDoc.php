@@ -5,13 +5,13 @@ namespace App\ExternalApi\Docs\Endpoints\V1;
 use App\ExternalApi\Docs\ApiEndpointDoc;
 
 /**
- * Dokumentasi POST /api/external/v1/master/armada (API-002 lanjutan).
+ * Dokumentasi POST /api/external/v1/armada (API-002 lanjutan).
  */
 class MasterArmadaCreateDoc extends ApiEndpointDoc
 {
     public function key(): string
     {
-        return 'master-armada-create';
+        return 'armada-create';
     }
 
     public function title(): string
@@ -26,12 +26,12 @@ class MasterArmadaCreateDoc extends ApiEndpointDoc
 
     public function path(): string
     {
-        return '/master/armada';
+        return '/armada';
     }
 
     public function group(): string
     {
-        return 'master';
+        return 'armada';
     }
 
     public function description(): string
@@ -86,7 +86,7 @@ class MasterArmadaCreateDoc extends ApiEndpointDoc
         return [
             'Hanya customer_code yang wajib diisi; customer_pic, customer_pic_phone, dan customer_notes boleh dikosongkan.',
             'id pada respons adalah id pelanggan yang dibuat Pegasus sendiri (customers.customer_id, auto-increment) — hanya untuk referensi, tidak dibutuhkan endpoint lain pada modul ini (semuanya memakai customer_code).',
-            'Bukan upsert: mengirim customer_code yang sudah dipakai (aktif maupun yang armadanya sudah dihapus) selalu ditolak dengan duplicate_ref_id, tidak pernah menimpa data yang sudah ada. Pakai PUT /master/armada/{customer_code} untuk memperbarui armada yang kodenya sudah ada.',
+            'Bukan upsert: mengirim customer_code yang sudah dipakai (aktif maupun yang armadanya sudah dihapus) selalu ditolak dengan duplicate_ref_id, tidak pernah menimpa data yang sudah ada. Pakai PUT /armada/{customer_code} untuk memperbarui armada yang kodenya sudah ada.',
             'Tidak ada endpoint "connect" pada modul ini (berbeda dengan sales/satuan): setiap pelanggan di Pegasus SELALU sudah punya customer_code (di-generate otomatis saat dibuat lewat halaman admin), jadi tidak pernah ada baris "belum tersambung" yang perlu dihubungkan belakangan.',
             'customer_name, customer_address, customer_email, sales_id, dan wilayah (area/city/district) ada di tabel pelanggan tapi tidak dikelola endpoint ini — mengikuti cakupan yang sama dengan form pelanggan di halaman admin.',
         ];

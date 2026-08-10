@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * customer_code jadi "universal id" untuk External API (/master/armada,
+ * customer_code jadi "universal id" untuk External API (/armada,
  * API-002 lanjutan): pemanggil menentukan sendiri nilainya lewat POST, dan
  * memakainya lagi sebagai path parameter pada PUT/DELETE. Supaya
  * pencariannya selalu tidak ambigu, kolom ini wajib unik.

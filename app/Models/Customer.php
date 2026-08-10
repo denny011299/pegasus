@@ -76,7 +76,7 @@ class Customer extends Model
     /**
      * customer_code sekarang wajib unik (units_customer_code_unique — lihat
      * migrasi 2026_08_11_120000) karena dipakai sebagai id universal oleh
-     * External API (/master/armada). Kode di-generate dari max(customer_id)
+     * External API (/armada). Kode di-generate dari max(customer_id)
      * seperti sebelumnya, tapi kalau kode itu ternyata sudah dipakai —
      * misalnya oleh pelanggan yang dibuat lewat External API dengan
      * customer_code bebas — nomor urutnya dinaikkan sampai ketemu kode yang

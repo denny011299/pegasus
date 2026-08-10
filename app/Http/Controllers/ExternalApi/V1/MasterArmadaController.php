@@ -39,7 +39,7 @@ class MasterArmadaController extends Controller
     private const DEFAULT_PER_PAGE = 20;
 
     /**
-     * GET /api/external/v1/master/armada
+     * GET /api/external/v1/armada
      *
      * Paginasi bersifat opsional: kirim ?page= (dan ?per_page= bila perlu)
      * untuk mengaktifkannya. Tanpa itu, seluruh armada aktif dikembalikan
@@ -69,7 +69,7 @@ class MasterArmadaController extends Controller
     }
 
     /**
-     * POST /api/external/v1/master/armada
+     * POST /api/external/v1/armada
      *
      * Selalu membuat baris pelanggan baru (id Pegasus-nya auto-increment,
      * tidak pernah ditentukan pemanggil). Bukan upsert: customer_code yang
@@ -108,7 +108,7 @@ class MasterArmadaController extends Controller
     }
 
     /**
-     * PUT /api/external/v1/master/armada/{customer_code}
+     * PUT /api/external/v1/armada/{customer_code}
      *
      * Tidak pernah membuat armada baru; customer_code yang tidak ditemukan
      * (atau ditemukan tapi statusnya nonaktif) selalu dijawab not_found.
@@ -129,7 +129,7 @@ class MasterArmadaController extends Controller
     }
 
     /**
-     * DELETE /api/external/v1/master/armada/{customer_code}
+     * DELETE /api/external/v1/armada/{customer_code}
      *
      * Soft delete (status = 0), memakai ulang Customer::deleteCustomer() —
      * sama persis dengan yang dipakai halaman admin. customer_code TIDAK

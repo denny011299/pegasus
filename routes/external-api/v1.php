@@ -67,18 +67,6 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::put('/sales/{staff_id}', [MasterSalesController::class, 'update'])->name('sales.update');
     Route::delete('/sales/{staff_id}', [MasterSalesController::class, 'destroy'])->name('sales.destroy');
     Route::patch('/sales/connect', [MasterSalesController::class, 'connect'])->name('sales.connect');
-
-    // Data Armada — "armada" bukan tabel tersendiri, baris tabel customers
-    // yang sama dengan pelanggan biasa (lihat catatan kelas
-    // MasterArmadaController). {customer_code} pada PUT/DELETE adalah id
-    // universal yang ditentukan pemanggil sendiri saat POST. TIDAK ADA
-    // endpoint connect di sini — customer_code selalu sudah terisi otomatis
-    // untuk setiap pelanggan, jadi tidak ada baris "belum tersambung" yang
-    // perlu dihubungkan belakangan seperti pada sales/satuan.
-    Route::get('/armada', [MasterArmadaController::class, 'index'])->name('armada');
-    Route::post('/armada', [MasterArmadaController::class, 'store'])->name('armada.store');
-    Route::put('/armada/{customer_code}', [MasterArmadaController::class, 'update'])->name('armada.update');
-    Route::delete('/armada/{customer_code}', [MasterArmadaController::class, 'destroy'])->name('armada.destroy');
 });
 
 /*
@@ -90,4 +78,26 @@ Route::prefix('master')->name('master.')->group(function () {
 Route::prefix('payments')->name('payments.')->group(function () {
     Route::post('/cash', [CashPaymentController::class, 'store'])->name('cashStore');
     Route::get('/cash/{ref_payment_id}', [CashPaymentController::class, 'show'])->name('cashShow');
+});
+
+/*
+ * Data Armada.
+ *
+ * Modul tersendiri, BUKAN bagian dari prefix master/ di atas — "armada"
+ * bukan tabel tersendiri, baris tabel customers yang sama dengan pelanggan
+ * biasa (lihat catatan kelas MasterArmadaController), tapi konsepnya beda
+ * dari data master yang statis (satuan, gudang, dst.) sehingga sengaja
+ * dilayani lewat rute dan halaman dokumentasi sendiri ("Data Armada").
+ *
+ * {customer_code} pada PUT/DELETE adalah id universal yang ditentukan
+ * pemanggil sendiri saat POST. TIDAK ADA endpoint connect di sini —
+ * customer_code selalu sudah terisi otomatis untuk setiap pelanggan, jadi
+ * tidak ada baris "belum tersambung" yang perlu dihubungkan belakangan
+ * seperti pada sales/satuan.
+ */
+Route::prefix('armada')->name('armada.')->group(function () {
+    Route::get('/', [MasterArmadaController::class, 'index'])->name('index');
+    Route::post('/', [MasterArmadaController::class, 'store'])->name('store');
+    Route::put('/{customer_code}', [MasterArmadaController::class, 'update'])->name('update');
+    Route::delete('/{customer_code}', [MasterArmadaController::class, 'destroy'])->name('destroy');
 });

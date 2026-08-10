@@ -5,13 +5,13 @@ namespace App\ExternalApi\Docs\Endpoints\V1;
 use App\ExternalApi\Docs\ApiEndpointDoc;
 
 /**
- * Dokumentasi PUT /api/external/v1/master/armada/{customer_code} (API-002 lanjutan).
+ * Dokumentasi PUT /api/external/v1/armada/{customer_code} (API-002 lanjutan).
  */
 class MasterArmadaUpdateDoc extends ApiEndpointDoc
 {
     public function key(): string
     {
-        return 'master-armada-update';
+        return 'armada-update';
     }
 
     public function title(): string
@@ -26,12 +26,12 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
 
     public function path(): string
     {
-        return '/master/armada/{customer_code}';
+        return '/armada/{customer_code}';
     }
 
     public function group(): string
     {
-        return 'master';
+        return 'armada';
     }
 
     public function description(): string
@@ -42,7 +42,7 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
     public function pathParameters(): array
     {
         return [
-            ['name' => 'customer_code', 'type' => 'string', 'required' => true, 'description' => 'id universal armada yang akan diubah, lihat GET /master/armada.'],
+            ['name' => 'customer_code', 'type' => 'string', 'required' => true, 'description' => 'id universal armada yang akan diubah, lihat GET /armada.'],
         ];
     }
 

@@ -157,14 +157,19 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesUpdateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesLinkDoc::class,
-        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaListDoc::class,
-        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaCreateDoc::class,
-        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaUpdateDoc::class,
-        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaDeleteDoc::class,
 
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentShowDoc::class,
+
+        // Data Armada — modul tersendiri, bukan bagian Data Master. "Armada"
+        // memakai tabel customers yang sama dengan pelanggan biasa, tapi
+        // dilayani lewat rute dan halaman dokumentasi sendiri karena
+        // konsepnya beda dari data master yang statis (satuan, gudang, dst.)
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaDeleteDoc::class,
     ],
 
     /*
@@ -178,6 +183,7 @@ return [
     */
     'doc_groups' => [
         'master' => 'Data Master',
+        'armada' => 'Data Armada',
         'pembayaran' => 'Pembayaran',
         'produk' => 'Produk',
         'stok' => 'Stok',

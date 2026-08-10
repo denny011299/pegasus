@@ -5,13 +5,13 @@ namespace App\ExternalApi\Docs\Endpoints\V1;
 use App\ExternalApi\Docs\ApiEndpointDoc;
 
 /**
- * Dokumentasi GET /api/external/v1/master/armada (API-002 lanjutan).
+ * Dokumentasi GET /api/external/v1/armada (API-002 lanjutan).
  */
 class MasterArmadaListDoc extends ApiEndpointDoc
 {
     public function key(): string
     {
-        return 'master-armada';
+        return 'armada';
     }
 
     public function title(): string
@@ -26,12 +26,12 @@ class MasterArmadaListDoc extends ApiEndpointDoc
 
     public function path(): string
     {
-        return '/master/armada';
+        return '/armada';
     }
 
     public function group(): string
     {
-        return 'master';
+        return 'armada';
     }
 
     public function description(): string
@@ -77,9 +77,9 @@ class MasterArmadaListDoc extends ApiEndpointDoc
     {
         return [
             'Tanpa ?page=, seluruh armada aktif dikembalikan sekaligus dan meta hanya berisi total — sama seperti endpoint data master lain. Dengan ?page=, bentuk meta berubah menjadi meta.pagination (page, per_page, total, total_pages), mengikuti standar paginasi platform.',
-            'Hanya armada berstatus aktif yang muncul. Armada yang dihapus lewat DELETE /master/armada (atau dinonaktifkan lewat halaman admin) hilang dari daftar ini.',
+            'Hanya armada berstatus aktif yang muncul. Armada yang dihapus lewat DELETE /armada (atau dinonaktifkan lewat halaman admin) hilang dari daftar ini.',
             'id adalah id pelanggan pada sistem Pegasus (customers.customer_id) — hanya untuk referensi, tidak dipakai sebagai path parameter di endpoint mana pun pada modul ini.',
-            'customer_code adalah id UNIVERSAL untuk armada ini: kalau dibuat lewat POST endpoint ini, nilainya persis yang dikirim pemanggil; kalau dibuat lewat halaman admin, nilainya di-generate otomatis Pegasus (format "CUSxxxx"). Dipakai sebagai path parameter pada PUT dan DELETE /master/armada.',
+            'customer_code adalah id UNIVERSAL untuk armada ini: kalau dibuat lewat POST endpoint ini, nilainya persis yang dikirim pemanggil; kalau dibuat lewat halaman admin, nilainya di-generate otomatis Pegasus (format "CUSxxxx"). Dipakai sebagai path parameter pada PUT dan DELETE /armada.',
             'customer_pic, customer_pic_phone, dan customer_notes boleh bernilai null bila datanya memang belum diisi. customer_notes adalah tempat konvensi "nomor polisi (nama)" tersimpan, mis. "W 9518 PG (Agus)".',
             'Urutan daftar bersifat tetap (diurutkan berdasarkan waktu pembuatan, lalu id), sehingga dua permintaan berturut-turut atas data yang sama menghasilkan urutan yang sama.',
         ];
