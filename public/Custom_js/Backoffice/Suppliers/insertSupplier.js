@@ -116,6 +116,7 @@ $(document).on("click", ".btn-save", function () {
         error: function (xhr) {
             // Re-enable button
             ResetLoadingButton(".btn-save", mode == 1?"Tambah Pemasok" : "Update Pemasok");
+            if (handlePermissionError(xhr)) return;
             console.log(xhr);
         },
     });

@@ -82,6 +82,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load Bank:", err);
             }
         });
@@ -130,6 +131,7 @@
             },
             error:function(e){
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Bank" : "Update Bank");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -182,6 +184,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

@@ -80,6 +80,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load role:", err);
             }
         });
@@ -128,6 +129,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save", 'Simpan perubahan');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -227,6 +229,7 @@
             },
             error: function (e) {
                 ResetLoadingButton("#btn_save_dash_widgets", "Simpan Widget");
+                if (handlePermissionError(e)) return;
                 console.log(e);
                 notifikasi('error', "Gagal Update", "Gagal update widget dashboard role");
             }

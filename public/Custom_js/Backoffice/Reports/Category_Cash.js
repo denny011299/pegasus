@@ -82,6 +82,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
         });
@@ -130,7 +131,8 @@
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori Kas" : "Update Kategori Kas");  
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Kategori Kas" : "Update Kategori Kas");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -183,6 +185,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

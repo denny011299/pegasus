@@ -123,6 +123,7 @@ function updateTtUploadProgress(percent) {
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load so:", err);
             }
         });
@@ -186,9 +187,10 @@ function updateTtUploadProgress(percent) {
                 
             },
             error:function(e){
+                ResetLoadingButton('#add_acc_tt .btn-save', "Konfirmasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
                 resetTtUploadProgress();
-                ResetLoadingButton('#add_acc_tt .btn-save', "Konfirmasi");
             }
         });
     });
@@ -250,6 +252,7 @@ $(document).on("change", "#image", function () {
             $("#file_name").text(compressedImageFile.name + " (" + kb + " KB)");
         },
         error(err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal kompres gambar:", err);
             compressedImageFile = file;
             let reader = new FileReader();
@@ -301,6 +304,7 @@ $(document).on("change", "#image", function () {
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

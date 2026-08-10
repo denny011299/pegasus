@@ -96,6 +96,7 @@
                 }
             },
             error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 var res = xhr.responseJSON || {};
                 if (res.state) {
                     renderState(res.state);

@@ -132,7 +132,8 @@
             success: function (rows) {
                 renderResults(rows || []);
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 renderResults([]);
             },
             complete: function () {
