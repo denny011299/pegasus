@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,16 +43,32 @@ use Illuminate\Support\Facades\DB;
  */
 class MasterUnitController extends Controller
 {
+    use HandlesListQueryParams;
+
     /**
      * GET /api/external/v1/master/units
+     *
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: id,
+     * ref_unit_id, unit_name, unit_short_name, created_at, updated_at.
+     * ?search= mencari di unit_name dan unit_short_name.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $units = (new Unit())->getUnitForExternalApi();
-
-        return ApiResponse::success(
-            $units->map(fn ($unit) => $this->present($unit))->all(),
-            ['total' => $units->count()],
+        return $this->respondList(
+            (new Unit())->getUnitForExternalApi(),
+            $request,
+            fn ($unit) => $this->present($unit),
+            sortable: [
+                'id' => 'unit_id',
+                'ref_unit_id' => 'ref_unit_id',
+                'unit_name' => 'unit_name',
+                'unit_short_name' => 'unit_short_name',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+            ],
+            searchable: ['unit_name', 'unit_short_name'],
+            tieBreaker: 'unit_id',
         );
     }
 

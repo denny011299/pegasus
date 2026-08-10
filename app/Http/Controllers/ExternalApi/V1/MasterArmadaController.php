@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,38 +35,35 @@ use Illuminate\Http\Request;
  */
 class MasterArmadaController extends Controller
 {
-    /** Batas atas per_page supaya satu permintaan tidak menarik seluruh tabel. */
-    private const MAX_PER_PAGE = 100;
-    private const DEFAULT_PER_PAGE = 20;
+    use HandlesListQueryParams;
 
     /**
      * GET /api/external/v1/armada
      *
-     * Paginasi bersifat opsional: kirim ?page= (dan ?per_page= bila perlu)
-     * untuk mengaktifkannya. Tanpa itu, seluruh armada aktif dikembalikan
-     * sekaligus sekali jalan — sama seperti endpoint data master lain.
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: id,
+     * customer_code, customer_pic, customer_pic_phone, customer_notes,
+     * created_at, updated_at. ?search= mencari di customer_code,
+     * customer_pic, customer_pic_phone, dan customer_notes.
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Customer::where('status', 1)
-            ->orderBy('created_at', 'asc')
-            ->orderBy('customer_id', 'asc');
-
-        if (! $request->has('page')) {
-            $customers = $query->get(['customer_id', 'customer_code', 'customer_pic', 'customer_pic_phone', 'customer_notes']);
-
-            return ApiResponse::success(
-                $customers->map(fn ($customer) => $this->present($customer))->all(),
-                ['total' => $customers->count()],
-            );
-        }
-
-        $perPage = (int) $request->input('per_page', self::DEFAULT_PER_PAGE);
-        $perPage = max(1, min($perPage, self::MAX_PER_PAGE));
-
-        $paginator = $query->paginate($perPage, ['customer_id', 'customer_code', 'customer_pic', 'customer_pic_phone', 'customer_notes']);
-
-        return ApiResponse::paginated($paginator, fn ($customer) => $this->present($customer));
+        return $this->respondList(
+            (new Customer())->getArmadaForExternalApi(),
+            $request,
+            fn ($customer) => $this->present($customer),
+            sortable: [
+                'id' => 'customer_id',
+                'customer_code' => 'customer_code',
+                'customer_pic' => 'customer_pic',
+                'customer_pic_phone' => 'customer_pic_phone',
+                'customer_notes' => 'customer_notes',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+            ],
+            searchable: ['customer_code', 'customer_pic', 'customer_pic_phone', 'customer_notes'],
+            tieBreaker: 'customer_id',
+        );
     }
 
     /**

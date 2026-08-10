@@ -40,13 +40,18 @@ class CashCategory extends Model
      *
      * cc_id ditambahkan sebagai penentu urutan akhir agar keluarannya tetap
      * sama di setiap permintaan, meski beberapa baris punya created_at kembar.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesListQueryParams, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat.
      */
     function getCashCategoryForExternalApi()
     {
         return CashCategory::where('status', '=', 1)
             ->orderBy('created_at', 'asc')
             ->orderBy('cc_id', 'asc')
-            ->get(['cc_id', 'cc_name', 'cc_type']);
+            ->select(['cc_id', 'cc_name', 'cc_type']);
     }
 
     function insertCashCategory($data)

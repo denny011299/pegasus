@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\Role;
 use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
@@ -42,16 +43,47 @@ use Illuminate\Support\Facades\DB;
  */
 class MasterSalesController extends Controller
 {
+    use HandlesListQueryParams;
+
     /**
      * GET /api/external/v1/master/sales
+     *
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: id, staff_id,
+     * nama, kode, email, telepon, alamat, role, created_at, updated_at.
+     * nama_depan/nama_belakang SENGAJA tidak bisa dipakai — keduanya hasil
+     * pemisahan nama saat disajikan (splitName()), bukan kolom tersendiri,
+     * jadi otomatis dilewati seperti kunci tak dikenal lainnya (urutkan
+     * lewat nama sebagai gantinya). ?search= mencari di nama, kode, email,
+     * telepon, alamat, dan staff_id (rujukan eksternal).
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $sales = (new Staff())->getSalesForExternalApi();
-
-        return ApiResponse::success(
-            $sales->map(fn ($staff) => $this->presentRow($staff))->all(),
-            ['total' => $sales->count()],
+        return $this->respondList(
+            (new Staff())->getSalesForExternalApi(),
+            $request,
+            fn ($staff) => $this->presentRow($staff),
+            sortable: [
+                'id' => 'staffs.staff_id',
+                'staff_id' => 'staffs.external_ref_id',
+                'nama' => 'staffs.staff_name',
+                'kode' => 'staffs.staff_code',
+                'email' => 'staffs.staff_email',
+                'telepon' => 'staffs.staff_phone',
+                'alamat' => 'staffs.staff_address',
+                'role' => 'roles.role_name',
+                'created_at' => 'staffs.created_at',
+                'updated_at' => 'staffs.updated_at',
+            ],
+            searchable: [
+                'staffs.staff_name',
+                'staffs.staff_code',
+                'staffs.staff_email',
+                'staffs.staff_phone',
+                'staffs.staff_address',
+                'staffs.external_ref_id',
+            ],
+            tieBreaker: 'staffs.staff_id',
         );
     }
 

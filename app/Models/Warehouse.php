@@ -161,6 +161,11 @@ class Warehouse extends Model
      *
      * id ikut diurutkan terakhir supaya urutan keluaran tetap sama di setiap
      * permintaan meski ada created_at yang kembar.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesListQueryParams, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat.
      */
     public function getWarehouseForExternalApi()
     {
@@ -168,7 +173,7 @@ class Warehouse extends Model
             ->with('type:id,warehouse_type_name')
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc')
-            ->get(['id', 'warehouse_name', 'warehouse_type_id', 'warehouse_address']);
+            ->select(['id', 'warehouse_name', 'warehouse_type_id', 'warehouse_address']);
     }
 
     public function getWarehouse(array $data = [])
