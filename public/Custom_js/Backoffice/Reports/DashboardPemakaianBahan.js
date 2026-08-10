@@ -222,7 +222,8 @@
             success: function (payload) {
                 fillProcurementTables(payload);
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 var errFull =
                     '<tr><td colspan="7" class="text-center text-danger py-3">Gagal memuat estimasi pembelian.</td></tr>';
                 var $a = $("#dash_procurement_body_kemasan");
@@ -258,7 +259,8 @@
                 renderChart(payload);
                 loadProcurementEstimate();
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 var err =
                     '<tr><td colspan="3" class="text-center text-danger py-3">Gagal memuat data</td></tr>';
                 $("#dash_top_body_kemasan").html(err);

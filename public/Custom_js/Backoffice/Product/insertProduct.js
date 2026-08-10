@@ -294,6 +294,7 @@ $(document).on("click",".btn-save",function(){
         },
         error:function(e){
             ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
+            if (handlePermissionError(e)) return;
             console.log(e);
         }
     });

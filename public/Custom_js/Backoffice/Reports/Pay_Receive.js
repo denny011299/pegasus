@@ -114,6 +114,7 @@
                 $('#totalInvoice').html(e.length);
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             }
         });
@@ -208,6 +209,7 @@
                 $('#jumlah_terpilih').text("0 Selected");
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -233,6 +235,7 @@
                 window.open('/generateHutang?' + $.param(params), '_self');
             },
             error: function(e){
+                if (handlePermissionError(e)) return;
                 console.error(e);
             }
         })

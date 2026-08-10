@@ -297,7 +297,8 @@
             success: function () {
                 if (typeof done === "function") done(true);
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 if (typeof done === "function") done(false);
             },
         });
@@ -753,7 +754,8 @@
                 tryBrowserNotifyBahan(lastBahanPack);
                 renderChart(data);
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 $("#dash_filter_label").text("Gagal memuat dashboard.");
             },
         });

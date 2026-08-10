@@ -93,6 +93,7 @@
                 notifikasi("success", "Berhasil Delete", "Berhasil delete produk");
             },
             error: function (e) {
+                if (handlePermissionError(e)) return;
                 console.log(e);
             },
         });
