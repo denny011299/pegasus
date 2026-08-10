@@ -14,6 +14,24 @@ class Customer extends Model
     public $timestamps = true;
     public $incrementing = true;
 
+    /**
+     * Daftar armada untuk External API — lihat catatan kelas
+     * MasterArmadaController. Tidak ada konsep "peran" seperti pada sales,
+     * jadi satu-satunya syarat adalah status aktif.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesOptionalPagination, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat.
+     */
+    function getArmadaForExternalApi()
+    {
+        return self::where('status', 1)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('customer_id', 'asc')
+            ->select(['customer_id', 'customer_code', 'customer_pic', 'customer_pic_phone', 'customer_notes']);
+    }
+
     function getCustomer($data = [])
     {
         $data = array_merge([

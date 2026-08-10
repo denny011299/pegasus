@@ -38,8 +38,16 @@ class MasterWarehouseListDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengambil seluruh data master gudang yang berstatus aktif, '
-            .'beserta nama dan id tipe gudangnya.';
+        return 'Mengambil daftar gudang yang berstatus aktif, '
+            .'beserta nama dan id tipe gudangnya. Paginasi bersifat opsional.';
+    }
+
+    public function queryParameters(): array
+    {
+        return [
+            ['name' => 'page', 'type' => 'integer', 'required' => false, 'description' => 'Nomor halaman. Kalau parameter ini tidak dikirim sama sekali, seluruh gudang aktif dikembalikan sekaligus tanpa paginasi.'],
+            ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'description' => 'Jumlah baris per halaman, hanya berlaku kalau page dikirim. Default 20, maksimum 100.'],
+        ];
     }
 
     public function responseExample(): array
@@ -64,6 +72,10 @@ class MasterWarehouseListDoc extends ApiEndpointDoc
             ],
             'meta' => [
                 'total' => 2,
+                'per_page' => 2,
+                'current_page' => 1,
+                'next_page_exists' => false,
+                'total_page' => 1,
             ],
         ];
     }
@@ -71,7 +83,7 @@ class MasterWarehouseListDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Endpoint ini tidak menerima parameter apa pun. Seluruh gudang aktif selalu dikembalikan sekaligus.',
+            'Bentuk meta selalu sama, dipaginasi maupun tidak: total, per_page, current_page, next_page_exists, total_page. Tanpa ?page=, current_page selalu 1, total_page selalu 1, dan next_page_exists selalu false — satu halaman berisi semua gudang aktif.',
             'gudang_id adalah id gudang pada sistem Pegasus dan merupakan pegangan yang stabil untuk merujuk satu gudang, dipakai sebagai path parameter pada endpoint ubah dan hapus gudang. Pakai gudang_id, bukan nama, karena nama gudang bisa berubah.',
             'Hanya gudang berstatus Aktif yang muncul. Gudang yang dinonaktifkan atau dihapus tidak ikut, jadi gudang yang hilang dari daftar berarti sudah tidak berlaku.',
             'alamat boleh bernilai null bila gudang memang belum diisi alamatnya.',
