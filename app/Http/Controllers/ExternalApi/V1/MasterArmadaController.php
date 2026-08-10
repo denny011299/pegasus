@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesOptionalPagination;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,15 +35,16 @@ use Illuminate\Http\Request;
  */
 class MasterArmadaController extends Controller
 {
-    use HandlesOptionalPagination;
+    use HandlesListQueryParams;
 
     /**
      * GET /api/external/v1/armada
      *
-     * Paginasi bersifat opsional: kirim ?page= (dan ?per_page= bila perlu)
-     * untuk mengaktifkannya. Tanpa itu, seluruh armada aktif dikembalikan
-     * sekaligus sekali jalan — sama seperti endpoint data master lain, lihat
-     * HandlesOptionalPagination.
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: id,
+     * customer_code, customer_pic, customer_pic_phone, customer_notes,
+     * created_at, updated_at. ?search= mencari di customer_code,
+     * customer_pic, customer_pic_phone, dan customer_notes.
      */
     public function index(Request $request): JsonResponse
     {
@@ -51,6 +52,17 @@ class MasterArmadaController extends Controller
             (new Customer())->getArmadaForExternalApi(),
             $request,
             fn ($customer) => $this->present($customer),
+            sortable: [
+                'id' => 'customer_id',
+                'customer_code' => 'customer_code',
+                'customer_pic' => 'customer_pic',
+                'customer_pic_phone' => 'customer_pic_phone',
+                'customer_notes' => 'customer_notes',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+            ],
+            searchable: ['customer_code', 'customer_pic', 'customer_pic_phone', 'customer_notes'],
+            tieBreaker: 'customer_id',
         );
     }
 

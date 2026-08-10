@@ -48,7 +48,7 @@ class Staff extends Model
      *
      * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
      * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
-     * HandlesOptionalPagination, tanpa menduplikasi penyaringan/urutan di
+     * HandlesListQueryParams, tanpa menduplikasi penyaringan/urutan di
      * dua tempat. JOIN-nya aman dipaginasi: role_id adalah relasi banyak-ke-
      * satu ke roles, jadi tidak ada baris staf yang terlipat ganda.
      */

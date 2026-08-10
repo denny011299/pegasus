@@ -4,7 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesOptionalPagination;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\CashCategory;
 use App\Models\WarehouseType;
 use Illuminate\Http\JsonResponse;
@@ -27,14 +27,14 @@ use Illuminate\Http\Request;
  * lapisan platform (SPEC-001), jadi controller ini benar-benar hanya memilih
  * data dan menyusun bentuk keluarannya.
  *
- * Paginasi bersifat OPSIONAL lewat HandlesOptionalPagination (kirim ?page=
+ * Paginasi bersifat OPSIONAL lewat HandlesListQueryParams (kirim ?page=
  * untuk mengaktifkannya) — bukan lagi dikeluarkan dari lingkup sepenuhnya.
  * Tabelnya tetap kecil (belasan sampai puluhan baris), jadi tanpa ?page=
  * respons tetap berupa daftar utuh data aktif seperti sebelumnya.
  */
 class MasterDataController extends Controller
 {
-    use HandlesOptionalPagination;
+    use HandlesListQueryParams;
 
     /**
      * GET /api/external/v1/master/cash_categories
@@ -43,9 +43,9 @@ class MasterDataController extends Controller
      * dokumen integrasi yang mendefinisikan kontrak kategori kas, jadi bentuk
      * yang dipakai diturunkan dari implementasi yang berjalan, bukan dikarang.
      *
-     * Paginasi opsional: kirim ?page= (dan ?per_page= bila perlu) untuk
-     * mengaktifkannya. Tanpa itu, seluruh kategori kas aktif dikembalikan
-     * sekaligus.
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: cc_id, cc_name,
+     * cc_type, created_at, updated_at. ?search= mencari di cc_name.
      */
     public function cashCategories(Request $request): JsonResponse
     {
@@ -57,6 +57,15 @@ class MasterDataController extends Controller
                 'cc_name' => (string) $category->cc_name,
                 'cc_type' => (string) $category->cc_type,
             ],
+            sortable: [
+                'cc_id' => 'cc_id',
+                'cc_name' => 'cc_name',
+                'cc_type' => 'cc_type',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+            ],
+            searchable: ['cc_name'],
+            tieBreaker: 'cc_id',
         );
     }
 
@@ -66,9 +75,9 @@ class MasterDataController extends Controller
      * Kontrak API-002 menyebut hanya dua field: nama dan status. status tetap
      * disertakan walau nilainya selalu 1, karena kontraknya memintanya.
      *
-     * Paginasi opsional: kirim ?page= (dan ?per_page= bila perlu) untuk
-     * mengaktifkannya. Tanpa itu, seluruh tipe gudang aktif dikembalikan
-     * sekaligus.
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: nama, status,
+     * created_at, updated_at. ?search= mencari di nama.
      */
     public function warehouseTypes(Request $request): JsonResponse
     {
@@ -79,6 +88,14 @@ class MasterDataController extends Controller
                 'nama' => (string) $type->warehouse_type_name,
                 'status' => (int) $type->status,
             ],
+            sortable: [
+                'nama' => 'warehouse_type_name',
+                'status' => 'status',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+            ],
+            searchable: ['warehouse_type_name'],
+            tieBreaker: 'id',
         );
     }
 }

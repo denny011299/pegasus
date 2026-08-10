@@ -44,6 +44,8 @@ class MasterSalesListDoc extends ApiEndpointDoc
         return [
             ['name' => 'page', 'type' => 'integer', 'required' => false, 'description' => 'Nomor halaman. Kalau parameter ini tidak dikirim sama sekali, seluruh sales aktif dikembalikan sekaligus tanpa paginasi.'],
             ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'description' => 'Jumlah baris per halaman, hanya berlaku kalau page dikirim. Default 20, maksimum 100.'],
+            ['name' => 'sort', 'type' => 'string', 'required' => false, 'description' => 'Urutan kustom, format "kunci:arah" dipisah koma, mis. "nama:asc,created_at:desc". Kunci yang sah: id, staff_id, nama, kode, email, telepon, alamat, role, created_at, updated_at (nama_depan/nama_belakang TIDAK bisa dipakai, lihat catatan). arah: asc atau desc. Kunci/arah lain dilewati diam-diam, bukan galat.'],
+            ['name' => 'search', 'type' => 'string', 'required' => false, 'description' => 'Kata kunci, dicocokkan %LIKE% pada nama, kode, email, telepon, alamat, ATAU staff_id.'],
         ];
     }
 
@@ -95,10 +97,11 @@ class MasterSalesListDoc extends ApiEndpointDoc
             'Hanya staf berstatus aktif yang muncul.',
             'id adalah id staf pada sistem Pegasus. Inilah nilai yang diminta endpoint Pembayaran Kas pada field staff_id ketika payment_type bernilai 2, dan juga field staff_id pada tiap butir body PATCH /master/sales/connect (menghubungkan staf yang sudah ada dengan rujukan eksternal).',
             'staff_id di respons ini BUKAN id staf Pegasus — ini rujukan milik sistem pemanggil sendiri (external_ref_id), boleh null kalau staf itu belum pernah dihubungkan ke sistem eksternal mana pun lewat POST atau PATCH /master/sales/connect. Inilah nilai yang dipakai sebagai path parameter {staff_id} pada PUT dan DELETE /master/sales.',
-            'nama_depan dan nama_belakang adalah hasil pemisahan otomatis dari nama (dipisah pada spasi pertama), disertakan supaya sejalan dengan bentuk body create/update sales. Untuk staf yang namanya terdiri lebih dari dua kata dan tidak pernah dibuat/diubah lewat endpoint create/update sales, pemisahan ini bisa saja tidak sama dengan pembagian depan/belakang yang sebenarnya — staffs.staff_name memang cuma satu kolom gabungan.',
-            'role berisi nama peran staf yang bersangkutan apa adanya seperti tersimpan di Pegasus, misalnya "Sales".',
+            'nama_depan dan nama_belakang adalah hasil pemisahan otomatis dari nama (dipisah pada spasi pertama), disertakan supaya sejalan dengan bentuk body create/update sales. Untuk staf yang namanya terdiri lebih dari dua kata dan tidak pernah dibuat/diubah lewat endpoint create/update sales, pemisahan ini bisa saja tidak sama dengan pembagian depan/belakang yang sebenarnya — staffs.staff_name memang cuma satu kolom gabungan. Karena bukan kolom tersendiri, nama_depan/nama_belakang TIDAK bisa dipakai sebagai kunci ?sort= atau ikut dicari ?search= — urutkan/cari lewat nama sebagai gantinya.',
+            'role berisi nama peran staf yang bersangkutan apa adanya seperti tersimpan di Pegasus, misalnya "Sales". Bisa dipakai sebagai kunci ?sort= karena diambil lewat JOIN yang sudah ada pada kueri endpoint ini, bukan relasi terpisah.',
             'kode, email, telepon, alamat, staff_id, dan nama_belakang boleh bernilai null bila datanya memang belum diisi di Pegasus.',
             'Kata sandi, nama pengguna, saldo staf, dan hak akses tidak pernah dikembalikan.',
+            '?sort= menggantikan urutan bawaan sepenuhnya begitu ada satu saja kunci yang sah; kalau seluruh kunci yang dikirim tidak dikenal (termasuk nama_depan/nama_belakang), urutan bawaan (dibuat lebih dulu → id) tetap berlaku.',
             'Urutan daftar bersifat tetap.',
         ];
     }
