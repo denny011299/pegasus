@@ -40,9 +40,17 @@ class MasterUnitListDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengambil seluruh data master satuan yang berstatus aktif. '
+        return 'Mengambil daftar satuan yang berstatus aktif. '
             .'Dipakai sistem eksternal untuk menyelaraskan satuan sebelum '
-            .'menukar data produk atau stok.';
+            .'menukar data produk atau stok. Paginasi bersifat opsional.';
+    }
+
+    public function queryParameters(): array
+    {
+        return [
+            ['name' => 'page', 'type' => 'integer', 'required' => false, 'description' => 'Nomor halaman. Kalau parameter ini tidak dikirim sama sekali, seluruh satuan aktif dikembalikan sekaligus tanpa paginasi.'],
+            ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'description' => 'Jumlah baris per halaman, hanya berlaku kalau page dikirim. Default 20, maksimum 100.'],
+        ];
     }
 
     public function responseExample(): array
@@ -71,6 +79,10 @@ class MasterUnitListDoc extends ApiEndpointDoc
             ],
             'meta' => [
                 'total' => 11,
+                'per_page' => 11,
+                'current_page' => 1,
+                'next_page_exists' => false,
+                'total_page' => 1,
             ],
         ];
     }
@@ -78,7 +90,7 @@ class MasterUnitListDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Endpoint ini tidak menerima parameter apa pun. Seluruh satuan aktif selalu dikembalikan sekaligus.',
+            'Bentuk meta selalu sama, dipaginasi maupun tidak: total, per_page, current_page, next_page_exists, total_page. Tanpa ?page=, current_page selalu 1, total_page selalu 1, dan next_page_exists selalu false — satu halaman berisi semua satuan aktif.',
             'Hanya satuan berstatus aktif yang muncul. Satuan yang dihapus di Pegasus akan hilang dari daftar ini — perlakukan satuan yang tidak lagi muncul sebagai satuan yang sudah tidak berlaku.',
             'id adalah id pada sistem Pegasus, dipakai sebagai field id pada tiap butir body PATCH /master/units/connect. ref_unit_id adalah id satuan yang sama pada sistem PMO, boleh null selama satuan tersebut belum pernah dihubungkan lewat POST/PATCH endpoint ini atau Pusat Sinkronisasi — dan dipakai sebagai path parameter pada PUT/DELETE /master/units.',
             'ref_unit_id sekaligus ditulis Pusat Sinkronisasi (menarik data satuan dari PMO). POST/PUT/PATCH pada grup endpoint ini adalah jalur tulis kedua ke kolom yang sama — disengaja, keduanya melayani sistem yang sama (PMO); siapa yang menulis terakhir yang berlaku.',

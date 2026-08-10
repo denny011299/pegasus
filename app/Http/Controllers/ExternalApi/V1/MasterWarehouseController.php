@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesOptionalPagination;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
 use Illuminate\Http\JsonResponse;
@@ -33,26 +34,31 @@ use Illuminate\Validation\ValidationException;
  */
 class MasterWarehouseController extends Controller
 {
+    use HandlesOptionalPagination;
+
     /**
      * GET /api/external/v1/master/warehouses
      *
      * Mengikuti kontrak API-002 (nama, tipe_nama, tipe_id, alamat) ditambah
      * gudang_id, memakai nama field yang sama dengan yang dikembalikan
      * endpoint create/update/delete gudang.
+     *
+     * Paginasi opsional: kirim ?page= (dan ?per_page= bila perlu) untuk
+     * mengaktifkannya. Tanpa itu, seluruh gudang aktif dikembalikan
+     * sekaligus — lihat HandlesOptionalPagination.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $warehouses = (new Warehouse())->getWarehouseForExternalApi();
-
-        return ApiResponse::success(
-            $warehouses->map(static fn ($warehouse) => [
+        return $this->respondList(
+            (new Warehouse())->getWarehouseForExternalApi(),
+            $request,
+            static fn ($warehouse) => [
                 'gudang_id' => (int) $warehouse->id,
                 'nama' => (string) $warehouse->warehouse_name,
                 'tipe_nama' => (string) ($warehouse->type->warehouse_type_name ?? ''),
                 'tipe_id' => (int) $warehouse->warehouse_type_id,
                 'alamat' => $warehouse->warehouse_address,
-            ])->all(),
-            ['total' => $warehouses->count()],
+            ],
         );
     }
 

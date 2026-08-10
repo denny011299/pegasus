@@ -50,13 +50,18 @@ class WarehouseType extends Model
      *
      * Kolom status tetap ikut karena kontrak API memintanya secara eksplisit,
      * walaupun nilainya akan selalu 1 selama hanya baris aktif yang keluar.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesOptionalPagination, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat.
      */
     public function getWarehouseTypeForExternalApi()
     {
         return self::active()
             ->orderBy('created_at', 'asc')
             ->orderBy('id', 'asc')
-            ->get(['id', 'warehouse_type_name', 'status']);
+            ->select(['id', 'warehouse_type_name', 'status']);
     }
 
     public function getWarehouseType(array $data = [])

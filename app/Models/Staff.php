@@ -45,6 +45,12 @@ class Staff extends Model
      *
      * Satu kueri JOIN, tanpa N+1, dan hanya kolom yang aman yang diambil:
      * kata sandi, nama pengguna, dan saldo staf tidak pernah ikut terbaca.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesOptionalPagination, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat. JOIN-nya aman dipaginasi: role_id adalah relasi banyak-ke-
+     * satu ke roles, jadi tidak ada baris staf yang terlipat ganda.
      */
     function getSalesForExternalApi(string $roleNameLike = 'sales')
     {
@@ -54,7 +60,7 @@ class Staff extends Model
             ->where('staffs.status', '=', 1)
             ->orderBy('staffs.created_at', 'asc')
             ->orderBy('staffs.staff_id', 'asc')
-            ->get([
+            ->select([
                 'staffs.staff_id',
                 'staffs.staff_name',
                 'staffs.staff_code',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesOptionalPagination;
 use App\Models\Role;
 use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
@@ -42,16 +43,21 @@ use Illuminate\Support\Facades\DB;
  */
 class MasterSalesController extends Controller
 {
+    use HandlesOptionalPagination;
+
     /**
      * GET /api/external/v1/master/sales
+     *
+     * Paginasi opsional: kirim ?page= (dan ?per_page= bila perlu) untuk
+     * mengaktifkannya. Tanpa itu, seluruh sales aktif dikembalikan
+     * sekaligus — lihat HandlesOptionalPagination.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $sales = (new Staff())->getSalesForExternalApi();
-
-        return ApiResponse::success(
-            $sales->map(fn ($staff) => $this->presentRow($staff))->all(),
-            ['total' => $sales->count()],
+        return $this->respondList(
+            (new Staff())->getSalesForExternalApi(),
+            $request,
+            fn ($staff) => $this->presentRow($staff),
         );
     }
 

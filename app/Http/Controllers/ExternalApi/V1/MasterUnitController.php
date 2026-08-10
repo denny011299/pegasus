@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesOptionalPagination;
 use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,16 +43,21 @@ use Illuminate\Support\Facades\DB;
  */
 class MasterUnitController extends Controller
 {
+    use HandlesOptionalPagination;
+
     /**
      * GET /api/external/v1/master/units
+     *
+     * Paginasi opsional: kirim ?page= (dan ?per_page= bila perlu) untuk
+     * mengaktifkannya. Tanpa itu, seluruh satuan aktif dikembalikan
+     * sekaligus — lihat HandlesOptionalPagination.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $units = (new Unit())->getUnitForExternalApi();
-
-        return ApiResponse::success(
-            $units->map(fn ($unit) => $this->present($unit))->all(),
-            ['total' => $units->count()],
+        return $this->respondList(
+            (new Unit())->getUnitForExternalApi(),
+            $request,
+            fn ($unit) => $this->present($unit),
         );
     }
 

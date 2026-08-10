@@ -69,6 +69,10 @@ class MasterArmadaListDoc extends ApiEndpointDoc
             ],
             'meta' => [
                 'total' => 2,
+                'per_page' => 2,
+                'current_page' => 1,
+                'next_page_exists' => false,
+                'total_page' => 1,
             ],
         ];
     }
@@ -76,7 +80,7 @@ class MasterArmadaListDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Tanpa ?page=, seluruh armada aktif dikembalikan sekaligus dan meta hanya berisi total — sama seperti endpoint data master lain. Dengan ?page=, bentuk meta berubah menjadi meta.pagination (page, per_page, total, total_pages), mengikuti standar paginasi platform.',
+            'Bentuk meta selalu sama, dipaginasi maupun tidak: total, per_page, current_page, next_page_exists, total_page. Tanpa ?page=, current_page selalu 1, total_page selalu 1, dan next_page_exists selalu false — satu halaman berisi semua armada aktif.',
             'Hanya armada berstatus aktif yang muncul. Armada yang dihapus lewat DELETE /armada (atau dinonaktifkan lewat halaman admin) hilang dari daftar ini.',
             'id adalah id pelanggan pada sistem Pegasus (customers.customer_id) — hanya untuk referensi, tidak dipakai sebagai path parameter di endpoint mana pun pada modul ini.',
             'customer_code adalah id UNIVERSAL untuk armada ini: kalau dibuat lewat POST endpoint ini, nilainya persis yang dikirim pemanggil; kalau dibuat lewat halaman admin, nilainya di-generate otomatis Pegasus (format "CUSxxxx"). Dipakai sebagai path parameter pada PUT dan DELETE /armada.',

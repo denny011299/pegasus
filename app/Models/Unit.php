@@ -50,13 +50,18 @@ class Unit extends Model
      *
      * Kolom yang dipilih dibatasi di sini, bukan di controller, supaya kolom
      * internal tidak pernah sempat ikut terbaca.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesOptionalPagination, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat.
      */
     function getUnitForExternalApi()
     {
         return self::where('status', '=', 1)
             ->orderBy('created_at', 'asc')
             ->orderBy('unit_id', 'asc')
-            ->get(['unit_id', 'ref_unit_id', 'unit_name', 'unit_short_name']);
+            ->select(['unit_id', 'ref_unit_id', 'unit_name', 'unit_short_name']);
     }
 
     function insertUnit($data)
