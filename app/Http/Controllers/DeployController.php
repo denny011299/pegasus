@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SnapshotRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Artisan;
@@ -123,9 +124,17 @@ class DeployController extends Controller
     }
 
     /**
-     * Full dev-data snapshot restore (database/seeders/data/*.json). Truncates
-     * every table the snapshot covers and reloads it — intended for staging,
-     * not for a production DB holding real data.
+     * Full dev-data snapshot restore. Truncates every table the chosen
+     * snapshot covers and reloads it — intended for staging, not for a
+     * production DB holding real data.
+     *
+     * Which snapshot: the 'snapshot' field selects among whatever
+     * SnapshotRegistry::list() finds (database/seeders/data = "default",
+     * plus any database/seeders/snapshots/<name> committed to the repo —
+     * see `php artisan snapshot:import-sql`). Defaults to "default" so
+     * existing callers that only ever POSTed `confirm` keep working
+     * unchanged. The name is checked against that same list before use, so
+     * an unknown/crafted value 403s instead of reaching the filesystem.
      */
     public function seedSnapshot(Request $request)
     {
@@ -135,9 +144,17 @@ class DeployController extends Controller
         if ($blocked = $this->requireConfirmation($request, 'SEED')) {
             return $blocked;
         }
-        $this->logDestructive($request, 'db:seed (full snapshot restore)');
 
-        Artisan::call('db:seed', ['--force' => true]);
+        $name = (string) $request->input('snapshot', SnapshotRegistry::DEFAULT_NAME);
+        $known = array_column(SnapshotRegistry::list(), 'name');
+
+        if (! in_array($name, $known, true)) {
+            return $this->forbidden("Snapshot tidak dikenal: {$name}. Pilihan: " . implode(', ', $known));
+        }
+
+        $this->logDestructive($request, "snapshot:restore {$name} (full snapshot restore)");
+
+        Artisan::call('snapshot:restore', ['name' => $name]);
 
         return response('<pre>'.e(Artisan::output()).'</pre>');
     }
@@ -165,7 +182,8 @@ class DeployController extends Controller
     /**
      * Small standalone HTML form so seed/fresh can be triggered from a
      * browser without curl, while still forcing the operator to type the
-     * confirm phrase by hand (never pre-filled).
+     * confirm phrase by hand (never pre-filled). Also renders the snapshot
+     * picker for the seed form (see seedSnapshot()).
      */
     public function console(Request $request)
     {
@@ -173,6 +191,23 @@ class DeployController extends Controller
             return $blocked;
         }
 
-        return view('Deploy.console', ['token' => $request->query('token')]);
+        return view('Deploy.console', [
+            'token' => $request->query('token'),
+            'snapshots' => SnapshotRegistry::list(),
+        ]);
+    }
+
+    /**
+     * Read-only listing of available named snapshots (JSON) — what the
+     * console's dropdown is built from, and usable directly by anyone
+     * scripting against /deploy/seed to see valid `snapshot` values first.
+     */
+    public function snapshots(Request $request)
+    {
+        if ($blocked = $this->guard($request)) {
+            return $blocked;
+        }
+
+        return response()->json(SnapshotRegistry::list());
     }
 }

@@ -13,6 +13,7 @@
   button, a.btn { display: inline-block; background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; }
   .danger button { background: #d33; }
   input[type=text] { padding: 6px 8px; border: 1px solid #bbb; border-radius: 4px; font-size: 14px; width: 140px; }
+  select { padding: 6px 8px; border: 1px solid #bbb; border-radius: 4px; font-size: 14px; max-width: 100%; }
   small { color: #666; }
   pre { background: #111; color: #ddd; padding: 12px; overflow-x: auto; border-radius: 6px; }
 </style>
@@ -39,12 +40,26 @@
 
 <div class="card danger">
   <strong>Seed snapshot penuh</strong> (untuk staging/testing)
-  <p><small>Meng-truncate semua tabel di snapshot lalu memuat ulang data dev dari <code>database/seeders/data</code>. <u>Jangan jalankan di database produksi berisi data asli.</u></small></p>
+  <p><small>Meng-truncate semua tabel di snapshot terpilih lalu memuat ulang datanya. <u>Jangan jalankan di database produksi berisi data asli.</u></small></p>
   <form method="POST" action="{{ url('/deploy/seed?token=' . $token) }}"
-        onsubmit="return confirm('Ini akan MENGHAPUS data di semua tabel snapshot dan menggantinya dengan data dev. Lanjutkan?');">
+        onsubmit="return confirm('Ini akan MENGHAPUS data di semua tabel snapshot \'' + this.snapshot.selectedOptions[0].dataset.name + '\' dan menggantinya dengan data snapshot itu. Lanjutkan?');">
     @csrf
-    <label>Ketik <code>SEED</code> untuk konfirmasi: <input type="text" name="confirm" autocomplete="off"></label>
-    <button type="submit">Jalankan db:seed</button>
+    <p>
+      <label>Snapshot:
+        <select name="snapshot">
+          @forelse ($snapshots as $snap)
+            <option value="{{ $snap['name'] }}" data-name="{{ $snap['name'] }}">
+              {{ $snap['name'] }}{{ $snap['label'] ? ' — ' . $snap['label'] : '' }}
+              ({{ $snap['tables'] }} tabel, {{ $snap['rows'] }} baris{{ $snap['generated_at'] ? ', ' . $snap['generated_at'] : '' }})
+            </option>
+          @empty
+            <option value="default" data-name="default">default</option>
+          @endforelse
+        </select>
+      </label>
+    </p>
+    <p><label>Ketik <code>SEED</code> untuk konfirmasi: <input type="text" name="confirm" autocomplete="off"></label></p>
+    <button type="submit">Jalankan seed</button>
   </form>
 </div>
 

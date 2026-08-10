@@ -45,6 +45,7 @@ class DeployControllerTest extends TestCase
             'migrate-status' => ['/deploy/migrate-status'],
             'optimize-clear' => ['/deploy/optimize-clear'],
             'console' => ['/deploy/console'],
+            'snapshots' => ['/deploy/snapshots'],
         ];
     }
 
@@ -130,14 +131,37 @@ class DeployControllerTest extends TestCase
             ->assertStatus(403);
     }
 
-    public function test_seed_calls_db_seed_only_once_the_token_and_confirm_phrase_both_match(): void
+    public function test_seed_calls_snapshot_restore_default_only_once_the_token_and_confirm_phrase_both_match(): void
     {
         $this->setDeployToken(self::VALID_TOKEN);
-        Artisan::shouldReceive('call')->once()->with('db:seed', ['--force' => true])->andReturn(0);
+        Artisan::shouldReceive('call')->once()->with('snapshot:restore', ['name' => 'default'])->andReturn(0);
         Artisan::shouldReceive('output')->andReturn('mocked output');
 
         $this->post('/deploy/seed?token='.self::VALID_TOKEN, ['confirm' => 'SEED'])
             ->assertStatus(200);
+    }
+
+    public function test_seed_restores_the_named_snapshot_the_form_selected(): void
+    {
+        $this->setDeployToken(self::VALID_TOKEN);
+        Artisan::shouldReceive('call')->once()->with('snapshot:restore', ['name' => 'default'])->andReturn(0);
+        Artisan::shouldReceive('output')->andReturn('mocked output');
+
+        // "default" is the only snapshot guaranteed to exist in every checkout (database/seeders/data);
+        // this proves the `snapshot` field is read and passed through, without depending on a second
+        // named snapshot existing in this checkout.
+        $this->post('/deploy/seed?token='.self::VALID_TOKEN, ['confirm' => 'SEED', 'snapshot' => 'default'])
+            ->assertStatus(200);
+    }
+
+    public function test_seed_rejects_an_unknown_snapshot_name_without_calling_artisan(): void
+    {
+        $this->setDeployToken(self::VALID_TOKEN);
+        Artisan::shouldReceive('call')->never();
+
+        $this->post('/deploy/seed?token='.self::VALID_TOKEN, ['confirm' => 'SEED', 'snapshot' => '../../etc/passwd'])
+            ->assertStatus(403)
+            ->assertSee('Snapshot tidak dikenal', false);
     }
 
     public function test_fresh_empty_is_blocked_by_a_wrong_confirm_phrase(): void

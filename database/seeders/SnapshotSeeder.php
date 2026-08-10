@@ -15,6 +15,12 @@ use Illuminate\Support\Facades\Schema;
  * down to the columns the CURRENT branch actually has, and tables missing on
  * this branch are reported and skipped rather than aborting the run. That is
  * what lets one committed snapshot restore a dev environment from any branch.
+ *
+ * Which snapshot: `php artisan db:seed` (no binding set) always restores the
+ * "default" snapshot at database/seeders/data, unchanged from before. To
+ * restore a different named snapshot (database/seeders/snapshots/<name>),
+ * go through `php artisan snapshot:restore <name>` instead of calling this
+ * seeder directly — that command binds 'snapshot.dir' before invoking it.
  */
 class SnapshotSeeder extends Seeder
 {
@@ -22,7 +28,7 @@ class SnapshotSeeder extends Seeder
 
     public function run(): void
     {
-        $dir = database_path('seeders/data');
+        $dir = app()->bound('snapshot.dir') ? app('snapshot.dir') : database_path('seeders/data');
         $indexPath = $dir . '/_snapshot.json';
 
         if (! File::exists($indexPath)) {
