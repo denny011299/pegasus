@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Session;
 
 class Product extends Model
@@ -12,6 +14,39 @@ class Product extends Model
     protected $primaryKey = "product_id";
     public $timestamps = true;
     public $incrementing = true;
+
+    /** Dipakai lewat eager-load opsional (?show_category=) pada External API. */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'category_id', 'category_id');
+    }
+
+    /** Dipakai lewat eager-load opsional (?show_variants=) pada External API. */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ProductVariant::class, 'product_id', 'product_id');
+    }
+
+    /**
+     * Daftar produk untuk External API.
+     *
+     * Aturan bisnisnya sama dengan getProduct(): hanya baris aktif
+     * (status = 1). Kolom yang dipilih dibatasi di sini supaya kolom
+     * internal (product_alert, created_by) tidak pernah sempat ikut
+     * terbaca lewat endpoint ini.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesListQueryParams, dan menambah ->with() untuk ?show_category=/
+     * ?show_variants= sebelum query benar-benar dijalankan.
+     */
+    public function getProductForExternalApi()
+    {
+        return self::where('status', 1)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('product_id', 'asc')
+            ->select(['product_id', 'ref_product_id', 'product_name', 'category_id', 'unit_id', 'product_unit']);
+    }
 
     function getProduct($data = [])
     {

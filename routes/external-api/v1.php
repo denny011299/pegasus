@@ -3,6 +3,7 @@
 use App\Http\Controllers\ExternalApi\V1\CashPaymentController;
 use App\Http\Controllers\ExternalApi\V1\MasterArmadaController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
+use App\Http\Controllers\ExternalApi\V1\MasterProductController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
 use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
@@ -100,4 +101,25 @@ Route::prefix('armada')->name('armada.')->group(function () {
     Route::post('/', [MasterArmadaController::class, 'store'])->name('store');
     Route::put('/{customer_code}', [MasterArmadaController::class, 'update'])->name('update');
     Route::delete('/{customer_code}', [MasterArmadaController::class, 'destroy'])->name('destroy');
+});
+
+/*
+ * Data Produk.
+ *
+ * Modul tersendiri, bukan bagian dari prefix master/ di atas — sama seperti
+ * Data Armada, punya rute dan halaman dokumentasi sendiri ("Data Produk").
+ * Beda dengan Armada: produk PUNYA endpoint connect, karena
+ * products.ref_product_id — sama seperti units.ref_unit_id — nullable dan
+ * sering kosong untuk produk yang dibuat lewat halaman admin, bukan selalu
+ * terisi seperti customers.customer_code. {ref_product_id} pada PUT/DELETE
+ * adalah rujukan itu; PATCH /produk/connect terpisah, menghubungkan banyak
+ * produk sekaligus (body.connections), tiap butir memakai id internal
+ * Pegasus. Lihat catatan kelas MasterProductController.
+ */
+Route::prefix('produk')->name('produk.')->group(function () {
+    Route::get('/', [MasterProductController::class, 'index'])->name('index');
+    Route::post('/', [MasterProductController::class, 'store'])->name('store');
+    Route::put('/{ref_product_id}', [MasterProductController::class, 'update'])->name('update');
+    Route::delete('/{ref_product_id}', [MasterProductController::class, 'destroy'])->name('destroy');
+    Route::patch('/connect', [MasterProductController::class, 'connect'])->name('connect');
 });

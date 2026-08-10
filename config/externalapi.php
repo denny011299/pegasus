@@ -170,6 +170,16 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaCreateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaUpdateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaDeleteDoc::class,
+
+        // Data Produk — modul tersendiri, sama seperti Data Armada. Beda
+        // dengan Armada: produk punya endpoint connect, karena
+        // products.ref_product_id nullable dan sering kosong (sama seperti
+        // units.ref_unit_id), bukan selalu terisi seperti customer_code.
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductLinkDoc::class,
     ],
 
     /*
@@ -185,7 +195,7 @@ return [
         'master' => 'Data Master',
         'armada' => 'Data Armada',
         'pembayaran' => 'Pembayaran',
-        'produk' => 'Produk',
+        'produk' => 'Data Produk',
         'stok' => 'Stok',
         'pesanan' => 'Pesanan',
         'pelanggan' => 'Pelanggan',
