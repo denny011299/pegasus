@@ -73,11 +73,25 @@ class Customer extends Model
         $t->save();
     }
 
-     function generateCustomerID()
+    /**
+     * customer_code sekarang wajib unik (units_customer_code_unique — lihat
+     * migrasi 2026_08_11_120000) karena dipakai sebagai id universal oleh
+     * External API (/armada). Kode di-generate dari max(customer_id)
+     * seperti sebelumnya, tapi kalau kode itu ternyata sudah dipakai —
+     * misalnya oleh pelanggan yang dibuat lewat External API dengan
+     * customer_code bebas — nomor urutnya dinaikkan sampai ketemu kode yang
+     * benar-benar belum dipakai, supaya pembuatan pelanggan lewat halaman
+     * admin tidak pernah diam-diam gagal menabrak unique index itu.
+     */
+    function generateCustomerID()
     {
-        $id  = self::max('customer_id');
-        if (is_null($id)) $id = 0;
-        $id++;
-        return "CUS".str_pad($id, 4, "0", STR_PAD_LEFT);
+        $id = (int) self::max('customer_id');
+
+        do {
+            $id++;
+            $code = "CUS".str_pad($id, 4, "0", STR_PAD_LEFT);
+        } while (self::where('customer_code', $code)->exists());
+
+        return $code;
     }
 }
