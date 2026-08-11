@@ -7,6 +7,7 @@ use App\Http\Controllers\ExternalApi\V1\MasterProductController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
 use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
+use App\Http\Controllers\ExternalApi\V1\ShipmentController;
 use App\Http\Controllers\ExternalApi\V1\StockController;
 use Illuminate\Support\Facades\Route;
 
@@ -137,4 +138,21 @@ Route::prefix('produk')->name('produk.')->group(function () {
  */
 Route::prefix('stock')->name('stock.')->group(function () {
     Route::post('/check', [StockController::class, 'check'])->name('check');
+});
+
+/*
+ * Shipment.
+ *
+ * Modul baru mengikuti "private docs/Open API/API_Integration_Specification_PMO_IPM_v1.md"
+ * (API Contract v1): /shipments/scheduled (dibangun di sini), /shipments/shipped,
+ * /shipments/status, /shipments/cancel, GET /shipments/{ref_shipment_id} (menyusul terpisah).
+ * Prefix rute PLURAL ("shipments") sesuai dokumen itu, beda dengan nama modul/branch yang
+ * singular ("Shipment") — dikonfirmasi pemilik produk.
+ *
+ * Tabelnya TETAP sales_orders/sales_order_details (menu admin "Pengiriman"), bukan tabel baru —
+ * lihat catatan kelas ShipmentController. scheduled() memakai ulang cek stok yang SAMA PERSIS
+ * dengan POST /stock/check lewat Concerns\ChecksStockAvailability.
+ */
+Route::prefix('shipments')->name('shipments.')->group(function () {
+    Route::post('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');
 });

@@ -720,6 +720,10 @@ function renderSoStatus(status) {
     if (status === 3) {
         return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Ditolak</span>';
     }
+    if (status === 4) {
+        // Dijadwalkan lewat External API (POST /shipments/scheduled) — belum di-ACC, stok belum dipotong.
+        return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-calendar me-1"></i> Dijadwalkan</span>';
+    }
     return "-";
 }
 

@@ -183,6 +183,11 @@ return [
 
         // Stok — modul baru, hanya baca (tidak ada create/update/delete).
         \App\ExternalApi\Docs\Endpoints\V1\StockCheckDoc::class,
+
+        // Shipment — modul baru. Baru /shipments/scheduled; /shipments/shipped,
+        // /shipments/status, /shipments/cancel, GET /shipments/{ref_shipment_id} menyusul
+        // terpisah (lihat API Contract v1 di "private docs/Open API/").
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentScheduledDoc::class,
     ],
 
     /*
@@ -200,6 +205,7 @@ return [
         'pembayaran' => 'Pembayaran',
         'produk' => 'Data Produk',
         'stok' => 'Stok',
+        'pengiriman' => 'Pengiriman',
         'pesanan' => 'Pesanan',
         'pelanggan' => 'Pelanggan',
     ],
