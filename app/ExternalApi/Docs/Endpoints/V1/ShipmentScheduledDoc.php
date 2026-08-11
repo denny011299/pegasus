@@ -37,10 +37,10 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
     public function description(): string
     {
         return 'Mengecek stok (logika yang sama dengan POST /stock/check) lalu menjadwalkan '
-            .'shipment: membuat satu baris Pengiriman (sales_orders) berstatus "scheduled". '
-            .'Shipment TETAP dijadwalkan meski ada item yang kurang stok — pemotongan stok '
-            .'sungguhan baru terjadi di POST /shipments/shipped (belum tersedia). Bila diminta, '
-            .'kekurangan dicatat sebagai dokumen terpisah untuk staf gudang/pembelian.';
+            .'shipment: membuat satu baris Pengiriman (sales_orders) ber-ipm_status "Dijadwalkan" '
+            .'(1). Shipment TETAP dijadwalkan meski ada item yang kurang stok — pemotongan stok '
+            .'sungguhan baru terjadi di POST /shipments/shipped. Bila diminta, kekurangan dicatat '
+            .'sebagai dokumen terpisah untuk staf gudang/pembelian.';
     }
 
     public function bodyParameters(): array
@@ -85,7 +85,8 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
             'data' => [
                 'shipment_internal_id' => 505,
                 'ref_shipment_id' => 'SHP-7788',
-                'status' => 'scheduled',
+                'ipm_status' => 1,
+                'ipm_status_label' => 'Dijadwalkan',
                 'shortage_doc_created' => true,
                 'shortage_doc_number' => 'BG-0101',
             ],
@@ -112,8 +113,8 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
     {
         return [
             'Shipment SELALU dijadwalkan (SO dibuat), baik ada shortage atau tidak — shortage TIDAK menolak permintaan. auto_create_shortage_doc hanya mengatur apakah kekurangan itu dicatat sebagai dokumen terpisah.',
-            'ref_shipment_id unik permanen — beda dengan POST /payments/cash yang idempoten. Mengirim ulang ref_shipment_id yang sama (retry jaringan dsb.) ditolak duplicate_ref_id; pemanggil wajib memakai ref_shipment_id baru per percobaan.',
-            'sales_orders.status yang dipakai di sini (4 = "Dijadwalkan") BARU, terpisah dari status 1/2/3 yang dipakai alur Pengiriman manual lewat halaman admin — SO hasil endpoint ini bisa dibedakan asalnya dari status itu sendiri.',
+            'ref_shipment_id unik permanen — beda dengan POST /payments/cash (dan POST /shipments/shipped) yang idempoten. Mengirim ulang ref_shipment_id yang sama (retry jaringan dsb.) ditolak duplicate_ref_id; pemanggil wajib memakai ref_shipment_id baru per percobaan.',
+            'ipm_status/ipm_status_label BUKAN sales_orders.status apa adanya — lihat App\\ExternalApi\\Support\\ShipmentStatusMap. SO hasil endpoint ini tersimpan dengan status internal 4 ("Dijadwalkan", terpisah dari 1/2/3 yang dipakai alur Pengiriman manual lewat halaman admin), dipetakan ke ipm_status 1.',
             'Stok yang dicek adalah gudang utama (tidak ada parameter gudang pada endpoint ini) — sama seperti default POST /stock/check ketika gudang_id tidak dikirim.',
             'Endpoint ini murni penjadwalan logistik, tidak membawa informasi harga — so_total/sod_harga/sod_subtotal seluruhnya tersimpan 0.',
             'sales_order_details dibuat satu baris per items[], memakai ulang App\\Models\\SalesOrderDetail::insertSalesOrderDetail() — sama persis dengan yang dipakai halaman admin Pengiriman.',

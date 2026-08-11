@@ -125,7 +125,8 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
             'success' => true,
             'data' => [
                 'ref_shipment_id' => $refShipmentId,
-                'status' => 'scheduled',
+                'ipm_status' => 1,
+                'ipm_status_label' => 'Dijadwalkan',
                 'shortage_doc_created' => false,
                 'shortage_doc_number' => null,
             ],
@@ -175,7 +176,8 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $response->assertStatus(201)->assertJson([
             'success' => true,
             'data' => [
-                'status' => 'scheduled',
+                'ipm_status' => 1,
+                'ipm_status_label' => 'Dijadwalkan',
                 'shortage_doc_created' => true,
             ],
         ]);
@@ -220,7 +222,8 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $response->assertStatus(201)->assertJson([
             'success' => true,
             'data' => [
-                'status' => 'scheduled',
+                'ipm_status' => 1,
+                'ipm_status_label' => 'Dijadwalkan',
                 'shortage_doc_created' => false,
                 'shortage_doc_number' => null,
             ],

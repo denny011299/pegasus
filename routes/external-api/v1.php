@@ -151,8 +151,12 @@ Route::prefix('stock')->name('stock.')->group(function () {
  *
  * Tabelnya TETAP sales_orders/sales_order_details (menu admin "Pengiriman"), bukan tabel baru —
  * lihat catatan kelas ShipmentController. scheduled() memakai ulang cek stok yang SAMA PERSIS
- * dengan POST /stock/check lewat Concerns\ChecksStockAvailability.
+ * dengan POST /stock/check lewat Concerns\ChecksStockAvailability. shipped() idempoten lewat
+ * ref_shipment_id (beda dengan scheduled() yang menolak duplikat) dan memakai ulang
+ * App\Support\SalesOrderApproval::confirm() — logika accSO() yang sama dipakai halaman admin
+ * Pengiriman, diekstrak supaya bisa dipakai di sini juga.
  */
 Route::prefix('shipments')->name('shipments.')->group(function () {
     Route::post('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');
+    Route::post('/shipped', [ShipmentController::class, 'shipped'])->name('shipped');
 });

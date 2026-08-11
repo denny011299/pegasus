@@ -59,16 +59,10 @@ trait ChecksStockAvailability
      */
     protected function checkStockAvailability(int $warehouseId, array $items): array
     {
-        $variantsBySku = ProductVariant::whereIn('product_variant_sku', array_column($items, 'sku'))
-            ->where('status', 1)
-            ->orderBy('product_variant_id')
-            ->get(['product_variant_id', 'product_id', 'product_variant_sku', 'product_variant_name'])
-            ->keyBy('product_variant_sku');
-
-        $unitsByRef = Unit::whereIn('ref_unit_id', array_column($items, 'unit_id'))
-            ->where('status', 1)
-            ->get(['unit_id', 'ref_unit_id'])
-            ->keyBy('ref_unit_id');
+        [$variantsBySku, $unitsByRef] = $this->resolveVariantsAndUnits(
+            array_column($items, 'sku'),
+            array_column($items, 'unit_id'),
+        );
 
         $hasShortage = false;
         $results = array_map(function (array $item) use ($variantsBySku, $unitsByRef, $warehouseId, &$hasShortage) {
@@ -103,5 +97,32 @@ trait ChecksStockAvailability
         }, $items);
 
         return ['has_shortage' => $hasShortage, 'items' => $results];
+    }
+
+    /**
+     * Bagian pencarian sku->variant / ref_unit_id->unit yang sama-sama dipakai
+     * checkStockAvailability() (StockController, ShipmentController::scheduled()) MAUPUN
+     * ShipmentController::shipped() — yang terakhir memakai nama field berbeda (variant_sku,
+     * bukan sku) sehingga tidak bisa lewat checkStockAvailability() apa adanya, tapi resolusinya
+     * persis sama.
+     *
+     * @param  array<int, string>  $skus
+     * @param  array<int, int>  $refUnitIds
+     * @return array{0: \Illuminate\Support\Collection<string, ProductVariant>, 1: \Illuminate\Support\Collection<int, Unit>}
+     */
+    protected function resolveVariantsAndUnits(array $skus, array $refUnitIds): array
+    {
+        $variantsBySku = ProductVariant::whereIn('product_variant_sku', $skus)
+            ->where('status', 1)
+            ->orderBy('product_variant_id')
+            ->get(['product_variant_id', 'product_id', 'product_variant_sku', 'product_variant_name'])
+            ->keyBy('product_variant_sku');
+
+        $unitsByRef = Unit::whereIn('ref_unit_id', $refUnitIds)
+            ->where('status', 1)
+            ->get(['unit_id', 'ref_unit_id'])
+            ->keyBy('ref_unit_id');
+
+        return [$variantsBySku, $unitsByRef];
     }
 }

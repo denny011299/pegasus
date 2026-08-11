@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Http\ApiResponse;
+use App\ExternalApi\Support\ShipmentPhotoStore;
+use App\ExternalApi\Support\ShipmentStatusMap;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\ChecksStockAvailability;
 use App\Models\Customer;
@@ -11,30 +13,35 @@ use App\Models\ProductStock;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderDetail;
 use App\Models\ShipmentShortageDocument;
+use App\Support\SalesOrderApproval;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Modul Shipment untuk sistem eksternal (API Contract v1 — lihat "private docs/Open API/
  * API_Integration_Specification_PMO_IPM_v1.md": /shipments/scheduled, /shipments/shipped,
- * /shipments/status, /shipments/cancel, GET /shipments/{ref_shipment_id}). Baru
- * /shipments/scheduled yang dibangun di sini — endpoint lain menyusul terpisah.
+ * /shipments/status, /shipments/cancel, GET /shipments/{ref_shipment_id}). scheduled() dan
+ * shipped() dibangun di sini — endpoint lain menyusul terpisah.
  *
  * Tabel yang dipakai TETAP sales_orders/sales_order_details — sama seperti menu admin
  * "Pengiriman" (lihat catatan migrasi retail_warehouse_id: "Menu UI = Pengiriman, tabel =
- * sales_orders"). Shipment yang dijadwalkan lewat API ini akan langsung muncul di halaman admin
- * itu juga, berstatus "Dijadwalkan" (status = 4, lihat migrasi
- * 2026_08_11_130000_add_ref_shipment_id_and_scheduled_status_to_sales_orders) — bukan tabel
- * terpisah.
+ * sales_orders"). Shipment yang dijadwalkan/dikirim lewat API ini langsung muncul di halaman
+ * admin itu juga — bukan tabel terpisah.
+ *
+ * ipm_status pada respons SELALU lewat App\ExternalApi\Support\ShipmentStatusMap — bukan
+ * sales_orders.status apa adanya, kosakatanya beda (lihat docblock kelas itu).
  */
 class ShipmentController extends Controller
 {
     use ChecksStockAvailability;
 
-    /** sales_orders.status = 4, lihat migrasi 2026_08_11_130000_*. */
+    /** sales_orders.status, lihat migrasi 2026_08_11_130000_* dan model SalesOrder. */
+    private const STATUS_CONFIRMED = 2;
+
     private const STATUS_SCHEDULED = 4;
 
     /**
@@ -153,13 +160,340 @@ class ShipmentController extends Controller
             throw $e;
         }
 
-        return ApiResponse::success([
+        $ipm = $this->ipmStatusFields($result['so']);
+
+        return ApiResponse::success(array_merge([
             'shipment_internal_id' => (int) $result['so']->so_id,
             'ref_shipment_id' => (string) $data['ref_shipment_id'],
-            'status' => 'scheduled',
+        ], $ipm, [
             'shortage_doc_created' => $result['shortage_doc_number'] !== null,
             'shortage_doc_number' => $result['shortage_doc_number'],
-        ], [], 201);
+        ]), [], 201);
+    }
+
+    /**
+     * POST /api/external/v1/shipments/shipped
+     *
+     * Idempoten lewat ref_shipment_id (satu-satunya endpoint Shipment yang begitu — beda dengan
+     * /shipments/scheduled yang menolak duplikat):
+     *   - ref_shipment_id BELUM ada -> buat baris sales_orders + sales_order_details baru
+     *     (reuse SalesOrder::insertSalesOrder()/SalesOrderDetail::insertSalesOrderDetail(), sama
+     *     seperti scheduled()), lalu langsung dikonfirmasi (lihat di bawah).
+     *   - ref_shipment_id SUDAH ada, sales_orders.status belum Confirmed (1 Created / 4
+     *     Dijadwalkan) -> baris yang sama diperbarui (bukan bikin baru), lalu dikonfirmasi.
+     *     Beda antara data tersimpan vs permintaan ini ditangani lewat detail_handler:
+     *       - "force" (bawaan): timpa (armada_code/shipment_date/notes/photos/items).
+     *       - "validate": TOLAK dengan galat informatif shipment_detail_mismatch, tidak ada yang
+     *         berubah — tidak ada beda sama sekali (data sudah identik) selalu lanjut ke
+     *         konfirmasi apa pun nilai detail_handler-nya.
+     *   - ref_shipment_id SUDAH ada, sales_orders.status = Confirmed (2, sudah pernah di-"ship"
+     *     lewat panggilan sebelumnya) -> idempotent replay MURNI: isi permintaan ini TIDAK
+     *     dibandingkan sama sekali (sama seperti /payments/cash), tidak ada stok yang dipotong
+     *     dua kali, tidak ada detail yang diubah — status yang sudah tersimpan dikembalikan apa
+     *     adanya lewat meta.idempotent_replay.
+     *
+     * Konfirmasi (potong stok + status -> Confirmed) memakai ulang App\Support\
+     * SalesOrderApproval::confirm() — PERSIS logika accSO() yang dipakai halaman admin Pengiriman
+     * (buildPlan -> executeDeduct -> set status), diekstrak supaya bisa dipakai di sini juga.
+     * Kalau stok tidak cukup, baris sales_orders TETAP ada (status tidak maju ke Confirmed) —
+     * sama seperti kalau admin gagal ACC lewat halaman admin, bukan galat 500.
+     *
+     * variant_sku (BUKAN "sku" seperti /stock/check dan /shipments/scheduled) di-resolve ke
+     * product_variant_id lewat Concerns\ChecksStockAvailability::resolveVariantsAndUnits() —
+     * resolusinya sama, cuma nama field bodinya beda di endpoint ini. items[].product_name/
+     * variant_name TIDAK di-lookup dari database — dipakai apa adanya dari body permintaan untuk
+     * sales_order_details.sod_nama/sod_variant, sama seperti field yang sudah diterima
+     * SalesOrderDetail::insertSalesOrderDetail() dari form admin.
+     *
+     * photos menerima file sungguhan lewat multipart/form-data (photos[] sebagai upload) ATAU
+     * data URI base64 lewat JSON murni — lihat App\ExternalApi\Support\ShipmentPhotoStore.
+     * Disimpan ke sales_orders.so_img (kolom yang sama dipakai halaman admin), folder
+     * public/issue/ (sama persis dengan CustomerController::insertSalesOrder()).
+     */
+    public function shipped(Request $request): JsonResponse
+    {
+        $data = $this->validateShippedPayload($request);
+        $detailHandler = $data['detail_handler'] ?? 'force';
+
+        [$variantsBySku, $unitsByRef] = $this->resolveVariantsAndUnits(
+            array_column($data['items'], 'variant_sku'),
+            array_column($data['items'], 'unit_id'),
+        );
+
+        $resolvedItems = [];
+        foreach ($data['items'] as $item) {
+            $variant = $variantsBySku->get($item['variant_sku']);
+            $unit = $unitsByRef->get((int) $item['unit_id']);
+
+            // Sudah divalidasi ada di validateShippedPayload() — null di sini cuma kemungkinan
+            // race condition (baris dinonaktifkan tepat setelah validate()), sangat jarang.
+            if ($variant === null || $unit === null) {
+                return ApiResponse::error(
+                    ApiResponse::ERROR_VALIDATION,
+                    'items.variant_sku atau items.unit_id tidak lagi valid, coba ulang.',
+                    422,
+                );
+            }
+
+            $resolvedItems[] = [
+                'variant_sku' => (string) $item['variant_sku'],
+                'unit_id' => (int) $item['unit_id'],
+                'internal_unit_id' => (int) $unit->unit_id,
+                'qty' => (int) $item['qty'],
+                'product_variant_id' => (int) $variant->product_variant_id,
+                'product_name' => (string) $item['product_name'],
+                'variant_name' => (string) ($item['variant_name'] ?? ''),
+            ];
+        }
+
+        $customer = Customer::where('customer_code', $data['armada_code'])->where('status', 1)->first();
+        $photos = new ShipmentPhotoStore();
+        $httpStatus = 200;
+
+        try {
+            $so = SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->first();
+
+            if ($so !== null && (int) $so->status === self::STATUS_CONFIRMED) {
+                return $this->presentShipped($so, ['idempotent_replay' => true]);
+            }
+
+            if ($so === null) {
+                $so = DB::transaction(fn () => $this->createShippedSo($data, $customer, $resolvedItems, $photos));
+                $httpStatus = 201;
+            } else {
+                $mismatch = $this->diffAgainstExisting($so, $data, $customer, $resolvedItems);
+                if ($mismatch !== []) {
+                    if ($detailHandler === 'validate') {
+                        $photos->cleanup();
+
+                        return $this->mismatchError($mismatch);
+                    }
+
+                    $so = DB::transaction(fn () => $this->upsertShippedSo($so, $data, $customer, $resolvedItems, $photos));
+                }
+            }
+        } catch (\InvalidArgumentException $e) {
+            $photos->cleanup();
+
+            throw ValidationException::withMessages(['photos' => [$e->getMessage()]]);
+        } catch (QueryException $e) {
+            $photos->cleanup();
+
+            // Dua permintaan dengan ref_shipment_id baru yang sama, nyaris bersamaan.
+            $raced = SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->first();
+            if ($raced !== null) {
+                return $this->presentShipped($raced, ['idempotent_replay' => (int) $raced->status === self::STATUS_CONFIRMED]);
+            }
+
+            throw $e;
+        } catch (\Throwable $e) {
+            $photos->cleanup();
+
+            throw $e;
+        }
+
+        $result = SalesOrderApproval::confirm($so->fresh(), null);
+        if (! ($result['ok'] ?? false)) {
+            return ApiResponse::error(
+                'insufficient_stock',
+                $result['message'] ?? 'Stok tidak mencukupi.',
+                409,
+                [
+                    'products' => $result['products'] ?? [],
+                    'recommendations' => $result['recommendations'] ?? [],
+                ],
+            );
+        }
+
+        return $this->presentShipped($so->fresh(), [], $httpStatus);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* shipped() — validasi & penyimpanan                                 */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validateShippedPayload(Request $request): array
+    {
+        // photos[] bisa berupa berkas sungguhan (multipart/form-data) atau data URI base64
+        // (JSON murni) — lihat docblock ShipmentPhotoStore. Aturan validasinya beda per bentuk,
+        // jadi ditentukan dulu sebelum validate() dipanggil.
+        $photoRules = $request->hasFile('photos')
+            ? ['file', 'mimes:png,jpg,jpeg', 'max:5120']
+            : ['string'];
+
+        return $request->validate([
+            'ref_shipment_id' => ['required', 'string', 'max:100'],
+            'shipment_date' => ['required', 'date'],
+            'armada_code' => [
+                'required', 'string',
+                Rule::exists('customers', 'customer_code')->where('status', 1),
+            ],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'detail_handler' => ['nullable', 'string', Rule::in(['force', 'validate'])],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.variant_sku' => [
+                'required', 'string',
+                Rule::exists('product_variants', 'product_variant_sku')->where('status', 1),
+            ],
+            'items.*.qty' => ['required', 'integer', 'min:1'],
+            'items.*.unit_id' => [
+                'required', 'integer',
+                Rule::exists('units', 'ref_unit_id')->where('status', 1),
+            ],
+            'items.*.product_name' => ['required', 'string', 'max:250'],
+            'items.*.variant_name' => ['nullable', 'string', 'max:250'],
+            'photos' => ['nullable', 'array'],
+            'photos.*' => $photoRules,
+        ]);
+    }
+
+    private function createShippedSo(array $data, Customer $customer, array $resolvedItems, ShipmentPhotoStore $photos): SalesOrder
+    {
+        $photoNames = ! empty($data['photos']) ? $photos->store($data['photos']) : [];
+
+        $so = (new SalesOrder())->insertSalesOrder([
+            'so_customer' => (string) $customer->customer_id,
+            'so_date' => $data['shipment_date'],
+            'so_total' => 0,
+            'so_img' => json_encode($photoNames),
+        ]);
+        $so->ref_shipment_id = $data['ref_shipment_id'];
+        $so->notes = $data['notes'] ?? null;
+        $so->status = self::STATUS_SCHEDULED;
+        $so->save();
+
+        $this->replaceDetails($so, $resolvedItems);
+
+        return $so;
+    }
+
+    private function upsertShippedSo(SalesOrder $so, array $data, Customer $customer, array $resolvedItems, ShipmentPhotoStore $photos): SalesOrder
+    {
+        if (array_key_exists('photos', $data) && $data['photos'] !== null) {
+            $so->so_img = json_encode($photos->store($data['photos']));
+        }
+
+        $so->so_customer = (string) $customer->customer_id;
+        $so->so_date = $data['shipment_date'];
+        $so->notes = $data['notes'] ?? null;
+        $so->save();
+
+        $this->replaceDetails($so, $resolvedItems);
+
+        return $so->fresh();
+    }
+
+    /**
+     * Ganti seluruh sales_order_details milik $so dengan $resolvedItems — baris lama yang tidak
+     * ada lagi di daftar baru dinonaktifkan (status = 0), sama persis pola
+     * CustomerController::updateSalesOrder(). warehouse_id selalu gudang utama, sama seperti
+     * scheduled().
+     *
+     * @param  array<int, array<string, mixed>>  $resolvedItems
+     */
+    private function replaceDetails(SalesOrder $so, array $resolvedItems): void
+    {
+        $warehouseId = ProductStock::resolveWarehouseId(null);
+        $keptIds = [];
+
+        foreach ($resolvedItems as $item) {
+            $keptIds[] = (new SalesOrderDetail())->insertSalesOrderDetail([
+                'so_id' => $so->so_id,
+                'product_variant_id' => $item['product_variant_id'],
+                'product_name' => $item['product_name'],
+                'product_variant_name' => $item['variant_name'],
+                'product_variant_sku' => $item['variant_sku'],
+                'unit_id' => $item['internal_unit_id'],
+                'warehouse_id' => $warehouseId,
+                'product_variant_price' => 0,
+                'so_qty' => $item['qty'],
+                'so_subtotal' => 0,
+            ]);
+        }
+
+        SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $keptIds)->update(['status' => 0]);
+    }
+
+    /**
+     * Bandingkan data tersimpan vs permintaan ini — dipanggil hanya saat SO sudah ada dan BELUM
+     * Confirmed (lihat shipped()). Hanya field substantif yang dibandingkan (armada_code/
+     * shipment_date/notes/items — identitas + qty + unit_id); product_name/variant_name (label
+     * dekoratif) TIDAK dibandingkan, supaya perbedaan penulisan nama produk saja tidak memicu
+     * shipment_detail_mismatch. photos juga tidak dibandingkan (tidak ada cara membandingkan
+     * berkas baru vs nama berkas tersimpan secara berarti) — force selalu menimpanya kalau
+     * dikirim, validate mengabaikannya sama sekali.
+     *
+     * @param  array<int, array<string, mixed>>  $resolvedItems
+     * @return array<int, string> nama field yang berbeda, kosong kalau sama persis
+     */
+    private function diffAgainstExisting(SalesOrder $so, array $data, Customer $customer, array $resolvedItems): array
+    {
+        $diffs = [];
+
+        if ((string) $so->so_customer !== (string) $customer->customer_id) {
+            $diffs[] = 'armada_code';
+        }
+        if ((string) $so->so_date !== (string) $data['shipment_date']) {
+            $diffs[] = 'shipment_date';
+        }
+        if ((string) ($so->notes ?? '') !== (string) ($data['notes'] ?? '')) {
+            $diffs[] = 'notes';
+        }
+
+        $existingItems = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)
+            ->get(['product_variant_id', 'unit_id', 'sod_qty'])
+            ->map(static fn ($row) => ((int) $row->product_variant_id).':'.((int) $row->unit_id).':'.((int) $row->sod_qty))
+            ->sort()->values()->all();
+
+        $incomingItems = collect($resolvedItems)
+            ->map(static fn (array $item) => $item['product_variant_id'].':'.$item['internal_unit_id'].':'.$item['qty'])
+            ->sort()->values()->all();
+
+        if ($existingItems !== $incomingItems) {
+            $diffs[] = 'items';
+        }
+
+        return $diffs;
+    }
+
+    private function mismatchError(array $mismatchedFields): JsonResponse
+    {
+        return ApiResponse::error(
+            'shipment_detail_mismatch',
+            'Data shipment untuk ref_shipment_id ini sudah tersimpan dan berbeda dari permintaan ini ('
+                .implode(', ', $mismatchedFields).'). Kirim detail_handler: "force" untuk menimpa, atau '
+                .'samakan data permintaan dengan yang sudah tersimpan.',
+            409,
+            ['mismatched_fields' => $mismatchedFields],
+        );
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Respons                                                             */
+    /* ------------------------------------------------------------------ */
+
+    private function presentShipped(SalesOrder $so, array $meta = [], int $httpStatus = 200): JsonResponse
+    {
+        return ApiResponse::success(array_merge([
+            'ref_shipment_id' => (string) $so->ref_shipment_id,
+            'shipment_internal_id' => (int) $so->so_id,
+        ], $this->ipmStatusFields($so)), $meta, $httpStatus);
+    }
+
+    /**
+     * @return array{ipm_status: ?int, ipm_status_label: ?string}
+     */
+    private function ipmStatusFields(SalesOrder $so): array
+    {
+        $ipmStatus = ShipmentStatusMap::fromInternal((int) $so->status);
+
+        return [
+            'ipm_status' => $ipmStatus,
+            'ipm_status_label' => $ipmStatus !== null ? ShipmentStatusMap::label($ipmStatus) : null,
+        ];
     }
 
     private function duplicateRefShipmentError(string $refShipmentId): JsonResponse
