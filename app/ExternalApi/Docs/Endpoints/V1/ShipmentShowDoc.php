@@ -100,7 +100,7 @@ class ShipmentShowDoc extends ApiEndpointDoc
             'armada_code, items[].variant_sku, items[].product_name, items[].variant_name dikembalikan apa adanya dari yang tersimpan (bentuk field sama dengan yang diterima POST /shipments/shipped, bukan format /shipments/scheduled).',
             'items[].unit_id adalah units.ref_unit_id (rujukan sistem PMO), diresolusi dari unit_id internal yang tersimpan — konsisten dengan konvensi unit_id di seluruh modul Shipment/Stok.',
             'photos berisi URL publik berkas yang tersimpan di sales_orders.so_img (folder public/issue/), bukan data mentah/base64.',
-            'ipm_status/ipm_status_label lewat App\\ExternalApi\\Support\\ShipmentStatusMap — sama seperti POST /shipments/scheduled dan /shipments/shipped, BUKAN sales_orders.status apa adanya.',
+            'ipm_status/ipm_status_label dipetakan secara terpisah — sama seperti POST /shipments/scheduled dan /shipments/shipped, BUKAN status internal sistem apa adanya.',
         ];
     }
 }

@@ -66,7 +66,7 @@ class MasterProductDeleteDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Ini soft delete: status produk diubah menjadi 0, bukan baris yang dihapus dari basis data — sama seperti penghapusan lewat halaman admin. Seluruh varian dan stok produk ini ikut dinonaktifkan (mengikuti Product::deleteProduct() yang sudah ada).',
+            'Ini soft delete: produk dinonaktifkan, bukan dihapus permanen — sama seperti penghapusan lewat halaman admin. Seluruh varian dan stok produk ini ikut dinonaktifkan.',
             'ref_product_id TIDAK dilepas oleh operasi ini — baris produk lama masih memegangnya, hanya berstatus nonaktif. Karena itu ref_product_id yang sudah dihapus lewat endpoint ini tidak bisa dipakai lagi lewat POST /produk (ditolak DUPLICATE_REF_ID), dan tidak muncul lagi lewat GET /produk.',
         ];
     }

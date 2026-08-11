@@ -114,11 +114,11 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
         return [
             'Shipment SELALU dijadwalkan (SO dibuat), baik ada shortage atau tidak — shortage TIDAK menolak permintaan. auto_create_shortage_doc hanya mengatur apakah kekurangan itu dicatat sebagai dokumen terpisah.',
             'ref_shipment_id unik permanen — beda dengan POST /payments/cash (dan POST /shipments/shipped) yang idempoten. Mengirim ulang ref_shipment_id yang sama (retry jaringan dsb.) ditolak DUPLICATE_REF_ID; pemanggil wajib memakai ref_shipment_id baru per percobaan.',
-            'ipm_status/ipm_status_label BUKAN sales_orders.status apa adanya — lihat App\\ExternalApi\\Support\\ShipmentStatusMap. SO hasil endpoint ini tersimpan dengan status internal 4 ("Dijadwalkan", terpisah dari 1/2/3 yang dipakai alur Pengiriman manual lewat halaman admin), dipetakan ke ipm_status 1.',
+            'ipm_status/ipm_status_label dipetakan secara terpisah, bukan status baku yang dipakai alur Pengiriman manual apa adanya. Shipment hasil endpoint ini dianggap "belum dikonfirmasi", sama seperti shipment yang baru dibuat manual lewat halaman admin dan belum di-ACC, sehingga dipetakan ke ipm_status 1 ("Dijadwalkan").',
             'Stok yang dicek adalah gudang utama (tidak ada parameter gudang pada endpoint ini) — sama seperti default POST /stock/check ketika gudang_id tidak dikirim.',
-            'Endpoint ini murni penjadwalan logistik, tidak membawa informasi harga — so_total/sod_harga/sod_subtotal seluruhnya tersimpan 0.',
-            'sales_order_details dibuat satu baris per items[], memakai ulang App\\Models\\SalesOrderDetail::insertSalesOrderDetail() — sama persis dengan yang dipakai halaman admin Pengiriman.',
-            'Dokumen kekurangan stok (App\\Models\\ShipmentShortageDocument) murni catatan untuk staf gudang/pembelian saat ini — belum ada endpoint atau halaman admin untuk membacanya balik.',
+            'Endpoint ini murni penjadwalan logistik, tidak membawa informasi harga — harga/subtotal item maupun total shipment seluruhnya tersimpan 0.',
+            'Satu baris detail dibuat per item yang dikirim di items[], disimpan dengan cara yang sama persis dengan yang dipakai halaman admin Pengiriman.',
+            'Dokumen kekurangan stok murni catatan untuk staf gudang/pembelian saat ini — belum ada endpoint atau halaman admin untuk membacanya balik.',
         ];
     }
 }

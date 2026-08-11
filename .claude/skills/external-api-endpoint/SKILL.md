@@ -170,6 +170,15 @@ Documentation checklist for every endpoint:
 - [ ] **do not** repeat the platform errors (invalid key, revoked, expired,
       disabled application) — those are already documented once on the page
 - [ ] registered in `config('externalapi.docs')`
+- [ ] **no source-code leakage in `description()`/`notes()`/parameter text**:
+      never name a PHP class, namespace, method (`App\Support\X::method()`),
+      migration, or file path — third-party consumers see this page and don't
+      care how it's implemented internally. Describe *behavior* in plain
+      language instead ("the same process the admin ACC button runs", not
+      "reuses `SalesOrderApproval::confirm()`"). Raw table/column names in
+      prose (`customers.customer_code`) are the one established exception —
+      they're field-mapping information the doc already relies on throughout,
+      not implementation detail.
 
 ### 5. Verify
 
