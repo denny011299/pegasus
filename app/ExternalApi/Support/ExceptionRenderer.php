@@ -2,6 +2,7 @@
 
 namespace App\ExternalApi\Support;
 
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +24,7 @@ final class ExceptionRenderer
     {
         if ($e instanceof ValidationException) {
             return ApiResponse::error(
-                ApiResponse::ERROR_VALIDATION,
+                ErrorCatalog::VALIDATION_FAILED,
                 'Data yang dikirim tidak lolos validasi.',
                 422,
                 $e->errors(),
@@ -44,7 +45,7 @@ final class ExceptionRenderer
         // tetap masuk log aplikasi lewat penanganan bawaan Laravel. Saat debug
         // aktif, pesan aslinya ikut ditampilkan agar pengembangan tidak buta.
         return ApiResponse::error(
-            ApiResponse::ERROR_SERVER,
+            ErrorCatalog::SERVER_ERROR,
             'Terjadi kesalahan pada server.',
             500,
             config('app.debug') ? ['exception' => $e->getMessage()] : null,
@@ -54,10 +55,10 @@ final class ExceptionRenderer
     private static function codeForStatus(int $status): string
     {
         return match ($status) {
-            401 => ApiResponse::ERROR_UNAUTHENTICATED,
-            404 => ApiResponse::ERROR_NOT_FOUND,
-            422 => ApiResponse::ERROR_VALIDATION,
-            default => $status >= 500 ? ApiResponse::ERROR_SERVER : 'request_failed',
+            401 => ErrorCatalog::UNAUTHENTICATED,
+            404 => ErrorCatalog::NOT_FOUND,
+            422 => ErrorCatalog::VALIDATION_FAILED,
+            default => $status >= 500 ? ErrorCatalog::SERVER_ERROR : ErrorCatalog::REQUEST_FAILED,
         };
     }
 

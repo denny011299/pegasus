@@ -59,7 +59,7 @@ class MasterUnitDeleteDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'ref_unit_id tidak ditemukan, atau ditemukan tapi satuannya sudah nonaktif/dihapus sebelumnya.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'ref_unit_id tidak ditemukan, atau ditemukan tapi satuannya sudah nonaktif/dihapus sebelumnya.'],
         ];
     }
 
@@ -67,7 +67,7 @@ class MasterUnitDeleteDoc extends ApiEndpointDoc
     {
         return [
             'Ini soft delete: status satuan diubah menjadi 0, bukan baris yang dihapus dari basis data — sama seperti penghapusan lewat halaman admin.',
-            'ref_unit_id TIDAK dilepas oleh operasi ini — baris satuan lama masih memegangnya, hanya berstatus nonaktif. Karena itu ref_unit_id yang sudah dihapus lewat endpoint ini tidak bisa dipakai lagi lewat POST /master/units (ditolak duplicate_ref_id), dan tidak muncul lagi lewat GET /master/units.',
+            'ref_unit_id TIDAK dilepas oleh operasi ini — baris satuan lama masih memegangnya, hanya berstatus nonaktif. Karena itu ref_unit_id yang sudah dihapus lewat endpoint ini tidak bisa dipakai lagi lewat POST /master/units (ditolak DUPLICATE_REF_ID), dan tidak muncul lagi lewat GET /master/units.',
             'Satuan yang masih dipakai produk/varian/stok tetap bisa dihapus lewat endpoint ini — tidak ada pemeriksaan pemakaian seperti pada penghapusan gudang.',
         ];
     }

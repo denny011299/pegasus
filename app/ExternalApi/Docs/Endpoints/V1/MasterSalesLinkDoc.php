@@ -87,7 +87,7 @@ class MasterSalesLinkDoc extends ApiEndpointDoc
                     'map_staff_id' => 'SLS-003',
                     'success' => false,
                     'error' => [
-                        'code' => 'not_found',
+                        'code' => 'NOT_FOUND',
                         'message' => 'Staf dengan id 999 tidak ditemukan atau bukan sales aktif.',
                     ],
                 ],
@@ -103,7 +103,7 @@ class MasterSalesLinkDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'connections kosong/bukan array, atau salah satu butir tidak berbentuk {staff_id, map_staff_id} yang sah — berlaku untuk SELURUH permintaan (bukan per butir).'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'connections kosong/bukan array, atau salah satu butir tidak berbentuk {staff_id, map_staff_id} yang sah — berlaku untuk SELURUH permintaan (bukan per butir).'],
         ];
     }
 
@@ -115,7 +115,7 @@ class MasterSalesLinkDoc extends ApiEndpointDoc
             'Setiap butir diproses independen, bukan satu transaksi besar: butir yang gagal tidak membatalkan butir lain yang berhasil dalam permintaan yang sama.',
             'Menimpa link yang sudah ada pada staf tujuan diperbolehkan.',
             'Kalau map_staff_id yang dikirim sedang dipegang staf LAIN (termasuk staf lain dalam butir connections yang sama), rujukan itu DILEPAS dulu dari staf itu (jadi null) sebelum dipasang ke staf tujuan — dipindah, bukan ditolak sebagai duplikat. Staf yang kehilangan rujukannya tidak dihapus atau diubah datanya selain kehilangan link tersebut.',
-            'Endpoint ini HANYA boleh menghubungkan staf yang berperan Sales (dan aktif) — staff_id yang menunjuk staf lain gagal dengan not_found pada butir itu.',
+            'Endpoint ini HANYA boleh menghubungkan staf yang berperan Sales (dan aktif) — staff_id yang menunjuk staf lain gagal dengan NOT_FOUND pada butir itu.',
             'Cocok dipakai untuk sales yang dibuat lewat halaman admin (belum punya rujukan eksternal, staff_id-nya null pada GET /master/sales) yang baru mau disinkronkan ke sistem Anda, tanpa perlu membuat baris duplikat lewat POST.',
             'nama_depan/nama_belakang/email/alamat tidak diubah oleh endpoint ini — hanya rujukan yang dipasang.',
         ];

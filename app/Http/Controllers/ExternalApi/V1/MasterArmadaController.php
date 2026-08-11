@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\ExternalApi\V1;
 
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
@@ -232,7 +233,7 @@ class MasterArmadaController extends Controller
     private function notFoundError(string $customerCode): JsonResponse
     {
         return ApiResponse::error(
-            ApiResponse::ERROR_NOT_FOUND,
+            ErrorCatalog::NOT_FOUND,
             'Armada dengan customer_code "'.$customerCode.'" tidak ditemukan.',
             404,
         );
@@ -241,7 +242,7 @@ class MasterArmadaController extends Controller
     private function duplicateRefError(string $customerCode): JsonResponse
     {
         return ApiResponse::error(
-            'duplicate_ref_id',
+            ErrorCatalog::DUPLICATE_REF_ID,
             'customer_code "'.$customerCode.'" sudah dipakai pelanggan/armada lain.',
             422,
         );

@@ -47,7 +47,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
     {
         return [
             ['name' => 'ref_shipment_id', 'type' => 'string', 'required' => true,
-                'description' => 'Penanda unik milik sistem pemanggil. UNIK di seluruh shipment — mengirim ulang nilai yang sama ditolak duplicate_ref_id, bukan idempotent replay.'],
+                'description' => 'Penanda unik milik sistem pemanggil. UNIK di seluruh shipment — mengirim ulang nilai yang sama ditolak DUPLICATE_REF_ID, bukan idempotent replay.'],
             ['name' => 'scheduled_date', 'type' => 'date', 'required' => true,
                 'description' => 'Tanggal shipment dijadwalkan, format YYYY-MM-DD. Disimpan sebagai sales_orders.so_date.'],
             ['name' => 'armada_code', 'type' => 'string', 'required' => true,
@@ -96,15 +96,15 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items harus berisi minimal satu baris.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.sku tidak ditemukan sebagai varian produk aktif.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.unit_id tidak merujuk satuan aktif manapun.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'armada_code tidak ditemukan atau tidak aktif.'],
-            ['code' => 'duplicate_ref_id', 'http_status' => 422,
+            ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422,
                 'message' => 'ref_shipment_id SHP-7788 sudah dipakai shipment lain.'],
         ];
     }
@@ -113,7 +113,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
     {
         return [
             'Shipment SELALU dijadwalkan (SO dibuat), baik ada shortage atau tidak — shortage TIDAK menolak permintaan. auto_create_shortage_doc hanya mengatur apakah kekurangan itu dicatat sebagai dokumen terpisah.',
-            'ref_shipment_id unik permanen — beda dengan POST /payments/cash (dan POST /shipments/shipped) yang idempoten. Mengirim ulang ref_shipment_id yang sama (retry jaringan dsb.) ditolak duplicate_ref_id; pemanggil wajib memakai ref_shipment_id baru per percobaan.',
+            'ref_shipment_id unik permanen — beda dengan POST /payments/cash (dan POST /shipments/shipped) yang idempoten. Mengirim ulang ref_shipment_id yang sama (retry jaringan dsb.) ditolak DUPLICATE_REF_ID; pemanggil wajib memakai ref_shipment_id baru per percobaan.',
             'ipm_status/ipm_status_label BUKAN sales_orders.status apa adanya — lihat App\\ExternalApi\\Support\\ShipmentStatusMap. SO hasil endpoint ini tersimpan dengan status internal 4 ("Dijadwalkan", terpisah dari 1/2/3 yang dipakai alur Pengiriman manual lewat halaman admin), dipetakan ke ipm_status 1.',
             'Stok yang dicek adalah gudang utama (tidak ada parameter gudang pada endpoint ini) — sama seperti default POST /stock/check ketika gudang_id tidak dikirim.',
             'Endpoint ini murni penjadwalan logistik, tidak membawa informasi harga — so_total/sod_harga/sod_subtotal seluruhnya tersimpan 0.',

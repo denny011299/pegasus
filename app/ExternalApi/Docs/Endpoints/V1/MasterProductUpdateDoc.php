@@ -84,8 +84,8 @@ class MasterProductUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'ref_product_id tidak ditemukan, atau ditemukan tapi produknya nonaktif/sudah dihapus.'],
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'product_name kosong, atau category_id/unit_id/salah satu unsur product_unit tidak menunjuk kategori/satuan yang aktif.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'ref_product_id tidak ditemukan, atau ditemukan tapi produknya nonaktif/sudah dihapus.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'product_name kosong, atau category_id/unit_id/salah satu unsur product_unit tidak menunjuk kategori/satuan yang aktif.'],
         ];
     }
 
@@ -95,7 +95,7 @@ class MasterProductUpdateDoc extends ApiEndpointDoc
             'Keempat field body wajib diisi meski hanya satu yang berubah — tidak ada partial update.',
             'ref_product_id tidak bisa diubah lewat endpoint ini — kirim ref_product_id baru dengan DELETE + POST kalau memang perlu mengganti rujukan PMO produk ini.',
             'category_id dan setiap unsur product_unit (termasuk unit_id) DIVALIDASI benar-benar menunjuk kategori/satuan yang aktif, sama seperti POST.',
-            'Endpoint ini HANYA menyentuh produk berstatus aktif — ref_product_id yang menunjuk produk nonaktif/sudah dihapus dijawab not_found, bukan diizinkan mengubah data produk itu.',
+            'Endpoint ini HANYA menyentuh produk berstatus aktif — ref_product_id yang menunjuk produk nonaktif/sudah dihapus dijawab NOT_FOUND, bukan diizinkan mengubah data produk itu.',
         ];
     }
 }

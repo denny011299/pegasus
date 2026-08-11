@@ -76,8 +76,8 @@ class MasterWarehouseCreateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'Salah satu field wajib kosong, atau tipe_nama sudah dipakai tipe gudang lain (rename ditolak).'],
-            ['code' => 'duplicate_name', 'http_status' => 422, 'message' => 'Nama gudang sudah dipakai gudang aktif lain.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'Salah satu field wajib kosong, atau tipe_nama sudah dipakai tipe gudang lain (rename ditolak).'],
+            ['code' => 'DUPLICATE_NAME', 'http_status' => 422, 'message' => 'Nama gudang sudah dipakai gudang aktif lain.'],
         ];
     }
 

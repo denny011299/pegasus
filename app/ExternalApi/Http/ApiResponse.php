@@ -21,19 +21,14 @@ use Illuminate\Http\JsonResponse;
  *
  * `code` adalah string stabil yang boleh dijadikan pegangan klien; `message`
  * boleh berubah sewaktu-waktu karena ditujukan untuk dibaca manusia.
+ *
+ * Kode error itu sendiri TIDAK lagi didefinisikan di sini — lihat
+ * App\ExternalApi\Errors\ErrorCatalog, satu-satunya sumber kode error di seluruh External API
+ * (dipisah dari kelas ini karena daftarnya terus bertambah seiring endpoint baru, sementara
+ * kelas ini murni membentuk amplop respons).
  */
 class ApiResponse
 {
-    /** Kode error baku milik lapisan platform. */
-    public const ERROR_UNAUTHENTICATED = 'unauthenticated';
-    public const ERROR_INVALID_KEY = 'invalid_api_key';
-    public const ERROR_KEY_REVOKED = 'api_key_revoked';
-    public const ERROR_KEY_EXPIRED = 'api_key_expired';
-    public const ERROR_APPLICATION_DISABLED = 'application_disabled';
-    public const ERROR_NOT_FOUND = 'not_found';
-    public const ERROR_VALIDATION = 'validation_failed';
-    public const ERROR_SERVER = 'server_error';
-
     /**
      * @param  mixed  $data
      * @param  array<string, mixed>  $meta

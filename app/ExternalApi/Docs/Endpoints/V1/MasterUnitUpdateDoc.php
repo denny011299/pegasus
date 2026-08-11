@@ -78,8 +78,8 @@ class MasterUnitUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'ref_unit_id tidak ditemukan, atau ditemukan tapi satuannya nonaktif/sudah dihapus.'],
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'unit_name atau unit_short_name kosong/tidak valid.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'ref_unit_id tidak ditemukan, atau ditemukan tapi satuannya nonaktif/sudah dihapus.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'unit_name atau unit_short_name kosong/tidak valid.'],
         ];
     }
 
@@ -87,7 +87,7 @@ class MasterUnitUpdateDoc extends ApiEndpointDoc
     {
         return [
             'Kedua field wajib diisi meski hanya satu yang berubah — tidak ada partial update.',
-            'Endpoint ini HANYA menyentuh satuan berstatus aktif — ref_unit_id yang menunjuk satuan nonaktif/sudah dihapus dijawab not_found, bukan diizinkan mengubah data satuan itu.',
+            'Endpoint ini HANYA menyentuh satuan berstatus aktif — ref_unit_id yang menunjuk satuan nonaktif/sudah dihapus dijawab NOT_FOUND, bukan diizinkan mengubah data satuan itu.',
         ];
     }
 }

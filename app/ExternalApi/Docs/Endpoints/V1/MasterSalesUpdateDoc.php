@@ -84,8 +84,8 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sales yang sudah dihapus).'],
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'nama_depan atau email kosong/tidak valid.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sales yang sudah dihapus).'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan atau email kosong/tidak valid.'],
         ];
     }
 
@@ -95,7 +95,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
             'staff_id pada path adalah rujukan milik sistem Anda sendiri (external_ref_id), BUKAN id Pegasus — endpoint yang path parameternya id Pegasus adalah PATCH /master/sales/{id}.',
             'nama_depan dan email wajib diisi meski hanya satu yang berubah; nama_belakang dan alamat boleh dikosongkan.',
             'Body selalu dianggap representasi penuh sales ini: nama_belakang/alamat yang tidak dikirim disimpan sebagai kosong, bukan mempertahankan nilai lama.',
-            'Endpoint ini HANYA boleh menyentuh staf yang berperan Sales (dan aktif) — staff_id yang menunjuk staf lain dijawab not_found, bukan diizinkan mengubah data staf itu.',
+            'Endpoint ini HANYA boleh menyentuh staf yang berperan Sales (dan aktif) — staff_id yang menunjuk staf lain dijawab NOT_FOUND, bukan diizinkan mengubah data staf itu.',
             'kode (staff_code), telepon (staff_phone), dan role tidak dikelola lewat endpoint ini — nilainya tidak berubah walau tidak dikirim.',
         ];
     }

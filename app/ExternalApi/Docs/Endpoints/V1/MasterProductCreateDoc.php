@@ -79,8 +79,8 @@ class MasterProductCreateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'ref_product_id/product_name kosong, atau category_id/unit_id/salah satu unsur product_unit tidak menunjuk kategori/satuan yang aktif.'],
-            ['code' => 'duplicate_ref_id', 'http_status' => 422, 'message' => 'ref_product_id sudah dipakai produk lain (baik yang masih aktif maupun yang sudah dihapus lewat DELETE produk) — pakai PUT untuk memperbarui produk yang sudah ada.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'ref_product_id/product_name kosong, atau category_id/unit_id/salah satu unsur product_unit tidak menunjuk kategori/satuan yang aktif.'],
+            ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'ref_product_id sudah dipakai produk lain (baik yang masih aktif maupun yang sudah dihapus lewat DELETE produk) — pakai PUT untuk memperbarui produk yang sudah ada.'],
         ];
     }
 
@@ -89,9 +89,9 @@ class MasterProductCreateDoc extends ApiEndpointDoc
         return [
             'Kelima field wajib diisi, tidak ada yang bersifat opsional.',
             'id pada respons adalah id produk yang dibuat Pegasus sendiri (auto-increment) — SIMPAN nilai ini kalau nanti perlu memanggil PATCH /produk/connect (yang butir connections-nya memakai id Pegasus, bukan ref_product_id).',
-            'Bukan upsert: mengirim ref_product_id yang sudah dipakai (aktif maupun yang produknya sudah dihapus) selalu ditolak dengan duplicate_ref_id, tidak pernah menimpa data yang sudah ada. Pakai PUT /produk/{ref_product_id} untuk memperbarui produk yang rujukannya sudah ada.',
+            'Bukan upsert: mengirim ref_product_id yang sudah dipakai (aktif maupun yang produknya sudah dihapus) selalu ditolak dengan DUPLICATE_REF_ID, tidak pernah menimpa data yang sudah ada. Pakai PUT /produk/{ref_product_id} untuk memperbarui produk yang rujukannya sudah ada.',
             'Untuk menghubungkan ref_product_id ke produk Pegasus yang SUDAH ADA (dibuat lewat halaman admin atau Pusat Sinkronisasi, misalnya), pakai PATCH /produk/connect — bukan POST ini, yang selalu membuat produk baru.',
-            'category_id dan setiap unsur product_unit (termasuk unit_id) DIVALIDASI benar-benar menunjuk kategori/satuan yang aktif — beda dengan form pelanggan lewat halaman admin yang tidak memeriksa ini. Kirim id yang salah akan ditolak validation_failed, bukan tersimpan dengan rujukan yang menggantung.',
+            'category_id dan setiap unsur product_unit (termasuk unit_id) DIVALIDASI benar-benar menunjuk kategori/satuan yang aktif — beda dengan form pelanggan lewat halaman admin yang tidak memeriksa ini. Kirim id yang salah akan ditolak VALIDATION_FAILED, bukan tersimpan dengan rujukan yang menggantung.',
             'ref_product_id juga ditulis Pusat Sinkronisasi (menarik data produk dari PMO) — endpoint ini adalah jalur tulis kedua ke kolom yang sama, disengaja karena keduanya melayani sistem yang sama (PMO).',
         ];
     }

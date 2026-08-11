@@ -86,7 +86,7 @@ class ExternalApiStockCheckFlowTest extends TestCase
         $this->postJson('/api/external/v1/stock/check', [
             'ref_shipment_id' => 'SHP-1',
             'items' => [],
-        ])->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'unauthenticated']]);
+        ])->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'UNAUTHENTICATED']]);
     }
 
     public function test_check_returns_zero_shortage_when_stock_is_sufficient(): void
@@ -233,7 +233,7 @@ class ExternalApiStockCheckFlowTest extends TestCase
             'items' => [
                 ['sku' => 'DOES-NOT-EXIST-'.uniqid(), 'qty' => 1, 'unit_id' => $refUnitId],
             ],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'validation_failed']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
     public function test_check_rejects_an_unmapped_unit_id(): void
@@ -247,7 +247,7 @@ class ExternalApiStockCheckFlowTest extends TestCase
             'items' => [
                 ['sku' => $fx['sku'], 'qty' => 1, 'unit_id' => random_int(100000000, 199999999)],
             ],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'validation_failed']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
     public function test_check_defaults_to_the_main_warehouse_when_gudang_id_is_omitted(): void
@@ -304,7 +304,7 @@ class ExternalApiStockCheckFlowTest extends TestCase
             'items' => [
                 ['sku' => $fx['sku'], 'qty' => 1, 'unit_id' => $refUnitId],
             ],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'validation_failed']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
     public function test_check_handles_multiple_items_independently(): void

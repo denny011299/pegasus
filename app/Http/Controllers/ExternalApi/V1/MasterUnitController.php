@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\ExternalApi\V1;
 
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
@@ -210,7 +211,7 @@ class MasterUnitController extends Controller
             return $this->connectFailure(
                 $unitId,
                 $refUnitId,
-                ApiResponse::ERROR_NOT_FOUND,
+                ErrorCatalog::NOT_FOUND,
                 'Satuan dengan id '.$unitId.' tidak ditemukan atau tidak aktif.',
             );
         }
@@ -327,7 +328,7 @@ class MasterUnitController extends Controller
     private function notFoundByRefError(int $refUnitId): JsonResponse
     {
         return ApiResponse::error(
-            ApiResponse::ERROR_NOT_FOUND,
+            ErrorCatalog::NOT_FOUND,
             'Satuan dengan ref_unit_id '.$refUnitId.' tidak ditemukan.',
             404,
         );
@@ -336,7 +337,7 @@ class MasterUnitController extends Controller
     private function duplicateRefError(int $refUnitId): JsonResponse
     {
         return ApiResponse::error(
-            'duplicate_ref_id',
+            ErrorCatalog::DUPLICATE_REF_ID,
             'ref_unit_id '.$refUnitId.' sudah dipakai satuan lain.',
             422,
         );

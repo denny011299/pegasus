@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\ExternalApi\V1;
 
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
@@ -153,7 +154,7 @@ class MasterWarehouseController extends Controller
 
         if (is_array($result)) {
             return ApiResponse::error(
-                'warehouse_has_stock',
+                ErrorCatalog::WAREHOUSE_HAS_STOCK,
                 $result['message'],
                 409,
                 ['count' => $result['count']],
@@ -285,7 +286,7 @@ class MasterWarehouseController extends Controller
     private function duplicateNameError(string $name): JsonResponse
     {
         return ApiResponse::error(
-            'duplicate_name',
+            ErrorCatalog::DUPLICATE_NAME,
             'Nama gudang "'.$name.'" sudah dipakai gudang aktif lain.',
             422,
         );
@@ -294,7 +295,7 @@ class MasterWarehouseController extends Controller
     private function notFoundError(int $gudangId): JsonResponse
     {
         return ApiResponse::error(
-            ApiResponse::ERROR_NOT_FOUND,
+            ErrorCatalog::NOT_FOUND,
             'Gudang dengan gudang_id '.$gudangId.' tidak ditemukan.',
             404,
         );

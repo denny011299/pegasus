@@ -3,7 +3,7 @@
 namespace App\ExternalApi\Auth;
 
 use App\ExternalApi\ApiKeyManager;
-use App\ExternalApi\Http\ApiResponse;
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\Models\ExternalApiKey;
 use App\Models\ExternalApplication;
 use Illuminate\Http\Request;
@@ -36,7 +36,7 @@ class ExternalApiAuthenticator
 
         if (!$plainKey) {
             return AuthenticationResult::failure(
-                ApiResponse::ERROR_UNAUTHENTICATED,
+                ErrorCatalog::UNAUTHENTICATED,
                 'Header ' . $this->keys->header() . ' wajib diisi.',
             );
         }
@@ -66,14 +66,14 @@ class ExternalApiAuthenticator
 
         if ($status === ExternalApiKey::STATUS_REVOKED) {
             return AuthenticationResult::failure(
-                ApiResponse::ERROR_KEY_REVOKED,
+                ErrorCatalog::API_KEY_REVOKED,
                 'API Key sudah dicabut.',
             );
         }
 
         if ($status === ExternalApiKey::STATUS_EXPIRED) {
             return AuthenticationResult::failure(
-                ApiResponse::ERROR_KEY_EXPIRED,
+                ErrorCatalog::API_KEY_EXPIRED,
                 'API Key sudah kedaluwarsa.',
             );
         }
@@ -91,7 +91,7 @@ class ExternalApiAuthenticator
 
         if ($application->application_status !== ExternalApplication::STATUS_ACTIVE) {
             return AuthenticationResult::failure(
-                ApiResponse::ERROR_APPLICATION_DISABLED,
+                ErrorCatalog::APPLICATION_DISABLED,
                 'Aplikasi eksternal sedang dinonaktifkan.',
                 403,
             );
@@ -140,7 +140,7 @@ class ExternalApiAuthenticator
     private function invalidKey(): AuthenticationResult
     {
         return AuthenticationResult::failure(
-            ApiResponse::ERROR_INVALID_KEY,
+            ErrorCatalog::INVALID_API_KEY,
             'API Key tidak valid.',
         );
     }

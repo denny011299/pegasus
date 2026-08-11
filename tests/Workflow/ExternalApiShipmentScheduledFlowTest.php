@@ -98,7 +98,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
             'scheduled_date' => '2026-07-25',
             'armada_code' => 'X',
             'items' => [],
-        ])->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'unauthenticated']]);
+        ])->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'UNAUTHENTICATED']]);
     }
 
     public function test_scheduled_creates_a_sales_order_with_status_scheduled_and_no_shortage(): void
@@ -256,7 +256,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->postJson('/api/external/v1/shipments/scheduled', $payload, $headers)->assertStatus(201);
 
         $second = $this->postJson('/api/external/v1/shipments/scheduled', $payload, $headers);
-        $second->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'duplicate_ref_id']]);
+        $second->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_REF_ID']]);
 
         $this->assertSame(1, SalesOrder::where('ref_shipment_id', $refShipmentId)->count());
     }
@@ -275,7 +275,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
             'items' => [
                 ['sku' => $fx['sku'], 'qty' => 1, 'unit_id' => $refUnitId],
             ],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'validation_failed']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
     public function test_scheduled_rejects_an_unknown_sku(): void
@@ -293,7 +293,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
             'items' => [
                 ['sku' => 'DOES-NOT-EXIST-'.uniqid(), 'qty' => 1, 'unit_id' => $refUnitId],
             ],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'validation_failed']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
 
         $this->assertSame(0, SalesOrder::where('ref_shipment_id', $refShipmentId)->count());
     }

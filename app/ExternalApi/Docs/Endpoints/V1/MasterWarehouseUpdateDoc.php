@@ -83,9 +83,9 @@ class MasterWarehouseUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'Gudang dengan gudang_id tersebut tidak ditemukan (termasuk yang sudah dihapus).'],
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'Salah satu field wajib kosong, atau tipe_nama sudah dipakai tipe gudang lain (rename ditolak).'],
-            ['code' => 'duplicate_name', 'http_status' => 422, 'message' => 'Nama gudang sudah dipakai gudang aktif lain.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'Gudang dengan gudang_id tersebut tidak ditemukan (termasuk yang sudah dihapus).'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'Salah satu field wajib kosong, atau tipe_nama sudah dipakai tipe gudang lain (rename ditolak).'],
+            ['code' => 'DUPLICATE_NAME', 'http_status' => 422, 'message' => 'Nama gudang sudah dipakai gudang aktif lain.'],
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\ExternalApi\V1;
 
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
@@ -228,7 +229,7 @@ class MasterSalesController extends Controller
         $mapStaffId = trim($rawMapStaffId);
 
         if ($mapStaffId === '') {
-            return $this->connectFailure($staffId, $rawMapStaffId, ApiResponse::ERROR_VALIDATION, 'map_staff_id tidak boleh kosong.');
+            return $this->connectFailure($staffId, $rawMapStaffId, ErrorCatalog::VALIDATION_FAILED, 'map_staff_id tidak boleh kosong.');
         }
 
         $staff = Staff::find($staffId);
@@ -237,7 +238,7 @@ class MasterSalesController extends Controller
             return $this->connectFailure(
                 $staffId,
                 $mapStaffId,
-                ApiResponse::ERROR_NOT_FOUND,
+                ErrorCatalog::NOT_FOUND,
                 'Staf dengan id '.$staffId.' tidak ditemukan atau bukan sales aktif.',
             );
         }
@@ -467,7 +468,7 @@ class MasterSalesController extends Controller
     private function notFoundByRefError(string $refId): JsonResponse
     {
         return ApiResponse::error(
-            ApiResponse::ERROR_NOT_FOUND,
+            ErrorCatalog::NOT_FOUND,
             'Sales dengan staff_id (external_ref_id) "'.$refId.'" tidak ditemukan.',
             404,
         );
@@ -477,7 +478,7 @@ class MasterSalesController extends Controller
     private function duplicateRefError(string $refId): JsonResponse
     {
         return ApiResponse::error(
-            'duplicate_ref_id',
+            ErrorCatalog::DUPLICATE_REF_ID,
             'staff_id (external_ref_id) "'.$refId.'" sudah dipakai sales lain.',
             422,
         );

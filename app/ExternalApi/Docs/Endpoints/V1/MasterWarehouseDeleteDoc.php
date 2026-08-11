@@ -66,8 +66,8 @@ class MasterWarehouseDeleteDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'Gudang dengan gudang_id tersebut tidak ditemukan (termasuk yang sudah dihapus sebelumnya).'],
-            ['code' => 'warehouse_has_stock', 'http_status' => 409, 'message' => 'Gudang masih punya stok produk/bahan mentah terdaftar. Kirim ulang dengan force=1 untuk tetap menghapus.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'Gudang dengan gudang_id tersebut tidak ditemukan (termasuk yang sudah dihapus sebelumnya).'],
+            ['code' => 'WAREHOUSE_HAS_STOCK', 'http_status' => 409, 'message' => 'Gudang masih punya stok produk/bahan mentah terdaftar. Kirim ulang dengan force=1 untuk tetap menghapus.'],
         ];
     }
 
@@ -76,7 +76,7 @@ class MasterWarehouseDeleteDoc extends ApiEndpointDoc
         return [
             'Ini soft delete: status gudang diubah menjadi 0, bukan baris yang dihapus dari basis data — sama seperti penghapusan lewat halaman admin.',
             'Akses staf ke gudang ini (staff_warehouses) ikut dilepas, dan baris stok produk/bahan mentah di gudang ini dinonaktifkan.',
-            'Tanpa force=1, penghapusan ditolak (warehouse_has_stock) selama gudang masih punya baris stok bernilai lebih dari 0.',
+            'Tanpa force=1, penghapusan ditolak (WAREHOUSE_HAS_STOCK) selama gudang masih punya baris stok bernilai lebih dari 0.',
         ];
     }
 }

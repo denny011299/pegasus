@@ -90,13 +90,13 @@ class StockCheckDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items harus berisi minimal satu baris.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.sku tidak ditemukan sebagai varian produk aktif.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.unit_id tidak merujuk satuan aktif manapun.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'gudang_id tidak ditemukan atau tidak aktif.'],
         ];
     }
@@ -104,7 +104,7 @@ class StockCheckDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Seluruh sku dan unit_id divalidasi lebih dulu: SKU yang tidak dikenal atau unit_id yang tidak merujuk satuan aktif manapun membuat SELURUH permintaan ditolak validation_failed, bukan diam-diam dianggap shortage penuh untuk item itu saja.',
+            'Seluruh sku dan unit_id divalidasi lebih dulu: SKU yang tidak dikenal atau unit_id yang tidak merujuk satuan aktif manapun membuat SELURUH permintaan ditolak VALIDATION_FAILED, bukan diam-diam dianggap shortage penuh untuk item itu saja.',
             'Kombinasi SKU + unit_id yang keduanya valid tapi bukan satuan produk itu (tidak sechain lewat product_relations) tetap lolos validasi — hasilnya wajar available: 0, karena memang tidak ada cara mengonversi stok ke satuan itu.',
             'available dihitung setara satu satuan (items[].unit_id): stok pada satuan itu sendiri, ditambah stok pada satuan lebih besar dalam chain product_relations yang sama (dibongkar otomatis). Stok pada satuan lebih KECIL tidak digabungkan naik (tidak ada packing).',
             'shortage tidak pernah negatif — selisih requested - available, dibulatkan ke 0 kalau stok mencukupi atau berlebih.',

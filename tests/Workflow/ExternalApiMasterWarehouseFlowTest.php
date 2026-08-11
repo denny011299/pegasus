@@ -36,7 +36,7 @@ class ExternalApiMasterWarehouseFlowTest extends TestCase
     {
         $this->postJson('/api/external/v1/master/warehouses', $this->payload())
             ->assertStatus(401)
-            ->assertJson(['success' => false, 'error' => ['code' => 'unauthenticated']]);
+            ->assertJson(['success' => false, 'error' => ['code' => 'UNAUTHENTICATED']]);
     }
 
     public function test_store_creates_a_warehouse_and_a_new_warehouse_type_with_the_exact_requested_id(): void
@@ -89,7 +89,7 @@ class ExternalApiMasterWarehouseFlowTest extends TestCase
         $this->postJson('/api/external/v1/master/warehouses', $payload, $headers)->assertStatus(201);
 
         $response = $this->postJson('/api/external/v1/master/warehouses', $this->payload(['nama' => $payload['nama']]), $headers);
-        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'duplicate_name']]);
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_NAME']]);
     }
 
     public function test_store_with_an_existing_tipe_id_renames_that_type_for_every_warehouse_using_it(): void
@@ -125,7 +125,7 @@ class ExternalApiMasterWarehouseFlowTest extends TestCase
 
         $this->putJson('/api/external/v1/master/warehouses/999999999', $this->payload(), $headers)
             ->assertStatus(404)
-            ->assertJson(['success' => false, 'error' => ['code' => 'not_found']]);
+            ->assertJson(['success' => false, 'error' => ['code' => 'NOT_FOUND']]);
     }
 
     public function test_destroy_is_blocked_by_existing_stock_unless_forced(): void
@@ -145,7 +145,7 @@ class ExternalApiMasterWarehouseFlowTest extends TestCase
             ->update(['ps_stock' => 10]);
 
         $blocked = $this->deleteJson('/api/external/v1/master/warehouses/'.$gudangId, [], $headers);
-        $blocked->assertStatus(409)->assertJson(['success' => false, 'error' => ['code' => 'warehouse_has_stock']]);
+        $blocked->assertStatus(409)->assertJson(['success' => false, 'error' => ['code' => 'WAREHOUSE_HAS_STOCK']]);
         $this->assertSame(1, (int) Warehouse::find($gudangId)->status, 'blocked delete must not soft-delete the warehouse');
 
         $forced = $this->deleteJson('/api/external/v1/master/warehouses/'.$gudangId, ['force' => 1], $headers);

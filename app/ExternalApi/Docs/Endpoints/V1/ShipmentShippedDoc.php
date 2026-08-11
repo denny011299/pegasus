@@ -54,7 +54,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas, disimpan sebagai sales_orders.notes.'],
             ['name' => 'detail_handler', 'type' => 'string', 'required' => false,
-                'description' => '"force" (bawaan) = timpa data tersimpan dengan permintaan ini bila berbeda. "validate" = tolak dengan galat shipment_detail_mismatch bila berbeda, tidak ada yang berubah. Hanya berlaku saat ref_shipment_id sudah ada DAN belum ipm_status "Berjalan" — lihat catatan.'],
+                'description' => '"force" (bawaan) = timpa data tersimpan dengan permintaan ini bila berbeda. "validate" = tolak dengan galat SHIPMENT_DETAIL_MISMATCH bila berbeda, tidak ada yang berubah. Hanya berlaku saat ref_shipment_id sudah ada DAN belum ipm_status "Berjalan" — lihat catatan.'],
             ['name' => 'items', 'type' => 'array', 'required' => true,
                 'description' => 'Daftar item yang dikirim, minimal satu.'],
             ['name' => 'items[].variant_sku', 'type' => 'string', 'required' => true,
@@ -108,13 +108,13 @@ class ShipmentShippedDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.variant_sku tidak ditemukan sebagai varian produk aktif.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'armada_code tidak ditemukan atau tidak aktif.'],
-            ['code' => 'shipment_detail_mismatch', 'http_status' => 409,
+            ['code' => 'SHIPMENT_DETAIL_MISMATCH', 'http_status' => 409,
                 'message' => 'Data shipment untuk ref_shipment_id ini sudah tersimpan dan berbeda dari permintaan ini (items). Kirim detail_handler: "force" untuk menimpa, atau samakan data permintaan dengan yang sudah tersimpan.'],
-            ['code' => 'insufficient_stock', 'http_status' => 409,
+            ['code' => 'INSUFFICIENT_STOCK', 'http_status' => 409,
                 'message' => 'Stok tidak mencukupi untuk satu atau lebih item.'],
         ];
     }
@@ -123,9 +123,9 @@ class ShipmentShippedDoc extends ApiEndpointDoc
     {
         return [
             'Idempoten lewat ref_shipment_id — BEDA dengan POST /shipments/scheduled yang menolak duplikat. Kalau baris dengan ref_shipment_id ini SUDAH ipm_status "Berjalan" (sudah pernah shipped sebelumnya), permintaan ini dijawab apa adanya lewat meta.idempotent_replay=true — isi permintaan TIDAK dibandingkan sama sekali, tidak ada stok yang dipotong dua kali, tidak ada detail yang diubah.',
-            'Kalau ref_shipment_id sudah ada TAPI belum "Berjalan" (masih "Dijadwalkan", atau dibuat manual lewat halaman admin dan belum di-ACC): data yang berbeda dari yang tersimpan ditangani lewat detail_handler — "force" (bawaan) menimpa, "validate" menolak dengan shipment_detail_mismatch. Kalau datanya sudah identik, detail_handler tidak berpengaruh — langsung lanjut ke konfirmasi.',
+            'Kalau ref_shipment_id sudah ada TAPI belum "Berjalan" (masih "Dijadwalkan", atau dibuat manual lewat halaman admin dan belum di-ACC): data yang berbeda dari yang tersimpan ditangani lewat detail_handler — "force" (bawaan) menimpa, "validate" menolak dengan SHIPMENT_DETAIL_MISMATCH. Kalau datanya sudah identik, detail_handler tidak berpengaruh — langsung lanjut ke konfirmasi.',
             'ref_shipment_id belum ada sama sekali -> baris baru dibuat (ipm_status awal "Dijadwalkan"), lalu langsung dikonfirmasi dalam permintaan yang sama.',
-            'Konfirmasi memakai ulang App\\Support\\SalesOrderApproval::confirm() — PERSIS logika ACC yang dipakai halaman admin Pengiriman (potong stok dulu, baru status berubah). Kalau stok tidak cukup, permintaan gagal (insufficient_stock) dan baris SO TETAP ada di ipm_status "Dijadwalkan" — tidak hilang, bisa dicoba lagi dengan ref_shipment_id yang sama setelah stok tersedia.',
+            'Konfirmasi memakai ulang App\\Support\\SalesOrderApproval::confirm() — PERSIS logika ACC yang dipakai halaman admin Pengiriman (potong stok dulu, baru status berubah). Kalau stok tidak cukup, permintaan gagal (INSUFFICIENT_STOCK) dan baris SO TETAP ada di ipm_status "Dijadwalkan" — tidak hilang, bisa dicoba lagi dengan ref_shipment_id yang sama setelah stok tersedia.',
             'items[].variant_sku (BUKAN "sku") di-resolve ke produk yang sama seperti /stock/check dan /shipments/scheduled — sekadar nama field bodinya beda di endpoint ini, mengikuti kontrak yang diminta.',
             'items[].product_name/variant_name dipakai APA ADANYA dari permintaan (tidak di-lookup ke tabel products/product_variants) untuk mengisi sales_order_details.sod_nama/sod_variant — sama seperti field yang diterima form admin Pengiriman.',
             'notes disimpan di sales_orders.notes (kolom baru, terpisah dari so_ref_number yang sudah ada — so_ref_number adalah field "Ref Number" bebas yang bisa diedit staf lewat halaman admin, tidak dipakai kontrak Shipment ini).',

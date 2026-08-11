@@ -73,8 +73,8 @@ class MasterUnitCreateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'ref_unit_id, unit_name, atau unit_short_name kosong/tidak valid.'],
-            ['code' => 'duplicate_ref_id', 'http_status' => 422, 'message' => 'ref_unit_id sudah dipakai satuan lain (baik yang masih aktif maupun yang sudah dihapus lewat DELETE units) — pakai PUT untuk memperbarui satuan yang sudah ada.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'ref_unit_id, unit_name, atau unit_short_name kosong/tidak valid.'],
+            ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'ref_unit_id sudah dipakai satuan lain (baik yang masih aktif maupun yang sudah dihapus lewat DELETE units) — pakai PUT untuk memperbarui satuan yang sudah ada.'],
         ];
     }
 
@@ -83,7 +83,7 @@ class MasterUnitCreateDoc extends ApiEndpointDoc
         return [
             'Ketiga field wajib diisi, tidak ada yang bersifat opsional.',
             'id pada respons adalah id satuan yang dibuat Pegasus sendiri (auto-increment) — SIMPAN nilai ini kalau nanti perlu memanggil PATCH /master/units/connect (yang butir connections-nya memakai id Pegasus, bukan ref_unit_id).',
-            'Bukan upsert: mengirim ref_unit_id yang sudah dipakai (aktif maupun yang satuannya sudah dihapus) selalu ditolak dengan duplicate_ref_id, tidak pernah menimpa data yang sudah ada. Pakai PUT /master/units/{ref_unit_id} untuk memperbarui satuan yang rujukannya sudah ada.',
+            'Bukan upsert: mengirim ref_unit_id yang sudah dipakai (aktif maupun yang satuannya sudah dihapus) selalu ditolak dengan DUPLICATE_REF_ID, tidak pernah menimpa data yang sudah ada. Pakai PUT /master/units/{ref_unit_id} untuk memperbarui satuan yang rujukannya sudah ada.',
             'Untuk menghubungkan ref_unit_id ke satuan Pegasus yang SUDAH ADA (dibuat lewat halaman admin atau Pusat Sinkronisasi, misalnya), pakai PATCH /master/units/connect — bukan POST ini, yang selalu membuat satuan baru.',
             'ref_unit_id juga ditulis Pusat Sinkronisasi (menarik data satuan dari PMO) — endpoint ini adalah jalur tulis kedua ke kolom yang sama, disengaja karena keduanya melayani sistem yang sama (PMO).',
         ];

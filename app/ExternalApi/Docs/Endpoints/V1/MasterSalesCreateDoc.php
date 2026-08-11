@@ -79,8 +79,8 @@ class MasterSalesCreateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'staff_id, nama_depan, atau email kosong/tidak valid.'],
-            ['code' => 'duplicate_ref_id', 'http_status' => 422, 'message' => 'staff_id sudah dipakai sales lain (baik yang masih aktif maupun yang sudah dihapus lewat DELETE sales) — pakai PUT untuk memperbarui sales yang sudah ada.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'staff_id, nama_depan, atau email kosong/tidak valid.'],
+            ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'staff_id sudah dipakai sales lain (baik yang masih aktif maupun yang sudah dihapus lewat DELETE sales) — pakai PUT untuk memperbarui sales yang sudah ada.'],
         ];
     }
 
@@ -90,7 +90,7 @@ class MasterSalesCreateDoc extends ApiEndpointDoc
             'staff_id, nama_depan, dan email wajib diisi; nama_belakang dan alamat boleh dikosongkan.',
             'id pada respons adalah id staf yang dibuat Pegasus sendiri (auto-increment) — SIMPAN nilai ini kalau nanti perlu memanggil PATCH /master/sales/{staff_id} (yang path parameternya memakai id Pegasus, bukan staff_id/rujukan Anda).',
             'staff_id pada body dan respons adalah id milik sistem Anda sendiri, disimpan di kolom terpisah (external_ref_id) — TIDAK menjadi id staf Pegasus. Endpoint ini tidak pernah membiarkan Anda menentukan id Pegasus.',
-            'Bukan upsert: mengirim staff_id yang sudah dipakai (aktif maupun yang sales-nya sudah dihapus) selalu ditolak dengan duplicate_ref_id, tidak pernah menimpa data yang sudah ada. Pakai PUT /master/sales/{staff_id} untuk memperbarui sales yang rujukannya sudah ada.',
+            'Bukan upsert: mengirim staff_id yang sudah dipakai (aktif maupun yang sales-nya sudah dihapus) selalu ditolak dengan DUPLICATE_REF_ID, tidak pernah menimpa data yang sudah ada. Pakai PUT /master/sales/{staff_id} untuk memperbarui sales yang rujukannya sudah ada.',
             'Untuk menghubungkan rujukan ke staf Pegasus yang SUDAH ADA (dibuat lewat halaman admin, misalnya), pakai PATCH /master/sales/{id} — bukan POST ini, yang selalu membuat staf baru.',
             'kode (staff_code), telepon (staff_phone), dan role tidak dikelola lewat endpoint ini — lihat GET /master/sales untuk field itu.',
         ];

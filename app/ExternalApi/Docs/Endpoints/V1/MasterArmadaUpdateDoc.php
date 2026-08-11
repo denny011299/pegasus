@@ -81,8 +81,8 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'customer_code tidak ditemukan, atau ditemukan tapi armadanya nonaktif/sudah dihapus.'],
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'Salah satu field tidak valid.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'customer_code tidak ditemukan, atau ditemukan tapi armadanya nonaktif/sudah dihapus.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'Salah satu field tidak valid.'],
         ];
     }
 
@@ -91,7 +91,7 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
         return [
             'Seluruh field body bersifat opsional (nullable) — tapi karena bersifat penggantian penuh, field yang tidak ikut dikirim akan DISIMPAN KOSONG, bukan mempertahankan nilai yang sudah ada. Kirim ulang nilai lama untuk field yang tidak ingin diubah.',
             'customer_code tidak bisa diubah lewat endpoint ini — kirim customer_code baru dengan DELETE + POST kalau memang perlu mengganti id universal armada ini.',
-            'Endpoint ini HANYA menyentuh armada berstatus aktif — customer_code yang menunjuk armada nonaktif/sudah dihapus dijawab not_found, bukan diizinkan mengubah data armada itu.',
+            'Endpoint ini HANYA menyentuh armada berstatus aktif — customer_code yang menunjuk armada nonaktif/sudah dihapus dijawab NOT_FOUND, bukan diizinkan mengubah data armada itu.',
         ];
     }
 }

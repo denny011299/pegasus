@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\ExternalApi\V1;
 
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\ExternalApi\Support\ShipmentPhotoStore;
 use App\ExternalApi\Support\ShipmentStatusMap;
@@ -13,6 +14,7 @@ use App\Models\ProductStock;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderDetail;
 use App\Models\ShipmentShortageDocument;
+use App\Models\Unit;
 use App\Support\SalesOrderApproval;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -24,8 +26,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Modul Shipment untuk sistem eksternal (API Contract v1 — lihat "private docs/Open API/
  * API_Integration_Specification_PMO_IPM_v1.md": /shipments/scheduled, /shipments/shipped,
- * /shipments/status, /shipments/cancel, GET /shipments/{ref_shipment_id}). scheduled() dan
- * shipped() dibangun di sini — endpoint lain menyusul terpisah.
+ * /shipments/status, /shipments/cancel, GET /shipments/{ref_shipment_id}). scheduled(), shipped(),
+ * dan show() dibangun di sini — /shipments/status dan /shipments/cancel menyusul terpisah.
  *
  * Tabel yang dipakai TETAP sales_orders/sales_order_details — sama seperti menu admin
  * "Pengiriman" (lihat catatan migrasi retail_warehouse_id: "Menu UI = Pengiriman, tabel =
@@ -229,7 +231,7 @@ class ShipmentController extends Controller
             // race condition (baris dinonaktifkan tepat setelah validate()), sangat jarang.
             if ($variant === null || $unit === null) {
                 return ApiResponse::error(
-                    ApiResponse::ERROR_VALIDATION,
+                    ErrorCatalog::VALIDATION_FAILED,
                     'items.variant_sku atau items.unit_id tidak lagi valid, coba ulang.',
                     422,
                 );
@@ -295,7 +297,7 @@ class ShipmentController extends Controller
         $result = SalesOrderApproval::confirm($so->fresh(), null);
         if (! ($result['ok'] ?? false)) {
             return ApiResponse::error(
-                'insufficient_stock',
+                ErrorCatalog::INSUFFICIENT_STOCK,
                 $result['message'] ?? 'Stok tidak mencukupi.',
                 409,
                 [
@@ -306,6 +308,82 @@ class ShipmentController extends Controller
         }
 
         return $this->presentShipped($so->fresh(), [], $httpStatus);
+    }
+
+    /**
+     * GET /api/external/v1/shipments/{ref_shipment_id}
+     *
+     * Detail satu shipment (baik yang baru dijadwalkan lewat /shipments/scheduled maupun yang
+     * sudah dikonfirmasi lewat /shipments/shipped) — ref_shipment_id yang sama sekali tidak
+     * pernah dipakai dijawab SHIPMENT_NOT_FOUND (404). Bukan cuma status Confirmed — baris
+     * apa pun yang benar-benar ada (berapa pun status internalnya) tetap ditemukan; existensi
+     * baris dan status "aktif" adalah dua hal berbeda di sini.
+     *
+     * armada_code, variant_sku, unit_id (ref_unit_id), product_name, variant_name dikembalikan
+     * apa adanya dari yang tersimpan — bentuknya SAMA PERSIS dengan yang diterima
+     * POST /shipments/shipped (bukan format /shipments/scheduled).
+     *
+     * ?show_unit=true menambahkan field "unit": {id, unit_name, unit_short_name} hasil resolusi
+     * items[].unit_id (ref_unit_id) di tiap item — satu objek per item (bukan daftar), karena
+     * satu item memang cuma punya satu satuan. Satuan diambil sekali per permintaan (dikelompokkan
+     * lewat whereIn), bukan sekali per item.
+     */
+    public function show(Request $request, string $refShipmentId): JsonResponse
+    {
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->first();
+
+        if ($so === null) {
+            return ApiResponse::error(
+                ErrorCatalog::SHIPMENT_NOT_FOUND,
+                ErrorCatalog::message(ErrorCatalog::SHIPMENT_NOT_FOUND, ['ref_shipment_id' => $refShipmentId]),
+                404,
+            );
+        }
+
+        $showUnit = $request->boolean('show_unit');
+        $customer = Customer::find((int) $so->so_customer);
+
+        $details = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)
+            ->orderBy('sod_id', 'asc')->get();
+
+        $unitIds = $details->pluck('unit_id')->filter()->unique()->values()->all();
+        $unitsByInternalId = $unitIds !== []
+            ? Unit::whereIn('unit_id', $unitIds)->get(['unit_id', 'ref_unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id')
+            : collect();
+
+        $photoNames = json_decode($so->so_img ?? '[]', true) ?: [];
+
+        return ApiResponse::success(array_merge([
+            'shipment_internal_id' => (int) $so->so_id,
+            'ref_shipment_id' => (string) $so->ref_shipment_id,
+        ], $this->ipmStatusFields($so), [
+            'shipment_date' => (string) $so->so_date,
+            'armada_code' => $customer->customer_code ?? null,
+            'notes' => $so->notes,
+            'photos' => array_map(static fn ($name) => ShipmentPhotoStore::url($name), $photoNames),
+            'created_at' => optional($so->created_at)->toIso8601String(),
+            'items' => $details->map(function (SalesOrderDetail $detail) use ($unitsByInternalId, $showUnit) {
+                $unit = $unitsByInternalId->get((int) $detail->unit_id);
+
+                $item = [
+                    'variant_sku' => (string) $detail->sod_sku,
+                    'qty' => (int) $detail->sod_qty,
+                    'unit_id' => $unit?->ref_unit_id !== null ? (int) $unit->ref_unit_id : null,
+                    'product_name' => (string) $detail->sod_nama,
+                    'variant_name' => (string) ($detail->sod_variant ?? ''),
+                ];
+
+                if ($showUnit) {
+                    $item['unit'] = $unit !== null ? [
+                        'id' => (int) $unit->unit_id,
+                        'unit_name' => (string) $unit->unit_name,
+                        'unit_short_name' => (string) $unit->unit_short_name,
+                    ] : null;
+                }
+
+                return $item;
+            })->values()->all(),
+        ]));
     }
 
     /* ------------------------------------------------------------------ */
@@ -462,7 +540,7 @@ class ShipmentController extends Controller
     private function mismatchError(array $mismatchedFields): JsonResponse
     {
         return ApiResponse::error(
-            'shipment_detail_mismatch',
+            ErrorCatalog::SHIPMENT_DETAIL_MISMATCH,
             'Data shipment untuk ref_shipment_id ini sudah tersimpan dan berbeda dari permintaan ini ('
                 .implode(', ', $mismatchedFields).'). Kirim detail_handler: "force" untuk menimpa, atau '
                 .'samakan data permintaan dengan yang sudah tersimpan.',
@@ -499,7 +577,7 @@ class ShipmentController extends Controller
     private function duplicateRefShipmentError(string $refShipmentId): JsonResponse
     {
         return ApiResponse::error(
-            'duplicate_ref_id',
+            ErrorCatalog::DUPLICATE_REF_ID,
             'ref_shipment_id '.$refShipmentId.' sudah dipakai shipment lain.',
             422,
         );

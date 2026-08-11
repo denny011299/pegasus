@@ -65,7 +65,7 @@ class ExternalApiMasterUnitFlowTest extends TestCase
             'ref_unit_id' => $refUnitId,
             'unit_name' => 'Dup',
             'unit_short_name' => 'dup',
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'duplicate_ref_id']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_REF_ID']]);
     }
 
     public function test_update_never_creates_a_new_unit_for_an_unknown_ref_unit_id(): void
@@ -75,7 +75,7 @@ class ExternalApiMasterUnitFlowTest extends TestCase
         $this->putJson('/api/external/v1/master/units/999999999', [
             'unit_name' => 'x',
             'unit_short_name' => 'x',
-        ], $headers)->assertStatus(404)->assertJson(['success' => false, 'error' => ['code' => 'not_found']]);
+        ], $headers)->assertStatus(404)->assertJson(['success' => false, 'error' => ['code' => 'NOT_FOUND']]);
     }
 
     public function test_update_and_delete_use_ref_unit_id_not_the_internal_id(): void
@@ -115,7 +115,7 @@ class ExternalApiMasterUnitFlowTest extends TestCase
             'unit_short_name' => 'RA',
         ], $headers);
 
-        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'duplicate_ref_id']]);
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_REF_ID']]);
     }
 
     public function test_connect_moves_a_ref_unit_id_from_whichever_unit_previously_held_it(): void
@@ -153,7 +153,7 @@ class ExternalApiMasterUnitFlowTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertFalse($response->json('data.0.success'));
-        $this->assertSame('not_found', $response->json('data.0.error.code'));
+        $this->assertSame('NOT_FOUND', $response->json('data.0.error.code'));
         $this->assertTrue($response->json('data.1.success'));
     }
 }

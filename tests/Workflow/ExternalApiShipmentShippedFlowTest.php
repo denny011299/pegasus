@@ -125,7 +125,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
             'shipment_date' => '2026-07-25',
             'armada_code' => 'X',
             'items' => [],
-        ])->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'unauthenticated']]);
+        ])->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'UNAUTHENTICATED']]);
     }
 
     public function test_shipped_creates_and_confirms_a_brand_new_shipment(): void
@@ -285,7 +285,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
 
         $response->assertStatus(409)->assertJson([
             'success' => false,
-            'error' => ['code' => 'shipment_detail_mismatch'],
+            'error' => ['code' => 'SHIPMENT_DETAIL_MISMATCH'],
         ]);
         $this->assertContains('items', $response->json('error.details.mismatched_fields'));
 
@@ -428,7 +428,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
 
         $response->assertStatus(409)->assertJson([
             'success' => false,
-            'error' => ['code' => 'insufficient_stock'],
+            'error' => ['code' => 'INSUFFICIENT_STOCK'],
         ]);
 
         $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
@@ -450,7 +450,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
             'shipment_date' => '2026-07-25',
             'armada_code' => 'DOES-NOT-EXIST',
             'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'validation_failed']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
     public function test_shipped_rejects_an_unknown_variant_sku(): void
@@ -465,7 +465,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
             'shipment_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
             'items' => [$this->itemPayload('DOES-NOT-EXIST-'.uniqid(), $refUnitId)],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'validation_failed']]);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
     public function test_shipped_accepts_photos_as_multipart_file_uploads(): void

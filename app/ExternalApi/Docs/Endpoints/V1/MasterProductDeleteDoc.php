@@ -59,7 +59,7 @@ class MasterProductDeleteDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404, 'message' => 'ref_product_id tidak ditemukan, atau ditemukan tapi produknya sudah nonaktif/dihapus sebelumnya.'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'ref_product_id tidak ditemukan, atau ditemukan tapi produknya sudah nonaktif/dihapus sebelumnya.'],
         ];
     }
 
@@ -67,7 +67,7 @@ class MasterProductDeleteDoc extends ApiEndpointDoc
     {
         return [
             'Ini soft delete: status produk diubah menjadi 0, bukan baris yang dihapus dari basis data — sama seperti penghapusan lewat halaman admin. Seluruh varian dan stok produk ini ikut dinonaktifkan (mengikuti Product::deleteProduct() yang sudah ada).',
-            'ref_product_id TIDAK dilepas oleh operasi ini — baris produk lama masih memegangnya, hanya berstatus nonaktif. Karena itu ref_product_id yang sudah dihapus lewat endpoint ini tidak bisa dipakai lagi lewat POST /produk (ditolak duplicate_ref_id), dan tidak muncul lagi lewat GET /produk.',
+            'ref_product_id TIDAK dilepas oleh operasi ini — baris produk lama masih memegangnya, hanya berstatus nonaktif. Karena itu ref_product_id yang sudah dihapus lewat endpoint ini tidak bisa dipakai lagi lewat POST /produk (ditolak DUPLICATE_REF_ID), dan tidak muncul lagi lewat GET /produk.',
         ];
     }
 }

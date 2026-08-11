@@ -82,7 +82,7 @@ class MasterUnitLinkDoc extends ApiEndpointDoc
                     'ref_unit_id' => 1043,
                     'success' => false,
                     'error' => [
-                        'code' => 'not_found',
+                        'code' => 'NOT_FOUND',
                         'message' => 'Satuan dengan id 999 tidak ditemukan atau tidak aktif.',
                     ],
                 ],
@@ -98,7 +98,7 @@ class MasterUnitLinkDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'connections kosong/bukan array, atau salah satu butir tidak berbentuk {id, ref_unit_id} yang sah — berlaku untuk SELURUH permintaan (bukan per butir).'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'connections kosong/bukan array, atau salah satu butir tidak berbentuk {id, ref_unit_id} yang sah — berlaku untuk SELURUH permintaan (bukan per butir).'],
         ];
     }
 

@@ -77,7 +77,7 @@ class CashPaymentShowDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'not_found', 'http_status' => 404,
+            ['code' => 'NOT_FOUND', 'http_status' => 404,
                 'message' => 'Pembayaran dengan ref_payment_id tersebut tidak ditemukan.'],
         ];
     }

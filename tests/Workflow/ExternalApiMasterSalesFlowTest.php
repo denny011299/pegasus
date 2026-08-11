@@ -78,7 +78,7 @@ class ExternalApiMasterSalesFlowTest extends TestCase
             'email' => 'dup-'.uniqid().'@example.test',
         ], $headers);
 
-        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'duplicate_ref_id']]);
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_REF_ID']]);
     }
 
     public function test_update_and_delete_use_external_ref_id_in_the_path_not_the_internal_staff_id(): void

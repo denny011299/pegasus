@@ -84,7 +84,7 @@ class MasterProductLinkDoc extends ApiEndpointDoc
                     'ref_product_id' => 13,
                     'success' => false,
                     'error' => [
-                        'code' => 'not_found',
+                        'code' => 'NOT_FOUND',
                         'message' => 'Produk dengan id 999 tidak ditemukan atau tidak aktif.',
                     ],
                 ],
@@ -100,7 +100,7 @@ class MasterProductLinkDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422, 'message' => 'connections kosong/bukan array, atau salah satu butir tidak berbentuk {id, ref_product_id} yang sah — berlaku untuk SELURUH permintaan (bukan per butir).'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'connections kosong/bukan array, atau salah satu butir tidak berbentuk {id, ref_product_id} yang sah — berlaku untuk SELURUH permintaan (bukan per butir).'],
         ];
     }
 
