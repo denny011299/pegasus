@@ -143,11 +143,12 @@ Route::prefix('stock')->name('stock.')->group(function () {
 /*
  * Shipment.
  *
- * Modul baru mengikuti "private docs/Open API/API_Integration_Specification_PMO_IPM_v1.md"
+ * Modul mengikuti "private docs/Open API/API_Integration_Specification_PMO_IPM_v1.md"
  * (API Contract v1): /shipments/scheduled, /shipments/shipped, GET /shipments/{ref_shipment_id},
- * PATCH /shipments/{ref_shipment_id}/change-status (semua dibangun di sini) — /shipments/cancel
- * menyusul terpisah. Prefix rute PLURAL ("shipments") sesuai dokumen itu, beda dengan nama
- * modul/branch yang singular ("Shipment") — dikonfirmasi pemilik produk.
+ * PATCH /shipments/{ref_shipment_id}/change-status, PUT /shipments/{ref_shipment_id}/cancel —
+ * modul Shipment lengkap, semua dibangun di sini. Prefix rute PLURAL ("shipments") sesuai
+ * dokumen itu, beda dengan nama modul/branch yang singular ("Shipment") — dikonfirmasi pemilik
+ * produk.
  *
  * Tabelnya TETAP sales_orders/sales_order_details (menu admin "Pengiriman"), bukan tabel baru —
  * lihat catatan kelas ShipmentController. scheduled() memakai ulang cek stok yang SAMA PERSIS
@@ -157,11 +158,15 @@ Route::prefix('stock')->name('stock.')->group(function () {
  * Pengiriman, diekstrak supaya bisa dipakai di sini juga. show() (GET) menemukan baris apa pun
  * dengan ref_shipment_id itu tanpa syarat status. changeStatus() (PATCH) FORCE mengubah status
  * berdasarkan label — BELUM ada aturan transisi maupun efek samping per transisi, lihat docblock
- * method-nya (butuh konfirmasi pemilik produk, dicatat KNOWN_ISSUES.md).
+ * method-nya (butuh konfirmasi pemilik produk, dicatat KNOWN_ISSUES.md). cancel() (PUT)
+ * membatalkan shipment SUNGGUHAN (bukan sekadar tulis status) — mengembalikan stok kalau
+ * sebelumnya Confirmed, lewat App\Support\SalesOrderCancellation::cancel() (BARU, karena tidak
+ * ada alur admin setara untuk diekstrak), idempoten lewat status.
  */
 Route::prefix('shipments')->name('shipments.')->group(function () {
     Route::post('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');
     Route::post('/shipped', [ShipmentController::class, 'shipped'])->name('shipped');
     Route::get('/{ref_shipment_id}', [ShipmentController::class, 'show'])->name('show');
     Route::patch('/{ref_shipment_id}/change-status', [ShipmentController::class, 'changeStatus'])->name('changeStatus');
+    Route::put('/{ref_shipment_id}/cancel', [ShipmentController::class, 'cancel'])->name('cancel');
 });

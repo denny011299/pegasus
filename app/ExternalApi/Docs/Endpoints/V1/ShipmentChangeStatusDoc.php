@@ -95,7 +95,7 @@ class ShipmentChangeStatusDoc extends ApiEndpointDoc
         return [
             'status pada body adalah LABEL (String, sama seperti ipm_status_label pada respons endpoint Shipment lain), BUKAN angka ipm_status maupun sales_orders.status internal.',
             'BELUM ada aturan transisi — status shipment saat ini APA PUN bisa dipaksa ke label APA PUN yang sah, termasuk melompat atau mundur. PERLU DITINJAU ULANG pemilik produk (dicatat di KNOWN_ISSUES.md), belum dikonfirmasi untuk rilis ini.',
-            'HANYA menulis kolom status — TIDAK menjalankan efek samping apa pun yang menyertai perubahan status di endpoint lain. Contoh: memaksa ke "Berjalan" TIDAK memotong stok lewat App\\Support\\SalesOrderApproval::confirm() seperti POST /shipments/shipped — kalau dipakai untuk shipment yang stoknya belum pernah dipotong, ipm_status akan tampak "Berjalan" padahal stok gudang belum tersentuh.',
+            'HANYA mengubah status — TIDAK menjalankan efek samping apa pun yang menyertai perubahan status di endpoint lain. Contoh: memaksa ke "Berjalan" TIDAK memotong stok seperti yang dilakukan POST /shipments/shipped — kalau dipakai untuk shipment yang stoknya belum pernah dipotong, ipm_status akan tampak "Berjalan" padahal stok gudang belum tersentuh.',
             '"Belum terkirim" dan "Sudah terkirim" hanya bisa dihasilkan lewat endpoint ini — POST /shipments/scheduled dan /shipments/shipped hanya menghasilkan "Dijadwalkan"/"Berjalan".',
             'ref_shipment_id yang sama sekali belum pernah dipakai dijawab SHIPMENT_NOT_FOUND, sama seperti GET /shipments/{ref_shipment_id} — existensi baris dan status "aktif" adalah dua hal berbeda.',
         ];
