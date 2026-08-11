@@ -16,6 +16,7 @@ use App\Models\SalesOrderDetail;
 use App\Models\ShipmentShortageDocument;
 use App\Models\Unit;
 use App\Support\SalesOrderApproval;
+use App\Support\SalesOrderCancellation;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,9 +27,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * Modul Shipment untuk sistem eksternal (API Contract v1 — lihat "private docs/Open API/
  * API_Integration_Specification_PMO_IPM_v1.md": /shipments/scheduled, /shipments/shipped,
- * /shipments/{ref}/change-status, /shipments/cancel, GET /shipments/{ref_shipment_id}).
- * scheduled(), shipped(), show(), dan changeStatus() dibangun di sini — /shipments/cancel
- * menyusul terpisah.
+ * /shipments/{ref}/change-status, /shipments/{ref}/cancel, GET /shipments/{ref_shipment_id}).
+ * scheduled(), shipped(), show(), changeStatus(), dan cancel() dibangun di sini — modul Shipment
+ * lengkap sesuai API Contract v1.
  *
  * Tabel yang dipakai TETAP sales_orders/sales_order_details — sama seperti menu admin
  * "Pengiriman" (lihat catatan migrasi retail_warehouse_id: "Menu UI = Pengiriman, tabel =
@@ -467,6 +468,64 @@ class ShipmentController extends Controller
             'status' => ShipmentStatusMap::label($ipmStatus),
             'message' => 'Status Pengiriman dengan referensi '.$so->ref_shipment_id.' menjadi '.ShipmentStatusMap::label($ipmStatus),
         ]);
+    }
+
+    /**
+     * PUT /api/external/v1/shipments/{ref_shipment_id}/cancel
+     *
+     * Batalkan (pembatalan) satu shipment — SELALU menjalankan proses pembatalan yang sama
+     * seperti alur normal, bukan sekadar menulis status seperti changeStatus(): kalau shipment
+     * ini sebelumnya sudah Confirmed (ipm_status "Berjalan", stok sudah dipotong lewat
+     * SalesOrderApproval::confirm()), stoknya DIKEMBALIKAN lebih dulu — lihat
+     * App\Support\SalesOrderCancellation::cancel() (BARU, diekstrak jadi reusable karena TIDAK
+     * ADA alur admin yang setara untuk dicontek: CustomerController::declineSO()/
+     * deleteSalesOrder() cuma berlaku sebelum Confirmed, jadi tidak pernah perlu mengembalikan
+     * stok).
+     *
+     * IDEMPOTEN: shipment yang statusnya SUDAH Dibatalkan dijawab sukses apa adanya, TIDAK
+     * mengembalikan stok lagi (mencegah stok gudang tergelembung kalau permintaan yang sama
+     * dikirim ulang) — meta.already_cancelled menandainya.
+     *
+     * ipm_status -1 "Dibatalkan" HANYA bisa dihasilkan lewat endpoint ini — beda dengan
+     * changeStatus() yang cuma menerima 4 label lain (Dijadwalkan/Berjalan/Belum terkirim/Sudah
+     * terkirim), "Dibatalkan" sengaja TIDAK ada di ShipmentStatusMap::validLabels().
+     */
+    public function cancel(Request $request, string $refShipmentId): JsonResponse
+    {
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->first();
+
+        if ($so === null) {
+            return ApiResponse::error(
+                ErrorCatalog::SHIPMENT_NOT_FOUND,
+                ErrorCatalog::message(ErrorCatalog::SHIPMENT_NOT_FOUND, ['ref_shipment_id' => $refShipmentId]),
+                404,
+            );
+        }
+
+        $data = $request->validate([
+            'reason' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $result = SalesOrderCancellation::cancel($so, $data['reason'] ?? null);
+
+        if (! ($result['ok'] ?? false)) {
+            return ApiResponse::error(
+                ErrorCatalog::SERVER_ERROR,
+                $result['message'] ?? 'Gagal membatalkan shipment.',
+                500,
+            );
+        }
+
+        $message = ($result['stock_restored'] ?? false)
+            ? 'Dokumen berhasil dibatalkan dan stok telah dikembalikan.'
+            : 'Dokumen berhasil dibatalkan.';
+
+        return ApiResponse::success(array_merge([
+            'ref_shipment_id' => (string) $so->ref_shipment_id,
+            'shipment_internal_id' => (int) $so->so_id,
+        ], $this->ipmStatusFields($so->fresh()), [
+            'message' => $message,
+        ]), ['already_cancelled' => $result['already_cancelled'] ?? false]);
     }
 
     /* ------------------------------------------------------------------ */

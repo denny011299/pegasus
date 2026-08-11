@@ -184,13 +184,13 @@ return [
         // Stok — modul baru, hanya baca (tidak ada create/update/delete).
         \App\ExternalApi\Docs\Endpoints\V1\StockCheckDoc::class,
 
-        // Shipment — modul baru. scheduled() + shipped() + show() (GET) + change-status (PATCH)
-        // sudah ada; /shipments/cancel menyusul terpisah (lihat API Contract v1 di
-        // "private docs/Open API/").
+        // Shipment — modul lengkap sesuai API Contract v1 (lihat "private docs/Open API/"):
+        // scheduled() + shipped() + show() (GET) + change-status (PATCH) + cancel (PUT).
         \App\ExternalApi\Docs\Endpoints\V1\ShipmentScheduledDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\ShipmentShippedDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\ShipmentShowDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\ShipmentChangeStatusDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentCancelDoc::class,
     ],
 
     /*
