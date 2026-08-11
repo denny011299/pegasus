@@ -724,6 +724,14 @@ function renderSoStatus(status) {
         // Dijadwalkan lewat External API (POST /shipments/scheduled) — belum di-ACC, stok belum dipotong.
         return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-calendar me-1"></i> Dijadwalkan</span>';
     }
+    if (status === 5) {
+        // Belum Terkirim, dipaksa lewat External API (PATCH /shipments/{ref}/change-status).
+        return '<span class="badge" style="background-color: #fef9c3; color: #854d0e; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Belum Terkirim</span>';
+    }
+    if (status === 6) {
+        // Sudah Terkirim, dipaksa lewat External API (PATCH /shipments/{ref}/change-status).
+        return '<span class="badge" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-square me-1"></i> Sudah Terkirim</span>';
+    }
     return "-";
 }
 

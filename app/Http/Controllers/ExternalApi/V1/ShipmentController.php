@@ -26,8 +26,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * Modul Shipment untuk sistem eksternal (API Contract v1 — lihat "private docs/Open API/
  * API_Integration_Specification_PMO_IPM_v1.md": /shipments/scheduled, /shipments/shipped,
- * /shipments/status, /shipments/cancel, GET /shipments/{ref_shipment_id}). scheduled(), shipped(),
- * dan show() dibangun di sini — /shipments/status dan /shipments/cancel menyusul terpisah.
+ * /shipments/{ref}/change-status, /shipments/cancel, GET /shipments/{ref_shipment_id}).
+ * scheduled(), shipped(), show(), dan changeStatus() dibangun di sini — /shipments/cancel
+ * menyusul terpisah.
  *
  * Tabel yang dipakai TETAP sales_orders/sales_order_details — sama seperti menu admin
  * "Pengiriman" (lihat catatan migrasi retail_warehouse_id: "Menu UI = Pengiriman, tabel =
@@ -45,6 +46,24 @@ class ShipmentController extends Controller
     private const STATUS_CONFIRMED = 2;
 
     private const STATUS_SCHEDULED = 4;
+
+    /** sales_orders.status, lihat migrasi 2026_08_12_110000_* — hanya dihasilkan changeStatus(). */
+    private const STATUS_NOT_DELIVERED = 5;
+
+    private const STATUS_DELIVERED = 6;
+
+    /**
+     * ipm_status (ShipmentStatusMap::ipmForLabel()) -> target sales_orders.status dipaksa
+     * changeStatus(). BUKAN kebalikan sesungguhnya dari ShipmentStatusMap::fromInternal() — ipm
+     * 1 "Dijadwalkan" bisa dihasilkan internal 1 ATAU 4, tapi target paksa di sini SELALU 4
+     * (dijadwalkan lewat API), tidak pernah 1 (dibuat manual lewat admin, beda alur).
+     */
+    private const TARGET_INTERNAL_STATUS = [
+        ShipmentStatusMap::IPM_SCHEDULED => self::STATUS_SCHEDULED,
+        ShipmentStatusMap::IPM_RUNNING => self::STATUS_CONFIRMED,
+        ShipmentStatusMap::IPM_NOT_DELIVERED => self::STATUS_NOT_DELIVERED,
+        ShipmentStatusMap::IPM_DELIVERED => self::STATUS_DELIVERED,
+    ];
 
     /**
      * POST /api/external/v1/shipments/scheduled
@@ -384,6 +403,70 @@ class ShipmentController extends Controller
                 return $item;
             })->values()->all(),
         ]));
+    }
+
+    /**
+     * PATCH /api/external/v1/shipments/{ref_shipment_id}/change-status
+     *
+     * FORCE mengubah status shipment — body.status adalah LABEL (bukan angka), salah satu dari
+     * 4 label yang disepakati kontrak (App\ExternalApi\Support\ShipmentStatusMap::validLabels()):
+     * "Dijadwalkan", "Berjalan", "Belum terkirim", "Sudah terkirim". Label yang bukan salah satu
+     * dari situ dijawab galat INVALID_STATUS (422) berisi daftar label yang sah.
+     *
+     * BELUM ada aturan transisi (mis. tidak boleh lompat dari "Dijadwalkan" langsung ke "Sudah
+     * terkirim", tidak boleh mundur) — status APA PUN pada baris saat ini bisa dipaksa ke label
+     * APA PUN yang sah, tanpa syarat. Ini SENGAJA untuk rilis pertama endpoint ini ("for now only
+     * force change the status") — PERLU DITINJAU ULANG pemilik produk, dicatat di
+     * cdocs/testing/KNOWN_ISSUES.md.
+     *
+     * PENTING: perubahan ini HANYA menulis kolom status — TIDAK menjalankan efek samping apa pun
+     * yang biasanya menyertai perubahan status di alur lain. Contoh paling nyata: memaksa ke
+     * "Berjalan" TIDAK memotong stok lewat App\Support\SalesOrderApproval::confirm() seperti
+     * POST /shipments/shipped — kalau dipakai untuk shipment yang stoknya belum pernah dipotong,
+     * shipment akan tampak "Berjalan" padahal stok gudang belum tersentuh. Efek samping per
+     * transisi (kalau memang dibutuhkan) menyusul setelah dikonfirmasi pemilik produk, sama
+     * seperti aturan transisi di atas.
+     *
+     * "Belum terkirim" dan "Sudah terkirim" belum bisa dihasilkan endpoint Shipment manapun
+     * selain lewat sini (scheduled()/shipped() hanya menghasilkan "Dijadwalkan"/"Berjalan") —
+     * makanya sales_orders.status butuh dua nilai baru (5, 6) khusus endpoint ini, lihat migrasi
+     * 2026_08_12_110000_* dan TARGET_INTERNAL_STATUS di atas.
+     */
+    public function changeStatus(Request $request, string $refShipmentId): JsonResponse
+    {
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->first();
+
+        if ($so === null) {
+            return ApiResponse::error(
+                ErrorCatalog::SHIPMENT_NOT_FOUND,
+                ErrorCatalog::message(ErrorCatalog::SHIPMENT_NOT_FOUND, ['ref_shipment_id' => $refShipmentId]),
+                404,
+            );
+        }
+
+        $data = $request->validate([
+            'status' => ['required', 'string'],
+        ]);
+
+        $ipmStatus = ShipmentStatusMap::ipmForLabel($data['status']);
+        if ($ipmStatus === null) {
+            return ApiResponse::error(
+                ErrorCatalog::INVALID_STATUS,
+                ErrorCatalog::message(ErrorCatalog::INVALID_STATUS, [
+                    'valid_statuses' => implode(', ', ShipmentStatusMap::validLabels()),
+                ]),
+                422,
+            );
+        }
+
+        $so->status = self::TARGET_INTERNAL_STATUS[$ipmStatus];
+        $so->save();
+
+        return ApiResponse::success([
+            'ref_shipment_id' => (string) $so->ref_shipment_id,
+            'status' => ShipmentStatusMap::label($ipmStatus),
+            'message' => 'Status Pengiriman dengan referensi '.$so->ref_shipment_id.' menjadi '.ShipmentStatusMap::label($ipmStatus),
+        ]);
     }
 
     /* ------------------------------------------------------------------ */

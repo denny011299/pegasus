@@ -144,10 +144,10 @@ Route::prefix('stock')->name('stock.')->group(function () {
  * Shipment.
  *
  * Modul baru mengikuti "private docs/Open API/API_Integration_Specification_PMO_IPM_v1.md"
- * (API Contract v1): /shipments/scheduled, /shipments/shipped, GET /shipments/{ref_shipment_id}
- * (semua dibangun di sini) — /shipments/status, /shipments/cancel menyusul terpisah. Prefix rute
- * PLURAL ("shipments") sesuai dokumen itu, beda dengan nama modul/branch yang singular
- * ("Shipment") — dikonfirmasi pemilik produk.
+ * (API Contract v1): /shipments/scheduled, /shipments/shipped, GET /shipments/{ref_shipment_id},
+ * PATCH /shipments/{ref_shipment_id}/change-status (semua dibangun di sini) — /shipments/cancel
+ * menyusul terpisah. Prefix rute PLURAL ("shipments") sesuai dokumen itu, beda dengan nama
+ * modul/branch yang singular ("Shipment") — dikonfirmasi pemilik produk.
  *
  * Tabelnya TETAP sales_orders/sales_order_details (menu admin "Pengiriman"), bukan tabel baru —
  * lihat catatan kelas ShipmentController. scheduled() memakai ulang cek stok yang SAMA PERSIS
@@ -155,10 +155,13 @@ Route::prefix('stock')->name('stock.')->group(function () {
  * ref_shipment_id (beda dengan scheduled() yang menolak duplikat) dan memakai ulang
  * App\Support\SalesOrderApproval::confirm() — logika accSO() yang sama dipakai halaman admin
  * Pengiriman, diekstrak supaya bisa dipakai di sini juga. show() (GET) menemukan baris apa pun
- * dengan ref_shipment_id itu tanpa syarat status.
+ * dengan ref_shipment_id itu tanpa syarat status. changeStatus() (PATCH) FORCE mengubah status
+ * berdasarkan label — BELUM ada aturan transisi maupun efek samping per transisi, lihat docblock
+ * method-nya (butuh konfirmasi pemilik produk, dicatat KNOWN_ISSUES.md).
  */
 Route::prefix('shipments')->name('shipments.')->group(function () {
     Route::post('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');
     Route::post('/shipped', [ShipmentController::class, 'shipped'])->name('shipped');
     Route::get('/{ref_shipment_id}', [ShipmentController::class, 'show'])->name('show');
+    Route::patch('/{ref_shipment_id}/change-status', [ShipmentController::class, 'changeStatus'])->name('changeStatus');
 });

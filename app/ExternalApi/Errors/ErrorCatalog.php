@@ -76,7 +76,7 @@ final class ErrorCatalog
     /** GET /shipments/{ref_shipment_id} — ref_shipment_id tidak ditemukan. */
     public const SHIPMENT_NOT_FOUND = 'SHIPMENT_NOT_FOUND';
 
-    /** Disiapkan untuk POST /shipments/status (belum dibangun) — status yang dikirim tidak ada di kosakata ipm_status. */
+    /** PATCH /shipments/{ref_shipment_id}/change-status — label status yang dikirim bukan salah satu dari 4 label yang disepakati kontrak. */
     public const INVALID_STATUS = 'INVALID_STATUS';
 
     /**
