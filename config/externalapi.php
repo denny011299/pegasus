@@ -180,6 +180,9 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterProductUpdateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterProductDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterProductLinkDoc::class,
+
+        // Stok — modul baru, hanya baca (tidak ada create/update/delete).
+        \App\ExternalApi\Docs\Endpoints\V1\StockCheckDoc::class,
     ],
 
     /*

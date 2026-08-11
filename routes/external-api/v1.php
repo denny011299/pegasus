@@ -7,6 +7,7 @@ use App\Http\Controllers\ExternalApi\V1\MasterProductController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
 use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
+use App\Http\Controllers\ExternalApi\V1\StockController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -122,4 +123,18 @@ Route::prefix('produk')->name('produk.')->group(function () {
     Route::put('/{ref_product_id}', [MasterProductController::class, 'update'])->name('update');
     Route::delete('/{ref_product_id}', [MasterProductController::class, 'destroy'])->name('destroy');
     Route::patch('/connect', [MasterProductController::class, 'connect'])->name('connect');
+});
+
+/*
+ * Stok.
+ *
+ * Beda dengan modul lain: hanya baca, tidak ada create/update/delete di
+ * sini, jadi tidak ada konsep "dikelola API ini" atau endpoint connect.
+ * check() memakai ulang App\Support\ProductUnitStock (logika stok yang sama
+ * dipakai Sales Order) untuk menghitung stok tersedia setara satu satuan per
+ * SKU, termasuk bongkar satuan lebih besar dalam satu chain
+ * product_relations. Lihat catatan kelas StockController.
+ */
+Route::prefix('stock')->name('stock.')->group(function () {
+    Route::post('/check', [StockController::class, 'check'])->name('check');
 });
