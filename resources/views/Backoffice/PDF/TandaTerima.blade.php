@@ -150,7 +150,7 @@
             <div class="info-section">
                 <div class="info-row">
                     <div class="info-label">Tanggal Surat Terima</div>
-                    <div class="info-value">: {{ date('d F Y', strtotime($tt["tt_date"]))??null }}</div>
+                    <div class="info-value">: {{ $tt["tt_date"] ? date('d F Y', strtotime($tt["tt_date"])) . ', ' . now()->format('H:i:s') : null }}</div>
                 </div>
                
                 <div class="info-row">
