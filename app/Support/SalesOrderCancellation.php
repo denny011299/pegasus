@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Batalkan satu Sales Order (Pengiriman): kembalikan stok KALAU sebelumnya sudah Confirmed
- * (stoknya sudah dipotong lewat SalesOrderApproval::confirm()), lalu set status Dibatalkan (7).
+ * Batalkan satu Sales Order (Pengiriman): kembalikan stok KALAU stoknya sebelumnya sudah pernah
+ * dipotong (lewat SalesOrderApproval::confirm(), baik dari /shipments/shipped ATAU dari transisi
+ * change-status Dijadwalkan -> Sudah Terkirim — lihat STOCK_DEDUCTED_STATUSES), lalu set status
+ * Dibatalkan (7).
  *
  * Tidak ada alur admin yang setara untuk dicontek/diekstrak (BEDA dengan SalesOrderApproval yang
  * diekstrak dari accSO() yang sudah ada) - CustomerController::declineSO()/deleteSalesOrder()
@@ -31,11 +33,14 @@ class SalesOrderCancellation
     public const STATUS_CANCELLED = 7;
 
     /**
-     * Status internal yang berarti "stok sudah dipotong dan perlu dikembalikan" kalau dibatalkan.
-     * Cuma 2 (Confirmed) - status lain (1/4/5/6) tidak pernah lewat SalesOrderApproval::confirm(),
-     * jadi stoknya tidak pernah dipotong untuk baris itu.
+     * Status internal yang berarti "stok sudah dipotong dan perlu dikembalikan" kalau dibatalkan:
+     *   - 2 (Confirmed/"Berjalan") - lewat POST /shipments/shipped atau ACC manual admin.
+     *   - 6 (Sudah Terkirim (API)) - lewat PATCH .../change-status, transisi Dijadwalkan -> Sudah
+     *     Terkirim (DIKONFIRMASI pemilik produk 2026-08-13 MEMOTONG STOK, sama seperti /shipped).
+     * Status lain (1/4/5, "Dijadwalkan"/"Belum terkirim") tidak pernah dipotong untuk baris itu -
+     * dikonfirmasi pemilik produk: dari "Dijadwalkan", cancel cuma mengubah status.
      */
-    private const STOCK_DEDUCTED_STATUSES = [2];
+    private const STOCK_DEDUCTED_STATUSES = [2, 6];
 
     /**
      * @return array{ok: bool, message?: string, already_cancelled?: bool, stock_restored?: bool}

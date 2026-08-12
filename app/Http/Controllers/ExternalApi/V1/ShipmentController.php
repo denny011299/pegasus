@@ -48,22 +48,26 @@ class ShipmentController extends Controller
 
     private const STATUS_SCHEDULED = 4;
 
-    /** sales_orders.status, lihat migrasi 2026_08_12_110000_* — hanya dihasilkan changeStatus(). */
+    /**
+     * sales_orders.status, lihat migrasi 2026_08_12_110000_*. Belum dihasilkan endpoint manapun
+     * saat ini — ALLOWED_TRANSITIONS di bawah belum membuka transisi apa pun menuju "Belum
+     * terkirim", dipertahankan untuk kalau pemilik produk membukanya nanti.
+     */
     private const STATUS_NOT_DELIVERED = 5;
 
+    /** sales_orders.status untuk ipm_status "Sudah Terkirim" — lihat ALLOWED_TRANSITIONS. */
     private const STATUS_DELIVERED = 6;
 
     /**
-     * ipm_status (ShipmentStatusMap::ipmForLabel()) -> target sales_orders.status dipaksa
-     * changeStatus(). BUKAN kebalikan sesungguhnya dari ShipmentStatusMap::fromInternal() — ipm
-     * 1 "Dijadwalkan" bisa dihasilkan internal 1 ATAU 4, tapi target paksa di sini SELALU 4
-     * (dijadwalkan lewat API), tidak pernah 1 (dibuat manual lewat admin, beda alur).
+     * Transisi ipm_status yang diizinkan changeStatus() saat ini — DIKONFIRMASI pemilik produk
+     * 2026-08-13: HANYA Dijadwalkan -> Sudah Terkirim, kombinasi lain (termasuk mundur, maupun
+     * target "Berjalan"/"Belum terkirim") ditolak INVALID_STATUS_TRANSITION. Bentuknya
+     * ipm_status_saat_ini => daftar ipm_status_tujuan yang boleh, supaya gampang ditambah kalau
+     * pemilik produk membuka transisi lain nanti — bukan berarti sengaja disiapkan buat itu
+     * sekarang, cuma bentuk yang paling gampang diperluas tanpa nulis ulang guard-nya.
      */
-    private const TARGET_INTERNAL_STATUS = [
-        ShipmentStatusMap::IPM_SCHEDULED => self::STATUS_SCHEDULED,
-        ShipmentStatusMap::IPM_RUNNING => self::STATUS_CONFIRMED,
-        ShipmentStatusMap::IPM_NOT_DELIVERED => self::STATUS_NOT_DELIVERED,
-        ShipmentStatusMap::IPM_DELIVERED => self::STATUS_DELIVERED,
+    private const ALLOWED_TRANSITIONS = [
+        ShipmentStatusMap::IPM_SCHEDULED => [ShipmentStatusMap::IPM_DELIVERED],
     ];
 
     /**
@@ -409,29 +413,22 @@ class ShipmentController extends Controller
     /**
      * PATCH /api/external/v1/shipments/{ref_shipment_id}/change-status
      *
-     * FORCE mengubah status shipment — body.status adalah LABEL (bukan angka), salah satu dari
-     * 4 label yang disepakati kontrak (App\ExternalApi\Support\ShipmentStatusMap::validLabels()):
-     * "Dijadwalkan", "Berjalan", "Belum terkirim", "Sudah terkirim". Label yang bukan salah satu
-     * dari situ dijawab galat INVALID_STATUS (422) berisi daftar label yang sah.
+     * body.status adalah LABEL (bukan angka), salah satu dari 4 label yang disepakati kontrak
+     * (App\ExternalApi\Support\ShipmentStatusMap::validLabels()): "Dijadwalkan", "Berjalan",
+     * "Belum terkirim", "Sudah terkirim". Label yang bukan salah satu dari situ dijawab galat
+     * INVALID_STATUS (422) berisi daftar label yang sah.
      *
-     * BELUM ada aturan transisi (mis. tidak boleh lompat dari "Dijadwalkan" langsung ke "Sudah
-     * terkirim", tidak boleh mundur) — status APA PUN pada baris saat ini bisa dipaksa ke label
-     * APA PUN yang sah, tanpa syarat. Ini SENGAJA untuk rilis pertama endpoint ini ("for now only
-     * force change the status") — PERLU DITINJAU ULANG pemilik produk, dicatat di
-     * cdocs/testing/KNOWN_ISSUES.md.
+     * HANYA SATU transisi yang diizinkan saat ini (DIKONFIRMASI pemilik produk 2026-08-13, lihat
+     * ALLOWED_TRANSITIONS di atas): Dijadwalkan -> Sudah Terkirim. Kombinasi status-saat-ini/
+     * label-tujuan lain (termasuk target "Berjalan"/"Belum terkirim", atau mundur dari status
+     * mana pun) ditolak INVALID_STATUS_TRANSITION (409) — beda dari INVALID_STATUS: labelnya
+     * SAH secara kontrak, cuma transisinya yang belum dibuka untuk status baris saat ini.
      *
-     * PENTING: perubahan ini HANYA menulis kolom status — TIDAK menjalankan efek samping apa pun
-     * yang biasanya menyertai perubahan status di alur lain. Contoh paling nyata: memaksa ke
-     * "Berjalan" TIDAK memotong stok lewat App\Support\SalesOrderApproval::confirm() seperti
-     * POST /shipments/shipped — kalau dipakai untuk shipment yang stoknya belum pernah dipotong,
-     * shipment akan tampak "Berjalan" padahal stok gudang belum tersentuh. Efek samping per
-     * transisi (kalau memang dibutuhkan) menyusul setelah dikonfirmasi pemilik produk, sama
-     * seperti aturan transisi di atas.
-     *
-     * "Belum terkirim" dan "Sudah terkirim" belum bisa dihasilkan endpoint Shipment manapun
-     * selain lewat sini (scheduled()/shipped() hanya menghasilkan "Dijadwalkan"/"Berjalan") —
-     * makanya sales_orders.status butuh dua nilai baru (5, 6) khusus endpoint ini, lihat migrasi
-     * 2026_08_12_110000_* dan TARGET_INTERNAL_STATUS di atas.
+     * Transisi Dijadwalkan -> Sudah Terkirim ini MEMOTONG STOK sungguhan — memakai ulang
+     * App\Support\SalesOrderApproval::confirm() PERSIS seperti POST /shipments/shipped, cuma
+     * target status akhirnya beda (6 "Sudah Terkirim (API)", bukan 2 "Confirmed/Berjalan").
+     * Kalau stok tidak cukup, permintaan gagal INSUFFICIENT_STOCK (409) dan baris TETAP di
+     * "Dijadwalkan" — sama seperti kegagalan konfirmasi di /shipments/shipped.
      */
     public function changeStatus(Request $request, string $refShipmentId): JsonResponse
     {
@@ -449,8 +446,8 @@ class ShipmentController extends Controller
             'status' => ['required', 'string'],
         ]);
 
-        $ipmStatus = ShipmentStatusMap::ipmForLabel($data['status']);
-        if ($ipmStatus === null) {
+        $targetIpm = ShipmentStatusMap::ipmForLabel($data['status']);
+        if ($targetIpm === null) {
             return ApiResponse::error(
                 ErrorCatalog::INVALID_STATUS,
                 ErrorCatalog::message(ErrorCatalog::INVALID_STATUS, [
@@ -460,23 +457,65 @@ class ShipmentController extends Controller
             );
         }
 
-        $so->status = self::TARGET_INTERNAL_STATUS[$ipmStatus];
-        $so->save();
+        $currentIpm = ShipmentStatusMap::fromInternal((int) $so->status);
+        $allowedTargets = self::ALLOWED_TRANSITIONS[$currentIpm] ?? [];
+        if (! in_array($targetIpm, $allowedTargets, true)) {
+            return $this->invalidTransitionError($currentIpm, $targetIpm);
+        }
+
+        // Satu-satunya transisi yang bisa lolos guard di atas saat ini: Dijadwalkan -> Sudah
+        // Terkirim — memotong stok sungguhan lewat proses yang sama dengan /shipments/shipped.
+        $result = SalesOrderApproval::confirm($so, null, self::STATUS_DELIVERED);
+        if (! ($result['ok'] ?? false)) {
+            return ApiResponse::error(
+                ErrorCatalog::INSUFFICIENT_STOCK,
+                $result['message'] ?? 'Stok tidak mencukupi.',
+                409,
+                [
+                    'products' => $result['products'] ?? [],
+                    'recommendations' => $result['recommendations'] ?? [],
+                ],
+            );
+        }
+
+        $label = ShipmentStatusMap::label($targetIpm);
 
         return ApiResponse::success([
             'ref_shipment_id' => (string) $so->ref_shipment_id,
-            'status' => ShipmentStatusMap::label($ipmStatus),
-            'message' => 'Status Pengiriman dengan referensi '.$so->ref_shipment_id.' menjadi '.ShipmentStatusMap::label($ipmStatus),
+            'status' => $label,
+            'message' => 'Status Pengiriman dengan referensi '.$so->ref_shipment_id.' menjadi '.$label,
         ]);
+    }
+
+    private function invalidTransitionError(?int $currentIpm, int $targetIpm): JsonResponse
+    {
+        $allowedDescriptions = [];
+        foreach (self::ALLOWED_TRANSITIONS as $fromIpm => $toIpmList) {
+            foreach ($toIpmList as $toIpm) {
+                $allowedDescriptions[] = ShipmentStatusMap::label($fromIpm).' -> '.ShipmentStatusMap::label($toIpm);
+            }
+        }
+
+        return ApiResponse::error(
+            ErrorCatalog::INVALID_STATUS_TRANSITION,
+            ErrorCatalog::message(ErrorCatalog::INVALID_STATUS_TRANSITION, [
+                'current_status' => $currentIpm !== null ? ShipmentStatusMap::label($currentIpm) : 'Tidak diketahui',
+                'target_status' => ShipmentStatusMap::label($targetIpm),
+                'allowed_transitions' => implode(', ', $allowedDescriptions),
+            ]),
+            409,
+        );
     }
 
     /**
      * PUT /api/external/v1/shipments/{ref_shipment_id}/cancel
      *
      * Batalkan (pembatalan) satu shipment — SELALU menjalankan proses pembatalan yang sama
-     * seperti alur normal, bukan sekadar menulis status seperti changeStatus(): kalau shipment
-     * ini sebelumnya sudah Confirmed (ipm_status "Berjalan", stok sudah dipotong lewat
-     * SalesOrderApproval::confirm()), stoknya DIKEMBALIKAN lebih dulu — lihat
+     * seperti alur normal, bukan sekadar menulis status seperti changeStatus(): kalau stok
+     * shipment ini sebelumnya sudah dipotong (ipm_status "Berjalan" lewat /shipments/shipped,
+     * ATAU "Sudah Terkirim" lewat transisi change-status Dijadwalkan -> Sudah Terkirim yang MEMANG
+     * memotong stok — DIKONFIRMASI pemilik produk 2026-08-13), stoknya DIKEMBALIKAN lebih dulu.
+     * Dari "Dijadwalkan" (stok belum pernah dipotong), cancel cuma mengubah status. Lihat
      * App\Support\SalesOrderCancellation::cancel() (BARU, diekstrak jadi reusable karena TIDAK
      * ADA alur admin yang setara untuk dicontek: CustomerController::declineSO()/
      * deleteSalesOrder() cuma berlaku sebelum Confirmed, jadi tidak pernah perlu mengembalikan

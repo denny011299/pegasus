@@ -79,6 +79,9 @@ final class ErrorCatalog
     /** PATCH /shipments/{ref_shipment_id}/change-status — label status yang dikirim bukan salah satu dari 4 label yang disepakati kontrak. */
     public const INVALID_STATUS = 'INVALID_STATUS';
 
+    /** PATCH /shipments/{ref_shipment_id}/change-status — label valid, tapi transisi dari status shipment saat ini ke label itu belum diizinkan. */
+    public const INVALID_STATUS_TRANSITION = 'INVALID_STATUS_TRANSITION';
+
     /**
      * Pesan baku bertemplate, placeholder `<nama>` diganti lewat $params.
      *
@@ -87,6 +90,7 @@ final class ErrorCatalog
     private const TEMPLATES = [
         self::SHIPMENT_NOT_FOUND => 'Pengiriman dengan referensi <ref_shipment_id> tidak ditemukan.',
         self::INVALID_STATUS => 'Field status tidak valid. Hanya menerima [<valid_statuses>]',
+        self::INVALID_STATUS_TRANSITION => 'Perubahan status dari "<current_status>" ke "<target_status>" belum diizinkan. Transisi yang didukung saat ini: <allowed_transitions>.',
     ];
 
     /**

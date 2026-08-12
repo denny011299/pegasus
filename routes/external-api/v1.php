@@ -156,12 +156,14 @@ Route::prefix('stock')->name('stock.')->group(function () {
  * ref_shipment_id (beda dengan scheduled() yang menolak duplikat) dan memakai ulang
  * App\Support\SalesOrderApproval::confirm() — logika accSO() yang sama dipakai halaman admin
  * Pengiriman, diekstrak supaya bisa dipakai di sini juga. show() (GET) menemukan baris apa pun
- * dengan ref_shipment_id itu tanpa syarat status. changeStatus() (PATCH) FORCE mengubah status
- * berdasarkan label — BELUM ada aturan transisi maupun efek samping per transisi, lihat docblock
- * method-nya (butuh konfirmasi pemilik produk, dicatat KNOWN_ISSUES.md). cancel() (PUT)
- * membatalkan shipment SUNGGUHAN (bukan sekadar tulis status) — mengembalikan stok kalau
- * sebelumnya Confirmed, lewat App\Support\SalesOrderCancellation::cancel() (BARU, karena tidak
- * ada alur admin setara untuk diekstrak), idempoten lewat status.
+ * dengan ref_shipment_id itu tanpa syarat status. changeStatus() (PATCH) mengubah status
+ * berdasarkan label — HANYA satu transisi diizinkan saat ini (DIKONFIRMASI pemilik produk
+ * 2026-08-13): Dijadwalkan -> Sudah Terkirim, dan transisi itu MEMOTONG STOK sungguhan lewat
+ * SalesOrderApproval::confirm() yang sama, lihat docblock method-nya. cancel() (PUT) membatalkan
+ * shipment SUNGGUHAN (bukan sekadar tulis status) — mengembalikan stok kalau sebelumnya
+ * Confirmed/"Berjalan" ATAU "Sudah Terkirim" (dua-duanya berarti stok sudah dipotong), lewat
+ * App\Support\SalesOrderCancellation::cancel() (BARU, karena tidak ada alur admin setara untuk
+ * diekstrak), idempoten lewat status.
  */
 Route::prefix('shipments')->name('shipments.')->group(function () {
     Route::post('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');

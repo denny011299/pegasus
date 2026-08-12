@@ -227,6 +227,41 @@ class ExternalApiShipmentCancelFlowTest extends TestCase
         $this->assertSame(100, $stock->fresh()->ps_stock); // fully restored back to pre-shipment level
     }
 
+    public function test_cancel_a_sudah_terkirim_shipment_restores_stock(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $fixture = $this->createScheduledShipment($headers);
+
+        // Dijadwalkan -> Sudah terkirim, per App\Support\SalesOrderApproval::confirm() deducting
+        // stock the same way /shipments/shipped does (DIKONFIRMASI pemilik produk 2026-08-13).
+        $this->patchJson('/api/external/v1/shipments/'.$fixture['ref'].'/change-status', ['status' => 'Sudah terkirim'], $headers)
+            ->assertStatus(200);
+
+        $stock = ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('product_variant_id', $fixture['variant']->product_variant_id)
+            ->where('warehouse_id', self::MAIN_WAREHOUSE_ID)->first();
+        $this->assertSame(76, $stock->fresh()->ps_stock); // 100 - 24, sanity check change-status deducted
+
+        $response = $this->putJson(
+            '/api/external/v1/shipments/'.$fixture['ref'].'/cancel',
+            ['reason' => 'Dibatalkan setelah Sudah terkirim'],
+            $headers,
+        );
+
+        $response->assertStatus(200)->assertJson([
+            'success' => true,
+            'data' => [
+                'ref_shipment_id' => $fixture['ref'],
+                'ipm_status' => -1,
+                'ipm_status_label' => 'Dibatalkan',
+                'message' => 'Dokumen berhasil dibatalkan dan stok telah dikembalikan.',
+            ],
+        ]);
+
+        $this->assertSame(7, SalesOrder::where('ref_shipment_id', $fixture['ref'])->value('status'));
+        $this->assertSame(100, $stock->fresh()->ps_stock); // fully restored back to pre-shipment level
+    }
+
     public function test_cancel_is_idempotent_and_does_not_double_restore_stock(): void
     {
         $headers = $this->externalApiHeaders();

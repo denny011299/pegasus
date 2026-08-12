@@ -37,10 +37,11 @@ class ShipmentCancelDoc extends ApiEndpointDoc
     public function description(): string
     {
         return 'Membatalkan (pembatalan) satu shipment. Kalau shipment ini sebelumnya sudah '
-            .'"Berjalan" (stok sudah dipotong), stoknya DIKEMBALIKAN dulu sebelum status '
-            .'diubah menjadi "Dibatalkan" — proses pembatalan sungguhan, bukan sekadar menulis '
-            .'status seperti PATCH .../change-status. Idempoten: shipment yang sudah dibatalkan '
-            .'dijawab sukses apa adanya, tidak mengembalikan stok lagi.';
+            .'"Berjalan" atau "Sudah terkirim" (stok sudah dipotong), stoknya DIKEMBALIKAN dulu '
+            .'sebelum status diubah menjadi "Dibatalkan". Dari "Dijadwalkan" (stok belum pernah '
+            .'dipotong), cuma status yang berubah — proses pembatalan sungguhan, bukan sekadar '
+            .'menulis status seperti PATCH .../change-status. Idempoten: shipment yang sudah '
+            .'dibatalkan dijawab sukses apa adanya, tidak mengembalikan stok lagi.';
     }
 
     public function pathParameters(): array
@@ -91,7 +92,7 @@ class ShipmentCancelDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Kalau shipment sebelumnya sudah ipm_status "Berjalan" (stok sudah dipotong — baik lewat POST /shipments/shipped maupun konfirmasi manual di halaman admin), stok DIKEMBALIKAN dulu sebelum status berubah — message-nya menyebutkan itu secara eksplisit ("...dan stok telah dikembalikan."). Kalau belum pernah "Berjalan" (mis. masih "Dijadwalkan"/"Belum terkirim"/"Sudah terkirim"), tidak ada stok yang perlu dikembalikan — message-nya cuma "Dokumen berhasil dibatalkan." tanpa menyebut stok.',
+            'Kalau shipment sebelumnya sudah ipm_status "Berjalan" (lewat POST /shipments/shipped atau konfirmasi manual di halaman admin) ATAU "Sudah terkirim" (lewat PATCH .../change-status) — dua-duanya berarti stok sudah dipotong — stok DIKEMBALIKAN dulu sebelum status berubah, message-nya menyebutkan itu secara eksplisit ("...dan stok telah dikembalikan."). Kalau masih "Dijadwalkan" (stok belum pernah dipotong), cuma status yang berubah — message-nya cuma "Dokumen berhasil dibatalkan." tanpa menyebut stok.',
             'Idempoten: shipment yang statusnya SUDAH "Dibatalkan" dijawab sukses apa adanya (meta.already_cancelled=true), TIDAK mengembalikan stok lagi — mencegah stok gudang tergelembung kalau permintaan yang sama dikirim ulang.',
             'ipm_status -1 "Dibatalkan" HANYA bisa dihasilkan lewat endpoint ini — PATCH .../change-status sengaja tidak menerima label ini (4 label lain saja: Dijadwalkan/Berjalan/Belum terkirim/Sudah terkirim).',
             'ref_shipment_id yang sama sekali belum pernah dipakai dijawab SHIPMENT_NOT_FOUND, sama seperti endpoint Shipment lain — existensi baris dan status "aktif" adalah dua hal berbeda.',
