@@ -37,10 +37,10 @@ class ShipmentChangeStatusDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'FORCE mengubah status shipment ke salah satu dari 4 label yang disepakati kontrak. '
-            .'BELUM ada aturan transisi (status apa pun bisa dipaksa ke label apa pun yang sah) '
-            .'maupun efek samping per transisi (mis. memaksa ke "Berjalan" TIDAK memotong stok) — '
-            .'lihat catatan.';
+        return 'Mengubah status shipment ke salah satu dari 4 label yang disepakati kontrak. '
+            .'HANYA SATU transisi yang diizinkan saat ini: "Dijadwalkan" ke "Sudah terkirim" — '
+            .'kombinasi lain ditolak. Transisi ini memotong stok sungguhan, proses yang sama '
+            .'dengan POST /shipments/shipped — lihat catatan.';
     }
 
     public function pathParameters(): array
@@ -57,14 +57,14 @@ class ShipmentChangeStatusDoc extends ApiEndpointDoc
             ['name' => 'status', 'type' => 'string', 'required' => true,
                 'description' => 'Label status baru — SALAH SATU dari: '
                     .implode(', ', array_map(static fn ($l) => '"'.$l.'"', ShipmentStatusMap::validLabels()))
-                    .'. Bukan angka, bukan ipm_status — persis salah satu label itu.'],
+                    .'. Bukan angka, bukan ipm_status — persis salah satu label itu. Untuk saat ini hanya "Sudah terkirim" yang bisa berhasil, dan hanya kalau status shipment saat ini "Dijadwalkan".'],
         ];
     }
 
     public function requestExample(): ?array
     {
         return [
-            'status' => 'Berjalan',
+            'status' => 'Sudah terkirim',
         ];
     }
 
@@ -74,8 +74,8 @@ class ShipmentChangeStatusDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 'ref_shipment_id' => 'SHP-7788',
-                'status' => 'Berjalan',
-                'message' => 'Status Pengiriman dengan referensi SHP-7788 menjadi Berjalan',
+                'status' => 'Sudah terkirim',
+                'message' => 'Status Pengiriman dengan referensi SHP-7788 menjadi Sudah terkirim',
             ],
         ];
     }
@@ -87,16 +87,19 @@ class ShipmentChangeStatusDoc extends ApiEndpointDoc
                 'message' => 'Pengiriman dengan referensi SHP-7788 tidak ditemukan.'],
             ['code' => 'INVALID_STATUS', 'http_status' => 422,
                 'message' => 'Field status tidak valid. Hanya menerima [Dijadwalkan, Berjalan, Belum terkirim, Sudah terkirim]'],
+            ['code' => 'INVALID_STATUS_TRANSITION', 'http_status' => 409,
+                'message' => 'Perubahan status dari "Berjalan" ke "Dijadwalkan" belum diizinkan. Transisi yang didukung saat ini: Dijadwalkan -> Sudah terkirim.'],
+            ['code' => 'INSUFFICIENT_STOCK', 'http_status' => 409,
+                'message' => 'Stok tidak mencukupi untuk satu atau lebih item.'],
         ];
     }
 
     public function notes(): array
     {
         return [
-            'status pada body adalah LABEL (String, sama seperti ipm_status_label pada respons endpoint Shipment lain), BUKAN angka ipm_status maupun sales_orders.status internal.',
-            'BELUM ada aturan transisi — status shipment saat ini APA PUN bisa dipaksa ke label APA PUN yang sah, termasuk melompat atau mundur. PERLU DITINJAU ULANG pemilik produk (dicatat di KNOWN_ISSUES.md), belum dikonfirmasi untuk rilis ini.',
-            'HANYA mengubah status — TIDAK menjalankan efek samping apa pun yang menyertai perubahan status di endpoint lain. Contoh: memaksa ke "Berjalan" TIDAK memotong stok seperti yang dilakukan POST /shipments/shipped — kalau dipakai untuk shipment yang stoknya belum pernah dipotong, ipm_status akan tampak "Berjalan" padahal stok gudang belum tersentuh.',
-            '"Belum terkirim" dan "Sudah terkirim" hanya bisa dihasilkan lewat endpoint ini — POST /shipments/scheduled dan /shipments/shipped hanya menghasilkan "Dijadwalkan"/"Berjalan".',
+            'status pada body adalah LABEL (String, sama seperti ipm_status_label pada respons endpoint Shipment lain), BUKAN angka ipm_status maupun status internal sistem.',
+            'HANYA SATU transisi yang diizinkan untuk saat ini: dari "Dijadwalkan" ke "Sudah terkirim". Mengirim label yang valid tapi bukan bagian dari transisi ini (mis. shipment yang statusnya sudah "Sudah terkirim" dikirim ulang "Sudah terkirim", atau shipment "Dijadwalkan" diminta jadi "Berjalan"/"Belum terkirim") ditolak dengan galat INVALID_STATUS_TRANSITION — beda dengan INVALID_STATUS yang berarti labelnya sendiri tidak dikenali sama sekali.',
+            'Transisi "Dijadwalkan" ke "Sudah terkirim" MEMOTONG STOK sungguhan, proses yang sama dengan konfirmasi di POST /shipments/shipped. Kalau stok tidak mencukupi, permintaan gagal INSUFFICIENT_STOCK dan status shipment TETAP "Dijadwalkan".',
             'ref_shipment_id yang sama sekali belum pernah dipakai dijawab SHIPMENT_NOT_FOUND, sama seperti GET /shipments/{ref_shipment_id} — existensi baris dan status "aktif" adalah dua hal berbeda.',
         ];
     }
