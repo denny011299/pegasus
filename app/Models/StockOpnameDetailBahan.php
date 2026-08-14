@@ -49,6 +49,7 @@ class StockOpnameDetailBahan extends Model
             $temp->stobd_real = $value->stobd_real;
             $temp->stobd_selisih = $value->stobd_selisih;
             $temp->stobd_notes = $value->stobd_notes;
+            $temp->stobd_touched = $value->stobd_touched;
             $temp->stobd_id = $value->stobd_id;
             $temp->stob_id = $value->stob_id;
             $result[$key] = $temp;
@@ -83,6 +84,7 @@ class StockOpnameDetailBahan extends Model
             $temp->stobd_real    = $value->stobd_real;
             $temp->stobd_selisih = $value->stobd_selisih;
             $temp->stobd_notes   = $value->stobd_notes;
+            $temp->stobd_touched = $value->stobd_touched;
             $temp->stobd_id      = $value->stobd_id;
             $temp->stob_id       = $value->stob_id;
 
@@ -107,6 +109,7 @@ class StockOpnameDetailBahan extends Model
         $t->stobd_real = $data['stobd_real'] ?? null;
         $t->stobd_selisih = $data['stobd_selisih'] ?? null;
         $t->stobd_notes = $data['stobd_notes'] ?? null;
+        $t->stobd_touched = !empty($data['stobd_touched']);
         $t->save();
 
         return $t->stobd_id;
@@ -126,6 +129,7 @@ class StockOpnameDetailBahan extends Model
         $t->stobd_real = $data['stobd_real'] ?? null;
         $t->stobd_selisih = $data['stobd_selisih'] ?? null;
         $t->stobd_notes = $data['stobd_notes'] ?? null;
+        $t->stobd_touched = !empty($data['stobd_touched']);
         $t->save();
 
         return $t->stobd_id;

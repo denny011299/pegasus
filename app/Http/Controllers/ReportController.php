@@ -2399,7 +2399,11 @@ class ReportController extends Controller
             ->where('status', 1)
             ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
             ->count();
+        // GitHub #53: dashboard_change_logs sekarang juga menyimpan baris activity_type='open'
+        // ("staf membuka menu X", lihat LogDashboardActivity) -- itu bukan sesuatu yang
+        // "menunggu ACC Direktur", jadi tidak ikut dihitung di KPI ini.
         $changelogPending += (int) DB::table('dashboard_change_logs')
+            ->where('activity_type', 'change')
             ->whereRaw('DATE(created_at) BETWEEN ? AND ?', [$s, $e])
             ->count();
 
@@ -2471,6 +2475,31 @@ class ReportController extends Controller
             return 'INV '.$so;
         };
 
+        // GitHub #53: format durasi pasif dari LogDashboardActivity::logOpen() jadi teks ringkas.
+        $fmtDuration = static function ($seconds) {
+            $seconds = (int) $seconds;
+            if ($seconds < 60) {
+                return $seconds.' detik';
+            }
+            $minutes = intdiv($seconds, 60);
+            if ($minutes < 60) {
+                return $minutes.' menit';
+            }
+            $hours = intdiv($minutes, 60);
+            $restMinutes = $minutes % 60;
+            return $restMinutes > 0 ? ($hours.' jam '.$restMinutes.' menit') : ($hours.' jam');
+        };
+        $fmtOpenedAt = static function ($createdAt) {
+            if (!$createdAt) {
+                return '-';
+            }
+            try {
+                return \Carbon\Carbon::parse($createdAt)->format('d M Y H:i');
+            } catch (\Throwable $e) {
+                return (string) $createdAt;
+            }
+        };
+
         $changelog = [];
 
         $piRows = DB::table('product_issues as pi')
@@ -2478,7 +2507,36 @@ class ReportController extends Controller
             ->whereRaw('DATE(COALESCE(pi.pi_date, pi.created_at)) BETWEEN ? AND ?', [$s, $e])
             ->orderByDesc('pi.created_at')
             ->limit($limit)
-            ->get(['pi.pi_id', 'pi.pi_code', 'pi.pi_type', 'pi.tipe_return', 'pi.pi_notes', 'pi.pi_date']);
+            ->get(['pi.pi_id', 'pi.pi_code', 'pi.pi_type', 'pi.tipe_return', 'pi.pi_notes', 'pi.pi_date', 'pi.created_at', 'pi.created_by']);
+
+        $masterChangeRows = DB::table('dashboard_change_logs as dcl')
+            ->whereRaw('DATE(dcl.created_at) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('dcl.created_at')
+            ->limit($limit)
+            ->get([
+                'dcl.id',
+                'dcl.module_key',
+                'dcl.activity_type',
+                'dcl.module_label',
+                'dcl.reference',
+                'dcl.what_changed',
+                'dcl.summary',
+                'dcl.url',
+                'dcl.url_label',
+                'dcl.created_at',
+                'dcl.created_by',
+                'dcl.duration_seconds',
+            ]);
+
+        // Satu query untuk semua nama staf (retur + changelog), hindari N+1.
+        $staffIds = $piRows->pluck('created_by')
+            ->concat($masterChangeRows->pluck('created_by'))
+            ->filter()
+            ->unique()
+            ->values();
+        $staffNames = $staffIds->isEmpty()
+            ? collect()
+            : DB::table('staffs')->whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id');
 
         foreach ($piRows as $pi) {
             $tipe = (int) ($pi->tipe_return ?? 0);
@@ -2493,28 +2551,23 @@ class ReportController extends Controller
                 'summary' => trim($tipeLabel.(($pi->pi_notes ?? '') !== '' ? ' — '.(string) $pi->pi_notes : '')),
                 'url' => url('productIssue').'?pi_id='.(int) $pi->pi_id,
                 'url_label' => 'Buka baris ini',
+                'staff_name' => $staffNames[$pi->created_by ?? 0] ?? '-',
+                'opened_at' => $fmtOpenedAt($pi->created_at ?? $pi->pi_date),
+                'duration_label' => '-',
             ];
         }
 
-        $masterChangeRows = DB::table('dashboard_change_logs as dcl')
-            ->whereRaw('DATE(dcl.created_at) BETWEEN ? AND ?', [$s, $e])
-            ->orderByDesc('dcl.created_at')
-            ->limit($limit)
-            ->get([
-                'dcl.id',
-                'dcl.module_key',
-                'dcl.module_label',
-                'dcl.reference',
-                'dcl.what_changed',
-                'dcl.summary',
-                'dcl.url',
-                'dcl.url_label',
-                'dcl.created_at',
-            ]);
         foreach ($masterChangeRows as $log) {
             $safeUrl = $this->normalizeDashboardLogUrl((string) ($log->url ?? ''));
             if ($safeUrl === url('admin')) {
                 $safeUrl = $this->fallbackDashboardLogUrlByModule((string) ($log->module_key ?? ''));
+            }
+            $isOpen = ($log->activity_type ?? 'change') === 'open';
+            $durationLabel = '-';
+            if ($isOpen) {
+                $durationLabel = $log->duration_seconds !== null
+                    ? $fmtDuration($log->duration_seconds)
+                    : 'Sedang dibuka';
             }
             $changelog[] = [
                 'kind' => (string) ($log->module_key ?? 'master_change'),
@@ -2526,6 +2579,9 @@ class ReportController extends Controller
                 'summary' => (string) ($log->summary ?? ''),
                 'url' => $safeUrl,
                 'url_label' => (string) ($log->url_label ?? 'Buka'),
+                'staff_name' => $staffNames[$log->created_by ?? 0] ?? '-',
+                'opened_at' => $fmtOpenedAt($log->created_at),
+                'duration_label' => $durationLabel,
             ];
         }
 
