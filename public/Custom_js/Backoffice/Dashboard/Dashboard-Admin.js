@@ -203,10 +203,16 @@
     function renderApprovalTable(tbodySelector, rows, emptyMsg) {
         var $tb = $(tbodySelector);
         if (!$tb.length) return;
+        // GitHub #53: hanya panel Changelog yang dapat kolom User + Jam/Durasi -- Confirmation
+        // dan Revision tetap 4 kolom seperti sebelumnya.
+        var isChangelog = tbodySelector === "#dash_changelog_body";
+        var colspan = isChangelog ? 6 : 4;
         $tb.empty();
         if (!rows || !rows.length) {
             $tb.append(
-                '<tr><td colspan="4" class="text-center text-muted">' +
+                '<tr><td colspan="' +
+                    colspan +
+                    '" class="text-center text-muted">' +
                     escHtml(emptyMsg) +
                     "</td></tr>"
             );
@@ -222,6 +228,16 @@
                       ? "revision"
                       : "changelog";
             var queueKey = String(r.queue_key || "");
+            var extraCols = isChangelog
+                ? "<td>" +
+                  escHtml(r.staff_name || "-") +
+                  "</td><td>" +
+                  escHtml(r.opened_at || "-") +
+                  (r.duration_label
+                      ? " · " + escHtml(r.duration_label)
+                      : "") +
+                  "</td>"
+                : "";
             $tb.append(
                 "<tr><td>" +
                     escHtml(r.module_label || "-") +
@@ -231,7 +247,9 @@
                     escHtml(r.what_changed || r.summary || "") +
                     '">' +
                     escHtml(r.what_changed || r.summary || "-") +
-                    '</span></td><td class="dash-col-actions">' +
+                    "</span></td>" +
+                    extraCols +
+                    '<td class="dash-col-actions">' +
                     '<div class="d-inline-flex gap-1 align-items-center">' +
                     '<a class="btn btn-sm dash-log-btn px-2" title="Buka" href="' +
                     url.replace(/"/g, "&quot;") +

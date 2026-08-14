@@ -537,6 +537,10 @@ function insertData(options) {
         item.stod_system = systemArr.join(", ");
         item.stod_real = realArr.join(", ");
         item.stod_selisih = selisihArr.join(", ");
+        // GitHub #53: baris ini pernah benar-benar diisi user, dibedakan dari yang cuma
+        // ikut tersimpan dengan real qty auto = stok sistem karena dibiarkan kosong --
+        // dipakai PDF (Backoffice/PDF/Opname.blade.php) untuk highlight.
+        item.stod_touched = hasValue ? 1 : 0;
 
         productSubmit.push(item);
     });

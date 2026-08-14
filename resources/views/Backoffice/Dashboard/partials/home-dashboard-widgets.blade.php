@@ -687,11 +687,13 @@
                                 <th class="text-nowrap">Modul</th>
                                 <th class="text-nowrap">Ref</th>
                                 <th>Perubahan / status</th>
+                                <th class="text-nowrap">User</th>
+                                <th class="text-nowrap">Jam / Durasi</th>
                                 <th class="text-end text-nowrap">Aksi</th>
                             </tr>
                         </thead>
                         <tbody id="dash_changelog_body">
-                            <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
+                            <tr><td colspan="6" class="text-center text-muted">Memuat…</td></tr>
                         </tbody>
                     </table>
                     </div>
