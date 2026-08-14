@@ -822,11 +822,6 @@
             if (! $akses->firstWhere('name', $name)) {
                 return false;
             }
-            // Master gudang harus tetap bisa dibuka dari gudang mana pun
-            // (kalau ikut whitelist, menu bisa hilang dan tidak bisa diedit lagi).
-            if (in_array($name, ['Gudang', 'Tipe Gudang'], true)) {
-                return true;
-            }
             if (! $activeWh) {
                 return true;
             }
