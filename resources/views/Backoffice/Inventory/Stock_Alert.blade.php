@@ -177,20 +177,22 @@
                                             <div style="padding: 16px 25px;">
                                                 <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                             </div>
-                                            <div class="dt-skeleton-head" style="grid-template-columns: 22% 10% 10% 14% 18% 26%;">
+                                            <div class="dt-skeleton-head" style="grid-template-columns: 20% 9% 9% 12% 12% 16% 22%;">
                                                 <span style="width:60%"></span>
                                                 <span style="width:50%"></span>
                                                 <span style="width:50%"></span>
+                                                <span style="width:55%"></span>
                                                 <span style="width:55%"></span>
                                                 <span style="width:60%"></span>
                                                 <span style="width:70%"></span>
                                             </div>
                                             <div class="dt-skeleton-body">
                                                 @for ($i = 0; $i < 5; $i++)
-                                                    <div class="dt-skeleton-row" style="grid-template-columns: 22% 10% 10% 14% 18% 26%;">
+                                                    <div class="dt-skeleton-row" style="grid-template-columns: 20% 9% 9% 12% 12% 16% 22%;">
                                                         <span class="skel-text" style="width:70%"></span>
                                                         <span class="skel-text" style="width:60%"></span>
                                                         <span class="skel-text" style="width:55%"></span>
+                                                        <span class="skel-text" style="width:50%"></span>
                                                         <span class="skel-text" style="width:50%"></span>
                                                         <span class="skel-badge" style="width:60%;justify-self:center"></span>
                                                         <span class="skel-text" style="width:80%"></span>
@@ -204,6 +206,7 @@
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
+                                                    <th>Stok Saat Ini</th>
                                                     <th>Peringatan Stok</th>
                                                     <th>Pemesanan Min.</th>
                                                     <th>Stok Minimum Rekomendasi</th>
@@ -221,20 +224,22 @@
                                             <div style="padding: 16px 25px;">
                                                 <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                             </div>
-                                            <div class="dt-skeleton-head" style="grid-template-columns: 22% 10% 10% 14% 18% 26%;">
+                                            <div class="dt-skeleton-head" style="grid-template-columns: 20% 9% 9% 12% 12% 16% 22%;">
                                                 <span style="width:60%"></span>
                                                 <span style="width:50%"></span>
                                                 <span style="width:50%"></span>
+                                                <span style="width:55%"></span>
                                                 <span style="width:55%"></span>
                                                 <span style="width:60%"></span>
                                                 <span style="width:70%"></span>
                                             </div>
                                             <div class="dt-skeleton-body">
                                                 @for ($i = 0; $i < 5; $i++)
-                                                    <div class="dt-skeleton-row" style="grid-template-columns: 22% 10% 10% 14% 18% 26%;">
+                                                    <div class="dt-skeleton-row" style="grid-template-columns: 20% 9% 9% 12% 12% 16% 22%;">
                                                         <span class="skel-text" style="width:70%"></span>
                                                         <span class="skel-text" style="width:60%"></span>
                                                         <span class="skel-text" style="width:55%"></span>
+                                                        <span class="skel-text" style="width:50%"></span>
                                                         <span class="skel-text" style="width:50%"></span>
                                                         <span class="skel-badge" style="width:60%;justify-self:center"></span>
                                                         <span class="skel-text" style="width:80%"></span>
@@ -248,6 +253,7 @@
                                                     <th>Nama Produk</th>
                                                     <th>Kategori</th>
                                                     <th>SKU</th>
+                                                    <th>Stok Saat Ini</th>
                                                     <th>Peringatan Stok</th>
                                                     <th>Pemesanan Min.</th>
                                                     <th>Stok Minimum Rekomendasi</th>
@@ -387,5 +393,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=25"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Alert.js')}}?v=26"></script>
 @endsection

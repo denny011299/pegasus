@@ -75,12 +75,13 @@
                 },
             },
             // Order MUST match thead:
-            // Nama Bahan Mentah | Peringatan Stok | Pemesanan Min. | Stok Minimum Rekomendasi
+            // Nama Bahan Mentah | Stok Saat Ini | Peringatan Stok | Pemesanan Min. | Stok Minimum Rekomendasi
             columns: [
-                { data: "supplies_name", width: "28%", defaultContent: "—" },
-                { data: "master_alert_text", width: "18%", defaultContent: "—" },
-                { data: "min_order_text", width: "24%", defaultContent: "—" },
-                { data: "supplies_alert_text", width: "30%", defaultContent: "—" },
+                { data: "supplies_name", width: "24%", defaultContent: "—" },
+                { data: "current_stock_text", width: "14%", defaultContent: "—" },
+                { data: "master_alert_text", width: "16%", defaultContent: "—" },
+                { data: "min_order_text", width: "22%", defaultContent: "—" },
+                { data: "supplies_alert_text", width: "24%", defaultContent: "—" },
             ],
             initComplete: function (settings) {
                 prepareStockAlertSuppliesFilter(settings);
@@ -141,6 +142,12 @@
                     //    threshold = supplies_min_stock (manual) ?? peringatan stok
                     var alertQty = parseFloat(item.supplies_alert) || 0;
                     var currentStock = parseFloat(item.current_stock) || 0;
+                    item.current_stock_text =
+                        '<span class="fw-semibold">' +
+                        formatLeadTimeQty(currentStock) +
+                        " " +
+                        (item.default_unit || "") +
+                        "<\/span>";
                     var orderThreshold =
                         item.min_order != null && item.min_order !== ""
                             ? parseFloat(item.min_order) || 0

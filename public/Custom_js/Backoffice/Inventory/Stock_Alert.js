@@ -75,14 +75,15 @@
                 },
             },
             // Order MUST match thead:
-            // Nama Produk | Kategori | SKU | Peringatan Stok | Pemesanan Min. | Stok Minimum Rekomendasi
+            // Nama Produk | Kategori | SKU | Stok Saat Ini | Peringatan Stok | Pemesanan Min. | Stok Minimum Rekomendasi
             columns: [
-                { data: "product_name_text", width: "22%", defaultContent: "—" },
-                { data: "product_category", width: "10%", defaultContent: "—" },
-                { data: "product_variant_sku", width: "10%", defaultContent: "—" },
-                { data: "master_alert_text", width: "14%", defaultContent: "—" },
-                { data: "min_order_text", width: "18%", defaultContent: "—" },
-                { data: "product_alert_text", width: "26%", defaultContent: "—" },
+                { data: "product_name_text", width: "20%", defaultContent: "—" },
+                { data: "product_category", width: "9%", defaultContent: "—" },
+                { data: "product_variant_sku", width: "9%", defaultContent: "—" },
+                { data: "current_stock_text", width: "12%", defaultContent: "—" },
+                { data: "master_alert_text", width: "12%", defaultContent: "—" },
+                { data: "min_order_text", width: "16%", defaultContent: "—" },
+                { data: "product_alert_text", width: "22%", defaultContent: "—" },
             ],
             initComplete: function (settings) {
                 prepareStockAlertFilter(settings);
@@ -152,6 +153,12 @@
                     //    threshold = ps_min_order (manual) ?? peringatan stok
                     var alertQty = parseFloat(item.product_variant_alert) || 0;
                     var currentStock = parseFloat(item.current_stock) || 0;
+                    item.current_stock_text =
+                        '<span class="fw-semibold">' +
+                        formatLeadTimeQty(currentStock) +
+                        ' ' +
+                        (item.product_unit || '') +
+                        '<\/span>';
                     var orderThreshold =
                         item.min_order != null && item.min_order !== ""
                             ? parseFloat(item.min_order) || 0
