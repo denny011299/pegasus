@@ -21,16 +21,20 @@
             word-wrap: break-word;
             vertical-align: middle;
         }
-        #tableStockAlertLow th:nth-child(2),
-        #tableStockAlertOut th:nth-child(2),
-        #tableStockAlertLow td:nth-child(2),
-        #tableStockAlertOut td:nth-child(2),
-        #tableStockAlertLow th:nth-child(3),
-        #tableStockAlertOut th:nth-child(3),
-        #tableStockAlertLow td:nth-child(3),
-        #tableStockAlertOut td:nth-child(3) {
+        #tableStockAlertLow th,
+        #tableStockAlertOut th {
             white-space: nowrap !important;
         }
+        #tableStockAlertLow th:nth-child(1),
+        #tableStockAlertOut th:nth-child(1) { width: 24% !important; }
+        #tableStockAlertLow th:nth-child(2),
+        #tableStockAlertOut th:nth-child(2) { width: 14% !important; }
+        #tableStockAlertLow th:nth-child(3),
+        #tableStockAlertOut th:nth-child(3) { width: 16% !important; }
+        #tableStockAlertLow th:nth-child(4),
+        #tableStockAlertOut th:nth-child(4) { width: 22% !important; }
+        #tableStockAlertLow th:nth-child(5),
+        #tableStockAlertOut th:nth-child(5) { width: 24% !important; min-width: 220px; }
 
         /* Flatten wrap: global .table-responsive border/radius stacks with .card-table glass chrome */
         #tableStockAlertLow-wrap,

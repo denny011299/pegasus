@@ -139,11 +139,10 @@ class StockAlert extends Model
                 }
             }
 
-            // Gudang eceran: semua angka (stok, alert, safety, min order) dalam satuan eceran (retail_unit).
-            // Gudang utama: tetap di unit alert tersimpan.
+            // Gudang eceran: tampil satuan eceran. Gudang utama: satuan default varian.
             $displayUnitId = ($isEceranWarehouse && $retailUnitId > 0)
                 ? $retailUnitId
-                : ($alertUnitId > 0 ? $alertUnitId : ($variantUnitId > 0 ? $variantUnitId : $retailUnitId));
+                : ($variantUnitId > 0 ? $variantUnitId : ($alertUnitId > 0 ? $alertUnitId : $retailUnitId));
             if ($displayUnitId <= 0) {
                 continue;
             }
@@ -166,16 +165,11 @@ class StockAlert extends Model
                 $stockList = \App\Support\UnitStockSorter::sort($stockList, $relations);
             }
 
-            // Gudang eceran: stok hanya dihitung dalam eceran (konversi semua baris → retail).
+            // Stok Saat Ini = qty baris satuan tampilan, tanpa konversi sisa unit lain (hindari 53.33 DOS).
             $currentStock = 0.0;
             foreach ($rows as $stockRow) {
-                $uid = (int) $stockRow->unit_id;
-                $qty = (float) ($stockRow->ps_stock ?? 0);
-                if ($isEceranWarehouse && $retailUnitId > 0) {
-                    // Exact retail row preferred; non-retail dikonversi jika ada sisa salah unit.
-                    $currentStock += ProductUnitStock::convertQty($qty, $uid, $displayUnitId, $vid);
-                } else {
-                    $currentStock += ProductUnitStock::convertQty($qty, $uid, $displayUnitId, $vid);
+                if ((int) $stockRow->unit_id === $displayUnitId) {
+                    $currentStock += (float) ($stockRow->ps_stock ?? 0);
                 }
             }
 

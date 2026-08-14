@@ -12,39 +12,36 @@
 
         .stock-alert-table {
             width: 100% !important;
-            min-width: 1200px;
+            min-width: 1280px;
+            table-layout: auto;
         }
         .stock-alert-table th,
         .stock-alert-table td {
             box-sizing: border-box !important;
-            white-space: normal !important;
-            overflow-wrap: anywhere;
             vertical-align: middle;
         }
+        .stock-alert-table th {
+            white-space: nowrap !important;
+            overflow-wrap: normal;
+        }
+        .stock-alert-table td {
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+        }
         .stock-alert-table th:nth-child(1),
-        .stock-alert-table td:nth-child(1) {
-            width: 22% !important;
-        }
+        .stock-alert-table td:nth-child(1) { width: 20% !important; }
         .stock-alert-table th:nth-child(2),
-        .stock-alert-table td:nth-child(2) {
-            width: 10% !important;
-        }
+        .stock-alert-table td:nth-child(2) { width: 9% !important; }
         .stock-alert-table th:nth-child(3),
-        .stock-alert-table td:nth-child(3) {
-            width: 10% !important;
-        }
+        .stock-alert-table td:nth-child(3) { width: 9% !important; }
         .stock-alert-table th:nth-child(4),
-        .stock-alert-table td:nth-child(4) {
-            width: 14% !important;
-        }
+        .stock-alert-table td:nth-child(4) { width: 12% !important; }
         .stock-alert-table th:nth-child(5),
-        .stock-alert-table td:nth-child(5) {
-            width: 18% !important;
-        }
+        .stock-alert-table td:nth-child(5) { width: 12% !important; }
         .stock-alert-table th:nth-child(6),
-        .stock-alert-table td:nth-child(6) {
-            width: 26% !important;
-        }
+        .stock-alert-table td:nth-child(6) { width: 16% !important; }
+        .stock-alert-table th:nth-child(7),
+        .stock-alert-table td:nth-child(7) { width: 22% !important; min-width: 220px; }
         .stock-alert-table td.dataTables_empty {
             width: auto !important;
             text-align: center;

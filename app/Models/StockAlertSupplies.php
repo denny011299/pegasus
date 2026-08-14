@@ -162,12 +162,15 @@ class StockAlertSupplies extends Model
             // Satuan eceran = leaf terkecil di relasi; fallback ke default unit.
             // Alert/safety/min_order di DB diangap dalam supplies_default_unit → dikonversi ke eceran.
             $eceranUnitId = self::resolveEceranUnitId($defaultUnitId, $relationRows);
-            $eceranUnit = $unitsMap->get($eceranUnitId) ?: $unitsMap->get($defaultUnitId);
-            $value->default_unit = $eceranUnit
-                ? ($eceranUnit->unit_name ?? $eceranUnit->unit_short_name ?? '-')
+            $displayUnitId = ($isEceranWarehouse && $eceranUnitId > 0)
+                ? $eceranUnitId
+                : ($defaultUnitId > 0 ? $defaultUnitId : $eceranUnitId);
+            $displayUnit = $unitsMap->get($displayUnitId) ?: $unitsMap->get($defaultUnitId);
+            $value->default_unit = $displayUnit
+                ? ($displayUnit->unit_name ?? $displayUnit->unit_short_name ?? '-')
                 : '-';
-            $value->unit_id = $eceranUnitId;
-            $value->alert_unit_id = $eceranUnitId;
+            $value->unit_id = $displayUnitId;
+            $value->alert_unit_id = $displayUnitId;
             $value->storage_unit_id = $defaultUnitId;
 
             $netUsage = 0.0;
@@ -175,7 +178,7 @@ class StockAlertSupplies extends Model
                 $netUsage += self::convertQty(
                     (float) $usage->net_qty,
                     (int) $usage->unit_id,
-                    $eceranUnitId,
+                    $displayUnitId,
                     $relationRows
                 );
             }
@@ -183,17 +186,14 @@ class StockAlertSupplies extends Model
 
             $currentStock = 0.0;
             foreach ($stockRows as $stockRow) {
-                $currentStock += self::convertQty(
-                    (float) ($stockRow->ss_stock ?? 0),
-                    (int) $stockRow->unit_id,
-                    $eceranUnitId,
-                    $relationRows
-                );
+                if ((int) $stockRow->unit_id === $displayUnitId) {
+                    $currentStock += (float) ($stockRow->ss_stock ?? 0);
+                }
             }
 
             $leadTime = max(0, (int) ($value->lead_time_days ?? 0));
             $safetyStored = max(0, (float) ($value->safety_stock ?? 0));
-            $safety = self::convertQty($safetyStored, $defaultUnitId, $eceranUnitId, $relationRows);
+            $safety = self::convertQty($safetyStored, $defaultUnitId, $displayUnitId, $relationRows);
             // Strict client spec: rekomendasi = titik pesan ulang saja (tanpa kurangi stok).
             $reorderPoint = (int) ceil(($avgDaily * $leadTime) + $safety);
             $recommended = $reorderPoint;
@@ -207,7 +207,7 @@ class StockAlertSupplies extends Model
                 ])->values();
 
             $alertStored = max(0, (float) ($value->supplies_alert ?? 0));
-            $alertEceran = self::convertQty($alertStored, $defaultUnitId, $eceranUnitId, $relationRows);
+            $alertDisplay = self::convertQty($alertStored, $defaultUnitId, $displayUnitId, $relationRows);
 
             $value->warehouse_id = (int) $warehouseId;
             $value->avg_daily = round($avgDaily, 4);
@@ -217,7 +217,7 @@ class StockAlertSupplies extends Model
             $value->reorder_point = $reorderPoint;
             $value->recommended_order = round($recommended, 4);
             // supplies_alert di response = nilai sudah dalam satuan eceran (untuk filter & UI)
-            $value->supplies_alert = round($alertEceran, 4);
+            $value->supplies_alert = round($alertDisplay, 4);
             $value->supplies_alert_stored = $alertStored;
             $value->is_eceran_warehouse = $isEceranWarehouse;
 
@@ -227,11 +227,11 @@ class StockAlertSupplies extends Model
                 $storedMinOrder = (int) round(self::convertQty(
                     (float) $value->supplies_min_stock,
                     $defaultUnitId,
-                    $eceranUnitId,
+                    $displayUnitId,
                     $relationRows
                 ));
             }
-            $orderThreshold = $storedMinOrder !== null ? $storedMinOrder : $alertEceran;
+            $orderThreshold = $storedMinOrder !== null ? $storedMinOrder : $alertDisplay;
             $calculatedMinOrder = (int) max(0, round($orderThreshold - $currentStock));
             $value->minim_order = $calculatedMinOrder;
             $value->min_order = (int) round($orderThreshold);

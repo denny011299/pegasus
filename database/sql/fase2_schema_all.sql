@@ -1215,5 +1215,28 @@ WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db A
 
 SELECT 'fase2_recent_patches OK' AS result;
 
+
+-- #############################################################################
+-- FILE: add_warehouse_sidebar_gudang_menus.sql
+-- #############################################################################
+
+UPDATE warehouses
+SET sidebar_menus = JSON_ARRAY_APPEND(sidebar_menus, '$', 'Gudang'),
+    updated_at = NOW()
+WHERE status <> 0
+  AND sidebar_menus IS NOT NULL
+  AND TRIM(CAST(sidebar_menus AS CHAR)) NOT IN ('', '[]', 'null')
+  AND sidebar_menus NOT LIKE '%"Gudang"%';
+
+UPDATE warehouses
+SET sidebar_menus = JSON_ARRAY_APPEND(sidebar_menus, '$', 'Tipe Gudang'),
+    updated_at = NOW()
+WHERE status <> 0
+  AND sidebar_menus IS NOT NULL
+  AND TRIM(CAST(sidebar_menus AS CHAR)) NOT IN ('', '[]', 'null')
+  AND sidebar_menus NOT LIKE '%"Tipe Gudang"%';
+
+SELECT 'add_warehouse_sidebar_gudang_menus OK' AS result;
+
 SET FOREIGN_KEY_CHECKS = 1;
 SELECT 'fase2_schema_all OK' AS result;
