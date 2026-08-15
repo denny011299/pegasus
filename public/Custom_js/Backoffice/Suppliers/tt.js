@@ -123,6 +123,7 @@ function updateTtUploadProgress(percent) {
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load so:", err);
             }
         });
@@ -186,9 +187,10 @@ function updateTtUploadProgress(percent) {
                 
             },
             error:function(e){
+                ResetLoadingButton('#add_acc_tt .btn-save', "Konfirmasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
                 resetTtUploadProgress();
-                ResetLoadingButton('#add_acc_tt .btn-save', "Konfirmasi");
             }
         });
     });
@@ -211,44 +213,6 @@ function updateTtUploadProgress(percent) {
         $('#preview_bukti').attr("src",public+data.tt_image);
         $('#view_tt').modal("show");
         
-    });
-
-    $(document).on("click","#generateTandaTerima",function(){
-        $('.invalid').removeClass('invalid');
-        var valid = 1;
-        if($('#select_supplier').val()==null||$('#select_supplier').val()==""){
-            $('.row-supplier .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        if($('#bank_kode').val()==null||$('#bank_kode').val()==""){
-             $('.row-rekening .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        
-        if(valid==-1){
-            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            return false;
-        };
-        var url = '/generateTandaTerima/'+$('#select_supplier').val()+"/"+$('#bank_kode').val();
-        $.ajax({
-            url:url,
-            method:"get",
-            success:function(e){
-                if(e==-1){
-                    notifikasi("error","Gagal Buat Surat Terima","Supplier tersebut tidak ada po selesai!")
-                }
-                else{
-                    refreshPurchaseOrder();
-                    window.location.href = '/viewTandaTerima/' + e;
-                }
-                $('#select_supplier').empty();
-                $('#bank_kode').empty();
-            },
-            error:function(e){
-                console.log(e);
-            }
-        });
-       
     });
 
 $(document).on("change", "#image", function () {
@@ -288,6 +252,7 @@ $(document).on("change", "#image", function () {
             $("#file_name").text(compressedImageFile.name + " (" + kb + " KB)");
         },
         error(err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal kompres gambar:", err);
             compressedImageFile = file;
             let reader = new FileReader();
@@ -339,6 +304,7 @@ $(document).on("change", "#image", function () {
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

@@ -1,0 +1,121 @@
+<?php
+
+namespace Tests\DatabaseTransaction;
+
+use App\Models\ProductStock;
+use App\Models\StockOpname;
+use Illuminate\Support\Facades\DB;
+use Tests\Support\ActingAsStaff;
+use Tests\TestCase;
+
+/**
+ * ✅ FIXED (2026-08-04): Extends the Phase 3 pilot (tests/Workflow/StockOpnameFlowTest.php,
+ * cdocs/testing/workflows/STOCK_OPNAME_FLOW.md). `accStockOpname` used to have no
+ * `DB::transaction()` (same gap shape as Purchase Order's `accPO` and Production's
+ * `accProduction`) and no null-check on its `ProductStock` lookup (`product_variant_id` +
+ * `unit_id`) — a bogus `unit_id` on a later item crashed the whole request with a fatal "Attempt
+ * to assign property on null" while an earlier item's stock was already permanently overwritten.
+ *
+ * Fix: the whole mutation loop now runs inside one `DB::transaction()`, and a missing
+ * `ProductStock` row is collected and rolled back with a clean `{status: 0, header: 'Gagal ACC',
+ * ...}` response instead of crashing.
+ */
+class StockOpnameApprovalAtomicityTest extends TestCase
+{
+    use ActingAsStaff;
+
+    private function pickTwoFixtureStocks(): array
+    {
+        return ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('status', 1)
+            ->where('warehouse_id', 1)
+            ->where('ps_stock', '>', 10)
+            ->limit(2)
+            ->get()
+            ->all();
+    }
+
+    private function categoryId(): int
+    {
+        return (int) DB::table('categories')->where('status', 1)->value('category_id');
+    }
+
+    private function staffId(): int
+    {
+        return (int) DB::table('staffs')->where('status', 1)->value('staff_id');
+    }
+
+    public function test_a_mid_loop_failure_is_now_cleanly_rejected_with_nothing_overwritten(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        [$stockA, $stockB] = $this->pickTwoFixtureStocks();
+        $startingA = $stockA->ps_stock;
+        $startingB = $stockB->ps_stock;
+        $bogusUnitId = 999999; // guaranteed to match no product_stocks row for stockB's variant
+
+        $insertResponse = $this->post('/insertStockOpname', [
+            'sto_date' => now()->toDateString(),
+            'staff_id' => $this->staffId(),
+            'category_id' => $this->categoryId(),
+            'sto_notes' => 'DB transaction atomicity test',
+            'is_draft' => 0,
+            'item' => json_encode([
+                [
+                    'product_id' => $stockA->product_id,
+                    'product_variant_id' => $stockA->product_variant_id,
+                    'stod_system' => $stockA->ps_stock.' pcs',
+                    'stod_real' => ($stockA->ps_stock - 1).' pcs',
+                    'stod_selisih' => '1 pcs',
+                    'stod_notes' => null,
+                ],
+                [
+                    'product_id' => $stockB->product_id,
+                    'product_variant_id' => $stockB->product_variant_id,
+                    'stod_system' => $stockB->ps_stock.' pcs',
+                    'stod_real' => ($stockB->ps_stock - 1).' pcs',
+                    'stod_selisih' => '1 pcs',
+                    'stod_notes' => null,
+                ],
+            ]),
+        ]);
+        $insertResponse->assertStatus(200);
+        $stoId = (int) $insertResponse->json('sto_id');
+
+        $logCountBefore = DB::table('log_stocks')->count();
+
+        $accResponse = $this->post('/accStockOpname', [
+            'sto_id' => $stoId,
+            'item' => json_encode([
+                [
+                    'product_variant_id' => $stockA->product_variant_id,
+                    'units' => [['unit_id' => $stockA->unit_id, 'real_qty' => $startingA - 1]],
+                ],
+                [
+                    'product_variant_id' => $stockB->product_variant_id,
+                    'units' => [['unit_id' => $bogusUnitId, 'real_qty' => $startingB - 1]],
+                ],
+            ]),
+        ]);
+
+        // Fixed: a clean, structured rejection instead of an uncaught 500.
+        $accResponse->assertOk();
+        $accResponse->assertJson(['status' => 0, 'header' => 'Gagal ACC']);
+
+        // Fixed: item A must be untouched now — the whole loop runs in one transaction, so item
+        // B's missing stock row rolls item A's mutation back too.
+        $stockA->refresh();
+        $this->assertSame($startingA, $stockA->ps_stock, "a rejected approval must not touch item A's stock at all");
+
+        $stockB->refresh();
+        $this->assertSame($startingB, $stockB->ps_stock, "a rejected approval must not touch item B's stock either");
+
+        // Fixed: no log_stocks rows survive a rolled-back approval.
+        $this->assertSame($logCountBefore, DB::table('log_stocks')->count(), 'a rejected approval must not leave any log_stocks rows behind');
+
+        // The document remains pending — never flipped to approved.
+        $sto = StockOpname::find($stoId);
+        $this->assertSame(1, (int) $sto->status, 'a rejected approval must leave the opname pending');
+        $this->assertNull($sto->acc_by);
+    }
+}

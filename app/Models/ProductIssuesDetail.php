@@ -259,18 +259,40 @@ class ProductIssuesDetail extends Model
                     if ($stok->unit_id == $data["unit_id"]) { $keyTarget = $idx; }
                 }
 
-                $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $m) {
-                    if (!isset($units[$targetKey + 1])) return false;
-                    $stokSekarang = $units[$targetKey]; 
-                    $stokAtas = $units[$targetKey + 1];
-                    
-                    if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) { 
-                        if (!$siapkanStok($targetKey + 1, $units)) return false; 
-                    }
-                    
+                $siapkanStok = function ($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStok, $m) {
+                    // Ditambahkan (2026-08-06): depth guard — $keyAtas dicari lewat lookup relasi
+                    // (bukan index array tetap seperti $targetKey+1), jadi kalau data
+                    // SuppliesRelation punya rantai unit sirkular (unit A "atas"-nya B, B
+                    // "atas"-nya A), rekursi ini bisa jalan selamanya sebelum sempat kembali ke
+                    // while loop di bawah yang punya $safety-nya sendiri. Belum pernah tereproduksi
+                    // dengan data nyata (semua rantai SuppliesRelation yang ditelusuri sejauh ini
+                    // bersih/acyclic) — ini murni defensive guard. Angka 20 mirror konvensi guard
+                    // serupa di tempat lain (lihat KNOWN_ISSUES.md).
+                    if ($depth >= 20) return false;
+
+                    $stokSekarang = $units[$targetKey];
+
+                    // Dulu mencari "unit di atas" lewat posisi array ($units[$targetKey + 1]) —
+                    // hanya benar kalau baris SuppliesStock unit besar KEBETULAN dibuat sebelum
+                    // unit kecil (array diurutkan ss_id desc), tidak ada yang menjamin itu.
+                    // Sekarang mencari lewat SuppliesRelation::su_id_1 dulu (mirroring
+                    // ProductionController's $siapkanStok), baru cari index array yang
+                    // unit_id-nya cocok — posisi di array tidak lagi relevan.
                     $sr = SuppliesRelation::where('supplies_id', $m->supplies_id)->where('su_id_2', $stokSekarang->unit_id)->where('status', 1)->first();
-                    
-                    if ($sr && $virtualStock[$stokAtas->ss_id]['current'] > 0) {
+                    if (!$sr) return false;
+
+                    $keyAtas = null;
+                    foreach ($units as $idx => $stok) {
+                        if ($stok->unit_id == $sr->su_id_1) { $keyAtas = $idx; break; }
+                    }
+                    if ($keyAtas === null) return false;
+                    $stokAtas = $units[$keyAtas];
+
+                    if ($virtualStock[$stokAtas->ss_id]['current'] <= 0) {
+                        if (!$siapkanStok($keyAtas, $units, $depth + 1)) return false;
+                    }
+
+                    if ($virtualStock[$stokAtas->ss_id]['current'] > 0) {
                         $virtualStock[$stokAtas->ss_id]['current'] -= 1;
                         $hasilBongkar = (float)$sr['sr_value_2'];
                         $virtualStock[$stokSekarang->ss_id]['current'] += $hasilBongkar;
@@ -336,12 +358,32 @@ class ProductIssuesDetail extends Model
                     if ($stok->unit_id == $data["unit_id"]) { $keyTarget = $idx; }
                 }
 
-                $siapkanStokProd = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStokProd, $itemId) {
-                    if (!isset($units[$targetKey + 1])) return false;
-                    $stokSekarang = $units[$targetKey]; $stokAtas = $units[$targetKey + 1];
-                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) { if (!$siapkanStokProd($targetKey + 1, $units)) return false; }
+                $siapkanStokProd = function ($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStokProd, $itemId) {
+                    // Depth guard — mirrors the tipe_return==1 closure above, see its comment.
+                    if ($depth >= 20) return false;
+
+                    $stokSekarang = $units[$targetKey];
+
+                    // Mirrors the fix in this same method's tipe_return==1 closure above: cari
+                    // "unit di atas" lewat ProductRelation::pr_unit_id_1 dulu, baru cari index
+                    // array yang unit_id-nya cocok — bukan lewat posisi array ($targetKey + 1),
+                    // yang cuma benar kalau baris ProductStock unit besar kebetulan dibuat lebih
+                    // dulu.
                     $sr = ProductRelation::where('product_variant_id', $itemId)->where('pr_unit_id_2', $stokSekarang->unit_id)->where('status', 1)->first();
-                    if ($sr && $virtualStock[$stokAtas->ps_id]['current'] > 0) {
+                    if (!$sr) return false;
+
+                    $keyAtas = null;
+                    foreach ($units as $idx => $stok) {
+                        if ($stok->unit_id == $sr->pr_unit_id_1) { $keyAtas = $idx; break; }
+                    }
+                    if ($keyAtas === null) return false;
+                    $stokAtas = $units[$keyAtas];
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
+                        if (!$siapkanStokProd($keyAtas, $units, $depth + 1)) return false;
+                    }
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {
                         $virtualStock[$stokAtas->ps_id]['current'] -= 1;
                         $hasilBongkar = (float)$sr['pr_unit_value_2'];
                         $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;

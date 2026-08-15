@@ -52,6 +52,7 @@
                 }
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error('Gagal load detail SO:', err);
                 if (typeof onError === 'function') {
                     onError(err);
@@ -343,7 +344,8 @@
 
                 $('#so_scan_barcode').val('').focus();
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 toastr.error('', 'Gagal mencari produk');
                 $('#so_scan_barcode').val('').focus();
             }
@@ -636,6 +638,7 @@
                 }
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load so:", err);
             }
         });
@@ -846,6 +849,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save", mode == 1?"Tambah Pengiriman" : "Update Pengiriman");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -977,6 +981,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -1033,8 +1038,9 @@
                 }                
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     })
@@ -1072,8 +1078,9 @@
                 
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     })

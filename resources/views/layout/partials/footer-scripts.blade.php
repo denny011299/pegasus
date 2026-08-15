@@ -1229,6 +1229,7 @@ let rotationAngle = 0; // rotasi foto
 let camRotation = 0;   // rotasi kamera
 let photoData = "";
 let currentStream = null;
+let cameraRequestId = 0; // invalidates stale/overlapping getUserMedia() calls
 var modeCamera = 1;//1= upload, 2 = savefile
 var inputFile = null;
 var cameraReturnModal = null;
@@ -1268,12 +1269,33 @@ function showCameraReturnModal(defaultSelector) {
 }
 
 function stopCameraStream() {
+    cameraRequestId++; // invalidate any getUserMedia() call still in flight
     if (currentStream) {
         currentStream.getTracks().forEach(function (t) { t.stop(); });
         currentStream = null;
     }
     var video = document.getElementById("video");
     if (video) video.srcObject = null;
+}
+
+function getCameraErrorMessage(err) {
+    switch (err && err.name) {
+        case "NotAllowedError":
+        case "PermissionDeniedError":
+            return "Akses kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser.";
+        case "NotFoundError":
+        case "DevicesNotFoundError":
+            return "Kamera tidak ditemukan pada perangkat ini.";
+        case "NotReadableError":
+        case "TrackStartError":
+            return "Kamera sedang dipakai aplikasi atau tab lain. Tutup aplikasi/tab lain yang memakai kamera lalu coba lagi.";
+        case "OverconstrainedError":
+            return "Kamera tidak mendukung konfigurasi yang diminta.";
+        case "SecurityError":
+            return "Akses kamera diblokir browser karena halaman ini dibuka lewat koneksi HTTP (tidak aman), bukan HTTPS. Ini bukan masalah di perangkat Anda — minta tim IT/developer mengaktifkan HTTPS untuk domain ini.";
+        default:
+            return "Tidak bisa akses kamera. Pastikan izin kamera aktif.";
+    }
 }
 
 function resetCameraModalUi() {
@@ -1319,14 +1341,17 @@ function startCamera() {
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        notifikasi("error", "Gagal Kamera", "Browser/perangkat tidak mendukung akses kamera.");
+        var reason = (window.isSecureContext === false)
+            ? "Akses kamera diblokir browser karena halaman ini dibuka lewat koneksi HTTP (tidak aman), bukan HTTPS. Ini bukan masalah di perangkat Anda — minta tim IT/developer mengaktifkan HTTPS untuk domain ini."
+            : "Browser/perangkat tidak mendukung akses kamera.";
+        notifikasi("error", "Gagal Kamera", reason);
         return Promise.resolve(false);
     }
 
-    // Stop camera old stream
-    if (currentStream) {
-        currentStream.getTracks().forEach(t => t.stop());
-    }
+    // Stop any previous stream and invalidate any getUserMedia() call that is
+    // still pending, so it can't clobber/leak past this new request.
+    stopCameraStream();
+    var requestId = ++cameraRequestId;
 
     return navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } }
@@ -1336,12 +1361,20 @@ function startCamera() {
         });
     })
     .then(stream => {
+        // A newer startCamera()/stopCameraStream() happened while this
+        // request was in flight (double click, modal closed, retake, ...).
+        // Release this stream instead of leaking it or overwriting the
+        // stream that's actually in use.
+        if (requestId !== cameraRequestId) {
+            stream.getTracks().forEach(t => t.stop());
+            return false;
+        }
         currentStream = stream;
         video.srcObject = stream;
     })
     .catch(function(err) {
         console.error("Tidak bisa akses kamera:", err);
-        notifikasi("error", "Gagal Kamera", "Tidak bisa akses kamera. Pastikan izin kamera aktif.");
+        notifikasi("error", "Gagal Kamera", getCameraErrorMessage(err));
         return false;
     });
 }

@@ -2,10 +2,18 @@ autocompleteProv('#state_id');
 autocompleteCity('#city_id');
 
 $(document).ready(function(){
-    $('#staff_first_name').val(data.staff_first_name ? data.staff_first_name : "");
-    $('#staff_last_name').val(data.staff_last_name ? data.staff_last_name : "");
+    // staffs.staff_name is a single combined column (no first/last split in the DB) — mirrors
+    // the same split insertStaff.js already does for the admin Staff-edit page.
+    var names = data && data.staff_name ? data.staff_name.split(" ") : [];
+    $('#staff_first_name').val(names[0] || "");
+    $('#staff_last_name').val(names.slice(1).join(" ") || "");
     $('#staff_email').val(data.staff_email ? data.staff_email : "");
     $('#staff_phone').val(data.staff_phone ? data.staff_phone : "");
+    // Birthdate/gender/nationality/state/city/blood type/profile image have no corresponding
+    // column on `staffs` at all (confirmed via Schema::getColumnListing) — there is no stored
+    // data to prefill these with for ANY staff, and Staff::updateStaff() doesn't persist them
+    // either. Left here as-is (harmless no-ops) rather than removed, since re-scoping this form
+    // to drop or back these fields with real columns is a separate decision.
     $('#staff_birthdate').val(data.staff_birthdate ? data.staff_birthdate : "");
     $('#staff_gender').val(data.staff_gender ? data.staff_gender : "");
     $('#staff_nationality').append(`<option value="${data.staff_nationality}">${data.staff_nationality}</option>`);
@@ -18,7 +26,7 @@ $(document).ready(function(){
 $(document).on('click', '.btn-save', function(){
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
-    var url = "/updateStaff";
+    var url = "/updateProfile";
 
     var valid = 1;
     $(".fill").each(function(){
@@ -66,7 +74,8 @@ $(document).on('click', '.btn-save', function(){
         staff_zipcode: data.staff_zipcode,
     };
 
-    param.staff_id = data.staff_id;
+    // staff_id / staff_username / staff_position (role) are always forced server-side from the
+    // logged-in session by /updateProfile, never trusted from this payload — no need to send them.
 
     const fd = new FormData();
     for (const [key, value] of Object.entries(param)) {
@@ -87,11 +96,16 @@ $(document).on('click', '.btn-save', function(){
         success: function (response) {
             // Re-enable button
             ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            if (response && response.status !== 1) {
+                notifikasi('error', response.header || "Gagal Update", response.message || "Terjadi kesalahan");
+                return false;
+            }
             notifikasi('success', "Berhasil Update", "Berhasil Update Profil");
         },
         error: function (xhr) {
             // Re-enable button
             ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            if (handlePermissionError(xhr)) return;
             console.log(xhr);
         },
     });

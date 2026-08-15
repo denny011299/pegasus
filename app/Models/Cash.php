@@ -329,9 +329,16 @@ class Cash extends Model
     }
 
     function insertCash($data){
+        // DEAD CODE, commented out (confirmed 2026-08-02, marked 2026-08-06 per user decision —
+        // not revived, not removed, just flagged): this string→int mapping is the counterpart
+        // ReportController::insertCash()'s admin/gudang auto-link branch expects — without it, a
+        // literal "admin"/"gudang" string reaching `$t->cash_tujuan` below (an integer column)
+        // would crash with a DB type error. Moot in practice: the real frontend (Cash.js) never
+        // sends `cash_tujuan` as a string in the first place. See KNOWN_ISSUES.md for the full
+        // trace.
         // if ($data['cash_tujuan'] == "admin") $data['cash_tujuan'] = 1;
         // else if ($data['cash_tujuan'] == "gudang") $data['cash_tujuan'] = 2;
-        
+
         $t = new self();
         $t->person_id = $data["person_id"] ?? 0;
         $t->cash_date = $data["cash_date"];

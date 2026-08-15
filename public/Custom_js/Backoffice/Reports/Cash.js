@@ -32,7 +32,16 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: false,
             autoWidth: false,
-            scrollX: true,
+            // scrollX was removed (2026-08-05): DataTables 1.10's scroll feature clones/resizes
+            // the header and footer into separate synced-width tables, and it does not support
+            // colspan'd cells in that clone — this tfoot uses colspan="3"/"5" on both rows
+            // (Cash.blade.php), so with scrollX on, the footer's labels ("Total :", "Sisa Kas :",
+            // "Total Setoran :") and the values written by updateCashFooterTotals() below rendered
+            // misaligned/on the wrong row. The table is still wrapped in a Bootstrap
+            // `.table-responsive` div, so horizontal scrolling on narrow screens still works via
+            // plain CSS overflow — just not through DataTables' own scrollX cloning. Sibling table
+            // Cash_Operational.js uses the same tfoot-update JS pattern without scrollX and renders
+            // correctly; match that instead of re-enabling this.
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -182,6 +191,7 @@
                 }, 100);
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kas:", err);
             }
         });
@@ -607,6 +617,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save", mode == 1?"Tambah Pencatatan" : "Update Pencatatan");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -645,6 +656,13 @@
         console.log(tujuan);
         let url = "";
         if (tujuan == 1) url = "/acceptCashAdmin";
+        // tujuan == 2 (gudang): this page only ever knows the row's cash_id, never a cg_id — that's
+        // intentional, not missing data. This is the "Kas Besar" table, and only "saldo"-type
+        // CashGudang entries ever get a real cash_id/appear here (see
+        // ReportController::insertCashGudang()'s "saldo" branch); "operasional"-type ("Kas Gudang")
+        // entries always have cash_id = 0 and never show up in this table at all. On the backend,
+        // acceptCashGudang() uses isset($data['cg_id']) specifically to tell these two entry kinds
+        // apart — don't "fix" this call to also send a cg_id, there isn't one for this row's kind.
         else if (tujuan == 2) url = "/acceptCashGudang";
         else if (tujuan == 3) url = "/acceptCashArmada";
         else if (tujuan == 4) url = "/acceptCashSales";
@@ -670,6 +688,7 @@
             },
             error:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -707,6 +726,7 @@
             },
             error:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

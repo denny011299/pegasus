@@ -195,6 +195,10 @@
         $('#btn-terima, #btn-tolak').hide();
         $("#production_date").val(getTodayStr()).prop('disabled', true);
         $('#addProduction').removeAttr("revision_source_production_id");
+        $('#row-production-acc-by').hide();
+        $('#row-production-detail-info').hide();
+        $('#row-production-cancel-info').hide();
+        $('#production_status_badge_header').hide().html('');
     })
 
     $(document).on('keyup', '#production_qty', function(){
@@ -229,11 +233,11 @@
 
         $('#unit_id').html("");
         data.pr_unit.forEach(element => {
-            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`) 
+            $('#unit_id').append(`<option value="${element.unit_id}">${element.unit_name}</option>`)
         });
         $('#unit_id').val(data.default_unit || data.unit_id).trigger("change");
         $('#pi_unit option').first().prop('selected', true);
-        
+
         $('#production_qty').trigger('keyup');
     })
 
@@ -265,6 +269,9 @@
                     previous: '<i class="fa fa-angle-left"></i> '
                 },
             },
+            // Lebar kolom diatur lewat CSS (nth-child, lihat <style> di Production.blade.php) —
+            // supaya table-layout:fixed jadi satu-satunya sumber lebar, tidak tumpang tindih
+            // dengan width inline yang tadinya di-set di sini.
             columns: [
                 { data: "date", width: "15%" },
                 { data: "production_code", width: "15%" },
@@ -297,7 +304,7 @@
                     e = e.original || [];
                 }
                 console.log(e);
-                table.clear().draw(); 
+                table.clear().draw();
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].production_date).format('D MMM YYYY');
@@ -458,6 +465,10 @@
             $('.btn-cancel').html("Batal");
             $('#addProduction').removeAttr("production_id");
             $('#addProduction').attr("revision_source_production_id", rowData.production_id);
+            $('#row-production-acc-by').hide();
+            $('#row-production-detail-info').hide();
+            $('#row-production-cancel-info').hide();
+            $('#production_status_badge_header').hide().html('');
             $('#addProduction').modal("show");
 
             params.delete("rev_production_id");
@@ -493,13 +504,13 @@
         });
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
             return false;
         };
         if(moment($('#production_date').val()).isAfter(moment().add(1, 'days'), 'day')){
             $('#production_date').addClass('is-invalid');
             notifikasi('error', "Gagal Insert", 'Input tanggal maksimal 1 hari setelah hari ini');
-            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
             return false;
         }
         if (items.length == 0){
@@ -526,9 +537,9 @@
             headers: {
                 'X-CSRF-TOKEN': token
             },
-            success:function(e){ 
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
-                console.log(e.length);      
+            success:function(e){
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
+                console.log(e.length);
                 if (e.status == 0){
                     notifikasi('error', e.header, e.message);
                     return false;
@@ -574,10 +585,10 @@
 
                 if (validQty == -1){
                     notifikasi('error', "Stock Tidak Mencukupi", `Mohon cek stock ${bahanKurang.map(d => d).join(", ")}`);
-                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi"); 
+                    ResetLoadingButton('.btn-save', mode == 1?"Tambah Produksi" : "Update Produksi");
                     return false;
                 } else{
-                    
+
             },
             error:function(e){
                 console.log(e)
@@ -677,7 +688,7 @@
         if (index !== undefined) {
             list_bahan.splice(index, 1);
         }
-        
+
         console.log(items)
         row.remove();
     });
@@ -698,6 +709,36 @@
         $('#unit_id').html("");
         $('#production_date').val(data.production_date);
         $('#production_desc').val(data.production_desc).attr('disabled', true);
+
+        // Info umum (Kode Produksi/Dibuat Oleh) — selalu tampil di mode lihat detail. Status
+        // ditampilkan sebagai badge di header modal, bukan field terpisah.
+        $('#production_code_display').val(data.production_code);
+        $('#production_created_by_display').val(data.created_by_name || '-');
+        $('#row-production-detail-info').show();
+        $('#production_status_badge_header').html(data.status_text || '').show();
+
+        // "Dibatalkan" dibedakan dari sekadar "Tolak" lewat cancel_requested_by — hanya terisi
+        // kalau produksi ini pernah lewat alur pengajuan batal (status 4) lalu disetujui
+        // pembatalannya (berakhir di status 3 juga, sama seperti tolak langsung dari pending, tapi
+        // beda alur). Notes Pembatalan pakai kolom `notes` yang sama dipakai declineProduction().
+        var isDibatalkan = data.status == 3 && data.cancel_requested_by;
+
+        // Diapprove Oleh: HANYA untuk status Berhasil (2) — acc_by_name bisa berisi "Sistem
+        // (Auto-Timeout)" kalau produksi ini di-auto-timeout, bukan diputuskan staf sungguhan.
+        if (data.status == 2 && data.acc_by_name && data.acc_by_name !== '-') {
+            $('#production_acc_by_name').val(data.acc_by_name);
+            $('#row-production-acc-by').show();
+        } else {
+            $('#row-production-acc-by').hide();
+        }
+
+        if (isDibatalkan) {
+            $('#production_cancel_requested_by_display').val(data.cancel_requested_by_name || '-');
+            $('#production_cancel_notes_display').val(data.notes || '-');
+            $('#row-production-cancel-info').show();
+        } else {
+            $('#row-production-cancel-info').hide();
+        }
 
         var total_dos = 0;
 
@@ -749,7 +790,7 @@
         if (moment(data.production_date).isBefore(moment().subtract(3, 'days').format('YYYY-MM-DD'))) {
             $('#btn-terima, #btn-tolak').hide();
         }
-        
+
         $('.is-invalid').removeClass('is-invalid');
         $('.add, .btn-save, .btn_delete_row_pr').hide();
         $('.dos').show();
@@ -780,7 +821,7 @@
     function getBom(id, index = null) {
         // kalau index sudah ada, maka akan balik
         if (modeBahan == 1 && list_bahan[index] !== undefined) {
-            return; 
+            return;
         }
 
         $.ajax({
@@ -795,7 +836,7 @@
                         temp.push(detail.supplies_id);
                     });
                     list_bahan[index] = temp;
-                } 
+                }
                 else if (modeBahan == 2) {
                     $('#tableSupplies tbody').html("");
 
@@ -816,7 +857,7 @@
                             isChecked = current_list.some(id => parseInt(id) == parseInt(b.supplies_id));
                         }
                         let isDisabled = (mode == 3) ? 'disabled' : '';
-                        
+
                         $('#tableSupplies tbody').append(`
                             <tr class="row-bahan">
                                 <td class="text-center">
@@ -836,7 +877,7 @@
         });
     }
 
-    
+
 
     $(document).on('click', '.btn-save-bahan', function(){
         var index = parseInt($(this).attr('index'));
@@ -854,10 +895,10 @@
         } else {
             list_bahan[index] = temp;
         }
-        
+
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Mohon input minimal 1 bahan');
-            ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan"); 
+            ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan");
             return false;
         }
 
@@ -867,7 +908,7 @@
         notifikasi('success', "Berhasil Simpan", 'Berhasil Simpan Detail Bahan');
         ResetLoadingButton('.btn-save-bahan', "Simpan Perubahan");
     });
-    
+
 
 //delete
 $(document).on("click", ".btn_delete", function () {
@@ -890,7 +931,7 @@ $(document).on("click", "#btn-delete-production", function () {
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
     console.log($('#delete_reason').val());
-    
+
     LoadingButton(this);
     $.ajax({
         url: "/deleteProduction",
@@ -1032,18 +1073,31 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         $('.btn-konfirmasi').html("Konfirmasi");
     })
 
-    $(document).on('click', '#btn-accept-production', function(){
-        LoadingButton(this);
+    // Dipakai baik oleh konfirmasi approve awal maupun konfirmasi "buat baris stok baru" di bawah
+    // — accProduction bisa membalas status:-3 kalau ada satuan ladder yang baris ProductStock-nya
+    // belum ada, sebelum mengubah apa pun. confirmCreateStock=true dikirim setelah user setuju.
+    function submitAccProduction(productionId, confirmCreateStock) {
+        LoadingButton($('.btn-konfirmasi'));
         $.ajax({
             url:"/accProduction",
             data:{
-                production_id:$('#btn-accept-production').attr('production_id'),
+                production_id: productionId,
+                confirm_create_stock: confirmCreateStock ? 1 : 0,
                 _token:token
             },
             method:"post",
             success:function(e){
                 if (e!=1){
                     if (typeof e === "object"){
+                        if (e.status == -3) {
+                            // Perlu konfirmasi tambahan: ada baris stok yang belum ada dan akan
+                            // dibuat dengan stok awal 0 kalau user melanjutkan.
+                            ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                            showModalKonfirmasi(e.message, "btn-confirm-create-stock-production");
+                            $('#btn-confirm-create-stock-production').attr("production_id", productionId);
+                            $('.btn-konfirmasi').html("Konfirmasi");
+                            return false;
+                        }
                         notifikasi('error', e.header, e.message);
                         if (e.status == -2) {
                             $('.modal').modal("hide");
@@ -1069,6 +1123,18 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
                 console.log(e);
             }
         });
+    }
+
+    $(document).on('click', '#btn-accept-production', function(){
+        // Baca lewat selector id (bukan $(this)) — .btn-konfirmasi juga dipakai tombol lain
+        // (mis. #modalDelete) sehingga showModalKonfirmasi() bisa menaruh id yang sama di lebih
+        // dari satu elemen; supaya konsisten dengan tempat penulisannya (juga lewat selector id),
+        // pembacaan production_id ikut lewat selector id juga.
+        submitAccProduction($('#btn-accept-production').attr('production_id'), false);
+    })
+
+    $(document).on('click', '#btn-confirm-create-stock-production', function(){
+        submitAccProduction($('#btn-confirm-create-stock-production').attr('production_id'), true);
     })
 
     $(document).on('click', '.btn_decline_produksi', function(){
@@ -1140,7 +1206,7 @@ $(document).on('click', '.LihatfotoProduksi', function(){
         method: "get",
         success: function (e) {
             console.log(e);
- 
+
             if(e.length > 0){
                 list_photo = e;
                 $('#modalViewPhoto .modal-footer').show();

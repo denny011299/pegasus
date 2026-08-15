@@ -144,6 +144,65 @@ class ProductController extends Controller
         return $data;
     }
 
+    /**
+     * Precheck (no mutation) shared by insertProduct()/updateProduct(): SKU must be unique
+     * among ALL active variants (any product — a barcode scan must never be ambiguous), and
+     * variant name must be unique among active variants of the SAME product (a product-owner
+     * choice; different products may reuse the same variant name, e.g. "Merah"). Checks both
+     * within the submitted batch and against existing rows. $productId is null for a brand-new
+     * product (nothing can exist for it yet, so only within-batch name dupes are checked).
+     */
+    private function validateVariantUniqueness(array $variants, ?int $productId): ?string
+    {
+        $seenSku = [];
+        $seenName = [];
+
+        foreach ($variants as $v) {
+            $sku = trim((string) ($v['variant_sku'] ?? ''));
+            $name = trim((string) ($v['variant_name'] ?? ''));
+            if (strtolower($name) === 'standar') {
+                $name = '';
+            }
+            $excludeId = !empty($v['product_variant_id']) ? (int) $v['product_variant_id'] : null;
+
+            if ($sku !== '') {
+                if (isset($seenSku[$sku])) {
+                    return "SKU \"{$sku}\" dipakai lebih dari satu varian pada penyimpanan ini.";
+                }
+                $seenSku[$sku] = true;
+
+                $q = ProductVariant::where('product_variant_sku', $sku)->where('status', 1);
+                if ($excludeId) {
+                    $q->where('product_variant_id', '<>', $excludeId);
+                }
+                if ($q->exists()) {
+                    return "SKU \"{$sku}\" sudah dipakai produk lain.";
+                }
+            }
+
+            if ($name !== '') {
+                if (isset($seenName[$name])) {
+                    return "Nama varian \"{$name}\" dipakai lebih dari satu kali pada produk ini.";
+                }
+                $seenName[$name] = true;
+
+                if ($productId) {
+                    $q = ProductVariant::where('product_id', $productId)
+                        ->where('product_variant_name', $name)
+                        ->where('status', 1);
+                    if ($excludeId) {
+                        $q->where('product_variant_id', '<>', $excludeId);
+                    }
+                    if ($q->exists()) {
+                        return "Nama varian \"{$name}\" sudah dipakai varian lain pada produk ini.";
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     function insertProduct(Request $req)
     {
         $data = $req->all();
@@ -159,9 +218,21 @@ class ProductController extends Controller
         //     ]);
         // }
 
-        $id = (new Product())->insertProduct($data);
         $variant = json_decode($data['product_variant'], true);
         $relasi = json_decode($data['product_relasi'], true);
+
+        // Diperbaiki (2026-08-05): regresi dari fix 2026-08-03 — sempat berubah jadi
+        // insertProduct() dipanggil DUA KALI, yang pertama sebelum precheck ini sama sekali
+        // (jadi row Product sudah permanen dibuat walau precheck akhirnya menolak), yang kedua
+        // (baris di bawah, yang sebenarnya dipakai) tepat setelah precheck lolos. Sekarang precheck
+        // ini kembali jadi hal PERTAMA yang terjadi, sebelum satu row pun disentuh — lihat
+        // KNOWN_ISSUES.md "Two product SKUs were shared across different products".
+        $uniquenessError = $this->validateVariantUniqueness($variant, null);
+        if ($uniquenessError) {
+            return response()->json(['message' => $uniquenessError]);
+        }
+
+        $id = (new Product())->insertProduct($data);
         foreach ($variant as $key => $value) {
             $value['product_id'] = $id;
             $variant[$key]["product_variant_id"] = (new ProductVariant())->insertProductVariant($value);
@@ -182,6 +253,17 @@ class ProductController extends Controller
         $data = $req->all();
         $id = [];
         $variant = json_decode($data['product_variant'], true);
+
+        // Diperbaiki (2026-08-05): regresi dari fix 2026-08-03 — updateProduct() sempat kehilangan
+        // panggilan ke precheck ini sama sekali, jadi mengganti nama sebuah varian supaya sama
+        // dengan varian lain pada produk yang sama (atau SKU yang sudah dipakai produk lain) tidak
+        // ditolak lagi. Dicek per varian, exclude dirinya sendiri lewat product_variant_id yang
+        // sudah ada di payload — lihat validateVariantUniqueness().
+        $uniquenessError = $this->validateVariantUniqueness($variant, (int) $data['product_id']);
+        if ($uniquenessError) {
+            return response()->json(['message' => $uniquenessError]);
+        }
+
         (new Product())->updateProduct($data);
         foreach ($variant as $key => $value) {
             $value['product_id'] = $data["product_id"];
@@ -196,12 +278,12 @@ class ProductController extends Controller
             $pvr_id = $variant[$keyRelasi]['product_variant_id'] ?? 0;
             $id = [];
             $activeUnitPairs = [];
-            
+
             // Jika ada data relasi dari frontend
             if (!empty($value)) {
                 foreach ($value as $key => $perVariant) {
                     $perVariant['product_variant_id'] = $pvr_id;
-                    
+
                     // Konversi pr_id dengan aman
                     $current_pr_id = isset($perVariant['pr_id']) ? intval($perVariant['pr_id']) : 0;
                     $perVariant['pr_id'] = $current_pr_id;
@@ -212,7 +294,7 @@ class ProductController extends Controller
                     } else {
                         $t = (new ProductRelation())->updateProductRelation($perVariant);
                     }
-                    
+
                     // Simpan ID yang aktif ke array $id
                     if ($t) $id[] = $t;
 
@@ -401,7 +483,7 @@ class ProductController extends Controller
                 'message' => 'Nama bahan sudah digunakan'
             ]);
         }
-        
+
         $id = (new Supplies())->insertSupplies($data);
         foreach (json_decode($data['supplies_variant'], true) as $key => $value) {
             $value['supplies_id'] = $id;
@@ -443,12 +525,12 @@ class ProductController extends Controller
         $afterName = trim((string) ($after->supplies_name ?? ($data['supplies_name'] ?? '')));
         $changeTexts = [];
         if ($beforeName !== '' && $afterName !== '' && strcasecmp($beforeName, $afterName) !== 0) {
-            $changeTexts[] = 'Nama: "'.$beforeName.'" -> "'.$afterName.'"';
+            $changeTexts[] = 'Nama: "' . $beforeName . '" -> "' . $afterName . '"';
         }
         $beforeAlert = (float) ($before->supplies_alert ?? 0);
         $afterAlert = (float) ($after->supplies_alert ?? ($data['supplies_alert'] ?? 0));
         if (abs($beforeAlert - $afterAlert) > 0.000001) {
-            $changeTexts[] = 'Batas min: '.$beforeAlert.' -> '.$afterAlert;
+            $changeTexts[] = 'Batas min: ' . $beforeAlert . ' -> ' . $afterAlert;
         }
         if ((int) ($before->supplies_default_unit ?? 0) !== (int) ($after->supplies_default_unit ?? ($data['supplies_default_unit'] ?? 0))) {
             $changeTexts[] = 'Satuan default diperbarui';
@@ -460,10 +542,10 @@ class ProductController extends Controller
         DashboardChangeLog::create([
             'module_key' => 'master_bahan',
             'module_label' => 'Master Bahan',
-            'reference' => 'BHN #'.(int) $data['supplies_id'],
+            'reference' => 'BHN #' . (int) $data['supplies_id'],
             'what_changed' => $whatChanged,
             'summary' => $afterName !== '' ? $afterName : ($beforeName !== '' ? $beforeName : 'Bahan'),
-            'url' => url('supplies').'?supplies_id='.(int) $data['supplies_id'],
+            'url' => url('supplies') . '?supplies_id=' . (int) $data['supplies_id'],
             'url_label' => 'Buka master',
             'created_by' => $actor ? ($actor->staff_id ?? null) : null,
             'meta' => [

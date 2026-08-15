@@ -82,6 +82,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             }
         });
@@ -108,6 +109,7 @@
                 viewHistory(e);
             },
             error: function(e){
+                if (handlePermissionError(e)) return;
                 console.error("Gagal load:", e);
             }
         });

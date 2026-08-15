@@ -4,6 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * DEPRECATED (2026-08-04): Sales Order Delivery is no longer used. insertSoDeliveryDetail()/
+ * updateSoDeliveryDetail() deduct ps_stock a second time on top of what CustomerController::accSO()
+ * already deducted at SO-approval time, and match ProductStock by product_id instead of
+ * product_variant_id — confirmed by product owner as unused, not fixed, not tested. See
+ * KNOWN_ISSUES.md.
+ */
 class SalesOrderDeliveryDetail extends Model
 {
     protected $table = "sales_delivery_orders_details";
@@ -50,9 +57,10 @@ class SalesOrderDeliveryDetail extends Model
             ->where("unit_id", "=", $data["unit_id"])
             ->where("status", "=", 1)
             ->first();
-            dd($s);
-        $s->ps_stock -= $data["sdod_qty"];
-        $s->save();
+        if ($s) {
+            $s->ps_stock -= $data["sdod_qty"];
+            $s->save();
+        }
 
         return $t->sdod_id;
     }

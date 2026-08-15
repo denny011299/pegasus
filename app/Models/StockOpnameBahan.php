@@ -81,6 +81,9 @@ class StockOpnameBahan extends Model
         $t->stob_code   = $this->generateStockOpnameBahanID();
         $t->staff_id = $data['staff_id'];
         $t->stob_notes = $data['stob_notes'] ?? null;
+        // Mirrors StockOpname::insertStockOpname() — see KNOWN_ISSUES.md "Stock Opname's draft
+        // feature is entirely non-functional".
+        $t->is_draft = !empty($data['is_draft']);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
@@ -98,6 +101,24 @@ class StockOpnameBahan extends Model
         $t->stob_date = $data['stob_date'];
         $t->staff_id = $data['staff_id'];
         $t->stob_notes = $data['stob_notes'] ?? null;
+        if (array_key_exists('is_draft', $data)) {
+            $t->is_draft = !empty($data['is_draft']);
+        }
+        $t->save();
+
+        return $t->stob_id;
+    }
+
+    /**
+     * Keluarkan dokumen dari mode draft (dipanggil dari tombol "Ajukan") — status tidak berubah,
+     * ini murni membuka gerbang supaya accStockOpnameBahan() bisa dijalankan.
+     */
+    function submitStockOpnameBahan($data)
+    {
+        $t = self::find($data['stob_id']);
+        if (!$t) return null;
+
+        $t->is_draft = false;
         $t->save();
 
         return $t->stob_id;

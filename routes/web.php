@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AutocompleteController;
+use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DeploymentCheckController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
@@ -16,6 +18,14 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', [GeneralController::class, 'login'])->name('login');
 Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
 Route::middleware(checkLogin::class)->group(function () {
+    Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
+
+    // Internal dev-only pages: intentionally NOT in the sidebar and NOT gated by
+    // check.access/role_access -- protected only by checkLogin (must be a logged-in
+    // staff account). Only devs who know the URL (from reading this file) reach them.
+    Route::get('/system/changelog', [ChangelogController::class, 'index'])->name('system.changelog');
+    Route::get('/system/deployment-check', [DeploymentCheckController::class, 'index'])->name('system.deployment-check');
+
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');
     })->name('index');
@@ -58,16 +68,16 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Variasi|view')->group(function () {
     });
     Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {
-        
+
     });
     Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {
     });
@@ -148,6 +158,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Produk|edit')->group(function () {
         Route::post('/updateStockOpname', [StockController::class, 'updateStockOpname'])->name('updateStockOpname');
         Route::post('/updateDetailStockOpname', [StockController::class, 'updateDetailStockOpname'])->name('updateDetailStockOpname');
+        Route::post('/submitStockOpname', [StockController::class, 'submitStockOpname'])->name('submitStockOpname');
     });
     Route::middleware('check.access:Stok Opname Produk|delete')->group(function () {
         Route::post('/deleteStockOpname', [StockController::class, 'deleteStockOpname'])->name('deleteStockOpname');
@@ -172,6 +183,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Bahan Mentah|edit')->group(function () {
         Route::post('/updateStockOpnameBahan', [StockController::class, 'updateStockOpnameBahan'])->name('updateStockOpnameBahan');
         Route::post('/updateDetailStockOpnameBahan', [StockController::class, 'updateDetailStockOpnameBahan'])->name('updateDetailStockOpnameBahan');
+        Route::post('/submitStockOpnameBahan', [StockController::class, 'submitStockOpnameBahan'])->name('submitStockOpnameBahan');
     });
     Route::middleware('check.access:Stok Opname Bahan Mentah|delete')->group(function () {
         Route::post('/deleteStockOpnameBahan', [StockController::class, 'deleteStockOpnameBahan'])->name('deleteStockOpnameBahan');
@@ -609,6 +621,9 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Profil|view')->group(function () {
         Route::get('/profiles', [SettingController::class, 'Profiles'])->name('profiles');
     });
+    Route::middleware('check.access:Profil|edit')->group(function () {
+        Route::post('/updateProfile', [SettingController::class, 'updateProfile'])->name('updateProfile');
+    });
 
     Route::middleware('check.access.any:Kategori,Satuan,Variasi,view')->group(function () {
         Route::get('/area', [GeneralController::class, 'Area'])->name('area');
@@ -655,9 +670,8 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tanda Terima PO|view')->group(function () {
         Route::get('/tt', [SupplierController::class, 'tt'])->name('tt');
         Route::get('/getTt', [SupplierController::class, 'getTt'])->name('getTt');
-        Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, 'generateTandaTerima'])->name('generateTandaTerima');
         Route::get('/generateTandaTerimaInvoice', [SupplierController::class, 'generateTandaTerimaInvoice'])->name('generateTandaTerimaInvoice');
-        Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('generateTandaTerima');
+        Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('viewTandaTerima');
     });
     Route::middleware('check.access:Tanda Terima PO|create')->group(function () {
         Route::post('/insertTt', [SupplierController::class, 'insertTt'])->name('insertTt');

@@ -201,6 +201,7 @@ function refreshEfisiensi() {
             feather.replace();
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load report efisiensi produksi:", err);
             updateKpiSummary([]);
         },

@@ -180,6 +180,7 @@ function refreshManageStock(){
             feather.replace();
         },
         error: function (e) {
+            if (handlePermissionError(e)) return;
             console.log(e.responseText);
         },
     });
@@ -323,7 +324,8 @@ function insertData() {
             afterInsert();
         },
         error:function(e){
-            $('.row-input input').attr("disabled",false); // reset input
+            if (handlePermissionError(e)) return;
+            $('.row-input input').attr("disabled",false);
             $('#input_barcode').val("");
             $('#input_barcode').trigger("focus");
             console.log(e);

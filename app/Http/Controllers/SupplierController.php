@@ -136,6 +136,16 @@ class SupplierController extends Controller
         else return -1;
     }
 
+    // DEPRECATED (2026-08-04): the manual/partial Purchase Order Delivery workflow (getPoDelivery
+    // through declinePoDelivery below) is no longer used — confirmed by product owner. It let a
+    // delivery batch flip purchase_orders.status to Approved with no stock check and no invoice
+    // creation (accPO is the only place that happens), permanently locking the PO out of accPO
+    // afterward. Not fixed, not tested. See KNOWN_ISSUES.md.
+    //
+    // NOT deprecated: accPO() (below) still calls PurchaseOrderDelivery::insertPoDelivery() and
+    // PurchaseOrderDeliveryDetail::insertPoDeliveryDetail() directly to record its own
+    // auto-generated, already-approved delivery — those two model methods stay fully active. Only
+    // the independent manual create/edit/approve/decline actions below are deprecated.
     function getPoDelivery(Request $req)
     {
         $data = (new PurchaseOrderDelivery())->getPoDelivery([
@@ -187,7 +197,13 @@ class SupplierController extends Controller
         foreach (json_decode($data['pdo_detail'], true) as $key => $value) {
             $p = PurchaseOrderDelivery::where('po_id','=',$data["po_id"])->where('status','=',2)->get();
             $total =  PurchaseOrderDeliveryDetail::whereIn('pdo_id', $p->pluck('pdo_id'))->where('supplies_variant_id','=',$value['supplies_variant_id'])->sum('pdod_qty');
-            if($total+$value['pdod_qty']>$value["pdod_qty"] ){
+            // Dulu dibandingkan ke $value["pdod_qty"] sendiri (selalu true begitu $total>0) —
+            // sekarang dibandingkan ke jumlah pesanan asli di purchase_orders_details.pod_qty.
+            $ordered = PurchaseOrderDetail::where('po_id', '=', $data['po_id'])
+                ->where('supplies_variant_id', '=', $value['supplies_variant_id'])
+                ->where('status', '=', 1)
+                ->value('pod_qty') ?? 0;
+            if($total+$value['pdod_qty']>$ordered ){
                 array_push($bermasalah, $value['name']);
             }
         }
@@ -343,62 +359,34 @@ class SupplierController extends Controller
     }
 
 
-    function generateTandaTerima($id,$kode) {
-        $param["supplier"] = Supplier::find($id); 
-        $param["data"] = PurchaseOrder::where('po_supplier','=',$id)->where('status','=',4)->where('pembayaran','=',0)
-        ->whereNull('tt_id')
-        ->get();
-        if(count($param["data"])<=0){
-            return -1;
-        }
-        $ada = -1;
-        foreach ($param["data"] as $key => $value) {
-            if($value["kodeTerima"]!=null) $ada=$value["kodeTerima"];
-        };
-        if($ada==-1)$ttid = (new PurchaseOrder())->generateTandaTerimaID($kode);
-        else $ttid = $ada;
-        date_default_timezone_set('Asia/Jakarta');
-        $tt = (new purchase_order_tt())->insertTt([
-            "tt_date"=> date('Y-m-d'),
-            "staff_name"=> Session::get('user')->staff_name,
-            "tt_kode"=> $ttid,
-            "supplier_id"=> $id,
-            "tt_total"=> 0,
-        ]);
-        $total = 0;
-        foreach ($param["data"] as $key => $value) {
-            $p = PurchaseOrder::find($value->po_id);
-            $p->tt_id = $tt;
-            $p->save();
-            $total += $p->po_total;
-        }
-        
-        $tt = purchase_order_tt::find($tt);
-        $tt->tt_total = $total;
-        $tt->save();
-        $param["tt"] = $tt;
-
-        $param = $this->mergePdfPrintMeta($param);
-        $pdf = Pdf::loadView('Backoffice.PDF.TandaTerima', $param);
-        //return $pdf->download('Tanda Terima'.$param["supplier"]["supplier_name"].'.pdf');
-        return $tt->tt_id;
-    }
-
     function generateTandaTerimaInvoice(Request $req) {
         $notValid = [];
         $notValidBank = [];
         $valid = [];
+        // Ditambahkan (2026-08-06, GitHub issue #18): dulu grouping hanya memvalidasi bank_id yang
+        // sama, tidak pernah supplier_id — dua supplier berbeda yang kebetulan pakai bank yang sama
+        // bisa lolos digabung ke satu batch Tanda Terima yang sama, dan supplier_id yang tersimpan
+        // di batch itu hanya mengikuti supplier dari invoice TERAKHIR di loop (bukan representasi
+        // yang benar untuk seluruh batch). PM mengonfirmasi (2026-08-06): grouping harus berdasarkan
+        // KEDUANYA, bank_id DAN supplier_id.
+        $notValidSupplier = [];
         $bank_id = 0;
+        $supplier_id = 0;
         $param["supplier"] ="";
         foreach ($req->poi_id as $key => $value) {
             $p = PurchaseOrderDetailInvoice::find($value);
             $po = PurchaseOrder::find($p->po_id);
             $s = Supplier::find($po->po_supplier);
             $param["supplier"] = $s;
-            if ($key == 0) $bank_id = $s->bank_id;
-            else {
+            if ($key == 0) {
+                $bank_id = $s->bank_id;
+                $supplier_id = $s->supplier_id;
+            } else {
                 if ($bank_id != $s->bank_id){
                     array_push($notValidBank, $p->poi_code);
+                }
+                if ($supplier_id != $s->supplier_id){
+                    array_push($notValidSupplier, $p->poi_code);
                 }
             }
             if($po->pembayaran!=1||$po->tt_id !=null){
@@ -418,6 +406,12 @@ class SupplierController extends Controller
             return [
                 "status"=>-1,
                 "message"=>"Data berikut memiliki bank yang berbeda : ".implode(", ",$notValidBank)
+            ];
+        }
+        if(count($notValidSupplier)>0){
+            return [
+                "status"=>-1,
+                "message"=>"Data berikut memiliki supplier yang berbeda : ".implode(", ",$notValidSupplier)
             ];
         }
 
@@ -835,6 +829,9 @@ class SupplierController extends Controller
         $po->po_total += $total;
         $po->save();
 
+        // Return value intentionally not checked here — see ProductIssues::deleteProductIssues()'s
+        // dead-code comment. Currently harmless (its ref_num guard never actually triggers today),
+        // but would need to change if that guard is ever revived.
         (new ProductIssues())->deleteProductIssues($rs);
         (new ReturnSupplies())->deleteReturnSupplies($data);
 

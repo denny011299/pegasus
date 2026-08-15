@@ -47,6 +47,7 @@ $(document).on("click", "#btn-login", function () {
         },
         error: function (xhr, status, error) {
             ResetLoadingButton("#btn-login", "Login");
+            if (handlePermissionError(xhr)) return;
             notifikasi("error", "Login Gagal", "");
         },
     });
