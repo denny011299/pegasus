@@ -75,16 +75,14 @@ class LogDashboardActivity
         $moduleLabel = $this->formatModuleLabel($moduleKey);
         $now = now();
 
-        // Debounce: staf yang sama membuka modul yang sama berkali-kali (klik-klik/refresh)
-        // dalam jendela singkat tidak perlu jadi baris baru tiap kali.
-        $recentlyOpened = DashboardChangeLog::where('created_by', $staffId)
-            ->where('module_key', $moduleKey)
-            ->where('activity_type', 'open')
-            ->where('created_at', '>=', $now->copy()->subMinutes(15))
-            ->exists();
-        if ($recentlyOpened) {
-            return;
-        }
+        // Ditambahkan (2026-08-14), dihapus lagi (2026-08-15): sempat ada debounce 15 menit
+        // per staf+modul di sini supaya klik-klik/refresh cepat tidak jadi baris baru tiap
+        // kali. Ternyata itu menutupi bug yang jauh lebih parah -- `return` dini di sini
+        // melompati juga logika "tutup sesi 'open' sebelumnya" di bawah, bukan cuma logika
+        // insert baris baru. Jadi membuka ulang modul yang SAMA dalam 15 menit (mis. balik ke
+        // Dashboard yang baru saja dibuka) diam-diam gagal menutup modul LAIN yang sedang
+        // terbuka -- persis gejala yang dilaporkan user ("Dashboard nav click still not
+        // ending the previous page session"). Setiap kunjungan sekarang selalu dicatat.
 
         // Tutup baris 'open' terakhir milik staf ini (modul manapun) yang belum punya durasi —
         // durasinya = jarak ke pembukaan menu berikutnya ini. Kalau jaraknya lebih dari 4 jam,

@@ -76,7 +76,15 @@ class DashboardChangelogMenuOpenTrackingTest extends TestCase
         ]);
     }
 
-    public function test_reopening_the_same_module_within_the_debounce_window_does_not_duplicate(): void
+    /**
+     * There used to be a 15-minute debounce here (skip logging a repeat visit to the same
+     * module). Removed 2026-08-15: it was coupled to the same early `return` as the
+     * close-previous-open-row logic below, so re-opening a module you'd visited recently
+     * silently failed to close whatever ELSE was open in between — e.g. Dashboard -> Customer
+     * -> Dashboard again within 15 minutes left Customer's row stuck on "Sedang dibuka" forever.
+     * User's call: every navigation gets recorded now, no debounce, duplicates included.
+     */
+    public function test_every_visit_is_recorded_even_repeat_visits_to_the_same_module(): void
     {
         $staff = $this->actingAsSuperAdminStaff();
 
@@ -88,7 +96,15 @@ class DashboardChangelogMenuOpenTrackingTest extends TestCase
             ->where('module_key', 'stockopname')
             ->where('activity_type', 'open')
             ->count();
-        $this->assertSame(1, $count, 'opening the same module repeatedly within 15 minutes must debounce to a single row');
+        $this->assertSame(3, $count, 'every visit must be recorded, including repeats of the same module');
+
+        // Only the LAST one is still "open" -- each earlier visit gets closed by the next one.
+        $openCount = DashboardChangeLog::where('created_by', $staff->staff_id)
+            ->where('module_key', 'stockopname')
+            ->where('activity_type', 'open')
+            ->whereNull('duration_seconds')
+            ->count();
+        $this->assertSame(1, $openCount, 'each repeat visit must close the previous one, not just accumulate open sessions');
     }
 
     public function test_opening_a_different_module_closes_the_previous_open_row_with_a_duration(): void
@@ -169,6 +185,33 @@ class DashboardChangelogMenuOpenTrackingTest extends TestCase
             'created_by' => $staff->staff_id,
             'duration_seconds' => null,
         ]);
+    }
+
+    public function test_revisiting_a_recently_opened_module_still_closes_whatever_is_currently_open(): void
+    {
+        // The exact user-reported scenario: Dashboard -> Customer -> Dashboard again (within
+        // what used to be the 15-minute debounce window) must still close Customer's session.
+        $staff = $this->actingAsSuperAdminStaff();
+
+        $this->get('/')->assertStatus(200);
+        $dashboardOpen = DashboardChangeLog::where('created_by', $staff->staff_id)
+            ->where('module_key', 'dashboard')->where('activity_type', 'open')
+            ->firstOrFail();
+
+        $this->get('/customer')->assertStatus(200);
+        $dashboardOpen->refresh();
+        $this->assertNotNull($dashboardOpen->duration_seconds, 'opening Customer must close the Dashboard session');
+
+        $customerOpen = DashboardChangeLog::where('created_by', $staff->staff_id)
+            ->where('module_key', 'customer')->where('activity_type', 'open')
+            ->firstOrFail();
+        $this->assertNull($customerOpen->duration_seconds);
+
+        // Back to Dashboard again, well within the old 15-minute debounce window.
+        $this->get('/')->assertStatus(200);
+
+        $customerOpen->refresh();
+        $this->assertNotNull($customerOpen->duration_seconds, "revisiting Dashboard must close Customer's session even though Dashboard was opened moments ago");
     }
 
     public function test_menu_open_rows_are_excluded_from_the_changelog_pending_kpi(): void
