@@ -75,16 +75,14 @@ class LogDashboardActivity
         $moduleLabel = $this->formatModuleLabel($moduleKey);
         $now = now();
 
-        // Debounce: staf yang sama membuka modul yang sama berkali-kali (klik-klik/refresh)
-        // dalam jendela singkat tidak perlu jadi baris baru tiap kali.
-        $recentlyOpened = DashboardChangeLog::where('created_by', $staffId)
-            ->where('module_key', $moduleKey)
-            ->where('activity_type', 'open')
-            ->where('created_at', '>=', $now->copy()->subMinutes(15))
-            ->exists();
-        if ($recentlyOpened) {
-            return;
-        }
+        // Ditambahkan (2026-08-14), dihapus lagi (2026-08-15): sempat ada debounce 15 menit
+        // per staf+modul di sini supaya klik-klik/refresh cepat tidak jadi baris baru tiap
+        // kali. Ternyata itu menutupi bug yang jauh lebih parah -- `return` dini di sini
+        // melompati juga logika "tutup sesi 'open' sebelumnya" di bawah, bukan cuma logika
+        // insert baris baru. Jadi membuka ulang modul yang SAMA dalam 15 menit (mis. balik ke
+        // Dashboard yang baru saja dibuka) diam-diam gagal menutup modul LAIN yang sedang
+        // terbuka -- persis gejala yang dilaporkan user ("Dashboard nav click still not
+        // ending the previous page session"). Setiap kunjungan sekarang selalu dicatat.
 
         // Tutup baris 'open' terakhir milik staf ini (modul manapun) yang belum punya durasi —
         // durasinya = jarak ke pembukaan menu berikutnya ini. Kalau jaraknya lebih dari 4 jam,
@@ -171,8 +169,15 @@ class LogDashboardActivity
             return false;
         }
 
+        // Ditambahkan (2026-08-15): '' (root '/') SEBELUMNYA ikut dikecualikan di sini, disalin
+        // dari daftar exclude shouldLogChange() -- tapi routes/web.php me-render dashboard
+        // langsung di GET '/' (bukan redirect ke '/admin'), jadi itu JUSTRU rute yang paling
+        // sering dipakai user untuk "kembali ke dashboard". Mengecualikannya berarti baris 'open'
+        // sebelumnya (menu apa pun yang masih terbuka) tidak pernah ditutup saat user balik ke
+        // dashboard lewat '/' -- selalu nyangkut di "Sedang dibuka". session()->has('user') di
+        // atas sudah cukup menyaring pengunjung yang belum login, jadi '' aman untuk dicatat.
         $path = strtolower(trim($request->path(), '/'));
-        if (in_array($path, ['', 'up', 'login', 'logout'], true)) {
+        if (in_array($path, ['up', 'login', 'logout'], true)) {
             return false;
         }
 
@@ -208,8 +213,83 @@ class LogDashboardActivity
         return $seg !== '' ? $seg : 'dashboard';
     }
 
+    /**
+     * module_key adalah segmen pertama URL apa adanya (mis. "detailstockopname",
+     * "insertstockopname") -- Str::title() begitu saja menghasilkan label yang teknis dan
+     * membingungkan (user melaporkan: "Insertstockopname" dikira halaman untuk MEMBUKA form,
+     * padahal itu baris mutasi AJAX; halaman form aslinya berlabel "Detailstockopname"). Basis
+     * data ini menerjemahkan awalan aksi (insert/update/delete/detail/acc/dst.) + nama modul
+     * dasar jadi label Indonesia yang jelas, mis. "detailstockopname" -> "Input Stok Opname",
+     * "insertstockopname" -> "Tambah Stok Opname". module_key yang tidak dikenal tetap jatuh ke
+     * fallback Str::title() lama, jadi modul yang belum dipetakan tidak pernah rusak/kosong --
+     * cuma tetap teknis seperti sebelumnya. Hanya memengaruhi baris yang BARU dibuat setelah ini
+     * (module_label disimpan permanen saat insert, bukan dihitung ulang saat ditampilkan).
+     */
+    private const MODULE_BASE_LABELS = [
+        'dashboard' => 'Dashboard',
+        'admin' => 'Dashboard',
+        'stockopnamebahan' => 'Stok Opname Bahan Mentah',
+        'stockopname' => 'Stok Opname',
+        'stockalertsupplies' => 'Stock Alert Bahan',
+        'stockalert' => 'Stock Alert',
+        'customer' => 'Customer',
+        'supplier' => 'Supplier',
+        'product' => 'Produk',
+        'supplies' => 'Bahan Mentah',
+        'staff' => 'Staff',
+        'purchaseorder' => 'Purchase Order',
+        'salesorder' => 'Sales Order',
+        'production' => 'Produksi',
+        'productissues' => 'Retur Produk',
+        'returnsupplies' => 'Retur Bahan Mentah',
+        'role' => 'Role / Hak Akses',
+        'area' => 'Area',
+        'bank' => 'Bank',
+        'category' => 'Kategori',
+        'unit' => 'Satuan',
+        'variant' => 'Variasi',
+        'bom' => 'BOM (Resep Produksi)',
+        'cashadmin' => 'Kas Operasional',
+        'cashgudang' => 'Kas Gudang',
+        'casharmada' => 'Kas Armada',
+        'cashsales' => 'Kas Sales',
+        'tt' => 'Tanda Terima',
+        'sodelivery' => 'Pengiriman SO',
+        'podelivery' => 'Pengiriman PO',
+        'invoicepo' => 'Invoice PO',
+        'invoiceso' => 'Invoice SO',
+    ];
+
+    // Diperiksa berurutan sesuai array ini -- "accept" HARUS sebelum "acc", kalau tidak
+    // "acceptcashadmin" akan salah terpotong jadi "acc" + "eptcashadmin".
+    private const MODULE_ACTION_PREFIXES = [
+        'accept' => 'Terima',
+        'decline' => 'Tolak',
+        'insert' => 'Tambah',
+        'update' => 'Ubah',
+        'delete' => 'Hapus',
+        'detail' => 'Input',
+        'tolak' => 'Tolak',
+        'acc' => 'ACC',
+    ];
+
     private function formatModuleLabel(string $moduleKey): string
     {
+        $key = strtolower($moduleKey);
+
+        if (isset(self::MODULE_BASE_LABELS[$key])) {
+            return self::MODULE_BASE_LABELS[$key];
+        }
+
+        foreach (self::MODULE_ACTION_PREFIXES as $prefix => $verb) {
+            if (str_starts_with($key, $prefix)) {
+                $base = substr($key, strlen($prefix));
+                if (isset(self::MODULE_BASE_LABELS[$base])) {
+                    return $verb.' '.self::MODULE_BASE_LABELS[$base];
+                }
+            }
+        }
+
         return Str::title(str_replace('_', ' ', $moduleKey));
     }
 
