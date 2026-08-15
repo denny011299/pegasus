@@ -248,6 +248,7 @@
             <div class="modal-footer pg-modal-footer">
                 <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
                 <button type="button" class="btn pg-btn-decline d-none" id="cr-decline"><i class="fe fe-x me-1"></i>Tolak</button>
+                <button type="button" class="btn pg-btn-print d-none" id="cr-print"><i class="fe fe-printer me-1"></i>Print</button>
                 <button type="button" class="btn pg-btn-accept d-none" id="cr-accept"><i class="fe fe-check-circle me-1"></i>Terima</button>
                 <button type="button" class="btn pg-btn-save" id="cr-save">
                     <i class="fe fe-save"></i> Simpan

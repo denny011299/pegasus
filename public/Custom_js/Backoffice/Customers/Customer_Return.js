@@ -102,6 +102,14 @@
         $("#tableCustomerReturn-wrap").toggleClass("is-loading", !!loading);
     }
 
+    function refreshCustomerReturn() {
+        initTable();
+        if (!crTable) return;
+        crTable.ajax.reload(function () {
+            adjustTable();
+        }, true);
+    }
+
     function customerReturnAjax(data, callback) {
         if (crXhr && crXhr.readyState !== 4) crXhr.abort();
         crXhr = $.ajax({
@@ -133,6 +141,9 @@
             html += '<a class="btn-action-icon cr-confirm" data-key="' + key + '" href="javascript:void(0);" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#059669;" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
         } else if (canView) {
             html += '<a class="btn-action-icon cr-view" data-key="' + key + '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+        }
+        if (canView && status === 2) {
+            html += '<a class="btn-action-icon cr-print" data-key="' + key + '" href="javascript:void(0);" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;" data-bs-toggle="tooltip" title="Print"><i class="fe fe-printer" style="font-size:14px;"></i></a>';
         }
         if (canEdit) {
             html += '<a class="btn-action-icon cr-edit" data-key="' + key + '" href="javascript:void(0);" style="background:#fffbeb;border:1px solid #fde68a;color:#d97706;" data-bs-toggle="tooltip" title="Edit"><i class="fe fe-edit-2" style="font-size:14px;"></i></a>';
@@ -589,7 +600,7 @@
         $("#cr-add-strip,#cr-save").removeClass("d-none");
         $("#cr-save").text("Simpan");
         $("#cr-btn-upload-proof").removeClass("d-none border-danger text-danger");
-        $("#cr-accept,#cr-decline").addClass("d-none");
+        $("#cr-accept,#cr-decline,#cr-print").addClass("d-none");
         setCrAddItemType("supply");
         setCrModalMode("form");
         $("#customer-return-modal .modal-title").text("Tambah Pengembalian");
@@ -834,6 +845,7 @@
                     $("#cr-customer,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
                     $("#cr-btn-upload-proof").addClass("d-none");
                     $("#cr-add-strip,#cr-save").addClass("d-none");
+                    $("#cr-print").toggleClass("d-none", parseInt(record.status, 10) !== 2);
                     if (parseInt(record.status, 10) === 1 && can("others")) {
                         $("#cr-accept,#cr-decline").removeClass("d-none");
                         setCrModalMode("confirm");
@@ -910,7 +922,7 @@
             .done(function (response) {
                 $("#customer-return-modal").modal("hide");
                 if (typeof toastr !== "undefined") toastr.success(response.message || "Pengembalian berhasil disimpan.");
-                if (crTable) crTable.ajax.reload(null, false);
+                window.setTimeout(refreshCustomerReturn, 200);
             })
             .fail(notifyError)
             .always(function () { $("#cr-save").prop("disabled", false); });
@@ -930,7 +942,7 @@
                 .done(function (response) {
                     $("#customer-return-modal").modal("hide");
                     if (typeof toastr !== "undefined") toastr.success(response.message);
-                    if (crTable) crTable.ajax.reload(null, false);
+                    window.setTimeout(refreshCustomerReturn, 200);
                 }).fail(notifyError);
         });
     }
@@ -1174,7 +1186,19 @@
         });
 
         $("#cr-save").on("click", submitRecord);
+        function printReturn(key) {
+            if (!key) return;
+            window.open("/customerReturns/" + encodeURIComponent(key) + "/print", "_blank");
+        }
         $(document).on("click", ".cr-view, .cr-confirm", function () { openRecord($(this).data("key"), "view"); });
+        $(document).on("click", ".cr-print", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            printReturn($(this).data("key"));
+        });
+        $("#cr-print").on("click", function () {
+            printReturn($("#cr-doc-key").val());
+        });
         $(document).on("click", ".cr-edit", function () { openRecord($(this).data("key"), "edit"); });
         $(document).on("click", ".cr-delete", function () {
             var key = $(this).data("key");
@@ -1184,7 +1208,7 @@
                     $.post("/customerReturns/" + encodeURIComponent(key) + "/delete", { _token: csrf() })
                         .done(function (response) {
                             if (typeof toastr !== "undefined") toastr.success(response.message);
-                            crTable.ajax.reload(null, false);
+                            refreshCustomerReturn();
                         }).fail(notifyError);
                 });
         });

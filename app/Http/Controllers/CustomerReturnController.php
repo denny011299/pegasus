@@ -10,6 +10,8 @@ use App\Models\LogStock;
 use App\Models\ProductStock;
 use App\Models\SuppliesStock;
 use App\Support\RoleAccess;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -107,6 +109,24 @@ class CustomerReturnController extends Controller
         $header['context'] = $this->buildReturnContext();
 
         return response()->json($header);
+    }
+
+    public function printForm(string $docKey)
+    {
+        $this->authorizeAbility('view');
+        $bundle = $this->resolveBundle($docKey);
+        if (! $bundle) {
+            abort(404, 'Pengembalian tidak ditemukan.');
+        }
+        if ((int) ($bundle['status'] ?? 0) !== 2) {
+            abort(403, 'Pengembalian harus dikonfirmasi terlebih dahulu.');
+        }
+
+        $param = $this->buildPrintPayload($bundle);
+        $pdf = Pdf::loadView('Backoffice.PDF.FormSisaBarang', $param)
+            ->setPaper([0, 0, 419.0, 596.0], 'portrait');
+
+        return $pdf->stream('Form_Sisa_Barang_' . $param['nomor_dokumen'] . '.pdf');
     }
 
     public function store(Request $request): JsonResponse
@@ -808,7 +828,13 @@ class CustomerReturnController extends Controller
 
         $primary = $supply ?: $product;
         $customerId = $primary->customer_id;
-        $customerName = DB::table('customers')->where('customer_id', $customerId)->value('customer_notes');
+        $customer = DB::table('customers')->where('customer_id', $customerId)->first([
+            'customer_notes',
+            'customer_code',
+            'customer_pic',
+            'customer_pic_phone',
+        ]);
+        $customerName = $customer?->customer_notes;
         $createdBy = $primary->created_by;
         $accBy = $primary->acc_by;
         $createdByName = $createdBy
@@ -903,6 +929,9 @@ class CustomerReturnController extends Controller
             'header' => [
                 'customer_id' => (int) $customerId,
                 'customer_name' => $customerName,
+                'customer_code' => $customer?->customer_code,
+                'customer_pic' => $customer?->customer_pic,
+                'customer_pic_phone' => $customer?->customer_pic_phone,
                 'return_date' => optional($primary->return_date)->format('Y-m-d') ?? (string) $primary->return_date,
                 'ref_number' => $primary->ref_number,
                 'notes' => $primary->notes,
@@ -910,8 +939,95 @@ class CustomerReturnController extends Controller
                 'status' => $status,
                 'created_by_name' => $createdByName,
                 'acc_by_name' => $accByName,
+                'created_at' => $primary->created_at?->toDateTimeString(),
             ],
         ];
+    }
+
+    /**
+     * Payload FORM-OPS-32 (Formulir Sisa Barang) dari satu dokumen pengembalian.
+     *
+     * @param  array<string, mixed>  $bundle
+     * @return array<string, mixed>
+     */
+    private function buildPrintPayload(array $bundle): array
+    {
+        $header = $bundle['header'];
+        $tanggal = $this->formatPrintDate($header['return_date'] ?? null);
+        $jam = $this->formatPrintTime($header['created_at'] ?? null);
+        $items = [];
+
+        foreach ($bundle['supply_details'] ?? [] as $detail) {
+            $unit = trim((string) ($detail->unit_short_name ?: $detail->unit_name ?: ''));
+            $name = trim((string) ($detail->supplies_name ?? '-'));
+            $items[] = [
+                'nama' => $name,
+                'qty' => (int) ($detail->qty ?? 0),
+                'unit' => $unit,
+            ];
+        }
+        foreach ($bundle['product_details'] ?? [] as $detail) {
+            $unit = trim((string) ($detail->unit_short_name ?: $detail->unit_name ?: ''));
+            $name = trim(preg_replace(
+                '/\s+/',
+                ' ',
+                trim((string) ($detail->product_name ?? '')) . ' ' . trim((string) ($detail->product_variant_name ?? ''))
+            ));
+            if ($name === '') {
+                $label = (string) ($detail->product_label ?? '');
+                $name = str_contains($label, ' | ') ? trim(explode(' | ', $label, 2)[1]) : $label;
+            }
+            $items[] = [
+                'nama' => $name !== '' ? $name : '-',
+                'qty' => (int) ($detail->qty ?? 0),
+                'unit' => $unit,
+            ];
+        }
+
+        $minRows = 6;
+        while (count($items) < $minRows) {
+            $items[] = ['nama' => '', 'qty' => null, 'unit' => ''];
+        }
+
+        $armadaName = trim((string) ($header['customer_name'] ?? ''));
+        $sopirArmada = trim((string) ($header['customer_pic'] ?? ''));
+        if ($sopirArmada === '') {
+            $sopirArmada = $armadaName;
+        }
+
+        return [
+            'nomor_dokumen' => $bundle['display_number'] ?: '-',
+            'tanggal' => $tanggal,
+            'jam' => $jam,
+            'pic_name' => $sopirArmada !== '' ? $sopirArmada : '-',
+            'sopir_name' => $armadaName !== '' ? $armadaName : ($sopirArmada !== '' ? $sopirArmada : '-'),
+            'kepala_operasional' => $header['acc_by_name'] ?: '',
+            'items' => $items,
+        ];
+    }
+
+    private function formatPrintDate($value): string
+    {
+        if (! $value) {
+            return '';
+        }
+        try {
+            return Carbon::parse($value)->format('d/m/Y');
+        } catch (\Throwable $e) {
+            return (string) $value;
+        }
+    }
+
+    private function formatPrintTime($value): string
+    {
+        if (! $value) {
+            return '';
+        }
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     private function validatedPayload(Request $request, bool $proofRequired): array

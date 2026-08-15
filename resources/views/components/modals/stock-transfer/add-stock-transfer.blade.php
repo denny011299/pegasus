@@ -78,7 +78,7 @@
                         <div class="position-relative mt-1">
                           <input type="text" class="form-control datetimepicker" id="transfer_date"
                             placeholder="Pilih Tanggal"
-                            style="border-radius:8px;font-size:13px;min-height:38px;padding-right:36px;">
+                            style="border-radius:8px;font-size:13px;min-height:38px;padding-right:36px;width:100%;">
                           <i class="fe fe-calendar position-absolute"
                             style="right:12px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none; font-size:14px;"></i>
                         </div>

@@ -341,6 +341,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'show'])->name('customerProductReturns.show');
         Route::get('/customerReturns', [CustomerReturnController::class, 'index'])->name('customerReturns.index');
         Route::get('/customerReturns/context', [CustomerReturnController::class, 'context'])->name('customerReturns.context');
+        Route::get('/customerReturns/{docKey}/print', [CustomerReturnController::class, 'printForm'])->name('customerReturns.print')->where('docKey', '[A-Za-z0-9:_-]+');
         Route::get('/customerReturns/{docKey}', [CustomerReturnController::class, 'show'])->name('customerReturns.show')->where('docKey', '[A-Za-z0-9:_-]+');
     });
     Route::middleware('check.access:Pengiriman|create')->group(function () {
