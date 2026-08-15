@@ -31,6 +31,51 @@ class DashboardChangelogMenuOpenTrackingTest extends TestCase
         ]);
     }
 
+    /**
+     * User-reported confusion: "Insertstockopname" (an AJAX mutation row) reads like it's about
+     * opening a page, while the actual "Input Stok Opname" form page is auto-labeled
+     * "Detailstockopname" — nothing ties the two together visually. formatModuleLabel() now
+     * translates action-prefix + base module into a human label instead of a bare title-cased
+     * URL segment.
+     */
+    public function test_module_labels_are_human_readable_not_raw_url_segments(): void
+    {
+        $staff = $this->actingAsSuperAdminStaff();
+
+        // The actual create/edit form page -> "Input Stok Opname", not "Detailstockopname".
+        $this->get('/detailStockOpname/-1')->assertStatus(200);
+        $this->assertDatabaseHas('dashboard_change_logs', [
+            'module_key' => 'detailstockopname',
+            'activity_type' => 'open',
+            'module_label' => 'Input Stok Opname',
+        ]);
+
+        // The AJAX insert mutation -> "Tambah Stok Opname", not "Insertstockopname".
+        $stock = \App\Models\ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('status', 1)->where('warehouse_id', 1)->firstOrFail();
+        $this->post('/insertStockOpname', [
+            'sto_date' => now()->toDateString(),
+            'staff_id' => $staff->staff_id,
+            'category_id' => (int) \Illuminate\Support\Facades\DB::table('categories')->where('status', 1)->value('category_id'),
+            'sto_notes' => 'label test',
+            'is_draft' => 0,
+            'item' => json_encode([[
+                'product_id' => $stock->product_id,
+                'product_variant_id' => $stock->product_variant_id,
+                'stod_system' => $stock->ps_stock.' pcs',
+                'stod_real' => $stock->ps_stock.' pcs',
+                'stod_selisih' => '0 pcs',
+                'stod_notes' => null,
+                'stod_touched' => 1,
+            ]]),
+        ])->assertStatus(200);
+        $this->assertDatabaseHas('dashboard_change_logs', [
+            'module_key' => 'insertstockopname',
+            'activity_type' => 'change',
+            'module_label' => 'Tambah Stok Opname',
+        ]);
+    }
+
     public function test_reopening_the_same_module_within_the_debounce_window_does_not_duplicate(): void
     {
         $staff = $this->actingAsSuperAdminStaff();
@@ -92,6 +137,38 @@ class DashboardChangelogMenuOpenTrackingTest extends TestCase
 
         $firstOpen->refresh();
         $this->assertNull($firstOpen->duration_seconds, 'a gap beyond the cap must not be recorded as a real duration');
+    }
+
+    public function test_navigating_back_to_the_dashboard_root_closes_the_previous_open_row(): void
+    {
+        // GitHub #53 follow-up (user-reported): routes/web.php renders the dashboard directly at
+        // GET '/' (not just '/admin') -- '/' used to be excluded from shouldLogOpen() (copied
+        // from shouldLogChange()'s exclude list), so the most common "back to dashboard" path
+        // never closed out whatever menu was left open, leaving it stuck on "Sedang dibuka"
+        // forever even while the user was actively looking at the Changelog panel itself.
+        $staff = $this->actingAsSuperAdminStaff();
+
+        $this->get('/stockOpname')->assertStatus(200);
+        $firstOpen = DashboardChangeLog::where('created_by', $staff->staff_id)
+            ->where('module_key', 'stockopname')
+            ->where('activity_type', 'open')
+            ->firstOrFail();
+        $this->assertNull($firstOpen->duration_seconds);
+
+        $firstOpen->created_at = now()->subMinutes(3);
+        $firstOpen->save();
+
+        $this->get('/')->assertStatus(200);
+
+        $firstOpen->refresh();
+        $this->assertNotNull($firstOpen->duration_seconds, "navigating to '/' must retroactively close the previous open row too");
+
+        $this->assertDatabaseHas('dashboard_change_logs', [
+            'module_key' => 'dashboard',
+            'activity_type' => 'open',
+            'created_by' => $staff->staff_id,
+            'duration_seconds' => null,
+        ]);
     }
 
     public function test_menu_open_rows_are_excluded_from_the_changelog_pending_kpi(): void
