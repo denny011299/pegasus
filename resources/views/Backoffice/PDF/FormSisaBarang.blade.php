@@ -11,6 +11,12 @@
             color: #111;
             margin: 0;
         }
+        .doc-code {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.2px;
+            margin: 0 0 4px 0;
+        }
         .title {
             font-size: 20px;
             font-weight: bold;
@@ -74,10 +80,10 @@
             border-collapse: collapse;
         }
         .sign td {
-            width: 50%;
+            width: 33.33%;
             text-align: center;
             vertical-align: top;
-            padding: 0 16px;
+            padding: 0 8px;
         }
         .sign .role {
             font-weight: bold;
@@ -99,6 +105,7 @@
     </style>
 </head>
 <body>
+    <div class="doc-code">FORM-OPS-32</div>
     <div class="title">Form Sisa Barang</div>
 
     <table class="meta">
@@ -149,10 +156,16 @@
     <table class="sign">
         <tr>
             <td>
-                <div class="role">Kepala Operasional</div>
+                <div class="role">Kepala Gudang</div>
                 <div class="space"></div>
                 <div class="line"></div>
                 <div class="name">{{ $kepala_operasional !== '' ? $kepala_operasional : ' ' }}</div>
+            </td>
+            <td>
+                <div class="role">Staff QC</div>
+                <div class="space"></div>
+                <div class="line"></div>
+                <div class="name">{{ $staff_qc !== '' ? $staff_qc : ' ' }}</div>
             </td>
             <td>
                 <div class="role">Sopir</div>

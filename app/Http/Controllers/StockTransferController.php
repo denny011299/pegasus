@@ -2434,13 +2434,13 @@ class StockTransferController extends Controller
         }
     }
 
-    public function logProductionTransferCreated(int $stId): void
+    public function logProductionTransferCreated(int $stId, string $origin = 'production'): void
     {
         $snapshot = $this->snapshotTransfer($stId);
         $this->logTransferAction('create', $snapshot['header'], [
             'items_count' => count($snapshot['items']),
             'automatic' => true,
-            'origin' => 'production',
+            'origin' => $origin,
         ], null, $snapshot);
     }
 }

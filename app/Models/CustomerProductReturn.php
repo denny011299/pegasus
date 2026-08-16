@@ -19,6 +19,7 @@ class CustomerProductReturn extends Model
         'proof_path',
         'status',
         'created_by',
+        'qc_staff_id',
         'acc_by',
     ];
 

@@ -119,10 +119,16 @@
                                 <select class="form-select fill" id="cr-customer" style="border-radius:8px;height:42px;"></select>
                             </div>
                             <div class="col-lg-4 col-md-6">
+                                <label class="form-label text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;">Staff QC &amp; Gudang <span class="text-danger">*</span></label>
+                                <select class="form-select fill" id="cr-qc-staff" style="border-radius:8px;height:42px;">
+                                    <option value="">Pilih Staff QC</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-4 col-md-6">
                                 <label class="form-label text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;">Nomor Referensi</label>
                                 <input type="text" class="form-control fill" id="cr-ref-number" maxlength="100" style="border-radius:8px;height:42px;" placeholder="Masukkan nomor referensi">
                             </div>
-                            <div class="col-lg-8 col-md-6">
+                            <div class="col-lg-4 col-md-6">
                                 <label class="form-label text-muted fw-semibold" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;">Catatan</label>
                                 <textarea class="form-control fill" id="cr-notes" rows="1" maxlength="2000" style="border-radius:8px;min-height:42px;" placeholder="Tambahkan catatan jika diperlukan..."></textarea>
                             </div>
@@ -290,6 +296,22 @@
         color: #2563eb;
         border-bottom-color: #2563eb;
         background: transparent;
+    }
+    #customer-return-modal .cr-retail-warehouse + .select2-container {
+        min-width: 180px;
+        width: 100% !important;
+    }
+    #customer-return-modal .cr-retail-warehouse + .select2-container .select2-selection.is-invalids,
+    #customer-return-modal .cr-retail-warehouse.is-invalid + .select2-container .select2-selection {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.15) !important;
+    }
+    #customer-return-modal .cr-main-warehouse {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #475569;
+        font-size: 13px;
     }
 </style>
 

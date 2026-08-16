@@ -8,6 +8,9 @@ use App\Models\CustomerSupplyReturn;
 use App\Models\CustomerSupplyReturnDetail;
 use App\Models\LogStock;
 use App\Models\ProductStock;
+use App\Models\Staff;
+use App\Models\StockTransfer;
+use App\Models\StockTransferDetail;
 use App\Models\SuppliesStock;
 use App\Support\RoleAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -37,7 +40,7 @@ class CustomerReturnController extends Controller
         $start = max(0, (int) $request->input('start', 0));
         $length = min(100, max(1, (int) $request->input('length', 10)));
         $search = trim((string) data_get($request->all(), 'search.value', ''));
-        $orderIndex = (int) data_get($request->all(), 'order.0.column', 1);
+        $orderIndex = (int) data_get($request->all(), 'order.0.column', 0);
         $orderDirection = strtolower((string) data_get($request->all(), 'order.0.dir', 'desc')) === 'asc'
             ? 'asc'
             : 'desc';
@@ -56,17 +59,14 @@ class CustomerReturnController extends Controller
             'created_by_name',
             'acc_by_name',
         ];
-        $sortKey = $sortKeys[$orderIndex] ?? 'return_date';
+        $sortKey = $sortKeys[$orderIndex] ?? 'return_number';
         usort($rows, function ($a, $b) use ($sortKey, $orderDirection) {
-            $av = $a[$sortKey] ?? '';
-            $bv = $b[$sortKey] ?? '';
-            if ($sortKey === 'return_date' || $sortKey === 'status') {
-                $cmp = $av <=> $bv;
-            } else {
-                $cmp = strcasecmp((string) $av, (string) $bv);
+            $cmp = $this->compareReturnSortValue($a, $b, $sortKey);
+            if ($cmp === 0) {
+                $cmp = $this->compareReturnSortValue($a, $b, 'return_number');
             }
             if ($cmp === 0) {
-                $cmp = strcmp((string) ($b['doc_key'] ?? ''), (string) ($a['doc_key'] ?? ''));
+                $cmp = ((int) ($a['return_id'] ?? 0)) <=> ((int) ($b['return_id'] ?? 0));
             }
 
             return $orderDirection === 'asc' ? $cmp : -$cmp;
@@ -113,13 +113,9 @@ class CustomerReturnController extends Controller
 
     public function printForm(string $docKey)
     {
-        $this->authorizeAbility('view');
         $bundle = $this->resolveBundle($docKey);
         if (! $bundle) {
             abort(404, 'Pengembalian tidak ditemukan.');
-        }
-        if ((int) ($bundle['status'] ?? 0) !== 2) {
-            abort(403, 'Pengembalian harus dikonfirmasi terlebih dahulu.');
         }
 
         $param = $this->buildPrintPayload($bundle);
@@ -158,6 +154,7 @@ class CustomerReturnController extends Controller
                         'proof_path' => $newProofPath,
                         'status' => 1,
                         'created_by' => $this->userId(),
+                        'qc_staff_id' => $data['qc_staff_id'],
                     ]);
                     $this->replaceSupplyDetails($supply->return_id, $supplyDetails);
                 }
@@ -173,6 +170,7 @@ class CustomerReturnController extends Controller
                         'proof_path' => $newProofPath,
                         'status' => 1,
                         'created_by' => $this->userId(),
+                        'qc_staff_id' => $data['qc_staff_id'],
                     ]);
                     $this->replaceProductDetails($product->return_id, $productDetails);
                 }
@@ -233,6 +231,7 @@ class CustomerReturnController extends Controller
                             'return_date' => $data['return_date'],
                             'ref_number' => $data['ref_number'] ?: null,
                             'notes' => $data['notes'] ?: null,
+                            'qc_staff_id' => $data['qc_staff_id'],
                         ]);
                         if ($newProofPath) {
                             $bundle['supply']->proof_path = $newProofPath;
@@ -251,6 +250,7 @@ class CustomerReturnController extends Controller
                             'proof_path' => $proofPath,
                             'status' => 1,
                             'created_by' => $this->userId(),
+                            'qc_staff_id' => $data['qc_staff_id'],
                         ]);
                         $this->replaceSupplyDetails($supply->return_id, $supplyDetails);
                     }
@@ -271,6 +271,7 @@ class CustomerReturnController extends Controller
                             'return_date' => $data['return_date'],
                             'ref_number' => $data['ref_number'] ?: null,
                             'notes' => $data['notes'] ?: null,
+                            'qc_staff_id' => $data['qc_staff_id'],
                         ]);
                         if ($newProofPath) {
                             $bundle['product']->proof_path = $newProofPath;
@@ -288,6 +289,7 @@ class CustomerReturnController extends Controller
                             'proof_path' => $proofPath,
                             'status' => 1,
                             'created_by' => $this->userId(),
+                            'qc_staff_id' => $data['qc_staff_id'],
                         ]);
                         $this->replaceProductDetails($product->return_id, $productDetails);
                     }
@@ -356,7 +358,8 @@ class CustomerReturnController extends Controller
     {
         $this->authorizeAbility('others');
 
-        DB::transaction(function () use ($docKey) {
+        $createdTransferIds = [];
+        DB::transaction(function () use ($docKey, &$createdTransferIds) {
             $bundle = $this->resolveBundle($docKey, true);
             if (! $bundle) {
                 throw ValidationException::withMessages(['doc_key' => 'Pengembalian tidak ditemukan.']);
@@ -373,11 +376,21 @@ class CustomerReturnController extends Controller
                 $this->acceptSupply($bundle['supply'], $customerName);
             }
             if ($bundle['product']) {
-                $this->acceptProduct($bundle['product'], $customerName);
+                $createdTransferIds = $this->acceptProduct($bundle['product'], $customerName);
             }
         }, 3);
 
-        return response()->json(['success' => true, 'message' => 'Pengembalian diterima dan stok telah ditambahkan.']);
+        $transferController = new StockTransferController();
+        foreach ($createdTransferIds as $transferId) {
+            $transferController->logProductionTransferCreated((int) $transferId, 'customer_return');
+        }
+
+        $stCount = count($createdTransferIds);
+        $message = $stCount > 0
+            ? 'Pengembalian diterima. Stok masuk gudang utama dan '.$stCount.' Stock Transfer ke gudang eceran dibuat (Pending).'
+            : 'Pengembalian diterima dan stok telah ditambahkan.';
+
+        return response()->json(['success' => true, 'message' => $message, 'stock_transfer_ids' => $createdTransferIds]);
     }
 
     public function decline(string $docKey): JsonResponse
@@ -462,18 +475,26 @@ class CustomerReturnController extends Controller
         $record->save();
     }
 
-    private function acceptProduct(CustomerProductReturn $record, string $customerName): void
+    private function acceptProduct(CustomerProductReturn $record, string $customerName): array
     {
+        $hasDest = Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
         $details = CustomerProductReturnDetail::where('return_id', $record->return_id)
             ->where('status', 1)
             ->lockForUpdate()
             ->get()
-            ->map(fn ($detail) => [
-                'product_variant_id' => (int) $detail->product_variant_id,
-                'unit_id' => (int) $detail->unit_id,
-                'warehouse_id' => (int) $detail->warehouse_id,
-                'qty' => (int) $detail->qty,
-            ])->all();
+            ->map(function ($detail) use ($hasDest) {
+                $row = [
+                    'product_variant_id' => (int) $detail->product_variant_id,
+                    'unit_id' => (int) $detail->unit_id,
+                    'warehouse_id' => (int) $detail->warehouse_id,
+                    'qty' => (int) $detail->qty,
+                ];
+                if ($hasDest) {
+                    $row['destination_warehouse_id'] = (int) ($detail->destination_warehouse_id ?? 0);
+                }
+
+                return $row;
+            })->all();
         $this->validateProductDetails($details);
 
         foreach ($details as $detail) {
@@ -522,9 +543,85 @@ class CustomerReturnController extends Controller
             ]);
         }
 
+        $createdTransferIds = $this->createRetailStockTransfers($record, $details, $customerName);
+
         $record->status = 2;
         $record->acc_by = $this->userId();
         $record->save();
+
+        return $createdTransferIds;
+    }
+
+    /**
+     * Produk jadi satuan eceran: stok masuk gudang utama, lalu ST pending ke gudang eceran.
+     *
+     * @param  array<int, array<string, mixed>>  $details
+     * @return array<int, int>
+     */
+    private function createRetailStockTransfers(CustomerProductReturn $record, array $details, string $customerName): array
+    {
+        if (
+            ! Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id')
+            || ! Schema::hasColumn('stock_transfers', 'source_type')
+        ) {
+            return [];
+        }
+
+        $groups = [];
+        foreach ($details as $detail) {
+            $fromId = (int) $detail['warehouse_id'];
+            $toId = (int) ($detail['destination_warehouse_id'] ?? 0);
+            if ($toId <= 0 || $toId === $fromId) {
+                continue;
+            }
+            $groups[$toId][] = $detail;
+        }
+        if ($groups === []) {
+            return [];
+        }
+
+        $variantIds = [];
+        foreach ($details as $detail) {
+            $variantIds[(int) $detail['product_variant_id']] = true;
+        }
+        $variants = DB::table('product_variants')
+            ->whereIn('product_variant_id', array_keys($variantIds))
+            ->get(['product_variant_id', 'product_id'])
+            ->keyBy('product_variant_id');
+
+        $created = [];
+        $docCode = $record->return_group ?: $record->return_number;
+        foreach ($groups as $destinationId => $items) {
+            $fromId = (int) $items[0]['warehouse_id'];
+            $transfer = StockTransfer::query()->create([
+                'transfer_code' => 'ST-'.$docCode.'-'.$destinationId,
+                'transfer_date' => $record->return_date,
+                'sender_id' => $this->userId() ?: $record->created_by,
+                'from_warehouse_id' => $fromId,
+                'to_warehouse_id' => (int) $destinationId,
+                'note' => 'Pengembalian '.$docCode.' dari armada '.$customerName,
+                'source_type' => 'customer_return',
+                'source_id' => (int) $record->return_id,
+                'status' => 1,
+                'created_by' => $this->userId() ?: null,
+            ]);
+            foreach ($items as $item) {
+                $variant = $variants->get((int) $item['product_variant_id']);
+                StockTransferDetail::query()->create([
+                    'st_id' => $transfer->st_id,
+                    'product_id' => (int) ($variant->product_id ?? 0),
+                    'product_variant_id' => (int) $item['product_variant_id'],
+                    'unit_id' => (int) $item['unit_id'],
+                    'received_unit_id' => null,
+                    'qty' => (int) $item['qty'],
+                    'qty_received' => null,
+                    'status' => 1,
+                ]);
+            }
+            $created[] = (int) $transfer->st_id;
+        }
+
+        return $created;
     }
 
     private function countUnifiedRows(string $search): int
@@ -535,6 +632,42 @@ class CustomerReturnController extends Controller
     private function activeWarehouseId(): int
     {
         return (int) (Session::get('active_warehouse_id') ?? 0);
+    }
+
+    private function assertQcStaffForActiveWarehouse(int $staffId): int
+    {
+        $allowed = collect(Staff::qcGudangForWarehouse($this->activeWarehouseId()))
+            ->pluck('id')
+            ->all();
+        if (! in_array($staffId, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'qc_staff_id' => 'Staff QC harus role QC gudang dan sudah di-assign ke gudang aktif.',
+            ]);
+        }
+
+        return $staffId;
+    }
+
+    private function qcStaffIdFrom($record): ?int
+    {
+        if (! $record || ! Schema::hasColumn($record->getTable(), 'qc_staff_id')) {
+            return null;
+        }
+        $id = (int) ($record->qc_staff_id ?? 0);
+
+        return $id > 0 ? $id : null;
+    }
+
+    private function qcStaffNameFrom($record): ?string
+    {
+        $id = $this->qcStaffIdFrom($record);
+        if (! $id) {
+            return null;
+        }
+
+        $name = DB::table('staffs')->where('staff_id', $id)->value('staff_name');
+
+        return $name !== null ? (string) $name : null;
     }
 
     /**
@@ -750,8 +883,28 @@ class CustomerReturnController extends Controller
             'has_product' => false,
             'supply_return_id' => null,
             'product_return_id' => null,
+            'return_id' => (int) $row->return_id,
             'return_type' => 'supply',
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $a
+     * @param  array<string, mixed>  $b
+     */
+    private function compareReturnSortValue(array $a, array $b, string $sortKey): int
+    {
+        if ($sortKey === 'return_number' || $sortKey === 'doc_key') {
+            $an = (int) preg_replace('/\D+/', '', (string) ($a[$sortKey] ?? ''));
+            $bn = (int) preg_replace('/\D+/', '', (string) ($b[$sortKey] ?? ''));
+
+            return $an <=> $bn;
+        }
+        if ($sortKey === 'return_date' || $sortKey === 'status') {
+            return ($a[$sortKey] ?? '') <=> ($b[$sortKey] ?? '');
+        }
+
+        return strcasecmp((string) ($a[$sortKey] ?? ''), (string) ($b[$sortKey] ?? ''));
     }
 
     private function enrichUnifiedRow(array &$target, object $row): void
@@ -779,6 +932,10 @@ class CustomerReturnController extends Controller
         }
         if ($row->return_group) {
             $target['return_group'] = $row->return_group;
+        }
+        $rid = (int) $row->return_id;
+        if ($rid > (int) ($target['return_id'] ?? 0)) {
+            $target['return_id'] = $rid;
         }
     }
 
@@ -874,27 +1031,40 @@ class CustomerReturnController extends Controller
 
         $productDetails = [];
         if ($product) {
-            $productDetails = DB::table('customer_product_return_details as d')
+            $hasDest = Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
+            $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
+            $select = [
+                'd.return_detail_id',
+                'd.product_variant_id',
+                'd.unit_id',
+                'd.warehouse_id',
+                'd.qty',
+                'p.product_name',
+                'pv.product_variant_name',
+                'pv.product_variant_sku',
+                'u.unit_name',
+                'u.unit_short_name',
+                'w.warehouse_name',
+            ];
+            if ($hasDest) {
+                $select[] = 'd.destination_warehouse_id';
+                $select[] = 'dw.warehouse_name as destination_warehouse_name';
+            }
+            if ($hasRetailCol) {
+                $select[] = 'pv.retail_unit';
+            }
+            $query = DB::table('customer_product_return_details as d')
                 ->join('product_variants as pv', 'pv.product_variant_id', '=', 'd.product_variant_id')
                 ->join('products as p', 'p.product_id', '=', 'pv.product_id')
                 ->join('units as u', 'u.unit_id', '=', 'd.unit_id')
                 ->join('warehouses as w', 'w.id', '=', 'd.warehouse_id')
                 ->where('d.return_id', $product->return_id)
                 ->where('d.status', 1)
-                ->orderBy('d.return_detail_id')
-                ->get([
-                    'd.return_detail_id',
-                    'd.product_variant_id',
-                    'd.unit_id',
-                    'd.warehouse_id',
-                    'd.qty',
-                    'p.product_name',
-                    'pv.product_variant_name',
-                    'pv.product_variant_sku',
-                    'u.unit_name',
-                    'u.unit_short_name',
-                    'w.warehouse_name',
-                ]);
+                ->orderBy('d.return_detail_id');
+            if ($hasDest) {
+                $query->leftJoin('warehouses as dw', 'dw.id', '=', 'd.destination_warehouse_id');
+            }
+            $productDetails = $query->get($select);
             foreach ($productDetails as $detail) {
                 $detail->product_label = $this->formatProductVariantLabel(
                     $detail->product_name ?? '',
@@ -939,6 +1109,8 @@ class CustomerReturnController extends Controller
                 'status' => $status,
                 'created_by_name' => $createdByName,
                 'acc_by_name' => $accByName,
+                'qc_staff_id' => $this->qcStaffIdFrom($primary),
+                'qc_staff_name' => $this->qcStaffNameFrom($primary),
                 'created_at' => $primary->created_at?->toDateTimeString(),
             ],
         ];
@@ -990,20 +1162,56 @@ class CustomerReturnController extends Controller
         }
 
         $armadaName = trim((string) ($header['customer_name'] ?? ''));
-        $sopirArmada = trim((string) ($header['customer_pic'] ?? ''));
-        if ($sopirArmada === '') {
-            $sopirArmada = $armadaName;
-        }
+        $sopirName = trim((string) ($header['customer_pic'] ?? ''));
 
         return [
             'nomor_dokumen' => $bundle['display_number'] ?: '-',
             'tanggal' => $tanggal,
             'jam' => $jam,
-            'pic_name' => $sopirArmada !== '' ? $sopirArmada : '-',
-            'sopir_name' => $armadaName !== '' ? $armadaName : ($sopirArmada !== '' ? $sopirArmada : '-'),
-            'kepala_operasional' => $header['acc_by_name'] ?: '',
+            'pic_name' => $sopirName !== '' ? $sopirName : ($armadaName !== '' ? $armadaName : '-'),
+            'sopir_name' => $sopirName,
+            'kepala_operasional' => $this->kepalaOperasionalGudangName($bundle),
+            'staff_qc' => trim((string) ($header['qc_staff_name'] ?? '')),
             'items' => $items,
         ];
+    }
+
+    private function kepalaOperasionalGudangName(array $bundle): string
+    {
+        if (! Schema::hasTable('staff_warehouses') || ! Schema::hasColumn('staff_warehouses', 'is_kepala_cabang')) {
+            return '';
+        }
+
+        $warehouseIds = [];
+        foreach ($bundle['supply_details'] ?? [] as $detail) {
+            $id = (int) ($detail->warehouse_id ?? 0);
+            if ($id > 0) {
+                $warehouseIds[$id] = true;
+            }
+        }
+        foreach ($bundle['product_details'] ?? [] as $detail) {
+            $id = (int) ($detail->warehouse_id ?? 0);
+            if ($id > 0) {
+                $warehouseIds[$id] = true;
+            }
+        }
+        $activeId = $this->activeWarehouseId();
+        if ($activeId > 0) {
+            $warehouseIds[$activeId] = true;
+        }
+        if ($warehouseIds === []) {
+            return '';
+        }
+
+        $staffId = (int) DB::table('staff_warehouses')
+            ->whereIn('warehouse_id', array_keys($warehouseIds))
+            ->where('is_kepala_cabang', 1)
+            ->value('staff_id');
+        if ($staffId <= 0) {
+            return '';
+        }
+
+        return trim((string) (DB::table('staffs')->where('staff_id', $staffId)->value('staff_name') ?? ''));
     }
 
     private function formatPrintDate($value): string
@@ -1045,8 +1253,11 @@ class CustomerReturnController extends Controller
             'product_details' => ['nullable'],
             'proof' => [$proofRequired ? 'required_without:proof_base64' : 'nullable', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
             'proof_base64' => [$proofRequired ? 'required_without:proof' : 'nullable', 'string'],
+            'qc_staff_id' => ['required', 'integer', 'min:1'],
         ]);
         $validator->validate();
+
+        $qcStaffId = $this->assertQcStaffForActiveWarehouse((int) $request->input('qc_staff_id'));
 
         $supplyDetails = $this->parseSupplyDetails($request->input('supply_details'));
         $productDetails = $this->parseProductDetails($request->input('product_details'));
@@ -1061,6 +1272,7 @@ class CustomerReturnController extends Controller
             'return_date' => $request->input('return_date'),
             'ref_number' => trim((string) $request->input('ref_number', '')),
             'notes' => trim((string) $request->input('notes', '')),
+            'qc_staff_id' => $qcStaffId,
         ], $supplyDetails, $productDetails];
     }
 
@@ -1100,13 +1312,18 @@ class CustomerReturnController extends Controller
         }
         $merged = [];
         foreach ($details as $index => $detail) {
-            $line = Validator::make((array) $detail, [
+            $rules = [
                 'product_variant_id' => ['required', 'integer', 'min:1'],
                 'unit_id' => ['required', 'integer', 'min:1'],
                 'warehouse_id' => ['required', 'integer', 'min:1'],
                 'qty' => ['required', 'integer', 'min:1', 'max:999999999999'],
-            ])->validate();
-            $key = $line['product_variant_id'] . '|' . $line['unit_id'] . '|' . $line['warehouse_id'];
+            ];
+            if (Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id')) {
+                $rules['destination_warehouse_id'] = ['nullable', 'integer', 'min:1'];
+            }
+            $line = Validator::make((array) $detail, $rules)->validate();
+            $destKey = (int) ($line['destination_warehouse_id'] ?? 0);
+            $key = $line['product_variant_id'] . '|' . $line['unit_id'] . '|' . $line['warehouse_id'] . '|' . $destKey;
             if (! isset($merged[$key])) {
                 $merged[$key] = $line;
             } else {
@@ -1168,16 +1385,22 @@ class CustomerReturnController extends Controller
             $retailUnitId = (int) ($product['retail_unit'] ?? 0);
             $isRetailUnit = $retailUnitId > 0 && (int) $detail['unit_id'] === $retailUnitId;
             if ($isRetailUnit) {
-                $warehouse = $warehousesById->get((int) $detail['warehouse_id']);
-                $isRetailWarehouse = $warehouse && (int) ($warehouse['is_main_warehouse'] ?? 1) === 0;
-                if (! $isRetailWarehouse) {
+                $receiveWarehouse = $warehousesById->get((int) $detail['warehouse_id']);
+                $receiveIsRetail = $receiveWarehouse && (int) ($receiveWarehouse['is_main_warehouse'] ?? 1) === 0;
+                if ($receiveIsRetail) {
+                    continue;
+                }
+                if (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
                     throw ValidationException::withMessages([
-                        "product_details.$index.warehouse_id" => 'Satuan eceran harus dikembalikan ke gudang eceran.',
+                        "product_details.$index.warehouse_id" => 'Satuan eceran diterima di gudang utama, lalu di-stock transfer ke gudang eceran.',
                     ]);
                 }
-                if ($retailUnitId <= 0) {
+                $destinationId = (int) ($detail['destination_warehouse_id'] ?? 0);
+                $destination = $warehousesById->get($destinationId);
+                $isRetailWarehouse = $destination && (int) ($destination['is_main_warehouse'] ?? 1) === 0;
+                if (! $isRetailWarehouse) {
                     throw ValidationException::withMessages([
-                        "product_details.$index.unit_id" => 'Produk tidak punya satuan eceran; tidak bisa dikembalikan ke gudang eceran.',
+                        "product_details.$index.destination_warehouse_id" => 'Pilih gudang eceran tujuan stock transfer.',
                     ]);
                 }
             } elseif (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
@@ -1196,6 +1419,7 @@ class CustomerReturnController extends Controller
             'supply_warehouses' => $this->mainWarehouses(),
             'product_warehouses' => $this->allActiveWarehouses(),
             'active_warehouse' => $this->activeWarehouseContext(),
+            'qc_staff' => Staff::qcGudangForWarehouse($this->activeWarehouseId()),
         ];
     }
 
@@ -1432,16 +1656,25 @@ class CustomerReturnController extends Controller
     {
         CustomerProductReturnDetail::where('return_id', $returnId)->delete();
         $now = now();
-        CustomerProductReturnDetail::insert(array_map(fn ($detail) => [
-            'return_id' => $returnId,
-            'product_variant_id' => $detail['product_variant_id'],
-            'unit_id' => $detail['unit_id'],
-            'warehouse_id' => $detail['warehouse_id'],
-            'qty' => $detail['qty'],
-            'status' => 1,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], $details));
+        $hasDest = Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
+        CustomerProductReturnDetail::insert(array_map(function ($detail) use ($returnId, $now, $hasDest) {
+            $row = [
+                'return_id' => $returnId,
+                'product_variant_id' => $detail['product_variant_id'],
+                'unit_id' => $detail['unit_id'],
+                'warehouse_id' => $detail['warehouse_id'],
+                'qty' => $detail['qty'],
+                'status' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+            if ($hasDest) {
+                $dest = (int) ($detail['destination_warehouse_id'] ?? 0);
+                $row['destination_warehouse_id'] = $dest > 0 ? $dest : (int) $detail['warehouse_id'];
+            }
+
+            return $row;
+        }, $details));
     }
 
     private function generateReturnGroup(): string

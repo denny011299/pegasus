@@ -15,11 +15,13 @@ class StaffWarehouse extends Model
     protected $fillable = [
         'staff_id',
         'warehouse_id',
+        'is_kepala_cabang',
     ];
 
     protected $casts = [
         'staff_id' => 'integer',
         'warehouse_id' => 'integer',
+        'is_kepala_cabang' => 'integer',
     ];
 
     public function staff(): BelongsTo

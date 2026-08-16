@@ -28,6 +28,16 @@ var transferDraft = {
 var transferDraftRun = 0;
 var transferDraftSelectGuard = false;
 var transferRouteRun = 0;
+
+function stockTransferOriginBadge(sourceType) {
+    if (sourceType === "production") {
+        return '<span class="badge ms-1" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;padding:6px 8px;">Produksi</span>';
+    }
+    if (sourceType === "customer_return") {
+        return '<span class="badge ms-1" style="background:#fff7ed;color:#c2410c;border:1px solid #ffedd5;padding:6px 8px;">Pengembalian</span>';
+    }
+    return "";
+}
 var transferScanLookupRun = 0;
 var transferStockLoadRun = 0;
 var transferStockLoads = {};
@@ -333,9 +343,7 @@ function inisialisasi() {
                 width: "14%",
                 render: function(data, type, row) {
                     if(!data || data === "-") return "-";
-                    var origin = row && row.source_type === "production"
-                        ? '<span class="badge ms-1" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;padding:6px 8px;">Produksi</span>'
-                        : '';
+                    var origin = stockTransferOriginBadge(row && row.source_type);
                     return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;"><span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">${data}</span>${origin}</div>`;
                 }
             },

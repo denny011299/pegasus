@@ -184,7 +184,7 @@ class Warehouse extends Model
         ], $data);
 
         // Tampilkan Aktif (1) & Non-Aktif (2); status 0 = soft delete, tetap disembunyikan
-        return self::query()
+        $rows = self::query()
             ->whereIn('status', [1, 2])
             ->with([
                 'type:id,warehouse_type_name,is_main_warehouse',
@@ -197,11 +197,40 @@ class Warehouse extends Model
                 $q->where('warehouse_type_id', $typeId);
             })
             ->orderBy('created_at', 'asc')
-            ->get()
-            ->each(function ($row) {
-                $row->created_by_name = $row->creator->staff_name ?? '-';
-                unset($row->creator);
-            });
+            ->get();
+
+        $assignmentMap = [];
+        $kepalaMap = [];
+        $warehouseIds = $rows->pluck('id')->all();
+        if ($warehouseIds !== []) {
+            $assignments = StaffWarehouse::query()
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->with(['staff' => fn ($q) => $q->select('staff_id', 'staff_name', 'status')])
+                ->get();
+            foreach ($assignments as $assignment) {
+                $staff = $assignment->staff;
+                if (!$staff || (int) $staff->status !== 1) {
+                    continue;
+                }
+                $item = [
+                    'id' => (int) $assignment->staff_id,
+                    'text' => (string) $staff->staff_name,
+                ];
+                $assignmentMap[$assignment->warehouse_id][] = $item;
+                if ((int) ($assignment->is_kepala_cabang ?? 0) === 1) {
+                    $kepalaMap[$assignment->warehouse_id] = $item;
+                }
+            }
+        }
+
+        return $rows->each(function ($row) use ($assignmentMap, $kepalaMap) {
+            $row->created_by_name = $row->creator->staff_name ?? '-';
+            unset($row->creator);
+            $row->assigned_staff = $assignmentMap[$row->id] ?? [];
+            $kepala = $kepalaMap[$row->id] ?? null;
+            $row->kepala_staff_id = $kepala['id'] ?? null;
+            $row->kepala_staff_name = $kepala['text'] ?? null;
+        });
     }
 
     /**
@@ -247,6 +276,11 @@ class Warehouse extends Model
             return -2;
         }
 
+        $requireKepala = array_key_exists('kepala_staff_id', $data);
+        if ($requireKepala && $this->resolveActiveStaffId($data['kepala_staff_id']) === null) {
+            return -3;
+        }
+
         $row = self::create([
             'warehouse_name' => trim((string) $data['warehouse_name']),
             'warehouse_type_id' => $data['warehouse_type_id'],
@@ -255,6 +289,10 @@ class Warehouse extends Model
             'status' => 1,
             'created_by' => Session::get('user')->staff_id ?? null,
         ]);
+
+        if ($requireKepala) {
+            $this->assignKepalaCabang($row->id, (int) $data['kepala_staff_id'], true);
+        }
 
         // Auto-generate stok 0 untuk semua produk/varian aktif di gudang baru
         (new ProductStock())->generateStocksForWarehouse($row->id);
@@ -271,6 +309,14 @@ class Warehouse extends Model
         }
 
         $row = self::query()->whereIn('status', [1, 2])->findOrFail($data['id']);
+
+        if (array_key_exists('kepala_staff_id', $data)) {
+            $assigned = $this->assignKepalaCabang($row->id, (int) $data['kepala_staff_id'], false);
+            if ($assigned < 0) {
+                return $assigned;
+            }
+        }
+
         $row->warehouse_name = trim((string) $data['warehouse_name']);
         $row->warehouse_type_id = $data['warehouse_type_id'];
         $row->warehouse_address = $this->normalizeAddress($data['warehouse_address'] ?? null);
@@ -281,6 +327,60 @@ class Warehouse extends Model
         $row->save();
 
         return $row->id;
+    }
+
+    /**
+     * Satu gudang = satu kepala (is_kepala_cabang=1).
+     * $createAssignment: insert (gudang baru, staff ikut di-assign).
+     *
+     * @return int 1 sukses, -3 staff tidak valid / belum di-assign
+     */
+    public function assignKepalaCabang(int $warehouseId, int $staffId, bool $createAssignment = false): int
+    {
+        if ($this->resolveActiveStaffId($staffId) === null) {
+            return -3;
+        }
+
+        $pivot = StaffWarehouse::query()
+            ->where('warehouse_id', $warehouseId)
+            ->where('staff_id', $staffId)
+            ->first();
+
+        if (!$pivot) {
+            if (!$createAssignment) {
+                return -3;
+            }
+            $pivot = StaffWarehouse::create([
+                'staff_id' => $staffId,
+                'warehouse_id' => $warehouseId,
+                'is_kepala_cabang' => 0,
+            ]);
+        }
+
+        StaffWarehouse::query()
+            ->where('warehouse_id', $warehouseId)
+            ->where('is_kepala_cabang', 1)
+            ->update(['is_kepala_cabang' => 0]);
+
+        $pivot->is_kepala_cabang = 1;
+        $pivot->save();
+
+        return 1;
+    }
+
+    private function resolveActiveStaffId($raw): ?int
+    {
+        $staffId = (int) $raw;
+        if ($staffId <= 0) {
+            return null;
+        }
+
+        $exists = Staff::query()
+            ->where('staff_id', $staffId)
+            ->where('status', 1)
+            ->exists();
+
+        return $exists ? $staffId : null;
     }
 
     /**
