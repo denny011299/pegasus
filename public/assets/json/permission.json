@@ -81,11 +81,12 @@
     { "Id": 42, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
 
     { "Id": 43, "Modules": "Integrasi", "SubModules": "Sinkronisasi" },
-    { "Id": 44, "Modules": "Integrasi", "SubModules": "Aplikasi Eksternal" },
+    { "Id": 44, "Modules": "Integrasi", "SubModules": "Status API Eksternal" },
+    { "Id": 45, "Modules": "Integrasi", "SubModules": "Aplikasi Eksternal" },
     {
-        "Id": 45,
+        "Id": 46,
         "Modules": "Integrasi",
         "SubModules": "Dokumentasi API Eksternal"
     },
-    { "Id": 46, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
+    { "Id": 47, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
 ]

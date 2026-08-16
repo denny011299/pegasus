@@ -812,6 +812,21 @@ Route::middleware(checkLogin::class)->group(function () {
     // Endpoint yang dipakai sistem pihak ketiga TIDAK ada di sini; jalurnya
     // terpisah di routes/api.php + routes/external-api/ dan dijaga API Key,
     // bukan session.
+
+    // Status API Eksternal — kendali cepat PER ENDPOINT (satu baris per
+    // ApiEndpointDoc terdaftar, lintas semua versi): aktif/nonaktifkan satu
+    // endpoint (is_active) dan tampilkan/sembunyikan satu endpoint dari
+    // halaman dokumentasi publik (is_public_docs_show). Bukan resource CRUD,
+    // jadi cuma pakai ability view (lihat halaman) & others (ubah saklar).
+    Route::middleware('check.access:Status API Eksternal|view')->group(function () {
+        Route::get('/externalApiStatus', [ExternalApiController::class, 'externalApiStatus'])->name('externalApiStatus');
+        Route::get('/getExternalApiStatus', [ExternalApiController::class, 'getExternalApiStatus'])->name('getExternalApiStatus');
+    });
+    Route::middleware('check.access:Status API Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApiEndpointActive', [ExternalApiController::class, 'toggleExternalApiEndpointActive'])->name('toggleExternalApiEndpointActive');
+        Route::post('/toggleExternalApiEndpointPublicDocs', [ExternalApiController::class, 'toggleExternalApiEndpointPublicDocs'])->name('toggleExternalApiEndpointPublicDocs');
+    });
+
     Route::middleware('check.access:Aplikasi Eksternal|view')->group(function () {
         Route::get('/externalApplication', [ExternalApiController::class, 'externalApplication'])->name('externalApplication');
         Route::get('/externalApplication/{id}', [ExternalApiController::class, 'externalApplicationDetail'])->name('externalApplicationDetail');
