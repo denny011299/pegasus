@@ -23,6 +23,7 @@
 </div>
 
 @foreach ($current['endpoints'] as $endpoint)
+    @php $status = $endpointStatus[$endpoint->key()] ?? null; @endphp
     <div class="card extapi-endpoint" id="endpoint-{{ $endpoint->key() }}">
         <div class="card-body">
             <div class="d-flex align-items-center flex-wrap mb-2">
@@ -30,6 +31,16 @@
                 <code class="extapi-endpoint-path">{{ $endpoint->fullPath() }}</code>
                 @if (!$endpoint->requiresAuthentication())
                     <span class="badge badge-soft-secondary ms-2">Tanpa Autentikasi</span>
+                @endif
+                @if ($status)
+                    <span class="badge {{ $status['is_active'] ? 'badge-soft-success' : 'badge-soft-danger' }} ms-2">
+                        Endpoint {{ $status['is_active'] ? 'Aktif' : 'Nonaktif' }}
+                    </span>
+                    @if ($showVisibilityBadge ?? true)
+                        <span class="badge {{ $status['is_public_docs_show'] ? 'badge-soft-success' : 'badge-soft-secondary' }} ms-2">
+                            Dokumentasi {{ $status['is_public_docs_show'] ? 'Publik' : 'Privat' }}
+                        </span>
+                    @endif
                 @endif
             </div>
 
