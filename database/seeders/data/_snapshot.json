@@ -1,7 +1,7 @@
 {
-    "generated_at": "2026-08-17T01:52:25+07:00",
+    "generated_at": "2026-08-17T02:18:41+07:00",
     "database": "pegasus",
-    "last_migration": "2026_08_14_010100_add_activity_tracking_to_dashboard_change_logs_table",
+    "last_migration": "2026_08_17_090000_create_external_api_endpoints_table",
     "label": null,
     "description": null,
     "order": [
@@ -42,6 +42,7 @@
         "customer_supply_returns",
         "dashboard_change_logs",
         "dashboard_queue_dismissals",
+        "external_api_endpoints",
         "external_api_keys",
         "external_api_request_logs",
         "external_applications",
@@ -148,7 +149,7 @@
             "capped": null
         },
         "settings": {
-            "rows": 59,
+            "rows": 13,
             "columns": [
                 "setting_id",
                 "setting_key",
@@ -1098,6 +1099,7 @@
                 "so_ref_number",
                 "ref_shipment_id",
                 "notes",
+                "cancel_reason",
                 "so_total",
                 "so_discount",
                 "so_ppn",
@@ -1321,6 +1323,7 @@
                 "product_variant_id",
                 "unit_id",
                 "warehouse_id",
+                "destination_warehouse_id",
                 "qty",
                 "status",
                 "created_at",
@@ -1341,6 +1344,7 @@
                 "proof_path",
                 "status",
                 "created_by",
+                "qc_staff_id",
                 "acc_by",
                 "created_at",
                 "updated_at"
@@ -1376,6 +1380,7 @@
                 "proof_path",
                 "status",
                 "created_by",
+                "qc_staff_id",
                 "acc_by",
                 "created_at",
                 "updated_at"
@@ -1475,6 +1480,7 @@
                 "id",
                 "staff_id",
                 "warehouse_id",
+                "is_kepala_cabang",
                 "created_at",
                 "updated_at"
             ],
@@ -1524,6 +1530,18 @@
             "rows": 0,
             "columns": [
                 "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "external_api_endpoints": {
+            "rows": 33,
+            "columns": [
+                "external_api_endpoint_id",
+                "endpoint_key",
+                "is_active",
+                "is_public_docs_show",
                 "created_at",
                 "updated_at"
             ],
