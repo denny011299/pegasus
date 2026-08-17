@@ -181,6 +181,16 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterProductDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterProductLinkDoc::class,
 
+        // Data Bahan — modul tersendiri, sama pola dengan Data Produk (endpoint connect,
+        // karena ref_supplies_id nullable dan sering kosong). Dibangun bersamaan dengan
+        // POST /shipments/returns (GitHub #58): item type=1 endpoint itu me-resolve
+        // item.ref_id lewat ref_supplies_id yang dikelola grup ini.
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesLinkDoc::class,
+
         // Stok — modul baru, hanya baca (tidak ada create/update/delete).
         \App\ExternalApi\Docs\Endpoints\V1\StockCheckDoc::class,
 
@@ -191,6 +201,11 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\ShipmentShowDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\ShipmentChangeStatusDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\ShipmentCancelDoc::class,
+
+        // Pengembalian (Retur) — GitHub #58, PMO memicu pengembalian armada langsung. Bukan
+        // bagian modul Shipment (tabel beda), tapi tetap grup dokumentasi "pengiriman" karena
+        // path-nya di bawah /shipments dan menu adminnya satu halaman (Pengiriman > Pengembalian).
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentReturnCreateDoc::class,
     ],
 
     /*
@@ -207,6 +222,7 @@ return [
         'armada' => 'Data Armada',
         'pembayaran' => 'Pembayaran',
         'produk' => 'Data Produk',
+        'bahan' => 'Data Bahan',
         'stok' => 'Stok',
         'pengiriman' => 'Pengiriman',
         'pesanan' => 'Pesanan',

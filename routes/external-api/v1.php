@@ -5,9 +5,11 @@ use App\Http\Controllers\ExternalApi\V1\MasterArmadaController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
 use App\Http\Controllers\ExternalApi\V1\MasterProductController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
+use App\Http\Controllers\ExternalApi\V1\MasterSuppliesController;
 use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
 use App\Http\Controllers\ExternalApi\V1\ShipmentController;
+use App\Http\Controllers\ExternalApi\V1\ShipmentReturnController;
 use App\Http\Controllers\ExternalApi\V1\StockController;
 use Illuminate\Support\Facades\Route;
 
@@ -127,6 +129,24 @@ Route::prefix('produk')->name('produk.')->group(function () {
 });
 
 /*
+ * Data Bahan.
+ *
+ * Modul tersendiri, sama seperti Data Produk/Armada — dibangun bersamaan dengan
+ * POST /shipments/returns (GitHub #58): item type=1 (bahan mentah/kemasan) endpoint itu
+ * me-resolve item.ref_id lewat supplies.ref_supplies_id yang dikelola di sini, sama seperti
+ * item type=2 (produk) me-resolve lewat product_variant_sku. Bahan punya endpoint connect,
+ * karena ref_supplies_id nullable dan sering kosong (sama seperti ref_product_id/ref_unit_id),
+ * bukan selalu terisi seperti customer_code. Lihat catatan kelas MasterSuppliesController.
+ */
+Route::prefix('bahan')->name('bahan.')->group(function () {
+    Route::get('/', [MasterSuppliesController::class, 'index'])->name('index');
+    Route::post('/', [MasterSuppliesController::class, 'store'])->name('store');
+    Route::put('/{ref_supplies_id}', [MasterSuppliesController::class, 'update'])->name('update');
+    Route::delete('/{ref_supplies_id}', [MasterSuppliesController::class, 'destroy'])->name('destroy');
+    Route::patch('/connect', [MasterSuppliesController::class, 'connect'])->name('connect');
+});
+
+/*
  * Stok.
  *
  * Beda dengan modul lain: hanya baca, tidak ada create/update/delete di
@@ -164,10 +184,22 @@ Route::prefix('stock')->name('stock.')->group(function () {
  * Confirmed/"Berjalan" ATAU "Sudah Terkirim" (dua-duanya berarti stok sudah dipotong), lewat
  * App\Support\SalesOrderCancellation::cancel() (BARU, karena tidak ada alur admin setara untuk
  * diekstrak), idempoten lewat status.
+ *
+ * POST /shipments/returns (GitHub #58) BUKAN bagian ShipmentController — tabelnya beda
+ * (customer_supply_returns/customer_product_returns, menu admin "Pengiriman > Pengembalian",
+ * bukan sales_orders), jadi dilayani ShipmentReturnController tersendiri, cuma prefix rutenya
+ * tetap "shipments" sesuai permintaan pemilik produk (PMO memicunya dari modul Pengiriman yang
+ * sama). Membuat baris pengembalian lewat App\Support\CustomerReturnCreation::create() — logika
+ * simpan yang sama dipakai App\Http\Controllers\CustomerReturnController::store() (halaman admin
+ * Pengiriman > Pengembalian), diekstrak supaya bisa dipakai di sini juga. warehouse_id SENGAJA
+ * selalu dikosongkan (DIKONFIRMASI pemilik produk lewat WhatsApp pada issue #58: "diperbolehkan
+ * skip auto insert ke gudang/warehouse" — modul Gudang masih WIP fase 2), staf mengisinya lewat
+ * halaman admin sebelum ACC. Lihat catatan kelas ShipmentReturnController.
  */
 Route::prefix('shipments')->name('shipments.')->group(function () {
     Route::post('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');
     Route::post('/shipped', [ShipmentController::class, 'shipped'])->name('shipped');
+    Route::post('/returns', [ShipmentReturnController::class, 'store'])->name('returns');
     Route::get('/{ref_shipment_id}', [ShipmentController::class, 'show'])->name('show');
     Route::patch('/{ref_shipment_id}/change-status', [ShipmentController::class, 'changeStatus'])->name('changeStatus');
     Route::put('/{ref_shipment_id}/cancel', [ShipmentController::class, 'cancel'])->name('cancel');

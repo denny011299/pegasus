@@ -27,6 +27,18 @@ class Supplies extends Model
         'safety_stock' => 'integer',
     ];
 
+    /**
+     * Query dasar untuk Data Bahan External API (App\Http\Controllers\ExternalApi\V1\
+     * MasterSuppliesController) — sama pola dengan Product::getProductForExternalApi().
+     */
+    function getSuppliesForExternalApi()
+    {
+        return self::where('status', 1)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('supplies_id', 'asc')
+            ->select(['supplies_id', 'ref_supplies_id', 'supplies_name', 'supplies_desc', 'supplies_unit', 'supplies_default_unit']);
+    }
+
     function getSupplies($data = [])
     {
         $data = array_merge([
