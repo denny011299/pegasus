@@ -105,6 +105,8 @@ class StockOpnameBahan extends Model
         $t->stob_code   = $this->generateStockOpnameBahanID();
         $t->staff_id = $data['staff_id'];
         $t->stob_notes = $data['stob_notes'] ?? null;
+        // Mirrors StockOpname::insertStockOpname() — see KNOWN_ISSUES.md "Stock Opname's draft
+        // feature is entirely non-functional".
         $t->is_draft = ! empty($data['is_draft']);
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();

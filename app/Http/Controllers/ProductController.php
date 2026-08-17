@@ -426,12 +426,17 @@ class ProductController extends Controller
         //     ]);
         // }
 
-        $id = (new Product())->insertProduct($data);
         $variant = $this->sanitizeVariantValues(json_decode($data['product_variant'], true) ?: []);
         $safetyPayload = $this->extractSafetyPayload($variant);
         $variant = $this->stripSafetyFromVariants($variant);
         $relasi = json_decode($data['product_relasi'], true);
 
+        // Diperbaiki (2026-08-05): regresi dari fix 2026-08-03 — sempat berubah jadi
+        // insertProduct() dipanggil DUA KALI, yang pertama sebelum precheck ini sama sekali
+        // (jadi row Product sudah permanen dibuat walau precheck akhirnya menolak), yang kedua
+        // (baris di bawah, yang sebenarnya dipakai) tepat setelah precheck lolos. Sekarang precheck
+        // ini kembali jadi hal PERTAMA yang terjadi, sebelum satu row pun disentuh — lihat
+        // KNOWN_ISSUES.md "Two product SKUs were shared across different products".
         $uniquenessError = $this->validateVariantUniqueness($variant, null);
         if ($uniquenessError) {
             return response()->json(['message' => $uniquenessError]);
@@ -465,6 +470,17 @@ class ProductController extends Controller
         $variant = $this->sanitizeVariantValues(json_decode($data['product_variant'], true) ?: []);
         $safetyPayload = $this->extractSafetyPayload($variant);
         $variant = $this->stripSafetyFromVariants($variant);
+
+        // Diperbaiki (2026-08-05): regresi dari fix 2026-08-03 — updateProduct() sempat kehilangan
+        // panggilan ke precheck ini sama sekali, jadi mengganti nama sebuah varian supaya sama
+        // dengan varian lain pada produk yang sama (atau SKU yang sudah dipakai produk lain) tidak
+        // ditolak lagi. Dicek per varian, exclude dirinya sendiri lewat product_variant_id yang
+        // sudah ada di payload — lihat validateVariantUniqueness().
+        $uniquenessError = $this->validateVariantUniqueness($variant, (int) $data['product_id']);
+        if ($uniquenessError) {
+            return response()->json(['message' => $uniquenessError]);
+        }
+
         (new Product())->updateProduct($data);
         foreach ($variant as $key => $value) {
             $value['product_id'] = $data["product_id"];

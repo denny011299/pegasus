@@ -247,8 +247,17 @@ class Production extends Model
 
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
-                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
-                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
+                // Diperbaiki (2026-08-06): dulu unconditional createFromFormat('d-m-Y', ...) —
+                // beda dengan cabang tanggal tunggal di bawah (yang sudah punya fallback
+                // hasFormat Y-m-d) dan dengan pattern yang sudah dipakai di
+                // ReportController.php:3353-3360 — sebuah range Y-m-d (mis. dari date picker yang
+                // mengirim format ISO) crash 500 ("data tidak sesuai format").
+                $startDate = \Carbon\Carbon::hasFormat($data["date"][0], 'Y-m-d')
+                    ? $data["date"][0]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
+                $endDate = \Carbon\Carbon::hasFormat($data["date"][1], 'Y-m-d')
+                    ? $data["date"][1]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
                 $query->whereBetween('p.production_date', [$startDate, $endDate]);
             } else {
                 $date = $data["date"];
@@ -370,8 +379,13 @@ class Production extends Model
 
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
-                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
-                $endDate   = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
+                // Mirrors getProductionReport()'s fix above — see the comment there.
+                $startDate = \Carbon\Carbon::hasFormat($data["date"][0], 'Y-m-d')
+                    ? $data["date"][0]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->format('Y-m-d');
+                $endDate = \Carbon\Carbon::hasFormat($data["date"][1], 'Y-m-d')
+                    ? $data["date"][1]
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->format('Y-m-d');
                 $query->whereBetween('p.production_date', [$startDate, $endDate]);
             } else {
                 $date = $data["date"];
