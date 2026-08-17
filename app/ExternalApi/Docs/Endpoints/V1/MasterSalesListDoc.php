@@ -36,8 +36,17 @@ class MasterSalesListDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengambil daftar staf sales yang berstatus aktif. Dipakai sistem '
-            .'eksternal antara lain untuk mengisi staff_id pada endpoint Pembayaran Kas.';
+        return 'Mengambil daftar staf sales yang berstatus aktif. Paginasi bersifat opsional.';
+    }
+
+    public function queryParameters(): array
+    {
+        return [
+            ['name' => 'page', 'type' => 'integer', 'required' => false, 'description' => 'Nomor halaman. Kalau parameter ini tidak dikirim sama sekali, seluruh sales aktif dikembalikan sekaligus tanpa paginasi.'],
+            ['name' => 'per_page', 'type' => 'integer', 'required' => false, 'description' => 'Jumlah baris per halaman, hanya berlaku kalau page dikirim. Default 20, maksimum 100.'],
+            ['name' => 'sort', 'type' => 'string', 'required' => false, 'description' => 'Urutan kustom, format "kunci:arah" dipisah koma, mis. "nama:asc,created_at:desc". Kunci yang sah: id, staff_id, nama, kode, email, telepon, alamat, role, created_at, updated_at (nama_depan/nama_belakang TIDAK bisa dipakai, lihat catatan). arah: asc atau desc. Kunci/arah lain dilewati diam-diam, bukan galat.'],
+            ['name' => 'search', 'type' => 'string', 'required' => false, 'description' => 'Kata kunci, dicocokkan %LIKE% pada nama, kode, email, telepon, alamat, ATAU staff_id.'],
+        ];
     }
 
     public function responseExample(): array
@@ -46,8 +55,11 @@ class MasterSalesListDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 [
-                    'staff_id' => 20,
+                    'id' => 20,
+                    'staff_id' => null,
                     'nama' => 'Bisma',
+                    'nama_depan' => 'Bisma',
+                    'nama_belakang' => null,
                     'kode' => null,
                     'email' => 'bisma@contoh.com',
                     'telepon' => '08123456789',
@@ -55,8 +67,11 @@ class MasterSalesListDoc extends ApiEndpointDoc
                     'role' => 'Sales',
                 ],
                 [
-                    'staff_id' => 26,
+                    'id' => 26,
+                    'staff_id' => 'SLS-002',
                     'nama' => 'Sales Counter',
+                    'nama_depan' => 'Sales',
+                    'nama_belakang' => 'Counter',
                     'kode' => null,
                     'email' => null,
                     'telepon' => null,
@@ -66,6 +81,10 @@ class MasterSalesListDoc extends ApiEndpointDoc
             ],
             'meta' => [
                 'total' => 7,
+                'per_page' => 7,
+                'current_page' => 1,
+                'next_page_exists' => false,
+                'total_page' => 1,
             ],
         ];
     }
@@ -73,13 +92,16 @@ class MasterSalesListDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Endpoint ini tidak menerima parameter apa pun.',
+            'Bentuk meta selalu sama, dipaginasi maupun tidak: total, per_page, current_page, next_page_exists, total_page. Tanpa ?page=, current_page selalu 1, total_page selalu 1, dan next_page_exists selalu false — satu halaman berisi semua sales aktif.',
             'Sales bukan tabel tersendiri: yang dikembalikan adalah staf yang nama perannya mengandung kata "sales". Penyaringan memakai nama peran, bukan id peran, sehingga peran baru yang mengandung kata itu otomatis ikut terbawa.',
             'Hanya staf berstatus aktif yang muncul.',
-            'staff_id di sini adalah nilai yang diminta endpoint Pembayaran Kas pada field staff_id ketika payment_type bernilai 2.',
-            'role berisi nama peran staf yang bersangkutan apa adanya seperti tersimpan di Pegasus, misalnya "Sales".',
-            'kode, email, telepon, dan alamat boleh bernilai null bila datanya memang belum diisi di Pegasus.',
+            'id adalah id staf pada sistem Pegasus. Inilah nilai yang diminta endpoint Pembayaran Kas pada field staff_id ketika payment_type bernilai 2, dan juga field staff_id pada tiap butir body PATCH /master/sales/connect (menghubungkan staf yang sudah ada dengan rujukan eksternal).',
+            'staff_id di respons ini BUKAN id staf Pegasus — ini rujukan milik sistem pemanggil sendiri (external_ref_id), boleh null kalau staf itu belum pernah dihubungkan ke sistem eksternal mana pun lewat POST atau PATCH /master/sales/connect. Inilah nilai yang dipakai sebagai path parameter {staff_id} pada PUT dan DELETE /master/sales.',
+            'nama_depan dan nama_belakang adalah hasil pemisahan otomatis dari nama (dipisah pada spasi pertama), disertakan supaya sejalan dengan bentuk body create/update sales. Untuk staf yang namanya terdiri lebih dari dua kata dan tidak pernah dibuat/diubah lewat endpoint create/update sales, pemisahan ini bisa saja tidak sama dengan pembagian depan/belakang yang sebenarnya — staffs.staff_name memang cuma satu kolom gabungan. Karena bukan kolom tersendiri, nama_depan/nama_belakang TIDAK bisa dipakai sebagai kunci ?sort= atau ikut dicari ?search= — urutkan/cari lewat nama sebagai gantinya.',
+            'role berisi nama peran staf yang bersangkutan apa adanya seperti tersimpan di Pegasus, misalnya "Sales". Bisa dipakai sebagai kunci ?sort= karena diambil lewat JOIN yang sudah ada pada kueri endpoint ini, bukan relasi terpisah.',
+            'kode, email, telepon, alamat, staff_id, dan nama_belakang boleh bernilai null bila datanya memang belum diisi di Pegasus.',
             'Kata sandi, nama pengguna, saldo staf, dan hak akses tidak pernah dikembalikan.',
+            '?sort= menggantikan urutan bawaan sepenuhnya begitu ada satu saja kunci yang sah; kalau seluruh kunci yang dikirim tidak dikenal (termasuk nama_depan/nama_belakang), urutan bawaan (dibuat lebih dulu → id) tetap berlaku.',
             'Urutan daftar bersifat tetap.',
         ];
     }

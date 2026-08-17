@@ -588,7 +588,7 @@ function insertData(options) {
         error: function (e) {
             ResetLoadingButton(btnSelector, doneText);
             if (handlePermissionError(e)) return;
-            toastr.success("", "Terjadi Kesalahan Saat Tambah Stok Opname");
+            toastr.error("", "Terjadi Kesalahan Saat Tambah Stok Opname");
             console.log(e);
         },
     });

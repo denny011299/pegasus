@@ -64,6 +64,7 @@ class UserController extends Controller
             'role_id' => null,
             'role_name' => '',
             'staff_warehouses' => [],
+            'kepala_warehouse_ids' => [],
         ];
         $param["warehouses"] = Warehouse::allActive();
         $param["roles"] = (new Role())->getRole();

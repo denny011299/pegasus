@@ -114,13 +114,13 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'payment_amount tidak sama dengan jumlah item.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'Armada dengan id tersebut tidak ditemukan.'],
-            ['code' => 'validation_failed', 'http_status' => 422,
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'Seluruh item harus memiliki type yang sama dalam satu pembayaran.'],
-            ['code' => 'payment_not_acceptable', 'http_status' => 409,
+            ['code' => 'PAYMENT_NOT_ACCEPTABLE', 'http_status' => 409,
                 'message' => 'Pembayaran sudah diterima/ditolak sebelumnya.'],
         ];
     }

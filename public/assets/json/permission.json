@@ -2,6 +2,8 @@
     { "Id": 1, "Modules": "Master", "SubModules": "Kategori" },
     { "Id": 2, "Modules": "Master", "SubModules": "Satuan" },
     { "Id": 3, "Modules": "Master", "SubModules": "Variasi" },
+    { "Id": 4, "Modules": "Master", "SubModules": "Gudang" },
+    { "Id": 5, "Modules": "Master", "SubModules": "Tipe Gudang" },
 
     { "Id": 6, "Modules": "Produk", "SubModules": "Daftar Produk" },
     { "Id": 7, "Modules": "Produk", "SubModules": "Stok Produk" },
@@ -79,11 +81,12 @@
     { "Id": 42, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
 
     { "Id": 43, "Modules": "Integrasi", "SubModules": "Sinkronisasi" },
-    { "Id": 44, "Modules": "Integrasi", "SubModules": "Aplikasi Eksternal" },
+    { "Id": 44, "Modules": "Integrasi", "SubModules": "Status API Eksternal" },
+    { "Id": 45, "Modules": "Integrasi", "SubModules": "Aplikasi Eksternal" },
     {
-        "Id": 45,
+        "Id": 46,
         "Modules": "Integrasi",
         "SubModules": "Dokumentasi API Eksternal"
     },
-    { "Id": 46, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
+    { "Id": 47, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
 ]

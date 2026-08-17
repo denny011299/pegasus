@@ -58,6 +58,8 @@
     <script>
         // Dipakai pemilih versi untuk tetap berada di modul yang sedang dibuka.
         var docGroupKey = @json($current['key'] ?? null);
+        // Base path rute halaman Umum — beda antara versi admin dan publik.
+        var docBasePath = @json(route('externalApiDocumentation'));
     </script>
     <script src="{{ asset('Custom_js/Backoffice/ExternalApi/Documentation.js') }}"></script>
 @endsection

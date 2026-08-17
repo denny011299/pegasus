@@ -10,10 +10,12 @@ use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use App\Models\Staff;
+use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 
 class CustomerController extends Controller
 {
@@ -283,46 +285,20 @@ class CustomerController extends Controller
             ]);
         }
 
-        $sod = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->get();
-        $lines = [];
-        foreach ($sod as $row) {
-            $lines[] = [
-                'product_variant_id' => $row->product_variant_id,
-                'unit_id' => $row->unit_id,
-                'warehouse_id' => $row->warehouse_id ?? null,
-                'qty' => (float) $row->sod_qty,
-            ];
-        }
+        // Logika potong stok + set status Confirmed ada di SalesOrderApproval::confirm() -
+        // dipakai bersama External API POST /shipments/shipped. Pengecekan status di atas
+        // sengaja tetap di sini (bukan dipindah seluruhnya ke confirm()) supaya pesan "sudah
+        // diterima/ditolak oleh {staff}" yang menyebut nama tetap ada di jalur admin ini.
+        $staffId = Session::get('user') ? Session::get('user')->staff_id : null;
+        $result = SalesOrderApproval::confirm($so, $staffId);
 
-        $retailWh = (int) ($so->retail_warehouse_id ?? 0);
-        $plan = SalesOrderStock::buildPlan($lines, $retailWh > 0 ? $retailWh : null);
-        if (! ($plan['ok'] ?? false)) {
+        if (! ($result['ok'] ?? false)) {
             return response()->json([
-                'status' => $plan['status'] ?? 0,
-                'header' => $plan['header'] ?? 'Stok tidak cukup',
-                'message' => $plan['message'] ?? 'Stok tidak mencukupi',
-                'products' => $plan['products'] ?? [],
-                'recommendations' => $plan['recommendations'] ?? [],
-            ]);
-        }
-
-        try {
-            DB::transaction(function () use ($plan, $so, $data) {
-                $deduct = SalesOrderStock::executeDeduct(
-                    $plan['plan'],
-                    $so->so_invoice_no ?: $so->so_number,
-                    'Pengiriman produk'
-                );
-                if (! ($deduct['ok'] ?? false)) {
-                    throw new \RuntimeException($deduct['message'] ?? 'Gagal potong stok');
-                }
-                (new SalesOrder())->accSO($data);
-            });
-        } catch (\Throwable $e) {
-            return response()->json([
-                'status' => 0,
-                'header' => 'Gagal ACC',
-                'message' => $e->getMessage(),
+                'status' => $result['status'] ?? 0,
+                'header' => $result['header'] ?? 'Gagal ACC',
+                'message' => $result['message'] ?? 'Stok tidak mencukupi',
+                'products' => $result['products'] ?? [],
+                'recommendations' => $result['recommendations'] ?? [],
             ]);
         }
 

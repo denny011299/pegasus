@@ -4,6 +4,14 @@ var table;
 $(document).ready(function () {
     inisialisasi();
     autocompleteWarehouseType("#warehouse_type_id", "#add_warehouse");
+    autocompleteStaff("#warehouse_kepala_staff_id", "#add_warehouse");
+    $("#add_warehouse")
+        .on("show.bs.modal", function () {
+            $("html, body").css("overflow", "hidden");
+        })
+        .on("hidden.bs.modal", function () {
+            $("html, body").css("overflow", "");
+        });
 });
 
 $(document).on("click", ".btnAdd", function () {
@@ -13,6 +21,7 @@ $(document).on("click", ".btnAdd", function () {
         "",
     );
     $("#warehouse_type_id").val(null).trigger("change");
+    setWarehouseKepala(null, []);
     setWarehouseSidebarMenus(null);
     $(".is-invalid").removeClass("is-invalid");
     $("#add_warehouse .btn-save").html(
@@ -20,6 +29,48 @@ $(document).on("click", ".btnAdd", function () {
     );
     $("#add_warehouse").removeAttr("data-id").modal("show");
 });
+
+function setWarehouseKepala(selectedId, assignedStaff) {
+    var $wrap = $("#warehouse_kepala_wrap");
+    var $sel = $("#warehouse_kepala_staff_id");
+    if ($sel.hasClass("select2-hidden-accessible")) {
+        $sel.select2("destroy");
+    }
+    $sel.empty().append(
+        '<option value="">Pilih Kepala Operasional...</option>',
+    );
+    $sel.val(null);
+
+    var assigned = Array.isArray(assignedStaff) ? assignedStaff : [];
+    // Update: hanya staff yang sudah assign. Kosong = sembunyikan.
+    if (mode == 2 && !assigned.length) {
+        $wrap.hide();
+        $sel.removeClass("fill");
+        return;
+    }
+
+    $wrap.show();
+    $sel.addClass("fill");
+
+    if (mode == 2) {
+        assigned.forEach(function (item) {
+            var opt = new Option(item.text, item.id, false, false);
+            $sel.append(opt);
+        });
+        if (selectedId) {
+            $sel.val(String(selectedId));
+        }
+        $sel.select2({
+            placeholder: "Pilih Kepala Operasional",
+            allowClear: false,
+            width: "100%",
+            dropdownParent: $("#add_warehouse"),
+        });
+        return;
+    }
+
+    autocompleteStaff("#warehouse_kepala_staff_id", "#add_warehouse");
+}
 
 function getWarehouseSidebarMenus() {
     var menus = [];
@@ -124,7 +175,7 @@ function inisialisasi() {
             {
                 data: "warehouse_name",
                 className: "text-start align-middle",
-                width: "22%",
+                width: "20%",
                 render: function (data, type, row) {
                     if (type !== "display") return data;
                     var isUtama =
@@ -165,7 +216,7 @@ function inisialisasi() {
                 data: "type.warehouse_type_name",
                 defaultContent: "-",
                 className: "text-center align-middle",
-                width: "14%",
+                width: "12%",
                 render: function (data, type, row) {
                     if (type !== "display") return data;
                     if (!data || data === "-")
@@ -192,7 +243,7 @@ function inisialisasi() {
                 data: "warehouse_address",
                 defaultContent: "-",
                 className: "text-start align-middle",
-                width: "20%",
+                width: "26%",
                 render: function (data, type) {
                     if (type !== "display") return data;
                     return (
@@ -205,7 +256,7 @@ function inisialisasi() {
             {
                 data: "warehouse_date",
                 className: "text-start align-middle",
-                width: "12%",
+                width: "14%",
                 render: function (data, type) {
                     if (type !== "display") return data;
                     return (
@@ -220,7 +271,7 @@ function inisialisasi() {
                 data: "created_by_name",
                 defaultContent: "-",
                 className: "text-start align-middle",
-                width: "14%",
+                width: "12%",
                 render: function (data, type) {
                     if (type !== "display") return data;
                     if (!data || data === "-")
@@ -238,7 +289,7 @@ function inisialisasi() {
             {
                 data: "status",
                 className: "text-center align-middle",
-                width: "10%",
+                width: "8%",
                 render: function (data, type) {
                     if (type !== "display") return data;
                     if (data == 1) {
@@ -376,6 +427,10 @@ $(document).on("click", "#add_warehouse .btn-save", function () {
         _token: token,
     };
 
+    if ($("#warehouse_kepala_wrap").is(":visible")) {
+        param.kepala_staff_id = $modal.find("#warehouse_kepala_staff_id").val();
+    }
+
     if (mode == 2) {
         url = "/updateWarehouse";
         param.id = $modal.attr("data-id");
@@ -397,6 +452,15 @@ $(document).on("click", "#add_warehouse .btn-save", function () {
             if (e == -2) {
                 notifikasi("error", "Gagal", "Nama gudang sudah terdaftar!");
                 $modal.find("#warehouse_name").addClass("is-invalid");
+                return;
+            }
+            if (e == -3) {
+                notifikasi(
+                    "error",
+                    "Gagal",
+                    "Kepala operasional wajib diisi dan harus staff yang sudah di-assign ke gudang ini",
+                );
+                $modal.find("#warehouse_kepala_staff_id").addClass("is-invalid");
                 return;
             }
             afterInsert();
@@ -486,6 +550,7 @@ $(document).on("click", ".btn_edit", function () {
         $("#warehouse_type_id").append(opt).trigger("change");
     }
 
+    setWarehouseKepala(data.kepala_staff_id, data.assigned_staff);
     setWarehouseSidebarMenus(data.sidebar_menus);
 
     $("#add_warehouse").attr("data-id", data.id).modal("show");

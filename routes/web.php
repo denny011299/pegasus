@@ -4,7 +4,9 @@ use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerProductReturnController;
+use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\CustomerSupplyReturnController;
+use App\Http\Controllers\DeployController;
 use App\Http\Controllers\DeploymentCheckController;
 use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
@@ -22,6 +24,36 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [GeneralController::class, 'login'])->name('login');
 Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
+
+// Dokumentasi API Eksternal — versi publik, tanpa login. Sama persis dengan
+// /externalApiDocumentation (lihat check.access:Dokumentasi API Eksternal|view
+// di bawah), hanya view & chrome-nya beda (tanpa sidebar/topbar admin). Isinya
+// bukan rahasia: hanya struktur endpoint & contoh, bukan API Key sungguhan.
+Route::middleware('throttle:60,1')->group(function () {
+    Route::get('/api-docs', [ExternalApiController::class, 'publicApiDocumentation'])->name('apiDocsPublic');
+    Route::get('/api-docs/{group}', [ExternalApiController::class, 'publicApiDocumentation'])->name('apiDocsPublicGroup');
+});
+
+// Deploy runner untuk shared hosting tanpa SSH/terminal (lihat DeployController
+// dan cdocs/docs/deploy-shared-hosting.md). Sengaja di luar checkLogin — proteksi
+// murni via DEPLOY_TOKEN acak di .env, bukan session. Rate-limited ketat karena
+// endpoint ini bisa dipakai untuk brute-force token kalau tidak dibatasi.
+Route::middleware('throttle:10,1')->prefix('deploy')->group(function () {
+    Route::get('/migrate', [DeployController::class, 'migrate'])->name('deploy.migrate');
+    Route::get('/migrate-status', [DeployController::class, 'status'])->name('deploy.migrateStatus');
+    Route::get('/optimize-clear', [DeployController::class, 'optimizeClear'])->name('deploy.optimizeClear');
+    Route::get('/console', [DeployController::class, 'console'])->name('deploy.console');
+    Route::get('/snapshots', [DeployController::class, 'snapshots'])->name('deploy.snapshots');
+});
+
+// Seed/fresh are data-destructive (truncate/drop tables) — POST-only so a
+// leaked link, crawler, or browser prefetch can never trigger them via GET,
+// and rate-limited tighter than the read/migrate routes above.
+Route::middleware('throttle:5,1')->prefix('deploy')->group(function () {
+    Route::post('/seed', [DeployController::class, 'seedSnapshot'])->name('deploy.seed');
+    Route::post('/fresh-empty', [DeployController::class, 'freshEmpty'])->name('deploy.freshEmpty');
+});
+
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
 
@@ -255,6 +287,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Peringatan Stok Produk|edit')->group(function () {
         Route::post('/updateStockAlert', [StockController::class, 'updateStockAlert'])->name('updateStockAlert');
+        Route::post('/updateMinOrder', [StockController::class, 'updateMinOrder'])->name('updateMinOrder');
     });
     Route::middleware('check.access:Peringatan Stok Produk|delete')->group(function () {
         Route::post('/deleteStockAlert', [StockController::class, 'deleteStockAlert'])->name('deleteStockAlert');
@@ -269,6 +302,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Peringatan Stok Bahan Mentah|edit')->group(function () {
         Route::post('/updateStockAlertSupplies', [StockController::class, 'updateStockAlertSupplies'])->name('updateStockAlertSupplies');
+        Route::post('/updateMinOrderSupplies', [StockController::class, 'updateMinOrderSupplies'])->name('updateMinOrderSupplies');
     });
     Route::middleware('check.access:Peringatan Stok Bahan Mentah|delete')->group(function () {
         Route::post('/deleteStockAlertSupplies', [StockController::class, 'deleteStockAlertSupplies'])->name('deleteStockAlertSupplies');
@@ -303,6 +337,8 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/generateHutang', [ReportController::class, 'generateHutang'])->name('generateHutang');
     });
 
+    Route::get('/customerReturns/{docKey}/print', [CustomerReturnController::class, 'printForm'])->name('customerReturns.print')->where('docKey', '[A-Za-z0-9:_-]+');
+
     Route::middleware('check.access:Pengiriman|view')->group(function () {
         Route::get('/salesOrder', [CustomerController::class, 'SalesOrder'])->name('salesOrder');
         Route::get('/getSalesOrder', [CustomerController::class, 'getSalesOrder'])->name('getSalesOrder');
@@ -315,6 +351,9 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/customerProductReturns', [CustomerProductReturnController::class, 'index'])->name('customerProductReturns.index');
         Route::get('/customerProductReturns/context', [CustomerProductReturnController::class, 'context'])->name('customerProductReturns.context');
         Route::get('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'show'])->name('customerProductReturns.show');
+        Route::get('/customerReturns', [CustomerReturnController::class, 'index'])->name('customerReturns.index');
+        Route::get('/customerReturns/context', [CustomerReturnController::class, 'context'])->name('customerReturns.context');
+        Route::get('/customerReturns/{docKey}', [CustomerReturnController::class, 'show'])->name('customerReturns.show')->where('docKey', '[A-Za-z0-9:_-]+');
     });
     Route::middleware('check.access:Pengiriman|create')->group(function () {
         Route::post('/insertSalesOrder', [CustomerController::class, 'insertSalesOrder'])->name('insertSalesOrder');
@@ -322,6 +361,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/insertInvoiceSO', [CustomerController::class, 'insertInvoiceSO'])->name('insertInvoiceSO');
         Route::post('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'store'])->name('customerSupplyReturns.store');
         Route::post('/customerProductReturns', [CustomerProductReturnController::class, 'store'])->name('customerProductReturns.store');
+        Route::post('/customerReturns', [CustomerReturnController::class, 'store'])->name('customerReturns.store');
     });
     Route::middleware('check.access:Pengiriman|edit')->group(function () {
         Route::post('/updateSalesOrder', [CustomerController::class, 'updateSalesOrder'])->name('updateSalesOrder');
@@ -330,6 +370,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/updateInvoiceSO', [CustomerController::class, 'updateInvoiceSO'])->name('updateInvoiceSO');
         Route::post('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'update'])->name('customerSupplyReturns.update');
         Route::post('/customerProductReturns/{returnId}', [CustomerProductReturnController::class, 'update'])->name('customerProductReturns.update');
+        Route::post('/customerReturns/{docKey}', [CustomerReturnController::class, 'update'])->name('customerReturns.update')->where('docKey', '[A-Za-z0-9:_-]+');
     });
     Route::middleware('check.access:Pengiriman|delete')->group(function () {
         Route::post('/deleteSalesOrder', [CustomerController::class, 'deleteSalesOrder'])->name('deleteSalesOrder');
@@ -337,6 +378,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/deleteInvoiceSO', [CustomerController::class, 'deleteInvoiceSO'])->name('deleteInvoiceSO');
         Route::post('/customerSupplyReturns/{returnId}/delete', [CustomerSupplyReturnController::class, 'destroy'])->name('customerSupplyReturns.destroy');
         Route::post('/customerProductReturns/{returnId}/delete', [CustomerProductReturnController::class, 'destroy'])->name('customerProductReturns.destroy');
+        Route::post('/customerReturns/{docKey}/delete', [CustomerReturnController::class, 'destroy'])->name('customerReturns.destroy')->where('docKey', '[A-Za-z0-9:_-]+');
     });
     Route::middleware('check.access:Pengiriman|others')->group(function () {
         Route::post('/accSO', [CustomerController::class, 'accSO'])->name('accSO');
@@ -349,6 +391,8 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/customerSupplyReturns/{returnId}/decline', [CustomerSupplyReturnController::class, 'decline'])->name('customerSupplyReturns.decline');
         Route::post('/customerProductReturns/{returnId}/accept', [CustomerProductReturnController::class, 'accept'])->name('customerProductReturns.accept');
         Route::post('/customerProductReturns/{returnId}/decline', [CustomerProductReturnController::class, 'decline'])->name('customerProductReturns.decline');
+        Route::post('/customerReturns/{docKey}/accept', [CustomerReturnController::class, 'accept'])->name('customerReturns.accept')->where('docKey', '[A-Za-z0-9:_-]+');
+        Route::post('/customerReturns/{docKey}/decline', [CustomerReturnController::class, 'decline'])->name('customerReturns.decline')->where('docKey', '[A-Za-z0-9:_-]+');
     });
 
     Route::middleware('check.access:Pembelian|view')->group(function () {
@@ -660,6 +704,9 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/getProduction', [ProductionController::class, 'getProduction'])->name('getProduction');
         Route::get('/getPemakaian', [ProductionController::class, 'getPemakaian'])->name('getPemakaian');
         Route::get('/getFotoProduksi', [ProductionController::class, 'getFotoProduksi'])->name('getFotoProduksi');
+        // Production-scoped BOM read/update (users may lack Resep Bahan Mentah access)
+        Route::get('/getProductionBom', [ProductionController::class, 'getBom'])->name('getProductionBom');
+        Route::post('/updateProductionBom', [ProductionController::class, 'updateBom'])->name('updateProductionBom');
     });
     Route::middleware('check.access:Produksi|create')->group(function () {
         Route::post('/insertProduction', [ProductionController::class, 'insertProduction'])->name('insertProduction');
@@ -774,6 +821,21 @@ Route::middleware(checkLogin::class)->group(function () {
     // Endpoint yang dipakai sistem pihak ketiga TIDAK ada di sini; jalurnya
     // terpisah di routes/api.php + routes/external-api/ dan dijaga API Key,
     // bukan session.
+
+    // Status API Eksternal — kendali cepat PER ENDPOINT (satu baris per
+    // ApiEndpointDoc terdaftar, lintas semua versi): aktif/nonaktifkan satu
+    // endpoint (is_active) dan tampilkan/sembunyikan satu endpoint dari
+    // halaman dokumentasi publik (is_public_docs_show). Bukan resource CRUD,
+    // jadi cuma pakai ability view (lihat halaman) & others (ubah saklar).
+    Route::middleware('check.access:Status API Eksternal|view')->group(function () {
+        Route::get('/externalApiStatus', [ExternalApiController::class, 'externalApiStatus'])->name('externalApiStatus');
+        Route::get('/getExternalApiStatus', [ExternalApiController::class, 'getExternalApiStatus'])->name('getExternalApiStatus');
+    });
+    Route::middleware('check.access:Status API Eksternal|others')->group(function () {
+        Route::post('/toggleExternalApiEndpointActive', [ExternalApiController::class, 'toggleExternalApiEndpointActive'])->name('toggleExternalApiEndpointActive');
+        Route::post('/toggleExternalApiEndpointPublicDocs', [ExternalApiController::class, 'toggleExternalApiEndpointPublicDocs'])->name('toggleExternalApiEndpointPublicDocs');
+    });
+
     Route::middleware('check.access:Aplikasi Eksternal|view')->group(function () {
         Route::get('/externalApplication', [ExternalApiController::class, 'externalApplication'])->name('externalApplication');
         Route::get('/externalApplication/{id}', [ExternalApiController::class, 'externalApplicationDetail'])->name('externalApplicationDetail');

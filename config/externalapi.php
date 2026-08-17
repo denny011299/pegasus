@@ -140,16 +140,72 @@ return [
     'docs' => [
         // API-001 — Data Master
         \App\ExternalApi\Docs\Endpoints\V1\MasterUnitListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterUnitLinkDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterCashCategoryListDoc::class,
 
         // API-002 — Data Master (batch 2)
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseTypeListDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSalesLinkDoc::class,
 
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentShowDoc::class,
+
+        // Data Armada — modul tersendiri, bukan bagian Data Master. "Armada"
+        // memakai tabel customers yang sama dengan pelanggan biasa, tapi
+        // dilayani lewat rute dan halaman dokumentasi sendiri karena
+        // konsepnya beda dari data master yang statis (satuan, gudang, dst.)
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterArmadaDeleteDoc::class,
+
+        // Data Produk — modul tersendiri, sama seperti Data Armada. Beda
+        // dengan Armada: produk punya endpoint connect, karena
+        // products.ref_product_id nullable dan sering kosong (sama seperti
+        // units.ref_unit_id), bukan selalu terisi seperti customer_code.
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterProductLinkDoc::class,
+
+        // Data Bahan — modul tersendiri, sama pola dengan Data Produk (endpoint connect,
+        // karena ref_supplies_id nullable dan sering kosong). Dibangun bersamaan dengan
+        // POST /shipments/returns (GitHub #58): item type=1 endpoint itu me-resolve
+        // item.ref_id lewat ref_supplies_id yang dikelola grup ini.
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterSuppliesLinkDoc::class,
+
+        // Stok — modul baru, hanya baca (tidak ada create/update/delete).
+        \App\ExternalApi\Docs\Endpoints\V1\StockCheckDoc::class,
+
+        // Shipment — modul lengkap sesuai API Contract v1 (lihat "private docs/Open API/"):
+        // scheduled() + shipped() + show() (GET) + change-status (PATCH) + cancel (PUT).
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentScheduledDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentShippedDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentShowDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentChangeStatusDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentCancelDoc::class,
+
+        // Pengembalian (Retur) — GitHub #58, PMO memicu pengembalian armada langsung. Bukan
+        // bagian modul Shipment (tabel beda), tapi tetap grup dokumentasi "pengiriman" karena
+        // path-nya di bawah /shipments dan menu adminnya satu halaman (Pengiriman > Pengembalian).
+        \App\ExternalApi\Docs\Endpoints\V1\ShipmentReturnCreateDoc::class,
     ],
 
     /*
@@ -163,9 +219,12 @@ return [
     */
     'doc_groups' => [
         'master' => 'Data Master',
+        'armada' => 'Data Armada',
         'pembayaran' => 'Pembayaran',
-        'produk' => 'Produk',
+        'produk' => 'Data Produk',
+        'bahan' => 'Data Bahan',
         'stok' => 'Stok',
+        'pengiriman' => 'Pengiriman',
         'pesanan' => 'Pesanan',
         'pelanggan' => 'Pelanggan',
     ],

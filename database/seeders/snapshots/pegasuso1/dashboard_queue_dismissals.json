@@ -1,0 +1,182 @@
+[
+    {
+        "id": 1,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "pr:91",
+        "status": 1,
+        "created_at": "2026-05-02 20:20:56",
+        "updated_at": "2026-05-02 20:20:56"
+    },
+    {
+        "id": 2,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "pr:92",
+        "status": 1,
+        "created_at": "2026-05-02 20:23:41",
+        "updated_at": "2026-05-02 20:23:41"
+    },
+    {
+        "id": 3,
+        "staff_id": 9,
+        "queue_section": "changelog",
+        "queue_key": "log:16",
+        "status": 1,
+        "created_at": "2026-05-02 20:23:58",
+        "updated_at": "2026-05-02 20:23:58"
+    },
+    {
+        "id": 4,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "pr:94",
+        "status": 1,
+        "created_at": "2026-05-04 09:19:49",
+        "updated_at": "2026-05-04 09:19:49"
+    },
+    {
+        "id": 5,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "so:181",
+        "status": 1,
+        "created_at": "2026-05-04 11:01:47",
+        "updated_at": "2026-05-04 11:01:47"
+    },
+    {
+        "id": 6,
+        "staff_id": 10,
+        "queue_section": "revision",
+        "queue_key": "pr:94",
+        "status": 1,
+        "created_at": "2026-05-07 08:49:02",
+        "updated_at": "2026-05-07 08:49:02"
+    },
+    {
+        "id": 7,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "pr:103",
+        "status": 1,
+        "created_at": "2026-05-12 07:02:46",
+        "updated_at": "2026-05-12 07:02:46"
+    },
+    {
+        "id": 8,
+        "staff_id": 17,
+        "queue_section": "revision",
+        "queue_key": "pr:116",
+        "status": 1,
+        "created_at": "2026-05-18 14:24:08",
+        "updated_at": "2026-05-18 14:24:08"
+    },
+    {
+        "id": 9,
+        "staff_id": 18,
+        "queue_section": "revision",
+        "queue_key": "pr:119",
+        "status": 1,
+        "created_at": "2026-05-20 08:08:11",
+        "updated_at": "2026-05-20 08:08:11"
+    },
+    {
+        "id": 10,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "so:196",
+        "status": 1,
+        "created_at": "2026-05-21 08:23:15",
+        "updated_at": "2026-05-21 08:23:15"
+    },
+    {
+        "id": 11,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "so:278",
+        "status": 1,
+        "created_at": "2026-05-21 10:10:12",
+        "updated_at": "2026-05-21 10:10:12"
+    },
+    {
+        "id": 12,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "pr:128",
+        "status": 1,
+        "created_at": "2026-05-29 09:06:54",
+        "updated_at": "2026-05-29 09:06:54"
+    },
+    {
+        "id": 13,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "pr:133",
+        "status": 1,
+        "created_at": "2026-05-30 15:10:53",
+        "updated_at": "2026-05-30 15:10:53"
+    },
+    {
+        "id": 14,
+        "staff_id": 17,
+        "queue_section": "revision",
+        "queue_key": "pr:186",
+        "status": 1,
+        "created_at": "2026-06-30 15:14:08",
+        "updated_at": "2026-06-30 15:14:08"
+    },
+    {
+        "id": 15,
+        "staff_id": 18,
+        "queue_section": "revision",
+        "queue_key": "pr:228",
+        "status": 1,
+        "created_at": "2026-07-22 09:53:40",
+        "updated_at": "2026-07-22 09:53:40"
+    },
+    {
+        "id": 16,
+        "staff_id": 18,
+        "queue_section": "revision",
+        "queue_key": "pr:234",
+        "status": 1,
+        "created_at": "2026-07-23 08:37:41",
+        "updated_at": "2026-07-23 08:37:41"
+    },
+    {
+        "id": 17,
+        "staff_id": 9,
+        "queue_section": "revision",
+        "queue_key": "pr:244",
+        "status": 1,
+        "created_at": "2026-07-27 09:57:10",
+        "updated_at": "2026-07-27 09:57:10"
+    },
+    {
+        "id": 18,
+        "staff_id": 17,
+        "queue_section": "revision",
+        "queue_key": "pr:249",
+        "status": 1,
+        "created_at": "2026-07-29 10:02:48",
+        "updated_at": "2026-07-29 10:02:48"
+    },
+    {
+        "id": 19,
+        "staff_id": 17,
+        "queue_section": "revision",
+        "queue_key": "pr:250",
+        "status": 1,
+        "created_at": "2026-07-29 13:17:51",
+        "updated_at": "2026-07-29 13:17:51"
+    },
+    {
+        "id": 20,
+        "staff_id": 18,
+        "queue_section": "revision",
+        "queue_key": "pr:253",
+        "status": 1,
+        "created_at": "2026-07-30 09:09:24",
+        "updated_at": "2026-07-30 09:09:24"
+    }
+]

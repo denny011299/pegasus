@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Support\BatchLookup;
+use App\Support\RoleIds;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class Staff extends Model
@@ -45,6 +47,12 @@ class Staff extends Model
      *
      * Satu kueri JOIN, tanpa N+1, dan hanya kolom yang aman yang diambil:
      * kata sandi, nama pengguna, dan saldo staf tidak pernah ikut terbaca.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesListQueryParams, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat. JOIN-nya aman dipaginasi: role_id adalah relasi banyak-ke-
+     * satu ke roles, jadi tidak ada baris staf yang terlipat ganda.
      */
     function getSalesForExternalApi(string $roleNameLike = 'sales')
     {
@@ -54,10 +62,11 @@ class Staff extends Model
             ->where('staffs.status', '=', 1)
             ->orderBy('staffs.created_at', 'asc')
             ->orderBy('staffs.staff_id', 'asc')
-            ->get([
+            ->select([
                 'staffs.staff_id',
                 'staffs.staff_name',
                 'staffs.staff_code',
+                'staffs.external_ref_id',
                 'staffs.staff_email',
                 'staffs.staff_phone',
                 'staffs.staff_address',
@@ -166,6 +175,7 @@ class Staff extends Model
             'role_id' => $staff->role_id !== null ? (int) $staff->role_id : null,
             'role_name' => (string) ($staff->role_name ?? ''),
             'staff_warehouses' => $staff->staff_warehouses ?? [],
+            'kepala_warehouse_ids' => $this->kepalaWarehouseIdsForStaff((int) $staff->staff_id),
             'status' => (int) ($staff->status ?? 0),
         ];
     }
@@ -184,14 +194,20 @@ class Staff extends Model
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
-        $this->syncStaffWarehouses($t->staff_id, $data['staff_warehouses'] ?? null);
+        $this->applyStaffWarehouses($t->staff_id, $data['staff_warehouses'] ?? null);
 
         return $t->staff_id;
     }
 
     function updateStaff($data)
     {
-        $t = self::find($data["staff_id"]);
+        $staffId = (int) $data["staff_id"];
+        $blocked = $this->kepalaUnassignError($staffId, $data['staff_warehouses'] ?? null);
+        if ($blocked !== null) {
+            return $blocked;
+        }
+
+        $t = self::find($staffId);
         $t->staff_name = $data["staff_first_name"] . " " . $data["staff_last_name"];
         $t->staff_email = $data["staff_email"];
         $t->staff_phone = $data["staff_phone"];
@@ -212,7 +228,7 @@ class Staff extends Model
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
-        $this->syncStaffWarehouses($t->staff_id, $data['staff_warehouses'] ?? null);
+        $this->applyStaffWarehouses($t->staff_id, $data['staff_warehouses'] ?? null);
 
         return $t->staff_id;
     }
@@ -226,25 +242,120 @@ class Staff extends Model
     }
 
     /**
-     * @param  mixed  $raw  JSON string "[1,2]", array, atau null
+     * Tambah gudang yang belum ada. Baris lama tidak diubah.
+     * Unassign hanya menghapus baris yang memang dilepas, dan hanya jika bukan kepala cabang.
+     *
+     * @param  mixed  $raw
      */
-    public function syncStaffWarehouses(int $staffId, $raw): void
+    public function applyStaffWarehouses(int $staffId, $raw): void
     {
-        $ids = $this->parseWarehouseIds($raw);
+        $wanted = $this->parseWarehouseIds($raw);
+        $existing = StaffWarehouse::query()
+            ->where('staff_id', $staffId)
+            ->pluck('warehouse_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
 
-        StaffWarehouse::where('staff_id', $staffId)->delete();
+        $toRemove = array_values(array_diff($existing, $wanted));
+        if ($toRemove !== []) {
+            StaffWarehouse::query()
+                ->where('staff_id', $staffId)
+                ->whereIn('warehouse_id', $toRemove)
+                ->delete();
+        }
 
-        if ($ids === []) {
+        $this->insertMissingStaffWarehouses($staffId, array_values(array_diff($wanted, $existing)));
+    }
+
+    /**
+     * @param  mixed  $raw
+     * @return array{status:int,message:string}|null
+     */
+    public function kepalaUnassignError(int $staffId, $raw): ?array
+    {
+        $wanted = $this->parseWarehouseIds($raw);
+        $existing = StaffWarehouse::query()
+            ->where('staff_id', $staffId)
+            ->pluck('warehouse_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        $toRemove = array_values(array_diff($existing, $wanted));
+        $blocked = $this->kepalaWarehouseIdsAmong($staffId, $toRemove);
+        if ($blocked === []) {
+            return null;
+        }
+
+        $names = Warehouse::query()
+            ->whereIn('id', $blocked)
+            ->pluck('warehouse_name')
+            ->filter()
+            ->implode(', ');
+
+        return [
+            'status' => -1,
+            'message' => 'Tidak bisa menonaktifkan gudang'
+                . ($names !== '' ? ' '.$names : '')
+                . ' karena staf ini Kepala Operasional gudang tersebut.',
+        ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function kepalaWarehouseIdsForStaff(int $staffId): array
+    {
+        return $this->kepalaWarehouseIdsAmong($staffId, null);
+    }
+
+    /**
+     * @param  array<int, int>|null  $warehouseIds
+     * @return array<int, int>
+     */
+    private function kepalaWarehouseIdsAmong(int $staffId, ?array $warehouseIds): array
+    {
+        if ($warehouseIds !== null && $warehouseIds === []) {
+            return [];
+        }
+        if (! Schema::hasColumn('staff_warehouses', 'is_kepala_cabang')) {
+            return [];
+        }
+
+        $query = StaffWarehouse::query()
+            ->where('staff_id', $staffId)
+            ->where('is_kepala_cabang', 1);
+        if ($warehouseIds !== null) {
+            $query->whereIn('warehouse_id', $warehouseIds);
+        }
+
+        return $query->pluck('warehouse_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @param  array<int, int>  $warehouseIds
+     */
+    private function insertMissingStaffWarehouses(int $staffId, array $warehouseIds): void
+    {
+        if ($warehouseIds === []) {
             return;
         }
 
+        $hasKepala = Schema::hasColumn('staff_warehouses', 'is_kepala_cabang');
         $now = now();
-        $rows = array_map(static fn ($warehouseId) => [
-            'staff_id' => $staffId,
-            'warehouse_id' => $warehouseId,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], $ids);
+        $rows = array_map(static function ($warehouseId) use ($staffId, $hasKepala, $now) {
+            $row = [
+                'staff_id' => $staffId,
+                'warehouse_id' => $warehouseId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+            if ($hasKepala) {
+                $row['is_kepala_cabang'] = 0;
+            }
+
+            return $row;
+        }, $warehouseIds);
 
         StaffWarehouse::insert($rows);
     }
@@ -288,6 +399,41 @@ class Staff extends Model
             ->where('staff_id', (int) $user->staff_id)
             ->pluck('warehouse_id')
             ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * Staff QC gudang (role_id tetap) yang sudah di-assign ke gudang.
+     *
+     * @return array<int, array{id:int,text:string}>
+     */
+    public static function qcGudangForWarehouse(int $warehouseId): array
+    {
+        if ($warehouseId <= 0) {
+            return [];
+        }
+
+        $assignedIds = StaffWarehouse::query()
+            ->where('warehouse_id', $warehouseId)
+            ->pluck('staff_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($assignedIds === []) {
+            return [];
+        }
+
+        return self::query()
+            ->where('status', 1)
+            ->where('role_id', RoleIds::QC_GUDANG)
+            ->whereIn('staff_id', $assignedIds)
+            ->orderBy('staff_name')
+            ->get(['staff_id', 'staff_name'])
+            ->map(static fn ($row) => [
+                'id' => (int) $row->staff_id,
+                'text' => (string) $row->staff_name,
+            ])
+            ->values()
             ->all();
     }
 }

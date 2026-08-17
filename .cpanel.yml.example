@@ -1,0 +1,38 @@
+# Template for cPanel "Git™ Version Control" deploy automation.
+#
+# Rename to `.cpanel.yml` (repo root) and fix the paths below ONLY after you've
+# confirmed your hosting account has the Git Version Control feature (cPanel →
+# Files → Git Version Control) and you know your account's real home path.
+# cPanel runs this file server-side on every "Update from Remote" / deploy
+# click — no SSH session needed, even though it looks like a shell script.
+#
+# Left as `.example` on purpose: an unconfigured copy named `.cpanel.yml`
+# would silently no-op or fail with wrong paths the moment Git Version
+# Control is enabled, which is worse than not having it at all.
+#
+# See cdocs/docs/deploy-shared-hosting.md for the full runbook.
+
+---
+deployment:
+  tasks:
+    # 1. Copy the repo checkout into your actual public app directory.
+    #    Adjust DEPLOYPATH to your real path (cPanel shows this on the Git
+    #    Version Control page for this repo, usually something like
+    #    /home/USERNAME/public_html or /home/USERNAME/app if public_html
+    #    only holds /public and the app lives one level up).
+    - export DEPLOYPATH=/home/USERNAME/public_html/
+    - /bin/cp -R * $DEPLOYPATH
+
+    # 2. Install PHP deps without dev packages (composer must be available
+    #    as a cPanel-provided binary — check cPanel → Software → Composer).
+    - cd $DEPLOYPATH && composer install --no-dev --optimize-autoloader
+
+    # 3. Run pending migrations. Safe to run every deploy: Laravel's
+    #    `migrations` table skips anything already applied.
+    - cd $DEPLOYPATH && php artisan migrate --force
+
+    # 4. Clear/rebuild caches so config & route changes actually take effect.
+    - cd $DEPLOYPATH && php artisan config:clear
+    - cd $DEPLOYPATH && php artisan cache:clear
+    - cd $DEPLOYPATH && php artisan view:clear
+    - cd $DEPLOYPATH && php artisan route:clear

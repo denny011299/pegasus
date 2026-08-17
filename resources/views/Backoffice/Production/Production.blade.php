@@ -189,14 +189,6 @@
             <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
-                    <div class="row text-end ps-2 mb-2">
-                        <div class="col-10 col-lg-11"></div>
-                        <div class="col-lg-1 col-2">
-                            <a class="btn btn-outline-primary LihatfotoProduksi" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti Produksi">
-                                <i class="fe fe-image"></i>
-                            </a>
-                        </div>
-                    </div>
                     <div class="card card-table">
                         <div class="card-body">
                             <div class="table-responsive dt-pending" id="tableProduction-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
@@ -281,7 +273,7 @@
                                 <table class="table table-center custom-table-scroll mb-0" id="tableSupplies" style="min-height: 15vh">
                                     <thead style="background: #f1f5f9;">
                                         <tr>
-                                            <th class="text-center" style="width: 15%; padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">#</th>
+                                            <th class="text-center col-bahan-check" title="Centang bahan yang dipakai untuk produksi ini" style="width: 15%; padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Pakai</th>
                                             <th style="padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Nama Bahan</th>
                                         </tr>
                                     </thead>
@@ -290,8 +282,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer border-top" style="background:#f8fafc;padding:14px 24px;">
-                        <button type="button" class="btn btn-save-bahan ms-2 d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:160px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3); cursor:pointer;"><i class="fe fe-save me-1"></i>Simpan Perubahan</button>
+                    <div class="modal-footer border-top d-flex justify-content-end gap-2" style="background:#f8fafc;padding:14px 24px;">
+                        <button type="button" class="btn pg-btn-cancel btn-close-bahan">Tutup</button>
+                        <button type="button" class="btn btn-save-bahan d-inline-flex align-items-center justify-content-center gap-2" style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;padding:9px 28px;font-size:13px;font-weight:600;min-width:160px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3); cursor:pointer;"><i class="fe fe-save me-1"></i>Simpan Perubahan</button>
                     </div>
                 </form>
             </div>

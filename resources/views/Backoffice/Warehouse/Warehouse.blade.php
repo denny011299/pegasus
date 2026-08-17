@@ -18,7 +18,7 @@
     }
     .dt-skeleton-head {
         display: grid;
-        grid-template-columns: 22% 14% 20% 12% 14% 10% 8%;
+        grid-template-columns: 20% 12% 26% 14% 12% 8% 8%;
         gap: 0;
         background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%);
         border-bottom: 2px solid #bfdbfe;
@@ -36,7 +36,7 @@
     }
     .dt-skeleton-row {
         display: grid;
-        grid-template-columns: 22% 14% 20% 12% 14% 10% 8%;
+        grid-template-columns: 20% 12% 26% 14% 12% 8% 8%;
         gap: 0;
         align-items: center;
         min-height: 65px;

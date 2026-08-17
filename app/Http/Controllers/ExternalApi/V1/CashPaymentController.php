@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\ExternalApi\V1;
 
+use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\ExternalApi\Support\PaymentPhotoStore;
 use App\Http\Controllers\Controller;
@@ -138,7 +139,7 @@ class CashPaymentController extends Controller
 
         if ($found === null) {
             return ApiResponse::error(
-                ApiResponse::ERROR_NOT_FOUND,
+                ErrorCatalog::NOT_FOUND,
                 'Pembayaran dengan ref_payment_id "'.$refPaymentId.'" tidak ditemukan.',
                 404,
             );
@@ -359,7 +360,7 @@ class CashPaymentController extends Controller
             $body = $result->getData(true);
 
             return ApiResponse::error(
-                'payment_not_acceptable',
+                ErrorCatalog::PAYMENT_NOT_ACCEPTABLE,
                 $body['message'] ?? 'Pembayaran tidak dapat disetujui.',
                 409,
             );

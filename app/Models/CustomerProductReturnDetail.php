@@ -14,6 +14,7 @@ class CustomerProductReturnDetail extends Model
         'product_variant_id',
         'unit_id',
         'warehouse_id',
+        'destination_warehouse_id',
         'qty',
         'status',
     ];

@@ -21,6 +21,7 @@
 /public/storage
 /public/customer_product_returns/
 /public/customer_supply_returns/
+/public/customer_returns/
 /storage/*.key
 /storage/pail
 /vendor
@@ -47,3 +48,13 @@ vendor.zip
 /.postman
 /cdocs
 /docs/sop-*.md
+
+/storage/backups/
+
+pegasuso_pegasus.sql
+
+# Raw .sql dumps dropped at the repo root as snapshot:import-sql input (e.g.
+# "Database baru.sql"). Never meant to be committed themselves — see
+# database/seeders/README.md. The generated snapshot under
+# database/seeders/{data,snapshots/<name>}/*.json is what gets committed.
+/*.sql

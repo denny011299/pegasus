@@ -221,6 +221,27 @@
         background: linear-gradient(135deg, #ef4444, #dc2626);
         box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
     }
+    .pg-btn-print {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        background: #fff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 9px 20px;
+        font-size: 13px;
+        font-weight: 600;
+        min-width: 130px;
+        height: 42px;
+        line-height: 1;
+    }
+    .pg-btn-print:hover {
+        color: #1e40af;
+        background: #eff6ff;
+        border-color: #93c5fd;
+    }
     .pg-btn-confirm.btn-danger:hover,
     .pg-btn-confirm--danger:hover {
         color: #fff;

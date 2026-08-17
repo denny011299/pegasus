@@ -671,29 +671,21 @@
 
 @if(Route::is(['bom']))
 <!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
-    <div class="row">
-        <div class="col-12 col-md-12 mb-4">
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-4">
-                        <div class="input-block mb-3 mb-md-0">
-                            <label>Produk</label>
-                            <select class="form-select" id="filter_product_id"></select>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="input-block mb-3 mb-md-0">
-                            <label>Bahan Mentah</label>
-                            <select class="form-select" id="filter_supplies_id"></select>
-                        </div>
-                    </div>
-                    <div class="col-md-4 col-sm-12 pt-md-4 text-end">
-                        <a class="btn btn-outline-secondary btn-clear">
-                            Clear
-                        </a>
-                    </div>
-                </div>
+<div class="card mb-4 border-0 mt-3" style="background: linear-gradient(145deg, #ffffff, #f8fafc); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-radius: 12px;">
+    <div class="card-body p-4">
+        <div class="d-flex flex-wrap align-items-end gap-3">
+            <div style="flex: 1 1 220px; min-width: 200px; max-width: 100%;">
+                <label class="form-label text-muted fw-semibold mb-2" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fe fe-box me-1"></i> Produk</label>
+                <select class="form-select" id="filter_product_id" style="border-radius: 8px; font-weight: 600; color: #1e293b; font-size: 14px; height: 42px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"></select>
+            </div>
+            <div style="flex: 1 1 220px; min-width: 200px; max-width: 100%;">
+                <label class="form-label text-muted fw-semibold mb-2" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fe fe-layers me-1"></i> Bahan Mentah</label>
+                <select class="form-select" id="filter_supplies_id" style="border-radius: 8px; font-weight: 600; color: #1e293b; font-size: 14px; height: 42px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);"></select>
+            </div>
+            <div class="ms-md-auto">
+                <button type="button" class="btn btn-light btn-clear" style="padding: 0 24px; font-weight: 600; border-radius: 8px; height: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; color: #475569; transition: all 0.2s ease;">
+                    <i class="fe fe-refresh-cw me-2" style="font-size: 14px;"></i> Clear
+                </button>
             </div>
         </div>
     </div>
@@ -706,11 +698,11 @@
 <div class="card mb-4 border-0 mt-3" style="background: linear-gradient(145deg, #ffffff, #f8fafc); box-shadow: 0 4px 15px rgba(0,0,0,0.03); border-radius: 12px;">
     <div class="card-body p-4">
         <div class="d-flex flex-wrap align-items-end gap-3">
-            <div style="flex: 1; min-width: 200px; max-width: 300px;">
+            <div style="flex: 1 1 220px; min-width: 200px; max-width: 100%;">
                 <label class="form-label text-muted fw-semibold mb-2" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fe fe-calendar me-1"></i> Tanggal</label>
                 <input type="date" class="form-control fill" id="date_production" style="border-radius: 8px; font-weight: 600; color: #1e293b; font-size: 14px; height: 42px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
             </div>
-            <div style="flex: 1; min-width: 200px; max-width: 300px;">
+            <div style="flex: 1 1 220px; min-width: 200px; max-width: 100%;">
                 <label class="form-label text-muted fw-semibold mb-2" style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;"><i class="fe fe-activity me-1"></i> Status</label>
                 <select class="form-select fill" id="status" style="border-radius: 8px; font-weight: 600; color: #1e293b; font-size: 14px; height: 42px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
                     <option value="">Semua</option>
@@ -720,8 +712,11 @@
                     <option value="3">Tolak</option>
                 </select>
             </div>
-            <div>
-                <button class="btn btn-light btn-clear" style="padding: 0 24px; font-weight: 600; border-radius: 8px; height: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; color: #475569; transition: all 0.2s ease;">
+            <div class="d-flex flex-wrap align-items-center gap-2 ms-md-auto">
+                <a href="javascript:void(0);" class="btn btn-outline-primary LihatfotoProduksi d-inline-flex align-items-center justify-content-center gap-2" style="padding: 0 20px; font-weight: 600; border-radius: 8px; height: 42px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.2s ease;" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Lihat Bukti Produksi">
+                    <i class="fe fe-image" style="font-size: 14px;"></i> Lihat Gambar
+                </a>
+                <button type="button" class="btn btn-light btn-clear" style="padding: 0 24px; font-weight: 600; border-radius: 8px; height: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; color: #475569; transition: all 0.2s ease;">
                     <i class="fe fe-refresh-cw me-2" style="font-size: 14px;"></i> Clear
                 </button>
             </div>
@@ -828,6 +823,74 @@
                     <div class="col-12 text-end">
                         <a class="btn btn-primary btn-filter me-2">Terapkan</a>
                         <a class="btn btn-outline-secondary btn-clear">Clear</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /Filter Pencarian -->
+@endif
+
+@if (Route::is(['externalApiStatus']))
+    {{--
+        Seluruh data tabel ini sudah dimuat sekali lewat AJAX (tidak
+        dipaginasi server), jadi filter di sini bekerja langsung di sisi
+        klien (lihat Status.js) — berubah, tabel langsung tersaring, tanpa
+        tombol "Terapkan". Pilihan Versi/Kelompok/Metode diisi JS dari data
+        yang benar-benar ada, jadi versi/kelompok/metode baru otomatis
+        muncul sebagai pilihan tanpa menyentuh berkas ini.
+    --}}
+    <!-- Filter Pencarian -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Versi</label>
+                            <select class="form-select" id="filter_status_version">
+                                <option value="">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Kelompok</label>
+                            <select class="form-select" id="filter_status_group">
+                                <option value="">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Metode</label>
+                            <select class="form-select" id="filter_status_method">
+                                <option value="">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Endpoint Aktif</label>
+                            <select class="form-select" id="filter_status_active">
+                                <option value="">Semua</option>
+                                <option value="1">Aktif</option>
+                                <option value="0">Nonaktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Dokumentasi Publik</label>
+                            <select class="form-select" id="filter_status_public">
+                                <option value="">Semua</option>
+                                <option value="1">Tampil</option>
+                                <option value="0">Tersembunyi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <a class="btn btn-outline-secondary btn-clear w-100">Clear</a>
                     </div>
                 </div>
             </div>

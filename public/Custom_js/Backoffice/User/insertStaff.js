@@ -33,6 +33,16 @@ $(document).ready(function () {
 
     // Checkbox interaction: hapus border merah jika dicentang
     $(".chk-warehouse").on("change", function () {
+        var $chk = $(this);
+        if (!$chk.prop("checked") && isKepalaWarehouse($chk.val())) {
+            $chk.prop("checked", true);
+            notifikasi(
+                "error",
+                "Tidak bisa dinonaktifkan",
+                "Staf ini Kepala Operasional gudang tersebut.",
+            );
+            return;
+        }
         if ($(".chk-warehouse:checked").length > 0) {
             $(".warehouse-list-container").removeClass("border-danger");
         }
@@ -91,6 +101,12 @@ $(document).ready(function () {
                 }
             } catch (e) {}
         }
+
+        kepalaWarehouseIds().forEach(function (id) {
+            $("#wh_" + id)
+                .prop("checked", true)
+                .attr("data-kepala", "1");
+        });
     }
 });
 
@@ -105,7 +121,16 @@ $(document).on("click", "#btn_select_all_warehouses", function () {
             .addClass("text-danger");
         $(".warehouse-list-container").removeClass("border-danger");
     } else {
-        $(".chk-warehouse").prop("checked", false);
+        var $kepala = $(".chk-warehouse[data-kepala='1']");
+        $(".chk-warehouse").not($kepala).prop("checked", false);
+        $kepala.prop("checked", true);
+        if ($kepala.length) {
+            notifikasi(
+                "error",
+                "Tidak bisa dinonaktifkan",
+                "Gudang Kepala Operasional tidak bisa dilepas dari staf ini.",
+            );
+        }
         $(this).attr("data-state", "all");
         $(this)
             .html('<i class="fa fa-check-square"></i> Pilih Semua')
@@ -125,6 +150,7 @@ $(document).on("click", ".btn-save", function () {
     // else if (mode==1) $('#staff_image').addClass('fill');
 
     var valid = 1;
+    var kepalaBlocked = false;
     $(".fill").each(function () {
         if (
             $(this).val() == null ||
@@ -152,6 +178,23 @@ $(document).on("click", ".btn-save", function () {
     if (!staff_warehouses || !staff_warehouses.length) {
         $(".warehouse-list-container").addClass("border-danger");
         valid = -1;
+    } else if (mode == 2 || mode === "2") {
+        var missingKepala = kepalaWarehouseIds().some(function (id) {
+            return staff_warehouses.map(Number).indexOf(id) === -1;
+        });
+        if (missingKepala) {
+            kepalaWarehouseIds().forEach(function (id) {
+                $("#wh_" + id).prop("checked", true);
+            });
+            $(".warehouse-list-container").addClass("border-danger");
+            valid = -1;
+            kepalaBlocked = true;
+            notifikasi(
+                "error",
+                "Tidak bisa dinonaktifkan",
+                "Staf ini Kepala Operasional gudang tersebut.",
+            );
+        }
     }
 
     let pass = $("#staff_password").val();
@@ -174,11 +217,13 @@ $(document).on("click", ".btn-save", function () {
     }
 
     if (valid == -1) {
-        notifikasi(
-            "error",
-            "Gagal Insert",
-            "Silahkan cek kembali inputan anda",
-        );
+        if (!kepalaBlocked) {
+            notifikasi(
+                "error",
+                "Gagal Insert",
+                "Silahkan cek kembali inputan anda",
+            );
+        }
         ResetLoadingButton(
             ".btn-save",
             mode == 1 ? "Tambah Staff" : "Update Staff",
@@ -246,6 +291,12 @@ $(document).on("click", ".btn-save", function () {
                     );
                 $("#staff_password").addClass("is-invalid");
                 $("#staff_confirm").addClass("is-invalid");
+            } else if (response && response.status == -1) {
+                notifikasi(
+                    "error",
+                    mode == 2 ? "Gagal Update" : "Gagal Insert",
+                    response.message || "Silahkan cek kembali inputan anda",
+                );
             } else {
                 if (mode == 1)
                     notifikasi(
@@ -299,6 +350,28 @@ $(document).on("change", "#staff_image", function () {
 //         $('#city_id').empty(); // kosongkan jika tidak ada provinsi
 //     }
 // });
+
+function kepalaWarehouseIds() {
+    var raw =
+        data && data.kepala_warehouse_ids ? data.kepala_warehouse_ids : [];
+    if (typeof raw === "string") {
+        try {
+            raw = JSON.parse(raw);
+        } catch (e) {
+            raw = [];
+        }
+    }
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+    return raw.map(Number).filter(function (id) {
+        return id > 0;
+    });
+}
+
+function isKepalaWarehouse(warehouseId) {
+    return kepalaWarehouseIds().indexOf(Number(warehouseId)) !== -1;
+}
 
 function afterInsert() {
     window.location.href = "/staff";

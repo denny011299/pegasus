@@ -791,10 +791,11 @@ class StockTransferController extends Controller
 
             $snapshot['units'] = $units->all();
             $snapshot['unit_order'] = $units->pluck('unit_id')->map(fn ($id) => (int) $id)->all();
+            // Tampilkan stok fisik per satuan (ps_stock), sama dengan batas Kirim.
             $snapshot['stock_text'] = $units->isEmpty()
                 ? '0'
                 : $units->map(fn ($unit) => number_format(
-                    (float) ($unit['available_qty'] ?? $unit['ps_stock'] ?? 0),
+                    (float) ($unit['ps_stock'] ?? 0),
                     0,
                     ',',
                     '.'
@@ -1268,9 +1269,9 @@ class StockTransferController extends Controller
 
                 ProductUnitStock::clearCache();
                 $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
-                // Kirim = potong satuan di detail ST saja (cek stok cukup dulu).
-                // Tanpa packing/rapikan gudang. Konversi hanya di Terima, dan hanya
-                // kalau tujuan eceran (→ retail_unit). Tujuan utama = satuan kirim apa adanya.
+                // Kirim: packing/rapikan OFF. Gudang utama boleh unpack ancestor
+                // (DOS→Piece) agar stok ekuivalen cukup; eceran tetap exact unit.
+                // Konversi satuan tujuan hanya di Terima (eceran → retail_unit).
                 $check = ProductUnitStock::checkItems(
                     (int) $lockedHeader->from_warehouse_id,
                     $this->applySourceAvailabilityMode($items, $sourceIsMain, $isProduction)
@@ -1281,6 +1282,7 @@ class StockTransferController extends Controller
                 }
 
                 $code = $lockedHeader->transfer_code;
+                $allowUnpack = $sourceIsMain === true;
                 foreach ($items as $item) {
                     $cut = ProductUnitStock::deductQty(
                         (int) $lockedHeader->from_warehouse_id,
@@ -1290,7 +1292,7 @@ class StockTransferController extends Controller
                         $code,
                         'Stock Transfer ' . $code . ' - keluar gudang asal',
                         false,
-                        false // exact unit only — jangan bongkar DOS/ancestor
+                        $allowUnpack
                     );
                     if (! $cut['ok']) {
                         throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
@@ -2065,9 +2067,9 @@ class StockTransferController extends Controller
     /**
      * Mode cek/potong stok untuk gudang asal.
      *
-     * Packing + unpack dimatikan: Kirim hanya memotong satuan di detail ST (stok
-     * di satuan itu harus cukup; tidak auto-bongkar DOS). Konversi antar-satuan
-     * hanya di Terima ke eceran.
+     * Packing/rapikan tetap OFF di Kirim. Gudang utama: allow_unpack=true
+     * (boleh bongkar ancestor agar available ekuivalen). Gudang eceran: unpack
+     * OFF. Konversi antar-satuan tujuan hanya di Terima ke eceran.
      *
      * @param  array<int, array>  $items
      * @return array<int, array>
@@ -2077,9 +2079,9 @@ class StockTransferController extends Controller
         ?bool $sourceIsMain,
         bool $isProduction = false
     ): array {
-        return array_map(function ($item) {
+        return array_map(function ($item) use ($sourceIsMain) {
             $item['allow_packing'] = false;
-            $item['allow_unpack'] = false;
+            $item['allow_unpack'] = $sourceIsMain === true;
             return $item;
         }, $items);
     }
@@ -2432,13 +2434,13 @@ class StockTransferController extends Controller
         }
     }
 
-    public function logProductionTransferCreated(int $stId): void
+    public function logProductionTransferCreated(int $stId, string $origin = 'production'): void
     {
         $snapshot = $this->snapshotTransfer($stId);
         $this->logTransferAction('create', $snapshot['header'], [
             'items_count' => count($snapshot['items']),
             'automatic' => true,
-            'origin' => 'production',
+            'origin' => $origin,
         ], null, $snapshot);
     }
 }

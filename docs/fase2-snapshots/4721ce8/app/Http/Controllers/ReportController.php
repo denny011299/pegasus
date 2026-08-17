@@ -1,0 +1,3601 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Bank;
+use App\Models\Cash;
+use App\Models\CashAdmin;
+use App\Models\CashAdminDetail;
+use App\Models\CashArmada;
+use App\Models\CashArmadaDetail;
+use App\Models\CashCategory;
+use App\Models\CashGudang;
+use App\Models\CashGudangDetail;
+use App\Models\CashSales;
+use App\Models\CashSalesDetail;
+use App\Models\Customer;
+use App\Models\InwardOutward;
+use App\Models\LogStock;
+use App\Models\PettyCash;
+use App\Models\Product;
+use App\Models\ProductIssues;
+use App\Models\PurchaseOrderDetailInvoice;
+use App\Models\ReportLoss;
+use App\Models\ReportProfit;
+use App\Models\Role;
+use App\Models\Production;
+use App\Models\ProductVariant;
+use App\Models\ReturnSupplies;
+use App\Models\Supplies;
+use App\Models\Staff;
+use App\Models\StockAlertSupplies;
+use App\Models\Supplier;
+use App\Models\Unit;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+class ReportController extends Controller
+{
+    private function parseSelisihNumeric($selisihText): float
+    {
+        if ($selisihText === null) return 0;
+        preg_match('/-?\d+(?:\.\d+)?/', (string) $selisihText, $m);
+        if (!isset($m[0])) return 0;
+        return (float) $m[0];
+    }
+
+    private function mergePdfPrintMeta(array $param): array
+    {
+        $u = session()->get('user');
+        $param['printed_by'] = $u ? ($u->staff_name ?? '-') : '-';
+        $param['printed_at'] = now()->format('d/m/Y H:i');
+        return $param;
+    }
+
+    /**
+     * Widget ringkas: penjualan (SO), produksi, pembelian (PO) — bulan berjalan vs bulan lalu.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function buildDashboardCrossWidgets(): array
+    {
+        $fmtRp = static function (float $n): string {
+            return 'Rp ' . number_format($n, 0, ',', '.');
+        };
+        $fallback = static function (string $title, string $subtitle, string $href): array {
+            return [
+                'title' => $title,
+                'subtitle' => $subtitle,
+                'primary' => 0,
+                'primary_label' => '—',
+                'secondary' => '—',
+                'mom_pct' => null,
+                'href' => $href,
+                'meta' => ['icon' => 'fe-activity'],
+            ];
+        };
+
+        try {
+            $start = \Carbon\Carbon::now()->startOfMonth();
+            $end = \Carbon\Carbon::now()->endOfMonth();
+            $pStart = $start->copy()->subMonth()->startOfMonth();
+            $pEnd = $pStart->copy()->endOfMonth();
+
+            $startD = $start->toDateString();
+            $endD = $end->toDateString();
+            $pStartD = $pStart->toDateString();
+            $pEndD = $pEnd->toDateString();
+
+            // Hindari translatedFormat('MMM…') yang bisa berakhir ganda di beberapa lingkungan PHP/intl
+            try {
+                $monthLabel = $start->copy()->locale('id')->monthName . ' ' . $start->year;
+            } catch (\Throwable $e) {
+                $monthLabel = $start->format('Y-m');
+            }
+
+            $salesThis = DB::table('sales_orders')->where('status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$startD, $endD]);
+            $salesCnt = (clone $salesThis)->count();
+            $salesSum = (float) ((clone $salesThis)->sum('so_total') ?? 0);
+
+            $salesPrev = DB::table('sales_orders')->where('status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$pStartD, $pEndD]);
+            $salesCntPrev = (clone $salesPrev)->count();
+            $momSales = $salesCntPrev > 0 ? round((($salesCnt - $salesCntPrev) / $salesCntPrev) * 100, 1) : null;
+
+            $prodThis = DB::table('productions')->where('status', '>=', 1)
+                ->whereBetween('production_date', [$startD, $endD]);
+            $prodCnt = (clone $prodThis)->count();
+            $mixRows = (clone $prodThis)->select('status', DB::raw('COUNT(*) as c'))->groupBy('status')->get();
+            $mix = [];
+            foreach ($mixRows as $row) {
+                $mix[(string) $row->status] = (int) $row->c;
+            }
+            $acc = (int) ($mix['2'] ?? 0);
+            $wait = (int) ($mix['1'] ?? 0) + (int) ($mix['4'] ?? 0);
+            $rej = (int) ($mix['3'] ?? 0);
+
+            $prodPrev = DB::table('productions')->where('status', '>=', 1)
+                ->whereBetween('production_date', [$pStartD, $pEndD]);
+            $prodCntPrev = (clone $prodPrev)->count();
+            $momProd = $prodCntPrev > 0 ? round((($prodCnt - $prodCntPrev) / $prodCntPrev) * 100, 1) : null;
+
+            $poThis = DB::table('purchase_orders')
+                ->where('status', '!=', 0)
+                ->where('status', '>=', -1)
+                ->whereBetween('po_date', [$startD, $endD]);
+            $poCnt = (clone $poThis)->count();
+            $poSum = (float) ((clone $poThis)->sum('po_total') ?? 0);
+
+            $poPrev = DB::table('purchase_orders')
+                ->where('status', '!=', 0)
+                ->where('status', '>=', -1)
+                ->whereBetween('po_date', [$pStartD, $pEndD]);
+            $poCntPrev = (clone $poPrev)->count();
+            $momPo = $poCntPrev > 0 ? round((($poCnt - $poCntPrev) / $poCntPrev) * 100, 1) : null;
+
+            return [
+                'sales' => [
+                    'title' => 'Pengiriman',
+                    'subtitle' => 'Pengiriman · ' . $monthLabel,
+                    'primary' => $salesCnt,
+                    'primary_label' => 'pengiriman',
+                    'secondary' => $fmtRp($salesSum),
+                    'mom_pct' => $momSales,
+                    'href' => url('/salesOrder'),
+                    'meta' => ['icon' => 'fe-truck'],
+                ],
+                'production' => [
+                    'title' => 'Produksi',
+                    'subtitle' => 'Batch · ' . $monthLabel,
+                    'primary' => $prodCnt,
+                    'primary_label' => 'Batch',
+                    'secondary' => 'ACC ' . $acc . ' · Tunggu ' . $wait . ($rej > 0 ? ' · Tolak ' . $rej : ''),
+                    'mom_pct' => $momProd,
+                    'href' => url('/production'),
+                    'meta' => ['icon' => 'fe-layers'],
+                ],
+                'purchase' => [
+                    'title' => 'Pembelian',
+                    'subtitle' => 'Purchase order · ' . $monthLabel,
+                    'primary' => $poCnt,
+                    'primary_label' => 'PO',
+                    'secondary' => $fmtRp($poSum),
+                    'mom_pct' => $momPo,
+                    'href' => url('/purchaseOrder'),
+                    'meta' => ['icon' => 'fe-shopping-cart'],
+                ],
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'sales' => $fallback('Penjualan', 'Sales order', url('/salesOrder')),
+                'production' => $fallback('Produksi', 'Produksi', url('/production')),
+                'purchase' => $fallback('Pembelian', 'Purchase order', url('/purchaseOrder')),
+            ];
+        }
+    }
+
+    /**
+     * Seri bulanan untuk grafik dashboard (SO, produksi, PO).
+     *
+     * @return array{labels: array<int, string>, sales_count: array<int, int>, production_count: array<int, int>, purchase_count: array<int, int>, sales_total: array<int, float>, purchase_total: array<int, float>}
+     */
+    private function buildDashboardExecutiveChartSeries(int $months): array
+    {
+        $months = max(3, min(18, $months));
+        $empty = static function (int $n): array {
+            return [
+                'labels' => array_fill(0, $n, '-'),
+                'sales_count' => array_fill(0, $n, 0),
+                'production_count' => array_fill(0, $n, 0),
+                'purchase_count' => array_fill(0, $n, 0),
+                'sales_total' => array_fill(0, $n, 0.0),
+                'purchase_total' => array_fill(0, $n, 0.0),
+            ];
+        };
+
+        try {
+            $rangeEnd = \Carbon\Carbon::now()->endOfMonth();
+            $rangeStart = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+
+            $ymKeys = [];
+            $labels = [];
+            $cursor = $rangeStart->copy();
+            while ($cursor->lte($rangeEnd)) {
+                $ymKeys[] = $cursor->format('Y-m');
+                // Label pendek numerik (hindari artefak render Apex + locale di sumbu X)
+                $labels[] = $cursor->format('m/y');
+                $cursor->addMonth();
+            }
+
+            $n = count($ymKeys);
+            if ($n === 0) {
+                return $empty(1);
+            }
+
+            $startD = $rangeStart->toDateString();
+            $endD = $rangeEnd->toDateString();
+
+            $salesRows = DB::table('sales_orders')
+                ->where('status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$startD, $endD])
+                ->selectRaw("DATE_FORMAT(DATE(COALESCE(so_date, created_at)), '%Y-%m') as ym")
+                ->selectRaw('COUNT(*) as cnt')
+                ->selectRaw('SUM(COALESCE(so_total, 0)) as total')
+                ->groupBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $prodRows = DB::table('productions')
+                ->where('status', '>=', 1)
+                ->whereBetween('production_date', [$startD, $endD])
+                ->selectRaw("DATE_FORMAT(production_date, '%Y-%m') as ym")
+                ->selectRaw('COUNT(*) as cnt')
+                ->groupBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $poRows = DB::table('purchase_orders')
+                ->where('status', '!=', 0)
+                ->where('status', '>=', -1)
+                ->whereBetween('po_date', [$startD, $endD])
+                ->selectRaw("DATE_FORMAT(po_date, '%Y-%m') as ym")
+                ->selectRaw('COUNT(*) as cnt')
+                ->selectRaw('SUM(COALESCE(po_total, 0)) as total')
+                ->groupBy('ym')
+                ->get()
+                ->keyBy('ym');
+
+            $salesCount = [];
+            $salesTotal = [];
+            $prodCount = [];
+            $poCount = [];
+            $poTotal = [];
+            foreach ($ymKeys as $ym) {
+                $sRow = $salesRows->get($ym);
+                $pRow = $prodRows->get($ym);
+                $poRow = $poRows->get($ym);
+                $salesCount[] = $sRow ? (int) $sRow->cnt : 0;
+                $salesTotal[] = $sRow ? (float) $sRow->total : 0.0;
+                $prodCount[] = $pRow ? (int) $pRow->cnt : 0;
+                $poCount[] = $poRow ? (int) $poRow->cnt : 0;
+                $poTotal[] = $poRow ? (float) $poRow->total : 0.0;
+            }
+
+            return [
+                'labels' => $labels,
+                'sales_count' => $salesCount,
+                'sales_total' => $salesTotal,
+                'production_count' => $prodCount,
+                'purchase_count' => $poCount,
+                'purchase_total' => $poTotal,
+            ];
+        } catch (\Throwable $e) {
+            return $empty(6);
+        }
+    }
+
+    private function hasNonZeroSelisih($selisihText): bool
+    {
+        if ($selisihText === null) return false;
+        preg_match_all('/-?\d+(?:\.\d+)?/', (string) $selisihText, $matches);
+        if (!isset($matches[0]) || count($matches[0]) === 0) return false;
+        foreach ($matches[0] as $num) {
+            if ((float) $num != 0.0) return true;
+        }
+        return false;
+    }
+
+    /**
+     * PDF: hanya baris detail yang benar-benar ber-selisih; hitung ulang ringkasan per kode opname.
+     *
+     * @param  mixed  $data  Array hasil getReportSelisihOpname (bisa nested stdClass dari JSON).
+     * @return array<int, array<string, mixed>>
+     */
+    private function selisihOpnamePdfRowsOnlySelisih($data): array
+    {
+        if (!is_array($data)) {
+            return [];
+        }
+        $out = [];
+        foreach ($data as $row) {
+            $row = json_decode(json_encode($row), true);
+            if (!is_array($row)) {
+                continue;
+            }
+            $detailsIn = $row['details'] ?? [];
+            if (!is_array($detailsIn)) {
+                continue;
+            }
+            $details = [];
+            foreach ($detailsIn as $d) {
+                $d = json_decode(json_encode($d), true);
+                if (!is_array($d)) {
+                    continue;
+                }
+                $text = $d['selisih_text'] ?? '';
+                if (!$this->hasNonZeroSelisih($text)) {
+                    continue;
+                }
+                $qty = isset($d['selisih_qty']) ? (float) $d['selisih_qty'] : $this->parseSelisihNumeric($text);
+                if (abs($qty) < 0.0000001) {
+                    continue;
+                }
+                $details[] = $d;
+            }
+            if (count($details) === 0) {
+                continue;
+            }
+            $nominalTotal = 0.0;
+            foreach ($details as $d) {
+                $nominalTotal += (float) ($d['nominal'] ?? 0);
+            }
+            $row['details'] = $details;
+            $row['total_item_selisih'] = count($details);
+            $row['total_nominal'] = $nominalTotal;
+            $out[] = $row;
+        }
+
+        return $out;
+    }
+
+    // Report Profit Loss
+    public function ProfitLoss(){
+        return view('Backoffice.Reports.Profit_Loss');
+    }
+
+    function getProfit(Request $req){
+        $data = (new ReportProfit())->getProfit();
+        return response()->json($data);
+    }
+
+    function getLoss(Request $req){
+        $data = (new ReportLoss())->getLoss();
+        return response()->json($data);
+    }
+
+    // Report Payables Receiveables
+    public function PayReceive(){
+        return view('Backoffice.Reports.Pay_Receive');
+    }
+
+    public function checkHutang(Request $req)
+    {
+        $data = $req->all();
+        $detail = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
+
+        if (count($detail) <= 0) {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Minimal ada 1 data hutang'
+            ]);
+        }
+
+        return response()->json([
+            'status' => 1
+        ]);
+    }
+
+    function generateHutang(Request $req) {
+        $data = $req->all();
+        $param["detail"] = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
+
+        $total = 0;
+        foreach ($param['detail'] as $key => $value) {
+            $total += $value->poi_total;
+
+            if ($value['pembayaran'] == 1 && $value['status'] == 1) $value['status_hutang'] = "Belum Terbayar";
+            else if ($value['pembayaran'] == 2) $value['status_hutang'] = "Terbayar";
+            else if ($value['pembayaran'] == 3) $value['status_hutang'] = "Menunggu Tanda Terima";
+            else $value['status_hutang'] = "Ditolak";
+        }
+        $param['total'] = $total;
+
+        $param['dates'] = $data['dates'] ?? "-";
+
+        $bank_kode = $data['bank_id'] ? Bank::find($data['bank_id'])->bank_kode : "-";
+        $param['bank_kode'] = $bank_kode;
+
+        $supplier = $data['po_supplier'] ? Supplier::find($data['po_supplier'])->supplier_name : "-";
+        $param['supplier_name'] = $supplier;
+
+        $user = session('user');
+        $param['user_name'] = $user->staff_name;
+
+        $role = Role::find($user->role_id)->role_name ?? "-";
+        $param['role_name'] = $role;
+
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.Hutang', $param);
+        return $pdf->download('Hutang_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    // Report Inward Outward Goods
+    public function InwardOutward(){
+        return view('Backoffice.Reports.Inward_Outward');
+    }
+
+    function getInwardOutward(Request $req){
+        $data = (new InwardOutward())->getInwardOutward();
+        return response()->json($data);
+    }
+
+    // Report Cash
+    public function Cash(){
+        return view('Backoffice.Reports.Cash');
+    }
+
+    function getCash(Request $req){
+        $data = (new Cash())->getCash($req->all());
+        return response()->json($data);
+    }
+
+    function insertCash(Request $req){
+        $data = $req->all();
+        $cash_id = (new Cash())->insertCash($data);
+        if (isset($data['cash_tujuan']) && $data['cash_tujuan'] != null) {
+            if ($data['cash_tujuan'] == "admin"){
+                (new CashAdmin())->insertCashAdmin([
+                    "staff_id" => session('user')->staff_id,
+                    "cash_id" => $cash_id,
+                    "ca_nominal" => $data['cash_nominal'],
+                    "ca_notes" => $data['cash_description'],
+                    "ca_type" => 2, // kredit
+                    "oc_transaksi" => 1, // Supaya jadi debit
+                    "status" => 2
+                ]);
+            }
+            else if ($data['cash_tujuan'] == "gudang"){
+                (new CashGudang())->insertCashGudang([
+                    "staff_id" => session('user')->staff_id,
+                    "cash_id" => $cash_id,
+                    "cg_nominal" => $data['cash_nominal'],
+                    "cg_notes" => $data['cash_description'],
+                    "cg_type" => 2, // kredit
+                    "oc_transaksi" => 1, // Supaya jadi debit
+                    "status" => 2
+                ]);
+            }
+        }
+    }
+
+    public function ReportCashOut()
+    {
+        return view('Backoffice.Reports.Cash_Out_Report');
+    }
+
+    public function getReportCashOut(Request $req)
+    {
+        $mode = strtolower((string) $req->get('filter_mode', 'month'));
+        if (!in_array($mode, ['day', 'month', 'year'], true)) {
+            $mode = 'month';
+        }
+
+        $today = \Carbon\Carbon::today();
+        $start = $today->copy()->startOfMonth();
+        $end = $today->copy()->endOfMonth();
+        $label = $today->isoFormat('MMMM Y');
+
+        if ($mode === 'day') {
+            $picked = trim((string) $req->get('filter_day', ''));
+            $day = $picked !== '' ? \Carbon\Carbon::parse($picked) : $today->copy();
+            $start = $day->copy()->startOfDay();
+            $end = $day->copy()->endOfDay();
+            $label = $day->isoFormat('D MMMM Y');
+        } elseif ($mode === 'year') {
+            $pickedYear = (int) $req->get('filter_year', (int) $today->format('Y'));
+            if ($pickedYear < 2000 || $pickedYear > 2100) {
+                $pickedYear = (int) $today->format('Y');
+            }
+            $yearDate = \Carbon\Carbon::create($pickedYear, 1, 1);
+            $start = $yearDate->copy()->startOfYear();
+            $end = $yearDate->copy()->endOfYear();
+            $label = (string) $pickedYear;
+        } else {
+            $pickedMonth = trim((string) $req->get('filter_month', ''));
+            if (preg_match('/^\d{4}-\d{2}$/', $pickedMonth) === 1) {
+                $monthDate = \Carbon\Carbon::createFromFormat('Y-m', $pickedMonth);
+            } else {
+                $monthDate = $today->copy();
+            }
+            $start = $monthDate->copy()->startOfMonth();
+            $end = $monthDate->copy()->endOfMonth();
+            $label = $monthDate->isoFormat('MMMM Y');
+        }
+
+        $tujuanMap = [
+            0 => 'Kas Besar',
+            1 => 'Kas Admin',
+            2 => 'Kas Gudang',
+            3 => 'Kas Armada',
+            4 => 'Kas Sales',
+        ];
+        $staffName = static function ($id): string {
+            if (!$id) return '-';
+            return Staff::find($id)->staff_name ?? '-';
+        };
+
+        $rows = [];
+        $total = 0.0;
+
+        // 1) Kas besar dari cashes — hanya Keluar (cash_type=2).
+        // Keluar 1 (cash_type=3) = setor ke bank, bukan pengeluaran operasional.
+        $cashCols = [
+            'cash_id',
+            'cash_date',
+            'cash_description',
+            'cash_nominal',
+            'cash_type',
+            'cash_tujuan',
+        ];
+        $cashHasCreatedBy = Schema::hasColumn('cashes', 'created_by');
+        $cashHasAccBy = Schema::hasColumn('cashes', 'acc_by');
+        if ($cashHasCreatedBy) $cashCols[] = 'created_by';
+        if ($cashHasAccBy) $cashCols[] = 'acc_by';
+
+        $mainCash = DB::table('cashes')
+            ->where('status', 2)
+            ->where('person_id', 0)
+            ->where('cash_tujuan', 0)
+            ->where('cash_type', 2)
+            ->whereBetween('cash_date', [$start->toDateString(), $end->toDateString()])
+            ->get($cashCols);
+
+        foreach ($mainCash as $row) {
+            $nominal = (float) ($row->cash_nominal ?? 0);
+            $total += $nominal;
+            $createdBy = ($cashHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-';
+            $accBy = ($cashHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-';
+            $rows[] = [
+                'cash_id' => 'cash-'.(int) $row->cash_id,
+                'report_source' => 'kas_besar',
+                'cash_date' => (string) $row->cash_date,
+                'cash_description' => (string) ($row->cash_description ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => (int) ($row->cash_type ?? 0),
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => (int) ($row->cash_tujuan ?? 0),
+                'cash_tujuan_label' => $tujuanMap[(int) ($row->cash_tujuan ?? 0)] ?? 'Umum',
+                'created_by_name' => $createdBy,
+                'acc_by_name' => $accBy,
+            ];
+        }
+
+        // 2) Kas operasional Admin (cash_id=0 agar tidak double dari tabel cashes)
+        $caCols = ['ca_id', 'ca_date', 'ca_notes', 'ca_nominal', 'ca_type', 'ca_aksi'];
+        $caHasCreatedBy = Schema::hasColumn('cash_admins', 'created_by');
+        $caHasAccBy = Schema::hasColumn('cash_admins', 'acc_by');
+        if ($caHasCreatedBy) $caCols[] = 'created_by';
+        if ($caHasAccBy) $caCols[] = 'acc_by';
+        $caRows = DB::table('cash_admins')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('ca_date', [$start->toDateString(), $end->toDateString()])
+            ->get($caCols);
+        foreach ($caRows as $row) {
+            $isOut = (int) ($row->ca_type ?? 0) === 2;
+            if (!$isOut) continue;
+            $nominal = (float) ($row->ca_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'ca-'.(int) $row->ca_id,
+                'report_source' => 'kas_admin',
+                'cash_date' => (string) $row->ca_date,
+                'cash_description' => (string) ($row->ca_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 1,
+                'cash_tujuan_label' => 'Kas Admin',
+                'created_by_name' => ($caHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($caHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        // 3) Kas operasional Gudang
+        $cgCols = ['cg_id', 'cg_date', 'cg_notes', 'cg_nominal', 'cg_type', 'cg_aksi'];
+        $cgHasCreatedBy = Schema::hasColumn('cash_gudangs', 'created_by');
+        $cgHasAccBy = Schema::hasColumn('cash_gudangs', 'acc_by');
+        if ($cgHasCreatedBy) $cgCols[] = 'created_by';
+        if ($cgHasAccBy) $cgCols[] = 'acc_by';
+        $cgRows = DB::table('cash_gudangs')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('cg_date', [$start->toDateString(), $end->toDateString()])
+            ->get($cgCols);
+        foreach ($cgRows as $row) {
+            $isOut = (int) ($row->cg_type ?? 0) === 2;
+            if (!$isOut) continue;
+            $nominal = (float) ($row->cg_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'cg-'.(int) $row->cg_id,
+                'report_source' => 'kas_gudang',
+                'cash_date' => (string) $row->cg_date,
+                'cash_description' => (string) ($row->cg_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 2,
+                'cash_tujuan_label' => 'Kas Gudang',
+                'created_by_name' => ($cgHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($cgHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        // 4) Kas operasional Armada
+        $crCols = ['cr_id', 'cr_date', 'cr_notes', 'cr_nominal', 'cr_type'];
+        $crHasCreatedBy = Schema::hasColumn('cash_armadas', 'created_by');
+        $crHasAccBy = Schema::hasColumn('cash_armadas', 'acc_by');
+        if ($crHasCreatedBy) $crCols[] = 'created_by';
+        if ($crHasAccBy) $crCols[] = 'acc_by';
+        $crRows = DB::table('cash_armadas')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('cr_date', [$start->toDateString(), $end->toDateString()])
+            ->get($crCols);
+        $crKeluarById = [];
+        $crIds = collect($crRows)->pluck('cr_id')->map(fn ($x) => (int) $x)->all();
+        if (count($crIds) > 0) {
+            $crKeluarRows = DB::table('cash_armada_details')
+                ->whereIn('cr_id', $crIds)
+                ->where('status', 1)
+                ->where('crd_type', 2)
+                ->select('cr_id')
+                ->selectRaw('SUM(crd_nominal) as keluar_nominal')
+                ->groupBy('cr_id')
+                ->get();
+            foreach ($crKeluarRows as $d) {
+                $crKeluarById[(int) $d->cr_id] = (float) ($d->keluar_nominal ?? 0);
+            }
+        }
+        foreach ($crRows as $row) {
+            // Kas operasional armada: acuan utama kategori detail (crd_type=2 => Keluar).
+            $detailOutNominal = (float) ($crKeluarById[(int) ($row->cr_id ?? 0)] ?? 0);
+            $isOut = $detailOutNominal > 0 || (int) ($row->cr_type ?? 0) === 2;
+            if (!$isOut) continue;
+            $nominal = $detailOutNominal > 0
+                ? $detailOutNominal
+                : (float) ($row->cr_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'cr-'.(int) $row->cr_id,
+                'report_source' => 'kas_armada',
+                'cash_date' => (string) $row->cr_date,
+                'cash_description' => (string) ($row->cr_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 3,
+                'cash_tujuan_label' => 'Kas Armada',
+                'created_by_name' => ($crHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($crHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        // 5) Kas operasional Sales
+        $csCols = ['cs_id', 'cs_date', 'cs_notes', 'cs_nominal', 'cs_transaction'];
+        $csHasCreatedBy = Schema::hasColumn('cash_sales', 'created_by');
+        $csHasAccBy = Schema::hasColumn('cash_sales', 'acc_by');
+        if ($csHasCreatedBy) $csCols[] = 'created_by';
+        if ($csHasAccBy) $csCols[] = 'acc_by';
+        $csRows = DB::table('cash_sales')
+            ->where('status', 2)
+            ->where('cash_id', 0)
+            ->whereBetween('cs_date', [$start->toDateString(), $end->toDateString()])
+            ->get($csCols);
+        $csKeluarById = [];
+        $csIds = collect($csRows)->pluck('cs_id')->map(fn ($x) => (int) $x)->all();
+        if (count($csIds) > 0) {
+            $csKeluarRows = DB::table('cash_sales_details')
+                ->whereIn('cs_id', $csIds)
+                ->where('status', 1)
+                ->where('csd_type', 2)
+                ->select('cs_id')
+                ->selectRaw('SUM(csd_nominal) as keluar_nominal')
+                ->groupBy('cs_id')
+                ->get();
+            foreach ($csKeluarRows as $d) {
+                $csKeluarById[(int) $d->cs_id] = (float) ($d->keluar_nominal ?? 0);
+            }
+        }
+        foreach ($csRows as $row) {
+            // Kas operasional sales: acuan utama kategori detail (csd_type=2 => Keluar).
+            $detailOutNominal = (float) ($csKeluarById[(int) ($row->cs_id ?? 0)] ?? 0);
+            $isOut = $detailOutNominal > 0 || (int) ($row->cs_transaction ?? 0) === 2;
+            if (!$isOut) continue;
+            $nominal = $detailOutNominal > 0
+                ? $detailOutNominal
+                : (float) ($row->cs_nominal ?? 0);
+            $total += $nominal;
+            $rows[] = [
+                'cash_id' => 'cs-'.(int) $row->cs_id,
+                'report_source' => 'kas_sales',
+                'cash_date' => (string) $row->cs_date,
+                'cash_description' => (string) ($row->cs_notes ?? '-'),
+                'cash_nominal' => round($nominal, 2),
+                'cash_type' => 2,
+                'cash_type_label' => 'Keluar',
+                'cash_tujuan' => 4,
+                'cash_tujuan_label' => 'Kas Sales',
+                'created_by_name' => ($csHasCreatedBy && !empty($row->created_by)) ? $staffName($row->created_by) : '-',
+                'acc_by_name' => ($csHasAccBy && !empty($row->acc_by)) ? $staffName($row->acc_by) : '-',
+            ];
+        }
+
+        // Flow lama tetap memakai filter deskripsi "Pengeluaran", tetapi kas besar
+        // ditambahkan sebagai sumber independen dan tidak boleh tersaring aturan lama.
+        $rows = array_values(array_filter($rows, static function ($r) {
+            if (($r['report_source'] ?? '') === 'kas_besar') {
+                return true;
+            }
+            $desc = trim((string) ($r['cash_description'] ?? ''));
+            if ($desc === '') {
+                return false;
+            }
+            return preg_match('/^pengeluaran\b/i', $desc) === 1;
+        }));
+
+        // Total mengikuti data yang lolos filter tampilan.
+        $total = 0.0;
+        foreach ($rows as $r) {
+            $total += (float) ($r['cash_nominal'] ?? 0);
+        }
+
+        usort($rows, static function ($a, $b) {
+            $da = strtotime((string) ($a['cash_date'] ?? ''));
+            $db = strtotime((string) ($b['cash_date'] ?? ''));
+            if ($da === $db) {
+                return strcmp((string) ($b['cash_id'] ?? ''), (string) ($a['cash_id'] ?? ''));
+            }
+            return $db <=> $da;
+        });
+
+        return response()->json([
+            'rows' => $rows,
+            'summary' => [
+                'period_label' => $label,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+                'total_pengeluaran' => round($total, 2),
+                'jumlah_transaksi' => count($rows),
+            ],
+        ]);
+    }
+
+    // Report Petty Cash
+    // DEPRECATED (2026-08-02): Petty Cash is no longer used. insertPettyCash() below crashes on
+    // every call (petty_cashes is missing columns the model writes to) — not fixed, not tested,
+    // by explicit decision. See KNOWN_ISSUES.md.
+    public function PettyCash(){
+        return view('Backoffice.Reports.Petty_Cash');
+    }
+
+    function getPettyCash(Request $req){
+        $data = (new PettyCash())->getPettyCash($req->all());
+        return response()->json($data);
+    }
+
+    function insertPettyCash(Request $req){
+        $data = $req->all();
+        return (new PettyCash())->insertPettyCash($data);
+    }
+
+    // Report Kas Operasional
+    public function OperationalCash(){
+        return view('Backoffice.Reports.Cash_Operational');
+    }
+
+    function getCashAdmin(Request $req)
+    {
+        $data = (new CashAdmin())->getCashAdmin($req->all());
+        return response()->json($data);
+    }
+
+    function insertCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        if ($req->photo){
+            // Ambil base64
+            $image = $req->photo;
+    
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+    
+            // Decode
+            $imageData = base64_decode($image);
+    
+            // Nama file
+            $imageName = 'photo_' . time() . '.png';
+    
+            // Path tujuan di public/produksi
+            $path = public_path('kas_admin/admin/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            $data["ca_img"] = $imageName;
+        }
+
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $total += $value['cad_nominal'];
+            }
+
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $data['ca_notes'] = "Pengeluaran admin " . $staff_name;
+            $data['ca_nominal'] = $total;
+        }
+
+        else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['ca_notes'] . " oleh admin " . $staff_name;
+            // Pengajuan dana
+            if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->insertCash([
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
+                    "cash_tujuan" => 1, // admin
+                    "status" => 1
+                ]);
+            }
+            // Pengembalian dana
+            else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 2;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->insertCash([
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
+                    "cash_tujuan" => 1, // admin
+                    "status" => 1
+                ]);
+            }
+            $data['cash_id'] = $cash_id;
+        }
+
+        if ($data['jenis_input'] == "operasional"){
+            $data['oc_transaksi'] = 0;
+            $data['ca_type'] = 2;
+            $ca_id = (new CashAdmin())->insertCashAdmin($data);
+
+            foreach ($item as $key => $value) {
+                $value['ca_id'] = $ca_id;
+                (new CashAdminDetail())->insertCashAdminDetail($value);
+            }
+        }
+
+        else if ($data['jenis_input'] == "saldo") {
+            $data['ca_type'] = 1;
+            (new CashAdmin())->insertCashAdmin($data);
+        }
+    }
+
+    function updateCashAdmin(Request $req)
+    {
+        $data = $req->all();
+
+        if ($req->photo){
+            // Ambil base64
+            $image = $req->photo;
+    
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+    
+            // Decode
+            $imageData = base64_decode($image);
+    
+            // Nama file
+            $imageName = 'photo_' . time() . '.png';
+    
+            // Path tujuan di public/produksi
+            $path = public_path('kas_admin/admin/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            $data["ca_img"] = $imageName;
+        }
+
+        $id = [];
+        $cash = CashAdmin::find($data['ca_id']);
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $total += $value['cad_nominal'];
+            }
+
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $data['ca_notes'] = "Pengeluaran admin " . $staff_name;
+            $data['ca_nominal'] = $total;
+            $data['ca_type'] = 2;
+        }
+
+        else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['ca_notes'] . " oleh admin " . $staff_name;
+            $data['ca_type'] = 1;
+            // Pengajuan dana
+            if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->updateCash([
+                    "cash_id" => $cash->cash_id,
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
+                    "cash_tujuan" => 1, // admin
+                    "status" => 1
+                ]);
+            }
+            // Pengembalian dana
+            else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['ca_nominal'];
+                if ($data['ca_nominal'] < 0) {
+                    $type = 2;
+                    $nominal = $data['ca_nominal'] - ($data['ca_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->updateCash([
+                    "cash_id" => $cash->cash_id,
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
+                    "cash_tujuan" => 1, // admin
+                    "status" => 1
+                ]);
+            }
+            $data['cash_id'] = $cash_id;
+        }
+
+        (new CashAdmin())->updateCashAdmin($data);
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $value['ca_id'] = $data['ca_id'];
+
+                if (!isset($value['cad_id']) || !$value['cad_id']){
+                    $t = (new CashAdminDetail())->insertCashAdminDetail($value);
+                }
+                else {
+                    $t = (new CashAdminDetail())->updateCashAdminDetail($value);
+                }
+                array_push($id, $t);
+            }
+            CashAdminDetail::where('ca_id', '=', $data["ca_id"])->whereNotIn("cad_id", $id)->update(["status" => 0]);
+        }
+    }
+
+    function deleteCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        $ca = CashAdmin::find($data['ca_id']);
+        (new CashAdmin())->deleteCashAdmin($data);
+        // Kalau manajemen saldo, maka hapus dari kas juga
+        if ($ca->ca_type == 1) (new Cash())->deleteCash($ca);
+    }
+
+    function acceptCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        if (isset($data['ca_id'])) {
+            $q = CashAdmin::find($data['ca_id']);
+        } else {
+            $q = CashAdmin::where('cash_id', $data['cash_id'])->first();
+        }
+        if ($q->status != 1) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+        return (new CashAdmin())->acceptCashAdmin($data);
+    }
+
+    function declineCashAdmin(Request $req)
+    {
+        $data = $req->all();
+        if (isset($data['ca_id'])) {
+            $q = CashAdmin::find($data['ca_id']);
+        } else {
+            $q = CashAdmin::where('cash_id', $data['cash_id'])->first();
+        }
+        if ($q->status != 1) {
+            $staff = Staff::find($q->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+        return (new CashAdmin())->declineCashAdmin($data);
+    }
+
+    function getCashGudang(Request $req)
+    {
+        $data = (new CashGudang())->getCashGudang($req->all());
+        return response()->json($data);
+    }
+
+    function insertCashGudang(Request $req)
+    {
+        $data = $req->all();
+        if ($req->photo){
+            // Ambil base64
+            $image = $req->photo;
+    
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+    
+            // Decode
+            $imageData = base64_decode($image);
+    
+            // Nama file
+            $imageName = 'photo_' . time() . '.png';
+    
+            // Path tujuan di public/produksi
+            $path = public_path('kas_admin/gudang/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            $data["cg_img"] = $imageName;
+        }
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $total += $value['cgd_nominal'];
+            }
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $data['cg_notes'] = "Penyerahan kas armada dari gudang - " . $staff_name;
+            $data['cg_nominal'] = $total;
+        }
+
+        else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['cg_notes'] . " dari gudang - " . $staff_name;
+            // Pengajuan dana
+            if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->insertCash([
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            // Pengembalian dana
+            else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 2;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->insertCash([
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            $data['cash_id'] = $cash_id;
+        }
+
+        if ($data['jenis_input'] == "operasional"){
+            $data['oc_transaksi'] = 0;
+            $data['cg_type'] = 2;
+            $cg_id = (new CashGudang())->insertCashGudang($data);
+
+            foreach ($item as $key => $value) {
+                $value['cg_id'] = $cg_id;
+                (new CashGudangDetail())->insertCashGudangDetail($value);
+            }
+        }
+
+        else if ($data['jenis_input'] == "saldo") {
+            $data['cg_type'] = 1;
+            (new CashGudang())->insertCashGudang($data);
+        }
+    }
+
+    function updateCashGudang(Request $req)
+    {
+        $data = $req->all();
+
+        if ($req->photo){
+            // Ambil base64
+            $image = $req->photo;
+    
+            // Hilangkan prefix base64
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+    
+            // Decode
+            $imageData = base64_decode($image);
+    
+            // Nama file
+            $imageName = 'photo_' . time() . '.png';
+    
+            // Path tujuan di public/produksi
+            $path = public_path('kas_admin/gudang/' . $imageName);
+            // Simpan file
+            file_put_contents($path, $imageData);
+            $data["cg_img"] = $imageName;
+        }
+
+        $id = [];
+        $cash = CashGudang::find($data['cg_id']);
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $total += $value['cgd_nominal'];
+            }
+
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $data['cg_notes'] = "Penyerahan kas armada dari gudang - " . $staff_name;
+            $data['cg_nominal'] = $total;
+            $data['cg_type'] = 2;
+        }
+
+        else if ($data['jenis_input'] == "saldo"){
+            $staff_name = Staff::find($data['staff_id'])->staff_name;
+            $notes = $data['cg_notes'] . " dari gudang - " . $staff_name;
+            $data['cg_type'] = 1;
+            // Pengajuan dana
+            if ($data['oc_transaksi'] == 1){
+                $type = 3;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->updateCash([
+                    "cash_id" => $cash->cash_id,
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // keluar 1
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            // Pengembalian dana
+            else if ($data['oc_transaksi'] == 2) {
+                $type = 1;
+                $nominal = $data['cg_nominal'];
+                if ($data['cg_nominal'] < 0) {
+                    $type = 2;
+                    $nominal = $data['cg_nominal'] - ($data['cg_nominal'] * 2);
+                }
+                $cash_id = (new Cash())->updateCash([
+                    "cash_id" => $cash->cash_id,
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // debit
+                    "cash_tujuan" => 2, // gudang
+                    "status" => 1
+                ]);
+            }
+            $data['cash_id'] = $cash_id;
+        }
+
+        (new CashGudang())->updateCashGudang($data);
+
+        if ($data['jenis_input'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+
+            foreach ($item as $key => $value) {
+                $value['cg_id'] = $data['cg_id'];
+
+                if (!isset($value['cgd_id']) || !$value['cgd_id']){
+                    $t = (new CashGudangDetail())->insertCashGudangDetail($value);
+                }
+                else {
+                    $t = (new CashGudangDetail())->updateCashGudangDetail($value);
+                }
+                array_push($id, $t);
+            }
+            CashGudangDetail::where('cg_id', '=', $data["cg_id"])->whereNotIn("cgd_id", $id)->update(["status" => 0]);
+        }
+    }
+
+    function deleteCashGudang(Request $req)
+    {
+        $data = $req->all();
+        $ca = CashGudang::find($data['cg_id']);
+        (new CashGudang())->deleteCashGudang($data);
+        // Kalau manajemen saldo, maka hapus dari kas juga
+        if ($ca->cg_type == 1) (new Cash())->deleteCash($ca);
+    }
+
+    function acceptCashGudang(Request $req)
+    {
+        $data = $req->all();
+
+        if (isset($data['cg_id'])){
+            $cg = CashGudang::find($data['cg_id']);
+
+            if ($cg->status != 1) {
+                $staff = Staff::find($cg->acc_by)->staff_name;
+                return response()->json([
+                    "status" => -2,
+                    "header" => "Gagal ACC",
+                    "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+                ]);
+            }
+            $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
+
+            foreach ($cgd as $key => $value) {
+                $customer = Customer::find($value['customer_id']);
+                $customer->customer_saldo += $value['cgd_nominal'];
+                $customer->save();
+            }
+        } else {
+            $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
+            if ($cg->status != 1) {
+                $staff = Staff::find($cg->acc_by)->staff_name;
+                return response()->json([
+                    "status" => -2,
+                    "header" => "Gagal ACC",
+                    "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+                ]);
+            }
+        }
+        return (new CashGudang())->acceptCashGudang($data);
+    }
+
+    function declineCashGudang(Request $req)
+    {
+        $data = $req->all();
+        if (isset($data['cg_id'])){
+            $cg = CashGudang::find($data['cg_id']);
+        } else {
+            $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
+        }
+        if ($cg->status != 1) {
+            $staff = Staff::find($cg->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+            ]);
+        }
+        return (new CashGudang())->declineCashGudang($data);
+    }
+
+    function getCashArmada(Request $req)
+    {
+        $data = (new CashArmada())->getCashArmada($req->all());
+        return response()->json($data);
+    }
+
+    function insertCashArmada(Request $req)
+    {
+        $data = $req->all();
+
+        $total = 0;
+        $customer = Customer::find($data['customer_id']);
+        if ($data['oc_transaksi'] == "operasional"){
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['crd_nominal'];
+            }
+
+            if ($item[0]['crd_type'] != 1) {
+                // if ($total > $customer->customer_saldo){
+                //     return response()->json([
+                //         "status" => 0,
+                //         "header" => "Gagal Insert",
+                //         "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+                //     ]);
+                // }
+            }
+        } else {
+            // if ($data['cr_nominal'] > $customer->customer_saldo){
+            //     return response()->json([
+            //         "status" => 0,
+            //         "header" => "Gagal Insert",
+            //         "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+            //     ]);
+            // }
+        }
+
+        if ($data['photo']){
+            $img = [];
+            foreach (json_decode($data["photo"]) as $key => $value) {
+                $image = $value;
+
+                // Hilangkan prefix base64
+                $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+                // Decode
+                $imageData = base64_decode($image);
+
+                // Nama file
+                $imageName = 'photo_' . uniqid() . '.png';
+
+                // Path tujuan di public/produksi
+                $path = public_path('kas_admin/armada/' . $imageName);
+                // Simpan file
+                file_put_contents($path, $imageData);
+                array_push($img, $imageName);
+            }
+            $data["cr_img"] = json_encode($img);
+        }
+
+        if ($data['oc_transaksi'] == "operasional"){
+            $data['cr_notes'] = "Pengeluaran armada " . $customer->customer_notes;
+            if ($item[0]['crd_type'] == 1) {
+                $data['cr_notes'] = "Setoran armada " . $customer->customer_notes;
+                $data['cr_type'] = 1;
+            }
+            $data['cr_nominal'] = $total;
+            $data['cash_id'] = 0;
+            $data['cr_aksi'] = 2;
+        } else {
+            $notes = $data['cr_notes'] . " dari armada " . $customer->customer_notes;
+            $type = 1;
+            $nominal = $data['cr_nominal'];
+            if ($data['cr_nominal'] < 0) {
+                $type = 2;
+                $nominal = $data['cr_nominal'] - ($data['cr_nominal'] * 2);
+            }
+            
+            $cash_id = (new Cash())->insertCash([
+                "person_id" => $data['customer_id'],
+                "cash_date" => $data['cr_date'] ?? now(),
+                "cash_description" => $notes,
+                "cash_nominal" => $nominal,
+                "cash_type" => $type,
+                "cash_tujuan" => 3, // Armada
+                "status" => 1
+            ]);
+    
+            $data['cash_id'] = $cash_id;
+            $data['cr_aksi'] = 1;
+        }
+
+        $cr_id = (new CashArmada())->insertCashArmada($data);
+
+        if ($data['oc_transaksi'] == "operasional"){
+            foreach ($item as $key => $value) {
+                $value['cr_id'] = $cr_id;
+                (new CashArmadaDetail())->insertCashArmadaDetail($value);
+            }
+        }
+    }
+
+    function updateCashArmada(Request $req)
+    {
+        $data = $req->all();
+
+        $id = [];
+        $customer = Customer::find($data['customer_id'])->customer_notes;
+
+        if ($data['oc_transaksi'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['crd_nominal'];
+            }
+    
+            $data['cr_notes'] = "Pengeluaran armada " . $customer;
+            $data['cr_nominal'] = $total;
+        }
+
+        if ($data['oc_transaksi'] == "saldo") $data['cr_aksi'] = 1;
+        else if ($data['oc_transaksi'] == "operasional") $data['cr_aksi'] = 2;
+        $cr_id = (new CashArmada())->updateCashArmada($data);
+
+        if ($data['oc_transaksi'] == "saldo"){
+            $notes = $data['cr_notes'] . " dari armada " . $customer;
+            $type = 1;
+            $nominal = $data['cr_nominal'];
+            if ($data['cr_nominal'] < 0) {
+                $type = 2;
+                $nominal = $data['cr_nominal'] - ($data['cr_nominal'] * 2);
+            }
+            $cash_id = (new Cash())->updateCash([
+                "cash_id" => $data['cash_id'],
+                "person_id" => $data['customer_id'],
+                "cash_date" => $data['cr_date'] ?? now(),
+                "cash_description" => $notes,
+                "cash_nominal" => $nominal,
+                "cash_type" => $type, // debit (pengembalian kas)
+                "cash_tujuan" => 3, // Armada
+                "status" => 1
+            ]);
+        }
+        // else if ($data['oc_transaksi'] == "operasional"){
+        //     foreach ($item as $key => $value) {
+        //         $cash_id = (new Cash())->updateCash([
+        //             "cash_date" => now(),
+        //             "cash_description" => $value['crd_notes'],
+        //             "cash_nominal" => $value['crd_nominal'],
+        //             "cash_type" => $value['crd_type'], // kredit 1
+        //             "cash_tujuan" => 3, // Armada
+        //             "status" => 1
+        //         ]);
+    
+        //         $value['cr_id'] = $cr_id;
+        //         $value['cash_id'] = $cash_id;
+    
+        //         if (!isset($value['crd_id']) || !$value['crd_id']){
+        //             $t = (new CashArmadaDetail())->insertCashArmadaDetail($value);
+        //         }
+        //         else {
+        //             $t = (new CashArmadaDetail())->updateCashArmadaDetail($value);
+        //         }
+        //         array_push($id, $t);
+        //     }
+        //     CashArmadaDetail::where('cr_id', '=', $data["cr_id"])->whereNotIn("crd_id", $id)->update(["status" => 0]);
+        // }
+    }
+
+    function deleteCashArmada(Request $req)
+    {
+        $data = $req->all();
+        $ca = CashArmada::find($data['cr_id']);
+        (new CashArmada())->deleteCashArmada($data);
+        $detail = CashArmadaDetail::where('cr_id', $data['cr_id'])->where('status', 1)->get();
+        foreach ($detail as $key => $value) {
+            (new CashArmadaDetail())->deleteCashArmadaDetail($value);
+        }
+        // Kalau manajemen saldo, maka hapus dari kas juga
+        if ($ca->cr_aksi == 1) (new Cash())->deleteCash($ca);
+    }
+
+    function acceptCashArmada(Request $req)
+    {
+        $data = $req->all();
+
+        if (isset($data['cr_id'])){
+            $cr = CashArmada::find($data['cr_id']);
+        } else {
+            $cr = CashArmada::where('cash_id', $data["cash_id"])->first();
+        }
+        // Pengecekan ACC
+        if ($cr->status != 1) {
+            $staff = Staff::find($cr->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        $customer = Customer::find($cr['customer_id']);
+        if ($cr->cr_type == 1){
+            $customer->customer_saldo += $cr['cr_nominal'];
+        } else if ($cr->cr_type >= 2) {
+            $customer->customer_saldo -= $cr['cr_nominal'];
+        }
+        // if ($customer->customer_saldo < 0){
+        //     return response()->json([
+        //         "status" => 0,
+        //         "header" => "Gagal Konfirmasi",
+        //         "message" => "Saldo armada " . $customer->customer_notes . " tidak mencukupi"
+        //     ]);
+        // }
+        $customer->save();
+        return (new CashArmada())->acceptCashArmada($data);
+    }
+
+    function declineCashArmada(Request $req)
+    {
+        $data = $req->all();
+        if (isset($data['cr_id'])){
+            $cr = CashArmada::find($data['cr_id']);
+        } else {
+            $cr = CashArmada::where('cash_id', $data["cash_id"])->first();
+        }
+        // Pengecekan Acc
+        if ($cr->status != 1) {
+            $staff = Staff::find($cr->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+        return (new CashArmada())->declineCashArmada($data);
+    }
+
+    function getCashSales(Request $req)
+    {
+        $data = (new CashSales())->getCashSales($req->all());
+        return response()->json($data);
+    }
+
+    function insertCashSales(Request $req)
+    {
+        $data = $req->all();
+
+        $total = 0;
+        $sales = Staff::find($data['staff_id']);
+        if ($data['oc_transaksi'] == "operasional"){
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['csd_nominal'];
+            }
+
+            // if ($item[0]['csd_type'] != 1){
+            //     if ($total > $sales->staff_saldo){
+            //         return response()->json([
+            //             "status" => 0,
+            //             "header" => "Gagal Insert",
+            //             "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
+            //         ]);
+            //     }
+            // }
+        }
+
+        if ($data['photo']){
+            $img = [];
+            foreach (json_decode($data["photo"]) as $key => $value) {
+                $image = $value;
+
+                // Hilangkan prefix base64
+                $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+
+                // Decode
+                $imageData = base64_decode($image);
+
+                // Nama file
+                $imageName = 'photo_' . uniqid() . '.png';
+
+                // Path tujuan di public/produksi
+                $path = public_path('kas_admin/sales/' . $imageName);
+                // Simpan file
+                file_put_contents($path, $imageData);
+                array_push($img, $imageName);
+            }
+            $data["cs_img"] = json_encode($img);
+        }
+
+        if ($data['oc_transaksi'] == "operasional"){
+            $data['cs_notes'] = "Pengeluaran sales " . $sales->staff_name;
+            $data['cs_transaction'] = $item[0]['csd_type'];
+            if ($item[0]['csd_type'] == 1) {
+                $data['cs_notes'] = "Setoran sales " . $sales->staff_name;
+            }
+            $data['cs_type'] = 2;
+            $data['cs_nominal'] = $total;
+            $data['cash_id'] = 0;
+        } else {
+            $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+            if ($data['cs_aksi'] == "1"){
+                $data['cs_transaction'] = 1;
+            }
+            else if ($data['cs_aksi'] == "2") {
+                $type = 3;
+                $nominal = $data['cs_nominal'];
+                if ($data['cs_nominal'] < 0) {
+                    $type = 1;
+                    $nominal = $data['cs_nominal'] - ($data['cs_nominal'] * 2);
+                }
+
+                $cash_id = (new Cash())->insertCash([
+                    "person_id" => $data['staff_id'],
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // Keluar 1
+                    "cash_tujuan" => 4, // Sales
+                    "status" => 1
+                ]);
+        
+                $data['cash_id'] = $cash_id;
+                $data['cs_transaction'] = 3;
+            }
+            else if ($data['cs_aksi'] == "3") {
+                $type = 1;
+                $nominal = $data['cs_nominal'];
+                if ($data['cs_nominal'] < 0) {
+                    $type = 2;
+                    $nominal = $data['cs_nominal'] - ($data['cs_nominal'] * 2);
+                }
+
+                $cash_id = (new Cash())->insertCash([
+                    "person_id" => $data['staff_id'],
+                    "cash_date" => now(),
+                    "cash_description" => $notes,
+                    "cash_nominal" => $nominal,
+                    "cash_type" => $type, // Debit
+                    "cash_tujuan" => 4, // Sales
+                    "status" => 1
+                ]);
+        
+                $data['cash_id'] = $cash_id;
+                $data['cs_transaction'] = 2;
+            }
+            $data['cs_type'] = 1;
+        }
+
+        $cs_id = (new CashSales())->insertCashSales($data);
+
+        if ($data['oc_transaksi'] == "operasional"){
+            foreach ($item as $key => $value) {
+                $value['cs_id'] = $cs_id;
+                (new CashSalesDetail())->insertCashSalesDetail($value);
+            }
+        }
+    }
+
+    function updateCashSales(Request $req)
+    {
+        $data = $req->all();
+
+        $id = [];
+        $sales = Staff::find($data['staff_id']);
+
+        if ($data['oc_transaksi'] == "operasional"){
+            $total = 0;
+            $item = json_decode($data['items'], true);
+    
+            foreach ($item as $key => $value) {
+                $total += $value['csd_nominal'];
+            }
+    
+            $data['cs_notes'] = "Pengeluaran sales " . $sales->staff_name;
+            $data['cs_nominal'] = $total;
+        }
+
+        if ($data['oc_transaksi'] == "saldo") $data['cs_aksi'] = 1;
+        else if ($data['oc_transaksi'] == "operasional") $data['cs_aksi'] = 2;
+        $cs_id = (new CashSales())->updateCashSales($data);
+
+        if ($data['oc_transaksi'] == "saldo"){
+            $notes = $data['cs_notes'] . " dari sales " . $sales->staff_name;
+            $type = 3;
+            $nominal = $data['cs_nominal'];
+            if ($data['cs_nominal'] < 0) {
+                $type = 1;
+                $nominal = $data['cs_nominal'] - ($data['cs_nominal'] * 2);
+            }
+            $cash_id = (new Cash())->updateCash([
+                "cash_id" => $data['cash_id'],
+                "person_id" => $data['staff_id'],
+                "cash_date" => now(),
+                "cash_description" => $notes,
+                "cash_nominal" => $nominal,
+                "cash_type" => $type, // keluar 1 (setor kas ke bank)
+                "cash_tujuan" => 3, // Armada
+                "status" => 1
+            ]);
+        }
+    }
+
+    function deleteCashSales(Request $req)
+    {
+        $data = $req->all();
+        $ca = CashSales::find($data['cs_id']);
+        (new CashSales())->deleteCashSales($data);
+        $detail = CashSalesDetail::where('cs_id', $data['cs_id'])->where('status', 1)->get();
+        foreach ($detail as $key => $value) {
+            (new CashSalesDetail())->deleteCashSalesDetail($value);
+        }
+        // Kalau manajemen saldo, maka hapus dari kas juga
+        if ($ca->cs_aksi == 2 || $ca->cs_aksi == 3) (new Cash())->deleteCash($ca);
+    }
+
+    function acceptCashSales(Request $req)
+    {
+        $data = $req->all();
+
+        if (isset($data['cs_id'])){
+            $cs = CashSales::find($data['cs_id']);
+        } else {
+            $cs = CashSales::where('cash_id', $data["cash_id"])->first();
+        }
+        // Pengecekan acc
+        if ($cs->status != 1) {
+            $staff = Staff::find($cs->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        $sales = Staff::find($cs['staff_id']);
+        if ($cs->cs_type == 1 && $cs->cs_aksi == 1){
+            $sales->staff_saldo += $cs['cs_nominal'];
+        } else if ($cs->cs_type == 2 && $cs->cs_transaction == 1) {
+            $sales->staff_saldo += $cs['cs_nominal'];
+        }else {
+            $sales->staff_saldo -= $cs['cs_nominal'];
+        }
+        // if ($sales->staff_saldo < 0){
+        //     return response()->json([
+        //         "status" => 0,
+        //         "header" => "Gagal Konfirmasi",
+        //         "message" => "Saldo sales " . $sales->staff_name . " tidak mencukupi"
+        //     ]);
+        // }
+        $sales->save();
+        return (new CashSales())->acceptCashSales($data);
+    }
+
+    function declineCashSales(Request $req)
+    {
+        $data = $req->all();
+        if (isset($data['cs_id'])){
+            $cs = CashSales::find($data['cs_id']);
+        } else {
+            $cs = CashSales::where('cash_id', $data["cash_id"])->first();
+        }
+        // Pengecekan acc
+        if ($cs->status != 1) {
+            $staff = Staff::find($cs->acc_by)->staff_name;
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        return (new CashSales())->declineCashSales($data);
+    }
+    
+    function reportBahanBaku(){
+        return view('Backoffice.Reports.Bahan_Baku');
+    }
+
+    function getDashboardExecutiveWidgets(Request $req)
+    {
+        $chartMonths = (int) $req->get('chart_months', 6);
+        if (! in_array($chartMonths, [3, 6, 12], true)) {
+            $chartMonths = 6;
+        }
+
+        return response()->json([
+            'cross_widgets' => $this->buildDashboardCrossWidgets(),
+            'exec_charts' => $this->buildDashboardExecutiveChartSeries($chartMonths),
+            'top_sales' => $this->buildDashboardTopSalesByLine($chartMonths),
+        ]);
+    }
+
+    function getDashboardOverview(Request $req)
+    {
+        $period = strtolower((string) $req->get('period', 'month'));
+        if (!in_array($period, ['week', 'month', 'year'], true)) {
+            $period = 'month';
+        }
+
+        $anchor = trim((string) $req->get('anchor', ''));
+        $base = \Carbon\Carbon::now();
+        if ($anchor !== '') {
+            try {
+                $base = \Carbon\Carbon::parse($anchor);
+            } catch (\Throwable $e) {
+                $base = \Carbon\Carbon::now();
+            }
+        }
+
+        [$start, $end] = $this->dashboardPeriodRange($period, $base);
+        [$prevStart, $prevEnd] = $this->dashboardPreviousRange($start, $end);
+
+        $asOfKey = $end->toDateString();
+        $agingRows = Cache::remember(
+            'dashboard_stock_aging:' . $asOfKey,
+            now()->addMinutes(10),
+            fn () => (new LogStock())->getStockAgingReport([
+                'type' => 'all',
+                'as_of' => $asOfKey,
+            ])
+        );
+
+        $salesQty = $this->sumSalesQty($start, $end);
+        $salesQtyPrev = $this->sumSalesQty($prevStart, $prevEnd);
+        $salesGrowth = $salesQtyPrev > 0 ? round((($salesQty - $salesQtyPrev) / $salesQtyPrev) * 100, 2) : null;
+
+        $aging = $this->buildAgingSummary($agingRows);
+        $agingDetailByBucket = $this->buildAgingDetailByBucket($agingRows);
+
+        $inventoryValue = Cache::remember(
+            'dashboard_inventory_value',
+            now()->addMinutes(5),
+            fn () => $this->dashboardInventoryValue()
+        );
+        $turnover = $this->dashboardInventoryTurnover($start, $end);
+        $returnRate = $this->dashboardReturnRate($start, $end, $salesQty);
+        $queues = $this->dashboardApprovalQueues($start, $end, 40);
+        $payablesDue = Cache::remember(
+            'dashboard_payables_due',
+            now()->addMinutes(5),
+            fn () => $this->dashboardPayablesDue()
+        );
+        $changeLog = array_merge(
+            $this->dashboardChangeLogCounts($start, $end),
+            [
+                'changelog_items' => $this->filterDashboardQueueItems($queues['changelog'], 'changelog'),
+                'confirmation_items' => $this->filterDashboardQueueItems($queues['confirmation'], 'confirmation'),
+                'revision_items' => $this->filterDashboardQueueItems($queues['revision'], 'revision'),
+            ]
+        );
+        $topProducts = $this->dashboardTopProducts($start, $end);
+        $warnings = $this->dashboardWarnings($agingRows, $start, $end);
+        $bahanStockAlerts = Cache::remember(
+            'dashboard_bahan_stock_alerts',
+            now()->addMinutes(5),
+            fn () => $this->dashboardBahanStockAlerts()
+        );
+        $chart = $this->dashboardChartSeries($period, $start, $end);
+
+        return response()->json([
+            'filter' => [
+                'period' => $period,
+                'start' => $start->toDateString(),
+                'end' => $end->toDateString(),
+                'label' => $start->format('d M Y') . ' - ' . $end->format('d M Y'),
+                'period_label' => $period === 'week' ? 'Minggu' : ($period === 'year' ? 'Tahun' : 'Bulan'),
+                'hint' => 'Pilih Minggu, Bulan, atau Tahun lalu Terapkan. Grafik, KPI penjualan & retur, log ACC, stock aging & rekomendasi produksi mengikuti periode tersebut. Nilai inventory = snapshot stok saat ini.',
+                'top_yearly_caption' => '1 Jan '.$end->year.' → '.$end->format('d M Y'),
+                'top_accum_caption' => 'Periode bulanan: '.$end->copy()->startOfMonth()->format('d M Y').' → '.$end->format('d M Y'),
+            ],
+            'changelog' => $changeLog,
+            'inventory_value' => $inventoryValue,
+            'top_products' => $topProducts,
+            'kpi' => [
+                'sales_growth_pct' => $salesGrowth,
+                'sales_qty_current' => round($salesQty, 2),
+                'sales_qty_previous' => round($salesQtyPrev, 2),
+                'inventory_turnover' => $turnover['turnover'],
+                'dio_days' => $turnover['dio_days'],
+                'return_rate_product_pct' => $returnRate['product'],
+                'return_rate_bahan_pct' => $returnRate['bahan'],
+            ],
+            'stock_aging' => $aging,
+            'stock_aging_detail' => $agingDetailByBucket,
+            'warnings' => $warnings,
+            'bahan_stock_alerts' => $bahanStockAlerts,
+            'payables_due' => $payablesDue,
+            'chart' => $chart,
+        ]);
+    }
+
+    /**
+     * Hutang yang jatuh tempo mulai H-2 hingga overdue dan belum dibayar.
+     * Kondisi: pembayaran = 1 (Belum Terbayar), status PO aktif (>0), status invoice aktif (>=0).
+     */
+    private function dashboardPayablesDue(int $limit = 30): array
+    {
+        $today = \Carbon\Carbon::today();
+        $hPlus2 = $today->copy()->addDays(7);
+
+        $rows = DB::table('purchase_order_detail_invoices as poi')
+            ->join('purchase_orders as po', 'po.po_id', '=', 'poi.po_id')
+            ->leftJoin('suppliers as s', 's.supplier_id', '=', 'po.po_supplier')
+            ->where('poi.status', '>=', 0)
+            ->where('po.status', '>', 0)
+            ->where('po.pembayaran', 1) // belum terbayar
+            ->whereNotNull('poi.poi_due')
+            ->whereDate('poi.poi_due', '<=', $hPlus2->toDateString())
+            ->orderBy('poi.poi_due', 'asc')
+            ->orderBy('poi.poi_id', 'desc')
+            ->limit(max(5, min(100, $limit)))
+            ->get([
+                'poi.poi_id',
+                'poi.po_id',
+                'poi.poi_code',
+                'poi.poi_due',
+                'poi.poi_total',
+                'po.po_number',
+                's.supplier_name',
+            ]);
+
+        $out = [];
+        foreach ($rows as $r) {
+            $due = $r->poi_due ? \Carbon\Carbon::parse($r->poi_due) : null;
+            if (!$due) {
+                continue;
+            }
+            $diff = (int) $today->diffInDays($due, false); // >0: belum jatuh tempo, 0: hari ini, <0: overdue
+            $badge = 'Jatuh tempo';
+            if ($diff > 0) $badge = 'Akan jatuh tempo dalam '.$diff.' hari';
+            elseif ($diff === 0) $badge = 'Hari ini';
+            elseif ($diff < 0) $badge = 'Lewat '.abs($diff).' hari';
+
+            $out[] = [
+                'poi_id' => (int) ($r->poi_id ?? 0),
+                'po_id' => (int) ($r->po_id ?? 0),
+                'invoice' => (string) ($r->poi_code ?? '-'),
+                'reference' => (string) ($r->po_number ?? '-'),
+                'customer' => (string) ($r->supplier_name ?? '-'),
+                'due_date' => $due->toDateString(),
+                'due_text' => $due->format('d M Y'),
+                'days_diff' => $diff,
+                'due_badge' => $badge,
+                'amount' => (float) ($r->poi_total ?? 0),
+                'url' => url('purchaseOrderDetailHutang/'.(int) ($r->po_id ?? 0)),
+            ];
+        }
+
+        return $out;
+    }
+
+    public function dismissDashboardQueueItem(Request $req)
+    {
+        $section = strtolower(trim((string) $req->get('section', '')));
+        $key = trim((string) $req->get('key', ''));
+        if (!in_array($section, ['changelog', 'confirmation', 'revision'], true) || $key === '') {
+            return response()->json(['status' => false, 'message' => 'Invalid payload'], 422);
+        }
+
+        $staffId = (int) (session('user')->staff_id ?? 0);
+        if ($staffId <= 0) {
+            return response()->json(['status' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        DB::table('dashboard_queue_dismissals')->updateOrInsert(
+            [
+                'staff_id' => $staffId,
+                'queue_section' => $section,
+                'queue_key' => $key,
+            ],
+            [
+                'status' => 1,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        return response()->json(['status' => true]);
+    }
+
+    private function filterDashboardQueueItems(array $rows, string $section): array
+    {
+        $staffId = (int) (session('user')->staff_id ?? 0);
+        if ($staffId <= 0 || $rows === []) {
+            return $rows;
+        }
+
+        $dismissed = DB::table('dashboard_queue_dismissals')
+            ->where('staff_id', $staffId)
+            ->where('queue_section', strtolower($section))
+            ->where('status', 1)
+            ->pluck('queue_key')
+            ->all();
+
+        if (!$dismissed) {
+            return $rows;
+        }
+
+        $map = array_fill_keys(array_map('strval', $dismissed), true);
+
+        return array_values(array_filter($rows, static function ($r) use ($map) {
+            $k = (string) ($r['queue_key'] ?? '');
+            return $k === '' || !isset($map[$k]);
+        }));
+    }
+
+    private function normalizeDashboardLogUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            return url('admin');
+        }
+
+        $path = trim((string) parse_url($url, PHP_URL_PATH), '/');
+        if ($path === '') {
+            return url('admin');
+        }
+
+        $lower = strtolower($path);
+        if ($lower === 'dashboard') {
+            return url('admin');
+        }
+        foreach (['insert', 'update', 'delete', 'acc', 'accept', 'decline', 'reject'] as $prefix) {
+            if (str_starts_with($lower, $prefix)) {
+                return url('admin');
+            }
+        }
+
+        return $url;
+    }
+
+    private function fallbackDashboardLogUrlByModule(string $moduleKey): string
+    {
+        $k = strtolower(trim($moduleKey));
+        if ($k === '') {
+            return url('admin');
+        }
+
+        if (str_contains($k, 'cash')) return url('operationalCash');
+        if (str_contains($k, 'salesorder') || str_contains($k, 'so')) return url('salesOrder');
+        if (str_contains($k, 'purchaseorder') || str_contains($k, 'po')) return url('purchaseOrder');
+        if (str_contains($k, 'production')) return url('production');
+        if (str_contains($k, 'productissue')) return url('productIssue');
+        if (str_contains($k, 'supplier')) return url('supplier');
+        if (str_contains($k, 'customer')) return url('customer');
+        if (str_contains($k, 'staff') || str_contains($k, 'user')) return url('staff');
+        if (str_contains($k, 'role') || str_contains($k, 'permission')) return url('role');
+        if (str_contains($k, 'category')) return url('category');
+        if (str_contains($k, 'variant')) return url('variant');
+        if (str_contains($k, 'unit')) return url('unit');
+        if (str_contains($k, 'product')) return url('product');
+        if (str_contains($k, 'supplies') || str_contains($k, 'bahan')) return url('supplies');
+        if (str_contains($k, 'stockalertsupplies')) return url('stockAlertSupplies');
+        if (str_contains($k, 'stockalert')) return url('stockAlert');
+        if (str_contains($k, 'stockopnamebahan')) return url('stockOpnameBahan');
+        if (str_contains($k, 'stockopname')) return url('stockOpname');
+
+        return url('admin');
+    }
+
+    /**
+     * Peringatan stok bahan mentah (sama rule dengan halaman Stock Alert Supplies): habis = merah; di/bawah batas alert = kuning.
+     */
+    private function dashboardBahanStockAlerts(): array
+    {
+        $raw = (new StockAlertSupplies())->getStockAlertSupplies(['mode' => 1]);
+        $unitIdSet = [];
+        foreach ($raw as $value) {
+            if ($value->supplies_default_unit) {
+                $unitIdSet[(int) $value->supplies_default_unit] = true;
+            }
+        }
+        $unitsMap = $unitIdSet !== []
+            ? Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id')
+            : collect();
+
+        $rows = [];
+        foreach ($raw as $value) {
+            $stockList = $value->stock ?? collect();
+            if ($stockList instanceof \Illuminate\Support\Collection) {
+                $stockArr = $stockList->values()->all();
+            } else {
+                $stockArr = is_array($stockList) ? $stockList : iterator_to_array($stockList);
+            }
+            $defUid = (int) ($value->supplies_default_unit ?? 0);
+
+            $habis = 1;
+            $firstStock = 0.0;
+            foreach ($stockArr as $element) {
+                if ((float) ($element->ss_stock ?? 0) > 0) {
+                    $habis = -1;
+                }
+                if ((int) ($element->unit_id ?? 0) === $defUid) {
+                    $firstStock = (float) ($element->ss_stock ?? 0);
+                }
+            }
+            $alert = (float) ($value->supplies_alert ?? 0);
+            $isOut = ($habis === 1);
+            $isLow = ($habis === -1 && $alert > 0 && $firstStock <= $alert);
+            if (! $isOut && ! $isLow) {
+                continue;
+            }
+            $level = $isOut ? 'critical' : 'warn';
+
+            $u = $unitsMap->get((int) $value->supplies_default_unit);
+            $defUnit = $u ? (string) $u->unit_name : '';
+            $stockText = '0 '.trim($defUnit !== '' ? $defUnit : '-');
+            if (count($stockArr) > 0) {
+                $parts = [];
+                foreach ($stockArr as $element) {
+                    $parts[] = $this->fmtQtyShort((float) ($element->ss_stock ?? 0)).' '.trim((string) ($element->unit_name ?? ''));
+                }
+                $stockText = implode(', ', $parts);
+            }
+            $unitsCount = $value->units instanceof \Illuminate\Support\Collection ? $value->units->count() : count($value->units ?? []);
+            $saran = 'Rinci di halaman peringatan';
+            if ($unitsCount <= 1 && $alert > 0 && ! $isOut) {
+                $need = max(0, (int) ceil($alert - $firstStock));
+                $saran = $need > 0 ? 'Est. kurang ~'.$need.' '.$defUnit : '—';
+            } elseif ($isOut) {
+                $saran = 'Order segera';
+            }
+
+            $rows[] = [
+                'supplies_id' => (int) $value->supplies_id,
+                'name' => (string) ($value->supplies_name ?? '-'),
+                'stock_text' => $stockText,
+                'alert_qty' => round($alert, 2),
+                'alert_unit' => $defUnit,
+                'saran' => $saran,
+                'level' => $level,
+                '_sort' => $isOut ? 0 : 1,
+            ];
+        }
+
+        usort($rows, function ($a, $b) {
+            if ($a['_sort'] !== $b['_sort']) {
+                return $a['_sort'] <=> $b['_sort'];
+            }
+
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        $countCritical = 0;
+        $countWarn = 0;
+        foreach ($rows as $r) {
+            if ($r['level'] === 'critical') {
+                $countCritical++;
+            } else {
+                $countWarn++;
+            }
+        }
+
+        foreach ($rows as &$r) {
+            unset($r['_sort']);
+        }
+        unset($r);
+
+        return [
+            // Jangan potong data di backend agar filter badge (habis/mendekati) selalu sinkron dengan jumlah badge.
+            'rows' => array_values($rows),
+            'count_critical' => $countCritical,
+            'count_warn' => $countWarn,
+            'urls' => [
+                'stock_alert_supplies' => url('stockAlertSupplies'),
+                'purchase_order' => url('purchaseOrder'),
+            ],
+        ];
+    }
+
+    private function fmtQtyShort(float $q): string
+    {
+        if (abs($q - round($q)) < 0.000001) {
+            return (string) (int) round($q);
+        }
+
+        return rtrim(rtrim(number_format($q, 2, '.', ''), '0'), '.');
+    }
+
+    private function dashboardPeriodRange(string $period, \Carbon\Carbon $base): array
+    {
+        // Periode dashboard berjalan sampai tanggal acuan saat ini (base),
+        // bukan sampai akhir minggu/bulan/tahun yang bisa jatuh di masa depan.
+        $end = $base->copy()->endOfDay();
+        if ($period === 'week') {
+            return [$base->copy()->startOfWeek()->startOfDay(), $end];
+        }
+        if ($period === 'year') {
+            return [$base->copy()->startOfYear()->startOfDay(), $end];
+        }
+
+        return [$base->copy()->startOfMonth()->startOfDay(), $end];
+    }
+
+    private function dashboardPreviousRange(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $days = $start->diffInDays($end) + 1;
+        $prevEnd = $start->copy()->subDay()->endOfDay();
+        $prevStart = $prevEnd->copy()->subDays($days - 1)->startOfDay();
+        return [$prevStart, $prevEnd];
+    }
+
+    private function sumSalesQty(\Carbon\Carbon $start, \Carbon\Carbon $end): float
+    {
+        return (float) (DB::table('sales_order_details as sod')
+            ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+            ->where('so.status', '>=', 1)
+            ->where('sod.status', '>=', 1)
+            ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$start->toDateString(), $end->toDateString()])
+            ->sum('sod.sod_qty') ?? 0);
+    }
+
+    private function dashboardInventoryValue(): array
+    {
+        $lastHargaSub = DB::table('purchase_orders_details as pod')
+            ->join('supplies_variants as sv', 'sv.supplies_variant_id', '=', 'pod.supplies_variant_id')
+            ->where('pod.status', 1)
+            ->select('sv.supplies_id', DB::raw('MAX(pod.pod_harga) as last_harga'))
+            ->groupBy('sv.supplies_id');
+
+        $productValue = (float) (DB::table('product_stocks as ps')
+            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'ps.product_variant_id')
+            ->where('ps.status', 1)
+            ->where('pv.status', 1)
+            ->selectRaw('SUM(ps.ps_stock * COALESCE(pv.product_variant_price,0)) as val')
+            ->value('val') ?? 0);
+
+        $bahanValue = (float) (DB::table('supplies_stocks as ss')
+            ->leftJoinSub($lastHargaSub, 'lh', function ($join) {
+                $join->on('lh.supplies_id', '=', 'ss.supplies_id');
+            })
+            ->where('ss.status', 1)
+            ->selectRaw('SUM(ss.ss_stock * COALESCE(lh.last_harga,0)) as val')
+            ->value('val') ?? 0);
+
+        return [
+            'total' => round($productValue + $bahanValue, 2),
+            'product' => round($productValue, 2),
+            'bahan' => round($bahanValue, 2),
+        ];
+    }
+
+    private function dashboardChangeLogCounts(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+
+        // Konfirmasi: transaksi baru menunggu ACC
+        $confirmation = 0;
+        $confirmation += (int) DB::table('sales_orders')->where('status', 1)->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('productions')->whereIn('status', [1, 4])->whereBetween('production_date', [$s, $e])->count();
+        $confirmation += (int) DB::table('purchase_orders')->where('status', 1)->whereBetween('po_date', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_admins')->where('status', 1)->whereRaw('DATE(COALESCE(ca_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_gudangs')->where('status', 1)->whereRaw('DATE(COALESCE(cg_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_armadas')->where('status', 1)->whereRaw('DATE(COALESCE(cr_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $confirmation += (int) DB::table('cash_sales')->where('status', 1)->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+
+        // Changelog: permintaan modifikasi / mutasi khusus menunggu ACC Direktur
+        $changelogPending = (int) DB::table('product_issues')
+            ->where('status', 1)
+            ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $changelogPending += (int) DB::table('dashboard_change_logs')
+            ->whereRaw('DATE(created_at) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+
+        // Revisi: ditolak — perlu input ulang
+        $revision = 0;
+        $revision += (int) DB::table('sales_orders')->where('status', 3)->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])->count();
+        $revision += (int) DB::table('productions')->where('status', 3)->whereBetween('production_date', [$s, $e])->count();
+        // Tolak PO mengubah baris (updated_at); jangan filter hanya po_date agar revisi tetap muncul di periode penolakan.
+        $revision += (int) DB::table('purchase_orders')
+            ->where('status', -1)
+            ->whereRaw('DATE(COALESCE(updated_at, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('product_issues')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('cash_sales')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(cs_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('cash_admins')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(ca_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('cash_gudangs')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(cg_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+        $revision += (int) DB::table('cash_armadas')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(cr_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->count();
+
+        return [
+            'changelog_pending' => $changelogPending,
+            'confirmation_log' => $confirmation,
+            'revision_log' => $revision,
+        ];
+    }
+
+    /**
+     * Antrian untuk Direktur: changelog (modifikasi), konfirmasi transaksi baru, revisi setelah penolakan.
+     *
+     * @return array{changelog: array<int, array<string, mixed>>, confirmation: array<int, array<string, mixed>>, revision: array<int, array<string, mixed>>}
+     */
+    private function dashboardApprovalQueues(\Carbon\Carbon $start, \Carbon\Carbon $end, int $limit): array
+    {
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+        $limit = max(5, min(80, $limit));
+
+        $fmtRp = static function (float $n): string {
+            return 'Rp ' . number_format($n, 0, ',', '.');
+        };
+        $fmtSoReference = static function ($soNumber, $soInvoiceNo = null): string {
+            $inv = trim((string) ($soInvoiceNo ?? ''));
+            if ($inv !== '') {
+                return preg_match('/^INV/i', $inv) ? $inv : ('INV'.$inv);
+            }
+
+            $so = trim((string) ($soNumber ?? ''));
+            if ($so === '') {
+                return '-';
+            }
+            if (preg_match('/^SO(?=\d)/i', $so)) {
+                return (string) preg_replace('/^SO/i', 'INV', $so, 1);
+            }
+
+            return 'INV '.$so;
+        };
+
+        $changelog = [];
+
+        $piRows = DB::table('product_issues as pi')
+            ->where('pi.status', 1)
+            ->whereRaw('DATE(COALESCE(pi.pi_date, pi.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('pi.created_at')
+            ->limit($limit)
+            ->get(['pi.pi_id', 'pi.pi_code', 'pi.pi_type', 'pi.tipe_return', 'pi.pi_notes', 'pi.pi_date']);
+
+        foreach ($piRows as $pi) {
+            $tipe = (int) ($pi->tipe_return ?? 0);
+            $tipeLabel = $tipe === 1 ? 'Retur ke pemasok' : ($tipe === 2 ? 'Retur dari armada' : 'Retur');
+            $changelog[] = [
+                'kind' => 'retur_produk',
+                'queue_key' => 'pi:'.$pi->pi_id,
+                'module_label' => 'Retur Produk',
+                'reference' => (string) ($pi->pi_code ?? '-'),
+                'date' => $pi->pi_date ? (string) $pi->pi_date : '',
+                'what_changed' => 'Permintaan '.$tipeLabel.' menunggu persetujuan Direktur sebelum mutasi stok.',
+                'summary' => trim($tipeLabel.(($pi->pi_notes ?? '') !== '' ? ' — '.(string) $pi->pi_notes : '')),
+                'url' => url('productIssue').'?pi_id='.(int) $pi->pi_id,
+                'url_label' => 'Buka baris ini',
+            ];
+        }
+
+        $masterChangeRows = DB::table('dashboard_change_logs as dcl')
+            ->whereRaw('DATE(dcl.created_at) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('dcl.created_at')
+            ->limit($limit)
+            ->get([
+                'dcl.id',
+                'dcl.module_key',
+                'dcl.module_label',
+                'dcl.reference',
+                'dcl.what_changed',
+                'dcl.summary',
+                'dcl.url',
+                'dcl.url_label',
+                'dcl.created_at',
+            ]);
+        foreach ($masterChangeRows as $log) {
+            $safeUrl = $this->normalizeDashboardLogUrl((string) ($log->url ?? ''));
+            if ($safeUrl === url('admin')) {
+                $safeUrl = $this->fallbackDashboardLogUrlByModule((string) ($log->module_key ?? ''));
+            }
+            $changelog[] = [
+                'kind' => (string) ($log->module_key ?? 'master_change'),
+                'queue_key' => 'log:'.(int) ($log->id ?? 0),
+                'module_label' => (string) ($log->module_label ?? 'Master Data'),
+                'reference' => (string) ($log->reference ?? ('LOG #'.(int) ($log->id ?? 0))),
+                'date' => $log->created_at ? (string) $log->created_at : '',
+                'what_changed' => (string) ($log->what_changed ?? 'Perubahan data master.'),
+                'summary' => (string) ($log->summary ?? ''),
+                'url' => $safeUrl,
+                'url_label' => (string) ($log->url_label ?? 'Buka'),
+            ];
+        }
+
+        usort($changelog, static function ($a, $b) {
+            return strcmp((string) ($b['date'] ?? ''), (string) ($a['date'] ?? ''));
+        });
+        $changelog = array_slice($changelog, 0, $limit);
+
+        $confirmation = [];
+
+        $soPend = DB::table('sales_orders')
+            ->where('status', 1)
+            ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['so_id', 'so_number', 'so_invoice_no', 'so_date', 'so_total']);
+
+        foreach ($soPend as $so) {
+            $confirmation[] = [
+                'kind' => 'pengiriman',
+                'queue_key' => 'so:'.$so->so_id,
+                'module_label' => 'Pengiriman (SO)',
+                'reference' => $fmtSoReference($so->so_number ?? null, $so->so_invoice_no ?? null),
+                'date' => $so->so_date ? (string) $so->so_date : '',
+                'what_changed' => 'Pengiriman baru menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp((float) ($so->so_total ?? 0)).(($so->so_invoice_no ?? '') !== '' ? ' · Inv '.(string) $so->so_invoice_no : ''),
+                'url' => url('salesOrder').'?confirm_so_id='.(int) $so->so_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $poPend = DB::table('purchase_orders')
+            ->where('status', 1)
+            ->whereBetween('po_date', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['po_id', 'po_number', 'po_date', 'po_total']);
+
+        foreach ($poPend as $po) {
+            $confirmation[] = [
+                'kind' => 'pembelian',
+                'queue_key' => 'po:'.$po->po_id,
+                'module_label' => 'Pembelian (PO)',
+                'reference' => (string) ($po->po_number ?? '-'),
+                'date' => $po->po_date ? (string) $po->po_date : '',
+                'what_changed' => 'PO menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp((float) ($po->po_total ?? 0)),
+                'url' => url('purchaseOrderDetail/'.$po->po_id),
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $prodPend = DB::table('productions')
+            ->whereIn('status', [1, 4])
+            ->whereBetween('production_date', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['production_id', 'production_code', 'production_date', 'status']);
+
+        foreach ($prodPend as $pr) {
+            $st = (int) ($pr->status ?? 0);
+            $stLabel = $st === 4 ? 'Menunggu pembatalan' : 'Menunggu ACC produksi';
+            $confirmation[] = [
+                'kind' => 'produksi',
+                'queue_key' => 'pr:'.$pr->production_id,
+                'module_label' => 'Produksi',
+                'reference' => (string) ($pr->production_code ?? '-'),
+                'date' => $pr->production_date ? (string) $pr->production_date : '',
+                'what_changed' => $stLabel.'.',
+                'summary' => $stLabel,
+                'url' => url('production').'?production_id='.(int) $pr->production_id,
+                'url_label' => 'Buka batch ini',
+            ];
+        }
+
+        $caPend = DB::table('cash_admins as ca')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'ca.staff_id')
+            ->where('ca.status', 1)
+            ->whereRaw('DATE(COALESCE(ca.ca_date, ca.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('ca.created_at')
+            ->limit($limit)
+            ->get(['ca.ca_id', 'ca.ca_nominal', 'ca.ca_notes', 'ca.ca_date', 'st.staff_name']);
+        foreach ($caPend as $ca) {
+            $nom = (float) ($ca->ca_nominal ?? 0);
+            $staff = trim((string) ($ca->staff_name ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_admin',
+                'queue_key' => 'ca:'.$ca->ca_id,
+                'module_label' => 'Kas Operasional Admin',
+                'reference' => 'CA #'.$ca->ca_id,
+                'date' => $ca->ca_date ? (string) $ca->ca_date : '',
+                'what_changed' => 'Pengajuan kas operasional admin menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($ca->ca_notes ?? '') !== '') ? ' — '.(string) $ca->ca_notes : ''),
+                'url' => url('operationalCash').'?ca_id='.(int) $ca->ca_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $cgPend = DB::table('cash_gudangs as cg')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cg.staff_id')
+            ->where('cg.status', 1)
+            ->whereRaw('DATE(COALESCE(cg.cg_date, cg.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cg.created_at')
+            ->limit($limit)
+            ->get(['cg.cg_id', 'cg.cg_nominal', 'cg.cg_notes', 'cg.cg_date', 'st.staff_name']);
+        foreach ($cgPend as $cg) {
+            $nom = (float) ($cg->cg_nominal ?? 0);
+            $staff = trim((string) ($cg->staff_name ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_gudang',
+                'queue_key' => 'cg:'.$cg->cg_id,
+                'module_label' => 'Kas Operasional Gudang',
+                'reference' => 'CG #'.$cg->cg_id,
+                'date' => $cg->cg_date ? (string) $cg->cg_date : '',
+                'what_changed' => 'Pengajuan kas operasional gudang menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($cg->cg_notes ?? '') !== '') ? ' — '.(string) $cg->cg_notes : ''),
+                'url' => url('operationalCash').'?cg_id='.(int) $cg->cg_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $crPend = DB::table('cash_armadas as cr')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'cr.customer_id')
+            ->where('cr.status', 1)
+            ->whereRaw('DATE(COALESCE(cr.cr_date, cr.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cr.created_at')
+            ->limit($limit)
+            ->get(['cr.cr_id', 'cr.cr_nominal', 'cr.cr_notes', 'cr.cr_date', 'c.customer_notes']);
+        foreach ($crPend as $cr) {
+            $nom = (float) ($cr->cr_nominal ?? 0);
+            $armada = trim((string) ($cr->customer_notes ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_armada',
+                'queue_key' => 'cr:'.$cr->cr_id,
+                'module_label' => 'Kas Operasional Armada',
+                'reference' => 'CR #'.$cr->cr_id,
+                'date' => $cr->cr_date ? (string) $cr->cr_date : '',
+                'what_changed' => 'Pengajuan kas operasional armada menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($armada !== '' ? ' · '.$armada : '').((($cr->cr_notes ?? '') !== '') ? ' — '.(string) $cr->cr_notes : ''),
+                'url' => url('operationalCash').'?cr_id='.(int) $cr->cr_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        $csPend = DB::table('cash_sales as cs')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cs.staff_id')
+            ->where('cs.status', 1)
+            ->whereRaw('DATE(COALESCE(cs.cs_date, cs.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cs.created_at')
+            ->limit($limit)
+            ->get(['cs.cs_id', 'cs.cs_nominal', 'cs.cs_notes', 'cs.cs_date', 'st.staff_name']);
+        foreach ($csPend as $cs) {
+            $nom = (float) ($cs->cs_nominal ?? 0);
+            $staff = trim((string) ($cs->staff_name ?? ''));
+            $confirmation[] = [
+                'kind' => 'kas_operasional_sales',
+                'queue_key' => 'cs:'.$cs->cs_id,
+                'module_label' => 'Kas Operasional Sales',
+                'reference' => 'CS #'.$cs->cs_id,
+                'date' => $cs->cs_date ? (string) $cs->cs_date : '',
+                'what_changed' => 'Pengajuan kas operasional sales menunggu konfirmasi / ACC.',
+                'summary' => 'Total '.$fmtRp($nom).($staff !== '' ? ' · '.$staff : '').((($cs->cs_notes ?? '') !== '') ? ' — '.(string) $cs->cs_notes : ''),
+                'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
+                'url_label' => 'Lihat & ACC',
+            ];
+        }
+
+        usort($confirmation, static function ($a, $b) {
+            return strcmp((string) ($b['date'] ?? ''), (string) ($a['date'] ?? ''));
+        });
+        $confirmation = array_slice($confirmation, 0, $limit);
+
+        $revision = [];
+
+        $soRev = DB::table('sales_orders')
+            ->where('status', 3)
+            ->whereRaw('DATE(COALESCE(so_date, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['so_id', 'so_number', 'so_invoice_no', 'so_date']);
+
+        foreach ($soRev as $so) {
+            $revision[] = [
+                'kind' => 'pengiriman',
+                'queue_key' => 'so:'.$so->so_id,
+                'module_label' => 'Pengiriman (SO)',
+                'reference' => $fmtSoReference($so->so_number ?? null, $so->so_invoice_no ?? null),
+                'date' => $so->so_date ? (string) $so->so_date : '',
+                'what_changed' => 'Pengiriman ditolak — perlu perbaikan / input ulang.',
+                'summary' => 'Status ditolak',
+                'url' => url('salesOrder').'?rev_so_id='.(int) $so->so_id,
+                'url_label' => 'Perbaiki SO',
+            ];
+        }
+
+        $poRev = DB::table('purchase_orders')
+            ->where('status', -1)
+            ->whereRaw('DATE(COALESCE(updated_at, created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['po_id', 'po_number', 'po_date', 'updated_at', 'created_at']);
+
+        foreach ($poRev as $po) {
+            $rejAt = $po->updated_at ?? $po->created_at ?? null;
+            $revision[] = [
+                'kind' => 'pembelian',
+                'queue_key' => 'po:'.$po->po_id,
+                'module_label' => 'Pembelian (PO)',
+                'reference' => (string) ($po->po_number ?? '-'),
+                'date' => $rejAt ? (string) \Carbon\Carbon::parse($rejAt)->toDateString() : ($po->po_date ? (string) $po->po_date : ''),
+                'what_changed' => 'Pengajuan pembelian ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => 'Status ditolak',
+                'url' => url('purchaseOrderDetail/'.$po->po_id),
+                'url_label' => 'Perbaiki / lihat PO',
+            ];
+        }
+
+        $prodRev = DB::table('productions')
+            ->where('status', 3)
+            ->whereBetween('production_date', [$s, $e])
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get(['production_id', 'production_code', 'production_date']);
+
+        foreach ($prodRev as $pr) {
+            $revision[] = [
+                'kind' => 'produksi',
+                'queue_key' => 'pr:'.$pr->production_id,
+                'module_label' => 'Produksi',
+                'reference' => (string) ($pr->production_code ?? '-'),
+                'date' => $pr->production_date ? (string) $pr->production_date : '',
+                'what_changed' => 'Produksi ditolak — perlu perbaikan / input ulang.',
+                'summary' => 'Status ditolak',
+                'url' => url('production').'?rev_production_id='.(int) $pr->production_id,
+                'url_label' => 'Buka batch ditolak',
+            ];
+        }
+
+        $piRev = DB::table('product_issues as pi')
+            ->where('pi.status', 3)
+            ->whereRaw('DATE(COALESCE(pi.pi_date, pi.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('pi.created_at')
+            ->limit($limit)
+            ->get(['pi.pi_id', 'pi.pi_code', 'pi.tipe_return', 'pi.pi_date']);
+
+        foreach ($piRev as $pi) {
+            $tipe = (int) ($pi->tipe_return ?? 0);
+            $tipeLabel = $tipe === 1 ? 'Retur ke pemasok' : ($tipe === 2 ? 'Retur dari armada' : 'Retur');
+            $revision[] = [
+                'kind' => 'retur_produk',
+                'queue_key' => 'pi:'.$pi->pi_id,
+                'module_label' => 'Retur Produk',
+                'reference' => (string) ($pi->pi_code ?? '-'),
+                'date' => $pi->pi_date ? (string) $pi->pi_date : '',
+                'what_changed' => 'Retur ditolak — sesuaikan data lalu ajukan ulang.',
+                'summary' => $tipeLabel.' ditolak',
+                'url' => url('productIssue').'?pi_id='.(int) $pi->pi_id,
+                'url_label' => 'Perbaiki retur',
+            ];
+        }
+
+        $csRev = DB::table('cash_sales as cs')
+            ->where('cs.status', 3)
+            ->whereRaw('DATE(COALESCE(cs.cs_date, cs.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cs.created_at')
+            ->limit($limit)
+            ->get(['cs.cs_id', 'cs.cs_date']);
+
+        foreach ($csRev as $cs) {
+            $revision[] = [
+                'kind' => 'kas_sales',
+                'queue_key' => 'cs:'.$cs->cs_id,
+                'module_label' => 'Kas Sales (Staff)',
+                'reference' => 'CS #'.$cs->cs_id,
+                'date' => $cs->cs_date ? (string) $cs->cs_date : '',
+                'what_changed' => 'Penyesuaian kas sales ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => 'Ditolak',
+                'url' => url('operationalCash').'?cs_id='.(int) $cs->cs_id,
+                'url_label' => 'Perbaiki kas sales',
+            ];
+        }
+
+        $caRev = DB::table('cash_admins as ca')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'ca.staff_id')
+            ->where('ca.status', 3)
+            ->whereRaw('DATE(COALESCE(ca.ca_date, ca.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('ca.created_at')
+            ->limit($limit)
+            ->get(['ca.ca_id', 'ca.ca_nominal', 'ca.ca_notes', 'ca.ca_date', 'st.staff_name']);
+
+        foreach ($caRev as $ca) {
+            $nom = (float) ($ca->ca_nominal ?? 0);
+            $staff = trim((string) ($ca->staff_name ?? ''));
+            $revision[] = [
+                'kind' => 'kas_admin',
+                'queue_key' => 'ca:'.$ca->ca_id,
+                'module_label' => 'Kas Admin (Staff)',
+                'reference' => 'CA #'.$ca->ca_id,
+                'date' => $ca->ca_date ? (string) $ca->ca_date : '',
+                'what_changed' => 'Penyesuaian kas admin ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : ''),
+                'url' => url('operationalCash').'?ca_id='.(int) $ca->ca_id,
+                'url_label' => 'Perbaiki kas admin',
+            ];
+        }
+
+        $cgRev = DB::table('cash_gudangs as cg')
+            ->leftJoin('staffs as st', 'st.staff_id', '=', 'cg.staff_id')
+            ->where('cg.status', 3)
+            ->whereRaw('DATE(COALESCE(cg.cg_date, cg.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cg.created_at')
+            ->limit($limit)
+            ->get(['cg.cg_id', 'cg.cg_nominal', 'cg.cg_notes', 'cg.cg_date', 'st.staff_name']);
+
+        foreach ($cgRev as $cg) {
+            $nom = (float) ($cg->cg_nominal ?? 0);
+            $staff = trim((string) ($cg->staff_name ?? ''));
+            $revision[] = [
+                'kind' => 'kas_gudang',
+                'queue_key' => 'cg:'.$cg->cg_id,
+                'module_label' => 'Kas Gudang (Staff)',
+                'reference' => 'CG #'.$cg->cg_id,
+                'date' => $cg->cg_date ? (string) $cg->cg_date : '',
+                'what_changed' => 'Penyesuaian kas gudang ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => $fmtRp($nom).($staff !== '' ? ' · '.$staff : ''),
+                'url' => url('operationalCash').'?cg_id='.(int) $cg->cg_id,
+                'url_label' => 'Perbaiki kas gudang',
+            ];
+        }
+
+        $crRev = DB::table('cash_armadas as cr')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'cr.customer_id')
+            ->where('cr.status', 3)
+            ->whereRaw('DATE(COALESCE(cr.cr_date, cr.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('cr.created_at')
+            ->limit($limit)
+            ->get(['cr.cr_id', 'cr.cr_nominal', 'cr.cr_notes', 'cr.cr_date', 'c.customer_notes']);
+
+        foreach ($crRev as $cr) {
+            $nom = (float) ($cr->cr_nominal ?? 0);
+            $armada = trim((string) ($cr->customer_notes ?? ''));
+            $revision[] = [
+                'kind' => 'kas_armada',
+                'queue_key' => 'cr:'.$cr->cr_id,
+                'module_label' => 'Kas Armada (Armada)',
+                'reference' => 'CR #'.$cr->cr_id,
+                'date' => $cr->cr_date ? (string) $cr->cr_date : '',
+                'what_changed' => 'Penyesuaian kas armada ditolak — perbaiki lalu ajukan ulang.',
+                'summary' => $fmtRp($nom).($armada !== '' ? ' · '.$armada : ''),
+                'url' => url('operationalCash').'?cr_id='.(int) $cr->cr_id,
+                'url_label' => 'Perbaiki kas armada',
+            ];
+        }
+
+        usort($revision, static function ($a, $b) {
+            return strcmp((string) ($b['date'] ?? ''), (string) ($a['date'] ?? ''));
+        });
+        $revision = array_slice($revision, 0, $limit);
+
+        return [
+            'changelog' => $changelog,
+            'confirmation' => $confirmation,
+            'revision' => $revision,
+        ];
+    }
+
+    private function dashboardInventoryTurnover(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $days = max(1, $start->diffInDays($end) + 1);
+        $outQty = (float) (DB::table('log_stocks')
+            ->where('status', 1)
+            ->where('log_category', 2)
+            ->whereBetween('log_date', [$start->toDateString() . ' 00:00:00', $end->toDateString() . ' 23:59:59'])
+            ->sum('log_jumlah') ?? 0);
+
+        $currentStock = (float) (DB::table('product_stocks')->where('status', 1)->sum('ps_stock') ?? 0)
+            + (float) (DB::table('supplies_stocks')->where('status', 1)->sum('ss_stock') ?? 0);
+
+        $avgStock = max(1.0, $currentStock);
+        $turnover = round($outQty / $avgStock, 3);
+        $annualized = $turnover * (365 / $days);
+        $dio = $annualized > 0 ? round(365 / $annualized, 1) : null;
+
+        return [
+            'turnover' => round($annualized, 2),
+            'dio_days' => $dio,
+        ];
+    }
+
+    private function dashboardReturnRate(\Carbon\Carbon $start, \Carbon\Carbon $end, float $salesQty): array
+    {
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+
+        $productReturnQty = (float) (DB::table('product_issues_details as pid')
+            ->join('product_issues as pi', 'pi.pi_id', '=', 'pid.pi_id')
+            ->where('pi.tipe_return', 2)
+            ->where('pi.status', 2)
+            ->where('pid.status', '>=', 1)
+            ->whereBetween('pi.pi_date', [$s, $e])
+            ->sum('pid.pid_qty') ?? 0);
+
+        $purchaseQty = (float) (DB::table('purchase_orders_details as pod')
+            ->join('purchase_orders as po', 'po.po_id', '=', 'pod.po_id')
+            ->where('pod.status', 1)
+            ->where('po.status', '>=', 1)
+            ->whereBetween('po.po_date', [$s, $e])
+            ->sum('pod.pod_qty') ?? 0);
+
+        $suppliesReturnQty = (float) (DB::table('return_supplies_detail as rsd')
+            ->join('return_supplies as rs', 'rs.rs_id', '=', 'rsd.rs_id')
+            ->where('rs.status', 1)
+            ->where('rsd.status', 1)
+            ->whereBetween('rs.rs_date', [$s, $e])
+            ->sum('rsd.rsd_qty') ?? 0);
+
+        return [
+            'product' => $salesQty > 0 ? round(($productReturnQty / $salesQty) * 100, 2) : 0.0,
+            'bahan' => $purchaseQty > 0 ? round(($suppliesReturnQty / $purchaseQty) * 100, 2) : 0.0,
+        ];
+    }
+
+    private function buildAgingSummary(array $agingRows): array
+    {
+        $map = [
+            '0-30 hari' => ['status' => 'Sehat', 'qty' => 0.0, 'value' => 0.0],
+            '31-60 hari' => ['status' => 'Waspada', 'qty' => 0.0, 'value' => 0.0],
+            '61-90 hari' => ['status' => 'Risiko', 'qty' => 0.0, 'value' => 0.0],
+            '>90 hari' => ['status' => 'Dead stock', 'qty' => 0.0, 'value' => 0.0],
+        ];
+        foreach ($agingRows as $r) {
+            $key = LogStock::dashboardFourBucketKeyFromAgingRow($r);
+            $map[$key]['qty'] += (float) ($r['qty'] ?? 0);
+            $map[$key]['value'] += (float) ($r['stock_value'] ?? 0);
+        }
+
+        $rows = [];
+        foreach ($map as $bucket => $x) {
+            $rows[] = [
+                'bucket' => $bucket,
+                'status' => $x['status'],
+                'qty' => round($x['qty'], 2),
+                'value' => round($x['value'], 2),
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Item per bucket umur (sama pembagian dengan ringkasan), untuk modal detail di dashboard.
+     *
+     * @return array<string, array<int, array{kind: string, name: string, qty: float, unit: string, value: float, age_days: float}>>
+     */
+    private function buildAgingDetailByBucket(array $agingRows): array
+    {
+        $buckets = [
+            '0-30 hari' => [],
+            '31-60 hari' => [],
+            '61-90 hari' => [],
+            '>90 hari' => [],
+        ];
+        foreach ($agingRows as $r) {
+            $days = (float) ($r['weighted_age_days'] ?? 0);
+            $key = LogStock::dashboardFourBucketKeyFromAgingRow($r);
+            $src = strtolower((string) ($r['sumber'] ?? ''));
+            $kind = $src === 'bahan' ? 'Bahan mentah' : 'Barang jadi';
+            $buckets[$key][] = [
+                'kind' => $kind,
+                'name' => trim((string) ($r['item_label'] ?? '')) ?: '-',
+                'qty' => round((float) ($r['qty'] ?? 0), 2),
+                'unit' => trim((string) ($r['unit_name'] ?? '')),
+                'value' => round((float) ($r['stock_value'] ?? 0), 2),
+                'age_days' => round($days, 1),
+            ];
+        }
+        foreach ($buckets as &$items) {
+            usort($items, function ($a, $b) {
+                $da = (float) ($b['age_days'] ?? 0) <=> (float) ($a['age_days'] ?? 0);
+                if ($da !== 0) {
+                    return $da;
+                }
+
+                return strcmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+            });
+        }
+        unset($items);
+
+        return $buckets;
+    }
+
+    /**
+     * Top 5 qty pengiriman: (1) tahunan = 1 Jan tahun dari $end sampai akhir rentang filter;
+     * (2) bulan ini = awal bulan dari $end sampai akhir rentang filter.
+     *
+     * @return array{yearly: array, accumulative: array, range_yearly: array{start: string, end: string}, range_accum: array{start: string, end: string}}
+     */
+    private function dashboardTopProducts(\Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $yearStart = $end->copy()->startOfYear()->toDateString();
+        $monthStart = $end->copy()->startOfMonth()->toDateString();
+        $endDate = $end->toDateString();
+
+        $build = function (?string $rangeStart, ?string $rangeEnd, bool $accumAllTime): array {
+            $q = DB::table('sales_order_details as sod')
+                ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+                ->leftJoin('units as u', 'u.unit_id', '=', 'sod.unit_id')
+                ->where('so.status', '>=', 1)
+                ->where('sod.status', '>=', 1);
+            if ($accumAllTime) {
+                $q->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) <= ?', [$rangeEnd]);
+            } else {
+                $q->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$rangeStart, $rangeEnd]);
+            }
+            $rows = $q->select('sod.sod_nama', 'sod.sod_variant', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
+                ->selectRaw('SUM(sod.sod_qty) as qty')
+                ->groupBy('sod.sod_nama', 'sod.sod_variant', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
+                ->orderByDesc('qty')
+                ->limit(5)
+                ->get();
+            $out = [];
+            foreach ($rows as $r) {
+                $u = trim((string) ($r->unit_short_name ?? ''));
+                if ($u === '') {
+                    $u = trim((string) ($r->unit_name ?? ''));
+                }
+                $out[] = [
+                    'name' => trim(trim((string) $r->sod_nama) . ' ' . trim((string) $r->sod_variant)),
+                    'qty' => (float) ($r->qty ?? 0),
+                    'unit' => $u,
+                    'qty_text' => $u !== ''
+                        ? number_format((float) ($r->qty ?? 0), 0, ',', '.').' '.$u
+                        : number_format((float) ($r->qty ?? 0), 0, ',', '.'),
+                ];
+            }
+
+            return $out;
+        };
+
+        return [
+            'yearly' => $build($yearStart, $endDate, false),
+            'accumulative' => $build($monthStart, $endDate, false),
+            'range_yearly' => ['start' => $yearStart, 'end' => $endDate],
+            'range_accum' => ['start' => $monthStart, 'end' => $endDate],
+        ];
+    }
+
+    /**
+     * Overstock dari aging (sudah as_of akhir filter). Rekomendasi produksi dari ritme penjualan dalam rentang filter.
+     */
+    private function dashboardWarnings(array $agingRows, \Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $overstock = [];
+        foreach ($agingRows as $r) {
+            $reportBucket = LogStock::stockAgingReportBucketOrFallback($r);
+            if (! in_array($reportBucket, ['91-180 hari', '>180 hari'], true)) {
+                continue;
+            }
+            $days = (float) ($r['weighted_age_days'] ?? 0);
+            $overstock[] = [
+                'name' => (string) ($r['item_label'] ?? '-'),
+                'age_days' => round($days, 1),
+                'qty' => (float) ($r['qty'] ?? 0),
+            ];
+            if (count($overstock) >= 8) {
+                break;
+            }
+        }
+
+        $rangeDays = max(1, $start->diffInDays($end) + 1);
+        $s = $start->toDateString();
+        $e = $end->toDateString();
+
+        $salesInRange = DB::table('sales_order_details as sod')
+            ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'sod.product_variant_id')
+            ->join('products as p', 'p.product_id', '=', 'pv.product_id')
+            ->where('so.status', '>=', 1)
+            ->where('sod.status', '>=', 1)
+            ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$s, $e])
+            ->select('sod.product_variant_id', 'p.product_name', 'pv.product_variant_name')
+            ->selectRaw('SUM(sod.sod_qty) as sold_qty')
+            ->groupBy('sod.product_variant_id', 'p.product_name', 'pv.product_variant_name')
+            ->get();
+
+        $reco = [];
+        foreach ($salesInRange as $r) {
+            $stock = (float) (DB::table('product_stocks')
+                ->where('status', 1)
+                ->where('product_variant_id', $r->product_variant_id)
+                ->sum('ps_stock') ?? 0);
+            $daily = (float) $r->sold_qty / $rangeDays;
+            $need7 = max(0, ceil(($daily * 7) - $stock));
+            if ($need7 <= 0) {
+                continue;
+            }
+            $reco[] = [
+                'name' => trim((string) $r->product_name . ' ' . (string) $r->product_variant_name),
+                'recommend_qty' => (int) $need7,
+            ];
+        }
+        usort($reco, function ($a, $b) {
+            return ($b['recommend_qty'] ?? 0) <=> ($a['recommend_qty'] ?? 0);
+        });
+        $reco = array_slice($reco, 0, 8);
+
+        return [
+            'overstock_alerts' => $overstock,
+            'recommended_production' => $reco,
+            'recommended_note' => 'Ritme jual rata-rata dari penjualan '.$rangeDays.' hari dalam periode filter; kebutuhan 7 hari ke depan vs stok sekarang.',
+        ];
+    }
+
+    private function dashboardChartSeries(string $period, \Carbon\Carbon $start, \Carbon\Carbon $end): array
+    {
+        $labels = [];
+        $ranges = [];
+        if ($period === 'week') {
+            $c = $start->copy()->startOfDay();
+            while ($c->lte($end)) {
+                $labels[] = $c->format('D');
+                $ranges[] = [$c->copy()->startOfDay(), $c->copy()->endOfDay()];
+                $c->addDay();
+            }
+        } elseif ($period === 'year') {
+            $c = $start->copy()->startOfMonth();
+            while ($c->lte($end)) {
+                $labels[] = $c->format('M');
+                $ranges[] = [$c->copy()->startOfMonth(), $c->copy()->endOfMonth()];
+                $c->addMonth();
+            }
+        } else {
+            $c = $start->copy()->startOfWeek();
+            while ($c->lte($end)) {
+                $wStart = $c->copy()->max($start);
+                $wEnd = $c->copy()->endOfWeek()->min($end);
+                $labels[] = $wStart->format('d M') . ' - ' . $wEnd->format('d M');
+                $ranges[] = [$wStart->copy()->startOfDay(), $wEnd->copy()->endOfDay()];
+                $c->addWeek();
+            }
+        }
+
+        $rangeStart = $start->toDateString();
+        $rangeEnd = $end->toDateString();
+
+        $salesByDate = DB::table('sales_order_details as sod')
+            ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+            ->where('so.status', '>=', 1)
+            ->where('sod.status', '>=', 1)
+            ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$rangeStart, $rangeEnd])
+            ->selectRaw('DATE(COALESCE(so.so_date, so.created_at)) as d, SUM(sod.sod_qty) as qty')
+            ->groupBy('d')
+            ->pluck('qty', 'd');
+
+        $returByDate = DB::table('product_issues_details as pid')
+            ->join('product_issues as pi', 'pi.pi_id', '=', 'pid.pi_id')
+            ->where('pi.tipe_return', 2)
+            ->where('pi.status', 2)
+            ->where('pid.status', '>=', 1)
+            ->whereBetween('pi.pi_date', [$rangeStart, $rangeEnd])
+            ->selectRaw('DATE(pi.pi_date) as d, SUM(pid.pid_qty) as qty')
+            ->groupBy('d')
+            ->pluck('qty', 'd');
+
+        $sumQtyInRange = static function ($byDate, \Carbon\Carbon $from, \Carbon\Carbon $to): float {
+            $sum = 0.0;
+            $cursor = $from->copy()->startOfDay();
+            $last = $to->copy()->startOfDay();
+            while ($cursor->lte($last)) {
+                $sum += (float) ($byDate[$cursor->toDateString()] ?? 0);
+                $cursor->addDay();
+            }
+
+            return $sum;
+        };
+
+        $salesSeries = [];
+        $returSeries = [];
+        foreach ($ranges as $r) {
+            $salesSeries[] = round($sumQtyInRange($salesByDate, $r[0], $r[1]), 2);
+            $returSeries[] = round($sumQtyInRange($returByDate, $r[0], $r[1]), 2);
+        }
+
+        $growthPct = [];
+        $n = count($salesSeries);
+        for ($i = 0; $i < $n; $i++) {
+            if ($i === 0) {
+                $growthPct[] = null;
+                continue;
+            }
+            $prev = (float) $salesSeries[$i - 1];
+            $cur = (float) $salesSeries[$i];
+            if ($prev <= 0) {
+                $growthPct[] = $cur > 0 ? 100.0 : 0.0;
+            } else {
+                $growthPct[] = round((($cur - $prev) / $prev) * 100, 2);
+            }
+        }
+
+        return [
+            'labels' => $labels,
+            'sales_qty' => $salesSeries,
+            'return_qty' => $returSeries,
+            'sales_growth_pct_by_bucket' => $growthPct,
+        ];
+    }
+
+    /**
+     * Top baris penjualan (agregasi detail SO) menurut qty terjual — rentang sama grafik "Penjualan" di atas.
+     *
+     * @return array{range: array{start: string, end: string}, rows: array<int, array{name: string, qty: float, unit: string}>}
+     */
+    private function buildDashboardTopSalesByLine(int $months): array
+    {
+        $months = max(3, min(18, $months));
+        $emptyRange = static function (): array {
+            $t = \Carbon\Carbon::now();
+
+            return [
+                'start' => $t->copy()->startOfMonth()->toDateString(),
+                'end' => $t->copy()->endOfMonth()->toDateString(),
+            ];
+        };
+
+        try {
+            $rangeEnd = \Carbon\Carbon::now()->endOfMonth();
+            $rangeStart = \Carbon\Carbon::now()->copy()->subMonths($months - 1)->startOfMonth();
+            $startD = $rangeStart->toDateString();
+            $endD = $rangeEnd->toDateString();
+
+            $rows = DB::table('sales_order_details as sod')
+                ->join('sales_orders as so', 'so.so_id', '=', 'sod.so_id')
+                ->leftJoin('units as u', 'u.unit_id', '=', 'sod.unit_id')
+                ->where('so.status', '>=', 1)
+                ->where('sod.status', '>=', 1)
+                ->whereRaw('DATE(COALESCE(so.so_date, so.created_at)) BETWEEN ? AND ?', [$startD, $endD])
+                ->select('sod.sod_nama', 'sod.sod_variant', 'sod.sod_sku', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
+                ->selectRaw('SUM(sod.sod_qty) as qty_sum')
+                ->groupBy('sod.sod_nama', 'sod.sod_variant', 'sod.sod_sku', 'sod.unit_id', 'u.unit_short_name', 'u.unit_name')
+                ->orderByDesc('qty_sum')
+                ->limit(8)
+                ->get();
+
+            $out = [];
+            foreach ($rows as $r) {
+                $base = trim((string) ($r->sod_nama ?? ''));
+                $var = trim((string) ($r->sod_variant ?? ''));
+                $name = $base;
+                if ($var !== '') {
+                    $name = trim($base.' '.$var);
+                }
+                if ($name === '') {
+                    $name = trim((string) ($r->sod_sku ?? '')) ?: '-';
+                }
+                $short = trim((string) ($r->unit_short_name ?? ''));
+                $long = trim((string) ($r->unit_name ?? ''));
+                $unit = $short !== '' ? $short : ($long !== '' ? $long : '-');
+                $out[] = [
+                    'name' => $name,
+                    'qty' => (float) ($r->qty_sum ?? 0),
+                    'unit' => $unit,
+                ];
+            }
+
+            return [
+                'range' => ['start' => $startD, 'end' => $endD],
+                'rows' => $out,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'range' => $emptyRange(),
+                'rows' => [],
+            ];
+        }
+    }
+
+    function getDashboardPemakaianBahan(Request $req)
+    {
+        $months = (int) $req->get('months', 12);
+        if (! in_array($months, [6, 12, 18, 24], true)) {
+            $months = 12;
+        }
+
+        $data = (new LogStock())->getRawMaterialUsageMonthlyDashboard([
+            'months' => $months,
+            'supplies_id' => $req->filled('supplies_id') ? (int) $req->supplies_id : null,
+            'supplier_id' => $req->filled('supplier_id') ? (int) $req->supplier_id : null,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function getDashboardProcurementEstimate(Request $req)
+    {
+        $months = (int) $req->get('months', 6);
+        if (! in_array($months, [3, 6, 12, 18, 24], true)) {
+            $months = 6;
+        }
+        $top = (int) $req->get('top', 12);
+        $top = max(5, min(40, $top));
+
+        return response()->json((new LogStock())->getProcurementEstimateProductionMaterials([
+            'months' => $months,
+            'top' => $top,
+        ]));
+    }
+
+    function getReportPemakaianBahan(Request $req){
+        $data = (new LogStock())->getRawMaterialUsageReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "supplies_id" => $req->supplies_id
+        ]);
+        return response()->json($data);
+    }
+
+    function reportSelisihOpname(){
+        return view('Backoffice.Reports.StockOpnameDifference');
+    }
+
+    function getReportSelisihOpname(Request $req){
+        $date = $req->date;
+        $type = strtolower((string)($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'])) $type = 'all';
+        $itemId = $req->item_id;
+        $startDate = null;
+        $endDate = null;
+        if (is_array($date) && count($date) === 2) {
+            $startRaw = trim((string)($date[0] ?? ""));
+            $endRaw = trim((string)($date[1] ?? ""));
+            if ($startRaw !== "") {
+                $startDate = \Carbon\Carbon::hasFormat($startRaw, 'Y-m-d')
+                    ? $startRaw
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $startRaw)->format('Y-m-d');
+            }
+            if ($endRaw !== "") {
+                $endDate = \Carbon\Carbon::hasFormat($endRaw, 'Y-m-d')
+                    ? $endRaw
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $endRaw)->format('Y-m-d');
+            }
+        }
+
+        $rows = [];
+
+        if ($type === 'all' || $type === 'product') {
+            $qProduct = DB::table('stock_opname_details as d')
+                ->join('stock_opnames as h', 'h.sto_id', '=', 'd.sto_id')
+                ->leftJoin('product_variants as pv', 'pv.product_variant_id', '=', 'd.product_variant_id')
+                ->leftJoin('products as p', 'p.product_id', '=', 'd.product_id')
+                ->where('d.status', 1)
+                ->where('h.status', '>=', 1)
+                ->select('h.sto_code as kode', 'h.sto_date as tanggal', DB::raw("'produk' as sumber"), 'p.product_name as item_name', 'pv.product_variant_name as variant_name', 'd.stod_system as stock_system', 'd.stod_real as stock_fisik', 'd.stod_selisih as selisih_text', 'pv.product_variant_price as harga_satuan');
+            if ($startDate && $endDate) $qProduct->whereBetween('h.sto_date', [$startDate, $endDate]);
+            else if ($startDate) $qProduct->where('h.sto_date', '>=', $startDate);
+            else if ($endDate) $qProduct->where('h.sto_date', '<=', $endDate);
+            if ($type === 'product' && !empty($itemId)) $qProduct->where('d.product_variant_id', $itemId);
+            $rows = array_merge($rows, $qProduct->get()->toArray());
+        }
+
+        $lastHargaSub = DB::table('purchase_orders_details as pod')
+            ->join('supplies_variants as sv', 'sv.supplies_variant_id', '=', 'pod.supplies_variant_id')
+            ->where('pod.status', 1)
+            ->select('sv.supplies_id', DB::raw('MAX(pod.pod_harga) as last_harga'))
+            ->groupBy('sv.supplies_id');
+
+        if ($type === 'all' || $type === 'bahan') {
+            $qBahan = DB::table('stock_opname_detail_bahans as d')
+                ->join('stock_opname_bahans as h', 'h.stob_id', '=', 'd.stob_id')
+                ->leftJoin('supplies as s', 's.supplies_id', '=', 'd.supplies_id')
+                ->leftJoinSub($lastHargaSub, 'lh', function ($join) {
+                    $join->on('lh.supplies_id', '=', 'd.supplies_id');
+                })
+                ->where('d.status', 1)
+                ->where('h.status', '>=', 1)
+                ->select('h.stob_code as kode', 'h.stob_date as tanggal', DB::raw("'bahan' as sumber"), 's.supplies_name as item_name', DB::raw("'' as variant_name"), 'd.stobd_system as stock_system', 'd.stobd_real as stock_fisik', 'd.stobd_selisih as selisih_text', DB::raw('COALESCE(lh.last_harga,0) as harga_satuan'));
+            if ($startDate && $endDate) $qBahan->whereBetween('h.stob_date', [$startDate, $endDate]);
+            else if ($startDate) $qBahan->where('h.stob_date', '>=', $startDate);
+            else if ($endDate) $qBahan->where('h.stob_date', '<=', $endDate);
+            if ($type === 'bahan' && !empty($itemId)) $qBahan->where('d.supplies_id', $itemId);
+            $rows = array_merge($rows, $qBahan->get()->toArray());
+        }
+
+        $grouped = [];
+        foreach ($rows as $row) {
+            if (!$this->hasNonZeroSelisih($row->selisih_text)) continue;
+            $selisihQty = $this->parseSelisihNumeric($row->selisih_text);
+            if ((float)$selisihQty == 0.0) continue;
+
+            $nominal = $selisihQty * ((float)($row->harga_satuan ?? 0));
+            $kode = $row->kode ?? '-';
+            if (!isset($grouped[$kode])) {
+                $grouped[$kode] = [
+                    "kode" => $kode,
+                    "tanggal" => $row->tanggal,
+                    "total_item_selisih" => 0,
+                    "total_nominal" => 0,
+                    "details" => []
+                ];
+            }
+            $grouped[$kode]["total_item_selisih"] += 1;
+            $grouped[$kode]["total_nominal"] += $nominal;
+            $grouped[$kode]["details"][] = [
+                "sumber" => $row->sumber,
+                "item_name" => $row->item_name ?? '-',
+                "variant_name" => $row->variant_name ?? '-',
+                "stock_system" => $row->stock_system ?? '-',
+                "stock_fisik" => $row->stock_fisik ?? '-',
+                "selisih_text" => $row->selisih_text ?? '-',
+                "selisih_qty" => $selisihQty,
+                "harga_satuan" => (float)($row->harga_satuan ?? 0),
+                "nominal" => $nominal
+            ];
+        }
+
+        $result = array_values($grouped);
+        usort($result, function($a, $b) {
+            return strcmp((string)$b["tanggal"], (string)$a["tanggal"]);
+        });
+        return response()->json($result);
+    }
+
+    function generateReportSelisihOpnamePdf(Request $req){
+        $json = $this->getReportSelisihOpname($req);
+        $data = $json->getData(true);
+        $raw = is_array($data) ? $data : [];
+        $param["data"] = $this->selisihOpnamePdfRowsOnlySelisih($raw);
+        $param["start_date"] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : "-";
+        $type = strtolower((string)($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'])) $type = 'all';
+        $param["type_label"] = $type === 'bahan' ? 'Bahan' : ($type === 'product' ? 'Product' : 'All');
+        $itemName = "Semua Item";
+        if (!empty($req->item_id)) {
+            if ($type === 'bahan') {
+                $itemName = Supplies::find($req->item_id)->supplies_name ?? "Semua Item";
+            } elseif ($type === 'product') {
+                $pv = ProductVariant::find($req->item_id);
+                if ($pv) {
+                    $p = Product::find($pv->product_id);
+                    $itemName = trim(
+                        (($p->product_name ?? '') !== '' ? $p->product_name . ' ' : '') .
+                        ($pv->product_variant_name ?? '')
+                    );
+                    $itemName = $itemName !== '' ? $itemName : "Semua Item";
+                } else {
+                    $itemName = "Semua Item";
+                }
+            }
+        }
+        $param["item_name"] = $itemName;
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportSelisihOpname', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Selisih_Stok_Opname_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    function generateReportPemakaianBahanPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "supplies_id" => $req->supplies_id
+        ];
+
+        $param["data"] = (new LogStock())->getRawMaterialUsageReport($filter);
+        $param["start_date"] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $item = null;
+        if ($req->supplies_id) {
+            $item = Supplies::find($req->supplies_id);
+        }
+        $param["supplies_name"] = $item->supplies_name ?? "Semua Bahan";
+
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportPemakaianBahan', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Pemakaian_Bahan_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+    
+    function ProductReturn(){
+        return view('Backoffice.Reports.ProductReturn');
+    }
+
+    function getReportReturn(Request $req){
+        $data = (new ReturnSupplies())->getReturnReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "supplies_id" => $req->supplies_id
+        ]);
+        return response()->json($data);
+    }
+
+    function generateReportReturnPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "supplies_id" => $req->supplies_id
+        ];
+
+        $param["data"] = (new ReturnSupplies())->getReturnReport($filter);
+        $param["start_date"] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $item = null;
+        if ($req->supplies_id) {
+            $item = Supplies::find($req->supplies_id);
+        }
+        $param["item_name"] = $item->supplies_name ?? "Semua Barang";
+
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportReturn', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Retur_Product_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    function reportReturProdukArmada()
+    {
+        return view('Backoffice.Reports.ReportReturProdukArmada');
+    }
+
+    function getReportReturProdukArmada(Request $req)
+    {
+        $data = (new ProductIssues())->getArmadaReturnReport([
+            'date' => $req->date,
+            'product_variant_id' => $req->product_variant_id,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function generateReportReturProdukArmadaPdf(Request $req)
+    {
+        $filter = [
+            'date' => $req->date,
+            'product_variant_id' => $req->product_variant_id,
+        ];
+
+        $param['data'] = (new ProductIssues())->getArmadaReturnReport($filter);
+        $param['start_date'] = is_array($req->date) && !empty($req->date[0]) ? $req->date[0] : '-';
+        $param['end_date'] = is_array($req->date) && !empty($req->date[1]) ? $req->date[1] : '-';
+        $param['product_label'] = 'Semua Produk';
+        if ($req->product_variant_id) {
+            $pv = ProductVariant::find($req->product_variant_id);
+            if ($pv) {
+                $pr = Product::find($pv->product_id);
+                $param['product_label'] = trim(($pr->product_name ?? '') . ' ' . ($pv->product_variant_name ?? '')) ?: 'Produk #' . $pv->product_variant_id;
+            }
+        }
+
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportReturProdukArmada', $param)->setPaper('a4', 'portrait');
+
+        return $pdf->stream('Laporan_Retur_Produk_Armada_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+    
+    function reportProduksi(){
+        return view('Backoffice.Reports.ReportProduksi');
+    }
+
+    function reportEfisiensiProduksi(){
+        return view('Backoffice.Reports.ReportEfisiensiProduksi');
+    }
+
+    function getReportProduksi(Request $req){
+        $data = (new Production())->getProductionReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
+        ]);
+        return response()->json($data);
+    }
+
+    function getReportEfisiensiProduksi(Request $req){
+        $data = (new Production())->getProductionEfficiencyReport([
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
+        ]);
+        return response()->json($data);
+    }
+
+    function generateReportProduksiPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
+        ];
+
+        $param["data"] = (new Production())->getProductionReport($filter);
+        $param["start_date"] = is_array($req->date) && isset($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && isset($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $param["product_name"] = $req->product_variant_id ? (ProductVariant::find($req->product_variant_id)->product_variant_name ?? "-") : "Semua Produk";
+
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportProduksi', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    function generateReportEfisiensiProduksiPdf(Request $req){
+        $filter = [
+            "date" => $req->date,
+            "supplier_id" => $req->supplier_id,
+            "product_variant_id" => $req->product_variant_id
+        ];
+
+        $param["data"] = (new Production())->getProductionEfficiencyReport($filter);
+        $param["start_date"] = is_array($req->date) && isset($req->date[0]) ? $req->date[0] : "-";
+        $param["end_date"] = is_array($req->date) && isset($req->date[1]) ? $req->date[1] : "-";
+        $param["supplier_name"] = $req->supplier_id ? (Supplier::find($req->supplier_id)->supplier_name ?? "-") : "Semua Supplier";
+        $param["product_name"] = $req->product_variant_id ? (ProductVariant::find($req->product_variant_id)->product_variant_name ?? "-") : "Semua Produk";
+
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportEfisiensiProduksi', $param)->setPaper('a4', 'portrait');
+        return $pdf->stream('Laporan_Efisiensi_Produksi_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    function reportStockAging()
+    {
+        return view('Backoffice.Reports.StockAging');
+    }
+
+    function getReportStockAging(Request $req)
+    {
+        $type = strtolower((string) ($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'], true)) {
+            $type = 'all';
+        }
+        $data = (new LogStock())->getStockAgingReport([
+            'type' => $type,
+            'item_id' => $req->item_id,
+            'as_of' => $req->as_of,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function generateReportStockAgingPdf(Request $req)
+    {
+        $type = strtolower((string) ($req->type ?? 'all'));
+        if (!in_array($type, ['all', 'bahan', 'product'], true)) {
+            $type = 'all';
+        }
+        $param['data'] = (new LogStock())->getStockAgingReport([
+            'type' => $type,
+            'item_id' => $req->item_id,
+            'as_of' => $req->as_of,
+        ]);
+        $param['type_label'] = $type === 'bahan' ? 'Bahan mentah' : ($type === 'product' ? 'Produk jadi' : 'Semua');
+        $rawAsOf = trim((string) ($req->as_of ?? ''));
+        if ($rawAsOf === '') {
+            $param['as_of_label'] = now()->format('d-m-Y');
+        } else {
+            $param['as_of_label'] = $rawAsOf;
+        }
+        $itemLabel = 'Semua item';
+        if (!empty($req->item_id)) {
+            if ($type === 'bahan') {
+                $itemLabel = Supplies::find($req->item_id)->supplies_name ?? 'Semua item';
+            } elseif ($type === 'product') {
+                $pv = ProductVariant::find($req->item_id);
+                if ($pv) {
+                    $p = Product::find($pv->product_id);
+                    $itemLabel = trim((($p->product_name ?? '') !== '' ? $p->product_name . ' ' : '') . ($pv->product_variant_name ?? ''));
+                    $itemLabel = $itemLabel !== '' ? $itemLabel : 'Semua item';
+                }
+            }
+        }
+        $param['item_label'] = $itemLabel;
+        $param = $this->mergePdfPrintMeta($param);
+        $pdf = Pdf::loadView('Backoffice.PDF.ReportStockAging', $param)->setPaper('a4', 'landscape');
+
+        return $pdf->stream('Laporan_Stock_Aging_' . now()->format('Y-m-d_H-i-s') . '.pdf');
+    }
+
+    // Cash Category
+    public function CashCategory(){
+        return view('Backoffice.Reports.Cash_Category');
+    }
+
+    function getCashCategory(Request $req){
+        $data = (new CashCategory())->getCashCategory();
+        return response()->json($data);
+    }
+
+    function insertCashCategory(Request $req){
+        $data = $req->all();
+        return (new CashCategory())->insertCashCategory($data);
+    }
+
+    function updateCashCategory(Request $req){
+        $data = $req->all();
+        return (new CashCategory())->updateCashCategory($data);
+    }
+
+    function deleteCashCategory(Request $req){
+        $data = $req->all();
+        return (new CashCategory())->deleteCashCategory($data);
+    }
+}

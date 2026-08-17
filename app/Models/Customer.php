@@ -14,6 +14,24 @@ class Customer extends Model
     public $timestamps = true;
     public $incrementing = true;
 
+    /**
+     * Daftar armada untuk External API — lihat catatan kelas
+     * MasterArmadaController. Tidak ada konsep "peran" seperti pada sales,
+     * jadi satu-satunya syarat adalah status aktif.
+     *
+     * Mengembalikan query builder (bukan koleksi sudah dieksekusi) supaya
+     * controller bisa memilih ->get() (daftar utuh) atau ->paginate() lewat
+     * HandlesListQueryParams, tanpa menduplikasi penyaringan/urutan di
+     * dua tempat.
+     */
+    function getArmadaForExternalApi()
+    {
+        return self::where('status', 1)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('customer_id', 'asc')
+            ->select(['customer_id', 'customer_code', 'customer_pic', 'customer_pic_phone', 'customer_notes']);
+    }
+
     function getCustomer($data = [])
     {
         $data = array_merge([
@@ -73,11 +91,25 @@ class Customer extends Model
         $t->save();
     }
 
-     function generateCustomerID()
+    /**
+     * customer_code sekarang wajib unik (units_customer_code_unique — lihat
+     * migrasi 2026_08_11_120000) karena dipakai sebagai id universal oleh
+     * External API (/armada). Kode di-generate dari max(customer_id)
+     * seperti sebelumnya, tapi kalau kode itu ternyata sudah dipakai —
+     * misalnya oleh pelanggan yang dibuat lewat External API dengan
+     * customer_code bebas — nomor urutnya dinaikkan sampai ketemu kode yang
+     * benar-benar belum dipakai, supaya pembuatan pelanggan lewat halaman
+     * admin tidak pernah diam-diam gagal menabrak unique index itu.
+     */
+    function generateCustomerID()
     {
-        $id  = self::max('customer_id');
-        if (is_null($id)) $id = 0;
-        $id++;
-        return "CUS".str_pad($id, 4, "0", STR_PAD_LEFT);
+        $id = (int) self::max('customer_id');
+
+        do {
+            $id++;
+            $code = "CUS".str_pad($id, 4, "0", STR_PAD_LEFT);
+        } while (self::where('customer_code', $code)->exists());
+
+        return $code;
     }
 }

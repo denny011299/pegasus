@@ -48,25 +48,35 @@ class WarehouseController extends Controller
 
     public function insertWarehouse(Request $req)
     {
-        $result = (new Warehouse())->insertWarehouse($req->only([
+        $payload = $req->only([
             'warehouse_name',
             'warehouse_type_id',
             'warehouse_address',
             'sidebar_menus',
-        ]));
+        ]);
+        if ($req->exists('kepala_staff_id')) {
+            $payload['kepala_staff_id'] = $req->kepala_staff_id;
+        }
+
+        $result = (new Warehouse())->insertWarehouse($payload);
 
         return response()->json($result);
     }
 
     public function updateWarehouse(Request $req)
     {
-        $result = (new Warehouse())->updateWarehouse($req->only([
+        $payload = $req->only([
             'id',
             'warehouse_name',
             'warehouse_type_id',
             'warehouse_address',
             'sidebar_menus',
-        ]));
+        ]);
+        if ($req->exists('kepala_staff_id')) {
+            $payload['kepala_staff_id'] = $req->kepala_staff_id;
+        }
+
+        $result = (new Warehouse())->updateWarehouse($payload);
 
         return response()->json($result);
     }

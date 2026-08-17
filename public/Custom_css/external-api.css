@@ -300,3 +300,19 @@ html body {
     display: inline-flex !important;
     align-items: center;
 }
+
+/*
+ * Status API Eksternal — path & judul endpoint tidak boleh memaksa lebar
+ * kolom (beda dari 3 tabel di atas yang justru butuh ruang lebar untuk
+ * banyak kolom), makanya di sini TIDAK diberi min-width: tabelnya harus
+ * pas di layar seperti tabel lain, tidak menggulir ke samping.
+ */
+#tableApiStatus {
+    width: 100% !important;
+}
+
+#tableApiStatus td {
+    white-space: normal !important;
+    word-wrap: break-word;
+    vertical-align: middle;
+}

@@ -21,6 +21,7 @@ class IntegrasiSmokeTest extends TestCase
     {
         return [
             'synchronization' => ['/synchronization', 'Sinkronisasi'],
+            'externalApiStatus' => ['/externalApiStatus', 'Status API Eksternal'],
             'externalApplication' => ['/externalApplication', 'Aplikasi Eksternal'],
             'externalApiDocumentation' => ['/externalApiDocumentation', 'Dokumentasi API Eksternal'],
             'externalApiLog' => ['/externalApiLog', 'Log API Eksternal'],

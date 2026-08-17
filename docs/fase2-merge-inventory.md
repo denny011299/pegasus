@@ -3,7 +3,7 @@
 **Tujuan:** catalog semua kerja fase multi-gudang / ST / produksi / modal SOP, supaya sebelum & sesudah merge ke `main` (atau rebase) agent/manusia bisa **cek cepat** mana yang hilang.
 
 **Branch sumber kebenaran:** `fase-2` (= tip yang sudah di-push ke `fase2/main`)  
-**Snapshot tip saat dokumen ini ditulis:** `a5103d2`  
+**Snapshot tip saat dokumen ini ditulis:** `4721ce8`  
 **Dokumen terkait:**
 - `docs/backlog-stock-multi-gudang.md` — keputusan bisnis ST + backlog #1–#11
 - `docs/production-acc-stock-safety.md` — ACC produksi + ST Pending
@@ -180,7 +180,7 @@ Panduan restore: `docs/fase2-snapshots/README.md`
 
 Salin dari backlog — verifikasi lewat test + code review:
 
-1. **Kirim ST:** `allow_packing=false`; stok di satuan kirim harus cukup (utama **tidak** auto-unpack DOS).
+1. **Kirim ST:** `allow_packing=false`; gudang utama `allow_unpack=true` (bongkar ancestor); eceran unpack OFF.
 2. **Terima utama:** satuan = satuan kirim (tanpa konversi ke default).
 3. **Terima eceran:** konversi ke `retail_unit`.
 4. **Eceran:** tidak pernah unpack satuan besar; cleanup via artisan.

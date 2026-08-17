@@ -141,7 +141,7 @@
                     style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Qty <span
                       class="text-danger">*</span></label>
                   <input type="text" class="form-control fill_product number-only" id="production_qty"
-                    placeholder="Qty" style="font-size:14px;border-radius:8px;height:42px;">
+                    placeholder="Qty" value="1" style="font-size:14px;border-radius:8px;height:42px;">
                   <small class="text-muted position-absolute" id="production_pallet_hint"
                     style="bottom: -18px; left: 2px; font-size: 10px; white-space: nowrap;"></small>
                 </div>
@@ -160,9 +160,27 @@
                   <label class="text-muted mb-2"
                     style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang
                     Tujuan <span class="text-danger">*</span></label>
+                  @php
+                    $prodDestWh = $activeWarehouse ?? null;
+                    $prodDestWhName = $prodDestWh
+                      ? ($prodDestWh->warehouse_name ?? $prodDestWh->name ?? '')
+                      : '';
+                    $isActiveMainWh = $prodDestWh
+                      && isset($prodDestWh->type)
+                      && (int) ($prodDestWh->type->is_main_warehouse ?? 0) === 1;
+                    $prodMainWhName = $prodDestWhName;
+                    if (! $isActiveMainWh && isset($warehouses)) {
+                        $prodMainWh = collect($warehouses)->first(function ($wh) {
+                            return isset($wh->type) && (int) $wh->type->is_main_warehouse === 1;
+                        });
+                        if ($prodMainWh) {
+                            $prodMainWhName = $prodMainWh->warehouse_name ?? $prodMainWh->name ?? $prodMainWhName;
+                        }
+                    }
+                  @endphp
                   <div id="production-main-warehouse-badge" class="d-flex align-items-center px-3"
                     style="height:42px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:13px;font-weight:600;">
-                    <i class="fe fe-home me-2"></i><span>Gudang utama aktif</span>
+                    <i class="fe fe-home me-2"></i><span>{{ $prodMainWhName !== '' ? $prodMainWhName : 'Gudang utama' }}</span>
                   </div>
                   <select class="form-select" id="production_destination_warehouse_id"
                     style="display:none;font-size:14px;border-radius:8px;height:42px;"></select>

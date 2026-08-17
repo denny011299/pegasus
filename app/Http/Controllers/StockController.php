@@ -72,7 +72,7 @@ class StockController extends Controller
     {
         $data = $req->all();
         $id =  (new StockOpname())->insertStockOpname($data);
-        foreach (json_decode($req->item, true) as $key => $value) {
+        foreach (json_decode($req->item, true) ?? [] as $key => $value) {
             $value["sto_id"] = $id;
             (new StockOpnameDetail())->insertDetail($value);
         }
@@ -867,6 +867,12 @@ class StockController extends Controller
         return (new StockAlert())->updateStockAlert($data);
     }
 
+    function updateMinOrder(Request $req)
+    {
+        $data = $req->all();
+        return (new StockAlert())->updateMinOrder($data);
+    }
+
     function deleteStockAlert(Request $req)
     {
         $data = $req->all();
@@ -902,6 +908,12 @@ class StockController extends Controller
     {
         $data = $req->all();
         return (new StockAlertSupplies())->updateStockAlertSupplies($data);
+    }
+
+    function updateMinOrderSupplies(Request $req)
+    {
+        $data = $req->all();
+        return (new StockAlertSupplies())->updateMinOrderSupplies($data);
     }
 
     function deleteStockAlertSupplies(Request $req)

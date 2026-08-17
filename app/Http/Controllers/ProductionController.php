@@ -37,6 +37,11 @@ class ProductionController extends Controller
 
     function getBom(Request $req)
     {
+        // Server-side DataTables (list Resep Bahan Mentah)
+        if ($req->has('draw')) {
+            return response()->json((new Bom())->getBomDataTable($req->all()));
+        }
+
         $withDetails = filter_var($req->with_details ?? false, FILTER_VALIDATE_BOOLEAN);
 
         return response()->json((new Bom())->getBom([
@@ -144,7 +149,9 @@ class ProductionController extends Controller
         if (count($bahan_satuan_tidak_aktif) > 0) {
             return response()->json([
                 'status' => 0,
-                'header' => 'Gagal Insert',
+                'header' => 'Satuan Resep Tidak Aktif',
+                'code' => 'recipe_needs_update',
+                'bom_id' => $this->firstBomIdWithInactiveUnits($item),
                 'message' => 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bahan_satuan_tidak_aktif),
             ]);
@@ -155,6 +162,8 @@ class ProductionController extends Controller
             return response()->json([
                 'status' => 0,
                 'header' => 'Gagal Insert',
+                'code' => 'recipe_needs_update',
+                'bom_id' => $this->firstBomIdWithNonSmallestSupplyUnit($item),
                 'message' => 'Satuan bahan mentah pada resep bukan satuan terkecil sesuai relasi. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bahan_bukan_satuan_terkecil),
             ]);
@@ -165,6 +174,8 @@ class ProductionController extends Controller
             return response()->json([
                 'status' => 0,
                 'header' => 'Gagal Insert',
+                'code' => 'recipe_needs_update',
+                'bom_id' => $this->firstBomIdWithNonSmallestProductUnit($item),
                 'message' => 'Satuan produk pada resep bukan satuan terkecil sesuai relasi produk. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bom_satuan_produk_bukan_terkecil),
             ]);
@@ -557,11 +568,14 @@ class ProductionController extends Controller
         $produk_tanpa_relasi = [];
         $bahan_kurang = []; // ← ditambahkan untuk menangkap bahan yang ternyata kurang saat eksekusi
 
-        $bahan_satuan_tidak_aktif = $this->validateProductionBomActiveUnits($item->toArray());
+        $accItems = $item->toArray();
+        $bahan_satuan_tidak_aktif = $this->validateProductionBomActiveUnits($accItems);
         if (count($bahan_satuan_tidak_aktif) > 0) {
             return response()->json([
                 'status' => 0,
-                'header' => 'Gagal ACC',
+                'header' => 'Satuan Resep Tidak Aktif',
+                'code' => 'recipe_needs_update',
+                'bom_id' => $this->firstBomIdWithInactiveUnits($accItems),
                 'message' => 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bahan_satuan_tidak_aktif),
             ]);
@@ -1889,6 +1903,76 @@ class ProductionController extends Controller
         }
 
         return $invalid;
+    }
+
+    private function firstBomIdWithInactiveUnits(array $productionItems): ?int
+    {
+        foreach ($productionItems as $value) {
+            $bomId = (int) ($value['bom_id'] ?? 0);
+            if ($bomId <= 0) {
+                continue;
+            }
+            $bom = (new Bom())->getBom(['bom_id' => $bomId])->first();
+            if (!$bom) {
+                continue;
+            }
+            foreach ($this->getBomDetailRows($bom) as $bd) {
+                if (!(new Supplies())->isSuppliesUnitActive((int) $bd['supplies_id'], (int) $bd['unit_id'])) {
+                    return $bomId;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function firstBomIdWithNonSmallestSupplyUnit(array $productionItems): ?int
+    {
+        foreach ($productionItems as $value) {
+            $bomId = (int) ($value['bom_id'] ?? 0);
+            if ($bomId <= 0) {
+                continue;
+            }
+            $bom = (new Bom())->getBom(['bom_id' => $bomId])->first();
+            if (!$bom) {
+                continue;
+            }
+            foreach ($this->getBomDetailRows($bom) as $bd) {
+                $hasDownwardRelation = SuppliesRelation::where('supplies_id', (int) $bd['supplies_id'])
+                    ->where('su_id_1', (int) $bd['unit_id'])
+                    ->where('status', 1)
+                    ->exists();
+                if ($hasDownwardRelation) {
+                    return $bomId;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function firstBomIdWithNonSmallestProductUnit(array $productionItems): ?int
+    {
+        foreach ($productionItems as $value) {
+            $bomId = (int) ($value['bom_id'] ?? 0);
+            $productVariantId = (int) ($value['product_variant_id'] ?? 0);
+            if ($bomId <= 0 || $productVariantId <= 0) {
+                continue;
+            }
+            $bom = (new Bom())->getBom(['bom_id' => $bomId])->first();
+            if (!$bom) {
+                continue;
+            }
+            $isNotSmallest = ProductRelation::where('product_variant_id', $productVariantId)
+                ->where('pr_unit_id_1', (int) $bom->unit_id)
+                ->where('status', 1)
+                ->exists();
+            if ($isNotSmallest) {
+                return $bomId;
+            }
+        }
+
+        return null;
     }
 
     private function activeMainProductionWarehouse(): ?Warehouse

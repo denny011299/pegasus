@@ -1,7 +1,7 @@
 <div class="modal modal-lg custom-modal fade pg-modal--form" id="add_warehouse" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content d-flex flex-column" style="border-radius:16px;overflow:hidden;border:none;">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content d-flex flex-column">
         {{-- ── HEADER ── --}}
         <div class="modal-header">
           <div class="d-flex align-items-center gap-3">
@@ -17,26 +17,35 @@
             aria-label="Close"></button>
         </div>
 
-        <form action="#" class="d-flex flex-column flex-grow-1" style="min-height:0;overflow:hidden;">
-          <div class="modal-body p-0 bg-light d-flex flex-column flex-grow-1" style="min-height:0;overflow-y:auto;">
+        <form action="#" class="d-flex flex-column flex-grow-1">
+          <div class="modal-body p-0 bg-light d-flex flex-column flex-grow-1">
             {{-- Basic Info Panel --}}
-            <div class="p-4 border-bottom bg-white shadow-sm" style="flex: 0 0 auto;">
+            <div class="p-4 border-bottom bg-white shadow-sm">
               <div class="row g-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="text-muted mb-2"
                     style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama Gudang
                     <span class="text-danger">*</span></label>
                   <input type="text" class="form-control fill" id="warehouse_name"
-                    placeholder="Contoh: Gudang Pusat Jakarta"
+                    placeholder="Gudang Pusat Jakarta"
                     style="font-size:14px;border-radius:8px;height:42px;">
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                   <label class="text-muted mb-2"
                     style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Tipe Gudang
                     <span class="text-danger">*</span></label>
                   <select class="form-select form-control fill select2" id="warehouse_type_id"
                     style="font-size:14px;height:42px;">
                     <option value="">Pilih Tipe Gudang...</option>
+                  </select>
+                </div>
+                <div class="col-md-4" id="warehouse_kepala_wrap">
+                  <label class="text-muted mb-2"
+                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Kepala Operasional
+                    <span class="text-danger">*</span></label>
+                  <select class="form-select form-control fill select2" id="warehouse_kepala_staff_id"
+                    style="font-size:14px;height:42px;">
+                    <option value="">Pilih Kepala Operasional...</option>
                   </select>
                 </div>
                 <div class="col-12">
@@ -50,7 +59,7 @@
             </div>
 
             {{-- Permissions Panel --}}
-            <div class="p-4" style="flex: 1 1 auto; background: #f8fafc;">
+            <div class="p-4" style="background: #f8fafc;">
               <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                 <div>
                   <label class="mb-0 fw-bold text-dark" style="font-size:14px;"><i
@@ -80,6 +89,50 @@
                     ->groupBy('Modules');
               @endphp
               <style>
+                #add_warehouse.modal {
+                  overflow: hidden !important;
+                }
+                html:has(#add_warehouse.show),
+                body:has(#add_warehouse.show) {
+                  overflow: hidden !important;
+                }
+                #add_warehouse .modal-dialog {
+                  height: calc(100dvh - 2rem) !important;
+                  max-height: calc(100dvh - 2rem) !important;
+                  min-height: 0 !important;
+                  margin: 1rem auto !important;
+                  display: flex !important;
+                  align-items: stretch !important;
+                }
+                #add_warehouse .modal-content {
+                  height: 100% !important;
+                  max-height: 100% !important;
+                  min-height: 0 !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  overflow: hidden !important;
+                  border: none;
+                  border-radius: 16px;
+                }
+                #add_warehouse form {
+                  flex: 1 1 auto !important;
+                  min-height: 0 !important;
+                  height: auto !important;
+                  max-height: none !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  overflow: hidden !important;
+                }
+                #add_warehouse .modal-header,
+                #add_warehouse .modal-footer {
+                  flex: 0 0 auto !important;
+                }
+                #add_warehouse .modal-body {
+                  flex: 1 1 auto !important;
+                  min-height: 0 !important;
+                  overflow-y: auto !important;
+                  overflow-x: hidden !important;
+                }
                 .menu-masonry {
                   column-count: 1;
                   column-gap: 16px;
@@ -107,8 +160,7 @@
                   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
                 }
               </style>
-              <div id="warehouse_sidebar_menus" class="border p-3 bg-white"
-                style="border-radius: 12px; max-height: 280px; overflow-y: auto;">
+              <div id="warehouse_sidebar_menus" class="border p-3 bg-white" style="border-radius: 12px;">
                 <div class="menu-masonry">
                   @foreach ($warehousePermissionGrouped as $module => $items)
                     <div class="menu-card">

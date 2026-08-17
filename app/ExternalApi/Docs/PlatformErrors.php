@@ -2,7 +2,7 @@
 
 namespace App\ExternalApi\Docs;
 
-use App\ExternalApi\Http\ApiResponse;
+use App\ExternalApi\Errors\ErrorCatalog;
 
 /**
  * Error yang bisa muncul di endpoint mana pun karena berasal dari lapisan
@@ -20,49 +20,55 @@ final class PlatformErrors
     {
         return [
             [
-                'code' => ApiResponse::ERROR_UNAUTHENTICATED,
+                'code' => ErrorCatalog::UNAUTHENTICATED,
                 'http_status' => 401,
                 'message' => 'Header API Key wajib diisi.',
                 'cause' => 'Permintaan dikirim tanpa header API Key sama sekali.',
             ],
             [
-                'code' => ApiResponse::ERROR_INVALID_KEY,
+                'code' => ErrorCatalog::INVALID_API_KEY,
                 'http_status' => 401,
                 'message' => 'API Key tidak valid.',
                 'cause' => 'Kunci tidak dikenali, salah ketik, atau aplikasinya sudah dihapus.',
             ],
             [
-                'code' => ApiResponse::ERROR_KEY_REVOKED,
+                'code' => ErrorCatalog::API_KEY_REVOKED,
                 'http_status' => 401,
                 'message' => 'API Key sudah dicabut.',
                 'cause' => 'Kunci dicabut administrator. Minta kunci baru.',
             ],
             [
-                'code' => ApiResponse::ERROR_KEY_EXPIRED,
+                'code' => ErrorCatalog::API_KEY_EXPIRED,
                 'http_status' => 401,
                 'message' => 'API Key sudah kedaluwarsa.',
                 'cause' => 'Tanggal kedaluwarsa kunci sudah lewat. Minta kunci baru.',
             ],
             [
-                'code' => ApiResponse::ERROR_APPLICATION_DISABLED,
+                'code' => ErrorCatalog::APPLICATION_DISABLED,
                 'http_status' => 403,
                 'message' => 'Aplikasi eksternal sedang dinonaktifkan.',
                 'cause' => 'Aplikasi pemilik kunci dinonaktifkan administrator.',
             ],
             [
-                'code' => ApiResponse::ERROR_NOT_FOUND,
+                'code' => ErrorCatalog::API_ENDPOINT_DISABLED,
+                'http_status' => 503,
+                'message' => 'Endpoint ini sedang dinonaktifkan sementara.',
+                'cause' => 'Administrator mematikan saklar "Endpoint Aktif" endpoint ini di halaman Status API Eksternal. Berlaku untuk semua aplikasi dan kunci, terlepas dari valid atau tidaknya API Key yang dikirim — hanya endpoint ini yang terpengaruh, endpoint lain pada versi yang sama tetap berjalan normal.',
+            ],
+            [
+                'code' => ErrorCatalog::NOT_FOUND,
                 'http_status' => 404,
                 'message' => 'Data tidak ditemukan.',
                 'cause' => 'Alamat endpoint keliru, atau data yang diminta tidak ada.',
             ],
             [
-                'code' => ApiResponse::ERROR_VALIDATION,
+                'code' => ErrorCatalog::VALIDATION_FAILED,
                 'http_status' => 422,
                 'message' => 'Data yang dikirim tidak lolos validasi.',
                 'cause' => 'Ada field wajib yang kosong atau formatnya salah. Rinciannya ada di error.details.',
             ],
             [
-                'code' => ApiResponse::ERROR_SERVER,
+                'code' => ErrorCatalog::SERVER_ERROR,
                 'http_status' => 500,
                 'message' => 'Terjadi kesalahan pada server.',
                 'cause' => 'Kegagalan tak terduga di sisi Pegasus. Hubungi administrator.',

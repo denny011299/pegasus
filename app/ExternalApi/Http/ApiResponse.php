@@ -21,19 +21,14 @@ use Illuminate\Http\JsonResponse;
  *
  * `code` adalah string stabil yang boleh dijadikan pegangan klien; `message`
  * boleh berubah sewaktu-waktu karena ditujukan untuk dibaca manusia.
+ *
+ * Kode error itu sendiri TIDAK lagi didefinisikan di sini — lihat
+ * App\ExternalApi\Errors\ErrorCatalog, satu-satunya sumber kode error di seluruh External API
+ * (dipisah dari kelas ini karena daftarnya terus bertambah seiring endpoint baru, sementara
+ * kelas ini murni membentuk amplop respons).
  */
 class ApiResponse
 {
-    /** Kode error baku milik lapisan platform. */
-    public const ERROR_UNAUTHENTICATED = 'unauthenticated';
-    public const ERROR_INVALID_KEY = 'invalid_api_key';
-    public const ERROR_KEY_REVOKED = 'api_key_revoked';
-    public const ERROR_KEY_EXPIRED = 'api_key_expired';
-    public const ERROR_APPLICATION_DISABLED = 'application_disabled';
-    public const ERROR_NOT_FOUND = 'not_found';
-    public const ERROR_VALIDATION = 'validation_failed';
-    public const ERROR_SERVER = 'server_error';
-
     /**
      * @param  mixed  $data
      * @param  array<string, mixed>  $meta
@@ -75,10 +70,11 @@ class ApiResponse
     /**
      * Respons daftar terpaginasi.
      *
-     * Standar paginasi External API: nomor halaman (`page` & `per_page`) dengan
-     * ringkasan di `meta.pagination`. Dipakai lewat helper ini supaya seluruh
-     * endpoint di masa depan memberi bentuk yang sama tanpa perlu menyalin
-     * susunan meta-nya satu per satu.
+     * Standar paginasi External API: meta selalu rata (bukan dibungkus lagi
+     * di dalam sub-objek seperti `meta.pagination`), dan bentuknya PERSIS
+     * sama dengan yang dipakai list() di bawah untuk daftar yang tidak
+     * dipaginasi — pemanggil tidak perlu menangani dua bentuk meta berbeda
+     * tergantung ada tidaknya ?page= pada permintaan.
      *
      * @param  \Illuminate\Contracts\Pagination\LengthAwarePaginator  $paginator
      * @param  callable|null  $transform  pemeta satu baris menjadi array
@@ -91,12 +87,42 @@ class ApiResponse
         }
 
         return self::success($items->values()->all(), [
-            'pagination' => [
-                'page' => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'total_pages' => $paginator->lastPage(),
-            ],
+            'total' => $paginator->total(),
+            'per_page' => $paginator->perPage(),
+            'current_page' => $paginator->currentPage(),
+            'next_page_exists' => $paginator->currentPage() < $paginator->lastPage(),
+            'total_page' => $paginator->lastPage(),
+        ]);
+    }
+
+    /**
+     * Respons daftar utuh, TANPA paginasi di sisi server (seluruh baris
+     * dikembalikan sekaligus) — tapi tetap memakai bentuk meta yang PERSIS
+     * sama dengan paginated(), sebagai "satu halaman berisi semuanya":
+     * current_page selalu 1, total_page selalu 1, next_page_exists selalu
+     * false. Ini yang membuat endpoint "paginasi opsional" (kirim ?page=
+     * untuk mengaktifkan, atau tidak sama sekali untuk dapat semuanya)
+     * tidak pernah mengubah bentuk meta tergantung mana yang dipakai
+     * pemanggil.
+     *
+     * @param  iterable  $items
+     * @param  callable|null  $transform  pemeta satu baris menjadi array
+     */
+    public static function list(iterable $items, ?callable $transform = null): JsonResponse
+    {
+        $collection = collect($items);
+        if ($transform) {
+            $collection = $collection->map($transform);
+        }
+
+        $total = $collection->count();
+
+        return self::success($collection->values()->all(), [
+            'total' => $total,
+            'per_page' => $total,
+            'current_page' => 1,
+            'next_page_exists' => false,
+            'total_page' => 1,
         ]);
     }
 }

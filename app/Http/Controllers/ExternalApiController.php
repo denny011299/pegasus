@@ -7,6 +7,7 @@ use App\ExternalApi\Docs\ApiDocRegistry;
 use App\ExternalApi\Docs\PlatformErrors;
 use App\ExternalApi\Logging\LogCleanupStrategy;
 use App\ExternalApi\Logging\RequestLogger;
+use App\ExternalApi\Support\ApiEndpointSettings;
 use App\ExternalApi\Support\ExternalApiPath;
 use App\Models\ExternalApiKey;
 use App\Models\ExternalApiRequestLog;
@@ -26,6 +27,7 @@ class ExternalApiController extends Controller
         private readonly ApiDocRegistry $docs,
         private readonly ApiKeyManager $keys,
         private readonly RequestLogger $logger,
+        private readonly ApiEndpointSettings $endpointSettings,
     ) {
     }
 
@@ -147,6 +149,36 @@ class ExternalApiController extends Controller
      */
     public function externalApiDocumentation(Request $req, ?string $group = null)
     {
+        return $this->renderApiDocumentation($req, $group, 'Backoffice.ExternalApi.Documentation', [
+            'index' => 'externalApiDocumentation',
+            'group' => 'externalApiDocumentationGroup',
+        ]);
+    }
+
+    /**
+     * Sama seperti externalApiDocumentation(), tapi diakses tanpa login —
+     * untuk pengembang pihak ketiga yang belum/tidak punya akun Pegasus.
+     * View-nya sendiri (Public.ApiDocumentation) yang tidak memuat sidebar
+     * admin; isi (partials doc-nav/doc-general/doc-group) sama persis.
+     *
+     * Satu-satunya halaman yang tunduk pada saklar "Dokumentasi Publik" di
+     * halaman Status API Eksternal — PER ENDPOINT, bukan per versi.
+     * Endpoint yang belum dipublikasikan admin hilang dari daftar isi &
+     * halaman kelompoknya di sini, tapi tetap tampil normal di halaman
+     * dokumentasi admin di atas (staf yang sudah login tidak terpengaruh
+     * saklar ini sama sekali).
+     */
+    public function publicApiDocumentation(Request $req, ?string $group = null)
+    {
+        return $this->renderApiDocumentation($req, $group, 'Public.ApiDocumentation', [
+            'index' => 'apiDocsPublic',
+            'group' => 'apiDocsPublicGroup',
+        ], publicOnly: true);
+    }
+
+    /** Versi terpilih dari query ?version=, jatuh ke versi default bila kosong/tidak dikenal. */
+    private function resolveDocVersion(Request $req): string
+    {
         $versions = $this->docs->versions();
         $version = $req->get('version');
 
@@ -154,6 +186,12 @@ class ExternalApiController extends Controller
             $version = $versions[0] ?? (string) config('externalapi.default_version', 'v1');
         }
 
+        return $version;
+    }
+
+    private function renderApiDocumentation(Request $req, ?string $group, string $view, array $docRoute, bool $publicOnly = false)
+    {
+        $version = $this->resolveDocVersion($req);
         $groups = $this->docs->grouped($version);
         $current = null;
 
@@ -165,16 +203,147 @@ class ExternalApiController extends Controller
             }
         }
 
-        return view('Backoffice.ExternalApi.Documentation', [
+        if ($publicOnly) {
+            $groups = $this->filterPublicGroups($groups);
+
+            if ($current !== null) {
+                $current = $this->filterPublicGroup($current);
+
+                if (! $current) {
+                    abort(404, 'Dokumentasi kelompok "'.$group.'" belum dipublikasikan untuk umum.');
+                }
+            }
+        }
+
+        return view($view, [
             'groups' => $groups,
             'current' => $current,
-            'versions' => $versions,
+            'versions' => $this->docs->versions(),
             'version' => $version,
-            'totalEndpoint' => $this->docs->count(),
+            'totalEndpoint' => $publicOnly
+                ? array_sum(array_map(fn (array $g) => count($g['endpoints']), $groups))
+                : $this->docs->count(),
             'baseUrl' => ExternalApiPath::baseUrl($version),
             'keyHeader' => $this->keys->header(),
             'platformErrors' => PlatformErrors::all(),
+            'docRoute' => $docRoute,
+            'endpointStatus' => $this->endpointStatusByKey(),
+            // Halaman publik hanya berisi endpoint yang is_public_docs_show-nya
+            // sudah true — badge "Dokumentasi Publik/Privat" jadi tidak
+            // bermakna di sana (semuanya pasti Publik), jadi disembunyikan.
+            // Badge "Endpoint Aktif/Nonaktif" tetap tampil di kedua halaman.
+            'showVisibilityBadge' => ! $publicOnly,
         ]);
+    }
+
+    /**
+     * Status Endpoint Aktif & Dokumentasi Publik per endpoint (lihat halaman
+     * Status API Eksternal), dibaca ulang di sini supaya kedua halaman
+     * dokumentasi (admin dan publik, keduanya lewat partials/doc-group)
+     * menampilkan badge status yang sama persis pada setiap kartu endpoint —
+     * admin melihatnya untuk semua endpoint apa adanya, publik hanya melihat
+     * endpoint yang memang sudah lolos filter is_public_docs_show.
+     *
+     * @return array<string, array{is_active:bool, is_public_docs_show:bool}>
+     */
+    private function endpointStatusByKey(): array
+    {
+        $status = [];
+
+        foreach ($this->endpointSettings->all() as $row) {
+            $status[$row['key']] = [
+                'is_active' => $row['is_active'],
+                'is_public_docs_show' => $row['is_public_docs_show'],
+            ];
+        }
+
+        return $status;
+    }
+
+    /**
+     * Buang endpoint yang saklar "Dokumentasi Publik"-nya mati dari setiap
+     * kelompok, lalu buang kelompok yang jadi kosong sama sekali — kelompok
+     * dengan sebagian endpoint publik tetap tampil, hanya berisi endpoint
+     * yang dipublikasikan.
+     *
+     * @param  array<int, array{key:string, title:string, endpoints:array<int, \App\ExternalApi\Docs\ApiEndpointDoc>}>  $groups
+     * @return array<int, array{key:string, title:string, endpoints:array<int, \App\ExternalApi\Docs\ApiEndpointDoc>}>
+     */
+    private function filterPublicGroups(array $groups): array
+    {
+        $filtered = [];
+
+        foreach ($groups as $group) {
+            $group = $this->filterPublicGroup($group);
+
+            if ($group !== null) {
+                $filtered[] = $group;
+            }
+        }
+
+        return $filtered;
+    }
+
+    /** @return array{key:string, title:string, endpoints:array<int, \App\ExternalApi\Docs\ApiEndpointDoc>}|null */
+    private function filterPublicGroup(array $group): ?array
+    {
+        $group['endpoints'] = array_values(array_filter(
+            $group['endpoints'],
+            fn ($doc) => $this->endpointSettings->isPublicDocsShown($doc->key()),
+        ));
+
+        return $group['endpoints'] !== [] ? $group : null;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Status                                                              */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Satu baris per ENDPOINT terdokumentasi (lintas seluruh versi), masing-
+     * masing dengan dua saklar: Endpoint Aktif (is_active) dan Dokumentasi
+     * Publik (is_public_docs_show). Data tabelnya sendiri diambil lewat AJAX
+     * (getExternalApiStatus) mengikuti pola daftar berbasis DataTables di
+     * modul ini — halaman cuma menyediakan kerangka tabelnya.
+     */
+    public function externalApiStatus()
+    {
+        return view('Backoffice.ExternalApi.Status');
+    }
+
+    function getExternalApiStatus(Request $req)
+    {
+        return response()->json($this->endpointSettings->all());
+    }
+
+    /** Saklar apakah satu endpoint tertentu bisa dipanggil. */
+    function toggleExternalApiEndpointActive(Request $req)
+    {
+        $key = (string) $req->get('key');
+
+        if (! $this->endpointSettings->isKnownKey($key)) {
+            return ["status" => -1, "message" => "Endpoint tidak dikenal."];
+        }
+
+        $enabled = filter_var($req->get('enabled'), FILTER_VALIDATE_BOOLEAN);
+        $this->endpointSettings->setActive($key, $enabled);
+
+        return response()->json(["status" => 1, "key" => $key, "is_active" => $enabled]);
+    }
+
+    /** Saklar apakah satu endpoint tertentu muncul di halaman dokumentasi publik (/api-docs). */
+    function toggleExternalApiEndpointPublicDocs(Request $req)
+    {
+        $key = (string) $req->get('key');
+
+        if (! $this->endpointSettings->isKnownKey($key)) {
+            return ["status" => -1, "message" => "Endpoint tidak dikenal."];
+        }
+
+        $enabled = filter_var($req->get('enabled'), FILTER_VALIDATE_BOOLEAN);
+        $this->endpointSettings->setPublicDocsShown($key, $enabled);
+
+        return response()->json(["status" => 1, "key" => $key, "is_public_docs_show" => $enabled]);
     }
 
     /* ------------------------------------------------------------------ */
