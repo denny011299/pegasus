@@ -38,9 +38,10 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
     {
         return 'Membuat satu dokumen pengembalian (bahan mentah/kemasan dan/atau produk jadi) '
             .'dari armada — proses yang sama dengan tombol "Tambah Pengembalian" di halaman '
-            .'admin Pengiriman > Pengembalian. Dokumen dibuat berstatus Pending, gudang tujuan '
-            .'BELUM diisi (lihat catatan) sampai staf mengisinya lewat halaman admin sebelum '
-            .'menerimanya.';
+            .'admin Pengiriman > Pengembalian. Dokumen dibuat berstatus Pending. Gudang tujuan '
+            .'tiap baris ditentukan otomatis untuk sebagian besar kasus (lihat catatan) — hanya '
+            .'baris produk jadi bersatuan eceran yang mungkin masih perlu diisi manual lewat '
+            .'halaman admin sebelum bisa diterima.';
     }
 
     public function bodyParameters(): array
@@ -68,6 +69,8 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
                 'description' => 'Jumlah yang dikembalikan, dalam satuan items[].satuan_id.'],
             ['name' => 'items[].satuan_id', 'type' => 'integer', 'required' => true,
                 'description' => 'Rujukan units.ref_unit_id (id satuan pada sistem PMO), BUKAN id internal Pegasus — sama pola dipakai items[].unit_id di seluruh modul Shipment/Stok. Harus satuan aktif YANG TERDAFTAR untuk bahan/produk itu.'],
+            ['name' => 'items[].gudang_id', 'type' => 'integer', 'required' => false,
+                'description' => 'Id gudang tujuan — nilai LANGSUNG dari id gudang (bukan kolom rujukan eksternal seperti satuan_id/ref_id, karena gudang tidak disinkronkan sistem PMO), ambil daftarnya dari GET /master/warehouses (grup Data Master). Hanya benar-benar dipakai untuk baris type=2 (produk jadi) yang satuannya adalah satuan eceran produk itu — untuk baris lain field ini diabaikan sama sekali. Belum wajib untuk sekarang, lihat catatan.'],
         ];
     }
 
@@ -82,6 +85,9 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
             'items' => [
                 ['type' => 1, 'ref_id' => 12, 'qty' => 5, 'satuan_id' => 2],
                 ['type' => 2, 'ref_id' => 'AAHK400ML', 'qty' => 3, 'satuan_id' => 2],
+                // Baris satuan eceran produk itu -- gudang_id dipakai karena kondisinya cocok
+                // (lihat catatan). Kalau tidak dikirim, warehouse_id baris ini akan kosong.
+                ['type' => 2, 'ref_id' => 'AAHK400ML', 'qty' => 2, 'satuan_id' => 7, 'gudang_id' => 4],
             ],
         ];
     }
@@ -96,7 +102,8 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
                 'supply_return_id' => 15,
                 'product_return_id' => 9,
                 'armada_code' => 'L8533N',
-                'message' => 'Pengembalian berhasil disimpan, menunggu gudang tujuan diisi sebelum diterima.',
+                'pending_warehouse_items' => 0,
+                'message' => 'Pengembalian berhasil disimpan, gudang tujuan tiap baris sudah ditentukan otomatis.',
             ],
         ];
     }
@@ -113,6 +120,8 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.*.satuan_id tidak terdaftar untuk bahan/produk pada baris itu.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
+                'message' => 'items.*.gudang_id tidak ditemukan sebagai id gudang yang aktif.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'proof/proof_base64 kosong, atau bukan gambar JPEG/PNG/WebP yang valid.'],
         ];
     }
@@ -122,7 +131,8 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
         return [
             'Fiturnya sama dengan menu admin Pengiriman > Pengembalian — endpoint ini cuma jalur masuk baru untuk PMO memicunya langsung, bukan alur baru.',
             'TIDAK idempoten (beda dengan /shipments/shipped dan /payments/cash) — tidak ada field acuan unik pada kontrak ini. Setiap permintaan yang lolos validasi selalu membuat dokumen pengembalian BARU, sama seperti /shipments/scheduled. Kirim ulang permintaan yang sama akan menghasilkan dua dokumen.',
-            'Gudang tujuan (warehouse) SENGAJA tidak ditanyakan sama sekali oleh endpoint ini — modul Gudang masih dalam pengembangan. Dokumen dibuat berstatus Pending seperti biasa, tapi baru bisa DITERIMA (ACC, memotong/menambah stok) setelah staf gudang mengisi gudang tujuan tiap baris lewat halaman admin Pengiriman > Pengembalian. Sampai saat itu, dokumen tetap terlihat di daftar Pengembalian dengan status Pending.',
+            'Gudang tujuan tiap baris DITENTUKAN OTOMATIS mengikuti aturan yang sama dengan halaman admin: baris bahan mentah/kemasan SELALU ke gudang utama; baris produk jadi SELALU ke gudang utama JUGA kecuali satuan yang dipakai adalah satuan eceran produk itu — untuk kasus terakhir ini, items[].gudang_id dipakai kalau dikirim. items[].gudang_id diabaikan sama sekali untuk baris lain di luar kasus itu.',
+            'items[].gudang_id BELUM diwajibkan untuk baris produk jadi satuan eceran — kalau tidak dikirim, warehouse_id baris itu (HANYA baris itu, baris lain tetap terisi otomatis) dibiarkan kosong. Dokumen tetap dibuat berstatus Pending dan tetap terlihat di daftar Pengembalian, tapi baru bisa DITERIMA (ACC, memotong/menambah stok) setelah staf gudang mengisi gudang tujuan baris yang masih kosong itu lewat halaman admin Pengiriman > Pengembalian. Jumlah baris yang masih kosong dilaporkan lewat pending_warehouse_items pada respons. Field ini rencananya akan DIWAJIBKAN untuk kasus ini di rilis mendatang.',
             'items[] boleh campuran type=1 dan type=2 dalam satu permintaan yang sama — satu dokumen pengembalian bisa berisi bahan mentah dan produk jadi sekaligus (return_type "mixed" pada respons), sama seperti form admin.',
             'Baris items[] dengan type + ref_id + satuan_id yang sama digabung otomatis (qty dijumlah) sebelum disimpan — mengirim baris duplikat tidak menghasilkan baris tersimpan ganda.',
             'items[].satuan_id divalidasi benar-benar terdaftar untuk bahan/produk pada baris itu (satuan default, satuan tambahan, atau hasil konversi) — mengirim satuan yang valid secara umum tapi tidak pernah didaftarkan untuk bahan/produk itu tetap ditolak VALIDATION_FAILED.',
