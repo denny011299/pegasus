@@ -49,6 +49,14 @@
         .items {
             width: 100%;
             border-collapse: collapse;
+            page-break-inside: auto;
+        }
+        .items thead {
+            display: table-header-group;
+        }
+        .items tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
         }
         .items th {
             font-weight: bold;
@@ -69,15 +77,25 @@
             border-bottom: 1px solid #111;
             height: 20px;
         }
-        .known {
+        .sign-block {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 18px;
-            margin-bottom: 10px;
+            page-break-inside: avoid;
+            page-break-before: auto;
+        }
+        .sign-block > tbody > tr > td {
+            padding: 0;
+        }
+        .known {
+            margin: 0 0 10px 0;
             font-size: 11px;
             font-weight: bold;
         }
         .sign {
             width: 100%;
             border-collapse: collapse;
+            page-break-inside: avoid;
         }
         .sign td {
             width: 33.33%;
@@ -125,7 +143,7 @@
         <tr>
             <td class="label">Nomor Dokumen</td>
             <td class="colon">:</td>
-            <td class="dots" colspan="4">{{ $nomor_dokumen !== '' ? $nomor_dokumen : ' ' }}</td>
+            <td class="dots" colspan="4">{{ ' ' }}</td>
         </tr>
     </table>
 
@@ -152,26 +170,32 @@
         </tbody>
     </table>
 
-    <div class="known">Diketahui Oleh</div>
-    <table class="sign">
+    <table class="sign-block">
         <tr>
             <td>
-                <div class="role">Kepala Gudang</div>
-                <div class="space"></div>
-                <div class="line"></div>
-                <div class="name">{{ $kepala_operasional !== '' ? $kepala_operasional : ' ' }}</div>
-            </td>
-            <td>
-                <div class="role">Staff QC</div>
-                <div class="space"></div>
-                <div class="line"></div>
-                <div class="name">{{ $staff_qc !== '' ? $staff_qc : ' ' }}</div>
-            </td>
-            <td>
-                <div class="role">Sopir</div>
-                <div class="space"></div>
-                <div class="line"></div>
-                <div class="name">{{ $sopir_name !== '' ? $sopir_name : ' ' }}</div>
+                <div class="known">Diketahui Oleh</div>
+                <table class="sign">
+                    <tr>
+                        <td>
+                            <div class="role">Kepala Gudang</div>
+                            <div class="space"></div>
+                            <div class="line"></div>
+                            <div class="name">{{ $kepala_operasional !== '' ? $kepala_operasional : ' ' }}</div>
+                        </td>
+                        <td>
+                            <div class="role">Staf QC &amp; Gudang</div>
+                            <div class="space"></div>
+                            <div class="line"></div>
+                            <div class="name">{{ $staff_qc !== '' ? $staff_qc : ' ' }}</div>
+                        </td>
+                        <td>
+                            <div class="role">Sopir</div>
+                            <div class="space"></div>
+                            <div class="line"></div>
+                            <div class="name">{{ $sopir_name !== '' ? $sopir_name : ' ' }}</div>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
