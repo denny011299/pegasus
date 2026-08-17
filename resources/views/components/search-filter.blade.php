@@ -830,3 +830,71 @@
     </div>
     <!-- /Filter Pencarian -->
 @endif
+
+@if (Route::is(['externalApiStatus']))
+    {{--
+        Seluruh data tabel ini sudah dimuat sekali lewat AJAX (tidak
+        dipaginasi server), jadi filter di sini bekerja langsung di sisi
+        klien (lihat Status.js) — berubah, tabel langsung tersaring, tanpa
+        tombol "Terapkan". Pilihan Versi/Kelompok/Metode diisi JS dari data
+        yang benar-benar ada, jadi versi/kelompok/metode baru otomatis
+        muncul sebagai pilihan tanpa menyentuh berkas ini.
+    --}}
+    <!-- Filter Pencarian -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Versi</label>
+                            <select class="form-select" id="filter_status_version">
+                                <option value="">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Kelompok</label>
+                            <select class="form-select" id="filter_status_group">
+                                <option value="">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Metode</label>
+                            <select class="form-select" id="filter_status_method">
+                                <option value="">Semua</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Endpoint Aktif</label>
+                            <select class="form-select" id="filter_status_active">
+                                <option value="">Semua</option>
+                                <option value="1">Aktif</option>
+                                <option value="0">Nonaktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <div class="input-block">
+                            <label>Dokumentasi Publik</label>
+                            <select class="form-select" id="filter_status_public">
+                                <option value="">Semua</option>
+                                <option value="1">Tampil</option>
+                                <option value="0">Tersembunyi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-xl-2 col-md-4">
+                        <a class="btn btn-outline-secondary btn-clear w-100">Clear</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /Filter Pencarian -->
+@endif

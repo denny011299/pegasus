@@ -12,17 +12,16 @@ use App\Models\Staff;
 use App\Models\StockTransfer;
 use App\Models\StockTransferDetail;
 use App\Models\SuppliesStock;
+use App\Support\CustomerReturnCreation;
 use App\Support\RoleAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -134,55 +133,18 @@ class CustomerReturnController extends Controller
 
         try {
             $newProofPath = $this->storeProof($request, true);
-            $record = DB::transaction(function () use ($data, $supplyDetails, $productDetails, $newProofPath) {
-                $this->validateSupplyDetails($supplyDetails);
-                $this->validateProductDetails($productDetails);
+            $this->validateSupplyDetails($supplyDetails);
+            $this->validateProductDetails($productDetails);
 
-                $group = $this->generateReturnGroup();
-                $supply = null;
-                $product = null;
-
-                if ($supplyDetails !== []) {
-                    $supply = CustomerSupplyReturn::create([
-                        'return_number' => (new CustomerSupplyReturn())->generateReturnNumber(),
-                        'return_group' => $group,
-                        'so_id' => null,
-                        'customer_id' => $data['customer_id'],
-                        'return_date' => $data['return_date'],
-                        'ref_number' => $data['ref_number'] ?: null,
-                        'notes' => $data['notes'] ?: null,
-                        'proof_path' => $newProofPath,
-                        'status' => 1,
-                        'created_by' => $this->userId(),
-                        'qc_staff_id' => $data['qc_staff_id'],
-                    ]);
-                    $this->replaceSupplyDetails($supply->return_id, $supplyDetails);
-                }
-
-                if ($productDetails !== []) {
-                    $product = CustomerProductReturn::create([
-                        'return_number' => (new CustomerProductReturn())->generateReturnNumber(),
-                        'return_group' => $group,
-                        'customer_id' => $data['customer_id'],
-                        'return_date' => $data['return_date'],
-                        'ref_number' => $data['ref_number'] ?: null,
-                        'notes' => $data['notes'] ?: null,
-                        'proof_path' => $newProofPath,
-                        'status' => 1,
-                        'created_by' => $this->userId(),
-                        'qc_staff_id' => $data['qc_staff_id'],
-                    ]);
-                    $this->replaceProductDetails($product->return_id, $productDetails);
-                }
-
-                return [
-                    'doc_key' => $group,
-                    'return_group' => $group,
-                    'return_type' => $this->resolveType($supply !== null, $product !== null),
-                    'supply_return_id' => $supply?->return_id,
-                    'product_return_id' => $product?->return_id,
-                ];
-            });
+            $record = CustomerReturnCreation::create([
+                'customer_id' => $data['customer_id'],
+                'return_date' => $data['return_date'],
+                'ref_number' => $data['ref_number'] ?: null,
+                'notes' => $data['notes'] ?: null,
+                'proof_path' => $newProofPath,
+                'qc_staff_id' => $data['qc_staff_id'],
+                'created_by' => $this->userId(),
+            ], $supplyDetails, $productDetails);
 
             return response()->json([
                 'success' => true,
@@ -941,14 +903,7 @@ class CustomerReturnController extends Controller
 
     private function resolveType(bool $hasSupply, bool $hasProduct): string
     {
-        if ($hasSupply && $hasProduct) {
-            return 'mixed';
-        }
-        if ($hasProduct) {
-            return 'product';
-        }
-
-        return 'supply';
+        return CustomerReturnCreation::resolveType($hasSupply, $hasProduct);
     }
 
     private function resolveBundle(string $docKey, bool $lock = false): ?array
@@ -1414,8 +1369,8 @@ class CustomerReturnController extends Controller
     private function buildReturnContext(): array
     {
         return [
-            'supplies' => $this->buildSuppliesContext(),
-            'products' => $this->buildProductsContext(),
+            'supplies' => CustomerReturnCreation::suppliesContext(),
+            'products' => CustomerReturnCreation::productsContext(),
             'supply_warehouses' => $this->mainWarehouses(),
             'product_warehouses' => $this->allActiveWarehouses(),
             'active_warehouse' => $this->activeWarehouseContext(),
@@ -1447,166 +1402,6 @@ class CustomerReturnController extends Controller
         ];
     }
 
-    private function buildSuppliesContext(): array
-    {
-        $suppliesRows = DB::table('supplies')
-            ->where('status', 1)
-            ->orderBy('supplies_name')
-            ->get(['supplies_id', 'supplies_name', 'supplies_unit', 'supplies_default_unit']);
-
-        $supplyIds = $suppliesRows->pluck('supplies_id')->map(fn ($id) => (int) $id)->values();
-        $relationUnits = $supplyIds->isEmpty()
-            ? collect()
-            : DB::table('supplies_relations')
-                ->where('status', 1)
-                ->whereIn('supplies_id', $supplyIds)
-                ->get(['supplies_id', 'su_id_1', 'su_id_2'])
-                ->groupBy('supplies_id');
-
-        $allUnitIds = [];
-        foreach ($suppliesRows as $row) {
-            if ((int) ($row->supplies_default_unit ?? 0) > 0) {
-                $allUnitIds[(int) $row->supplies_default_unit] = true;
-            }
-            foreach ((array) (json_decode($row->supplies_unit ?? '[]', true) ?: []) as $unitId) {
-                $allUnitIds[(int) $unitId] = true;
-            }
-            foreach ($relationUnits->get($row->supplies_id, collect()) as $relation) {
-                $allUnitIds[(int) $relation->su_id_1] = true;
-                $allUnitIds[(int) $relation->su_id_2] = true;
-            }
-        }
-
-        $units = $allUnitIds === []
-            ? collect()
-            : DB::table('units')->where('status', 1)->whereIn('unit_id', array_keys($allUnitIds))
-                ->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id');
-
-        return $suppliesRows->map(function ($row) use ($relationUnits, $units) {
-            $unitIds = collect(json_decode($row->supplies_unit ?? '[]', true) ?: []);
-            $defaultUnitId = (int) ($row->supplies_default_unit ?? 0);
-            if ($defaultUnitId > 0) {
-                $unitIds->prepend($defaultUnitId);
-            }
-            foreach ($relationUnits->get($row->supplies_id, collect()) as $relation) {
-                $unitIds->push($relation->su_id_1)->push($relation->su_id_2);
-            }
-
-            return [
-                'supplies_id' => (int) $row->supplies_id,
-                'supplies_name' => $row->supplies_name,
-                'default_unit_id' => $defaultUnitId,
-                'units' => $unitIds->map(fn ($unitId) => $units->get((int) $unitId))
-                    ->filter()
-                    ->unique('unit_id')
-                    ->map(fn ($unit) => [
-                        'unit_id' => (int) $unit->unit_id,
-                        'unit_name' => $unit->unit_name,
-                        'unit_short_name' => $unit->unit_short_name,
-                    ])->values()->all(),
-            ];
-        })->values()->all();
-    }
-
-    private function buildProductsContext(): array
-    {
-        $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
-        $hasProductUnitId = Schema::hasColumn('products', 'unit_id');
-        $variantCols = [
-            'pv.product_variant_id',
-            'pv.product_id',
-            'pv.product_variant_name',
-            'pv.product_variant_sku',
-            'p.product_name',
-            'p.product_unit',
-        ];
-        if ($hasProductUnitId) {
-            $variantCols[] = 'p.unit_id as default_unit_id';
-        }
-        if ($hasRetailCol) {
-            $variantCols[] = 'pv.retail_unit';
-        }
-
-        $variants = DB::table('product_variants as pv')
-            ->join('products as p', 'p.product_id', '=', 'pv.product_id')
-            ->where('pv.status', 1)
-            ->where('p.status', 1)
-            ->orderBy('p.product_name')
-            ->orderBy('pv.product_variant_name')
-            ->get($variantCols);
-
-        $variantIds = $variants->pluck('product_variant_id')->map(fn ($id) => (int) $id)->values();
-        $relationUnits = $variantIds->isEmpty()
-            ? collect()
-            : DB::table('product_relations')
-                ->where('status', 1)
-                ->whereIn('product_variant_id', $variantIds)
-                ->get(['product_variant_id', 'pr_unit_id_1', 'pr_unit_id_2'])
-                ->groupBy('product_variant_id');
-
-        $allUnitIds = [];
-        foreach ($variants as $variant) {
-            $defaultUnitId = $hasProductUnitId ? (int) ($variant->default_unit_id ?? 0) : 0;
-            if ($defaultUnitId > 0) {
-                $allUnitIds[$defaultUnitId] = true;
-            }
-            foreach ((array) (json_decode($variant->product_unit ?? '[]', true) ?: []) as $unitId) {
-                $allUnitIds[(int) $unitId] = true;
-            }
-            if ($hasRetailCol && (int) ($variant->retail_unit ?? 0) > 0) {
-                $allUnitIds[(int) $variant->retail_unit] = true;
-            }
-            foreach ($relationUnits->get($variant->product_variant_id, collect()) as $relation) {
-                $allUnitIds[(int) $relation->pr_unit_id_1] = true;
-                $allUnitIds[(int) $relation->pr_unit_id_2] = true;
-            }
-        }
-
-        $units = $allUnitIds === []
-            ? collect()
-            : DB::table('units')->where('status', 1)->whereIn('unit_id', array_keys($allUnitIds))
-                ->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id');
-
-        return $variants->map(function ($variant) use ($relationUnits, $units, $hasRetailCol, $hasProductUnitId) {
-            $unitIds = collect(json_decode($variant->product_unit ?? '[]', true) ?: []);
-            $defaultUnitId = $hasProductUnitId ? (int) ($variant->default_unit_id ?? 0) : 0;
-            if ($defaultUnitId > 0) {
-                $unitIds->prepend($defaultUnitId);
-            } elseif ($unitIds->isNotEmpty()) {
-                $defaultUnitId = (int) $unitIds->first();
-            }
-            if ($hasRetailCol && (int) ($variant->retail_unit ?? 0) > 0) {
-                $unitIds->push((int) $variant->retail_unit);
-            }
-            foreach ($relationUnits->get($variant->product_variant_id, collect()) as $relation) {
-                $unitIds->push($relation->pr_unit_id_1)->push($relation->pr_unit_id_2);
-            }
-
-            $retailUnitId = $hasRetailCol ? (int) ($variant->retail_unit ?? 0) : 0;
-
-            return [
-                'product_variant_id' => (int) $variant->product_variant_id,
-                'product_id' => (int) $variant->product_id,
-                'product_variant_sku' => $variant->product_variant_sku,
-                'product_label' => $this->formatProductVariantLabel(
-                    $variant->product_name ?? '',
-                    $variant->product_variant_name ?? '',
-                    $variant->product_variant_sku ?? ''
-                ),
-                'default_unit_id' => $defaultUnitId,
-                'retail_unit' => $retailUnitId > 0 ? $retailUnitId : null,
-                'units' => $unitIds->map(fn ($unitId) => $units->get((int) $unitId))
-                    ->filter()
-                    ->unique('unit_id')
-                    ->map(fn ($unit) => [
-                        'unit_id' => (int) $unit->unit_id,
-                        'unit_name' => $unit->unit_name,
-                        'unit_short_name' => $unit->unit_short_name,
-                    ])->values()->all(),
-            ];
-        })->values()->all();
-    }
-
     private function mainWarehouses(): array
     {
         return DB::table('warehouses as w')
@@ -1636,135 +1431,40 @@ class CustomerReturnController extends Controller
             ->values()->all();
     }
 
+    /** @param  array<int, array<string, mixed>>  $details */
     private function replaceSupplyDetails(int $returnId, array $details): void
     {
-        CustomerSupplyReturnDetail::where('return_id', $returnId)->delete();
-        $now = now();
-        CustomerSupplyReturnDetail::insert(array_map(fn ($detail) => [
-            'return_id' => $returnId,
-            'supplies_id' => $detail['supplies_id'],
-            'unit_id' => $detail['unit_id'],
-            'warehouse_id' => $detail['warehouse_id'],
-            'qty' => $detail['qty'],
-            'status' => 1,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], $details));
+        CustomerReturnCreation::replaceSupplyDetails($returnId, $details);
     }
 
+    /** @param  array<int, array<string, mixed>>  $details */
     private function replaceProductDetails(int $returnId, array $details): void
     {
-        CustomerProductReturnDetail::where('return_id', $returnId)->delete();
-        $now = now();
-        $hasDest = Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
-        CustomerProductReturnDetail::insert(array_map(function ($detail) use ($returnId, $now, $hasDest) {
-            $row = [
-                'return_id' => $returnId,
-                'product_variant_id' => $detail['product_variant_id'],
-                'unit_id' => $detail['unit_id'],
-                'warehouse_id' => $detail['warehouse_id'],
-                'qty' => $detail['qty'],
-                'status' => 1,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
-            if ($hasDest) {
-                $dest = (int) ($detail['destination_warehouse_id'] ?? 0);
-                $row['destination_warehouse_id'] = $dest > 0 ? $dest : (int) $detail['warehouse_id'];
-            }
-
-            return $row;
-        }, $details));
+        CustomerReturnCreation::replaceProductDetails($returnId, $details);
     }
 
     private function generateReturnGroup(): string
     {
-        $maxSupply = (int) DB::table('customer_supply_returns')
-            ->where('return_group', 'like', 'PKR%')
-            ->selectRaw("MAX(CAST(SUBSTRING(return_group, 4) AS UNSIGNED)) as max_no")
-            ->value('max_no');
-        $maxProduct = (int) DB::table('customer_product_returns')
-            ->where('return_group', 'like', 'PKR%')
-            ->selectRaw("MAX(CAST(SUBSTRING(return_group, 4) AS UNSIGNED)) as max_no")
-            ->value('max_no');
-        $next = max($maxSupply, $maxProduct) + 1;
-
-        return 'PKR' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        return CustomerReturnCreation::generateReturnGroup();
     }
 
     private function storeProof(Request $request, bool $required): ?string
     {
-        $binary = null;
-        if ($request->hasFile('proof')) {
-            $file = $request->file('proof');
-            $binary = File::get($file->getRealPath());
-        } elseif ($request->filled('proof_base64')) {
-            $value = (string) $request->input('proof_base64');
-            if (! preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+\/=\r\n]+)$/', $value, $matches)) {
-                throw ValidationException::withMessages(['proof_base64' => 'Format bukti tidak valid.']);
-            }
-            $binary = base64_decode($matches[2], true);
-            if ($binary === false || strlen($binary) > 5 * 1024 * 1024) {
-                throw ValidationException::withMessages(['proof_base64' => 'Ukuran bukti maksimal 5 MB.']);
-            }
-        }
-        if ($binary === null) {
-            if ($required) {
-                throw ValidationException::withMessages(['proof' => 'Bukti foto wajib diunggah.']);
-            }
-
-            return null;
-        }
-
-        $imageInfo = @getimagesizefromstring($binary);
-        $mime = $imageInfo['mime'] ?? '';
-        $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-        if (! isset($extensions[$mime])) {
-            throw ValidationException::withMessages(['proof' => 'Isi file bukti bukan gambar JPEG, PNG, atau WebP yang valid.']);
-        }
-        $extension = $extensions[$mime];
-        $directory = public_path('customer_returns');
-        File::ensureDirectoryExists($directory);
-        $filename = now()->format('YmdHis') . '_' . Str::random(24) . '.' . $extension;
-        if (File::put($directory . DIRECTORY_SEPARATOR . $filename, $binary) === false) {
-            throw ValidationException::withMessages(['proof' => 'Bukti gagal disimpan.']);
-        }
-
-        return 'customer_returns/' . $filename;
+        return CustomerReturnCreation::storeProofFromInput(
+            $request->filled('proof_base64') ? (string) $request->input('proof_base64') : null,
+            $request->hasFile('proof') ? $request->file('proof') : null,
+            $required,
+        );
     }
 
     private function deleteProof(?string $path): void
     {
-        if (! $path) {
-            return;
-        }
-        $allowed = ['customer_returns/', 'customer_supply_returns/', 'customer_product_returns/'];
-        $ok = false;
-        foreach ($allowed as $prefix) {
-            if (str_starts_with($path, $prefix)) {
-                $ok = true;
-                break;
-            }
-        }
-        if (! $ok) {
-            return;
-        }
-        File::delete(public_path(str_replace('/', DIRECTORY_SEPARATOR, $path)));
+        CustomerReturnCreation::deleteProof($path);
     }
 
     private function formatProductVariantLabel($productName, $variantName = '', $sku = ''): string
     {
-        $name = trim(preg_replace(
-            '/\s+/',
-            ' ',
-            trim((string) $productName) . ' ' . trim((string) $variantName)
-        ));
-        $sku = trim((string) $sku);
-        if ($sku !== '' && $sku !== '-') {
-            return $name !== '' ? ($sku . ' | ' . $name) : $sku;
-        }
-
-        return $name !== '' ? $name : '-';
+        return CustomerReturnCreation::formatProductVariantLabel($productName, $variantName, $sku);
     }
 
     private function authorizeAbility(string $ability): void

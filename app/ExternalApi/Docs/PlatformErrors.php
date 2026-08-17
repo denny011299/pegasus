@@ -50,6 +50,12 @@ final class PlatformErrors
                 'cause' => 'Aplikasi pemilik kunci dinonaktifkan administrator.',
             ],
             [
+                'code' => ErrorCatalog::API_ENDPOINT_DISABLED,
+                'http_status' => 503,
+                'message' => 'Endpoint ini sedang dinonaktifkan sementara.',
+                'cause' => 'Administrator mematikan saklar "Endpoint Aktif" endpoint ini di halaman Status API Eksternal. Berlaku untuk semua aplikasi dan kunci, terlepas dari valid atau tidaknya API Key yang dikirim — hanya endpoint ini yang terpengaruh, endpoint lain pada versi yang sama tetap berjalan normal.',
+            ],
+            [
                 'code' => ErrorCatalog::NOT_FOUND,
                 'http_status' => 404,
                 'message' => 'Data tidak ditemukan.',

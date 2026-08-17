@@ -35,6 +35,9 @@ final class ErrorCatalog
 
     public const APPLICATION_DISABLED = 'APPLICATION_DISABLED';
 
+    /** Saklar "Endpoint Aktif" endpoint ini di halaman Status API Eksternal dimatikan administrator. */
+    public const API_ENDPOINT_DISABLED = 'API_ENDPOINT_DISABLED';
+
     public const NOT_FOUND = 'NOT_FOUND';
 
     public const VALIDATION_FAILED = 'VALIDATION_FAILED';

@@ -4,11 +4,11 @@
         "warehouse_name": "Gudang Pusat",
         "warehouse_type_id": 1,
         "warehouse_address": "Gudang utama (default) - seluruh stok yang sudah ada sebelum fitur multi-gudang diaktifkan dipindahkan ke sini.",
-        "sidebar_menus": null,
+        "sidebar_menus": "[\"Kategori\", \"Satuan\", \"Variasi\", \"Gudang\", \"Tipe Gudang\"]",
         "status": 1,
-        "created_by": null,
+        "created_by": 13,
         "created_at": "2026-08-01 03:36:00",
-        "updated_at": "2026-08-01 03:36:00"
+        "updated_at": "2026-08-17 00:58:56"
     },
     {
         "id": 2,

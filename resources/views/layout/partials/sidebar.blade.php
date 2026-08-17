@@ -1232,6 +1232,7 @@
                     @php
                         $showIntegrasi =
                         $canShow('Sinkronisasi') ||
+                        $canShow('Status API Eksternal') ||
                         $canShow('Aplikasi Eksternal') ||
                         $canShow('Dokumentasi API Eksternal') ||
                         $canShow('Log API Eksternal');
@@ -1243,6 +1244,15 @@
                             <li>
                                 <a class="{{ Request::is('synchronization*') ? 'active' : '' }}" href="/synchronization">
                                     <i class="fe fe-refresh-cw"></i> <span>Pusat Sinkronisasi</span>
+                                </a>
+                            </li>
+                        @endif
+
+                        @if ($canShow('Status API Eksternal'))
+                            <li>
+                                <a class="{{ Request::is('externalApiStatus*') ? 'active' : '' }}"
+                                    href="/externalApiStatus">
+                                    <i class="fe fe-sliders"></i> <span>Status API Eksternal</span>
                                 </a>
                             </li>
                         @endif
