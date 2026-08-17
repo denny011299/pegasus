@@ -15,6 +15,16 @@ class LogStock extends Model
     public $timestamps = true;
     public $incrementing = true;
 
+    /**
+     * "oleh <nama staff sesi aktif>" — ditempel di akhir log_notes (setelah spasi
+     * pemisah milik pemanggil) agar Catatan menyebut siapa yang melakukan
+     * transaksi, selain kolom Staff yang sudah ada.
+     */
+    public static function actorSuffix(): string
+    {
+        return 'oleh ' . (Session::get('user')->staff_name ?? '-');
+    }
+
     function getLog($data = [])
     {
 
@@ -596,8 +606,17 @@ class LogStock extends Model
 
         if ($data["date"]) {
             if (is_array($data["date"]) && count($data["date"]) === 2) {
-                $startDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->startOfDay();
-                $endDate = \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->endOfDay();
+                // Diperbaiki (2026-08-06): dulu unconditional createFromFormat('d-m-Y', ...) —
+                // beda dengan cabang tanggal tunggal di bawah (yang sudah punya fallback
+                // hasFormat Y-m-d) dan dengan pattern yang sudah dipakai di
+                // ReportController.php:3353-3360 / Production::getProductionReport(). Sama
+                // persis bugnya, lihat KNOWN_ISSUES.md.
+                $startDate = \Carbon\Carbon::hasFormat($data["date"][0], 'Y-m-d')
+                    ? \Carbon\Carbon::parse($data["date"][0])->startOfDay()
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][0])->startOfDay();
+                $endDate = \Carbon\Carbon::hasFormat($data["date"][1], 'Y-m-d')
+                    ? \Carbon\Carbon::parse($data["date"][1])->endOfDay()
+                    : \Carbon\Carbon::createFromFormat('d-m-Y', $data["date"][1])->endOfDay();
                 $query->whereBetween('l.log_date', [$startDate, $endDate]);
             } else {
                 $date = $data["date"];

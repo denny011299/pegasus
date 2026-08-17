@@ -260,6 +260,7 @@
             },
             error: function (err) {
                 if (err && err.statusText === "abort") return;
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             },
             complete: function (xhr, status) {

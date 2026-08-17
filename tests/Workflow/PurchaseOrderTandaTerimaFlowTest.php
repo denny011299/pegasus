@@ -24,9 +24,9 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
 
     /**
      * Inserts and approves a PO, then accepts its automatic invoice in full — identical to
-     * PurchaseOrderInvoiceFlowTest's fixture. Ends with the PO at status=4 (fully covered) and
-     * pembayaran still at its default of 1 (untouched by invoice acceptance), ready to be grouped
-     * into a Tt.
+     * PurchaseOrderInvoiceFlowTest's fixture. Ends with the PO at status=2 (accepting an invoice no
+     * longer moves purchase_orders.status — see GitHub issue #14) and pembayaran still at its
+     * default of 1 (untouched by invoice acceptance), ready to be grouped into a Tt.
      */
     private function insertPoWithAcceptedInvoice(int $qty, int $price, ?Supplier $supplier = null): array
     {
@@ -232,17 +232,16 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
     }
 
     /**
-     * Found while testing the cross-bank guard: the guard only ever compares `bank_id` — it never
-     * checks that all grouped invoices belong to the SAME supplier, despite
+     * ✅ FIXED (2026-08-06, GitHub issue #18, closes #18): the guard used to only ever compare
+     * `bank_id` — it never checked that all grouped invoices belong to the SAME supplier, despite
      * cdocs/docs/flows/purchase-order-tanda-terima/FLOW.md describing a Tt as grouping POs "by the
-     * same supplier and same bank." Two different suppliers who happen to share a bank_id can be
-     * grouped into one Tt today, and the resulting `purchase_order_tts.supplier_id` ends up set to
-     * whichever supplier's invoice happened to be LAST in the request array — `$param["supplier"]`
-     * is overwritten every loop iteration and only its final value is used after the loop
-     * (`SupplierController.php:396,426,434`) — not necessarily representative of every PO actually
-     * grouped into the batch. Not fixed — see KNOWN_ISSUES.md.
+     * same supplier and same bank." Two different suppliers who happened to share a bank_id could
+     * be grouped into one Tt, and the resulting `purchase_order_tts.supplier_id` ended up set to
+     * whichever supplier's invoice happened to be LAST in the request array. PM confirmed
+     * (2026-08-06): grouping must require both bank_id AND supplier_id to match —
+     * `generateTandaTerimaInvoice()` now validates both and rejects a mismatch on either.
      */
-    public function test_grouping_invoices_from_different_suppliers_sharing_one_bank_is_silently_allowed(): void
+    public function test_grouping_invoices_from_different_suppliers_sharing_one_bank_is_rejected(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -254,23 +253,43 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
         $fxA = $this->insertPoWithAcceptedInvoice(qty: 3, price: 1000, supplier: $supplierA);
         $fxB = $this->insertPoWithAcceptedInvoice(qty: 2, price: 1000, supplier: $supplierB);
 
-        // supplierB's invoice is listed LAST — per the bug, the resulting Tt's supplier_id will
-        // reflect supplierB only, even though supplierA's PO is grouped into it too.
         $result = $this->generateTtForMany([$fxA['poi_id'], $fxB['poi_id']]);
 
-        $this->assertSame(1, $result['status'], 'BUG: grouping across two different suppliers succeeds as long as their bank_id matches');
+        $this->assertSame(-1, $result['status'], 'grouping across two different suppliers must be rejected even when their bank_id matches (closes #18)');
+        $this->assertStringContainsString('memiliki supplier yang berbeda', $result['message']);
 
         $poA = PurchaseOrder::findOrFail($fxA['po_id']);
         $poB = PurchaseOrder::findOrFail($fxB['po_id']);
-        $this->assertSame((int) $result['tt_id'], (int) $poA->tt_id, "supplier A's PO is grouped into the batch");
-        $this->assertSame((int) $result['tt_id'], (int) $poB->tt_id, "supplier B's PO is ALSO grouped into the same batch");
+        $this->assertNull($poA->tt_id, 'a rejected cross-supplier grouping must not group anything, including the first (valid-looking) item');
+        $this->assertNull($poB->tt_id);
+        $this->assertSame(1, (int) $poA->pembayaran);
+        $this->assertSame(1, (int) $poB->pembayaran);
+    }
+
+    /**
+     * Confirms the fix above doesn't reject a batch merely for sharing a bank — grouping two
+     * different POs from the SAME supplier (and same bank) must still succeed as before.
+     */
+    public function test_grouping_two_invoices_from_the_same_supplier_and_bank_still_succeeds(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $supplier = Supplier::where('status', 1)->whereNotNull('bank_id')->firstOrFail();
+
+        $fxA = $this->insertPoWithAcceptedInvoice(qty: 3, price: 1000, supplier: $supplier);
+        $fxB = $this->insertPoWithAcceptedInvoice(qty: 2, price: 1000, supplier: $supplier);
+
+        $result = $this->generateTtForMany([$fxA['poi_id'], $fxB['poi_id']]);
+
+        $this->assertSame(1, $result['status'], 'grouping two POs from the same supplier and bank must still succeed');
+
+        $poA = PurchaseOrder::findOrFail($fxA['po_id']);
+        $poB = PurchaseOrder::findOrFail($fxB['po_id']);
+        $this->assertSame((int) $result['tt_id'], (int) $poA->tt_id);
+        $this->assertSame((int) $result['tt_id'], (int) $poB->tt_id);
 
         $tt = purchase_order_tt::findOrFail($result['tt_id']);
-        $this->assertSame(
-            $supplierB->supplier_id,
-            (int) $tt->supplier_id,
-            'BUG: the Tt\'s supplier_id reflects only the LAST invoice processed (supplier B), despite supplier A\'s PO being grouped in too'
-        );
+        $this->assertSame($supplier->supplier_id, (int) $tt->supplier_id);
     }
 
     /**

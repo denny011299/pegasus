@@ -87,6 +87,7 @@ function refreshExternalApiKey() {
             feather.replace();
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load API Key:", err);
         }
     });
@@ -147,6 +148,7 @@ $(document).on('click', '.btn_edit', function () {
             $('#add_external_api_key').modal("show");
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load API Key:", err);
         }
     });
@@ -211,9 +213,10 @@ $(document).on("click", ".btn-save-key", function () {
             refreshExternalApiKey();
         },
         error: function (err) {
+            ResetLoadingButton('.btn-save-key', mode == 1 ? "Buat API Key" : "Update API Key");
+            if (handlePermissionError(err)) return;
             console.error("Gagal simpan API Key:", err);
             notifikasi('error', "Gagal", 'Terjadi kesalahan saat menyimpan');
-            ResetLoadingButton('.btn-save-key', mode == 1 ? "Buat API Key" : "Update API Key");
         }
     });
 });
@@ -263,6 +266,7 @@ $(document).on('click', '#btn-revoke-external-api-key', function () {
             notifikasi('success', "Berhasil Dicabut", "API Key sudah tidak berlaku");
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal cabut API Key:", err);
             notifikasi('error', "Gagal", 'Terjadi kesalahan saat mencabut kunci');
         }
@@ -288,6 +292,7 @@ $(document).on('click', '#btn-delete-external-api-key', function () {
             notifikasi('success', "Berhasil Delete", "API Key berhasil dihapus");
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal delete API Key:", err);
             notifikasi('error', "Gagal", 'Terjadi kesalahan saat menghapus');
         }

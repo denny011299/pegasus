@@ -155,6 +155,7 @@ function refreshSelisihOpname() {
             feather.replace();
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load report selisih opname:", err);
         },
     });

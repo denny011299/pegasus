@@ -436,6 +436,14 @@ class ReportController extends Controller
     function insertCash(Request $req){
         $data = $req->all();
         $cash_id = (new Cash())->insertCash($data);
+        // DEAD CODE (confirmed 2026-08-02, marked 2026-08-06 per user decision — not revived, not
+        // removed, just flagged): the real frontend (Cash.js) has `cash_tujuan` commented out of
+        // the AJAX payload sent to /insertCash, so this whole admin/gudang auto-link branch never
+        // actually runs today. If the literal string "admin"/"gudang" were ever sent again, note
+        // that `Cash::insertCash()`'s own string→int mapping for `cash_tujuan` (the counterpart to
+        // this check) is ALSO commented out, and `cashes.cash_tujuan` is an integer column — so the
+        // `(new Cash())->insertCash($data)` call above would crash with a DB type error before
+        // execution ever reaches this branch at all. See KNOWN_ISSUES.md for the full trace.
         if (isset($data['cash_tujuan']) && $data['cash_tujuan'] != null) {
             if ($data['cash_tujuan'] == "admin"){
                 (new CashAdmin())->insertCashAdmin([
@@ -1070,6 +1078,11 @@ class ReportController extends Controller
             $data["cg_img"] = $imageName;
         }
 
+        // "operasional" == entri "Kas Gudang" (lihat juga acceptCashGudang() di bawah): baris
+        // CashGudangDetail dibuat di bawah, cash_id SELALU 0 — entri ini tidak pernah muncul di
+        // halaman "Kas Besar" (/cash). "saldo" == entri "Kas Besar": tidak pernah punya baris
+        // CashGudangDetail sama sekali, tapi selalu punya cash_id sungguhan lewat Cash::insertCash()
+        // di bawah. Jangan disamakan/digabung, keduanya sengaja berbeda bentuk.
         if ($data['jenis_input'] == "operasional"){
             $total = 0;
             $item = json_decode($data['items'], true);
@@ -1143,6 +1156,21 @@ class ReportController extends Controller
     {
         $data = $req->all();
 
+        // Ditambahkan (2026-08-05): PM konfirmasi sekali status != 1 (sudah disetujui/ditolak),
+        // tidak ada prosedur lain yang boleh mengubah data ini lagi — acceptCashGudang() sudah
+        // memutasi customer_saldo + membuat CashArmada row dari cgd_nominal saat itu, jadi
+        // mengubah cg_nominal/detail baris setelahnya akan membuat kedua sisi tidak sinkron
+        // tanpa ada cara membalikkannya. Sama seperti guard updateCashArmada/updateCashSales.
+        $cash = CashGudang::find($data['cg_id']);
+        if ($cash && $cash->status != 1) {
+            $staff = Staff::find($cash->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Update",
+                "message" => "Pengajuan sudah disetujui/ditolak oleh " . $staff . ", data tidak bisa diubah lagi"
+            ]);
+        }
+
         if ($req->photo){
             // Ambil base64
             $image = $req->photo;
@@ -1164,7 +1192,6 @@ class ReportController extends Controller
         }
 
         $id = [];
-        $cash = CashGudang::find($data['cg_id']);
 
         if ($data['jenis_input'] == "operasional"){
             $total = 0;
@@ -1248,6 +1275,20 @@ class ReportController extends Controller
     {
         $data = $req->all();
         $ca = CashGudang::find($data['cg_id']);
+
+        // Ditambahkan (2026-08-05): guard yang sama dengan updateCashGudang() di atas — sekali
+        // disetujui/ditolak, acceptCashGudang() sudah memutasi customer_saldo + membuat CashArmada
+        // row, jadi menghapus dokumen ini tidak boleh lagi dimungkinkan (tidak ada cara membalikkan
+        // mutasi yang sudah terjadi).
+        if ($ca && $ca->status != 1) {
+            $staff = Staff::find($ca->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Hapus",
+                "message" => "Pengajuan sudah disetujui/ditolak oleh " . $staff . ", data tidak bisa dihapus lagi"
+            ]);
+        }
+
         (new CashGudang())->deleteCashGudang($data);
         // Kalau manajemen saldo, maka hapus dari kas juga
         if ($ca->cg_type == 1) (new Cash())->deleteCash($ca);
@@ -1257,36 +1298,87 @@ class ReportController extends Controller
     {
         $data = $req->all();
 
-        if (isset($data['cg_id'])){
-            $cg = CashGudang::find($data['cg_id']);
+        // Race-condition fix (2026-08-05): the "already accepted" status check used to be a
+        // plain read done well before any mutation — two near-simultaneous accept requests for
+        // the same cg_id/cash_id (double-click, a retried request) could both pass that check
+        // and both go on to mutate, double-crediting customer_saldo and inserting duplicate
+        // CashArmada rows. The whole read-check-mutate sequence now runs inside one
+        // DB::transaction() with lockForUpdate() on the CashGudang row itself, so a second
+        // concurrent request blocks on the lock until the first commits, then re-reads the
+        // already-flipped status and is refused cleanly instead of double-processing.
+        // PENTING (dikonfirmasi PM 2026-08-05, JANGAN "disatukan" lagi): isset($data['cg_id']) di
+        // sini BUKAN dua jalan menuju data yang sama — ini pembeda antara dua jenis entri yang
+        // berbeda:
+        //   - cg_id ADA  -> "Kas Gudang" (entri operasional, jenis_input == "operasional" di
+        //     insertCashGudang()/updateCashGudang()). Selalu punya baris CashGudangDetail, cash_id
+        //     SELALU 0 (tidak pernah dapat baris `cashes` sungguhan), makanya TIDAK PERNAH muncul
+        //     di halaman "Kas Besar" (/cash, Cash::getCash() query tabel `cashes` by cash_id asli).
+        //   - cg_id TIDAK ADA (hanya cash_id) -> "Kas Besar" (entri "saldo", jenis_input ==
+        //     "saldo"). Selalu punya baris `cashes` sungguhan lewat cash_id, dan TIDAK PERNAH
+        //     punya baris CashGudangDetail sama sekali.
+        // Karena keduanya tidak pernah overlap, loop customer_saldo + pembuatan CashArmada di
+        // bawah (yang hanya jalan kalau isset($data['cg_id'])) TIDAK PERNAH relevan untuk entri Kas
+        // Besar — bukan berarti Kas Besar "kelewatan" mutasi itu, memang tidak ada apa pun untuk
+        // dimutasi (CashGudangDetail-nya kosong). Lihat KNOWN_ISSUES.md "NOT A BUG: acceptCashGudang()'s
+        // cash_id-only path" untuk detail lengkap sebelum "memperbaiki" percabangan ini lagi.
+        DB::beginTransaction();
+        try {
+            if (isset($data['cg_id'])) {
+                $cg = CashGudang::where('cg_id', $data['cg_id'])->lockForUpdate()->first();
+            } else {
+                $cg = CashGudang::where('cash_id', $data['cash_id'])->lockForUpdate()->first();
+            }
 
-            if ($cg->status != 1) {
-                $staff = Staff::find($cg->acc_by)->staff_name;
+            if (!$cg || $cg->status != 1) {
+                DB::rollBack();
+                $staff = ($cg && $cg->acc_by) ? Staff::find($cg->acc_by) : null;
                 return response()->json([
                     "status" => -2,
                     "header" => "Gagal ACC",
-                    "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+                    "message" => "Pengajuan sudah diterima/ditolak oleh " . ($staff->staff_name ?? 'staff lain')
                 ]);
             }
-            $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
 
-            foreach ($cgd as $key => $value) {
-                $customer = Customer::find($value['customer_id']);
-                $customer->customer_saldo += $value['cgd_nominal'];
-                $customer->save();
+            if (isset($data['cg_id'])) {
+                $cgd = CashGudangDetail::where('cg_id', $data['cg_id'])->where('status', 1)->get();
+
+                // Ditambahkan: mutasi customer_saldo di bawah + insert CashArmada di
+                // CashGudang::acceptCashGudang() (dipanggil di akhir method ini) dulu tidak
+                // dibungkus transaction sama sekali — customer_id yang tidak valid di baris ke-N
+                // akan crash dengan sebagian baris sebelumnya sudah permanen menaikkan
+                // customer_saldo. Sekarang dicek dulu (tanpa mutasi) sebelum satu pun saldo
+                // disentuh, dan seluruh mutasi (loop ini + acceptCashGudang() di model) dibungkus
+                // satu DB::transaction() supaya gagal di tengah jalan tidak meninggalkan mutasi
+                // parsial.
+                $customer_invalid = [];
+                foreach ($cgd as $value) {
+                    if (!Customer::find($value['customer_id'])) {
+                        $customer_invalid[] = "id {$value['customer_id']}";
+                    }
+                }
+                if (count($customer_invalid) > 0) {
+                    DB::rollBack();
+                    return response()->json([
+                        "status" => 0,
+                        "header" => "Gagal ACC",
+                        "message" => "Data pelanggan tidak ditemukan untuk: " . implode(', ', array_unique($customer_invalid)),
+                    ]);
+                }
+
+                foreach ($cgd as $value) {
+                    $customer = Customer::find($value['customer_id']);
+                    $customer->customer_saldo += $value['cgd_nominal'];
+                    $customer->save();
+                }
             }
-        } else {
-            $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
-            if ($cg->status != 1) {
-                $staff = Staff::find($cg->acc_by)->staff_name;
-                return response()->json([
-                    "status" => -2,
-                    "header" => "Gagal ACC",
-                    "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
-                ]);
-            }
+
+            $result = (new CashGudang())->acceptCashGudang($data);
+            DB::commit();
+            return $result;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
-        return (new CashGudang())->acceptCashGudang($data);
     }
 
     function declineCashGudang(Request $req)
@@ -1414,6 +1506,22 @@ class ReportController extends Controller
     function updateCashArmada(Request $req)
     {
         $data = $req->all();
+
+        // Ditambahkan: dulu tidak ada pengecekan status sama sekali, sementara
+        // acceptCashArmada/declineCashArmada sudah menolak kalau status != 1. Tanpa ini,
+        // updateCashArmada() diam-diam mengembalikan entry yang sudah di-ACC kembali ke status
+        // pending (lihat CashArmada::updateCashArmada()), padahal customer_saldo dari accept
+        // sebelumnya tidak pernah dibalik — accept kedua jadi menerapkan mutasi saldo yang sama
+        // dua kali.
+        $existing = CashArmada::find($data['cr_id']);
+        if ($existing && $existing->status != 1) {
+            $staff = Staff::find($existing->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Update",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
 
         $id = [];
         $customer = Customer::find($data['customer_id'])->customer_notes;
@@ -1673,6 +1781,23 @@ class ReportController extends Controller
     function updateCashSales(Request $req)
     {
         $data = $req->all();
+
+        // Ditambahkan: same gap as updateCashArmada above — acceptCashSales/declineCashSales
+        // already refuse if status != 1, but updateCashSales() never checked at all. Worse here:
+        // CashSales::updateCashSales()'s status-revival logic (meant only for reviving a declined
+        // entry back to pending) also silently catches an already-APPROVED entry, and this
+        // controller unconditionally forces cs_aksi based on oc_transaksi — so a re-accept after
+        // editing an approved entry doesn't just double-apply the balance change, it can flip
+        // acceptCashSales() into the opposite branch and cancel the first accept out entirely.
+        $existing = CashSales::find($data['cs_id']);
+        if ($existing && $existing->status != 1) {
+            $staff = Staff::find($existing->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal Update",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
 
         $id = [];
         $sales = Staff::find($data['staff_id']);
@@ -2274,7 +2399,11 @@ class ReportController extends Controller
             ->where('status', 1)
             ->whereRaw('DATE(COALESCE(pi_date, created_at)) BETWEEN ? AND ?', [$s, $e])
             ->count();
+        // GitHub #53: dashboard_change_logs sekarang juga menyimpan baris activity_type='open'
+        // ("staf membuka menu X", lihat LogDashboardActivity) -- itu bukan sesuatu yang
+        // "menunggu ACC Direktur", jadi tidak ikut dihitung di KPI ini.
         $changelogPending += (int) DB::table('dashboard_change_logs')
+            ->where('activity_type', 'change')
             ->whereRaw('DATE(created_at) BETWEEN ? AND ?', [$s, $e])
             ->count();
 
@@ -2346,6 +2475,31 @@ class ReportController extends Controller
             return 'INV '.$so;
         };
 
+        // GitHub #53: format durasi pasif dari LogDashboardActivity::logOpen() jadi teks ringkas.
+        $fmtDuration = static function ($seconds) {
+            $seconds = (int) $seconds;
+            if ($seconds < 60) {
+                return $seconds.' detik';
+            }
+            $minutes = intdiv($seconds, 60);
+            if ($minutes < 60) {
+                return $minutes.' menit';
+            }
+            $hours = intdiv($minutes, 60);
+            $restMinutes = $minutes % 60;
+            return $restMinutes > 0 ? ($hours.' jam '.$restMinutes.' menit') : ($hours.' jam');
+        };
+        $fmtOpenedAt = static function ($createdAt) {
+            if (!$createdAt) {
+                return '-';
+            }
+            try {
+                return \Carbon\Carbon::parse($createdAt)->format('d M Y H:i');
+            } catch (\Throwable $e) {
+                return (string) $createdAt;
+            }
+        };
+
         $changelog = [];
 
         $piRows = DB::table('product_issues as pi')
@@ -2353,7 +2507,36 @@ class ReportController extends Controller
             ->whereRaw('DATE(COALESCE(pi.pi_date, pi.created_at)) BETWEEN ? AND ?', [$s, $e])
             ->orderByDesc('pi.created_at')
             ->limit($limit)
-            ->get(['pi.pi_id', 'pi.pi_code', 'pi.pi_type', 'pi.tipe_return', 'pi.pi_notes', 'pi.pi_date']);
+            ->get(['pi.pi_id', 'pi.pi_code', 'pi.pi_type', 'pi.tipe_return', 'pi.pi_notes', 'pi.pi_date', 'pi.created_at', 'pi.created_by']);
+
+        $masterChangeRows = DB::table('dashboard_change_logs as dcl')
+            ->whereRaw('DATE(dcl.created_at) BETWEEN ? AND ?', [$s, $e])
+            ->orderByDesc('dcl.created_at')
+            ->limit($limit)
+            ->get([
+                'dcl.id',
+                'dcl.module_key',
+                'dcl.activity_type',
+                'dcl.module_label',
+                'dcl.reference',
+                'dcl.what_changed',
+                'dcl.summary',
+                'dcl.url',
+                'dcl.url_label',
+                'dcl.created_at',
+                'dcl.created_by',
+                'dcl.duration_seconds',
+            ]);
+
+        // Satu query untuk semua nama staf (retur + changelog), hindari N+1.
+        $staffIds = $piRows->pluck('created_by')
+            ->concat($masterChangeRows->pluck('created_by'))
+            ->filter()
+            ->unique()
+            ->values();
+        $staffNames = $staffIds->isEmpty()
+            ? collect()
+            : DB::table('staffs')->whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id');
 
         foreach ($piRows as $pi) {
             $tipe = (int) ($pi->tipe_return ?? 0);
@@ -2368,28 +2551,23 @@ class ReportController extends Controller
                 'summary' => trim($tipeLabel.(($pi->pi_notes ?? '') !== '' ? ' — '.(string) $pi->pi_notes : '')),
                 'url' => url('productIssue').'?pi_id='.(int) $pi->pi_id,
                 'url_label' => 'Buka baris ini',
+                'staff_name' => $staffNames[$pi->created_by ?? 0] ?? '-',
+                'opened_at' => $fmtOpenedAt($pi->created_at ?? $pi->pi_date),
+                'duration_label' => '-',
             ];
         }
 
-        $masterChangeRows = DB::table('dashboard_change_logs as dcl')
-            ->whereRaw('DATE(dcl.created_at) BETWEEN ? AND ?', [$s, $e])
-            ->orderByDesc('dcl.created_at')
-            ->limit($limit)
-            ->get([
-                'dcl.id',
-                'dcl.module_key',
-                'dcl.module_label',
-                'dcl.reference',
-                'dcl.what_changed',
-                'dcl.summary',
-                'dcl.url',
-                'dcl.url_label',
-                'dcl.created_at',
-            ]);
         foreach ($masterChangeRows as $log) {
             $safeUrl = $this->normalizeDashboardLogUrl((string) ($log->url ?? ''));
             if ($safeUrl === url('admin')) {
                 $safeUrl = $this->fallbackDashboardLogUrlByModule((string) ($log->module_key ?? ''));
+            }
+            $isOpen = ($log->activity_type ?? 'change') === 'open';
+            $durationLabel = '-';
+            if ($isOpen) {
+                $durationLabel = $log->duration_seconds !== null
+                    ? $fmtDuration($log->duration_seconds)
+                    : 'Sedang dibuka';
             }
             $changelog[] = [
                 'kind' => (string) ($log->module_key ?? 'master_change'),
@@ -2401,6 +2579,9 @@ class ReportController extends Controller
                 'summary' => (string) ($log->summary ?? ''),
                 'url' => $safeUrl,
                 'url_label' => (string) ($log->url_label ?? 'Buka'),
+                'staff_name' => $staffNames[$log->created_by ?? 0] ?? '-',
+                'opened_at' => $fmtOpenedAt($log->created_at),
+                'duration_label' => $durationLabel,
             ];
         }
 

@@ -8,9 +8,10 @@
             <i class="fe fe-layers"></i>
           </div>
           <div>
-            <h5 class="mb-0 fw-bold text-white modal-title" style="font-size:16px;letter-spacing:.2px;">Tambah
+            <h5 class="mb-0 fw-bold text-white modal-title d-inline-block" style="font-size:16px;letter-spacing:.2px;">Tambah
               Produksi</h5>
-            <small class="text-white-50">Kelola hasil produksi dan daftar produk</small>
+            <span id="production_status_badge_header" class="ms-2" style="display:none;"></span>
+            <small class="d-block text-white-50">Kelola hasil produksi dan daftar produk</small>
           </div>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -32,6 +33,49 @@
                   style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Keterangan</label>
                 <input type="text" class="form-control" id="production_desc"
                   placeholder="Masukkan Keterangan" style="font-size:14px;border-radius:8px;height:42px;">
+              </div>
+              <div class="col-12" id="row-production-detail-info" style="display:none;">
+                <div class="row g-4">
+                  <div class="col-lg-6 col-12">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Kode
+                      Produksi</label>
+                    <input type="text" class="form-control" id="production_code_display" disabled
+                      style="font-size:14px;border-radius:8px;height:42px;">
+                  </div>
+                  <div class="col-lg-6 col-12">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Dibuat
+                      Oleh</label>
+                    <input type="text" class="form-control" id="production_created_by_display" disabled
+                      style="font-size:14px;border-radius:8px;height:42px;">
+                  </div>
+                </div>
+              </div>
+              <div class="col-lg-6 col-12" id="row-production-acc-by" style="display:none;">
+                <label class="text-muted mb-2"
+                  style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Diapprove
+                  Oleh</label>
+                <input type="text" class="form-control" id="production_acc_by_name" disabled
+                  style="font-size:14px;border-radius:8px;height:42px;">
+              </div>
+              <div class="col-12" id="row-production-cancel-info" style="display:none;">
+                <div class="row g-4">
+                  <div class="col-lg-6 col-12">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Pengajuan
+                      Batal Oleh</label>
+                    <input type="text" class="form-control" id="production_cancel_requested_by_display" disabled
+                      style="font-size:14px;border-radius:8px;height:42px;">
+                  </div>
+                  <div class="col-lg-6 col-12">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Notes
+                      Pembatalan</label>
+                    <input type="text" class="form-control" id="production_cancel_notes_display" disabled
+                      style="font-size:14px;border-radius:8px;height:42px;">
+                  </div>
+                </div>
               </div>
             </div>
           </div>

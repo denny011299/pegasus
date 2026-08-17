@@ -58,6 +58,10 @@ class PurchaseOrderDelivery extends Model
         return $t->pdo_id;
     }
 
+    // DEPRECATED (2026-08-04): only reachable via the deprecated manual PO Delivery workflow —
+    // unconditionally flips purchase_orders.status to Approved with no stock check and no invoice
+    // creation, bypassing accPO() entirely. accPO() never calls this (it only ever inserts,
+    // never updates, its own auto-generated delivery). See KNOWN_ISSUES.md.
     function updatePoDelivery($data)
     {
         $t = PurchaseOrderDelivery::find($data["pdo_id"]);
@@ -72,10 +76,12 @@ class PurchaseOrderDelivery extends Model
         $p = PurchaseOrder::find($data["po_id"]);
         $p->status = 2; // update status PO menjadi "Sedang D
         $p->save();
-        
+
         return $t->pdo_id;
     }
 
+    // DEPRECATED (2026-08-04): only reachable via the deprecated manual PO Delivery workflow. See
+    // KNOWN_ISSUES.md.
     function deletePoDelivery($data)
     {
         $t = PurchaseOrderDelivery::find($data["pdo_id"]);
@@ -91,6 +97,9 @@ class PurchaseOrderDelivery extends Model
         }
     }
 
+    // DEPRECATED (2026-08-04): only reachable via the deprecated manual PO Delivery workflow
+    // (accPoDelivery()/declinePoDelivery()) — accPO() sets status directly on
+    // insertPoDelivery()'s own call, it never calls this. See KNOWN_ISSUES.md.
     function statusPoDelivery($data)
     {
         $t = PurchaseOrderDelivery::find($data["pdo_id"]);

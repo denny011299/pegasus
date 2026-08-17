@@ -237,7 +237,8 @@ function loadBomForValidation(bomId, callback) {
         success: function (response) {
             callback(response && response[0] ? response[0] : null);
         },
-        error: function () {
+        error: function (xhr) {
+            if (handlePermissionError(xhr)) return;
             callback(null);
         },
     });
@@ -1084,6 +1085,7 @@ $(document).on("click", ".btnAdd", function () {
     $(".dos").hide();
     $("#production_date").val(getTodayStr()).prop("disabled", true);
     $("#addProduction").removeAttr("revision_source_production_id");
+    $("#row-production-acc-by").hide();
     syncProductionDestinationControl();
 });
 
@@ -1420,6 +1422,7 @@ function refreshProduction() {
         },
         error: function (err) {
             if (err && err.statusText === "abort") return;
+            if (handlePermissionError(err)) return;
             console.error("Gagal load produksi:", err);
         },
         complete: function () {
@@ -1532,6 +1535,7 @@ function openProductionRevisionFromDashboardLink() {
             "revision_source_production_id",
             rowData.production_id,
         );
+        $("#row-production-acc-by").hide();
         $("#addProduction").modal("show");
         syncProductionDestinationControl();
 
@@ -1687,6 +1691,7 @@ $(document).on("click", ".btn-save", function () {
                 ".btn-save",
                 mode == 1 ? "Tambah Produksi" : "Update Produksi",
             );
+            if (handlePermissionError(a)) return;
             console.log(a);
         },
     });
@@ -1934,6 +1939,36 @@ $(document).on("click", ".btn_view", function () {
     $("#unit_id").html("");
     $("#production_date").val(data.production_date);
     $("#production_desc").val(data.production_desc).attr("disabled", true);
+
+    // Info umum (Kode Produksi/Dibuat Oleh) — selalu tampil di mode lihat detail. Status
+    // ditampilkan sebagai badge di header modal, bukan field terpisah.
+    $('#production_code_display').val(data.production_code);
+    $('#production_created_by_display').val(data.created_by_name || '-');
+    $('#row-production-detail-info').show();
+    $('#production_status_badge_header').html(data.status_text || '').show();
+
+    // "Dibatalkan" dibedakan dari sekadar "Tolak" lewat cancel_requested_by — hanya terisi
+    // kalau produksi ini pernah lewat alur pengajuan batal (status 4) lalu disetujui
+    // pembatalannya (berakhir di status 3 juga, sama seperti tolak langsung dari pending, tapi
+    // beda alur). Notes Pembatalan pakai kolom `notes` yang sama dipakai declineProduction().
+    var isDibatalkan = data.status == 3 && data.cancel_requested_by;
+
+    // Diapprove Oleh: HANYA untuk status Berhasil (2) — acc_by_name bisa berisi "Sistem
+    // (Auto-Timeout)" kalau produksi ini di-auto-timeout, bukan diputuskan staf sungguhan.
+    if (data.status == 2 && data.acc_by_name && data.acc_by_name !== '-') {
+        $('#production_acc_by_name').val(data.acc_by_name);
+        $('#row-production-acc-by').show();
+    } else {
+        $('#row-production-acc-by').hide();
+    }
+
+    if (isDibatalkan) {
+        $('#production_cancel_requested_by_display').val(data.cancel_requested_by_name || '-');
+        $('#production_cancel_notes_display').val(data.notes || '-');
+        $('#row-production-cancel-info').show();
+    } else {
+        $('#row-production-cancel-info').hide();
+    }
 
     var total_dos = 0;
 
@@ -2317,6 +2352,10 @@ function getBom(id, index = null) {
             }
             console.log(list_bahan);
         },
+        error: function (xhr) {
+            if (handlePermissionError(xhr)) return;
+            console.error("Gagal load resep:", xhr);
+        },
     });
 }
 
@@ -2400,6 +2439,7 @@ $(document).on("click", "#btn-delete-production", function () {
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -2463,6 +2503,7 @@ $(document).on("click", "#btn-acc-delete-production", function () {
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -2511,6 +2552,7 @@ $(document).on("click", "#btn-cancel-delete-production", function () {
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi Batal Produksi');
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -2596,6 +2638,7 @@ function submitAccProduction(productionId, confirmCreateStock) {
             }
         },
         error: function (e) {
+            if (handlePermissionError(e)) return;
             console.log(e);
             ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
         },
@@ -2653,6 +2696,7 @@ $(document).on("click", "#btn-decline-production", function () {
             notifikasi("success", "Berhasil Tolak", "Berhasil Tolak Pengajuan");
         },
         error: function (e) {
+            if (handlePermissionError(e)) return;
             console.log(e);
             ResetLoadingButton(".btn-konfirmasi", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
         },
@@ -2715,6 +2759,7 @@ $(document).on("click", ".LihatfotoProduksi", function () {
             $("#modalViewPhoto").modal("show");
         },
         error: function (e) {
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });

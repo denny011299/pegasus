@@ -185,19 +185,17 @@ class CustomerController extends Controller
             ];
         }
 
-        $plan = SalesOrderStock::buildPlan($newLines, $newRetailWh > 0 ? $newRetailWh : null);
-        if (! ($plan['ok'] ?? false)) {
-            return response()->json([
-                'status' => $plan['status'] ?? 0,
-                'header' => $plan['header'] ?? 'Stok tidak cukup',
-                'message' => $plan['message'] ?? 'Stok tidak mencukupi',
-                'products' => $plan['products'] ?? [],
-                'recommendations' => $plan['recommendations'] ?? [],
-            ]);
-        }
-
+        // Diperbaiki (2026-08-08): buildPlan() (cek kecukupan stok untuk item BARU) dulu dijalankan
+        // di sini, SEBELUM executeRestore() di bawah mengembalikan stok item LAMA — jadi SO yang
+        // stoknya sudah habis terpakai (kasus normal: menjual persis sisa stok) ditolak "Stok tidak
+        // cukup" bahkan untuk edit no-op yang sama sekali tidak menambah komitmen stok apa pun.
+        // Sekarang plan dibangun DI DALAM transaction, SETELAH restore, supaya mengecek terhadap
+        // stok yang sudah benar mencerminkan pengembalian item lama. $plan ditangkap lewat
+        // referensi supaya detail respons (products/recommendations) masih bisa dibaca di blok
+        // catch kalau gagal.
+        $plan = null;
         try {
-            DB::transaction(function () use ($data, $productsData, $oldLines, $oldRetailWh, $plan, $soBefore) {
+            DB::transaction(function () use ($data, $productsData, $oldLines, $oldRetailWh, $newLines, $newRetailWh, $soBefore, &$plan) {
                 if ($oldLines !== []) {
                     $restore = SalesOrderStock::executeRestore(
                         $oldLines,
@@ -208,6 +206,11 @@ class CustomerController extends Controller
                     if (! ($restore['ok'] ?? false)) {
                         throw new \RuntimeException($restore['message'] ?? 'Gagal kembalikan stok lama');
                     }
+                }
+
+                $plan = SalesOrderStock::buildPlan($newLines, $newRetailWh > 0 ? $newRetailWh : null);
+                if (! ($plan['ok'] ?? false)) {
+                    throw new \RuntimeException($plan['message'] ?? 'Stok tidak mencukupi');
                 }
 
                 $deduct = SalesOrderStock::executeDeduct(
@@ -231,6 +234,15 @@ class CustomerController extends Controller
                 SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
             });
         } catch (\Throwable $e) {
+            if ($plan && ! ($plan['ok'] ?? false)) {
+                return response()->json([
+                    'status' => $plan['status'] ?? 0,
+                    'header' => $plan['header'] ?? 'Stok tidak cukup',
+                    'message' => $plan['message'] ?? 'Stok tidak mencukupi',
+                    'products' => $plan['products'] ?? [],
+                    'recommendations' => $plan['recommendations'] ?? [],
+                ]);
+            }
             return response()->json([
                 'status' => 0,
                 'header' => 'Gagal Update',
@@ -322,6 +334,10 @@ class CustomerController extends Controller
         else return -1;
     }
 
+    // DEPRECATED (2026-08-04): Sales Order Delivery (getSoDelivery through declineSoDelivery
+    // below) is no longer used — its stock mutation double-counted what accSO() already deducts
+    // at SO-approval time. Confirmed by product owner as unused, not fixed, not tested. See
+    // KNOWN_ISSUES.md.
     function getSoDelivery(Request $req)
     {
         $data = (new SalesOrderDelivery())->getSoDelivery([
@@ -473,6 +489,17 @@ class CustomerController extends Controller
     function acceptInvoiceSO(Request $req)
     {
         $data = $req->all();
-        return (new SalesOrderDetailInvoice())->changeStatusInvoiceSO($data);
+        // Ditambahkan: dulu tidak ada guard sama sekali — menerima 2+ invoice yang gabungan
+        // totalnya melebihi so_total selalu berhasil. Mirroring acceptInvoicePO's pattern exactly
+        // (SupplierController.php): jumlahkan invoice yang sudah diterima (status=2) + invoice
+        // ini sendiri, tolak kalau melebihi so_total.
+        $soi = SalesOrderDetailInvoice::find($data["soi_id"]);
+        $total = SalesOrderDetailInvoice::where("so_id", "=", $soi->so_id)->where("status", "=", 2)->sum("soi_total");
+        $so = SalesOrder::find($soi->so_id);
+        if ($total + $soi->soi_total <= $so->so_total) {
+            return (new SalesOrderDetailInvoice())->changeStatusInvoiceSO($data);
+        } else {
+            return -1;
+        }
     }
 }

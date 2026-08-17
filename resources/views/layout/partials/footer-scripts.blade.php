@@ -337,6 +337,22 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       text: deskripsi,
     });
   }
+
+  /**
+   * Panggil ini di awal setiap ajax error callback (terutama di popup) supaya pesan
+   * 403 (ditolak middleware permission) konsisten di seluruh aplikasi dan tidak
+   * membocorkan modul/permission apa yang kurang ke user.
+   * Return true kalau sudah ditangani (403) — caller tinggal `return` tanpa
+   * menampilkan notifikasi generiknya sendiri. Return false untuk error lain,
+   * silakan lanjut pakai handling yang sudah ada di masing-masing pemanggil.
+   */
+  function handlePermissionError(xhr) {
+    if (xhr && xhr.status === 403) {
+      notifikasi('error', 'Akses Ditolak', 'Anda tidak memiliki akses terhadap aksi ini, mohon hubungi Admin!');
+      return true;
+    }
+    return false;
+  }
   //munculin modal delete
     function showModalDelete(text, button_id) {
         if ($('#modalDelete .modal-body').is(':empty')) {
@@ -1470,6 +1486,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   let camRotation = 0; // rotasi kamera
   let photoData = "";
   let currentStream = null;
+  let cameraRequestId = 0; // invalidates stale/overlapping getUserMedia() calls
   var modeCamera = 1; //1= upload, 2 = savefile
   var inputFile = null;
   var cameraReturnModal = null;
@@ -1509,6 +1526,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   }
 
   function stopCameraStream() {
+    cameraRequestId++; // invalidate any getUserMedia() call still in flight
     if (currentStream) {
       currentStream.getTracks().forEach(function(t) {
         t.stop();
@@ -1624,17 +1642,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      notifikasi("error", "Gagal Kamera", "Browser/perangkat tidak mendukung akses kamera.");
+      var reason = (window.isSecureContext === false)
+        ? "Akses kamera diblokir browser karena halaman ini dibuka lewat koneksi HTTP (tidak aman), bukan HTTPS. Ini bukan masalah di perangkat Anda — minta tim IT/developer mengaktifkan HTTPS untuk domain ini."
+        : "Browser/perangkat tidak mendukung akses kamera.";
+      notifikasi("error", "Gagal Kamera", reason);
       return Promise.resolve(false);
     }
 
-    if (currentStream) {
-      currentStream.getTracks().forEach(function(t) {
-        t.stop();
-      });
-      currentStream = null;
-      video.srcObject = null;
-    }
+    // Stop any previous stream and invalidate any getUserMedia() call that is
+    // still pending, so it can't clobber/leak past this new request.
+    stopCameraStream();
+    var requestId = ++cameraRequestId;
 
     return navigator.mediaDevices.getUserMedia({
         video: {
@@ -1647,7 +1665,15 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
           video: true
         });
       })
-      .then(function(stream) {
+      .then(stream => {
+        // A newer startCamera()/stopCameraStream() happened while this
+        // request was in flight (double click, modal closed, retake, ...).
+        // Release this stream instead of leaking it or overwriting the
+        // stream that's actually in use.
+        if (requestId !== cameraRequestId) {
+          stream.getTracks().forEach(t => t.stop());
+          return false;
+        }
         return attachCameraStream(video, stream);
       })
       .catch(function(err) {

@@ -140,6 +140,7 @@
             },
             error: function (err) {
                 if (err && err.statusText === "abort") return;
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load bom:", err);
                 callback({
                     draw: data.draw,
@@ -310,7 +311,8 @@
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep");       
             },
             error:function(e){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Resep" : "Update Resep");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -435,6 +437,7 @@
                 }
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error('Gagal load detail BOM:', err);
                 notifikasi('error', 'Gagal', 'Gagal memuat detail resep.');
             }
@@ -731,6 +734,7 @@
                 notifikasi('success', "Berhasil Delete", "Berhasil delete resep bahan mentah");
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

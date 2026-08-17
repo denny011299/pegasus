@@ -235,9 +235,10 @@ class ProductionController extends Controller
                 ]);
             }
 
-            // Pengali konversi BOM vs Input User (dalam satuan terkecil produk)
-            $qty = 1;
-            if ($bom['unit_id'] != $value['unit_id']) {
+            // Pengecekan unit produksi punya relasi yang tersambung ke satuan resep atau tidak
+            // (dos/pack di bawah butuh ini; getBatchCount() sendiri sudah aman lewat
+            // convertQtyToSmallestUnit()'s fail-safe kalau tidak tersambung).
+            if ($bom['unit_id'] != $value['unit_id']){
                 $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
@@ -273,14 +274,6 @@ class ProductionController extends Controller
                     if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
                     continue;
                 }
-
-                // ← ditambahkan: hitung pengali $qty dari satuan input user
-                //   ke satuan terkecil produk (dipakai khusus untuk bahan dos/pack)
-                foreach ($pr as $relasi) {
-                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
-                        $qty *= $relasi['pr_unit_value_2'];
-                    }
-                }
             }
 
             // Masukkan ke dalam array agregat berdasarkan supplies_id
@@ -311,10 +304,17 @@ class ProductionController extends Controller
                         ->where('status', 1)
                         ->first();
 
+                    // Diperbaiki (2026-08-06): dulu pakai convertQtyToSmallestUnit(), yang jalan
+                    // sampai unit paling bawah di rantai relasi — salah kalau rantainya lebih dari
+                    // satu tingkat (satuan resep belum tentu unit paling bawah). Sekarang berhenti
+                    // TEPAT di satuan resep ($bom['unit_id']) — lihat convertQtyBetweenUnits().
                     $nilaiIsiDos = $relasiKonversi ? $relasiKonversi->pr_unit_value_2 : 1;
-                    $totalPcs    = ($bom['unit_id'] != $value['unit_id'])
-                        ? $value['pd_qty'] * $qty
-                        : $value['pd_qty'];
+                    $totalPcs    = $this->convertQtyBetweenUnits(
+                        (int) $value['pd_qty'],
+                        (int) $value['unit_id'],
+                        (int) $bom['unit_id'],
+                        (int) $value['product_variant_id']
+                    );
                     $jumlahDos      = floor($totalPcs / $nilaiIsiDos);
                     $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
                 } else {
@@ -371,13 +371,15 @@ class ProductionController extends Controller
                 ];
             }
 
-            $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan) use (
-                &$virtualStock,
-                &$logSummary,
-                &$siapkanStok,
-                $bd,
-                $suppliesId
+            $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan, $depth = 0) use (
+                &$virtualStock, &$logSummary, &$siapkanStok, $bd, $suppliesId
             ) {
+                // Ditambahkan (2026-08-06): depth guard — $keyAtas dicari lewat lookup relasi,
+                // jadi rantai SuppliesRelation yang sirkular bisa membuat rekursi ini jalan
+                // selamanya. Belum pernah tereproduksi dengan data nyata, murni defensive guard.
+                // Lihat KNOWN_ISSUES.md.
+                if ($depth >= 20) return false;
+
                 $stokSekarang = $units[$targetKey];
 
                 $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
@@ -407,7 +409,7 @@ class ProductionController extends Controller
                 $butuhDariAtas = (int) ceil($kekurangan / $nilaiKonversi);
 
                 if ($virtualStock[$stokAtas->ss_id]['current'] < $butuhDariAtas) {
-                    $siapkanStok($keyAtas, $units, $butuhDariAtas);
+                    $siapkanStok($keyAtas, $units, $butuhDariAtas, $depth + 1);
                 }
 
                 $bongkarSebenarnya = min($butuhDariAtas, (int) $virtualStock[$stokAtas->ss_id]['current']);
@@ -592,9 +594,10 @@ class ProductionController extends Controller
                 ]);
             }
 
-            // Logika pencarian pengali konversi (BOM vs Input User)
-            $qty = 1; // ← dipakai khusus untuk perhitungan bahan dos/pack di bawah
-            if ($bom['unit_id'] != $value['unit_id']) {
+            // Pengecekan unit produksi punya relasi yang tersambung ke satuan resep atau tidak
+            // (dos/pack di bawah butuh ini; getBatchCount() sendiri sudah aman lewat
+            // convertQtyToSmallestUnit()'s fail-safe kalau tidak tersambung).
+            if ($bom['unit_id'] != $value['unit_id']){
                 $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
                     ->where('status', 1)
                     ->orderBy('pr_id', 'desc')
@@ -630,14 +633,6 @@ class ProductionController extends Controller
                     if (!in_array($namaProduk, $produk_tanpa_relasi, true)) $produk_tanpa_relasi[] = $namaProduk;
                     continue;
                 }
-
-                // ← ditambahkan: hitung pengali $qty dari satuan input user
-                //   ke satuan terkecil produk (dipakai khusus bahan dos/pack)
-                foreach ($pr as $relasi) {
-                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
-                        $qty *= $relasi['pr_unit_value_2'];
-                    }
-                }
             }
 
             // Masukkan ke dalam array agregat berdasarkan supplies_id
@@ -660,10 +655,15 @@ class ProductionController extends Controller
                         ->where('status', 1)
                         ->first();
 
+                    // Diperbaiki (2026-08-06): lihat comment di convertQtyBetweenUnits() —
+                    // berhenti tepat di satuan resep, bukan sampai unit paling bawah rantai.
                     $nilaiIsiDos = $relasiKonversi ? $relasiKonversi->pr_unit_value_2 : 1;
-                    $totalPcs    = ($bom['unit_id'] != $value['unit_id'])
-                        ? $value['pd_qty'] * $qty
-                        : $value['pd_qty'];
+                    $totalPcs    = $this->convertQtyBetweenUnits(
+                        (int) $value['pd_qty'],
+                        (int) $value['unit_id'],
+                        (int) $bom['unit_id'],
+                        (int) $value['product_variant_id']
+                    );
                     $jumlahDos      = floor($totalPcs / $nilaiIsiDos);
                     $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
                 } else {
@@ -736,11 +736,16 @@ class ProductionController extends Controller
                 ];
             }
 
-            $siapkanStokCek = function ($targetKey, $units, $jumlahDibutuhkan) use (
+            $siapkanStokCek = function ($targetKey, $units, $jumlahDibutuhkan, $depth = 0) use (
                 &$virtualStock,
                 &$siapkanStokCek,
                 $bd
             ) {
+                // Depth guard — mirrors $siapkanStok() above, see its comment.
+                if ($depth >= 20) {
+                    return false;
+                }
+
                 $stokSekarang = $units[$targetKey];
                 $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
                     ->where('su_id_2', $stokSekarang->unit_id)
@@ -774,7 +779,7 @@ class ProductionController extends Controller
 
                 $butuhDariAtas = (int) ceil($kekurangan / $nilaiKonversi);
                 if ($virtualStock[$stokAtas->ss_id]['current'] < $butuhDariAtas) {
-                    $siapkanStokCek($keyAtas, $units, $butuhDariAtas);
+                    $siapkanStokCek($keyAtas, $units, $butuhDariAtas, $depth + 1);
                 }
 
                 $bongkarSebenarnya = min($butuhDariAtas, (int) $virtualStock[$stokAtas->ss_id]['current']);
@@ -918,13 +923,17 @@ class ProductionController extends Controller
                     ];
                 }
 
-                $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan) use (
+                $siapkanStok = function ($targetKey, $units, $jumlahDibutuhkan, $depth = 0) use (
                     &$virtualStock,
                     &$logSummary,
                     &$siapkanStok,
                     $bd,
                     $suppliesId
                 ) {
+                    // Depth guard — mirrors the other $siapkanStok() in this controller, see its
+                    // comment.
+                    if ($depth >= 20) return false;
+
                     $stokSekarang = $units[$targetKey];
 
                     $sr = SuppliesRelation::where('supplies_id', $bd['supplies_id'])
@@ -958,7 +967,7 @@ class ProductionController extends Controller
                     // Kalau stok atas tidak cukup, coba bongkar dulu dari level
                     // yang lebih atas lagi (rekursif)
                     if ($virtualStock[$stokAtas->ss_id]['current'] < $butuhDariAtas) {
-                        $siapkanStok($keyAtas, $units, $butuhDariAtas);
+                        $siapkanStok($keyAtas, $units, $butuhDariAtas, $depth + 1);
                     }
 
                     $bongkarSebenarnya = min($butuhDariAtas, (int) $virtualStock[$stokAtas->ss_id]['current']);
@@ -1276,9 +1285,16 @@ class ProductionController extends Controller
             ]);
         }
 
-        (new Production())->cancelProduction($data);
-        (new ProductionDetails())->cancelProductionDetail($data);
-
+        // Ditambahkan: seluruh reversal (stok produk, pengembalian bahan, dan status flip)
+        // sekarang jalan dalam satu DB::transaction(). Dulu tidak ada transaksi sama sekali,
+        // dan cancelProduction()/cancelProductionDetail() dipanggil DI AWAL sebelum reversal
+        // stok berjalan — kalau loop reversal di bawah gagal di tengah jalan (mis. deductQty()
+        // salah satu item gagal), produksi sudah kadung ditandai batal padahal stoknya belum
+        // benar-benar direversal semua. Status flip dipindah ke akhir supaya itu tidak lagi bisa
+        // terjadi, dan sebuah exception di tengah jalan (bukan cuma error terkontrol) sekarang
+        // roll back semuanya alih-alih meninggalkan reversal setengah jalan.
+        DB::beginTransaction();
+        try {
         // Stok produk
         foreach ($outputTotals as $output) {
             $cut = ProductUnitStock::deductQty(
@@ -1290,6 +1306,7 @@ class ProductionController extends Controller
                 'Pembatalan produksi ' . $p->production_code
             );
             if (! $cut['ok']) {
+                DB::rollBack();
                 return response()->json([
                     "status"  => -1,
                     "message" => $cut['message'] ?? 'Gagal membatalkan stok hasil produksi.',
@@ -1303,20 +1320,6 @@ class ProductionController extends Controller
             $b   = Bom::find($value['bom_id']);
             $bdetail = BomDetail::where('bom_id', $value['bom_id'])->where('status', 1)->get();
             if (!$b) continue;
-
-            $qty = 1;
-            if ($b['unit_id'] != $value['unit_id']) {
-                $pr = ProductRelation::where('product_variant_id', $value['product_variant_id'])
-                    ->where('status', 1)
-                    ->orderBy('pr_id', 'desc')
-                    ->get();
-
-                foreach ($pr as $relasi) {
-                    if ($relasi['pr_unit_id_2'] != $value['unit_id']) {
-                        $qty *= $relasi['pr_unit_value_2'];
-                    }
-                }
-            }
 
             $batchCount = $this->getBatchCount(
                 (int) $value['pd_qty'],
@@ -1338,10 +1341,16 @@ class ProductionController extends Controller
                         ->where('status', 1)
                         ->first();
 
+                    // Diperbaiki (2026-08-06): lihat comment di convertQtyBetweenUnits() —
+                    // berhenti tepat di satuan resep, bukan sampai unit paling bawah rantai. Ini
+                    // membuat reversal ini simetris dengan insertProduction()/accProduction().
                     $nilaiIsiDos = $relasiKonversi ? $relasiKonversi->pr_unit_value_2 : 1;
-                    $totalPcs    = ($b['unit_id'] != $value['unit_id'])
-                        ? $value['pd_qty'] * $qty
-                        : $value['pd_qty'];
+                    $totalPcs    = $this->convertQtyBetweenUnits(
+                        (int) $value['pd_qty'],
+                        (int) $value['unit_id'],
+                        (int) $b['unit_id'],
+                        (int) $value['product_variant_id']
+                    );
                     $jumlahDos      = floor($totalPcs / $nilaiIsiDos);
                     $kebutuhanBaris = $jumlahDos * $bd['bom_detail_qty'];
                 } else {
@@ -1447,6 +1456,18 @@ class ProductionController extends Controller
                 ]);
             }
         }
+
+        // Status flip pindah ke sini (dulu di paling awal, sebelum reversal stok berjalan
+        // sama sekali) — lihat catatan di awal blok transaksi.
+        (new Production())->cancelProduction($data);
+        (new ProductionDetails())->cancelProductionDetail($data);
+
+        DB::commit();
+        return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function getPemakaian(Request $req)
@@ -1523,19 +1544,79 @@ class ProductionController extends Controller
 
     private function convertQtyToSmallestUnit(int $qty, int $unitId, int $productVariantId): int
     {
-        $multiplier = 1;
+        // Bug #16: this used to fetch EVERY active product_relations row for the variant and
+        // multiply all of their pr_unit_value_2 together whenever the row's base unit wasn't
+        // $unitId — which is true for every sibling row when a product has more than one
+        // independent "big unit -> Piece" relation (e.g. DOS=20pcs, kg=5pcs, LTR=10pcs all
+        // mapping to Piece). That folded unrelated relations into the multiplier
+        // (20 * 5 * 10 = 1000) instead of picking the single relation that actually matches
+        // $unitId, producing a 100x+ raw-material overconsumption. Walk the chain one hop at a
+        // time instead, exactly like the already-correct convertSuppliesQtyToSmallestUnit()
+        // below — this also makes multi-level ladders (Sak -> DOS -> Piece) resolve correctly.
         $relations = ProductRelation::where('product_variant_id', $productVariantId)
             ->where('status', 1)
-            ->orderBy('pr_id', 'desc')
             ->get();
 
-        foreach ($relations as $relation) {
-            if ($relation['pr_unit_id_2'] != $unitId) {
-                $multiplier *= (int) $relation['pr_unit_value_2'];
+        $multiplier = 1;
+        $currentUnit = $unitId;
+        $guard = 0;
+
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_1 === (int) $currentUnit);
+            if (!$rel) {
+                break;
             }
+            $multiplier *= (int) $rel->pr_unit_value_2;
+            $currentUnit = (int) $rel->pr_unit_id_2;
         }
 
         return $qty * $multiplier;
+    }
+
+    /**
+     * Diperbaiki (2026-08-06): dulu perhitungan "kemasan besar" (dos/pack) di bawah memakai
+     * convertQtyToSmallestUnit(), yang SELALU jalan sampai unit paling bawah di rantai relasi —
+     * padahal yang dibutuhkan di sana adalah qty dalam satuan RESEP (`$bom['unit_id']`), yang
+     * belum tentu unit paling bawah kalau rantainya lebih dari satu tingkat (mis. Dos->Pcs->Liter,
+     * resep pakai Pcs — bukan Liter). Contoh nyata bedanya: 1 Dos = 12 Pcs, 1 Pcs = 2 Liter. Resep
+     * "Dos Karton isi 12 Pcs" butuh qty dalam satuan Pcs (12), tapi convertQtyToSmallestUnit()
+     * jalan terus sampai Liter (12*2=24) — floor(24/12)=2 dos yang dianggap terpakai, padahal yang
+     * benar floor(12/12)=1. Method ini berhenti TEPAT di $toUnitId, bukan di dasar rantai.
+     *
+     * Fail-safe: kalau $toUnitId tidak pernah ketemu sambil turun dari $fromUnitId (seharusnya
+     * tidak terjadi untuk produk yang relasinya sudah tersambung benar, lihat validasi "$ada" di
+     * pemanggil), kembalikan $qty apa adanya (anggap 1:1) daripada mengalikan dengan faktor yang
+     * sebenarnya tidak berhubungan.
+     */
+    private function convertQtyBetweenUnits(int $qty, int $fromUnitId, int $toUnitId, int $productVariantId): int
+    {
+        if ($fromUnitId === $toUnitId) {
+            return $qty;
+        }
+
+        $relations = ProductRelation::where('product_variant_id', $productVariantId)
+            ->where('status', 1)
+            ->get();
+
+        $multiplier = 1;
+        $currentUnit = $fromUnitId;
+        $guard = 0;
+
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_1 === (int) $currentUnit);
+            if (!$rel) {
+                return $qty;
+            }
+            $multiplier *= (int) $rel->pr_unit_value_2;
+            $currentUnit = (int) $rel->pr_unit_id_2;
+            if ($currentUnit === $toUnitId) {
+                return $qty * $multiplier;
+            }
+        }
+
+        return $qty;
     }
 
     private function getBatchCount(

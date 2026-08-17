@@ -11,11 +11,19 @@ use Tests\TestCase;
 
 /**
  * See cdocs/testing/workflows/SALES_ORDER_INVOICE_FLOW.md for the fully-traced flow this asserts
- * against. Built specifically to check whether this mirrors Purchase Order's invoice over-payment
- * guard (cdocs/testing/workflows/PURCHASE_ORDER_INVOICE_FLOW.md) — it doesn't. These tests confirm
- * that gap is real: accepting invoices that together exceed so_total succeeds anyway, and
- * sales_orders.status is never recalculated as a side effect (unlike purchase_orders.status via
- * PurchaseOrderDetailInvoice::cekInvoice()). See cdocs/testing/KNOWN_ISSUES.md for the disposition.
+ * against. Originally built to check whether this mirrors Purchase Order's invoice over-payment
+ * guard (cdocs/testing/workflows/PURCHASE_ORDER_INVOICE_FLOW.md) — it didn't.
+ *
+ * ✅ FIXED (2026-08-05): `CustomerController::acceptInvoiceSO()` now mirrors `acceptInvoicePO()`
+ * exactly — sums already-accepted (`status == 2`) invoices for the SO, adds this invoice's own
+ * total, and rejects with a bare `-1` (matching `acceptInvoicePO`'s own response shape) if it would
+ * exceed `so_total`. `declineInvoiceSO` is deliberately left as an unconditional status flip, same
+ * as `declineInvoicePO`.
+ *
+ * Deliberately NOT addressed as part of this fix (separate, still-open item — scoped narrowly to
+ * the over-payment guard only): `sales_orders.status` is still never recalculated as a side effect
+ * of accepting/declining an invoice, unlike `purchase_orders.status` via
+ * `PurchaseOrderDetailInvoice::cekInvoice()`.
  */
 class SalesOrderInvoiceFlowTest extends TestCase
 {
@@ -67,7 +75,7 @@ class SalesOrderInvoiceFlowTest extends TestCase
         return $soId;
     }
 
-    public function test_accepting_invoices_that_together_exceed_so_total_is_currently_allowed(): void
+    public function test_accepting_a_second_invoice_that_would_exceed_so_total_is_now_rejected(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -90,15 +98,26 @@ class SalesOrderInvoiceFlowTest extends TestCase
         ])->getContent();
 
         $this->post('/acceptInvoiceSO', ['soi_id' => $firstPoiId, 'status' => 2])->assertOk();
-        $this->post('/acceptInvoiceSO', ['soi_id' => $secondPoiId, 'status' => 2])->assertOk();
+        $secondResponse = $this->post('/acceptInvoiceSO', ['soi_id' => $secondPoiId, 'status' => 2]);
+        $secondResponse->assertOk();
+        $this->assertSame('-1', $secondResponse->getContent(), 'the second accept must be rejected, matching acceptInvoicePO\'s own -1 response shape');
 
         $first = SalesOrderDetailInvoice::findOrFail($firstPoiId);
         $second = SalesOrderDetailInvoice::findOrFail($secondPoiId);
-        $this->assertSame(2, (int) $first->status, 'nothing blocks accepting the first invoice');
-        $this->assertSame(2, (int) $second->status, 'nothing blocks accepting the second invoice either, despite the combined total exceeding so_total');
+        $this->assertSame(2, (int) $first->status, 'the first invoice, alone within so_total, must still be accepted');
+        $this->assertSame(1, (int) $second->status, 'the second invoice must be left pending, not accepted, since combined it exceeds so_total');
+
+        // A retry with a smaller, in-budget total must succeed (1000 remaining after the first
+        // 4000 of 5000 was accepted).
+        $second->soi_total = 1000;
+        $second->save();
+        $retryResponse = $this->post('/acceptInvoiceSO', ['soi_id' => $secondPoiId, 'status' => 2]);
+        $this->assertNotSame('-1', $retryResponse->getContent(), 'an invoice that fits within the remaining budget must be accepted');
+        $second->refresh();
+        $this->assertSame(2, (int) $second->status);
 
         $so->refresh();
-        $this->assertSame(2, (int) $so->status, 'unlike Purchase Order, accepting Sales Order invoices never recalculates sales_orders.status');
+        $this->assertSame(2, (int) $so->status, 'separate, still-open gap: unlike Purchase Order, accepting Sales Order invoices never recalculates sales_orders.status — not addressed by this fix');
     }
 
     public function test_decline_an_invoice_is_an_unconditional_status_flip(): void

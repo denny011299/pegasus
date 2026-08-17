@@ -10,6 +10,7 @@ class DashboardChangeLog extends Model
 
     protected $fillable = [
         'module_key',
+        'activity_type',
         'module_label',
         'reference',
         'what_changed',
@@ -18,6 +19,7 @@ class DashboardChangeLog extends Model
         'url_label',
         'created_by',
         'meta',
+        'duration_seconds',
     ];
 
     protected $casts = [
