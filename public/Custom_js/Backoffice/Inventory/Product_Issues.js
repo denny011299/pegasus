@@ -241,6 +241,7 @@
                 openProductIssueFromDashboardLink();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             }
         });
@@ -501,8 +502,9 @@ function loadPiType() {
                 afterInsert();
             },
             error: function (e) {
-                console.log(e);
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk");
+                if (handlePermissionError(e)) return;
+                console.log(e); 
             },
         });
     });
@@ -887,8 +889,9 @@ $(document).on("click", ".btn_view", function () {
                 }                
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     })
@@ -923,8 +926,9 @@ $(document).on("click", ".btn_view", function () {
                 
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     })
@@ -1011,8 +1015,9 @@ $(document).on("click", "#btn-delete-issues", function () {
             }
         },
         error: function (e) {
-            console.log(e);
             ResetLoadingButton(".btn-konfirmasi", "Delete");
+            if (handlePermissionError(e)) return;
+            console.log(e);
         },
     });
 });

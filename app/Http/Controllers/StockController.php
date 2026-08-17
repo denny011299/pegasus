@@ -222,6 +222,52 @@ class StockController extends Controller
         return 0;
     }
 
+    // Kebalikan dari getQty() -- rakit ['DOS' => 10, 'pcs' => 2] jadi "10 DOS, 2 pcs".
+    private function buildQtyString(array $qtyByUnit): string
+    {
+        $parts = [];
+        foreach ($qtyByUnit as $unit => $qty) {
+            $parts[] = $qty . ' ' . $unit;
+        }
+        return implode(', ', $parts);
+    }
+
+    /**
+     * stod_system/stod_selisih (stobd_* untuk Bahan) dibekukan sekali saat dokumen dibuat/diedit
+     * dan tidak pernah di-refresh -- begitu ada peristiwa stok LAIN APAPUN sebelum dokumen ini
+     * diputuskan (stock opname lain di-ACC, SO dikirim, dst.), PDF-nya diam-diam membandingkan
+     * dengan angka sistem yang sudah basi. getDetail()/getDetailBulk() sudah menempelkan koleksi
+     * stok LIVE per unit (`->stock`, lihat ProductVariant::getProductVariantBulk()/
+     * Supplies::getSuppliesBulk()) -- pakai itu, bukan string yang tersimpan, TAPI HANYA untuk
+     * dokumen yang belum diputuskan (status masih 1/menunggu). Snapshot dokumen yang sudah
+     * disetujui/ditolak adalah catatan historis yang sengaja dibekukan (lihat accStockOpname() --
+     * dibekukan ke nilai sebenarnya saat itu terjadi) dan TIDAK BOLEH dihitung ulang live, atau
+     * dokumen yang sudah disetujui akan selalu terlihat "tidak ada selisih" selamanya setelahnya.
+     */
+    private function refreshLiveSystemQty($detail, string $realKey, string $systemKey, string $selisihKey, string $stockQtyKey)
+    {
+        foreach ($detail as $item) {
+            $liveByUnit = [];
+            foreach ($item->stock ?? [] as $s) {
+                $liveByUnit[$s->unit_short_name] = (int) $s->{$stockQtyKey};
+            }
+            if (empty($liveByUnit)) {
+                continue;
+            }
+
+            $selisihByUnit = [];
+            foreach ($liveByUnit as $unitName => $systemQty) {
+                $realQty = $this->getQty($item->{$realKey} ?? '', $unitName);
+                $selisihByUnit[$unitName] = $realQty - $systemQty;
+            }
+
+            $item->{$systemKey} = $this->buildQtyString($liveByUnit);
+            $item->{$selisihKey} = $this->buildQtyString($selisihByUnit);
+        }
+
+        return $detail;
+    }
+
     function getDetailStockOpname(Request $req)
     {
         $data = StockOpnameDetail::getDetail($req->all());
@@ -282,10 +328,30 @@ class StockController extends Controller
             ]);
         }
 
+        // GitHub #53 follow-up: bekukan stod_system/stod_selisih ke nilai SEBENARNYA yang dipakai
+        // approval ini (bukan lagi nilai basi dari saat dokumen dibuat/diedit) -- ini jadi catatan
+        // historis permanen dokumen, mirror persis "before" yang sudah ditulis ke log_stocks di
+        // bawah, cuma sekarang juga disimpan balik ke stock_opname_details.
+        $detailRows = StockOpnameDetail::where('sto_id', $sto->sto_id)
+            ->where('status', 1)
+            ->get()
+            ->keyBy('product_variant_id');
+        $allUnitIds = collect($stod)
+            ->flatMap(fn ($v) => collect($v['units'] ?? [])->pluck('unit_id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $unitNames = $allUnitIds !== []
+            ? Unit::whereIn('unit_id', $allUnitIds)->pluck('unit_short_name', 'unit_id')
+            : collect();
+
         DB::beginTransaction();
         try {
         $produk_gagal = [];
         foreach ($stod as $key => $value) {
+            $liveSystemByUnit = [];
+            $realByUnit = [];
             foreach ($value['units'] as $u) {
                 $q = ProductStock::withoutGlobalScope('active_warehouse')
                     ->where('status', 1)
@@ -346,6 +412,21 @@ class StockController extends Controller
                     'unit_id' => $u['unit_id'],
                     'warehouse_id' => $wid > 0 ? $wid : null,
                 ]);
+
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+                $liveSystemByUnit[$unitName] = (int) $oldQty;
+                $realByUnit[$unitName] = (int) $u['real_qty'];
+            }
+
+            $detailRow = $detailRows->get($value['product_variant_id']);
+            if ($detailRow && !empty($liveSystemByUnit)) {
+                $selisihByUnit = [];
+                foreach ($liveSystemByUnit as $unitName => $systemQty) {
+                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                }
+                $detailRow->stod_system = $this->buildQtyString($liveSystemByUnit);
+                $detailRow->stod_selisih = $this->buildQtyString($selisihByUnit);
+                $detailRow->save();
             }
         }
 
@@ -397,6 +478,10 @@ class StockController extends Controller
             ->sortBy(fn($item) => strtolower((data_get($item, 'pr_name') ?? '') . '|' . (data_get($item, 'product_variant_name') ?? '')))
             ->values()
             ->all();
+
+        if ((int) $param['stockOpname']['status'] === 1) {
+            $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock');
+        }
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
@@ -589,10 +674,28 @@ class StockController extends Controller
             ]);
         }
 
+        // GitHub #53 follow-up: mirrors accStockOpname() above -- bekukan stobd_system/
+        // stobd_selisih ke nilai sebenarnya yang dipakai approval ini.
+        $detailRows = StockOpnameDetailBahan::where('stob_id', $stob->stob_id)
+            ->where('status', 1)
+            ->get()
+            ->keyBy('supplies_id');
+        $allUnitIds = collect($stod)
+            ->flatMap(fn ($v) => collect($v['sp_units'] ?? [])->pluck('unit_id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $unitNames = $allUnitIds !== []
+            ? Unit::whereIn('unit_id', $allUnitIds)->pluck('unit_short_name', 'unit_id')
+            : collect();
+
         DB::beginTransaction();
         try {
         $bahan_gagal = [];
         foreach ($stod as $key => $value) {
+            $liveSystemByUnit = [];
+            $realByUnit = [];
             foreach ($value['sp_units'] as $u) {
                 $q = SuppliesStock::withoutGlobalScope('active_warehouse')
                     ->where('status', 1)
@@ -646,6 +749,21 @@ class StockController extends Controller
                     'unit_id' => $u['unit_id'],
                     'warehouse_id' => $wid > 0 ? $wid : null,
                 ]);
+
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+                $liveSystemByUnit[$unitName] = (int) $oldQty;
+                $realByUnit[$unitName] = (int) $u['real_qty'];
+            }
+
+            $detailRow = $detailRows->get($value['supplies_id']);
+            if ($detailRow && !empty($liveSystemByUnit)) {
+                $selisihByUnit = [];
+                foreach ($liveSystemByUnit as $unitName => $systemQty) {
+                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                }
+                $detailRow->stobd_system = $this->buildQtyString($liveSystemByUnit);
+                $detailRow->stobd_selisih = $this->buildQtyString($selisihByUnit);
+                $detailRow->save();
             }
         }
 
@@ -697,6 +815,10 @@ class StockController extends Controller
             ->sortBy(fn($item) => strtolower(data_get($item, 'supplies_name') ?? ''))
             ->values()
             ->all();
+
+        if ((int) $param['stockOpname']['status'] === 1) {
+            $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock');
+        }
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";

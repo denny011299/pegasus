@@ -51,6 +51,7 @@ $(document).on('click', '.btn-save', function(){
            
         },
         error: function(e) {
+            if (handlePermissionError(e)) return;
             notifikasi('error', "Terjadi Kesalahan", "");
             console.log(e);
         }

@@ -44,6 +44,7 @@
                 callback(json);
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
                 callback({
                     draw: data.draw,
@@ -351,6 +352,7 @@
                 if (xhr.statusText === "abort") return;
                 logLazy.loading = false;
                 setLogFooterLoading(false);
+                if (handlePermissionError(xhr)) return;
                 console.error("Gagal load:", xhr);
                 if (!append) {
                     setHistoryLogLoading(false);

@@ -707,6 +707,7 @@
                 openCashFromDashboardLink();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
         });
@@ -807,6 +808,7 @@
                 openCashFromDashboardLink();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
         });
@@ -917,6 +919,7 @@
                 openCashFromDashboardLink();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
         });
@@ -1019,6 +1022,7 @@
                 openCashFromDashboardLink();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
         });
@@ -1516,6 +1520,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save-admin", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -1710,6 +1715,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save-gudang", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -1914,6 +1920,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save-armada", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -2147,6 +2154,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save-sales", mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -2292,6 +2300,7 @@
             },
             error:function(e){
                 ResetLoadingButton('#btn-delete-admin', "Delete");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -2427,6 +2436,7 @@
             },
             error:function(e){
                 ResetLoadingButton('#btn-delete-gudang', "Delete");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -2585,6 +2595,7 @@
             },
             error:function(e){
                 ResetLoadingButton('#btn-delete-armada', "Delete");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -2743,6 +2754,7 @@
             },
             error:function(e){
                 ResetLoadingButton('#btn-delete-sales', "Delete");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -2821,8 +2833,9 @@
                 
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     })
@@ -2896,8 +2909,9 @@
                 
             },
             error:function(e){
-                console.log(e);
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                if (handlePermissionError(e)) return;
+                console.log(e);
             }
         });
     })

@@ -214,7 +214,8 @@ function refreshStockOpname(callback) {
             if (typeof callback === "function") callback();
         },
         error: function (e) {
-            if (reqId !== stockOpnameReqSeq) return; // request lama yang dibatalkan (abort)
+            if (handlePermissionError(e)) return;
+            if (reqId !== stockOpnameReqSeq) return;
             console.log(e);
         },
     });
@@ -376,8 +377,9 @@ $(document).on("click", ".btn-ajukan", function () {
                         window.location.href = "/stockOpname";
                     },
                     error: function (e) {
-                        console.log(e);
                         ResetLoadingButton(".btn-ajukan", "Ajukan");
+                        if (handlePermissionError(e)) return;
+                        console.log(e);
                     },
                 });
             },
@@ -412,8 +414,9 @@ $(document).on("click", "#btn-delete-draft-confirm", function () {
             window.location.href = "/stockOpname";
         },
         error: function (e) {
-            console.log(e);
             ResetLoadingButton(".btn-konfirmasi", "Delete");
+            if (handlePermissionError(e)) return;
+            console.log(e);
         },
     });
 });
@@ -534,6 +537,10 @@ function insertData(options) {
         item.stod_system = systemArr.join(", ");
         item.stod_real = realArr.join(", ");
         item.stod_selisih = selisihArr.join(", ");
+        // GitHub #53: baris ini pernah benar-benar diisi user, dibedakan dari yang cuma
+        // ikut tersimpan dengan real qty auto = stok sistem karena dibiarkan kosong --
+        // dipakai PDF (Backoffice/PDF/Opname.blade.php) untuk highlight.
+        item.stod_touched = hasValue ? 1 : 0;
 
         productSubmit.push(item);
     });
@@ -579,8 +586,9 @@ function insertData(options) {
             window.location.href = "/stockOpname";
         },
         error: function (e) {
-            toastr.success("", "Terjadi Kesalahan Saat Tambah Stok Opname");
             ResetLoadingButton(btnSelector, doneText);
+            if (handlePermissionError(e)) return;
+            toastr.success("", "Terjadi Kesalahan Saat Tambah Stok Opname");
             console.log(e);
         },
     });
@@ -686,8 +694,9 @@ $(document).on("click", "#btn-acc-sto", function () {
             window.open("/stockOpname", "_self");
         },
         error: function (e) {
-            console.log(e);
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            if (handlePermissionError(e)) return;
+            console.log(e);
         },
     });
 });
@@ -721,8 +730,9 @@ $(document).on("click", "#btn-tolak-sto", function () {
             window.open("/stockOpname", "_self");
         },
         error: function (e) {
-            console.log(e);
             ResetLoadingButton(".btn-konfirmasi", "Delete");
+            if (handlePermissionError(e)) return;
+            console.log(e);
         },
     });
 });

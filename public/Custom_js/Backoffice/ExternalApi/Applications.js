@@ -91,6 +91,7 @@ function refreshExternalApplication() {
             feather.replace();
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load Aplikasi Eksternal:", err);
         }
     });
@@ -152,6 +153,7 @@ $(document).on('click', '.btn_edit', function () {
             $('#add_external_application').modal("show");
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load Aplikasi Eksternal:", err);
         }
     });
@@ -208,9 +210,10 @@ $(document).on("click", ".btn-save", function () {
             ResetLoadingButton('.btn-save', mode == 1 ? "Tambah Aplikasi" : "Update Aplikasi");
         },
         error: function (err) {
+            ResetLoadingButton('.btn-save', mode == 1 ? "Tambah Aplikasi" : "Update Aplikasi");
+            if (handlePermissionError(err)) return;
             console.error("Gagal simpan Aplikasi Eksternal:", err);
             notifikasi('error', "Gagal", 'Terjadi kesalahan saat menyimpan');
-            ResetLoadingButton('.btn-save', mode == 1 ? "Tambah Aplikasi" : "Update Aplikasi");
         }
     });
 });
@@ -237,6 +240,7 @@ $(document).on('click', '#btn-delete-external-application', function () {
             notifikasi('success', "Berhasil Delete", "Aplikasi eksternal berhasil dihapus");
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal delete Aplikasi Eksternal:", err);
             notifikasi('error', "Gagal", 'Terjadi kesalahan saat menghapus');
         }

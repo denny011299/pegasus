@@ -105,6 +105,7 @@ $(document).on('click', '.btn-save', function(){
         error: function (xhr) {
             // Re-enable button
             ResetLoadingButton(".btn-save", 'Simpan perubahan');
+            if (handlePermissionError(xhr)) return;
             console.log(xhr);
         },
     });

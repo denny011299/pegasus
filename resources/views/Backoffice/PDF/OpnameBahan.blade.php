@@ -122,7 +122,13 @@
                                 }
                             }
                         }
-                        $highlight = $hasSelisih ? 'background-color: #FFF9C4;' : '';
+                        // GitHub #53: kuning kalau diisi dan ada selisih, hijau kalau diisi dan
+                        // stok real cocok dengan sistem, tanpa highlight kalau memang tidak
+                        // pernah diisi stok real-nya (bukan sekadar default = stok sistem).
+                        $highlight = '';
+                        if (!empty($item['stobd_touched'])) {
+                            $highlight = $hasSelisih ? 'background-color: #FFF9C4;' : 'background-color: #C8E6C9;';
+                        }
                     @endphp
                     <tr>
                         <td>{{ $item['supplies_name'] ?? '-' }}</td>
