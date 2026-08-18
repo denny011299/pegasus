@@ -4,6 +4,7 @@
     "branch": "fase2/main",
     "file_count": 3089,
     "files": {
+        "app/Console/Commands/CleanupRetailUnitStockCommand.php": "6b5b1e705c5a303d77f4c073aeb2af8f55318be6",
         "app/Console/Commands/ClearPendingProductionMaterialLocksCommand.php": "4db05f6428b9fb0638c61228400589d87d388d15",
         "app/Console/Commands/GenerateDeployManifestCommand.php": "e7d69096b134ead586b4e1ca0c5a1ed09535f744",
         "app/Console/Commands/ResolveOverdueProductionsCommand.php": "c5f14fed5ece86e9810f5ee7b848dc6ec520b8c0",
