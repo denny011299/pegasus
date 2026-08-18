@@ -147,7 +147,7 @@ class SynchronizationController extends Controller
     private function blockedReason(array $unmet): ?string
     {
         if (! $this->pmo->isConfigured()) {
-            return 'Alamat server PMO belum dikonfigurasi. Isi PMO_BASE_URL pada file .env terlebih dahulu.';
+            return 'Alamat server PMO belum dikonfigurasi. Isi PMO_BASE_URL dan PMO_API_KEY pada file .env terlebih dahulu.';
         }
 
         if ($unmet !== []) {

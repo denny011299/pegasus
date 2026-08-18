@@ -6,13 +6,13 @@ return [
     | Sumber Data PMO
     |--------------------------------------------------------------------------
     |
-    | Integrasi PMO saat ini berupa pemanggilan HTTP biasa ke server lain
-    | (tanpa token / tanpa auth). Kalau nanti PMO butuh autentikasi, tambahkan
-    | header di App\Synchronization\Pmo\PmoClient.
+    | Setiap request ke PMO mengirim header X-API-Key berisi PMO_API_KEY.
+    | Header ini ditambahkan di App\Synchronization\Pmo\PmoClient.
     |
     */
     'pmo' => [
         'base_url' => env('PMO_BASE_URL', ''),
+        'api_key' => env('PMO_API_KEY', ''),
         'timeout' => (int) env('PMO_TIMEOUT', 60),
         'connect_timeout' => (int) env('PMO_CONNECT_TIMEOUT', 10),
         'verify_ssl' => filter_var(env('PMO_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),

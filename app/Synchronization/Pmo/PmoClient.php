@@ -9,9 +9,7 @@ use Illuminate\Support\Facades\Http;
 /**
  * Klien HTTP sederhana ke server PMO.
  *
- * Saat ini PMO diakses sebagai pemanggilan HTTP biasa: tanpa token dan tanpa
- * autentikasi. Kalau nanti PMO memerlukan kredensial, cukup tambahkan header
- * pada request() di kelas ini — pemanggil tidak perlu berubah.
+ * Setiap request membawa header X-API-Key (dari PMO_API_KEY di .env).
  */
 class PmoClient
 {
@@ -24,7 +22,8 @@ class PmoClient
 
     public function isConfigured(): bool
     {
-        return trim((string) ($this->config['base_url'] ?? '')) !== '';
+        return trim((string) ($this->config['base_url'] ?? '')) !== ''
+            && trim((string) ($this->config['api_key'] ?? '')) !== '';
     }
 
     public function baseUrl(): string
@@ -53,7 +52,7 @@ class PmoClient
     {
         if (! $this->isConfigured()) {
             throw new PmoException(
-                'Alamat server PMO belum dikonfigurasi. Isi PMO_BASE_URL pada file .env terlebih dahulu.'
+                'Alamat server PMO belum dikonfigurasi. Isi PMO_BASE_URL dan PMO_API_KEY pada file .env terlebih dahulu.'
             );
         }
 
@@ -95,6 +94,7 @@ class PmoClient
     {
         try {
             $response = Http::acceptJson()
+                ->withHeaders(['X-API-Key' => (string) ($this->config['api_key'] ?? '')])
                 ->timeout((int) ($this->config['timeout'] ?? 60))
                 ->connectTimeout((int) ($this->config['connect_timeout'] ?? 10))
                 ->withOptions(['verify' => (bool) ($this->config['verify_ssl'] ?? true)])
