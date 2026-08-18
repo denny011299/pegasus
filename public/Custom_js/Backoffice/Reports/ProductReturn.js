@@ -167,6 +167,7 @@
                 feather.replace();
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load retur:", err);
             }
         });

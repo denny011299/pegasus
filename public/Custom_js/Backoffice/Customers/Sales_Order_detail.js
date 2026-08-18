@@ -261,6 +261,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             }
         });
@@ -312,6 +313,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
             }
         });
@@ -499,6 +501,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".save-qty", 'Simpan perubahan');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -582,6 +585,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-save-delivery", 'Simpan perubahan');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -640,6 +644,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-approve", 'Setujui');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -698,6 +703,7 @@
             },
             error:function(e){
                 ResetLoadingButton(".btn-decline", 'Tolak');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -772,6 +778,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -880,6 +887,7 @@
             },
             error: function (e) {
                 ResetLoadingButton('.btn-save-invoice', 'Simpan Perubahan');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             },
         });
@@ -931,6 +939,7 @@
                 notifikasi('success', "Berhasil Delete", "Berhasil delete invoice");
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -955,6 +964,7 @@
             },
             error:function(e){
                 ResetLoadingButton(btn, 'Tolak');
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -972,18 +982,27 @@
             },
             method:"post",
             success:function(e){
+                ResetLoadingButton(btn, 'Setujui');
+                if(e==-1){
+                    notifikasi(
+                        "error",
+                        "Gagal Setujui",
+                        "Melebihi Sisa Pembayaran"
+                    );
+                    return false;
+                }
                 $('.modal').modal("hide");
                 refreshInvoice();
-                ResetLoadingButton(btn, 'Setujui');
                 notifikasi('success', "Berhasil Accept", "Berhasil accept invoice");
             },
             error:function(e){
                  ResetLoadingButton(btn, 'Setujui');
-                console.log(e);
+                 if (handlePermissionError(e)) return;
+                 console.log(e);
             }
         });
     });
-    
+
     $(document).on("click","#btnAddTerima",function(){
         $('#modalTerima').modal("show");
     });

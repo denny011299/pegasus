@@ -9,18 +9,16 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Extends the Phase 3 pilot (tests/Workflow/StockOpnameFlowTest.php,
- * cdocs/testing/workflows/STOCK_OPNAME_FLOW.md). `accStockOpname` has no `DB::transaction()`
- * (same gap shape as Purchase Order's `accPO` and Production's `accProduction`), so this documents
- * exactly how far a mid-loop failure gets.
+ * ✅ FIXED (2026-08-04): Extends the Phase 3 pilot (tests/Workflow/StockOpnameFlowTest.php,
+ * cdocs/testing/workflows/STOCK_OPNAME_FLOW.md). `accStockOpname` used to have no
+ * `DB::transaction()` (same gap shape as Purchase Order's `accPO` and Production's
+ * `accProduction`) and no null-check on its `ProductStock` lookup (`product_variant_id` +
+ * `unit_id`) — a bogus `unit_id` on a later item crashed the whole request with a fatal "Attempt
+ * to assign property on null" while an earlier item's stock was already permanently overwritten.
  *
- * Trigger: `StockController::accStockOpname()` looks up `ProductStock` by
- * `product_variant_id` + `unit_id` with no null-check (`StockController.php:250-267`). A second
- * product line in the same request carries a bogus `unit_id` that matches no stock row, so the
- * lookup returns null. The FIRST log_stocks insert reads `$s->ps_stock` — a read on null is only
- * a PHP warning (evaluates to `null`), not fatal — but the very next line,
- * `$s->ps_stock = $u['real_qty'];`, is a WRITE to a property on null, which IS a fatal `Error` in
- * PHP 8. So the crash lands one line later than it looks at first glance.
+ * Fix: the whole mutation loop now runs inside one `DB::transaction()`, and a missing
+ * `ProductStock` row is collected and rolled back with a clean `{status: 0, header: 'Gagal ACC',
+ * ...}` response instead of crashing.
  */
 class StockOpnameApprovalAtomicityTest extends TestCase
 {
@@ -47,7 +45,7 @@ class StockOpnameApprovalAtomicityTest extends TestCase
         return (int) DB::table('staffs')->where('status', 1)->value('staff_id');
     }
 
-    public function test_a_mid_loop_failure_leaves_the_first_item_permanently_overwritten(): void
+    public function test_a_mid_loop_failure_is_now_cleanly_rejected_with_nothing_overwritten(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -100,31 +98,24 @@ class StockOpnameApprovalAtomicityTest extends TestCase
             ]),
         ]);
 
-        // Documents current behavior: an uncaught error, not a clean {status:-1, ...} response.
-        $accResponse->assertStatus(500);
+        // Fixed: a clean, structured rejection instead of an uncaught 500.
+        $accResponse->assertOk();
+        $accResponse->assertJson(['status' => 0, 'header' => 'Gagal ACC']);
 
-        // Item A (processed first) is fully, permanently overwritten with its counted value.
+        // Fixed: item A must be untouched now — the whole loop runs in one transaction, so item
+        // B's missing stock row rolls item A's mutation back too.
         $stockA->refresh();
-        $this->assertSame($startingA - 1, $stockA->ps_stock, "the first item's stock is permanently overwritten despite the second item's later crash");
+        $this->assertSame($startingA, $stockA->ps_stock, "a rejected approval must not touch item A's stock at all");
 
-        // Item B is never touched — the crash happens before its own ps_stock write.
         $stockB->refresh();
-        $this->assertSame($startingB, $stockB->ps_stock, "the second (bogus-unit) item's stock is left completely untouched");
+        $this->assertSame($startingB, $stockB->ps_stock, "a rejected approval must not touch item B's stock either");
 
-        // Item A gets both of its log_stocks rows (before + after); item B's crash happens after
-        // its first (read-on-null) log row is already inserted, but before its stock write.
-        $this->assertGreaterThanOrEqual($logCountBefore + 2, DB::table('log_stocks')->count());
-        $this->assertDatabaseHas('log_stocks', [
-            'log_type' => 1,
-            'log_category' => 1,
-            'log_item_id' => $stockA->product_variant_id,
-            'log_jumlah' => $startingA - 1,
-        ]);
+        // Fixed: no log_stocks rows survive a rolled-back approval.
+        $this->assertSame($logCountBefore, DB::table('log_stocks')->count(), 'a rejected approval must not leave any log_stocks rows behind');
 
-        // The document itself is left stuck: neither approved nor left in its prior pending shape
-        // cleanly — status was never flipped to 2, since the loop never reaches the end.
+        // The document remains pending — never flipped to approved.
         $sto = StockOpname::find($stoId);
-        $this->assertSame(1, (int) $sto->status, 'the opname is left pending, despite the first item already being permanently overwritten');
+        $this->assertSame(1, (int) $sto->status, 'a rejected approval must leave the opname pending');
         $this->assertNull($sto->acc_by);
     }
 }

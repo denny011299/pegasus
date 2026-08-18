@@ -50,6 +50,7 @@ class StockOpnameDetail extends Model
             $temp->stod_real = $value->stod_real;
             $temp->stod_selisih = $value->stod_selisih;
             $temp->stod_notes = $value->stod_notes;
+            $temp->stod_touched = $value->stod_touched;
             $temp->stod_id = $value->stod_id;
             $temp->sto_id = $value->sto_id;
             $result[$key] = $temp;
@@ -91,6 +92,7 @@ class StockOpnameDetail extends Model
             $temp->stod_real = $value->stod_real;
             $temp->stod_selisih = $value->stod_selisih;
             $temp->stod_notes = $value->stod_notes;
+            $temp->stod_touched = $value->stod_touched;
             $temp->stod_id = $value->stod_id;
             $temp->sto_id = $value->sto_id;
 
@@ -116,6 +118,7 @@ class StockOpnameDetail extends Model
         $t->stod_real = $data['stod_real'] ?? null;
         $t->stod_selisih = $data['stod_selisih'] ?? null;
         $t->stod_notes = $data['stod_notes'] ?? null;
+        $t->stod_touched = !empty($data['stod_touched']);
         $t->save();
 
         return $t->stod_id;
@@ -136,6 +139,7 @@ class StockOpnameDetail extends Model
         $t->stod_real = $data['stod_real'] ?? null;
         $t->stod_selisih = $data['stod_selisih'] ?? null;
         $t->stod_notes = $data['stod_notes'] ?? null;
+        $t->stod_touched = !empty($data['stod_touched']);
         $t->save();
 
         return $t->stod_id;

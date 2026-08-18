@@ -196,6 +196,9 @@ class StockController extends Controller
             'category_id' => $sto->category_id,
             'sto_notes'   => $sto->sto_notes,
             'status'      => $sto->status,
+            // Ditambahkan (2026-08-05): CreateStockOpname.js membaca data.is_draft/data.created_by
+            // untuk canEditDraft — sebelumnya keduanya tidak ada di array ini sama sekali, jadi
+            // selalu undefined di frontend (draft tidak pernah terdeteksi sebagai draft).
             'is_draft'    => (bool) $sto->is_draft,
             'created_by'  => $sto->created_by,
             'item'        => $items
@@ -217,6 +220,52 @@ class StockController extends Controller
             }
         }
         return 0;
+    }
+
+    // Kebalikan dari getQty() -- rakit ['DOS' => 10, 'pcs' => 2] jadi "10 DOS, 2 pcs".
+    private function buildQtyString(array $qtyByUnit): string
+    {
+        $parts = [];
+        foreach ($qtyByUnit as $unit => $qty) {
+            $parts[] = $qty . ' ' . $unit;
+        }
+        return implode(', ', $parts);
+    }
+
+    /**
+     * stod_system/stod_selisih (stobd_* untuk Bahan) dibekukan sekali saat dokumen dibuat/diedit
+     * dan tidak pernah di-refresh -- begitu ada peristiwa stok LAIN APAPUN sebelum dokumen ini
+     * diputuskan (stock opname lain di-ACC, SO dikirim, dst.), PDF-nya diam-diam membandingkan
+     * dengan angka sistem yang sudah basi. getDetail()/getDetailBulk() sudah menempelkan koleksi
+     * stok LIVE per unit (`->stock`, lihat ProductVariant::getProductVariantBulk()/
+     * Supplies::getSuppliesBulk()) -- pakai itu, bukan string yang tersimpan, TAPI HANYA untuk
+     * dokumen yang belum diputuskan (status masih 1/menunggu). Snapshot dokumen yang sudah
+     * disetujui/ditolak adalah catatan historis yang sengaja dibekukan (lihat accStockOpname() --
+     * dibekukan ke nilai sebenarnya saat itu terjadi) dan TIDAK BOLEH dihitung ulang live, atau
+     * dokumen yang sudah disetujui akan selalu terlihat "tidak ada selisih" selamanya setelahnya.
+     */
+    private function refreshLiveSystemQty($detail, string $realKey, string $systemKey, string $selisihKey, string $stockQtyKey)
+    {
+        foreach ($detail as $item) {
+            $liveByUnit = [];
+            foreach ($item->stock ?? [] as $s) {
+                $liveByUnit[$s->unit_short_name] = (int) $s->{$stockQtyKey};
+            }
+            if (empty($liveByUnit)) {
+                continue;
+            }
+
+            $selisihByUnit = [];
+            foreach ($liveByUnit as $unitName => $systemQty) {
+                $realQty = $this->getQty($item->{$realKey} ?? '', $unitName);
+                $selisihByUnit[$unitName] = $realQty - $systemQty;
+            }
+
+            $item->{$systemKey} = $this->buildQtyString($liveByUnit);
+            $item->{$selisihKey} = $this->buildQtyString($selisihByUnit);
+        }
+
+        return $detail;
     }
 
     function getDetailStockOpname(Request $req)
@@ -252,7 +301,57 @@ class StockController extends Controller
             ($sto->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
         );
+
+        // Ditambahkan (2026-08-05): gerbang draft — kolom is_draft sudah ada di DB tapi baru
+        // sekarang benar-benar ditulis (lihat StockOpname::insertStockOpname()/updateStockOpname())
+        // dan baru sekarang ditegakkan di sini juga. Status berbeda dari guard status!=1 di bawah
+        // (-1 bukan -2) supaya frontend (CreateStockOpname.js) bisa membedakan "belum diajukan"
+        // dari "sudah diproses orang lain".
+        if ($sto->is_draft) {
+            return response()->json([
+                "status" => -1,
+                "header" => "Gagal ACC",
+                "message" => "Dokumen masih berupa draft — ajukan (submit) dokumen ini dulu sebelum bisa di-ACC",
+            ]);
+        }
+
+        // Ditambahkan: dulu tidak ada pengecekan status sama sekali (cuma is_draft di halaman
+        // insert) — beda dengan PO/SO/Production yang semuanya menolak kalau status != 1. Tanpa
+        // ini, approve ulang pada dokumen yang sudah disetujui diam-diam menimpa ps_stock lagi
+        // dengan real_qty apa pun yang dibawa request kedua.
+        if ($sto->status != 1) {
+            $staff = Staff::find($sto->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        // GitHub #53 follow-up: bekukan stod_system/stod_selisih ke nilai SEBENARNYA yang dipakai
+        // approval ini (bukan lagi nilai basi dari saat dokumen dibuat/diedit) -- ini jadi catatan
+        // historis permanen dokumen, mirror persis "before" yang sudah ditulis ke log_stocks di
+        // bawah, cuma sekarang juga disimpan balik ke stock_opname_details.
+        $detailRows = StockOpnameDetail::where('sto_id', $sto->sto_id)
+            ->where('status', 1)
+            ->get()
+            ->keyBy('product_variant_id');
+        $allUnitIds = collect($stod)
+            ->flatMap(fn ($v) => collect($v['units'] ?? [])->pluck('unit_id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $unitNames = $allUnitIds !== []
+            ? Unit::whereIn('unit_id', $allUnitIds)->pluck('unit_short_name', 'unit_id')
+            : collect();
+
+        DB::beginTransaction();
+        try {
+        $produk_gagal = [];
         foreach ($stod as $key => $value) {
+            $liveSystemByUnit = [];
+            $realByUnit = [];
             foreach ($value['units'] as $u) {
                 $q = ProductStock::withoutGlobalScope('active_warehouse')
                     ->where('status', 1)
@@ -262,7 +361,19 @@ class StockController extends Controller
                     $q->where('warehouse_id', $warehouseId);
                 }
                 $s = $q->first();
-                if (! $s) {
+
+                // Ditambahkan: dulu di-assign langsung tanpa null-check — sebuah unit_id yang
+                // salah/tidak match menyebabkan crash "Attempt to assign property on null" di
+                // tengah loop, sementara item-item sebelumnya sudah kadung ditimpa permanen.
+                if (!$s) {
+                    $pv = ProductVariant::find($value['product_variant_id']);
+                    $namaProduk = '-';
+                    if ($pv) {
+                        $pr = Product::find($pv->product_id);
+                        $namaProduk = trim(($pr->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                        if ($namaProduk === '') $namaProduk = $pv->product_variant_name ?? '-';
+                    }
+                    if (!in_array($namaProduk, $produk_gagal, true)) $produk_gagal[] = $namaProduk;
                     continue;
                 }
 
@@ -301,11 +412,42 @@ class StockController extends Controller
                     'unit_id' => $u['unit_id'],
                     'warehouse_id' => $wid > 0 ? $wid : null,
                 ]);
+
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+                $liveSystemByUnit[$unitName] = (int) $oldQty;
+                $realByUnit[$unitName] = (int) $u['real_qty'];
+            }
+
+            $detailRow = $detailRows->get($value['product_variant_id']);
+            if ($detailRow && !empty($liveSystemByUnit)) {
+                $selisihByUnit = [];
+                foreach ($liveSystemByUnit as $unitName => $systemQty) {
+                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                }
+                $detailRow->stod_system = $this->buildQtyString($liveSystemByUnit);
+                $detailRow->stod_selisih = $this->buildQtyString($selisihByUnit);
+                $detailRow->save();
             }
         }
+
+        if (count($produk_gagal) > 0) {
+            DB::rollBack();
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal ACC",
+                "message" => "Baris stok tidak ditemukan untuk: " . implode(', ', $produk_gagal),
+            ]);
+        }
+
         $sto->status = 2;
         $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
+        DB::commit();
+        return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function tolakStockOpname(Request $req)
@@ -336,6 +478,10 @@ class StockController extends Controller
             ->sortBy(fn($item) => strtolower((data_get($item, 'pr_name') ?? '') . '|' . (data_get($item, 'product_variant_name') ?? '')))
             ->values()
             ->all();
+
+        if ((int) $param['stockOpname']['status'] === 1) {
+            $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock');
+        }
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
@@ -508,7 +654,48 @@ class StockController extends Controller
             ($stob->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
         );
+
+        // Mirrors accStockOpname()'s draft gate above.
+        if ($stob->is_draft) {
+            return response()->json([
+                "status" => -1,
+                "header" => "Gagal ACC",
+                "message" => "Dokumen masih berupa draft — ajukan (submit) dokumen ini dulu sebelum bisa di-ACC",
+            ]);
+        }
+
+        // Mirrors accStockOpname()'s status guard above.
+        if ($stob->status != 1) {
+            $staff = Staff::find($stob->acc_by)->staff_name ?? '-';
+            return response()->json([
+                "status" => -2,
+                "header" => "Gagal ACC",
+                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        // GitHub #53 follow-up: mirrors accStockOpname() above -- bekukan stobd_system/
+        // stobd_selisih ke nilai sebenarnya yang dipakai approval ini.
+        $detailRows = StockOpnameDetailBahan::where('stob_id', $stob->stob_id)
+            ->where('status', 1)
+            ->get()
+            ->keyBy('supplies_id');
+        $allUnitIds = collect($stod)
+            ->flatMap(fn ($v) => collect($v['sp_units'] ?? [])->pluck('unit_id'))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $unitNames = $allUnitIds !== []
+            ? Unit::whereIn('unit_id', $allUnitIds)->pluck('unit_short_name', 'unit_id')
+            : collect();
+
+        DB::beginTransaction();
+        try {
+        $bahan_gagal = [];
         foreach ($stod as $key => $value) {
+            $liveSystemByUnit = [];
+            $realByUnit = [];
             foreach ($value['sp_units'] as $u) {
                 $q = SuppliesStock::withoutGlobalScope('active_warehouse')
                     ->where('status', 1)
@@ -518,7 +705,12 @@ class StockController extends Controller
                     $q->where('warehouse_id', $warehouseId);
                 }
                 $s = $q->first();
-                if (! $s) {
+
+                // Mirrors accStockOpname()'s null-guard above.
+                if (!$s) {
+                    $sup = Supplies::find($value['supplies_id']);
+                    $namaBahan = $sup->supplies_name ?? "id {$value['supplies_id']}";
+                    if (!in_array($namaBahan, $bahan_gagal, true)) $bahan_gagal[] = $namaBahan;
                     continue;
                 }
 
@@ -557,11 +749,42 @@ class StockController extends Controller
                     'unit_id' => $u['unit_id'],
                     'warehouse_id' => $wid > 0 ? $wid : null,
                 ]);
+
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+                $liveSystemByUnit[$unitName] = (int) $oldQty;
+                $realByUnit[$unitName] = (int) $u['real_qty'];
+            }
+
+            $detailRow = $detailRows->get($value['supplies_id']);
+            if ($detailRow && !empty($liveSystemByUnit)) {
+                $selisihByUnit = [];
+                foreach ($liveSystemByUnit as $unitName => $systemQty) {
+                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                }
+                $detailRow->stobd_system = $this->buildQtyString($liveSystemByUnit);
+                $detailRow->stobd_selisih = $this->buildQtyString($selisihByUnit);
+                $detailRow->save();
             }
         }
+
+        if (count($bahan_gagal) > 0) {
+            DB::rollBack();
+            return response()->json([
+                "status" => 0,
+                "header" => "Gagal ACC",
+                "message" => "Baris stok tidak ditemukan untuk: " . implode(', ', $bahan_gagal),
+            ]);
+        }
+
         $stob->status = 2;
         $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $stob->save();
+        DB::commit();
+        return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function tolakStockOpnameBahan(Request $req)
@@ -592,6 +815,10 @@ class StockController extends Controller
             ->sortBy(fn($item) => strtolower(data_get($item, 'supplies_name') ?? ''))
             ->values()
             ->all();
+
+        if ((int) $param['stockOpname']['status'] === 1) {
+            $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock');
+        }
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
@@ -1054,6 +1281,11 @@ class StockController extends Controller
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
     }
 
+    // UI-unreachable (confirmed 2026-08-02) — this route's delete trigger icon is commented out in
+    // Product_Issues.js, on top of the original "MASIH NGEBUG" ("still buggy") note below. This is
+    // the one caller of ProductIssues::deleteProductIssues() that DOES check its -1 return value —
+    // see that method's dead-code comment for why the other, reachable caller doesn't need to
+    // (yet).
     function deleteProductIssue(Request $req) // MASIH NGEBUG
     {
         $data = $req->all();
@@ -1124,7 +1356,13 @@ class StockController extends Controller
                 }
 
                 // Fungsi rekursif — cari unit atas via relasi, tidak bergantung index
-                $siapkanStok = function ($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                $siapkanStok = function($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                    // Ditambahkan (2026-08-06): depth guard — $keyAtas dicari lewat lookup relasi,
+                    // jadi rantai ProductRelation yang sirkular bisa membuat rekursi ini jalan
+                    // selamanya sebelum sempat kembali ke while loop di bawah. Belum pernah
+                    // tereproduksi dengan data nyata, murni defensive guard. Lihat KNOWN_ISSUES.md.
+                    if ($depth >= 20) return false;
+
                     $stokSekarang = $units[$targetKey];
 
                     $sr = ProductRelation::where('product_variant_id', $variantId)
@@ -1148,7 +1386,7 @@ class StockController extends Controller
                     $stokAtas = $units[$keyAtas];
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
-                        if (!$siapkanStok($keyAtas, $units)) return false;
+                        if (!$siapkanStok($keyAtas, $units, $depth + 1)) return false;
                     }
 
                     if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {

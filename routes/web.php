@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\AutocompleteController;
+use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerProductReturnController;
 use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\CustomerSupplyReturnController;
 use App\Http\Controllers\DeployController;
+use App\Http\Controllers\DeploymentCheckController;
 use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
@@ -53,6 +55,14 @@ Route::middleware('throttle:5,1')->prefix('deploy')->group(function () {
 });
 
 Route::middleware(checkLogin::class)->group(function () {
+    Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
+
+    // Internal dev-only pages: intentionally NOT in the sidebar and NOT gated by
+    // check.access/role_access -- protected only by checkLogin (must be a logged-in
+    // staff account). Only devs who know the URL (from reading this file) reach them.
+    Route::get('/system/changelog', [ChangelogController::class, 'index'])->name('system.changelog');
+    Route::get('/system/deployment-check', [DeploymentCheckController::class, 'index'])->name('system.deployment-check');
+
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');
     })->name('index');
@@ -779,7 +789,6 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Tanda Terima PO|view')->group(function () {
         Route::get('/tt', [SupplierController::class, 'tt'])->name('tt');
         Route::get('/getTt', [SupplierController::class, 'getTt'])->name('getTt');
-        Route::get('/generateTandaTerima/{id}/{kode}', [SupplierController::class, 'generateTandaTerima'])->name('generateTandaTerima');
         Route::get('/generateTandaTerimaInvoice', [SupplierController::class, 'generateTandaTerimaInvoice'])->name('generateTandaTerimaInvoice');
         Route::get('/viewTandaTerima/{id}', [SupplierController::class, 'viewTandaTerima'])->name('viewTandaTerima');
     });

@@ -114,6 +114,7 @@ function loadSalesOrderWithItems(soId, onSuccess, onError) {
             }
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load detail SO:", err);
             if (typeof onError === "function") {
                 onError(err);
@@ -477,7 +478,8 @@ function doScanAddSo() {
 
             $("#so_scan_barcode").val("").focus();
         },
-        error: function () {
+        error: function (xhr) {
+            if (handlePermissionError(xhr)) return;
             toastr.error("", "Gagal mencari produk");
             $("#so_scan_barcode").val("").focus();
         },
@@ -695,6 +697,7 @@ function salesOrderAjax(data, callback) {
         },
         error: function (err) {
             if (err && err.statusText === "abort") return;
+            if (handlePermissionError(err)) return;
             console.error("Gagal load so:", err);
             callback({
                 draw: data.draw,
@@ -1353,6 +1356,7 @@ $(document).on("click", ".btn-save", function () {
                 ".btn-save",
                 mode == 1 ? "Tambah Pengiriman" : "Update Pengiriman",
             );
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -1517,6 +1521,7 @@ $(document).on("click", "#btn-delete-sales", function () {
             );
         },
         error: function (e) {
+            if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
@@ -1575,38 +1580,21 @@ $(document).on("click", "#btn-accept-so", function () {
                         $(".modal").modal("hide");
                         refreshSalesOrder();
                     }
-                    return false;
-                } else {
-                    ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
-                    var fallbackNames =
-                        $("#btn-accept-so").data("fallback_products") || [];
-                    var stockText = normalizeProductErrorMessage(
-                        e,
-                        fallbackNames,
-                    );
-                    notifikasi(
-                        "error",
-                        "Gagal Update",
-                        "Stock Product yang tidak mencukupi : " + stockText,
-                    );
                 }
             } else {
                 ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
                 refreshSalesOrder();
                 $(".modal").modal("hide");
-                notifikasi(
-                    "success",
-                    "Berhasil Terima",
-                    "Berhasil Terima Pengiriman",
-                );
+                notifikasi("success", "Berhasil Terima", "Berhasil Terima Pengiriman");
             }
         },
         error: function (e) {
-            console.log(e);
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
-        },
-    });
-});
+            if (handlePermissionError(e)) return;
+            console.log(e);
+        }
+        });
+    })
 
 function formatStockRecommendations(res) {
     var parts = [];
@@ -1796,8 +1784,9 @@ $(document).on("click", "#btn-decline-so", function () {
             notifikasi("success", "Berhasil Tolak", "Berhasil Tolak Pengajuan");
         },
         error: function (e) {
-            console.log(e);
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            if (handlePermissionError(e)) return;
+            console.log(e);
         },
     });
 });

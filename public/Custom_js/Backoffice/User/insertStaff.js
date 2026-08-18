@@ -319,6 +319,7 @@ $(document).on("click", ".btn-save", function () {
                 ".btn-save",
                 mode == 1 ? "Tambah Staff" : "Update Staff",
             );
+            if (handlePermissionError(xhr)) return;
             console.log(xhr);
         },
     });

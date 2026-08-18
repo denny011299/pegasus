@@ -85,7 +85,8 @@
                 $("#cash_out_total_pengeluaran").text(fmtRp(summary.total_pengeluaran || 0));
                 $("#cash_out_total_transaksi").text(String(summary.jumlah_transaksi || 0));
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 table.clear().draw();
                 $("#cash_out_period_label").text("Gagal memuat data");
                 $("#cash_out_total_pengeluaran").text("Rp 0");

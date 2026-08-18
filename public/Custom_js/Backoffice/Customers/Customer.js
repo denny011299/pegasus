@@ -97,6 +97,7 @@
                 $('#tableCustomer-wrap').removeClass('dt-pending');
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
                 $('#tableCustomer-wrap').removeClass('dt-pending');
             }
@@ -125,6 +126,7 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });

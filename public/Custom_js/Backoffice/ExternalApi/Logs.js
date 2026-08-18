@@ -78,6 +78,7 @@ function refreshExternalApiLog() {
             feather.replace();
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load Log API Eksternal:", err);
         }
     });
@@ -94,6 +95,7 @@ function refreshRingkasan() {
             $('#statNewest').html(e.newest_at ? moment(e.newest_at).format('D MMM YYYY HH:mm') : '-');
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal load ringkasan log:", err);
         }
     });
@@ -148,6 +150,7 @@ $(document).on('change', '#toggleLogging', function () {
                 : "Pencatatan permintaan dinonaktifkan");
         },
         error: function (err) {
+            if (handlePermissionError(err)) return;
             console.error("Gagal ubah status pencatatan:", err);
             notifikasi('error', "Gagal", 'Terjadi kesalahan saat mengubah status pencatatan');
             $('#toggleLogging').prop('checked', !enabled);
@@ -230,9 +233,10 @@ $(document).on('click', '.btn-confirm-cleanup', function () {
             notifikasi('success', "Berhasil", e.message);
         },
         error: function (err) {
+            ResetLoadingButton('.btn-confirm-cleanup', "Hapus Log");
+            if (handlePermissionError(err)) return;
             console.error("Gagal bersihkan log:", err);
             notifikasi('error', "Gagal", 'Terjadi kesalahan saat membersihkan log');
-            ResetLoadingButton('.btn-confirm-cleanup', "Hapus Log");
         }
     });
 });

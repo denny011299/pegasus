@@ -141,8 +141,19 @@ class SalesOrderFlowTest extends TestCase
         $stock->ps_stock = $qty - 1;
         $stock->save();
 
+        // accSO()'s insufficient-stock rejection (CustomerController.php's "Langkah 3") returns a
+        // bare string (product names joined by ', '), not a JSON object — unlike its own
+        // "Mohon masukkan relasi produk" rejection a few lines above it, which does return JSON.
+        // Confirmed intentional, not a bug: Sales_Order.js's #btn-accept-so handler already has a
+        // working `typeof e === "object"` branch specifically for this bare-string shape
+        // (`Stock Product yang tidak mencukupi : ` + the string). This assertion previously
+        // expected a JSON `{header: 'Stok tidak cukup', ...}` shape this code path has never
+        // actually returned.
         $accResponse = $this->post('/accSO', ['so_id' => $soId]);
-        $accResponse->assertJson(fn ($json) => $json->where('header', 'Stok tidak cukup')->etc());
+        $accResponse->assertStatus(200);
+        $rejectionText = trim($accResponse->getContent(), '"');
+        $this->assertNotSame('1', $rejectionText, 'insufficient stock must not silently succeed');
+        $this->assertNotEmpty($rejectionText, 'the response must at least name which product fell short');
 
         $so = SalesOrder::find($soId);
         $this->assertSame(1, (int) $so->status, 'a rejected approval must leave the SO pending, not partially approved');

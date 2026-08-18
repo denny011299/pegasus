@@ -807,7 +807,7 @@
                             </ul>
                         </li>
                         <li>
-                            <a href="{{ url('login') }}"><i class="fe fe-power"></i> <span>Logout</span></a>
+                            <a href="{{ route('logout') }}"><i class="fe fe-power"></i> <span>Logout</span></a>
                         </li>
                     </ul>
                     <!-- /Settings -->

@@ -160,7 +160,8 @@
 
                 $('#po_scan_barcode').val('').focus();
             },
-            error: function () {
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 toastr.error('', 'Gagal mencari produk');
                 $('#po_scan_barcode').val('').focus();
             }
@@ -388,6 +389,7 @@
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load so:", err);
             }
         });
@@ -527,7 +529,8 @@
                 afterInsert();
             },
             error:function(e){
-                ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian"); 
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Pembelian" : "Update Pembelian");
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
@@ -582,37 +585,14 @@
                 
             },
             error:function(e){
+                if (handlePermissionError(e)) return;
                 console.log(e);
             }
         });
     });
 
-    $(document).on("click","#generateTandaTerima",function(){
-        $('.invalid').removeClass('invalid');
-        var valid = 1;
-        if($('#select_supplier').val()==null||$('#select_supplier').val()==""){
-            $('.row-supplier .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        if($('#bank_kode').val()==null||$('#bank_kode').val()==""){
-             $('.row-rekening .select2-selection--single').addClass('invalid');
-            valid=-1;
-        }
-        
-        if(valid==-1){
-            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-            return false;
-        };
 
 
-        var anchor = document.createElement('a');
-        anchor.href = '/generateTandaTerima/'+$('#select_supplier').val()+"/"+$('#bank_kode').val();
-        anchor.click();
-    });
-
-
-    
-    
 $(document).on('click', '#btn-foto-bukti', function() {
     rotationAngle = 0;
     camRotation = 0;

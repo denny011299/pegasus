@@ -71,6 +71,7 @@
             },
             error: function (err) {
                 if (err && err.statusText === "abort") return;
+                if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
                 callback({
                     draw: data.draw,
@@ -301,6 +302,7 @@
                 }
             },
             error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 var msg =
                     (xhr.responseJSON && xhr.responseJSON.message) || "Gagal menyimpan";
                 if (typeof toastr !== "undefined") toastr.error("", msg);
@@ -356,6 +358,7 @@
                 }
             },
             error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
                 var msg =
                     (xhr.responseJSON && xhr.responseJSON.message) || "Gagal transfer";
                 if (typeof toastr !== "undefined") toastr.error("", msg);
@@ -755,6 +758,7 @@
                 if (xhr.statusText === "abort") return;
                 logLazy.loading = false;
                 setLogFooterLoading(false);
+                if (handlePermissionError(xhr)) return;
                 console.error("Gagal load:", xhr);
                 if (!append) {
                     setHistoryLogLoading(false);
