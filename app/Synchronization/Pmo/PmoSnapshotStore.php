@@ -46,34 +46,113 @@ class PmoSnapshotStore
     }
 
     /**
-     * Selalu tarik ulang dari PMO dan gantikan potret sebelumnya.
+     * Selalu tarik ulang dari PMO (seluruh halaman sekaligus, satu
+     * panggilan) dan gantikan potret sebelumnya.
+     *
+     * Dipakai jalur sekali-jalan (handle()). Untuk progres per halaman,
+     * pakai fetchPage() + finalizePages().
      *
      * @throws PmoException
      */
     public function refresh(string $flowKey, string $endpointKey): PmoSnapshot
     {
-        $response = $this->client->fetchCollection($this->endpoint($endpointKey));
+        $response = $this->client->fetchCollection(PmoEndpoints::resolve($endpointKey));
+
+        return $this->persist($flowKey, $endpointKey, $response->rows, $response->meta, $response->url);
+    }
+
+    /**
+     * Ambil TEPAT SATU halaman dari PMO dan tambahkan ke buffer sesi —
+     * belum menyentuh potret sungguhan, jadi langkah lain yang membaca lewat
+     * get()/refresh() tidak melihat data yang belum lengkap. $page=1 selalu
+     * memulai buffer baru, menimpa sisa percobaan sebelumnya yang belum
+     * selesai (mis. karena browser tertutup di tengah jalan).
+     *
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed> page, total_pages, rows_so_far, is_last_page.
+     *
+     * @throws PmoException
+     */
+    public function fetchPage(string $flowKey, string $endpointKey, int $page, array $query = []): array
+    {
+        $pageResult = $this->client->fetchPage(PmoEndpoints::resolve($endpointKey), $query, $page);
+        $bufferKey = $this->bufferKey($flowKey, $endpointKey);
+
+        $buffer = $page > 1 ? Session::get($bufferKey) : null;
+        $buffer ??= ['rows' => [], 'meta' => [], 'url' => $pageResult->url];
+
+        $buffer['rows'] = array_merge($buffer['rows'], $pageResult->rows);
+        if ($page === 1) {
+            $buffer['meta'] = $pageResult->meta;
+            $buffer['url'] = $pageResult->url;
+        }
+
+        Session::put($bufferKey, $buffer);
+
+        return [
+            'page' => $pageResult->page,
+            'total_pages' => $pageResult->totalPages,
+            'rows_so_far' => count($buffer['rows']),
+            'is_last_page' => $pageResult->isLastPage(),
+        ];
+    }
+
+    /**
+     * Pindahkan buffer sesi (diisi lewat fetchPage()) ke potret sungguhan,
+     * lalu bersihkan buffernya. Dipanggil setelah halaman terakhir selesai
+     * diambil.
+     *
+     * @throws PmoException
+     */
+    public function finalizePages(string $flowKey, string $endpointKey): PmoSnapshot
+    {
+        $bufferKey = $this->bufferKey($flowKey, $endpointKey);
+        $buffer = Session::get($bufferKey);
+
+        if (! is_array($buffer)) {
+            throw new PmoException(
+                'Belum ada halaman yang diambil untuk "'.$endpointKey.'" pada sesi ini — '
+                .'mulai lagi dari halaman 1.'
+            );
+        }
+
+        Session::forget($bufferKey);
+
+        return $this->persist($flowKey, $endpointKey, $buffer['rows'], $buffer['meta'], $buffer['url']);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @param  array<string, mixed>  $meta
+     */
+    private function persist(string $flowKey, string $endpointKey, array $rows, array $meta, string $url): PmoSnapshot
+    {
         $fetchedAt = Carbon::now();
         $user = Session::get('user');
 
         SyncSnapshot::updateOrCreate(
             ['flow_key' => $flowKey, 'endpoint_key' => $endpointKey],
             [
-                'url' => $response->url,
-                'payload' => $this->encode(['rows' => $response->rows, 'meta' => $response->meta]),
-                'row_count' => $response->count(),
+                'url' => $url,
+                'payload' => $this->encode(['rows' => $rows, 'meta' => $meta]),
+                'row_count' => count($rows),
                 'fetched_at' => $fetchedAt,
                 'fetched_by' => $user->staff_id ?? null,
             ]
         );
 
         return new PmoSnapshot(
-            rows: $response->rows,
-            meta: $response->meta,
+            rows: $rows,
+            meta: $meta,
             fetchedAt: $fetchedAt,
-            url: $response->url,
+            url: $url,
             justFetched: true,
         );
+    }
+
+    private function bufferKey(string $flowKey, string $endpointKey): string
+    {
+        return 'sync_fetch_buffer:'.$flowKey.':'.$endpointKey;
     }
 
     public function forget(string $flowKey, ?string $endpointKey = null): void
@@ -92,25 +171,6 @@ class PmoSnapshotStore
         return SyncSnapshot::where('flow_key', $flowKey)
             ->where('endpoint_key', $endpointKey)
             ->first();
-    }
-
-    /**
-     * @throws PmoException
-     */
-    private function endpoint(string $endpointKey): string
-    {
-        // Diambil langsung dari array supaya kunci yang mengandung titik tetap
-        // terbaca apa adanya oleh config().
-        $endpoints = (array) config('synchronization.endpoints', []);
-        $endpoint = (string) ($endpoints[$endpointKey] ?? '');
-
-        if ($endpoint === '') {
-            throw new PmoException(
-                'Endpoint PMO "'.$endpointKey.'" belum terdaftar di config/synchronization.php.'
-            );
-        }
-
-        return $endpoint;
     }
 
     /**

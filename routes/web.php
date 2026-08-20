@@ -815,6 +815,8 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Sinkronisasi|others')->group(function () {
         Route::post('/synchronization/{flow}/{step}/execute', [SynchronizationController::class, 'execute'])->name('synchronizationExecute');
+        Route::post('/synchronization/{flow}/{step}/fetch-page', [SynchronizationController::class, 'fetchPage'])->name('synchronizationFetchPage');
+        Route::post('/synchronization/{flow}/{step}/finalize', [SynchronizationController::class, 'finalize'])->name('synchronizationFinalize');
     });
 
     // Platform API Eksternal — halaman administrasi di modul Integrasi.

@@ -3,7 +3,10 @@
 namespace App\Synchronization;
 
 use App\Models\SyncExecution;
+use App\Synchronization\Contracts\PaginatedStepHandler;
+use App\Synchronization\Contracts\SyncStepHandler;
 use Illuminate\Support\Facades\Log;
+use LogicException;
 use Throwable;
 
 /**
@@ -21,9 +24,40 @@ class SyncRunner
     }
 
     /**
+     * Jalur sekali-jalan: handler menunggu sampai seluruh pekerjaannya
+     * selesai (termasuk, untuk langkah berbasis halaman, seluruh halaman)
+     * sebelum baris riwayat dicatat.
+     *
      * @throws PrerequisiteNotMetException
      */
     public function run(SyncFlow $flow, SyncStep $step): SyncExecution
+    {
+        return $this->execute($flow, $step, fn (SyncStepHandler $handler) => $handler->handle());
+    }
+
+    /**
+     * Selesaikan langkah berbasis halaman (SyncStep::$paginated) setelah
+     * seluruh halamannya diambil lewat endpoint fetch-page — prasyarat,
+     * pencatatan waktu, dan SyncExecution yang dihasilkan sama persis
+     * dengan run().
+     *
+     * @throws PrerequisiteNotMetException
+     */
+    public function runFinalize(SyncFlow $flow, SyncStep $step): SyncExecution
+    {
+        return $this->execute($flow, $step, function (SyncStepHandler $handler) {
+            if (! $handler instanceof PaginatedStepHandler) {
+                throw new LogicException(get_class($handler).' bukan langkah berbasis halaman.');
+            }
+
+            return $handler->finalize();
+        });
+    }
+
+    /**
+     * @throws PrerequisiteNotMetException
+     */
+    private function execute(SyncFlow $flow, SyncStep $step, callable $work): SyncExecution
     {
         $latest = $this->executions->latestForFlow($flow);
         $unmet = $this->prerequisites->unmet($flow, $step, $latest);
@@ -37,7 +71,7 @@ class SyncRunner
         $result = SyncStepResult::start();
 
         try {
-            $result = $step->makeHandler()->handle();
+            $result = $work($step->makeHandler());
         } catch (Throwable $e) {
             Log::error('Sinkronisasi gagal', [
                 'flow' => $flow->key(),

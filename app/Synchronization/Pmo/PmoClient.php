@@ -3,19 +3,24 @@
 namespace App\Synchronization\Pmo;
 
 use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 
 /**
  * Klien HTTP sederhana ke server PMO.
  *
  * Setiap request membawa header X-API-Key (dari PMO_API_KEY di .env).
+ *
+ * Kontrak respons PMO (dikonfirmasi PMO, dipakai seluruh endpoint):
+ * `{"items": [...], "pagination": {"total", "page", "limit", "total_pages"}}`.
+ * Tanpa query params, endpoint otomatis membalas halaman pertama — satu-
+ * satunya parameter paginasi yang boleh kita kirim adalah "page" (PMO tidak
+ * menerima permintaan mengubah "limit"). Kalau $query membawa filter yang
+ * membuat PMO menganggapnya "single get" (mis. product_id), responsnya tidak
+ * mengandung "pagination" dan "items" berisi maksimal satu baris — dalam hal
+ * ini fetchCollection() otomatis berhenti setelah satu kali panggilan.
  */
 class PmoClient
 {
-    /** Kunci yang lazim dipakai server untuk membungkus daftar baris. */
-    private const ROW_WRAPPERS = ['data', 'rows', 'items', 'records', 'result', 'results', 'list'];
-
     public function __construct(private readonly array $config)
     {
     }
@@ -41,14 +46,63 @@ class PmoClient
     }
 
     /**
-     * Ambil satu koleksi data dari PMO. Kalau responsnya terpaginasi
-     * (mengandung current_page/last_page) halaman berikutnya ikut diambil.
+     * Ambil satu koleksi data dari PMO, mengikuti seluruh halaman yang ada
+     * (lewat "pagination.total_pages") sampai habis atau menyentuh max_pages.
+     * Dibangun di atas fetchPage() — kalau pemanggil ingin mengontrol sendiri
+     * perpindahan antar halaman (mis. supaya progresnya bisa ditampilkan di
+     * UI), pakai fetchPage() langsung.
+     *
+     * $query bisa membawa filter khusus PMO (mis. product_id=... untuk
+     * "single get") — dikirim apa adanya, tidak ikut diberi parameter
+     * paginasi selain "page".
      *
      * @param  array<string, mixed>  $query
      *
      * @throws PmoException
      */
     public function fetchCollection(string $endpoint, array $query = []): PmoResponse
+    {
+        $rows = [];
+        $meta = [];
+        $maxPages = max(1, (int) ($this->config['max_pages'] ?? 200));
+        $totalPages = 1;
+        $page = 1;
+        $url = $this->url($endpoint);
+
+        while ($page <= $totalPages && $page <= $maxPages) {
+            $pageResult = $this->fetchPage($endpoint, $query, $page);
+
+            $rows = array_merge($rows, $pageResult->rows);
+
+            if ($page === 1) {
+                $meta = $pageResult->meta;
+                $totalPages = $pageResult->totalPages;
+                $url = $pageResult->url;
+            }
+
+            $page++;
+        }
+
+        return new PmoResponse($rows, $meta, $page - 1, $url);
+    }
+
+    /**
+     * Ambil TEPAT SATU halaman dari PMO, tanpa mengikuti halaman berikutnya.
+     * Dipakai saat pemanggil ingin mengontrol sendiri perpindahan antar
+     * halaman — biasanya supaya progresnya bisa ditampilkan langsung di UI
+     * (lihat App\Synchronization\Contracts\PaginatedStepHandler) — alih-alih
+     * menunggu seluruh halaman selesai dalam satu panggilan seperti
+     * fetchCollection().
+     *
+     * $page=1 selalu dikirim tanpa parameter "page" (mengikuti kontrak PMO:
+     * tanpa query params = halaman pertama); $page>1 menambahkan "page" ke
+     * $query.
+     *
+     * @param  array<string, mixed>  $query
+     *
+     * @throws PmoException
+     */
+    public function fetchPage(string $endpoint, array $query, int $page): PmoPage
     {
         if (! $this->isConfigured()) {
             throw new PmoException(
@@ -57,31 +111,15 @@ class PmoClient
         }
 
         $url = $this->url($endpoint);
-        $rows = [];
-        $meta = [];
-        $page = 1;
-        $maxPages = max(1, (int) ($this->config['max_pages'] ?? 200));
+        $payload = $this->request($url, $page > 1 ? $query + ['page' => $page] : $query);
 
-        while ($page <= $maxPages) {
-            $payload = $this->request($url, $page > 1 ? $query + ['page' => $page] : $query);
-
-            $rows = array_merge($rows, $this->extractRows($payload));
-
-            if ($page === 1) {
-                $meta = $this->extractMeta($payload);
-            }
-
-            $lastPage = $this->readPageNumber($payload, ['last_page', 'total_pages', 'lastPage', 'totalPages']);
-            $currentPage = $this->readPageNumber($payload, ['current_page', 'page', 'currentPage']) ?? $page;
-
-            if ($lastPage === null || $currentPage >= $lastPage) {
-                break;
-            }
-
-            $page = $currentPage + 1;
-        }
-
-        return new PmoResponse($rows, $meta, $page, $url);
+        return new PmoPage(
+            rows: $this->extractRows($payload, $url),
+            meta: $this->extractMeta($payload),
+            page: $page,
+            totalPages: $this->extractTotalPages($payload),
+            url: $url,
+        );
     }
 
     /**
@@ -118,56 +156,56 @@ class PmoClient
     }
 
     /**
+     * "items" wajib ada dan berupa daftar — bukan sinyal "PMO tidak punya
+     * data" (itu sah, hasilnya cukup daftar kosong), melainkan kegagalan di
+     * level payload: kontraknya dilanggar, jadi seluruh langkah harus gagal
+     * (bukan diam-diam dianggap nol baris).
+     *
      * @param  array<mixed>  $payload
      * @return array<int, array<string, mixed>>
+     *
+     * @throws PmoException
      */
-    private function extractRows(array $payload): array
+    private function extractRows(array $payload, string $url): array
     {
-        if (array_is_list($payload)) {
-            return $this->onlyAssocRows($payload);
+        $items = $payload['items'] ?? null;
+
+        if (! is_array($items) || ! array_is_list($items)) {
+            throw new PmoException('Respons PMO dari '.$url.' tidak memiliki "items" berupa daftar.');
         }
 
-        foreach (self::ROW_WRAPPERS as $key) {
-            $value = $payload[$key] ?? null;
-
-            if (is_array($value) && array_is_list($value)) {
-                return $this->onlyAssocRows($value);
-            }
-
-            // Bentuk paginator Laravel: {"data": {"data": [...], "current_page": 1}}
-            if (is_array($value)) {
-                foreach (self::ROW_WRAPPERS as $nested) {
-                    $inner = $value[$nested] ?? null;
-                    if (is_array($inner) && array_is_list($inner)) {
-                        return $this->onlyAssocRows($inner);
-                    }
-                }
-            }
-        }
-
-        return [];
-    }
-
-    /**
-     * @param  array<int, mixed>  $rows
-     * @return array<int, array<string, mixed>>
-     */
-    private function onlyAssocRows(array $rows): array
-    {
-        $out = [];
-        foreach ($rows as $row) {
+        $rows = [];
+        foreach ($items as $row) {
             if (is_array($row)) {
-                $out[] = $row;
+                $rows[] = $row;
             } elseif (is_object($row)) {
-                $out[] = (array) $row;
+                $rows[] = (array) $row;
             }
         }
 
-        return $out;
+        return $rows;
     }
 
     /**
-     * Informasi tambahan dari respons (di luar daftar baris) supaya bisa
+     * Jumlah total halaman menurut "pagination.total_pages". Respons "single
+     * get" (mis. hasil filter product_id) tidak membawa "pagination" sama
+     * sekali — dianggap satu halaman, tidak perlu panggilan lanjutan.
+     *
+     * @param  array<mixed>  $payload
+     */
+    private function extractTotalPages(array $payload): int
+    {
+        $pagination = $payload['pagination'] ?? null;
+
+        if (! is_array($pagination) || ! isset($pagination['total_pages']) || ! is_numeric($pagination['total_pages'])) {
+            return 1;
+        }
+
+        return max(0, (int) $pagination['total_pages']);
+    }
+
+    /**
+     * Informasi paginasi dari respons halaman pertama saja, supaya bisa
      * ditampilkan apa adanya pada hasil eksekusi.
      *
      * @param  array<mixed>  $payload
@@ -175,41 +213,21 @@ class PmoClient
      */
     private function extractMeta(array $payload): array
     {
-        if (array_is_list($payload)) {
+        $pagination = $payload['pagination'] ?? null;
+        if (! is_array($pagination)) {
             return [];
         }
 
-        $meta = Arr::except($payload, self::ROW_WRAPPERS);
+        $meta = [];
 
-        if (isset($payload['meta']) && is_array($payload['meta'])) {
-            $meta = array_merge($meta, $payload['meta']);
-            unset($meta['meta']);
+        if (isset($pagination['total']) && is_numeric($pagination['total'])) {
+            $meta['Total Data di PMO'] = (int) $pagination['total'];
         }
 
-        return array_filter($meta, static fn ($value) => is_scalar($value) || $value === null);
-    }
-
-    /**
-     * @param  array<mixed>  $payload
-     * @param  array<int, string>  $keys
-     */
-    private function readPageNumber(array $payload, array $keys): ?int
-    {
-        $sources = [$payload];
-        foreach (['meta', 'data', 'pagination'] as $wrapper) {
-            if (isset($payload[$wrapper]) && is_array($payload[$wrapper])) {
-                $sources[] = $payload[$wrapper];
-            }
+        if (isset($pagination['total_pages']) && is_numeric($pagination['total_pages'])) {
+            $meta['Jumlah Halaman'] = (int) $pagination['total_pages'];
         }
 
-        foreach ($sources as $source) {
-            foreach ($keys as $key) {
-                if (isset($source[$key]) && is_numeric($source[$key])) {
-                    return (int) $source[$key];
-                }
-            }
-        }
-
-        return null;
+        return $meta;
     }
 }
