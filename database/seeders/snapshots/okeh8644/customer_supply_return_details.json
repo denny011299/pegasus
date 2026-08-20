@@ -1,0 +1,57 @@
+[
+    {
+        "return_detail_id": 1,
+        "return_id": 1,
+        "supplies_id": 111,
+        "unit_id": 7,
+        "warehouse_id": 1,
+        "qty": 1,
+        "status": 1,
+        "created_at": "2026-08-07 16:09:43",
+        "updated_at": "2026-08-07 16:09:43"
+    },
+    {
+        "return_detail_id": 2,
+        "return_id": 2,
+        "supplies_id": 16,
+        "unit_id": 9,
+        "warehouse_id": 1,
+        "qty": 1,
+        "status": 1,
+        "created_at": "2026-08-14 08:25:46",
+        "updated_at": "2026-08-14 08:25:46"
+    },
+    {
+        "return_detail_id": 3,
+        "return_id": 3,
+        "supplies_id": 110,
+        "unit_id": 7,
+        "warehouse_id": 13,
+        "qty": 1,
+        "status": 1,
+        "created_at": "2026-08-14 23:56:58",
+        "updated_at": "2026-08-14 23:56:58"
+    },
+    {
+        "return_detail_id": 4,
+        "return_id": 3,
+        "supplies_id": 111,
+        "unit_id": 7,
+        "warehouse_id": 13,
+        "qty": 1,
+        "status": 1,
+        "created_at": "2026-08-14 23:56:58",
+        "updated_at": "2026-08-14 23:56:58"
+    },
+    {
+        "return_detail_id": 5,
+        "return_id": 4,
+        "supplies_id": 39,
+        "unit_id": 9,
+        "warehouse_id": 1,
+        "qty": 1,
+        "status": 1,
+        "created_at": "2026-08-18 16:15:42",
+        "updated_at": "2026-08-18 16:15:42"
+    }
+]

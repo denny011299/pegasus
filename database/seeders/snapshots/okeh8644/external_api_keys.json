@@ -1,0 +1,20 @@
+[
+    {
+        "external_api_key_id": 1,
+        "external_application_id": 1,
+        "key_name": "PMO1",
+        "environment": "development",
+        "key_prefix": "ext_dev_Y3ZcKYgM3Ffx",
+        "key_hash": "cf86c5d41df1e262074667c82d175681680110ffeaf9a161580579ed724378ac",
+        "key_last_four": "4dQ7",
+        "key_status": "active",
+        "expires_at": null,
+        "last_used_at": null,
+        "revoked_at": null,
+        "revoked_by": null,
+        "created_by": 13,
+        "status": 1,
+        "created_at": "2026-08-18 20:16:01",
+        "updated_at": "2026-08-18 20:16:01"
+    }
+]

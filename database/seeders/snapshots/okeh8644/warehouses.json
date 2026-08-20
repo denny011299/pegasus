@@ -1,0 +1,156 @@
+[
+    {
+        "id": 1,
+        "warehouse_name": "Gudang Besar Pegasus Hikari Group Sidoarjo",
+        "warehouse_type_id": 1,
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A8 - 9, Jalan Industri, Buduran, Sidoarjo",
+        "sidebar_menus": "[\"Kategori\",\"Satuan\",\"Variasi\",\"Gudang\",\"Tipe Gudang\",\"Daftar Produk\",\"Stok Produk\",\"Daftar Bahan Mentah\",\"Stok Bahan Mentah\",\"Armada\",\"Pemasok\",\"Produk Bermasalah\",\"Peringatan Stok Produk\",\"Peringatan Stok Bahan Mentah\",\"Stok Opname Produk\",\"Stok Opname Bahan Mentah\",\"Stock Transfer\",\"Pengiriman\",\"Pembelian\",\"Tanda Terima PO\",\"Resep Bahan Mentah\",\"Produksi\",\"Bank Account\",\"Hutang\",\"Kategori Kas\",\"Kas Operasional Admin\",\"Kas Operasional Gudang\",\"Kas Operasional Armada\",\"Kas Operasional Sales\",\"Kas\",\"Pengelolaan Bahan Mentah\",\"Retur Produk\",\"Laporan Produksi\",\"Untung & Rugi\",\"Barang Masuk Keluar\",\"Laporan Stock Aging\",\"Pengguna\",\"Peran & Perizinan\",\"Profil\",\"Pengaturan\",\"Sinkronisasi\",\"Status API Eksternal\",\"Aplikasi Eksternal\",\"Dokumentasi API Eksternal\",\"Log API Eksternal\"]",
+        "status": 1,
+        "created_by": 13,
+        "created_at": "2026-07-22 12:03:46",
+        "updated_at": "2026-08-18 22:34:07"
+    },
+    {
+        "id": 2,
+        "warehouse_name": "Gudang Kecil 1",
+        "warehouse_type_id": 5,
+        "warehouse_address": "Jl. Wonorejo II no. 49",
+        "sidebar_menus": "[\"Gudang\", \"Tipe Gudang\", \"Stok Produk\"]",
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-22 12:08:29",
+        "updated_at": "2026-07-30 15:51:48"
+    },
+    {
+        "id": 3,
+        "warehouse_name": "Gudang Kecil 2",
+        "warehouse_type_id": 5,
+        "warehouse_address": null,
+        "sidebar_menus": "[\"Kategori\", \"Satuan\", \"Variasi\", \"Gudang\", \"Tipe Gudang\", \"Pengelolaan Bahan Mentah\", \"Laporan Produksi\", \"Barang Masuk Keluar\", \"Pengaturan\"]",
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-22 12:08:36",
+        "updated_at": "2026-07-30 15:51:51"
+    },
+    {
+        "id": 4,
+        "warehouse_name": "Gudang Kecil 3",
+        "warehouse_type_id": 5,
+        "warehouse_address": null,
+        "sidebar_menus": null,
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-22 12:08:44",
+        "updated_at": "2026-07-30 15:51:55"
+    },
+    {
+        "id": 5,
+        "warehouse_name": "Gudang Kecil 4",
+        "warehouse_type_id": 5,
+        "warehouse_address": null,
+        "sidebar_menus": null,
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-22 12:11:02",
+        "updated_at": "2026-07-30 15:52:01"
+    },
+    {
+        "id": 6,
+        "warehouse_name": "Gudang Kecil 5",
+        "warehouse_type_id": 5,
+        "warehouse_address": null,
+        "sidebar_menus": null,
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-22 12:42:43",
+        "updated_at": "2026-07-30 15:52:04"
+    },
+    {
+        "id": 7,
+        "warehouse_name": "Gudang Kecil 6",
+        "warehouse_type_id": 5,
+        "warehouse_address": null,
+        "sidebar_menus": null,
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-22 12:51:49",
+        "updated_at": "2026-07-30 15:52:08"
+    },
+    {
+        "id": 8,
+        "warehouse_name": "gUDANG dENNY",
+        "warehouse_type_id": 1,
+        "warehouse_address": null,
+        "sidebar_menus": null,
+        "status": 0,
+        "created_by": 13,
+        "created_at": "2026-07-22 15:15:07",
+        "updated_at": "2026-07-22 16:25:03"
+    },
+    {
+        "id": 9,
+        "warehouse_name": "Test Gudang",
+        "warehouse_type_id": 7,
+        "warehouse_address": null,
+        "sidebar_menus": null,
+        "status": 0,
+        "created_by": null,
+        "created_at": "2026-07-22 17:01:31",
+        "updated_at": "2026-07-23 19:36:42"
+    },
+    {
+        "id": 10,
+        "warehouse_name": "Gudang Kecil 7",
+        "warehouse_type_id": 5,
+        "warehouse_address": null,
+        "sidebar_menus": null,
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-23 19:38:38",
+        "updated_at": "2026-07-30 15:52:13"
+    },
+    {
+        "id": 11,
+        "warehouse_name": "Gudang Eceran Sidoarjo",
+        "warehouse_type_id": 5,
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A9, Jalan Industri, Buduran, Sidoarjo",
+        "sidebar_menus": "[\"Kategori\", \"Satuan\", \"Variasi\", \"Gudang\", \"Tipe Gudang\", \"Daftar Produk\", \"Stok Produk\"]",
+        "status": 1,
+        "created_by": 13,
+        "created_at": "2026-07-25 02:12:41",
+        "updated_at": "2026-08-17 02:00:51"
+    },
+    {
+        "id": 12,
+        "warehouse_name": "Gudang Besar B",
+        "warehouse_type_id": 1,
+        "warehouse_address": null,
+        "sidebar_menus": "[\"Kategori\", \"Satuan\", \"Variasi\", \"Gudang\", \"Tipe Gudang\", \"Daftar Produk\", \"Stok Produk\", \"Daftar Bahan Mentah\", \"Stok Bahan Mentah\", \"Armada\", \"Pemasok\", \"Produk Bermasalah\", \"Peringatan Stok Produk\", \"Peringatan Stok Bahan Mentah\", \"Stok Opname Produk\", \"Stok Opname Bahan Mentah\", \"Stock Transfer\", \"Pengiriman\", \"Pembelian\", \"Tanda Terima PO\", \"Resep Bahan Mentah\", \"Produksi\", \"Bank Account\", \"Hutang\", \"Kategori Kas\", \"Kas Operasional Admin\", \"Kas Operasional Gudang\", \"Kas Operasional Armada\", \"Kas Operasional Sales\", \"Kas\", \"Pengelolaan Bahan Mentah\", \"Retur Produk\", \"Laporan Produksi\", \"Untung & Rugi\", \"Barang Masuk Keluar\", \"Laporan Stock Aging\", \"Pengguna\", \"Peran & Perizinan\", \"Profil\", \"Pengaturan\"]",
+        "status": 0,
+        "created_by": 9,
+        "created_at": "2026-07-30 01:34:37",
+        "updated_at": "2026-07-30 15:51:40"
+    },
+    {
+        "id": 13,
+        "warehouse_name": "Gudang Besar Okejob",
+        "warehouse_type_id": 1,
+        "warehouse_address": "Kendangsari",
+        "sidebar_menus": "[\"Gudang\",\"Tipe Gudang\",\"Daftar Produk\",\"Stok Produk\",\"Daftar Bahan Mentah\",\"Stok Bahan Mentah\",\"Armada\",\"Pemasok\",\"Produk Bermasalah\",\"Peringatan Stok Produk\",\"Peringatan Stok Bahan Mentah\",\"Stok Opname Produk\",\"Stok Opname Bahan Mentah\",\"Stock Transfer\",\"Pengiriman\",\"Pembelian\",\"Tanda Terima PO\",\"Resep Bahan Mentah\",\"Produksi\",\"Bank Account\",\"Hutang\",\"Kategori Kas\",\"Kas Operasional Admin\",\"Kas Operasional Gudang\",\"Kas Operasional Armada\",\"Kas Operasional Sales\",\"Kas\",\"Pengelolaan Bahan Mentah\",\"Retur Produk\",\"Laporan Produksi\",\"Untung & Rugi\",\"Barang Masuk Keluar\",\"Laporan Stock Aging\",\"Pengguna\",\"Peran & Perizinan\",\"Profil\",\"Pengaturan\",\"Sinkronisasi\",\"Status API Eksternal\",\"Aplikasi Eksternal\",\"Dokumentasi API Eksternal\",\"Log API Eksternal\"]",
+        "status": 1,
+        "created_by": 13,
+        "created_at": "2026-08-04 17:52:49",
+        "updated_at": "2026-08-18 22:34:12"
+    },
+    {
+        "id": 14,
+        "warehouse_name": "Gudang Eceran Okejob",
+        "warehouse_type_id": 5,
+        "warehouse_address": null,
+        "sidebar_menus": "[\"Kategori\",\"Satuan\",\"Variasi\",\"Gudang\",\"Tipe Gudang\",\"Daftar Produk\",\"Stok Produk\",\"Armada\",\"Pemasok\",\"Produk Bermasalah\",\"Peringatan Stok Produk\",\"Peringatan Stok Bahan Mentah\",\"Stok Opname Produk\",\"Stok Opname Bahan Mentah\",\"Stock Transfer\",\"Pengiriman\",\"Pembelian\",\"Tanda Terima PO\",\"Resep Bahan Mentah\",\"Produksi\",\"Bank Account\",\"Hutang\",\"Kategori Kas\",\"Kas Operasional Admin\",\"Kas Operasional Gudang\",\"Kas Operasional Armada\",\"Kas Operasional Sales\",\"Kas\",\"Pengelolaan Bahan Mentah\",\"Retur Produk\",\"Laporan Produksi\",\"Untung & Rugi\",\"Barang Masuk Keluar\",\"Laporan Stock Aging\",\"Pengguna\",\"Peran & Perizinan\",\"Profil\",\"Pengaturan\",\"Sinkronisasi\",\"Aplikasi Eksternal\",\"Dokumentasi API Eksternal\",\"Log API Eksternal\"]",
+        "status": 1,
+        "created_by": 13,
+        "created_at": "2026-08-04 17:52:59",
+        "updated_at": "2026-08-17 02:00:47"
+    }
+]

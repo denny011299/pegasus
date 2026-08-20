@@ -1,0 +1,266 @@
+[
+    {
+        "external_api_endpoint_id": 1,
+        "endpoint_key": "armada",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 2,
+        "endpoint_key": "armada-create",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 3,
+        "endpoint_key": "armada-delete",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 4,
+        "endpoint_key": "armada-update",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 5,
+        "endpoint_key": "master-cash-categories",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 6,
+        "endpoint_key": "master-sales",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 7,
+        "endpoint_key": "master-sales-connect",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 8,
+        "endpoint_key": "master-sales-create",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 9,
+        "endpoint_key": "master-sales-delete",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 10,
+        "endpoint_key": "master-sales-update",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 11,
+        "endpoint_key": "master-units",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 12,
+        "endpoint_key": "master-units-connect",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 13,
+        "endpoint_key": "master-units-create",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 14,
+        "endpoint_key": "master-units-delete",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 15,
+        "endpoint_key": "master-units-update",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 16,
+        "endpoint_key": "master-warehouse-types",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 17,
+        "endpoint_key": "master-warehouses",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 18,
+        "endpoint_key": "master-warehouses-create",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 19,
+        "endpoint_key": "master-warehouses-delete",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 20,
+        "endpoint_key": "master-warehouses-update",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 21,
+        "endpoint_key": "pembayaran-kas-buat",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 22,
+        "endpoint_key": "pembayaran-kas-detail",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 23,
+        "endpoint_key": "produk",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 24,
+        "endpoint_key": "produk-connect",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 25,
+        "endpoint_key": "produk-create",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 26,
+        "endpoint_key": "produk-delete",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 27,
+        "endpoint_key": "produk-update",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 28,
+        "endpoint_key": "shipment-cancel",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 29,
+        "endpoint_key": "shipment-change-status",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 30,
+        "endpoint_key": "shipment-scheduled",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 31,
+        "endpoint_key": "shipment-shipped",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 32,
+        "endpoint_key": "shipment-show",
+        "is_active": 0,
+        "is_public_docs_show": 0,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    },
+    {
+        "external_api_endpoint_id": 33,
+        "endpoint_key": "stok-cek",
+        "is_active": 1,
+        "is_public_docs_show": 1,
+        "created_at": "2026-08-18 19:32:06",
+        "updated_at": "2026-08-18 19:32:06"
+    }
+]
