@@ -78,7 +78,8 @@
                 <div class="col-xl-8 col-lg-7">
                     @foreach ($steps as $index => $step)
                         <div class="sync-step-pane {{ $index === 0 ? 'is-active' : '' }}"
-                            data-step="{{ $step->key }}" data-index="{{ $index }}">
+                            data-step="{{ $step->key }}" data-index="{{ $index }}"
+                            data-paginated="{{ $step->paginated ? '1' : '0' }}">
                             <div class="card">
                                 <div class="card-body">
                                     <div class="d-flex align-items-start justify-content-between">
@@ -152,6 +153,22 @@
                                             <i class="fe fe-refresh-cw me-2"></i>Jalankan Sinkronisasi
                                         </button>
                                     </div>
+
+                                    @if ($step->paginated)
+                                        <!-- Progres per halaman (PMO berbasis halaman) -->
+                                        <div class="sync-page-progress d-none mt-4">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <span class="sync-page-progress-text text-muted">Mengambil halaman…</span>
+                                                <span class="sync-page-progress-rows text-muted">-</span>
+                                            </div>
+                                            <div class="progress sync-progress">
+                                                <div class="progress-bar bg-info sync-page-progress-bar"
+                                                    role="progressbar" style="width: 0%"
+                                                    aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
 
                                     <!-- Hasil eksekusi -->
                                     <div class="sync-result d-none mt-4">

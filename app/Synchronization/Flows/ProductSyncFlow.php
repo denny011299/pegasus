@@ -28,9 +28,10 @@ use App\Synchronization\SyncStep;
  *             products ──► product_variants ──┬──► product_relations
  *                                             └──► product_stocks
  *
- * Dua endpoint dipakai — /getUnits untuk master satuan dan /getProducts untuk
- * sisanya — dan masing-masing hanya ditarik sekali per sesi lalu dipakai
- * bersama seluruh langkah (lihat PmoSnapshotStore).
+ * Satu-satunya endpoint yang dipanggil adalah /getProducts, ditarik sekali
+ * per sesi lalu dipakai bersama seluruh langkah (lihat PmoSnapshotStore).
+ * PMO tidak menyediakan endpoint satuan terpisah — master satuan diturunkan
+ * dari items[].units[] pada respons yang sama (lihat ProductFlowStep::units()).
  */
 class ProductSyncFlow extends SyncFlow
 {
@@ -113,23 +114,30 @@ class ProductSyncFlow extends SyncFlow
                 notes: [
                     'Langkah ini aman dijalankan kapan saja — tidak mengubah data apa pun.',
                     'Jalankan ulang langkah ini bila ingin mengambil data terbaru dari PMO.',
+                    '/getProducts berbasis halaman — langkah ini menariknya halaman demi halaman '
+                        .'secara otomatis, progresnya terlihat berjalan di layar ini.',
                 ],
+                paginated: true,
             ),
             new SyncStep(
                 key: 'unit',
                 title: 'Sinkronisasi Satuan',
-                description: 'Menarik master satuan dari PMO ke tabel satuan Pegasus.',
-                dataSynced: 'Nama satuan, singkatan, dan statusnya.',
+                description: 'Menurunkan master satuan dari daftar satuan tiap produk pada data PMO.',
+                dataSynced: 'Nama satuan. Singkatan dan status aktif tidak pernah diubah — lihat catatan.',
                 why: 'Satuan adalah fondasi seluruh data produk. Produk, varian produk, konversi satuan, '
                     .'dan stok semuanya menunjuk ke satuan.',
                 dependents: 'Produk, Varian Produk, Konversi Satuan, dan Stok Produk.',
                 expectation: 'Daftar satuan di menu Master → Satuan akan sesuai dengan satuan di PMO.',
-                prerequisites: [],
+                prerequisites: ['fetch'],
                 handler: SyncUnitStep::class,
                 notes: [
+                    'PMO tidak menyediakan endpoint satuan terpisah — daftarnya diturunkan dari satuan '
+                        .'yang dipakai tiap produk pada langkah "Ambil & Periksa Data PMO".',
                     'Pada sinkronisasi pertama, satuan Pegasus yang namanya sama akan dipakai ulang, '
                         .'bukan dibuat ganda.',
                     'Satuan dengan nama ganda di Pegasus dilaporkan gagal — rapikan dulu, lalu jalankan ulang.',
+                    'PMO tidak mengirim singkatan maupun status aktif per satuan, jadi keduanya tidak '
+                        .'pernah dinonaktifkan otomatis oleh sinkronisasi ini.',
                 ],
             ),
             new SyncStep(
