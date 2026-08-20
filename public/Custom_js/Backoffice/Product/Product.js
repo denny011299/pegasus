@@ -5,18 +5,29 @@
         inisialisasi();
     });
 
+    function setProductTableLoading(isLoading) {
+        var $wrap = $("#tableProduct-wrap");
+        if (!$wrap.length) return;
+        $wrap.toggleClass("is-loading", !!isLoading);
+    }
+
     function inisialisasi() {
         var $productTable = $("#tableProduct");
 
-        $productTable.on("processing.dt", function (event, settings, processing) {
-            $(settings.nTableWrapper).toggleClass("is-processing", processing);
-        });
+        $productTable
+            .on("preXhr.dt", function () {
+                setProductTableLoading(true);
+            })
+            .on("xhr.dt", function () {
+                setTimeout(function () {
+                    setProductTableLoading(false);
+                }, 0);
+            });
 
         table = $productTable.DataTable({
             processing: true,
             serverSide: true,
             deferRender: true,
-            // responsive + scrollX sering bikin header/body tidak sinkron
             responsive: false,
             autoWidth: false,
             scrollX: false,
@@ -46,7 +57,16 @@
                 { data: "product_category", width: "12%" },
                 { data: "unit_values", width: "12%" },
                 { data: "variant_values", width: "35%" },
-                { data: "created_by_name", defaultContent: "-", width: "13%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
+                {
+                    data: "created_by_name",
+                    defaultContent: "-",
+                    width: "13%",
+                    render: function (data) {
+                        return typeof renderCreatedByName === "function"
+                            ? renderCreatedByName(data)
+                            : data;
+                    },
+                },
                 {
                     data: "action",
                     className: "text-center align-middle",
@@ -60,9 +80,15 @@
                 $filter.appendTo(".search-input");
                 $filter.find("label").prepend('<i class="fa fa-search"></i> ');
                 this.api().columns.adjust();
+                $("#tableProduct-wrap")
+                    .removeClass("dt-pending")
+                    .addClass("dt-ready");
+                setProductTableLoading(false);
             },
             drawCallback: function () {
                 this.api().columns.adjust();
+                setProductTableLoading(false);
+                if (typeof feather !== "undefined") feather.replace();
             },
         });
     }
@@ -71,7 +97,6 @@
         if (table) table.ajax.reload(null, false);
     }
 
-    // delete
     $(document).on("click", ".btn_delete", function () {
         var data = $("#tableProduct").DataTable().row($(this).parents("tr")).data();
         showModalDelete("Apakah yakin ingin menghapus produk ini?", "btn-delete-product");
