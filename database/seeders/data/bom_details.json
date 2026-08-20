@@ -106,8 +106,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-25 16:26:09",
-        "updated_at": "2026-02-25 16:26:09",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:41",
+        "created_by": 13
     },
     {
         "bom_detail_id": 11,
@@ -117,8 +117,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-25 16:26:09",
-        "updated_at": "2026-02-25 16:26:09",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:41",
+        "created_by": 13
     },
     {
         "bom_detail_id": 12,
@@ -128,8 +128,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-25 16:26:09",
-        "updated_at": "2026-02-25 16:26:09",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:41",
+        "created_by": 13
     },
     {
         "bom_detail_id": 13,
@@ -139,19 +139,19 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-25 16:26:09",
-        "updated_at": "2026-02-25 16:26:09",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:41",
+        "created_by": 13
     },
     {
         "bom_detail_id": 14,
         "bom_id": 3,
         "supplies_id": 26,
         "bom_detail_qty": 1,
-        "unit_id": 9,
+        "unit_id": 7,
         "status": 1,
         "created_at": "2026-02-25 16:26:09",
-        "updated_at": "2026-02-25 16:26:09",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:41",
+        "created_by": 13
     },
     {
         "bom_detail_id": 15,
@@ -216,8 +216,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-28 09:08:06",
-        "updated_at": "2026-02-28 09:08:06",
-        "created_by": null
+        "updated_at": "2026-08-06 20:22:07",
+        "created_by": 9
     },
     {
         "bom_detail_id": 21,
@@ -227,8 +227,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-28 09:08:06",
-        "updated_at": "2026-02-28 09:08:06",
-        "created_by": null
+        "updated_at": "2026-08-06 20:22:07",
+        "created_by": 9
     },
     {
         "bom_detail_id": 22,
@@ -238,8 +238,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-28 09:08:06",
-        "updated_at": "2026-02-28 09:08:06",
-        "created_by": null
+        "updated_at": "2026-08-06 20:22:07",
+        "created_by": 9
     },
     {
         "bom_detail_id": 23,
@@ -249,19 +249,19 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-28 09:08:06",
-        "updated_at": "2026-02-28 09:08:06",
-        "created_by": null
+        "updated_at": "2026-08-06 20:22:07",
+        "created_by": 9
     },
     {
         "bom_detail_id": 24,
         "bom_id": 5,
         "supplies_id": 10,
         "bom_detail_qty": 1,
-        "unit_id": 9,
+        "unit_id": 7,
         "status": 1,
         "created_at": "2026-02-28 09:08:06",
-        "updated_at": "2026-02-28 09:08:06",
-        "created_by": null
+        "updated_at": "2026-08-06 20:22:07",
+        "created_by": 9
     },
     {
         "bom_detail_id": 25,
@@ -524,8 +524,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 13:40:06",
-        "updated_at": "2026-03-02 13:40:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:08:18",
+        "created_by": 13
     },
     {
         "bom_detail_id": 49,
@@ -535,8 +535,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 13:40:06",
-        "updated_at": "2026-03-02 13:40:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:08:18",
+        "created_by": 13
     },
     {
         "bom_detail_id": 50,
@@ -546,8 +546,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 13:40:06",
-        "updated_at": "2026-03-02 13:40:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:08:18",
+        "created_by": 13
     },
     {
         "bom_detail_id": 51,
@@ -557,19 +557,19 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 13:40:06",
-        "updated_at": "2026-03-02 13:40:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:08:18",
+        "created_by": 13
     },
     {
         "bom_detail_id": 52,
         "bom_id": 11,
         "supplies_id": 34,
         "bom_detail_qty": 1,
-        "unit_id": 9,
+        "unit_id": 7,
         "status": 1,
         "created_at": "2026-03-02 13:40:06",
-        "updated_at": "2026-03-02 13:40:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:08:18",
+        "created_by": 13
     },
     {
         "bom_detail_id": 53,
@@ -1294,8 +1294,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:35:36",
-        "updated_at": "2026-03-02 14:35:36",
-        "created_by": null
+        "updated_at": "2026-07-29 14:23:50",
+        "created_by": 13
     },
     {
         "bom_detail_id": 119,
@@ -1305,8 +1305,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:35:36",
-        "updated_at": "2026-03-02 14:35:36",
-        "created_by": null
+        "updated_at": "2026-07-29 14:23:50",
+        "created_by": 13
     },
     {
         "bom_detail_id": 120,
@@ -1316,19 +1316,19 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:35:36",
-        "updated_at": "2026-03-02 14:35:36",
-        "created_by": null
+        "updated_at": "2026-07-29 14:23:50",
+        "created_by": 13
     },
     {
         "bom_detail_id": 121,
         "bom_id": 25,
         "supplies_id": 31,
         "bom_detail_qty": 1,
-        "unit_id": 9,
+        "unit_id": 7,
         "status": 1,
         "created_at": "2026-03-02 14:35:36",
-        "updated_at": "2026-03-02 14:35:36",
-        "created_by": null
+        "updated_at": "2026-07-29 14:23:50",
+        "created_by": 13
     },
     {
         "bom_detail_id": 122,
@@ -1338,8 +1338,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:36:21",
-        "updated_at": "2026-03-02 14:36:21",
-        "created_by": null
+        "updated_at": "2026-07-29 23:06:43",
+        "created_by": 13
     },
     {
         "bom_detail_id": 123,
@@ -1349,8 +1349,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:36:21",
-        "updated_at": "2026-03-02 14:36:21",
-        "created_by": null
+        "updated_at": "2026-07-29 23:06:43",
+        "created_by": 13
     },
     {
         "bom_detail_id": 124,
@@ -1360,19 +1360,19 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:36:21",
-        "updated_at": "2026-03-02 14:36:21",
-        "created_by": null
+        "updated_at": "2026-07-29 23:06:43",
+        "created_by": 13
     },
     {
         "bom_detail_id": 125,
         "bom_id": 26,
         "supplies_id": 32,
         "bom_detail_qty": 1,
-        "unit_id": 9,
+        "unit_id": 7,
         "status": 1,
         "created_at": "2026-03-02 14:36:21",
-        "updated_at": "2026-03-02 14:36:21",
-        "created_by": null
+        "updated_at": "2026-07-29 23:06:43",
+        "created_by": 13
     },
     {
         "bom_detail_id": 126,
@@ -1382,8 +1382,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:37:44",
-        "updated_at": "2026-03-02 14:37:44",
-        "created_by": null
+        "updated_at": "2026-08-06 20:14:42",
+        "created_by": 9
     },
     {
         "bom_detail_id": 127,
@@ -1393,8 +1393,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:37:44",
-        "updated_at": "2026-03-02 14:37:44",
-        "created_by": null
+        "updated_at": "2026-08-06 20:14:42",
+        "created_by": 9
     },
     {
         "bom_detail_id": 128,
@@ -1404,19 +1404,19 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:37:44",
-        "updated_at": "2026-03-02 14:37:44",
-        "created_by": null
+        "updated_at": "2026-08-06 20:14:42",
+        "created_by": 9
     },
     {
         "bom_detail_id": 129,
         "bom_id": 27,
         "supplies_id": 33,
         "bom_detail_qty": 1,
-        "unit_id": 9,
+        "unit_id": 7,
         "status": 1,
         "created_at": "2026-03-02 14:37:44",
-        "updated_at": "2026-03-02 14:37:44",
-        "created_by": null
+        "updated_at": "2026-08-06 20:14:42",
+        "created_by": 9
     },
     {
         "bom_detail_id": 130,
@@ -3670,8 +3670,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:39:36",
-        "updated_at": "2026-03-14 11:39:36",
-        "created_by": null
+        "updated_at": "2026-06-22 15:10:53",
+        "created_by": 15
     },
     {
         "bom_detail_id": 335,
@@ -3681,8 +3681,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:39:36",
-        "updated_at": "2026-03-14 11:39:36",
-        "created_by": null
+        "updated_at": "2026-06-22 15:10:53",
+        "created_by": 15
     },
     {
         "bom_detail_id": 336,
@@ -3690,9 +3690,9 @@
         "supplies_id": 34,
         "bom_detail_qty": 1,
         "unit_id": 9,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-03-14 11:39:36",
-        "updated_at": "2026-03-14 11:39:36",
+        "updated_at": "2026-06-22 15:10:53",
         "created_by": null
     },
     {
@@ -3703,8 +3703,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:40:27",
-        "updated_at": "2026-03-14 11:40:27",
-        "created_by": null
+        "updated_at": "2026-06-22 15:12:36",
+        "created_by": 15
     },
     {
         "bom_detail_id": 338,
@@ -3714,8 +3714,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:40:27",
-        "updated_at": "2026-03-14 11:40:27",
-        "created_by": null
+        "updated_at": "2026-06-22 15:12:36",
+        "created_by": 15
     },
     {
         "bom_detail_id": 339,
@@ -3723,9 +3723,9 @@
         "supplies_id": 32,
         "bom_detail_qty": 1,
         "unit_id": 9,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-03-14 11:40:27",
-        "updated_at": "2026-03-14 11:40:27",
+        "updated_at": "2026-06-22 15:12:48",
         "created_by": null
     },
     {
@@ -3736,7 +3736,7 @@
         "unit_id": 9,
         "status": 0,
         "created_at": "2026-03-14 11:43:11",
-        "updated_at": "2026-05-07 07:52:44",
+        "updated_at": "2026-06-22 15:11:21",
         "created_by": null
     },
     {
@@ -3747,8 +3747,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:43:11",
-        "updated_at": "2026-05-04 09:17:30",
-        "created_by": 9
+        "updated_at": "2026-06-22 15:11:21",
+        "created_by": 15
     },
     {
         "bom_detail_id": 342,
@@ -3756,9 +3756,9 @@
         "supplies_id": 33,
         "bom_detail_qty": 1,
         "unit_id": 9,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-03-14 11:43:11",
-        "updated_at": "2026-05-04 09:17:30",
+        "updated_at": "2026-06-22 15:11:21",
         "created_by": 9
     },
     {
@@ -3824,7 +3824,7 @@
         "unit_id": 9,
         "status": 0,
         "created_at": "2026-03-14 11:49:37",
-        "updated_at": "2026-03-16 10:31:03",
+        "updated_at": "2026-06-25 09:39:35",
         "created_by": null
     },
     {
@@ -3833,9 +3833,9 @@
         "supplies_id": 37,
         "bom_detail_qty": 1,
         "unit_id": 9,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-03-14 11:49:37",
-        "updated_at": "2026-03-14 11:49:37",
+        "updated_at": "2026-06-25 09:39:35",
         "created_by": null
     },
     {
@@ -3890,7 +3890,7 @@
         "unit_id": 21,
         "status": 0,
         "created_at": "2026-03-14 11:54:33",
-        "updated_at": "2026-06-18 18:00:34",
+        "updated_at": "2026-06-25 15:20:16",
         "created_by": null
     },
     {
@@ -3921,9 +3921,9 @@
         "supplies_id": 158,
         "bom_detail_qty": 1,
         "unit_id": 21,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-03-16 10:31:03",
-        "updated_at": "2026-03-16 10:31:03",
+        "updated_at": "2026-06-25 09:39:35",
         "created_by": null
     },
     {
@@ -4286,8 +4286,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-28 08:35:06",
-        "updated_at": "2026-03-28 08:35:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:56",
+        "created_by": 13
     },
     {
         "bom_detail_id": 391,
@@ -4297,8 +4297,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-28 08:35:06",
-        "updated_at": "2026-03-28 08:35:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:56",
+        "created_by": 13
     },
     {
         "bom_detail_id": 392,
@@ -4308,19 +4308,19 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-28 08:35:06",
-        "updated_at": "2026-03-28 08:35:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:56",
+        "created_by": 13
     },
     {
         "bom_detail_id": 393,
         "bom_id": 106,
         "supplies_id": 166,
         "bom_detail_qty": 1,
-        "unit_id": 9,
+        "unit_id": 7,
         "status": 1,
         "created_at": "2026-03-28 08:35:06",
-        "updated_at": "2026-03-28 08:35:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:56",
+        "created_by": 13
     },
     {
         "bom_detail_id": 394,
@@ -5021,9 +5021,9 @@
         "supplies_id": 199,
         "bom_detail_qty": 1,
         "unit_id": 21,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-03-28 11:23:08",
-        "updated_at": "2026-03-28 11:23:08",
+        "updated_at": "2026-06-30 15:19:29",
         "created_by": null
     },
     {
@@ -5815,7 +5815,7 @@
         "unit_id": 7,
         "status": 0,
         "created_at": "2026-05-04 09:17:30",
-        "updated_at": "2026-05-07 07:52:44",
+        "updated_at": "2026-06-22 15:11:21",
         "created_by": 9
     },
     {
@@ -5826,8 +5826,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-05-07 07:52:44",
-        "updated_at": "2026-05-07 07:52:44",
-        "created_by": 9
+        "updated_at": "2026-06-22 15:11:21",
+        "created_by": 15
     },
     {
         "bom_detail_id": 531,
@@ -6044,9 +6044,9 @@
         "supplies_id": 77,
         "bom_detail_qty": 12,
         "unit_id": 1,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-06-18 18:00:34",
-        "updated_at": "2026-06-18 18:00:34",
+        "updated_at": "2026-06-25 15:20:16",
         "created_by": 15
     },
     {
@@ -6055,9 +6055,9 @@
         "supplies_id": 226,
         "bom_detail_qty": 1,
         "unit_id": 21,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-06-18 18:00:34",
-        "updated_at": "2026-06-18 18:00:34",
+        "updated_at": "2026-06-25 15:20:16",
         "created_by": 15
     },
     {
@@ -6125,5 +6125,104 @@
         "created_at": "2026-06-20 08:13:14",
         "updated_at": "2026-06-20 08:13:14",
         "created_by": 9
+    },
+    {
+        "bom_detail_id": 558,
+        "bom_id": 88,
+        "supplies_id": 34,
+        "bom_detail_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 15:10:53",
+        "updated_at": "2026-06-22 15:10:53",
+        "created_by": 15
+    },
+    {
+        "bom_detail_id": 559,
+        "bom_id": 90,
+        "supplies_id": 33,
+        "bom_detail_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 15:11:21",
+        "updated_at": "2026-06-22 15:11:21",
+        "created_by": 15
+    },
+    {
+        "bom_detail_id": 560,
+        "bom_id": 89,
+        "supplies_id": 32,
+        "bom_detail_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 15:12:36",
+        "updated_at": "2026-06-22 15:12:36",
+        "created_by": 15
+    },
+    {
+        "bom_detail_id": 561,
+        "bom_id": 151,
+        "supplies_id": 235,
+        "bom_detail_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-06-23 19:22:52",
+        "updated_at": "2026-06-23 19:22:52",
+        "created_by": 9
+    },
+    {
+        "bom_detail_id": 562,
+        "bom_id": 93,
+        "supplies_id": 157,
+        "bom_detail_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-25 09:39:35",
+        "updated_at": "2026-06-25 09:39:35",
+        "created_by": 15
+    },
+    {
+        "bom_detail_id": 563,
+        "bom_id": 93,
+        "supplies_id": 37,
+        "bom_detail_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-25 09:39:35",
+        "updated_at": "2026-06-25 09:39:35",
+        "created_by": 15
+    },
+    {
+        "bom_detail_id": 564,
+        "bom_id": 98,
+        "supplies_id": 159,
+        "bom_detail_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-06-25 15:20:16",
+        "updated_at": "2026-06-25 15:20:16",
+        "created_by": 9
+    },
+    {
+        "bom_detail_id": 565,
+        "bom_id": 122,
+        "supplies_id": 227,
+        "bom_detail_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-06-30 15:19:29",
+        "updated_at": "2026-06-30 15:19:29",
+        "created_by": 9
+    },
+    {
+        "bom_detail_id": 566,
+        "bom_id": 152,
+        "supplies_id": 238,
+        "bom_detail_qty": 1,
+        "unit_id": 5,
+        "status": 1,
+        "created_at": "2026-07-02 15:02:51",
+        "updated_at": "2026-07-02 15:02:51",
+        "created_by": 15
     }
 ]

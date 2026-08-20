@@ -1828,5 +1828,525 @@
         "status": 1,
         "created_at": "2026-06-20 10:45:04",
         "updated_at": "2026-06-20 10:45:04"
+    },
+    {
+        "pid_id": 184,
+        "pi_id": 72,
+        "item_id": 1,
+        "pid_qty": 9,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 09:41:32",
+        "updated_at": "2026-06-22 09:41:32"
+    },
+    {
+        "pid_id": 185,
+        "pi_id": 72,
+        "item_id": 2,
+        "pid_qty": 9,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 09:41:32",
+        "updated_at": "2026-06-22 09:41:32"
+    },
+    {
+        "pid_id": 186,
+        "pi_id": 73,
+        "item_id": 3,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 10:37:22",
+        "updated_at": "2026-06-22 10:37:22"
+    },
+    {
+        "pid_id": 187,
+        "pi_id": 74,
+        "item_id": 61,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 12:09:17",
+        "updated_at": "2026-06-22 12:09:17"
+    },
+    {
+        "pid_id": 188,
+        "pi_id": 74,
+        "item_id": 1,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-22 12:09:17",
+        "updated_at": "2026-06-22 12:09:17"
+    },
+    {
+        "pid_id": 189,
+        "pi_id": 75,
+        "item_id": 25,
+        "pid_qty": 10,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-24 14:00:20",
+        "updated_at": "2026-06-24 14:00:20"
+    },
+    {
+        "pid_id": 190,
+        "pi_id": 75,
+        "item_id": 28,
+        "pid_qty": 5,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-24 14:00:20",
+        "updated_at": "2026-06-24 14:00:20"
+    },
+    {
+        "pid_id": 191,
+        "pi_id": 75,
+        "item_id": 93,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-24 14:00:20",
+        "updated_at": "2026-06-24 14:00:20"
+    },
+    {
+        "pid_id": 192,
+        "pi_id": 75,
+        "item_id": 80,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-24 14:00:20",
+        "updated_at": "2026-06-24 14:00:20"
+    },
+    {
+        "pid_id": 193,
+        "pi_id": 76,
+        "item_id": 46,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-24 14:57:22",
+        "updated_at": "2026-06-24 14:57:22"
+    },
+    {
+        "pid_id": 194,
+        "pi_id": 77,
+        "item_id": 244,
+        "pid_qty": 3500,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-25 10:18:13",
+        "updated_at": "2026-06-25 10:18:13"
+    },
+    {
+        "pid_id": 195,
+        "pi_id": 77,
+        "item_id": 245,
+        "pid_qty": 3500,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-25 10:18:13",
+        "updated_at": "2026-06-25 10:18:13"
+    },
+    {
+        "pid_id": 196,
+        "pi_id": 77,
+        "item_id": 247,
+        "pid_qty": 3500,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-25 10:18:13",
+        "updated_at": "2026-06-25 10:18:13"
+    },
+    {
+        "pid_id": 197,
+        "pi_id": 78,
+        "item_id": 1,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-25 13:02:58",
+        "updated_at": "2026-06-25 13:02:58"
+    },
+    {
+        "pid_id": 198,
+        "pi_id": 79,
+        "item_id": 1,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-26 10:21:50",
+        "updated_at": "2026-06-26 10:21:50"
+    },
+    {
+        "pid_id": 199,
+        "pi_id": 80,
+        "item_id": 28,
+        "pid_qty": 23,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-27 09:50:04",
+        "updated_at": "2026-06-27 09:50:04"
+    },
+    {
+        "pid_id": 200,
+        "pi_id": 80,
+        "item_id": 25,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-27 09:50:04",
+        "updated_at": "2026-06-27 09:50:04"
+    },
+    {
+        "pid_id": 201,
+        "pi_id": 80,
+        "item_id": 160,
+        "pid_qty": 3,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-06-27 09:50:04",
+        "updated_at": "2026-06-27 09:50:04"
+    },
+    {
+        "pid_id": 202,
+        "pi_id": 80,
+        "item_id": 15,
+        "pid_qty": 6,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-27 09:50:04",
+        "updated_at": "2026-06-27 09:50:04"
+    },
+    {
+        "pid_id": 203,
+        "pi_id": 80,
+        "item_id": 148,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-27 09:50:04",
+        "updated_at": "2026-06-27 09:50:04"
+    },
+    {
+        "pid_id": 204,
+        "pi_id": 81,
+        "item_id": 19,
+        "pid_qty": 120,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-27 13:26:33",
+        "updated_at": "2026-06-27 13:26:33"
+    },
+    {
+        "pid_id": 205,
+        "pi_id": 81,
+        "item_id": 25,
+        "pid_qty": 24,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-27 13:26:33",
+        "updated_at": "2026-06-27 13:26:33"
+    },
+    {
+        "pid_id": 206,
+        "pi_id": 81,
+        "item_id": 24,
+        "pid_qty": 11,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-27 13:26:33",
+        "updated_at": "2026-06-27 13:26:33"
+    },
+    {
+        "pid_id": 207,
+        "pi_id": 82,
+        "item_id": 79,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-29 09:24:57",
+        "updated_at": "2026-06-29 09:24:57"
+    },
+    {
+        "pid_id": 208,
+        "pi_id": 83,
+        "item_id": 14,
+        "pid_qty": 4,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-29 09:57:34",
+        "updated_at": "2026-06-29 09:57:34"
+    },
+    {
+        "pid_id": 209,
+        "pi_id": 83,
+        "item_id": 18,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-29 09:57:34",
+        "updated_at": "2026-06-29 09:57:34"
+    },
+    {
+        "pid_id": 210,
+        "pi_id": 83,
+        "item_id": 28,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-29 09:57:34",
+        "updated_at": "2026-06-29 09:57:34"
+    },
+    {
+        "pid_id": 211,
+        "pi_id": 83,
+        "item_id": 25,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-29 09:57:34",
+        "updated_at": "2026-06-29 09:57:34"
+    },
+    {
+        "pid_id": 212,
+        "pi_id": 83,
+        "item_id": 98,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-29 09:57:34",
+        "updated_at": "2026-06-29 09:57:34"
+    },
+    {
+        "pid_id": 213,
+        "pi_id": 84,
+        "item_id": 27,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-30 09:18:20",
+        "updated_at": "2026-06-30 09:18:20"
+    },
+    {
+        "pid_id": 214,
+        "pi_id": 84,
+        "item_id": 28,
+        "pid_qty": 5,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-30 09:18:20",
+        "updated_at": "2026-06-30 09:18:20"
+    },
+    {
+        "pid_id": 215,
+        "pi_id": 85,
+        "item_id": 27,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-30 10:41:28",
+        "updated_at": "2026-06-30 10:41:28"
+    },
+    {
+        "pid_id": 216,
+        "pi_id": 85,
+        "item_id": 28,
+        "pid_qty": 5,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-30 10:41:28",
+        "updated_at": "2026-06-30 10:41:28"
+    },
+    {
+        "pid_id": 217,
+        "pi_id": 85,
+        "item_id": 15,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-30 10:41:28",
+        "updated_at": "2026-06-30 10:41:28"
+    },
+    {
+        "pid_id": 218,
+        "pi_id": 85,
+        "item_id": 1,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-06-30 10:41:28",
+        "updated_at": "2026-06-30 10:41:28"
+    },
+    {
+        "pid_id": 219,
+        "pi_id": 86,
+        "item_id": 8,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-01 09:19:41",
+        "updated_at": "2026-07-01 09:19:41"
+    },
+    {
+        "pid_id": 220,
+        "pi_id": 87,
+        "item_id": 25,
+        "pid_qty": 8,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-02 08:19:24",
+        "updated_at": "2026-07-02 08:19:24"
+    },
+    {
+        "pid_id": 221,
+        "pi_id": 87,
+        "item_id": 79,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-02 08:19:24",
+        "updated_at": "2026-07-02 08:19:24"
+    },
+    {
+        "pid_id": 222,
+        "pi_id": 88,
+        "item_id": 16,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-02 14:42:32",
+        "updated_at": "2026-07-02 14:42:32"
+    },
+    {
+        "pid_id": 223,
+        "pi_id": 89,
+        "item_id": 160,
+        "pid_qty": 10,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-07-03 09:28:48",
+        "updated_at": "2026-07-03 09:28:48"
+    },
+    {
+        "pid_id": 224,
+        "pi_id": 89,
+        "item_id": 102,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 09:28:48",
+        "updated_at": "2026-07-03 09:28:48"
+    },
+    {
+        "pid_id": 225,
+        "pi_id": 90,
+        "item_id": 25,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 11:32:54",
+        "updated_at": "2026-07-03 11:32:54"
+    },
+    {
+        "pid_id": 226,
+        "pi_id": 90,
+        "item_id": 28,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 11:32:54",
+        "updated_at": "2026-07-03 11:32:54"
+    },
+    {
+        "pid_id": 227,
+        "pi_id": 90,
+        "item_id": 1,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 11:32:54",
+        "updated_at": "2026-07-03 11:32:54"
+    },
+    {
+        "pid_id": 228,
+        "pi_id": 90,
+        "item_id": 15,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 11:32:54",
+        "updated_at": "2026-07-03 11:32:54"
+    },
+    {
+        "pid_id": 229,
+        "pi_id": 90,
+        "item_id": 61,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 11:32:54",
+        "updated_at": "2026-07-03 11:32:54"
+    },
+    {
+        "pid_id": 230,
+        "pi_id": 90,
+        "item_id": 62,
+        "pid_qty": 4,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 11:32:54",
+        "updated_at": "2026-07-03 11:32:54"
+    },
+    {
+        "pid_id": 231,
+        "pi_id": 90,
+        "item_id": 98,
+        "pid_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-03 11:32:54",
+        "updated_at": "2026-07-03 11:32:54"
+    },
+    {
+        "pid_id": 232,
+        "pi_id": 91,
+        "item_id": 25,
+        "pid_qty": 5,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-04 09:43:46",
+        "updated_at": "2026-07-04 09:43:46"
+    },
+    {
+        "pid_id": 233,
+        "pi_id": 91,
+        "item_id": 28,
+        "pid_qty": 5,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-04 09:43:46",
+        "updated_at": "2026-07-04 09:43:46"
+    },
+    {
+        "pid_id": 234,
+        "pi_id": 91,
+        "item_id": 27,
+        "pid_qty": 2,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-07-04 09:43:46",
+        "updated_at": "2026-07-04 09:43:46"
+    },
+    {
+        "pid_id": 235,
+        "pi_id": 92,
+        "item_id": 163,
+        "pid_qty": 5,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-07-04 11:52:10",
+        "updated_at": "2026-07-04 11:52:10"
     }
 ]

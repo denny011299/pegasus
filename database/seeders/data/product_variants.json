@@ -27,7 +27,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "317417285158",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 20,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -36,7 +36,7 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 13:12:00",
-        "updated_at": "2026-04-23 11:31:13",
+        "updated_at": "2026-07-30 13:10:18",
         "created_by": 9
     },
     {
@@ -227,17 +227,17 @@
         "product_variant_price": 0,
         "product_variant_barcode": "661714135725",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 420,
         "lead_time_days": 0,
         "safety_stock": 0,
         "safety_unit_id": null,
         "unit_id": 7,
-        "qty_per_pallet": null,
+        "qty_per_pallet": 50,
         "status": 1,
         "created_at": "2026-02-19 13:28:56",
-        "updated_at": "2026-02-19 13:28:56",
-        "created_by": null
+        "updated_at": "2026-08-08 15:47:52",
+        "created_by": 13
     },
     {
         "product_variant_id": 13,
@@ -247,7 +247,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "668561025651",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 10,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -256,8 +256,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 13:28:56",
-        "updated_at": "2026-02-19 13:28:56",
-        "created_by": null
+        "updated_at": "2026-07-30 13:05:37",
+        "created_by": 13
     },
     {
         "product_variant_id": 14,
@@ -267,7 +267,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "873897491524",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 200,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -276,8 +276,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 13:28:56",
-        "updated_at": "2026-02-19 13:28:56",
-        "created_by": null
+        "updated_at": "2026-07-30 13:05:37",
+        "created_by": 13
     },
     {
         "product_variant_id": 15,
@@ -287,7 +287,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "452948628752",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 600,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -296,8 +296,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 13:28:56",
-        "updated_at": "2026-02-19 13:28:56",
-        "created_by": null
+        "updated_at": "2026-07-30 13:05:37",
+        "created_by": 13
     },
     {
         "product_variant_id": 16,
@@ -327,7 +327,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "467010609122",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 7,
         "product_variant_alert": 10,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -336,7 +336,7 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 15:16:00",
-        "updated_at": "2026-06-20 08:04:13",
+        "updated_at": "2026-07-30 02:22:46",
         "created_by": 9
     },
     {
@@ -456,8 +456,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 15:20:48",
-        "updated_at": "2026-02-19 15:20:48",
-        "created_by": null
+        "updated_at": "2026-06-22 13:57:25",
+        "created_by": 15
     },
     {
         "product_variant_id": 24,
@@ -527,7 +527,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "100803897174",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 100,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -536,8 +536,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 15:30:10",
-        "updated_at": "2026-02-19 15:30:10",
-        "created_by": null
+        "updated_at": "2026-08-06 20:23:16",
+        "created_by": 9
     },
     {
         "product_variant_id": 28,
@@ -547,7 +547,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "907789211291",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 600,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -556,8 +556,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 15:30:10",
-        "updated_at": "2026-02-19 15:30:10",
-        "created_by": null
+        "updated_at": "2026-08-06 20:23:16",
+        "created_by": 9
     },
     {
         "product_variant_id": 29,
@@ -567,7 +567,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "820085280946",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 1,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -576,8 +576,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-19 15:30:10",
-        "updated_at": "2026-02-19 15:30:10",
-        "created_by": null
+        "updated_at": "2026-08-06 20:23:16",
+        "created_by": 9
     },
     {
         "product_variant_id": 30,
@@ -1522,8 +1522,8 @@
     {
         "product_variant_id": 77,
         "product_id": 30,
-        "product_variant_name": "12 X 500 ML",
-        "product_variant_sku": "HK4DMF500ML",
+        "product_variant_name": "24 X 460 ML",
+        "product_variant_sku": "HK4DMF460ML",
         "product_variant_price": 0,
         "product_variant_barcode": "220499066291",
         "product_variant_stock": 0,
@@ -1536,8 +1536,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-02-21 10:05:03",
-        "updated_at": "2026-02-21 10:05:03",
-        "created_by": null
+        "updated_at": "2026-06-24 20:43:34",
+        "created_by": 15
     },
     {
         "product_variant_id": 78,
@@ -2343,7 +2343,7 @@
         "product_variant_id": 118,
         "product_id": 42,
         "product_variant_name": "HIDROLIS X 18 LITER ",
-        "product_variant_sku": "SOHPPAIL",
+        "product_variant_sku": "SOHP",
         "product_variant_price": 0,
         "product_variant_barcode": "243240357245",
         "product_variant_stock": 0,
@@ -2942,8 +2942,8 @@
     {
         "product_variant_id": 148,
         "product_id": 50,
-        "product_variant_name": "24 X 300 ML",
-        "product_variant_sku": "HKCH300ML",
+        "product_variant_name": "30 X 220 ML",
+        "product_variant_sku": "HKCH220ML",
         "product_variant_price": 0,
         "product_variant_barcode": "455663431682",
         "product_variant_stock": 0,
@@ -2956,8 +2956,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-03-12 10:15:51",
-        "updated_at": "2026-03-28 09:22:20",
-        "created_by": null
+        "updated_at": "2026-06-22 16:48:31",
+        "created_by": 15
     },
     {
         "product_variant_id": 149,
@@ -2976,7 +2976,7 @@
         "qty_per_pallet": null,
         "status": 0,
         "created_at": "2026-03-12 10:15:51",
-        "updated_at": "2026-04-04 09:04:14",
+        "updated_at": "2026-06-22 16:48:31",
         "created_by": null
     },
     {
@@ -2996,7 +2996,7 @@
         "qty_per_pallet": null,
         "status": 0,
         "created_at": "2026-03-12 10:15:51",
-        "updated_at": "2026-04-04 09:04:14",
+        "updated_at": "2026-06-22 16:48:31",
         "created_by": null
     },
     {
@@ -3016,7 +3016,7 @@
         "qty_per_pallet": null,
         "status": 0,
         "created_at": "2026-03-12 10:15:51",
-        "updated_at": "2026-04-04 09:04:14",
+        "updated_at": "2026-06-22 16:48:31",
         "created_by": null
     },
     {
@@ -3036,7 +3036,7 @@
         "qty_per_pallet": null,
         "status": 0,
         "created_at": "2026-03-12 10:15:51",
-        "updated_at": "2026-04-04 09:04:14",
+        "updated_at": "2026-06-22 16:48:31",
         "created_by": null
     },
     {
@@ -3407,7 +3407,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "368346188324",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 9,
         "product_variant_alert": 1,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -3416,8 +3416,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-03-14 12:06:25",
-        "updated_at": "2026-03-14 12:06:25",
-        "created_by": null
+        "updated_at": "2026-07-27 02:12:08",
+        "created_by": 13
     },
     {
         "product_variant_id": 172,
@@ -3427,7 +3427,7 @@
         "product_variant_price": 0,
         "product_variant_barcode": "831796926583",
         "product_variant_stock": 0,
-        "retail_unit": null,
+        "retail_unit": 7,
         "product_variant_alert": 1,
         "lead_time_days": 0,
         "safety_stock": 0,
@@ -3436,8 +3436,8 @@
         "qty_per_pallet": null,
         "status": 1,
         "created_at": "2026-03-14 12:06:25",
-        "updated_at": "2026-03-14 12:06:25",
-        "created_by": null
+        "updated_at": "2026-07-30 02:22:32",
+        "created_by": 13
     },
     {
         "product_variant_id": 173,
@@ -3563,7 +3563,7 @@
         "product_variant_id": 179,
         "product_id": 66,
         "product_variant_name": "PUTIH",
-        "product_variant_sku": "MRP300P30",
+        "product_variant_sku": "MRP300P",
         "product_variant_price": 0,
         "product_variant_barcode": "946122431293",
         "product_variant_stock": 0,
@@ -4678,5 +4678,45 @@
         "created_at": "2026-06-20 08:05:03",
         "updated_at": "2026-06-20 08:06:16",
         "created_by": 9
+    },
+    {
+        "product_variant_id": 235,
+        "product_id": 81,
+        "product_variant_name": "15 KG",
+        "product_variant_sku": "UNLLT15KG",
+        "product_variant_price": 0,
+        "product_variant_barcode": "754941836338",
+        "product_variant_stock": 0,
+        "retail_unit": null,
+        "product_variant_alert": 1,
+        "lead_time_days": 0,
+        "safety_stock": 0,
+        "safety_unit_id": null,
+        "unit_id": 21,
+        "qty_per_pallet": null,
+        "status": 1,
+        "created_at": "2026-06-23 19:20:01",
+        "updated_at": "2026-06-23 19:21:51",
+        "created_by": 9
+    },
+    {
+        "product_variant_id": 236,
+        "product_id": 82,
+        "product_variant_name": " 52 209 LITER",
+        "product_variant_sku": "PERT52209L",
+        "product_variant_price": 0,
+        "product_variant_barcode": "986078187130",
+        "product_variant_stock": 0,
+        "retail_unit": null,
+        "product_variant_alert": 1,
+        "lead_time_days": 0,
+        "safety_stock": 0,
+        "safety_unit_id": null,
+        "unit_id": 5,
+        "qty_per_pallet": null,
+        "status": 1,
+        "created_at": "2026-07-02 15:02:14",
+        "updated_at": "2026-07-02 15:02:14",
+        "created_by": 15
     }
 ]

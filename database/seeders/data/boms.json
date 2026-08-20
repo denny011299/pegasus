@@ -26,8 +26,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-25 16:26:09",
-        "updated_at": "2026-02-25 16:26:09",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:41",
+        "created_by": 13
     },
     {
         "bom_id": 4,
@@ -46,8 +46,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-02-28 09:08:06",
-        "updated_at": "2026-02-28 09:08:06",
-        "created_by": null
+        "updated_at": "2026-08-06 20:22:07",
+        "created_by": 9
     },
     {
         "bom_id": 6,
@@ -106,8 +106,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 13:40:06",
-        "updated_at": "2026-03-02 13:40:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:08:18",
+        "created_by": 13
     },
     {
         "bom_id": 12,
@@ -246,8 +246,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:35:36",
-        "updated_at": "2026-03-02 14:35:36",
-        "created_by": null
+        "updated_at": "2026-07-29 14:23:50",
+        "created_by": 13
     },
     {
         "bom_id": 26,
@@ -256,8 +256,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:36:21",
-        "updated_at": "2026-03-02 14:36:21",
-        "created_by": null
+        "updated_at": "2026-07-29 23:06:43",
+        "created_by": 13
     },
     {
         "bom_id": 27,
@@ -266,8 +266,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-02 14:37:44",
-        "updated_at": "2026-03-02 14:37:44",
-        "created_by": null
+        "updated_at": "2026-08-06 20:14:42",
+        "created_by": 9
     },
     {
         "bom_id": 28,
@@ -444,10 +444,10 @@
         "product_id": 77,
         "bom_qty": 1,
         "unit_id": 9,
-        "status": 1,
+        "status": 0,
         "created_at": "2026-03-12 10:44:18",
-        "updated_at": "2026-03-12 10:44:18",
-        "created_by": null
+        "updated_at": "2026-06-22 15:16:48",
+        "created_by": 15
     },
     {
         "bom_id": 46,
@@ -876,8 +876,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:39:36",
-        "updated_at": "2026-03-14 11:39:36",
-        "created_by": null
+        "updated_at": "2026-06-22 15:10:53",
+        "created_by": 15
     },
     {
         "bom_id": 89,
@@ -886,8 +886,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:40:27",
-        "updated_at": "2026-03-14 11:40:27",
-        "created_by": null
+        "updated_at": "2026-06-22 15:12:36",
+        "created_by": 15
     },
     {
         "bom_id": 90,
@@ -896,8 +896,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:43:11",
-        "updated_at": "2026-05-04 09:17:30",
-        "created_by": 9
+        "updated_at": "2026-06-22 15:11:21",
+        "created_by": 15
     },
     {
         "bom_id": 91,
@@ -926,8 +926,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-14 11:49:37",
-        "updated_at": "2026-03-14 11:49:37",
-        "created_by": null
+        "updated_at": "2026-06-25 09:39:35",
+        "created_by": 15
     },
     {
         "bom_id": 94,
@@ -976,8 +976,8 @@
         "unit_id": 21,
         "status": 1,
         "created_at": "2026-03-14 11:54:33",
-        "updated_at": "2026-06-18 18:00:34",
-        "created_by": 15
+        "updated_at": "2026-06-25 15:20:16",
+        "created_by": 9
     },
     {
         "bom_id": 99,
@@ -1056,8 +1056,8 @@
         "unit_id": 9,
         "status": 1,
         "created_at": "2026-03-28 08:35:06",
-        "updated_at": "2026-03-28 08:35:06",
-        "created_by": null
+        "updated_at": "2026-08-07 16:07:56",
+        "created_by": 13
     },
     {
         "bom_id": 107,
@@ -1216,8 +1216,8 @@
         "unit_id": 21,
         "status": 1,
         "created_at": "2026-03-28 11:23:08",
-        "updated_at": "2026-03-28 11:23:08",
-        "created_by": null
+        "updated_at": "2026-06-30 15:19:29",
+        "created_by": 9
     },
     {
         "bom_id": 123,
@@ -1498,5 +1498,25 @@
         "created_at": "2026-06-20 08:13:14",
         "updated_at": "2026-06-20 08:13:14",
         "created_by": 9
+    },
+    {
+        "bom_id": 151,
+        "product_id": 235,
+        "bom_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-06-23 19:22:52",
+        "updated_at": "2026-06-23 19:22:52",
+        "created_by": 9
+    },
+    {
+        "bom_id": 152,
+        "product_id": 236,
+        "bom_qty": 1,
+        "unit_id": 5,
+        "status": 1,
+        "created_at": "2026-07-02 15:02:51",
+        "updated_at": "2026-07-02 15:02:51",
+        "created_by": 15
     }
 ]

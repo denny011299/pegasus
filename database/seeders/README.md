@@ -75,6 +75,44 @@ same as `seed:dump`, it is never reachable over HTTP.
 Run `php artisan snapshot:list` any time to see every snapshot currently
 committed (name, label, row counts, when it was generated).
 
+## The "empty-products" snapshot
+
+A named snapshot derived from "default" with the product catalog — and
+everything that only exists to describe or move product stock — wiped, while
+everything else (roles/staff/users/permissions, customers/suppliers,
+supplies/purchasing, warehouses, cash ledgers) is kept exactly as in
+"default". Restoring it gives a login-capable environment with a genuinely
+empty catalog, so a PMO product sync run has something to actually create
+instead of matching everything that's already there and showing no diff.
+
+```bash
+php artisan snapshot:restore empty-products
+```
+
+Wiped: `categories`, `units`, `variants`, `products`, `product_variants`,
+`product_stocks`, `product_relations`, `boms`/`bom_details`,
+`stock_opnames`/`stock_opname_details`, `manage_stocks`,
+`stock_transfers`/`stock_transfer_details`, `stock_alerts`,
+`productions`/`production_details`/`production_photos`, the whole Sales
+pipeline (`sales_orders`, `sales_order_details`, `sales_order_detail_invoices`,
+`sales_order_deliveries`/`sales_order_delivery_details`,
+`sales_delivery_orders`/`sales_delivery_orders_details`,
+`customer_product_returns`/`customer_product_return_details`,
+`shipment_shortage_documents`). Two mixed product+supplies tables are
+filtered row-by-row instead: `log_stocks` (log_type 1=Produk/2=Bahan) and
+`product_issues`/`product_issues_details` (tipe_return 1=Bahan/2=Produk) —
+only the Bahan side survives. Purchasing is untouched (it's a supplies-only
+pipeline, not product).
+
+Regenerate it after `seed:dump` refreshes "default" with new non-product data
+you want carried over (new staff, new roles, etc.):
+
+```bash
+php artisan snapshot:derive-empty-products   # writes snapshots/empty-products, --force to overwrite
+```
+
+Then commit the JSON diff, same as any other snapshot.
+
 ## Why it works across branches
 
 The loader filters every row against `Schema::getColumnListing()` on the branch

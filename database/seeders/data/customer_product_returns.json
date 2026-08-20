@@ -1,1 +1,66 @@
-[]
+[
+    {
+        "return_id": 1,
+        "return_number": "PBJ0001",
+        "return_group": "PKR0002",
+        "customer_id": 4,
+        "return_date": "2026-08-14",
+        "ref_number": "980",
+        "notes": "AAH1000ML Kembali 1 Dos Karena Bocor sama 1 Jerigen",
+        "proof_path": "customer_returns/20260814082546_CEJKtUxDDmvryHufyIieMrfu.png",
+        "status": 2,
+        "created_by": 9,
+        "qc_staff_id": null,
+        "acc_by": 9,
+        "created_at": "2026-08-14 08:25:46",
+        "updated_at": "2026-08-14 08:27:34"
+    },
+    {
+        "return_id": 2,
+        "return_number": "PBJ0002",
+        "return_group": "PKR0003",
+        "customer_id": 3,
+        "return_date": "2026-08-14",
+        "ref_number": "1003",
+        "notes": "Testing Pengembalian Bahan Mentah dan Produk Jadi",
+        "proof_path": "customer_returns/20260814235658_wnwBXwTmLctdhhz2qTk8ibfd.png",
+        "status": 2,
+        "created_by": 13,
+        "qc_staff_id": null,
+        "acc_by": 13,
+        "created_at": "2026-08-14 23:56:58",
+        "updated_at": "2026-08-14 23:57:04"
+    },
+    {
+        "return_id": 3,
+        "return_number": "PBJ0003",
+        "return_group": "PKR0004",
+        "customer_id": 5,
+        "return_date": "2026-08-16",
+        "ref_number": "1003",
+        "notes": null,
+        "proof_path": "customer_returns/20260817020145_KaCtJ9eql4gLU5dggcy6h6is.png",
+        "status": 2,
+        "created_by": 13,
+        "qc_staff_id": 29,
+        "acc_by": 13,
+        "created_at": "2026-08-17 02:01:45",
+        "updated_at": "2026-08-17 02:01:49"
+    },
+    {
+        "return_id": 4,
+        "return_number": "PBJ0004",
+        "return_group": "PKR0005",
+        "customer_id": 3,
+        "return_date": "2026-08-18",
+        "ref_number": null,
+        "notes": null,
+        "proof_path": "customer_returns/20260818161420_Abdk9IpllU5hrgx4IzfSAmin.png",
+        "status": 2,
+        "created_by": 9,
+        "qc_staff_id": 29,
+        "acc_by": 9,
+        "created_at": "2026-08-18 16:14:20",
+        "updated_at": "2026-08-18 16:14:47"
+    }
+]
