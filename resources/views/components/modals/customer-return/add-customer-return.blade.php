@@ -199,8 +199,34 @@
                                     <select class="form-select bg-white w-100" id="cr-supply" style="border-radius:8px;height:38px;min-width:0;"></select>
                                 </div>
                                 <div class="col-lg-5 col-md-12 min-w-0 d-none" id="cr-field-product">
-                                    <label class="form-label text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Produk / Varian</label>
-                                    <select class="form-select bg-white w-100" id="cr-product" style="border-radius:8px;height:38px;min-width:0;"></select>
+                                    <label class="form-label text-muted mb-1 d-flex align-items-center gap-2" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;">
+                                        Produk / Varian
+                                        <button type="button"
+                                            class="btn btn-sm btn-outline-secondary py-0 px-2 d-inline-flex align-items-center"
+                                            id="btn_toggle_scan_cr" title="Ganti mode Scan"
+                                            style="border-radius:4px;font-size:10px;min-height:20px;text-transform:none;letter-spacing:0;">
+                                            <i class="fa fa-barcode me-1"></i> Mode Scan
+                                        </button>
+                                    </label>
+                                    <div id="cr_mode_select_product">
+                                        <select class="form-select bg-white w-100" id="cr-product" style="border-radius:8px;height:38px;min-width:0;"></select>
+                                    </div>
+                                    <div id="cr_mode_scan_product" style="display:none">
+                                        <div class="input-group" style="border-radius:8px;overflow:hidden;height:38px;">
+                                            <input type="text" class="form-control bg-white" id="cr_scan_barcode"
+                                                placeholder="Scan / ketik barcode..."
+                                                style="flex:1 1 auto;border-right:0;height:38px;">
+                                            <input type="number" class="form-control bg-white" id="cr_scan_qty"
+                                                placeholder="Qty" value="1" min="1"
+                                                style="max-width:80px;border-left:1px solid #e2e8f0;height:38px;">
+                                            <button type="button"
+                                                class="btn d-inline-flex align-items-center justify-content-center px-3"
+                                                id="btn_scan_add_cr" title="Tambah Produk"
+                                                style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col-lg-2 col-4 min-w-0" id="cr-field-supply-qty">
                                     <label class="form-label text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Qty</label>
@@ -218,7 +244,7 @@
                                     <label class="form-label text-muted mb-1" style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;">Satuan</label>
                                     <select class="form-select bg-white w-100" id="cr-product-unit" style="border-radius:8px;height:38px;min-width:0;"></select>
                                 </div>
-                                <div class="col-lg-2 col-12">
+                                <div class="col-lg-2 col-12" id="cr-field-add-btn">
                                     <button type="button" class="btn w-100" id="cr-add-item" style="border-radius:8px;height:38px;color:#fff;border:none;font-weight:600;font-size:13px; transition: all 0.3s ease;">
                                         <i class="fe fe-plus me-1"></i> <span id="cr-add-btn-text"></span>
                                     </button>

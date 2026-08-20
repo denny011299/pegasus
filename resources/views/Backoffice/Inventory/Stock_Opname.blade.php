@@ -44,6 +44,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Tanggal Opname</th>
+                                            <th>Gudang</th>
                                             <th>Penanggung Jawab</th>
                                             <th>ID Opname</th>
                                             <th>Dibuat Oleh</th>

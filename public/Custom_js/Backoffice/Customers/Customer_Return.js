@@ -8,6 +8,7 @@
     var crMode = "create";
     var crExistingProofUrl = "";
     var crXhr = null;
+    var crScanMode = false;
 
     function can(action) {
         return typeof hasAccessAction === "function" && hasAccessAction("Pengiriman", action);
@@ -523,12 +524,124 @@
         return $('input[name="cr-item-type"]:checked').val() || "supply";
     }
 
+    function setCrProductScanMode(on) {
+        crScanMode = !!on && crAddItemType() === "product";
+        var $toggle = $("#btn_toggle_scan_cr");
+        if (crScanMode) {
+            $("#cr_mode_select_product").hide();
+            $("#cr_mode_scan_product").show();
+            $("#cr-field-product-qty,#cr-field-product-unit,#cr-field-add-btn").addClass("d-none");
+            $("#cr-field-product").removeClass("col-lg-5").addClass("col-lg-10");
+            $toggle
+                .html('<i class="fa fa-list me-1"></i> Mode Input')
+                .removeClass("btn-outline-secondary")
+                .addClass("btn-outline-primary");
+            window.setTimeout(function () {
+                $("#cr_scan_barcode").focus();
+            }, 50);
+            return;
+        }
+        $("#cr_mode_scan_product").hide();
+        $("#cr_mode_select_product").show();
+        $("#cr-field-product").removeClass("col-lg-10").addClass("col-lg-5");
+        $toggle
+            .html('<i class="fa fa-barcode me-1"></i> Mode Scan')
+            .removeClass("btn-outline-primary")
+            .addClass("btn-outline-secondary");
+        if (crAddItemType() === "product") {
+            $("#cr-field-product-qty,#cr-field-product-unit,#cr-field-add-btn").removeClass("d-none");
+        } else {
+            $("#cr-field-add-btn").removeClass("d-none");
+        }
+    }
+
+    function doScanAddCr() {
+        if (crMode === "view") return;
+        var barcode = ($("#cr_scan_barcode").val() || "").trim();
+        var qty = parseInt($("#cr_scan_qty").val(), 10) || 1;
+        if (qty < 1) qty = 1;
+
+        if (!barcode) {
+            if (typeof toastr !== "undefined") {
+                toastr.warning("Masukkan barcode/SKU terlebih dahulu");
+            }
+            return;
+        }
+        if (!crContext || !Array.isArray(crContext.products)) {
+            if (typeof toastr !== "undefined") {
+                toastr.error("Data produk belum siap. Tunggu sebentar.");
+            }
+            return;
+        }
+
+        $.ajax({
+            url: "/searchProductVariantByScan",
+            method: "post",
+            data: {
+                keyword: barcode,
+                _token: csrf(),
+            },
+            success: function (res) {
+                var results = res.data || [];
+                if (!results.length) {
+                    if (typeof toastr !== "undefined") {
+                        toastr.error("Produk tidak ditemukan untuk barcode: " + barcode);
+                    }
+                    $("#cr_scan_barcode").val("").focus();
+                    return;
+                }
+
+                var scanned = results[0];
+                var variantId = parseInt(scanned.product_variant_id, 10);
+                var product = (crContext.products || []).find(function (row) {
+                    return parseInt(row.product_variant_id, 10) === variantId;
+                });
+                if (!product) {
+                    if (typeof toastr !== "undefined") {
+                        toastr.error("Produk tidak tersedia untuk pengembalian.");
+                    }
+                    $("#cr_scan_barcode").val("").focus();
+                    return;
+                }
+
+                $("#cr-product").val(String(variantId)).trigger("change");
+                $("#cr-product-qty").val(qty);
+                var added = addProductLine();
+                if (added && typeof toastr !== "undefined") {
+                    toastr.success(
+                        "Berhasil menambahkan: " +
+                            (product.product_label || scanned.pr_name || "produk") +
+                            " (x" +
+                            qty +
+                            ")",
+                    );
+                }
+                $("#cr_scan_barcode").val("").focus();
+                $("#cr_scan_qty").val(1);
+            },
+            error: function (xhr) {
+                if (typeof handlePermissionError === "function" && handlePermissionError(xhr)) return;
+                if (typeof toastr !== "undefined") {
+                    toastr.error("Gagal mencari produk");
+                }
+                $("#cr_scan_barcode").val("").focus();
+            },
+        });
+    }
+
     function setCrAddItemType(type) {
         type = type === "product" ? "product" : "supply";
         var isSupply = type === "supply";
         $("#cr-type-" + type).prop("checked", true);
+        if (isSupply) {
+            setCrProductScanMode(false);
+        }
         $("#cr-field-supply,#cr-field-supply-qty,#cr-field-supply-unit").toggleClass("d-none", !isSupply);
         $("#cr-field-product,#cr-field-product-qty,#cr-field-product-unit").toggleClass("d-none", isSupply);
+        $("#cr-field-add-btn").removeClass("d-none");
+        if (!isSupply && crScanMode) {
+            setCrProductScanMode(true);
+        }
         var $btn = $("#cr-add-item");
         if (isSupply) {
             $btn.css("background", "linear-gradient(135deg,#3b82f6,#2563eb)");
@@ -672,6 +785,9 @@
         $("#cr-save").text("Simpan").prop("disabled", false);
         $("#cr-btn-upload-proof").removeClass("d-none border-danger text-danger");
         $("#cr-accept,#cr-decline,#cr-print").addClass("d-none");
+        $("#cr_scan_barcode").val("");
+        $("#cr_scan_qty").val(1);
+        setCrProductScanMode(false);
         setCrAddItemType("supply");
         setCrModalMode("form");
         $("#customer-return-modal .modal-title").text("Tambah Pengembalian");
@@ -1104,20 +1220,20 @@
         $("#cr-product-qty").toggleClass("is-invalid", !qty || qty <= 0);
         if (!product || !unitId || !qty || qty <= 0) {
             if (typeof toastr !== "undefined") toastr.error("Pilih produk, satuan, dan qty positif.");
-            return;
+            return false;
         }
         var dest = resolveProductDestination(product, unitId);
         if (!dest || dest.error) {
             if (typeof toastr !== "undefined") {
                 toastr.error(dest ? dest.error : "Gudang tujuan tidak valid.");
             }
-            return;
+            return false;
         }
         var retail = isRetailUnit(product, unitId);
         if (retail && !product.retail_unit) {
             promptRetailUnitSetup(product);
             setSelectInvalid("#cr-product-unit", true);
-            return;
+            return false;
         }
         var destWhId = retail ? 0 : dest.id;
         var existing = productLines.find(function (line) {
@@ -1149,6 +1265,7 @@
         if (retail && missingRetailDestinations() && typeof toastr !== "undefined") {
             toastr.warning("Pilih gudang eceran untuk produk satuan eceran di daftar item.");
         }
+        return true;
     }
 
     $(function () {
@@ -1216,6 +1333,22 @@
         $("#cr-add-item").on("click", function () {
             if (crAddItemType() === "product") addProductLine();
             else addSupplyLine();
+        });
+
+        $(document).on("click", "#btn_toggle_scan_cr", function () {
+            if (crMode === "view" || crAddItemType() !== "product") return;
+            setCrProductScanMode(!crScanMode);
+        });
+
+        $(document).on("click", "#btn_scan_add_cr", function () {
+            doScanAddCr();
+        });
+
+        $(document).on("keydown", "#cr_scan_barcode", function (e) {
+            if (e.key === "Enter" || e.keyCode === 13) {
+                e.preventDefault();
+                doScanAddCr();
+            }
         });
 
         $(document).on("change", "#customer-return-modal .cr-retail-warehouse", function () {

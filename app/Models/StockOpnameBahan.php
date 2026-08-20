@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\RoleAccess;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class StockOpnameBahan extends Model
@@ -16,6 +17,7 @@ class StockOpnameBahan extends Model
     protected $fillable = [
         'stob_date',
         'staff_id',
+        'warehouse_id',
         'stob_notes',
         'status',
         'is_draft',
@@ -31,9 +33,12 @@ class StockOpnameBahan extends Model
             'stob_date' => null,
             'staff_id'  => null,
             'stob_id'   => null,
+            'warehouse_id' => null,
             // List tidak butuh detail item (JS hanya pakai kolom header).
             'with_items' => false,
         ], $data);
+
+        $hasWarehouse = Schema::hasColumn($this->getTable(), 'warehouse_id');
 
         $result = self::where('status', '>=', 1);
 
@@ -52,11 +57,24 @@ class StockOpnameBahan extends Model
         if ($data['staff_id'])  $result->where('staff_id', $data['staff_id']);
         if ($data['stob_id'])   $result->where('stob_id', $data['stob_id']);
 
+        // List per gudang aktif. Detail by id tidak difilter.
+        if ($hasWarehouse && empty($data['stob_id'])) {
+            $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+            if ($warehouseId <= 0) {
+                $warehouseId = (int) SuppliesStock::resolveWarehouseId();
+            }
+            if ($warehouseId <= 0) {
+                return collect();
+            }
+            $result->where('warehouse_id', $warehouseId);
+        }
+
         $result->orderBy('status', 'asc')->orderBy('stob_date', 'desc');
 
         $result = $result->get();
 
         $staffIdSet = [];
+        $warehouseIds = [];
         foreach ($result as $value) {
             if ($value->staff_id) {
                 $staffIdSet[(int) $value->staff_id] = true;
@@ -67,9 +85,15 @@ class StockOpnameBahan extends Model
             if ($value->acc_by) {
                 $staffIdSet[(int) $value->acc_by] = true;
             }
+            if ($hasWarehouse && $value->warehouse_id) {
+                $warehouseIds[(int) $value->warehouse_id] = true;
+            }
         }
         $staffMap = $staffIdSet !== []
             ? Staff::whereIn('staff_id', array_keys($staffIdSet))->pluck('staff_name', 'staff_id')
+            : collect();
+        $warehouseMap = $warehouseIds !== []
+            ? Warehouse::whereIn('id', array_keys($warehouseIds))->pluck('warehouse_name', 'id')
             : collect();
 
         $detailsGrouped = collect();
@@ -90,6 +114,10 @@ class StockOpnameBahan extends Model
                 ? ($staffMap[$value->created_by] ?? $staffMain)
                 : $staffMain;
             $value->acc_by_name = $value->acc_by ? ($staffMap[$value->acc_by] ?? '-') : '-';
+            if ($hasWarehouse) {
+                $wid = (int) ($value->warehouse_id ?? 0);
+                $value->warehouse_name = $wid > 0 ? ($warehouseMap[$wid] ?? '-') : '-';
+            }
         }
 
         return $result;
@@ -108,6 +136,10 @@ class StockOpnameBahan extends Model
         // Mirrors StockOpname::insertStockOpname() — see KNOWN_ISSUES.md "Stock Opname's draft
         // feature is entirely non-functional".
         $t->is_draft = ! empty($data['is_draft']);
+        if (Schema::hasColumn($t->getTable(), 'warehouse_id')) {
+            $warehouseId = (int) SuppliesStock::resolveWarehouseId($data['warehouse_id'] ?? null);
+            $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
@@ -128,6 +160,7 @@ class StockOpnameBahan extends Model
         if (array_key_exists('is_draft', $data)) {
             $t->is_draft = ! empty($data['is_draft']);
         }
+        // warehouse_id sengaja tidak diubah di update — dokumen terikat gudang saat dibuat.
         $t->save();
 
         return $t->stob_id;

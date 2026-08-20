@@ -30,6 +30,7 @@
             },
             columns: [
                 { data: "stob_date"},
+                { data: "warehouse_name", defaultContent: "-" },
                 { data: "staff_name", defaultContent: "-" },
                 { data: "stob_code" },
                 { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
@@ -69,6 +70,7 @@
                 return {
                     ...item,
                     stob_date: item.stob_date ? moment(item.stob_date).format('D MMM YYYY') : '-',
+                    warehouse_name: item.warehouse_name || '-',
                     staff_name: item.staff_name || '-',
                     stob_code: item.stob_code || '-',
                     created_by_name: item.created_by_name || '-',
