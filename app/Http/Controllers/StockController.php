@@ -301,6 +301,9 @@ class StockController extends Controller
             ($sto->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
         );
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) \App\Models\ProductStock::resolveWarehouseId();
+        }
 
         // Ditambahkan (2026-08-05): gerbang draft — kolom is_draft sudah ada di DB tapi baru
         // sekarang benar-benar ditulis (lihat StockOpname::insertStockOpname()/updateStockOpname())
@@ -654,6 +657,9 @@ class StockController extends Controller
             ($stob->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
         );
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) \App\Models\SuppliesStock::resolveWarehouseId();
+        }
 
         // Mirrors accStockOpname()'s draft gate above.
         if ($stob->is_draft) {

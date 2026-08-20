@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Form Sisa Barang</title>
+    <title>Form Pengembalian Armada</title>
     <style>
         @page { size: 147.81mm 210.26mm; margin: 12mm 14mm 12mm 14mm; }
         body {
@@ -124,7 +124,7 @@
 </head>
 <body>
     <div class="doc-code">FORM-OPS-32</div>
-    <div class="title">Form Sisa Barang</div>
+    <div class="title">Form Pengembalian Armada</div>
 
     <table class="meta">
         <tr>
