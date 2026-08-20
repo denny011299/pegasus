@@ -23,11 +23,18 @@ interface PaginatedStepHandler extends SyncStepHandler
      * langkah ini. $page=1 selalu memulai buffer baru (menimpa sisa
      * percobaan sebelumnya yang belum selesai).
      *
+     * $query datang dari SyncStep::$queryFields yang diisi operator di wizard
+     * (lihat Wizard.js:collectQueryFields()) — dikirim ULANG pada SETIAP
+     * panggilan halaman, bukan hanya $page=1, karena tiap halaman adalah
+     * request PMO baru. Langkah yang tidak mendeklarasikan queryFields
+     * menerima array kosong dan boleh mengabaikannya sepenuhnya.
+     *
+     * @param  array<string, mixed>  $query
      * @return array<string, mixed> Info progres: page, total_pages, rows_so_far, is_last_page.
      *
      * @throws PmoException
      */
-    public function fetchPage(int $page): array;
+    public function fetchPage(int $page, array $query = []): array;
 
     /**
      * Pindahkan buffer sesi ke potret sungguhan (bisa dibaca langkah lain)

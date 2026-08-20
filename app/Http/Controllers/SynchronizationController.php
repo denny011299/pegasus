@@ -115,9 +115,10 @@ class SynchronizationController extends Controller
         }
 
         $page = max(1, (int) $request->input('page', 1));
+        $query = (array) $request->input('query', []);
 
         try {
-            $progress = $handler->fetchPage($page);
+            $progress = $handler->fetchPage($page, $query);
         } catch (PmoException $e) {
             return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
         }

@@ -143,6 +143,29 @@
                             <!-- Eksekusi -->
                             <div class="card">
                                 <div class="card-body">
+                                    @if ($step->queryFields)
+                                        <div class="sync-query-fields row g-2 mb-3">
+                                            @foreach ($step->queryFields as $field)
+                                                <div class="col-sm-6">
+                                                    <label class="form-label" style="font-size: 13px;">
+                                                        {{ $field['label'] }}
+                                                        @if (!empty($field['required']))
+                                                            <span class="text-danger">*</span>
+                                                        @endif
+                                                    </label>
+                                                    <input type="{{ $field['type'] ?? 'text' }}"
+                                                        class="form-control form-control-sm sync-query-field"
+                                                        data-key="{{ $field['key'] }}"
+                                                        data-label="{{ $field['label'] }}"
+                                                        @if (!empty($field['required'])) data-required="1" @endif>
+                                                    @if (!empty($field['help']))
+                                                        <small class="text-muted">{{ $field['help'] }}</small>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
                                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                         <div>
                                             <h6 class="mb-1">Status Saat Ini</h6>

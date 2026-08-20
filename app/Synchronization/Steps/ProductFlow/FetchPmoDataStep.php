@@ -37,7 +37,12 @@ class FetchPmoDataStep extends ProductFlowStep implements PaginatedStepHandler
         });
     }
 
-    public function fetchPage(int $page): array
+    /**
+     * $query tidak dipakai di sini — /getProducts tidak punya parameter
+     * wajib, seluruh katalog ditarik tanpa filter (beda dengan
+     * /getShipments, lihat Steps\ShipmentFlow\FetchShipmentsStep).
+     */
+    public function fetchPage(int $page, array $query = []): array
     {
         return $this->snapshots->fetchPage(self::FLOW_KEY, self::ENDPOINT_KEY, $page);
     }

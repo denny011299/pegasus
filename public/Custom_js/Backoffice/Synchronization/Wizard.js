@@ -115,19 +115,55 @@
             return;
         }
 
+        var collected = collectQueryFields(stepKey);
+        if (collected.error) {
+            notifikasi('error', 'Lengkapi Input', collected.error);
+            return;
+        }
+
         running = true;
         markRunning(stepKey);
         LoadingButton('.sync-step-pane[data-step="' + stepKey + '"] .btn-execute-step');
         showPageProgress(stepKey, 'Mengambil halaman 1…', 0);
 
-        fetchNextPage(stepKey, 1);
+        fetchNextPage(stepKey, 1, collected.query);
     }
 
-    function fetchNextPage(stepKey, page) {
+    /**
+     * Baca .sync-query-field di dalam pane langkah ini (diisi dari
+     * SyncStep::$queryFields, lihat Wizard.blade.php) jadi { key: value },
+     * dikirim ULANG pada setiap panggilan fetch-page — bukan hanya halaman
+     * pertama, karena tiap halaman adalah request PMO baru
+     * (App\Synchronization\Contracts\PaginatedStepHandler::fetchPage()).
+     * Langkah tanpa queryFields (mis. alur Produk) mengembalikan {} apa adanya.
+     */
+    function collectQueryFields(stepKey) {
+        var pane = $('.sync-step-pane[data-step="' + stepKey + '"]');
+        var fields = pane.find('.sync-query-field');
+        var query = {};
+        var missing = [];
+
+        fields.each(function () {
+            var el = $(this);
+            var value = $.trim(el.val());
+            if (el.data('required') == 1 && !value) {
+                missing.push(el.data('label') || el.data('key'));
+            }
+            query[el.data('key')] = value;
+        });
+
+        if (missing.length) {
+            return { error: 'Isi dulu: ' + missing.join(', ') + '.' };
+        }
+
+        return { query: query };
+    }
+
+    function fetchNextPage(stepKey, page, query) {
         $.ajax({
             url: '/synchronization/' + syncFlowKey + '/' + stepKey + '/fetch-page',
             method: 'post',
-            data: { _token: token, page: page },
+            data: { _token: token, page: page, query: query },
             success: function (res) {
                 if (!res.ok) {
                     failPageProgress(stepKey, res.message || 'Gagal mengambil halaman dari PMO.');
@@ -145,7 +181,7 @@
                 if (res.is_last_page) {
                     finalizePaginatedStep(stepKey);
                 } else {
-                    fetchNextPage(stepKey, res.page + 1);
+                    fetchNextPage(stepKey, res.page + 1, query);
                 }
             },
             error: function (xhr) {

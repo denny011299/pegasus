@@ -74,5 +74,6 @@ return [
     */
     'flows' => [
         \App\Synchronization\Flows\ProductSyncFlow::class,
+        \App\Synchronization\Flows\ShipmentSyncFlow::class,
     ],
 ];

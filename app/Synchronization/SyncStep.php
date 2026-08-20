@@ -26,6 +26,13 @@ class SyncStep
      * @param  bool  $paginated  Handler-nya mengimplementasikan PaginatedStepHandler — wizard
      *                           menjalankannya halaman demi halaman (lihat Wizard.js) alih-alih
      *                           satu panggilan handle() yang menunggu seluruh halaman selesai.
+     * @param  array<int, array{key: string, label: string, type?: string, required?: bool, help?: string}>  $queryFields
+     *                           Input yang wizard minta dari operator sebelum menjalankan langkah
+     *                           ini, dikirim sebagai $query ke PaginatedStepHandler::fetchPage()
+     *                           pada SETIAP panggilan halaman (lihat Wizard.js:collectQueryFields()).
+     *                           Dipakai endpoint yang mewajibkan parameter query (mis. /getShipments
+     *                           dengan date_start/date_end) — endpoint yang bisa "ambil semua tanpa
+     *                           filter" seperti /getProducts tidak butuh ini, biarkan array kosong.
      */
     public function __construct(
         public readonly string $key,
@@ -39,6 +46,7 @@ class SyncStep
         public readonly string $handler,
         public readonly array $notes = [],
         public readonly bool $paginated = false,
+        public readonly array $queryFields = [],
     ) {
     }
 
@@ -71,6 +79,7 @@ class SyncStep
             'prerequisites' => $this->prerequisites,
             'notes' => $this->notes,
             'paginated' => $this->paginated,
+            'query_fields' => $this->queryFields,
         ];
     }
 }
