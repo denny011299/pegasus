@@ -61,6 +61,13 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompletePO', [AutocompleteController::class, 'autocompletePO'])->name('autocompletePO');
     Route::post('/autocompleteSO', [AutocompleteController::class, 'autocompleteSO'])->name('autocompleteSO');
 
+    // Riwayat Stok Produk / Bahan Mentah modal (Stock_Product.js & Stock_Supplies.js) -- dulu
+    // salah tergabung ke grup 'Peran & Perizinan|view' sehingga staf QC & Gudang yang cuma
+    // punya akses 'Stok Produk'/'Stok Bahan Mentah' kena 403 saat buka histori stok (GitHub #68).
+    // Sama seperti endpoint autocomplete di atas: dipakai lintas modul & datanya sudah terlindungi
+    // oleh akses view halaman Stok Produk/Stok Bahan Mentah itu sendiri, cukup gate login saja.
+    Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
+
     Route::middleware('check.access:Kategori|view')->group(function () {
     });
     Route::middleware('check.access:Satuan|view')->group(function () {
@@ -378,7 +385,6 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/permission/{id}', [UserController::class, 'permission'])->name('permission');
         Route::get('/dashboardWidgets/{id}', [UserController::class, 'dashboardWidgets'])->name('dashboardWidgets');
         Route::get('/getPermission', [UserController::class, 'getPermission'])->name('getPermission');
-        Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
     });
     Route::middleware('check.access:Peran & Perizinan|create')->group(function () {
         Route::post('/insertRole', [UserController::class, 'insertRole'])->name('insertRole');
