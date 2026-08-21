@@ -61,40 +61,13 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::post('/autocompletePO', [AutocompleteController::class, 'autocompletePO'])->name('autocompletePO');
     Route::post('/autocompleteSO', [AutocompleteController::class, 'autocompleteSO'])->name('autocompleteSO');
 
-    Route::middleware('check.access:Kategori|view')->group(function () {
-    });
-    Route::middleware('check.access:Satuan|view')->group(function () {
-    });
-    Route::middleware('check.access:Variasi|view')->group(function () {
-    });
-    Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {
-    });
-    Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {
-    });
-    Route::middleware('check.access:Pengiriman|view')->group(function () {
-    });
-    Route::middleware('check.access.any:Kategori Kas,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,Kas,view')->group(function () {
-    });
-    Route::middleware('check.access:Peran & Perizinan|view')->group(function () {
-    });
-    Route::middleware('check.access.any:Bank Account,Hutang,view')->group(function () {
-    });
-    Route::middleware('check.access:Pembelian|view')->group(function () {
-    });
-    Route::middleware('check.access:Pengiriman|view')->group(function () {
-    });
+    // Riwayat Stok Produk / Bahan Mentah modal (Stock_Product.js & Stock_Supplies.js) -- dulu
+    // salah tergabung ke grup 'Peran & Perizinan|view' sehingga staf QC & Gudang yang cuma
+    // punya akses 'Daftar Produk'/'Daftar Bahan Mentah' kena 403 saat buka histori stok
+    // (GitHub #68). Modul yang dicek tergantung request-nya (log_type: produk vs bahan mentah),
+    // jadi check.access middleware yang statis per-route tidak bisa mengekspresikan ini --
+    // GeneralController::getLog() sendiri yang memvalidasi lewat RoleAccess.
+    Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
 
     Route::middleware('check.access:Kategori|view')->group(function () {
         Route::get('/category', [ProductController::class, 'Category'])->name('category');
@@ -378,7 +351,6 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/permission/{id}', [UserController::class, 'permission'])->name('permission');
         Route::get('/dashboardWidgets/{id}', [UserController::class, 'dashboardWidgets'])->name('dashboardWidgets');
         Route::get('/getPermission', [UserController::class, 'getPermission'])->name('getPermission');
-        Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
     });
     Route::middleware('check.access:Peran & Perizinan|create')->group(function () {
         Route::post('/insertRole', [UserController::class, 'insertRole'])->name('insertRole');
