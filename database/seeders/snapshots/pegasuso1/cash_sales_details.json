@@ -1,0 +1,6202 @@
+[
+    {
+        "csd_id": 1,
+        "cs_id": 3,
+        "csd_notes": "BBM",
+        "csd_nominal": 263000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-04-27 14:21:40",
+        "updated_at": "2026-04-27 14:21:40"
+    },
+    {
+        "csd_id": 2,
+        "cs_id": 3,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-04-27 14:21:40",
+        "updated_at": "2026-04-27 14:21:40"
+    },
+    {
+        "csd_id": 3,
+        "cs_id": 3,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-04-27 14:21:40",
+        "updated_at": "2026-04-27 14:21:40"
+    },
+    {
+        "csd_id": 4,
+        "cs_id": 3,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-04-27 14:21:40",
+        "updated_at": "2026-04-27 14:21:40"
+    },
+    {
+        "csd_id": 5,
+        "cs_id": 3,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-04-27 14:21:40",
+        "updated_at": "2026-04-27 14:21:40"
+    },
+    {
+        "csd_id": 6,
+        "cs_id": 5,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 10000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-04-27 14:30:11",
+        "updated_at": "2026-04-27 14:30:11"
+    },
+    {
+        "csd_id": 7,
+        "cs_id": 8,
+        "csd_notes": "BBM",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-06 10:06:20",
+        "updated_at": "2026-05-06 10:06:20"
+    },
+    {
+        "csd_id": 8,
+        "cs_id": 11,
+        "csd_notes": "BBM",
+        "csd_nominal": 247000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-07 09:58:07",
+        "updated_at": "2026-05-07 09:58:07"
+    },
+    {
+        "csd_id": 9,
+        "cs_id": 11,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-07 09:58:07",
+        "updated_at": "2026-05-07 09:58:07"
+    },
+    {
+        "csd_id": 10,
+        "cs_id": 11,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-07 09:58:07",
+        "updated_at": "2026-05-07 09:58:07"
+    },
+    {
+        "csd_id": 11,
+        "cs_id": 11,
+        "csd_notes": "BBM",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-07 09:58:07",
+        "updated_at": "2026-05-07 09:58:07"
+    },
+    {
+        "csd_id": 12,
+        "cs_id": 22,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6735400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-09 15:40:50",
+        "updated_at": "2026-05-09 15:40:50"
+    },
+    {
+        "csd_id": 13,
+        "cs_id": 23,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2511840,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-09 17:27:22",
+        "updated_at": "2026-05-09 17:27:22"
+    },
+    {
+        "csd_id": 14,
+        "cs_id": 24,
+        "csd_notes": "MINGGUAN ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-09 17:30:51",
+        "updated_at": "2026-05-09 17:30:51"
+    },
+    {
+        "csd_id": 15,
+        "cs_id": 24,
+        "csd_notes": "BBM",
+        "csd_nominal": 130000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-09 17:30:51",
+        "updated_at": "2026-05-09 17:30:51"
+    },
+    {
+        "csd_id": 16,
+        "cs_id": 24,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-09 17:30:51",
+        "updated_at": "2026-05-09 17:30:51"
+    },
+    {
+        "csd_id": 17,
+        "cs_id": 26,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 09:59:20",
+        "updated_at": "2026-05-11 09:59:20"
+    },
+    {
+        "csd_id": 18,
+        "cs_id": 26,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 09:59:20",
+        "updated_at": "2026-05-11 09:59:20"
+    },
+    {
+        "csd_id": 19,
+        "cs_id": 27,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1421700,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-11 10:00:44",
+        "updated_at": "2026-05-11 10:00:44"
+    },
+    {
+        "csd_id": 20,
+        "cs_id": 30,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:13:53",
+        "updated_at": "2026-05-11 11:13:53"
+    },
+    {
+        "csd_id": 21,
+        "cs_id": 30,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:13:53",
+        "updated_at": "2026-05-11 11:13:53"
+    },
+    {
+        "csd_id": 22,
+        "cs_id": 30,
+        "csd_notes": "Hotel",
+        "csd_nominal": 450000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:13:53",
+        "updated_at": "2026-05-11 11:13:53"
+    },
+    {
+        "csd_id": 23,
+        "cs_id": 30,
+        "csd_notes": "SETOR TF",
+        "csd_nominal": 3000000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:13:53",
+        "updated_at": "2026-05-11 11:13:53"
+    },
+    {
+        "csd_id": 24,
+        "cs_id": 30,
+        "csd_notes": "BBM",
+        "csd_nominal": 137100,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:13:53",
+        "updated_at": "2026-05-11 11:13:53"
+    },
+    {
+        "csd_id": 25,
+        "cs_id": 31,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8785700,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-11 11:15:53",
+        "updated_at": "2026-05-11 11:15:53"
+    },
+    {
+        "csd_id": 26,
+        "cs_id": 33,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6931600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-11 11:39:15",
+        "updated_at": "2026-05-11 11:39:15"
+    },
+    {
+        "csd_id": 27,
+        "cs_id": 34,
+        "csd_notes": "BBM",
+        "csd_nominal": 275000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:40:50",
+        "updated_at": "2026-05-11 11:40:50"
+    },
+    {
+        "csd_id": 28,
+        "cs_id": 34,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:40:50",
+        "updated_at": "2026-05-11 11:40:50"
+    },
+    {
+        "csd_id": 29,
+        "cs_id": 34,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:40:50",
+        "updated_at": "2026-05-11 11:40:50"
+    },
+    {
+        "csd_id": 30,
+        "cs_id": 34,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:40:50",
+        "updated_at": "2026-05-11 11:40:50"
+    },
+    {
+        "csd_id": 31,
+        "cs_id": 34,
+        "csd_notes": "Parkir",
+        "csd_nominal": 4000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:40:50",
+        "updated_at": "2026-05-11 11:40:50"
+    },
+    {
+        "csd_id": 32,
+        "cs_id": 35,
+        "csd_notes": "SETOR TF",
+        "csd_nominal": 13000000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 11:41:42",
+        "updated_at": "2026-05-11 11:41:42"
+    },
+    {
+        "csd_id": 33,
+        "cs_id": 37,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2395000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-11 13:23:11",
+        "updated_at": "2026-05-11 13:23:11"
+    },
+    {
+        "csd_id": 34,
+        "cs_id": 38,
+        "csd_notes": "Hotel",
+        "csd_nominal": 250000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 14:10:05",
+        "updated_at": "2026-05-11 14:10:05"
+    },
+    {
+        "csd_id": 35,
+        "cs_id": 38,
+        "csd_notes": "BBM",
+        "csd_nominal": 155000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 14:10:05",
+        "updated_at": "2026-05-11 14:10:05"
+    },
+    {
+        "csd_id": 36,
+        "cs_id": 38,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 120000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 14:10:05",
+        "updated_at": "2026-05-11 14:10:05"
+    },
+    {
+        "csd_id": 37,
+        "cs_id": 41,
+        "csd_notes": "P5 UD METRO MOTOR",
+        "csd_nominal": 300000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-11 14:53:28",
+        "updated_at": "2026-05-11 14:53:28"
+    },
+    {
+        "csd_id": 38,
+        "cs_id": 45,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2511840,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-12 15:18:08",
+        "updated_at": "2026-05-12 15:18:08"
+    },
+    {
+        "csd_id": 39,
+        "cs_id": 46,
+        "csd_notes": "BBM",
+        "csd_nominal": 130000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-12 15:19:29",
+        "updated_at": "2026-05-12 15:19:29"
+    },
+    {
+        "csd_id": 40,
+        "cs_id": 46,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-12 15:19:29",
+        "updated_at": "2026-05-12 15:19:29"
+    },
+    {
+        "csd_id": 41,
+        "cs_id": 46,
+        "csd_notes": "MINGGUAN ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-12 15:19:29",
+        "updated_at": "2026-05-12 15:19:29"
+    },
+    {
+        "csd_id": 42,
+        "cs_id": 55,
+        "csd_notes": "Penyesuaian Kas Sales/Armada (DIKARENAKAN SALAH INPUT)",
+        "csd_nominal": 2395000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-12 17:22:04",
+        "updated_at": "2026-05-12 17:22:04"
+    },
+    {
+        "csd_id": 43,
+        "cs_id": 56,
+        "csd_notes": "Penyesuaian Kas Sales/Armada (DIKARENAKAN SALAH INPUT)",
+        "csd_nominal": 1633800,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-12 17:23:13",
+        "updated_at": "2026-05-12 17:23:13"
+    },
+    {
+        "csd_id": 44,
+        "cs_id": 57,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7851996,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-12 17:41:13",
+        "updated_at": "2026-05-12 17:41:13"
+    },
+    {
+        "csd_id": 45,
+        "cs_id": 60,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 60000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-13 09:58:49",
+        "updated_at": "2026-05-13 09:58:49"
+    },
+    {
+        "csd_id": 46,
+        "cs_id": 61,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 90000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-13 10:44:53",
+        "updated_at": "2026-05-13 10:44:53"
+    },
+    {
+        "csd_id": 47,
+        "cs_id": 62,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2410000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-15 14:49:27",
+        "updated_at": "2026-05-15 14:49:27"
+    },
+    {
+        "csd_id": 48,
+        "cs_id": 64,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6357800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-15 15:40:14",
+        "updated_at": "2026-05-15 15:40:14"
+    },
+    {
+        "csd_id": 49,
+        "cs_id": 66,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1304600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-15 16:44:29",
+        "updated_at": "2026-05-15 16:44:29"
+    },
+    {
+        "csd_id": 50,
+        "cs_id": 68,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 766680,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-16 08:26:17",
+        "updated_at": "2026-05-16 08:26:17"
+    },
+    {
+        "csd_id": 51,
+        "cs_id": 72,
+        "csd_notes": "Penyesuaian Kas Sales/Armada (KELUAR)",
+        "csd_nominal": 60000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-16 09:30:28",
+        "updated_at": "2026-05-16 09:30:28"
+    },
+    {
+        "csd_id": 52,
+        "cs_id": 73,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-16 09:42:43",
+        "updated_at": "2026-05-16 09:42:43"
+    },
+    {
+        "csd_id": 53,
+        "cs_id": 73,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-16 09:42:43",
+        "updated_at": "2026-05-16 09:42:43"
+    },
+    {
+        "csd_id": 54,
+        "cs_id": 73,
+        "csd_notes": "Hotel",
+        "csd_nominal": 450000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-16 09:42:43",
+        "updated_at": "2026-05-16 09:42:43"
+    },
+    {
+        "csd_id": 55,
+        "cs_id": 73,
+        "csd_notes": "BBM",
+        "csd_nominal": 137100,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-16 09:42:43",
+        "updated_at": "2026-05-16 09:42:43"
+    },
+    {
+        "csd_id": 56,
+        "cs_id": 74,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8785700,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-16 09:45:55",
+        "updated_at": "2026-05-16 09:45:55"
+    },
+    {
+        "csd_id": 57,
+        "cs_id": 75,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6357800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-16 13:06:08",
+        "updated_at": "2026-05-16 13:06:08"
+    },
+    {
+        "csd_id": 58,
+        "cs_id": 77,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 460000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-16 13:43:23",
+        "updated_at": "2026-05-16 13:43:23"
+    },
+    {
+        "csd_id": 59,
+        "cs_id": 79,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 19500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-18 11:25:53",
+        "updated_at": "2026-05-18 11:25:53"
+    },
+    {
+        "csd_id": 60,
+        "cs_id": 81,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6765400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-18 11:41:10",
+        "updated_at": "2026-05-18 11:41:10"
+    },
+    {
+        "csd_id": 61,
+        "cs_id": 82,
+        "csd_notes": "BBM",
+        "csd_nominal": 154500,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 11:44:05",
+        "updated_at": "2026-05-18 11:44:05"
+    },
+    {
+        "csd_id": 62,
+        "cs_id": 82,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 11:44:05",
+        "updated_at": "2026-05-18 11:44:05"
+    },
+    {
+        "csd_id": 63,
+        "cs_id": 84,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4992000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-18 14:07:05",
+        "updated_at": "2026-05-18 14:07:05"
+    },
+    {
+        "csd_id": 64,
+        "cs_id": 85,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 14:08:12",
+        "updated_at": "2026-05-18 14:08:12"
+    },
+    {
+        "csd_id": 65,
+        "cs_id": 85,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 14:08:12",
+        "updated_at": "2026-05-18 14:08:12"
+    },
+    {
+        "csd_id": 66,
+        "cs_id": 85,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 14:08:12",
+        "updated_at": "2026-05-18 14:08:12"
+    },
+    {
+        "csd_id": 67,
+        "cs_id": 85,
+        "csd_notes": "Hotel",
+        "csd_nominal": 340000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 14:08:12",
+        "updated_at": "2026-05-18 14:08:12"
+    },
+    {
+        "csd_id": 68,
+        "cs_id": 87,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7787400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-18 14:37:39",
+        "updated_at": "2026-05-18 14:37:39"
+    },
+    {
+        "csd_id": 69,
+        "cs_id": 88,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 14:38:34",
+        "updated_at": "2026-05-18 14:38:34"
+    },
+    {
+        "csd_id": 70,
+        "cs_id": 88,
+        "csd_notes": "BBM",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 14:38:34",
+        "updated_at": "2026-05-18 14:38:34"
+    },
+    {
+        "csd_id": 71,
+        "cs_id": 90,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4414800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-18 15:33:15",
+        "updated_at": "2026-05-18 15:33:15"
+    },
+    {
+        "csd_id": 72,
+        "cs_id": 91,
+        "csd_notes": "BBM",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 15:34:22",
+        "updated_at": "2026-05-18 15:34:22"
+    },
+    {
+        "csd_id": 73,
+        "cs_id": 91,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 15:34:22",
+        "updated_at": "2026-05-18 15:34:22"
+    },
+    {
+        "csd_id": 74,
+        "cs_id": 91,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 15:34:22",
+        "updated_at": "2026-05-18 15:34:22"
+    },
+    {
+        "csd_id": 75,
+        "cs_id": 91,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 15:34:23",
+        "updated_at": "2026-05-18 15:34:23"
+    },
+    {
+        "csd_id": 76,
+        "cs_id": 93,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11926800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-18 16:34:05",
+        "updated_at": "2026-05-18 16:34:05"
+    },
+    {
+        "csd_id": 77,
+        "cs_id": 96,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9818617,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-18 17:00:29",
+        "updated_at": "2026-05-18 17:00:29"
+    },
+    {
+        "csd_id": 78,
+        "cs_id": 97,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 79,
+        "cs_id": 97,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 900000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 80,
+        "cs_id": 97,
+        "csd_notes": "Hotel",
+        "csd_nominal": 945000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 81,
+        "cs_id": 97,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 300000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 82,
+        "cs_id": 97,
+        "csd_notes": "Hotel",
+        "csd_nominal": 520000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 83,
+        "cs_id": 97,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 250000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 84,
+        "cs_id": 97,
+        "csd_notes": "bus",
+        "csd_nominal": 315000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 85,
+        "cs_id": 97,
+        "csd_notes": "ojek",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 86,
+        "cs_id": 97,
+        "csd_notes": "BBM",
+        "csd_nominal": 238590,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 87,
+        "cs_id": 97,
+        "csd_notes": "Parkir",
+        "csd_nominal": 28000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:08:01",
+        "updated_at": "2026-05-18 17:08:01"
+    },
+    {
+        "csd_id": 88,
+        "cs_id": 98,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-18 17:10:04",
+        "updated_at": "2026-05-18 17:10:04"
+    },
+    {
+        "csd_id": 89,
+        "cs_id": 101,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 19012800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-19 11:26:40",
+        "updated_at": "2026-05-19 11:26:40"
+    },
+    {
+        "csd_id": 90,
+        "cs_id": 103,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 21050000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-19 12:01:19",
+        "updated_at": "2026-05-19 12:01:19"
+    },
+    {
+        "csd_id": 91,
+        "cs_id": 104,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-19 12:02:59",
+        "updated_at": "2026-05-19 12:02:59"
+    },
+    {
+        "csd_id": 92,
+        "cs_id": 104,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-19 12:02:59",
+        "updated_at": "2026-05-19 12:02:59"
+    },
+    {
+        "csd_id": 93,
+        "cs_id": 104,
+        "csd_notes": "Hotel",
+        "csd_nominal": 360000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-19 12:02:59",
+        "updated_at": "2026-05-19 12:02:59"
+    },
+    {
+        "csd_id": 94,
+        "cs_id": 104,
+        "csd_notes": "BBM",
+        "csd_nominal": 109400,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-19 12:02:59",
+        "updated_at": "2026-05-19 12:02:59"
+    },
+    {
+        "csd_id": 95,
+        "cs_id": 108,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 105000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-19 13:34:17",
+        "updated_at": "2026-05-19 13:34:17"
+    },
+    {
+        "csd_id": 96,
+        "cs_id": 110,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 150000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-20 10:35:12",
+        "updated_at": "2026-05-20 10:35:12"
+    },
+    {
+        "csd_id": 97,
+        "cs_id": 112,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 920000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-20 11:38:35",
+        "updated_at": "2026-05-20 11:38:35"
+    },
+    {
+        "csd_id": 98,
+        "cs_id": 114,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1540950,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-20 13:03:42",
+        "updated_at": "2026-05-20 13:03:42"
+    },
+    {
+        "csd_id": 99,
+        "cs_id": 116,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 520000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-21 15:23:27",
+        "updated_at": "2026-05-21 15:23:27"
+    },
+    {
+        "csd_id": 100,
+        "cs_id": 118,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 460000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-21 15:50:28",
+        "updated_at": "2026-05-21 15:50:28"
+    },
+    {
+        "csd_id": 101,
+        "cs_id": 119,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-21 16:39:59",
+        "updated_at": "2026-05-21 16:39:59"
+    },
+    {
+        "csd_id": 102,
+        "cs_id": 122,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 180000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-22 15:57:08",
+        "updated_at": "2026-05-22 15:57:08"
+    },
+    {
+        "csd_id": 103,
+        "cs_id": 124,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4358200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-23 11:19:55",
+        "updated_at": "2026-05-23 11:19:55"
+    },
+    {
+        "csd_id": 104,
+        "cs_id": 127,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11409200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-23 14:15:20",
+        "updated_at": "2026-05-23 14:15:20"
+    },
+    {
+        "csd_id": 105,
+        "cs_id": 128,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-23 14:17:36",
+        "updated_at": "2026-05-23 14:17:36"
+    },
+    {
+        "csd_id": 106,
+        "cs_id": 128,
+        "csd_notes": "BBM",
+        "csd_nominal": 187000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-23 14:17:36",
+        "updated_at": "2026-05-23 14:17:36"
+    },
+    {
+        "csd_id": 107,
+        "cs_id": 128,
+        "csd_notes": "Hotel",
+        "csd_nominal": 350000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-23 14:17:36",
+        "updated_at": "2026-05-23 14:17:36"
+    },
+    {
+        "csd_id": 108,
+        "cs_id": 131,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2944000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-23 14:45:37",
+        "updated_at": "2026-05-23 14:45:37"
+    },
+    {
+        "csd_id": 109,
+        "cs_id": 132,
+        "csd_notes": "Hotel",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-23 14:46:39",
+        "updated_at": "2026-05-23 14:46:39"
+    },
+    {
+        "csd_id": 110,
+        "cs_id": 132,
+        "csd_notes": "BBM",
+        "csd_nominal": 154400,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-23 14:46:39",
+        "updated_at": "2026-05-23 14:46:39"
+    },
+    {
+        "csd_id": 111,
+        "cs_id": 132,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-23 14:46:39",
+        "updated_at": "2026-05-23 14:46:39"
+    },
+    {
+        "csd_id": 112,
+        "cs_id": 134,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 19243800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 10:17:15",
+        "updated_at": "2026-05-25 10:17:15"
+    },
+    {
+        "csd_id": 113,
+        "cs_id": 137,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5808600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 10:25:13",
+        "updated_at": "2026-05-25 10:25:13"
+    },
+    {
+        "csd_id": 114,
+        "cs_id": 141,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5808900,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 11:03:12",
+        "updated_at": "2026-05-25 11:03:12"
+    },
+    {
+        "csd_id": 115,
+        "cs_id": 143,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3720800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 11:49:08",
+        "updated_at": "2026-05-25 11:49:08"
+    },
+    {
+        "csd_id": 116,
+        "cs_id": 145,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9180270,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 13:33:24",
+        "updated_at": "2026-05-25 13:33:24"
+    },
+    {
+        "csd_id": 117,
+        "cs_id": 146,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 13:35:45",
+        "updated_at": "2026-05-25 13:35:45"
+    },
+    {
+        "csd_id": 118,
+        "cs_id": 146,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 13:35:45",
+        "updated_at": "2026-05-25 13:35:45"
+    },
+    {
+        "csd_id": 119,
+        "cs_id": 146,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 13:35:45",
+        "updated_at": "2026-05-25 13:35:45"
+    },
+    {
+        "csd_id": 120,
+        "cs_id": 148,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6516000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 15:02:04",
+        "updated_at": "2026-05-25 15:02:04"
+    },
+    {
+        "csd_id": 121,
+        "cs_id": 149,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 12718600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 15:03:15",
+        "updated_at": "2026-05-25 15:03:15"
+    },
+    {
+        "csd_id": 122,
+        "cs_id": 150,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:03:22",
+        "updated_at": "2026-05-25 15:03:22"
+    },
+    {
+        "csd_id": 123,
+        "cs_id": 150,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:03:22",
+        "updated_at": "2026-05-25 15:03:22"
+    },
+    {
+        "csd_id": 124,
+        "cs_id": 150,
+        "csd_notes": "Hotel",
+        "csd_nominal": 445000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:03:22",
+        "updated_at": "2026-05-25 15:03:22"
+    },
+    {
+        "csd_id": 125,
+        "cs_id": 150,
+        "csd_notes": "BBM",
+        "csd_nominal": 114400,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:03:22",
+        "updated_at": "2026-05-25 15:03:22"
+    },
+    {
+        "csd_id": 126,
+        "cs_id": 153,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:04:35",
+        "updated_at": "2026-05-25 15:04:35"
+    },
+    {
+        "csd_id": 127,
+        "cs_id": 153,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:04:35",
+        "updated_at": "2026-05-25 15:04:35"
+    },
+    {
+        "csd_id": 128,
+        "cs_id": 153,
+        "csd_notes": "BBM",
+        "csd_nominal": 190000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:04:35",
+        "updated_at": "2026-05-25 15:04:35"
+    },
+    {
+        "csd_id": 129,
+        "cs_id": 153,
+        "csd_notes": "Parkir",
+        "csd_nominal": 12000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:04:35",
+        "updated_at": "2026-05-25 15:04:35"
+    },
+    {
+        "csd_id": 130,
+        "cs_id": 155,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:12:45",
+        "updated_at": "2026-05-25 15:12:45"
+    },
+    {
+        "csd_id": 131,
+        "cs_id": 155,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:12:45",
+        "updated_at": "2026-05-25 15:12:45"
+    },
+    {
+        "csd_id": 132,
+        "cs_id": 155,
+        "csd_notes": "BBM",
+        "csd_nominal": 190000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:12:45",
+        "updated_at": "2026-05-25 15:12:45"
+    },
+    {
+        "csd_id": 133,
+        "cs_id": 155,
+        "csd_notes": "Parkir",
+        "csd_nominal": 12000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:12:45",
+        "updated_at": "2026-05-25 15:12:45"
+    },
+    {
+        "csd_id": 134,
+        "cs_id": 155,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:12:45",
+        "updated_at": "2026-05-25 15:12:45"
+    },
+    {
+        "csd_id": 135,
+        "cs_id": 157,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5702480,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-25 15:57:28",
+        "updated_at": "2026-05-25 15:57:28"
+    },
+    {
+        "csd_id": 136,
+        "cs_id": 158,
+        "csd_notes": "BBM",
+        "csd_nominal": 278000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:58:43",
+        "updated_at": "2026-05-25 15:58:43"
+    },
+    {
+        "csd_id": 137,
+        "cs_id": 158,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:58:43",
+        "updated_at": "2026-05-25 15:58:43"
+    },
+    {
+        "csd_id": 138,
+        "cs_id": 158,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:58:43",
+        "updated_at": "2026-05-25 15:58:43"
+    },
+    {
+        "csd_id": 139,
+        "cs_id": 158,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:58:43",
+        "updated_at": "2026-05-25 15:58:43"
+    },
+    {
+        "csd_id": 140,
+        "cs_id": 158,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-05-25 15:58:43",
+        "updated_at": "2026-05-25 15:58:43"
+    },
+    {
+        "csd_id": 141,
+        "cs_id": 161,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10693612,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-26 08:52:10",
+        "updated_at": "2026-05-26 08:52:10"
+    },
+    {
+        "csd_id": 142,
+        "cs_id": 165,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 100000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-26 10:36:41",
+        "updated_at": "2026-05-26 10:36:41"
+    },
+    {
+        "csd_id": 143,
+        "cs_id": 167,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4175300,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-28 15:16:44",
+        "updated_at": "2026-05-28 15:16:44"
+    },
+    {
+        "csd_id": 144,
+        "cs_id": 169,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 920000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-28 15:56:24",
+        "updated_at": "2026-05-28 15:56:24"
+    },
+    {
+        "csd_id": 145,
+        "cs_id": 171,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 144000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-29 09:48:40",
+        "updated_at": "2026-05-29 09:48:40"
+    },
+    {
+        "csd_id": 146,
+        "cs_id": 173,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2581400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-29 12:58:33",
+        "updated_at": "2026-05-29 12:58:33"
+    },
+    {
+        "csd_id": 147,
+        "cs_id": 175,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 14640002,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-29 15:04:30",
+        "updated_at": "2026-05-29 15:04:30"
+    },
+    {
+        "csd_id": 148,
+        "cs_id": 178,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 540000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-05-30 14:38:43",
+        "updated_at": "2026-05-30 14:38:43"
+    },
+    {
+        "csd_id": 149,
+        "cs_id": 180,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5491200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 10:35:04",
+        "updated_at": "2026-06-02 10:35:04"
+    },
+    {
+        "csd_id": 150,
+        "cs_id": 182,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 270000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 10:55:17",
+        "updated_at": "2026-06-02 10:55:17"
+    },
+    {
+        "csd_id": 151,
+        "cs_id": 184,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4849800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 13:44:48",
+        "updated_at": "2026-06-02 13:44:48"
+    },
+    {
+        "csd_id": 152,
+        "cs_id": 185,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 13:45:38",
+        "updated_at": "2026-06-02 13:45:38"
+    },
+    {
+        "csd_id": 153,
+        "cs_id": 185,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 60000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 13:45:38",
+        "updated_at": "2026-06-02 13:45:38"
+    },
+    {
+        "csd_id": 154,
+        "cs_id": 185,
+        "csd_notes": "BBM",
+        "csd_nominal": 104000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 13:45:38",
+        "updated_at": "2026-06-02 13:45:38"
+    },
+    {
+        "csd_id": 155,
+        "cs_id": 187,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2551000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 14:14:23",
+        "updated_at": "2026-06-02 14:14:23"
+    },
+    {
+        "csd_id": 156,
+        "cs_id": 188,
+        "csd_notes": "BBM",
+        "csd_nominal": 250000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 14:15:09",
+        "updated_at": "2026-06-02 14:15:09"
+    },
+    {
+        "csd_id": 157,
+        "cs_id": 188,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 14:15:09",
+        "updated_at": "2026-06-02 14:15:09"
+    },
+    {
+        "csd_id": 158,
+        "cs_id": 188,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 14:15:09",
+        "updated_at": "2026-06-02 14:15:09"
+    },
+    {
+        "csd_id": 159,
+        "cs_id": 190,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2715600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 14:27:58",
+        "updated_at": "2026-06-02 14:27:58"
+    },
+    {
+        "csd_id": 160,
+        "cs_id": 191,
+        "csd_notes": "BBM",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 14:28:37",
+        "updated_at": "2026-06-02 14:28:37"
+    },
+    {
+        "csd_id": 161,
+        "cs_id": 191,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 14:28:37",
+        "updated_at": "2026-06-02 14:28:37"
+    },
+    {
+        "csd_id": 162,
+        "cs_id": 193,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7109400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 14:44:54",
+        "updated_at": "2026-06-02 14:44:54"
+    },
+    {
+        "csd_id": 163,
+        "cs_id": 196,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 22541200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 15:16:31",
+        "updated_at": "2026-06-02 15:16:31"
+    },
+    {
+        "csd_id": 164,
+        "cs_id": 197,
+        "csd_notes": "BBM",
+        "csd_nominal": 160000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:17:14",
+        "updated_at": "2026-06-02 15:17:14"
+    },
+    {
+        "csd_id": 165,
+        "cs_id": 197,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:17:14",
+        "updated_at": "2026-06-02 15:17:14"
+    },
+    {
+        "csd_id": 166,
+        "cs_id": 197,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:17:14",
+        "updated_at": "2026-06-02 15:17:14"
+    },
+    {
+        "csd_id": 167,
+        "cs_id": 200,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 17618900,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-02 15:32:31",
+        "updated_at": "2026-06-02 15:32:31"
+    },
+    {
+        "csd_id": 168,
+        "cs_id": 201,
+        "csd_notes": "Hotel",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:36:21",
+        "updated_at": "2026-06-02 15:36:21"
+    },
+    {
+        "csd_id": 169,
+        "cs_id": 201,
+        "csd_notes": "BBM",
+        "csd_nominal": 107400,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:36:21",
+        "updated_at": "2026-06-02 15:36:21"
+    },
+    {
+        "csd_id": 170,
+        "cs_id": 201,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:36:21",
+        "updated_at": "2026-06-02 15:36:21"
+    },
+    {
+        "csd_id": 171,
+        "cs_id": 201,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:36:21",
+        "updated_at": "2026-06-02 15:36:21"
+    },
+    {
+        "csd_id": 172,
+        "cs_id": 201,
+        "csd_notes": "GAJI SALES",
+        "csd_nominal": 967200,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-02 15:36:21",
+        "updated_at": "2026-06-02 15:36:21"
+    },
+    {
+        "csd_id": 173,
+        "cs_id": 205,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 72000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-03 09:59:26",
+        "updated_at": "2026-06-03 09:59:26"
+    },
+    {
+        "csd_id": 174,
+        "cs_id": 207,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 150000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-04 08:52:23",
+        "updated_at": "2026-06-04 08:52:23"
+    },
+    {
+        "csd_id": 175,
+        "cs_id": 209,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 72000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-04 10:18:43",
+        "updated_at": "2026-06-04 10:18:43"
+    },
+    {
+        "csd_id": 176,
+        "cs_id": 211,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4275540,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-04 11:22:54",
+        "updated_at": "2026-06-04 11:22:54"
+    },
+    {
+        "csd_id": 177,
+        "cs_id": 213,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3104000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-04 11:44:32",
+        "updated_at": "2026-06-04 11:44:32"
+    },
+    {
+        "csd_id": 178,
+        "cs_id": 215,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 920000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-04 15:42:36",
+        "updated_at": "2026-06-04 15:42:36"
+    },
+    {
+        "csd_id": 179,
+        "cs_id": 217,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 36000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-05 09:58:53",
+        "updated_at": "2026-06-05 09:58:53"
+    },
+    {
+        "csd_id": 180,
+        "cs_id": 219,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 566000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-05 10:49:50",
+        "updated_at": "2026-06-05 10:49:50"
+    },
+    {
+        "csd_id": 181,
+        "cs_id": 221,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 603404,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-06 17:03:32",
+        "updated_at": "2026-06-06 17:03:32"
+    },
+    {
+        "csd_id": 182,
+        "cs_id": 223,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3546900,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-08 08:35:17",
+        "updated_at": "2026-06-08 08:35:17"
+    },
+    {
+        "csd_id": 183,
+        "cs_id": 224,
+        "csd_notes": "PENGELUARAN NR",
+        "csd_nominal": 280000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 08:37:30",
+        "updated_at": "2026-06-08 08:37:30"
+    },
+    {
+        "csd_id": 184,
+        "cs_id": 224,
+        "csd_notes": "PENGELUARAN DIKA",
+        "csd_nominal": 800000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 08:37:30",
+        "updated_at": "2026-06-08 08:37:30"
+    },
+    {
+        "csd_id": 185,
+        "cs_id": 224,
+        "csd_notes": "PENGELUARAN BAGAS",
+        "csd_nominal": 688600,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 08:37:30",
+        "updated_at": "2026-06-08 08:37:30"
+    },
+    {
+        "csd_id": 186,
+        "cs_id": 224,
+        "csd_notes": "MINGGUAN ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 08:37:30",
+        "updated_at": "2026-06-08 08:37:30"
+    },
+    {
+        "csd_id": 187,
+        "cs_id": 226,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 100000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-08 10:02:10",
+        "updated_at": "2026-06-08 10:02:10"
+    },
+    {
+        "csd_id": 188,
+        "cs_id": 228,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5002600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-08 13:42:51",
+        "updated_at": "2026-06-08 13:42:51"
+    },
+    {
+        "csd_id": 189,
+        "cs_id": 231,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3592670,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-08 13:44:32",
+        "updated_at": "2026-06-08 13:44:32"
+    },
+    {
+        "csd_id": 190,
+        "cs_id": 233,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 22475850,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-08 14:35:16",
+        "updated_at": "2026-06-08 14:35:16"
+    },
+    {
+        "csd_id": 191,
+        "cs_id": 234,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 14:36:36",
+        "updated_at": "2026-06-08 14:36:36"
+    },
+    {
+        "csd_id": 192,
+        "cs_id": 234,
+        "csd_notes": "Parkir",
+        "csd_nominal": 6000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 14:36:36",
+        "updated_at": "2026-06-08 14:36:36"
+    },
+    {
+        "csd_id": 193,
+        "cs_id": 234,
+        "csd_notes": "BBM",
+        "csd_nominal": 160000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 14:36:36",
+        "updated_at": "2026-06-08 14:36:36"
+    },
+    {
+        "csd_id": 194,
+        "cs_id": 234,
+        "csd_notes": "Hotel",
+        "csd_nominal": 425000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 14:36:36",
+        "updated_at": "2026-06-08 14:36:36"
+    },
+    {
+        "csd_id": 195,
+        "cs_id": 239,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8337800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-08 15:22:06",
+        "updated_at": "2026-06-08 15:22:06"
+    },
+    {
+        "csd_id": 196,
+        "cs_id": 240,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 15:24:23",
+        "updated_at": "2026-06-08 15:24:23"
+    },
+    {
+        "csd_id": 197,
+        "cs_id": 240,
+        "csd_notes": "BBM",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 15:24:23",
+        "updated_at": "2026-06-08 15:24:23"
+    },
+    {
+        "csd_id": 198,
+        "cs_id": 240,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 15:24:23",
+        "updated_at": "2026-06-08 15:24:23"
+    },
+    {
+        "csd_id": 199,
+        "cs_id": 240,
+        "csd_notes": "E Tol",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 15:24:23",
+        "updated_at": "2026-06-08 15:24:23"
+    },
+    {
+        "csd_id": 200,
+        "cs_id": 240,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 15:24:23",
+        "updated_at": "2026-06-08 15:24:23"
+    },
+    {
+        "csd_id": 201,
+        "cs_id": 242,
+        "csd_notes": "BBM",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 16:07:24",
+        "updated_at": "2026-06-08 16:07:24"
+    },
+    {
+        "csd_id": 202,
+        "cs_id": 242,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 16:07:24",
+        "updated_at": "2026-06-08 16:07:24"
+    },
+    {
+        "csd_id": 203,
+        "cs_id": 242,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 16:07:24",
+        "updated_at": "2026-06-08 16:07:24"
+    },
+    {
+        "csd_id": 204,
+        "cs_id": 242,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 16:07:24",
+        "updated_at": "2026-06-08 16:07:24"
+    },
+    {
+        "csd_id": 205,
+        "cs_id": 242,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 16:07:24",
+        "updated_at": "2026-06-08 16:07:24"
+    },
+    {
+        "csd_id": 206,
+        "cs_id": 243,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11688600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-08 16:13:32",
+        "updated_at": "2026-06-08 16:13:32"
+    },
+    {
+        "csd_id": 207,
+        "cs_id": 244,
+        "csd_notes": "Hotel",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-08 16:14:39",
+        "updated_at": "2026-06-08 16:14:39"
+    },
+    {
+        "csd_id": 208,
+        "cs_id": 248,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8755500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-09 10:18:15",
+        "updated_at": "2026-06-09 10:18:15"
+    },
+    {
+        "csd_id": 209,
+        "cs_id": 249,
+        "csd_notes": "Hotel",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 10:19:12",
+        "updated_at": "2026-06-09 10:19:12"
+    },
+    {
+        "csd_id": 210,
+        "cs_id": 249,
+        "csd_notes": "BBM",
+        "csd_nominal": 103600,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 10:19:12",
+        "updated_at": "2026-06-09 10:19:12"
+    },
+    {
+        "csd_id": 211,
+        "cs_id": 249,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 10:19:12",
+        "updated_at": "2026-06-09 10:19:12"
+    },
+    {
+        "csd_id": 212,
+        "cs_id": 249,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 10:19:12",
+        "updated_at": "2026-06-09 10:19:12"
+    },
+    {
+        "csd_id": 213,
+        "cs_id": 252,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8407625,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-09 13:05:49",
+        "updated_at": "2026-06-09 13:05:49"
+    },
+    {
+        "csd_id": 214,
+        "cs_id": 255,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3457600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-09 15:25:46",
+        "updated_at": "2026-06-09 15:25:46"
+    },
+    {
+        "csd_id": 215,
+        "cs_id": 256,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 216,
+        "cs_id": 256,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 900000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 217,
+        "cs_id": 256,
+        "csd_notes": "Hotel",
+        "csd_nominal": 810000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 218,
+        "cs_id": 256,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 250000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 219,
+        "cs_id": 256,
+        "csd_notes": "Hotel",
+        "csd_nominal": 675000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 220,
+        "cs_id": 256,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 450000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 221,
+        "cs_id": 256,
+        "csd_notes": "bus",
+        "csd_nominal": 375000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 222,
+        "cs_id": 256,
+        "csd_notes": "ojek",
+        "csd_nominal": 140000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 223,
+        "cs_id": 256,
+        "csd_notes": "BBM",
+        "csd_nominal": 258070,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 224,
+        "cs_id": 256,
+        "csd_notes": "Parkir",
+        "csd_nominal": 18000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-09 15:28:35",
+        "updated_at": "2026-06-09 15:28:35"
+    },
+    {
+        "csd_id": 225,
+        "cs_id": 258,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10097200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-10 11:20:52",
+        "updated_at": "2026-06-10 11:20:52"
+    },
+    {
+        "csd_id": 226,
+        "cs_id": 260,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2818000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-10 11:36:16",
+        "updated_at": "2026-06-10 11:36:16"
+    },
+    {
+        "csd_id": 227,
+        "cs_id": 262,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 140000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-11 10:12:49",
+        "updated_at": "2026-06-11 10:12:49"
+    },
+    {
+        "csd_id": 228,
+        "cs_id": 264,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 374000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-11 14:00:08",
+        "updated_at": "2026-06-11 14:00:08"
+    },
+    {
+        "csd_id": 229,
+        "cs_id": 266,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1380000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-11 15:28:04",
+        "updated_at": "2026-06-11 15:28:04"
+    },
+    {
+        "csd_id": 230,
+        "cs_id": 268,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 539000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-12 10:28:22",
+        "updated_at": "2026-06-12 10:28:22"
+    },
+    {
+        "csd_id": 231,
+        "cs_id": 270,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 28434890,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-12 13:22:05",
+        "updated_at": "2026-06-12 13:22:05"
+    },
+    {
+        "csd_id": 232,
+        "cs_id": 276,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1700000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-13 09:57:42",
+        "updated_at": "2026-06-13 09:57:42"
+    },
+    {
+        "csd_id": 233,
+        "cs_id": 278,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3645000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-13 13:15:45",
+        "updated_at": "2026-06-13 13:15:45"
+    },
+    {
+        "csd_id": 234,
+        "cs_id": 280,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5600000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-13 15:03:09",
+        "updated_at": "2026-06-13 15:03:09"
+    },
+    {
+        "csd_id": 235,
+        "cs_id": 281,
+        "csd_notes": "Hotel",
+        "csd_nominal": 210000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-13 15:05:47",
+        "updated_at": "2026-06-13 15:05:47"
+    },
+    {
+        "csd_id": 236,
+        "cs_id": 284,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 282000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 10:34:47",
+        "updated_at": "2026-06-15 10:34:47"
+    },
+    {
+        "csd_id": 237,
+        "cs_id": 286,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3456000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 11:46:29",
+        "updated_at": "2026-06-15 11:46:29"
+    },
+    {
+        "csd_id": 238,
+        "cs_id": 287,
+        "csd_notes": "BBM",
+        "csd_nominal": 306000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 11:47:12",
+        "updated_at": "2026-06-15 11:47:12"
+    },
+    {
+        "csd_id": 239,
+        "cs_id": 287,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 11:47:12",
+        "updated_at": "2026-06-15 11:47:12"
+    },
+    {
+        "csd_id": 240,
+        "cs_id": 287,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 11:47:12",
+        "updated_at": "2026-06-15 11:47:12"
+    },
+    {
+        "csd_id": 241,
+        "cs_id": 289,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5500000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 13:10:43",
+        "updated_at": "2026-06-15 13:10:43"
+    },
+    {
+        "csd_id": 242,
+        "cs_id": 290,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 13:12:18",
+        "updated_at": "2026-06-15 13:12:18"
+    },
+    {
+        "csd_id": 243,
+        "cs_id": 290,
+        "csd_notes": "BBM",
+        "csd_nominal": 173400,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 13:12:18",
+        "updated_at": "2026-06-15 13:12:18"
+    },
+    {
+        "csd_id": 244,
+        "cs_id": 290,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 13:12:18",
+        "updated_at": "2026-06-15 13:12:18"
+    },
+    {
+        "csd_id": 245,
+        "cs_id": 292,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1249000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 13:48:15",
+        "updated_at": "2026-06-15 13:48:15"
+    },
+    {
+        "csd_id": 246,
+        "cs_id": 294,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 16993600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 14:10:41",
+        "updated_at": "2026-06-15 14:10:41"
+    },
+    {
+        "csd_id": 247,
+        "cs_id": 295,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:11:48",
+        "updated_at": "2026-06-15 14:11:48"
+    },
+    {
+        "csd_id": 248,
+        "cs_id": 295,
+        "csd_notes": "BBM",
+        "csd_nominal": 120000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:11:48",
+        "updated_at": "2026-06-15 14:11:48"
+    },
+    {
+        "csd_id": 249,
+        "cs_id": 296,
+        "csd_notes": "PENGELUARAN SAIFUL",
+        "csd_nominal": 373500,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:16:48",
+        "updated_at": "2026-06-15 14:16:48"
+    },
+    {
+        "csd_id": 250,
+        "cs_id": 298,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8298400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 14:18:52",
+        "updated_at": "2026-06-15 14:18:52"
+    },
+    {
+        "csd_id": 251,
+        "cs_id": 299,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:19:38",
+        "updated_at": "2026-06-15 14:19:38"
+    },
+    {
+        "csd_id": 252,
+        "cs_id": 299,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:19:38",
+        "updated_at": "2026-06-15 14:19:38"
+    },
+    {
+        "csd_id": 253,
+        "cs_id": 299,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:19:38",
+        "updated_at": "2026-06-15 14:19:38"
+    },
+    {
+        "csd_id": 254,
+        "cs_id": 304,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6296200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 14:41:21",
+        "updated_at": "2026-06-15 14:41:21"
+    },
+    {
+        "csd_id": 255,
+        "cs_id": 305,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:43:14",
+        "updated_at": "2026-06-15 14:43:14"
+    },
+    {
+        "csd_id": 256,
+        "cs_id": 305,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:43:14",
+        "updated_at": "2026-06-15 14:43:14"
+    },
+    {
+        "csd_id": 257,
+        "cs_id": 305,
+        "csd_notes": "Hotel",
+        "csd_nominal": 450000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:43:14",
+        "updated_at": "2026-06-15 14:43:14"
+    },
+    {
+        "csd_id": 258,
+        "cs_id": 305,
+        "csd_notes": "BBM",
+        "csd_nominal": 93200,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 14:43:14",
+        "updated_at": "2026-06-15 14:43:14"
+    },
+    {
+        "csd_id": 259,
+        "cs_id": 308,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 15:28:27",
+        "updated_at": "2026-06-15 15:28:27"
+    },
+    {
+        "csd_id": 260,
+        "cs_id": 308,
+        "csd_notes": "BBM",
+        "csd_nominal": 120000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-15 15:28:27",
+        "updated_at": "2026-06-15 15:28:27"
+    },
+    {
+        "csd_id": 261,
+        "cs_id": 309,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 23196880,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-15 16:21:33",
+        "updated_at": "2026-06-15 16:21:33"
+    },
+    {
+        "csd_id": 262,
+        "cs_id": 314,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 140000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-18 09:41:10",
+        "updated_at": "2026-06-18 09:41:10"
+    },
+    {
+        "csd_id": 263,
+        "cs_id": 316,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3447800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-18 10:26:58",
+        "updated_at": "2026-06-18 10:26:58"
+    },
+    {
+        "csd_id": 264,
+        "cs_id": 318,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 200000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-19 10:05:35",
+        "updated_at": "2026-06-19 10:05:35"
+    },
+    {
+        "csd_id": 265,
+        "cs_id": 320,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 855000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-19 13:53:24",
+        "updated_at": "2026-06-19 13:53:24"
+    },
+    {
+        "csd_id": 266,
+        "cs_id": 322,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 15070070,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-19 13:58:56",
+        "updated_at": "2026-06-19 13:58:56"
+    },
+    {
+        "csd_id": 267,
+        "cs_id": 323,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-19 13:59:46",
+        "updated_at": "2026-06-19 13:59:46"
+    },
+    {
+        "csd_id": 268,
+        "cs_id": 323,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-19 13:59:46",
+        "updated_at": "2026-06-19 13:59:46"
+    },
+    {
+        "csd_id": 269,
+        "cs_id": 323,
+        "csd_notes": "BBM",
+        "csd_nominal": 140000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-19 13:59:46",
+        "updated_at": "2026-06-19 13:59:46"
+    },
+    {
+        "csd_id": 270,
+        "cs_id": 323,
+        "csd_notes": "Parkir",
+        "csd_nominal": 18000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-19 13:59:46",
+        "updated_at": "2026-06-19 13:59:46"
+    },
+    {
+        "csd_id": 271,
+        "cs_id": 326,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10998200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-19 14:00:27",
+        "updated_at": "2026-06-19 14:00:27"
+    },
+    {
+        "csd_id": 272,
+        "cs_id": 333,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1760000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-20 10:17:57",
+        "updated_at": "2026-06-20 10:17:57"
+    },
+    {
+        "csd_id": 273,
+        "cs_id": 335,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3891000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-22 09:19:06",
+        "updated_at": "2026-06-22 09:19:06"
+    },
+    {
+        "csd_id": 274,
+        "cs_id": 337,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 16800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-22 09:54:53",
+        "updated_at": "2026-06-22 09:54:53"
+    },
+    {
+        "csd_id": 275,
+        "cs_id": 339,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10476000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-22 11:07:23",
+        "updated_at": "2026-06-22 11:07:23"
+    },
+    {
+        "csd_id": 276,
+        "cs_id": 343,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 940000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-22 13:58:18",
+        "updated_at": "2026-06-22 13:58:18"
+    },
+    {
+        "csd_id": 277,
+        "cs_id": 345,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2656800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-22 15:34:08",
+        "updated_at": "2026-06-22 15:34:08"
+    },
+    {
+        "csd_id": 278,
+        "cs_id": 346,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 15:35:12",
+        "updated_at": "2026-06-22 15:35:12"
+    },
+    {
+        "csd_id": 279,
+        "cs_id": 346,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 15:35:12",
+        "updated_at": "2026-06-22 15:35:12"
+    },
+    {
+        "csd_id": 280,
+        "cs_id": 346,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 15:35:12",
+        "updated_at": "2026-06-22 15:35:12"
+    },
+    {
+        "csd_id": 281,
+        "cs_id": 346,
+        "csd_notes": "Hotel",
+        "csd_nominal": 340000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 15:35:12",
+        "updated_at": "2026-06-22 15:35:12"
+    },
+    {
+        "csd_id": 282,
+        "cs_id": 348,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5089000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-22 16:21:39",
+        "updated_at": "2026-06-22 16:21:39"
+    },
+    {
+        "csd_id": 283,
+        "cs_id": 349,
+        "csd_notes": "BBM",
+        "csd_nominal": 291000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 16:22:45",
+        "updated_at": "2026-06-22 16:22:45"
+    },
+    {
+        "csd_id": 284,
+        "cs_id": 349,
+        "csd_notes": "Hotel",
+        "csd_nominal": 320000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 16:22:45",
+        "updated_at": "2026-06-22 16:22:45"
+    },
+    {
+        "csd_id": 285,
+        "cs_id": 349,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 16:22:45",
+        "updated_at": "2026-06-22 16:22:45"
+    },
+    {
+        "csd_id": 286,
+        "cs_id": 349,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 16:22:45",
+        "updated_at": "2026-06-22 16:22:45"
+    },
+    {
+        "csd_id": 287,
+        "cs_id": 349,
+        "csd_notes": "Parkir",
+        "csd_nominal": 4000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-22 16:22:45",
+        "updated_at": "2026-06-22 16:22:45"
+    },
+    {
+        "csd_id": 288,
+        "cs_id": 352,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3464400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 09:30:24",
+        "updated_at": "2026-06-23 09:30:24"
+    },
+    {
+        "csd_id": 289,
+        "cs_id": 353,
+        "csd_notes": "Hotel",
+        "csd_nominal": 415000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:30:58",
+        "updated_at": "2026-06-23 09:30:58"
+    },
+    {
+        "csd_id": 290,
+        "cs_id": 353,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:30:58",
+        "updated_at": "2026-06-23 09:30:58"
+    },
+    {
+        "csd_id": 291,
+        "cs_id": 354,
+        "csd_notes": "BBM",
+        "csd_nominal": 126200,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:32:03",
+        "updated_at": "2026-06-23 09:32:03"
+    },
+    {
+        "csd_id": 292,
+        "cs_id": 354,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:32:03",
+        "updated_at": "2026-06-23 09:32:03"
+    },
+    {
+        "csd_id": 293,
+        "cs_id": 354,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:32:03",
+        "updated_at": "2026-06-23 09:32:03"
+    },
+    {
+        "csd_id": 294,
+        "cs_id": 354,
+        "csd_notes": "Parkir",
+        "csd_nominal": 13000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:32:03",
+        "updated_at": "2026-06-23 09:32:03"
+    },
+    {
+        "csd_id": 295,
+        "cs_id": 356,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 18147735,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 09:35:58",
+        "updated_at": "2026-06-23 09:35:58"
+    },
+    {
+        "csd_id": 296,
+        "cs_id": 357,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:37:03",
+        "updated_at": "2026-06-23 09:37:03"
+    },
+    {
+        "csd_id": 297,
+        "cs_id": 357,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:37:03",
+        "updated_at": "2026-06-23 09:37:03"
+    },
+    {
+        "csd_id": 298,
+        "cs_id": 357,
+        "csd_notes": "BBM",
+        "csd_nominal": 170000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:37:03",
+        "updated_at": "2026-06-23 09:37:03"
+    },
+    {
+        "csd_id": 299,
+        "cs_id": 357,
+        "csd_notes": "Parkir",
+        "csd_nominal": 12000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 09:37:03",
+        "updated_at": "2026-06-23 09:37:03"
+    },
+    {
+        "csd_id": 300,
+        "cs_id": 364,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 210000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 10:37:39",
+        "updated_at": "2026-06-23 10:37:39"
+    },
+    {
+        "csd_id": 301,
+        "cs_id": 366,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 30000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 10:38:55",
+        "updated_at": "2026-06-23 10:38:55"
+    },
+    {
+        "csd_id": 302,
+        "cs_id": 368,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 15731000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 11:59:11",
+        "updated_at": "2026-06-23 11:59:11"
+    },
+    {
+        "csd_id": 303,
+        "cs_id": 369,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 11:59:53",
+        "updated_at": "2026-06-23 11:59:53"
+    },
+    {
+        "csd_id": 304,
+        "cs_id": 369,
+        "csd_notes": "BBM",
+        "csd_nominal": 123000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 11:59:53",
+        "updated_at": "2026-06-23 11:59:53"
+    },
+    {
+        "csd_id": 305,
+        "cs_id": 369,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 11:59:53",
+        "updated_at": "2026-06-23 11:59:53"
+    },
+    {
+        "csd_id": 306,
+        "cs_id": 371,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 15731000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 13:25:06",
+        "updated_at": "2026-06-23 13:25:06"
+    },
+    {
+        "csd_id": 307,
+        "cs_id": 372,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 13:28:31",
+        "updated_at": "2026-06-23 13:28:31"
+    },
+    {
+        "csd_id": 308,
+        "cs_id": 372,
+        "csd_notes": "BBM",
+        "csd_nominal": 123000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 13:28:31",
+        "updated_at": "2026-06-23 13:28:31"
+    },
+    {
+        "csd_id": 309,
+        "cs_id": 372,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 13:28:31",
+        "updated_at": "2026-06-23 13:28:31"
+    },
+    {
+        "csd_id": 310,
+        "cs_id": 374,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 22697600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 15:35:34",
+        "updated_at": "2026-06-23 15:35:34"
+    },
+    {
+        "csd_id": 311,
+        "cs_id": 375,
+        "csd_notes": "Hotel",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 15:37:23",
+        "updated_at": "2026-06-23 15:37:23"
+    },
+    {
+        "csd_id": 312,
+        "cs_id": 380,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 16387000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-23 16:04:59",
+        "updated_at": "2026-06-23 16:04:59"
+    },
+    {
+        "csd_id": 313,
+        "cs_id": 381,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 16:06:15",
+        "updated_at": "2026-06-23 16:06:15"
+    },
+    {
+        "csd_id": 314,
+        "cs_id": 381,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 16:06:15",
+        "updated_at": "2026-06-23 16:06:15"
+    },
+    {
+        "csd_id": 315,
+        "cs_id": 381,
+        "csd_notes": "Hotel",
+        "csd_nominal": 175000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 16:06:15",
+        "updated_at": "2026-06-23 16:06:15"
+    },
+    {
+        "csd_id": 316,
+        "cs_id": 381,
+        "csd_notes": "BBM",
+        "csd_nominal": 103100,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-23 16:06:15",
+        "updated_at": "2026-06-23 16:06:15"
+    },
+    {
+        "csd_id": 317,
+        "cs_id": 385,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 70000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-24 08:59:56",
+        "updated_at": "2026-06-24 08:59:56"
+    },
+    {
+        "csd_id": 318,
+        "cs_id": 387,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 178500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-24 10:01:21",
+        "updated_at": "2026-06-24 10:01:21"
+    },
+    {
+        "csd_id": 319,
+        "cs_id": 389,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 570000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-24 11:22:58",
+        "updated_at": "2026-06-24 11:22:58"
+    },
+    {
+        "csd_id": 320,
+        "cs_id": 391,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7293600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-24 15:32:18",
+        "updated_at": "2026-06-24 15:32:18"
+    },
+    {
+        "csd_id": 321,
+        "cs_id": 393,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1657000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-25 13:51:24",
+        "updated_at": "2026-06-25 13:51:24"
+    },
+    {
+        "csd_id": 322,
+        "cs_id": 395,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 550000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-25 15:56:39",
+        "updated_at": "2026-06-25 15:56:39"
+    },
+    {
+        "csd_id": 323,
+        "cs_id": 397,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 16859500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-25 16:39:23",
+        "updated_at": "2026-06-25 16:39:23"
+    },
+    {
+        "csd_id": 324,
+        "cs_id": 399,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 33459600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-26 09:18:00",
+        "updated_at": "2026-06-26 09:18:00"
+    },
+    {
+        "csd_id": 325,
+        "cs_id": 405,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 20045400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-27 12:03:04",
+        "updated_at": "2026-06-27 12:03:04"
+    },
+    {
+        "csd_id": 326,
+        "cs_id": 406,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-27 12:03:33",
+        "updated_at": "2026-06-27 12:03:33"
+    },
+    {
+        "csd_id": 327,
+        "cs_id": 411,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 234000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-27 13:35:19",
+        "updated_at": "2026-06-27 13:35:19"
+    },
+    {
+        "csd_id": 328,
+        "cs_id": 413,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8981500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-27 17:30:20",
+        "updated_at": "2026-06-27 17:30:20"
+    },
+    {
+        "csd_id": 329,
+        "cs_id": 414,
+        "csd_notes": "Parkir",
+        "csd_nominal": 3000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-27 17:31:59",
+        "updated_at": "2026-06-27 17:31:59"
+    },
+    {
+        "csd_id": 330,
+        "cs_id": 414,
+        "csd_notes": "BBM",
+        "csd_nominal": 307000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-27 17:31:59",
+        "updated_at": "2026-06-27 17:31:59"
+    },
+    {
+        "csd_id": 331,
+        "cs_id": 414,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-27 17:31:59",
+        "updated_at": "2026-06-27 17:31:59"
+    },
+    {
+        "csd_id": 332,
+        "cs_id": 414,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-27 17:31:59",
+        "updated_at": "2026-06-27 17:31:59"
+    },
+    {
+        "csd_id": 333,
+        "cs_id": 417,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11310350,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-29 10:14:52",
+        "updated_at": "2026-06-29 10:14:52"
+    },
+    {
+        "csd_id": 334,
+        "cs_id": 418,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 10:15:29",
+        "updated_at": "2026-06-29 10:15:29"
+    },
+    {
+        "csd_id": 335,
+        "cs_id": 418,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 10:15:29",
+        "updated_at": "2026-06-29 10:15:29"
+    },
+    {
+        "csd_id": 336,
+        "cs_id": 418,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 10:15:29",
+        "updated_at": "2026-06-29 10:15:29"
+    },
+    {
+        "csd_id": 337,
+        "cs_id": 420,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1350000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-29 10:56:22",
+        "updated_at": "2026-06-29 10:56:22"
+    },
+    {
+        "csd_id": 338,
+        "cs_id": 422,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1330600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-29 11:11:49",
+        "updated_at": "2026-06-29 11:11:49"
+    },
+    {
+        "csd_id": 339,
+        "cs_id": 423,
+        "csd_notes": "BBM",
+        "csd_nominal": 40000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:12:37",
+        "updated_at": "2026-06-29 11:12:37"
+    },
+    {
+        "csd_id": 340,
+        "cs_id": 424,
+        "csd_notes": "BBM",
+        "csd_nominal": 155000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:14:00",
+        "updated_at": "2026-06-29 11:14:00"
+    },
+    {
+        "csd_id": 341,
+        "cs_id": 424,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:14:00",
+        "updated_at": "2026-06-29 11:14:00"
+    },
+    {
+        "csd_id": 342,
+        "cs_id": 424,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:14:00",
+        "updated_at": "2026-06-29 11:14:00"
+    },
+    {
+        "csd_id": 343,
+        "cs_id": 424,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:14:00",
+        "updated_at": "2026-06-29 11:14:00"
+    },
+    {
+        "csd_id": 344,
+        "cs_id": 426,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 19810750,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-29 11:24:41",
+        "updated_at": "2026-06-29 11:24:41"
+    },
+    {
+        "csd_id": 345,
+        "cs_id": 427,
+        "csd_notes": "Hotel",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:26:07",
+        "updated_at": "2026-06-29 11:26:07"
+    },
+    {
+        "csd_id": 346,
+        "cs_id": 427,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:26:07",
+        "updated_at": "2026-06-29 11:26:07"
+    },
+    {
+        "csd_id": 347,
+        "cs_id": 427,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:26:07",
+        "updated_at": "2026-06-29 11:26:07"
+    },
+    {
+        "csd_id": 348,
+        "cs_id": 427,
+        "csd_notes": "BBM",
+        "csd_nominal": 96200,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 11:26:07",
+        "updated_at": "2026-06-29 11:26:07"
+    },
+    {
+        "csd_id": 349,
+        "cs_id": 431,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 315500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-29 11:50:02",
+        "updated_at": "2026-06-29 11:50:02"
+    },
+    {
+        "csd_id": 350,
+        "cs_id": 433,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 18504000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-29 13:05:58",
+        "updated_at": "2026-06-29 13:05:58"
+    },
+    {
+        "csd_id": 351,
+        "cs_id": 434,
+        "csd_notes": "Hotel",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 13:06:19",
+        "updated_at": "2026-06-29 13:06:19"
+    },
+    {
+        "csd_id": 352,
+        "cs_id": 438,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10868697,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-29 13:28:59",
+        "updated_at": "2026-06-29 13:28:59"
+    },
+    {
+        "csd_id": 353,
+        "cs_id": 439,
+        "csd_notes": "BBM",
+        "csd_nominal": 147700,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 13:29:59",
+        "updated_at": "2026-06-29 13:29:59"
+    },
+    {
+        "csd_id": 354,
+        "cs_id": 439,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-06-29 13:29:59",
+        "updated_at": "2026-06-29 13:29:59"
+    },
+    {
+        "csd_id": 355,
+        "cs_id": 442,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 550000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-06-30 15:44:06",
+        "updated_at": "2026-06-30 15:44:06"
+    },
+    {
+        "csd_id": 356,
+        "cs_id": 444,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 29750,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-01 10:24:49",
+        "updated_at": "2026-07-01 10:24:49"
+    },
+    {
+        "csd_id": 357,
+        "cs_id": 446,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 119000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-01 10:35:22",
+        "updated_at": "2026-07-01 10:35:22"
+    },
+    {
+        "csd_id": 358,
+        "cs_id": 448,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 270000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-01 15:25:46",
+        "updated_at": "2026-07-01 15:25:46"
+    },
+    {
+        "csd_id": 359,
+        "cs_id": 450,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-01 17:05:02",
+        "updated_at": "2026-07-01 17:05:02"
+    },
+    {
+        "csd_id": 360,
+        "cs_id": 452,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 60000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-02 10:30:34",
+        "updated_at": "2026-07-02 10:30:34"
+    },
+    {
+        "csd_id": 361,
+        "cs_id": 454,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1376000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-02 15:47:30",
+        "updated_at": "2026-07-02 15:47:30"
+    },
+    {
+        "csd_id": 362,
+        "cs_id": 456,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2408604,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-03 15:00:26",
+        "updated_at": "2026-07-03 15:00:26"
+    },
+    {
+        "csd_id": 363,
+        "cs_id": 458,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2729185,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-03 15:05:25",
+        "updated_at": "2026-07-03 15:05:25"
+    },
+    {
+        "csd_id": 364,
+        "cs_id": 460,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1726000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-04 09:21:01",
+        "updated_at": "2026-07-04 09:21:01"
+    },
+    {
+        "csd_id": 365,
+        "cs_id": 462,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3653200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 09:51:42",
+        "updated_at": "2026-07-06 09:51:42"
+    },
+    {
+        "csd_id": 366,
+        "cs_id": 464,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7574000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 10:30:15",
+        "updated_at": "2026-07-06 10:30:15"
+    },
+    {
+        "csd_id": 367,
+        "cs_id": 465,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4234000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 10:49:27",
+        "updated_at": "2026-07-06 10:49:27"
+    },
+    {
+        "csd_id": 368,
+        "cs_id": 466,
+        "csd_notes": "BBM",
+        "csd_nominal": 275000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 10:50:30",
+        "updated_at": "2026-07-06 10:50:30"
+    },
+    {
+        "csd_id": 369,
+        "cs_id": 466,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 10:50:30",
+        "updated_at": "2026-07-06 10:50:30"
+    },
+    {
+        "csd_id": 370,
+        "cs_id": 466,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 10:50:30",
+        "updated_at": "2026-07-06 10:50:30"
+    },
+    {
+        "csd_id": 371,
+        "cs_id": 466,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 10:50:30",
+        "updated_at": "2026-07-06 10:50:30"
+    },
+    {
+        "csd_id": 372,
+        "cs_id": 466,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 10:50:30",
+        "updated_at": "2026-07-06 10:50:30"
+    },
+    {
+        "csd_id": 373,
+        "cs_id": 469,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1095835,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 11:09:01",
+        "updated_at": "2026-07-06 11:09:01"
+    },
+    {
+        "csd_id": 374,
+        "cs_id": 470,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 11:10:16",
+        "updated_at": "2026-07-06 11:10:16"
+    },
+    {
+        "csd_id": 375,
+        "cs_id": 470,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 11:10:16",
+        "updated_at": "2026-07-06 11:10:16"
+    },
+    {
+        "csd_id": 376,
+        "cs_id": 470,
+        "csd_notes": "Hotel",
+        "csd_nominal": 340000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 11:10:16",
+        "updated_at": "2026-07-06 11:10:16"
+    },
+    {
+        "csd_id": 377,
+        "cs_id": 470,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 11:10:16",
+        "updated_at": "2026-07-06 11:10:16"
+    },
+    {
+        "csd_id": 378,
+        "cs_id": 472,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5341000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 13:14:32",
+        "updated_at": "2026-07-06 13:14:32"
+    },
+    {
+        "csd_id": 379,
+        "cs_id": 473,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 13:15:42",
+        "updated_at": "2026-07-06 13:15:42"
+    },
+    {
+        "csd_id": 380,
+        "cs_id": 473,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 13:15:42",
+        "updated_at": "2026-07-06 13:15:42"
+    },
+    {
+        "csd_id": 381,
+        "cs_id": 473,
+        "csd_notes": "Hotel",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 13:15:42",
+        "updated_at": "2026-07-06 13:15:42"
+    },
+    {
+        "csd_id": 382,
+        "cs_id": 473,
+        "csd_notes": "BBM",
+        "csd_nominal": 102600,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 13:15:42",
+        "updated_at": "2026-07-06 13:15:42"
+    },
+    {
+        "csd_id": 383,
+        "cs_id": 476,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 35114200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 13:44:26",
+        "updated_at": "2026-07-06 13:44:26"
+    },
+    {
+        "csd_id": 384,
+        "cs_id": 477,
+        "csd_notes": "Hotel",
+        "csd_nominal": 515000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 13:45:12",
+        "updated_at": "2026-07-06 13:45:12"
+    },
+    {
+        "csd_id": 385,
+        "cs_id": 477,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 13:45:12",
+        "updated_at": "2026-07-06 13:45:12"
+    },
+    {
+        "csd_id": 386,
+        "cs_id": 477,
+        "csd_notes": "BBM",
+        "csd_nominal": 236000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 13:45:12",
+        "updated_at": "2026-07-06 13:45:12"
+    },
+    {
+        "csd_id": 387,
+        "cs_id": 483,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8068600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 14:10:59",
+        "updated_at": "2026-07-06 14:10:59"
+    },
+    {
+        "csd_id": 388,
+        "cs_id": 484,
+        "csd_notes": "Hotel",
+        "csd_nominal": 360000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 14:11:33",
+        "updated_at": "2026-07-06 14:11:33"
+    },
+    {
+        "csd_id": 389,
+        "cs_id": 488,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9153980,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 15:03:26",
+        "updated_at": "2026-07-06 15:03:26"
+    },
+    {
+        "csd_id": 390,
+        "cs_id": 489,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 15:04:24",
+        "updated_at": "2026-07-06 15:04:24"
+    },
+    {
+        "csd_id": 391,
+        "cs_id": 489,
+        "csd_notes": "BBM",
+        "csd_nominal": 172200,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 15:04:24",
+        "updated_at": "2026-07-06 15:04:24"
+    },
+    {
+        "csd_id": 392,
+        "cs_id": 489,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 15:04:24",
+        "updated_at": "2026-07-06 15:04:24"
+    },
+    {
+        "csd_id": 393,
+        "cs_id": 490,
+        "csd_notes": "BBM",
+        "csd_nominal": 213000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 15:07:35",
+        "updated_at": "2026-07-06 15:07:35"
+    },
+    {
+        "csd_id": 394,
+        "cs_id": 490,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 15:07:35",
+        "updated_at": "2026-07-06 15:07:35"
+    },
+    {
+        "csd_id": 395,
+        "cs_id": 490,
+        "csd_notes": "SEWA KOS",
+        "csd_nominal": 300000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 15:07:35",
+        "updated_at": "2026-07-06 15:07:35"
+    },
+    {
+        "csd_id": 396,
+        "cs_id": 490,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 15:07:35",
+        "updated_at": "2026-07-06 15:07:35"
+    },
+    {
+        "csd_id": 397,
+        "cs_id": 492,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7574000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 16:32:24",
+        "updated_at": "2026-07-06 16:32:24"
+    },
+    {
+        "csd_id": 398,
+        "cs_id": 493,
+        "csd_notes": "PENGELUARAN SAEFUL",
+        "csd_nominal": 824900,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 16:34:38",
+        "updated_at": "2026-07-06 16:34:38"
+    },
+    {
+        "csd_id": 399,
+        "cs_id": 496,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 30448717,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-06 17:03:00",
+        "updated_at": "2026-07-06 17:03:00"
+    },
+    {
+        "csd_id": 400,
+        "cs_id": 497,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 401,
+        "cs_id": 497,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 900000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 402,
+        "cs_id": 497,
+        "csd_notes": "bus",
+        "csd_nominal": 325000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 403,
+        "cs_id": 497,
+        "csd_notes": "ojek",
+        "csd_nominal": 155000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 404,
+        "cs_id": 497,
+        "csd_notes": "BBM",
+        "csd_nominal": 243430,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 405,
+        "cs_id": 497,
+        "csd_notes": "Parkir",
+        "csd_nominal": 24000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 406,
+        "cs_id": 497,
+        "csd_notes": "Hotel",
+        "csd_nominal": 945000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 407,
+        "cs_id": 497,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 300000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 408,
+        "cs_id": 497,
+        "csd_notes": "Hotel",
+        "csd_nominal": 520000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 409,
+        "cs_id": 497,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 250000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-06 17:07:57",
+        "updated_at": "2026-07-06 17:07:57"
+    },
+    {
+        "csd_id": 410,
+        "cs_id": 505,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 14647265,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-11 10:52:26",
+        "updated_at": "2026-07-11 10:52:26"
+    },
+    {
+        "csd_id": 411,
+        "cs_id": 506,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 60000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-11 10:56:17",
+        "updated_at": "2026-07-11 10:56:17"
+    },
+    {
+        "csd_id": 412,
+        "cs_id": 506,
+        "csd_notes": "Hotel",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-11 10:56:17",
+        "updated_at": "2026-07-11 10:56:17"
+    },
+    {
+        "csd_id": 413,
+        "cs_id": 506,
+        "csd_notes": "BBM",
+        "csd_nominal": 54000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-11 10:56:17",
+        "updated_at": "2026-07-11 10:56:17"
+    },
+    {
+        "csd_id": 414,
+        "cs_id": 506,
+        "csd_notes": "P5 SANTOSO ( 1943 )",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-11 10:56:17",
+        "updated_at": "2026-07-11 10:56:17"
+    },
+    {
+        "csd_id": 415,
+        "cs_id": 506,
+        "csd_notes": "P5 LOAK MTR ( 402 )",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-11 10:56:17",
+        "updated_at": "2026-07-11 10:56:17"
+    },
+    {
+        "csd_id": 416,
+        "cs_id": 509,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4239000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-11 10:59:29",
+        "updated_at": "2026-07-11 10:59:29"
+    },
+    {
+        "csd_id": 417,
+        "cs_id": 511,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4193290,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-11 13:14:02",
+        "updated_at": "2026-07-11 13:14:02"
+    },
+    {
+        "csd_id": 418,
+        "cs_id": 513,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11013200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-11 14:02:27",
+        "updated_at": "2026-07-11 14:02:27"
+    },
+    {
+        "csd_id": 419,
+        "cs_id": 515,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6184192,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-13 11:07:05",
+        "updated_at": "2026-07-13 11:07:05"
+    },
+    {
+        "csd_id": 420,
+        "cs_id": 516,
+        "csd_notes": "BBM",
+        "csd_nominal": 305000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 11:07:57",
+        "updated_at": "2026-07-13 11:07:57"
+    },
+    {
+        "csd_id": 421,
+        "cs_id": 516,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 11:07:57",
+        "updated_at": "2026-07-13 11:07:57"
+    },
+    {
+        "csd_id": 422,
+        "cs_id": 516,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 11:07:57",
+        "updated_at": "2026-07-13 11:07:57"
+    },
+    {
+        "csd_id": 423,
+        "cs_id": 518,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10063400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-13 11:39:29",
+        "updated_at": "2026-07-13 11:39:29"
+    },
+    {
+        "csd_id": 424,
+        "cs_id": 519,
+        "csd_notes": "BBM",
+        "csd_nominal": 73800,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 11:40:40",
+        "updated_at": "2026-07-13 11:40:40"
+    },
+    {
+        "csd_id": 425,
+        "cs_id": 519,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 11:40:40",
+        "updated_at": "2026-07-13 11:40:40"
+    },
+    {
+        "csd_id": 426,
+        "cs_id": 521,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1398000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-13 13:09:04",
+        "updated_at": "2026-07-13 13:09:04"
+    },
+    {
+        "csd_id": 427,
+        "cs_id": 522,
+        "csd_notes": "BBM",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 13:09:55",
+        "updated_at": "2026-07-13 13:09:55"
+    },
+    {
+        "csd_id": 428,
+        "cs_id": 522,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 50000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 13:09:55",
+        "updated_at": "2026-07-13 13:09:55"
+    },
+    {
+        "csd_id": 429,
+        "cs_id": 522,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 13:09:55",
+        "updated_at": "2026-07-13 13:09:55"
+    },
+    {
+        "csd_id": 430,
+        "cs_id": 524,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 12476814,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-13 13:47:03",
+        "updated_at": "2026-07-13 13:47:03"
+    },
+    {
+        "csd_id": 431,
+        "cs_id": 525,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 13:47:56",
+        "updated_at": "2026-07-13 13:47:56"
+    },
+    {
+        "csd_id": 432,
+        "cs_id": 525,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 13:47:56",
+        "updated_at": "2026-07-13 13:47:56"
+    },
+    {
+        "csd_id": 433,
+        "cs_id": 525,
+        "csd_notes": "BBM",
+        "csd_nominal": 80000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 13:47:56",
+        "updated_at": "2026-07-13 13:47:56"
+    },
+    {
+        "csd_id": 434,
+        "cs_id": 525,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 50000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 13:47:56",
+        "updated_at": "2026-07-13 13:47:56"
+    },
+    {
+        "csd_id": 435,
+        "cs_id": 528,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 18180500,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-13 14:23:52",
+        "updated_at": "2026-07-13 14:23:52"
+    },
+    {
+        "csd_id": 436,
+        "cs_id": 529,
+        "csd_notes": "BBM",
+        "csd_nominal": 80000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 14:24:22",
+        "updated_at": "2026-07-13 14:24:22"
+    },
+    {
+        "csd_id": 437,
+        "cs_id": 529,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-13 14:24:22",
+        "updated_at": "2026-07-13 14:24:22"
+    },
+    {
+        "csd_id": 438,
+        "cs_id": 533,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 19376700,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-15 15:40:19",
+        "updated_at": "2026-07-15 15:40:19"
+    },
+    {
+        "csd_id": 439,
+        "cs_id": 534,
+        "csd_notes": "BBM",
+        "csd_nominal": 80000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-15 15:41:39",
+        "updated_at": "2026-07-15 15:41:39"
+    },
+    {
+        "csd_id": 440,
+        "cs_id": 534,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-15 15:41:39",
+        "updated_at": "2026-07-15 15:41:39"
+    },
+    {
+        "csd_id": 441,
+        "cs_id": 540,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7403620,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-17 13:36:16",
+        "updated_at": "2026-07-17 13:36:16"
+    },
+    {
+        "csd_id": 442,
+        "cs_id": 542,
+        "csd_notes": "Penyesuaian Kas Sales/Armada (KELUAR)",
+        "csd_nominal": 7574000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-17 14:13:34",
+        "updated_at": "2026-07-17 14:13:34"
+    },
+    {
+        "csd_id": 443,
+        "cs_id": 543,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 33640000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-18 16:40:50",
+        "updated_at": "2026-07-18 16:40:50"
+    },
+    {
+        "csd_id": 444,
+        "cs_id": 544,
+        "csd_notes": "Hotel",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-18 16:41:48",
+        "updated_at": "2026-07-18 16:41:48"
+    },
+    {
+        "csd_id": 445,
+        "cs_id": 544,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-18 16:41:48",
+        "updated_at": "2026-07-18 16:41:48"
+    },
+    {
+        "csd_id": 446,
+        "cs_id": 544,
+        "csd_notes": "Parkir",
+        "csd_nominal": 4000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-18 16:41:48",
+        "updated_at": "2026-07-18 16:41:48"
+    },
+    {
+        "csd_id": 447,
+        "cs_id": 544,
+        "csd_notes": "BBM",
+        "csd_nominal": 147000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-18 16:41:48",
+        "updated_at": "2026-07-18 16:41:48"
+    },
+    {
+        "csd_id": 448,
+        "cs_id": 551,
+        "csd_notes": "PENGELUARAN SAEFUL",
+        "csd_nominal": 828600,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-18 16:45:10",
+        "updated_at": "2026-07-18 16:45:10"
+    },
+    {
+        "csd_id": 449,
+        "cs_id": 553,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 21800400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-20 11:29:29",
+        "updated_at": "2026-07-20 11:29:29"
+    },
+    {
+        "csd_id": 450,
+        "cs_id": 554,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 11:31:02",
+        "updated_at": "2026-07-20 11:31:02"
+    },
+    {
+        "csd_id": 451,
+        "cs_id": 554,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 11:31:02",
+        "updated_at": "2026-07-20 11:31:02"
+    },
+    {
+        "csd_id": 452,
+        "cs_id": 554,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 11:31:02",
+        "updated_at": "2026-07-20 11:31:02"
+    },
+    {
+        "csd_id": 453,
+        "cs_id": 554,
+        "csd_notes": "BBM",
+        "csd_nominal": 277000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 11:31:02",
+        "updated_at": "2026-07-20 11:31:02"
+    },
+    {
+        "csd_id": 454,
+        "cs_id": 554,
+        "csd_notes": "Parkir",
+        "csd_nominal": 4000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 11:31:02",
+        "updated_at": "2026-07-20 11:31:02"
+    },
+    {
+        "csd_id": 455,
+        "cs_id": 557,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11547000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-20 14:17:25",
+        "updated_at": "2026-07-20 14:17:25"
+    },
+    {
+        "csd_id": 456,
+        "cs_id": 559,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10004800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-20 15:31:23",
+        "updated_at": "2026-07-20 15:31:23"
+    },
+    {
+        "csd_id": 457,
+        "cs_id": 560,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 15:32:17",
+        "updated_at": "2026-07-20 15:32:17"
+    },
+    {
+        "csd_id": 458,
+        "cs_id": 560,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 15:32:17",
+        "updated_at": "2026-07-20 15:32:17"
+    },
+    {
+        "csd_id": 459,
+        "cs_id": 560,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 15:32:17",
+        "updated_at": "2026-07-20 15:32:17"
+    },
+    {
+        "csd_id": 460,
+        "cs_id": 560,
+        "csd_notes": "Hotel",
+        "csd_nominal": 340000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 15:32:17",
+        "updated_at": "2026-07-20 15:32:17"
+    },
+    {
+        "csd_id": 461,
+        "cs_id": 562,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3937350,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-20 15:34:01",
+        "updated_at": "2026-07-20 15:34:01"
+    },
+    {
+        "csd_id": 462,
+        "cs_id": 565,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6499440,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-20 16:15:32",
+        "updated_at": "2026-07-20 16:15:32"
+    },
+    {
+        "csd_id": 463,
+        "cs_id": 567,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 20405400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-20 16:54:08",
+        "updated_at": "2026-07-20 16:54:08"
+    },
+    {
+        "csd_id": 464,
+        "cs_id": 568,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 16:56:25",
+        "updated_at": "2026-07-20 16:56:25"
+    },
+    {
+        "csd_id": 465,
+        "cs_id": 568,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 16:56:25",
+        "updated_at": "2026-07-20 16:56:25"
+    },
+    {
+        "csd_id": 466,
+        "cs_id": 568,
+        "csd_notes": "Hotel",
+        "csd_nominal": 445000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 16:56:25",
+        "updated_at": "2026-07-20 16:56:25"
+    },
+    {
+        "csd_id": 467,
+        "cs_id": 568,
+        "csd_notes": "BBM",
+        "csd_nominal": 94600,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-20 16:56:25",
+        "updated_at": "2026-07-20 16:56:25"
+    },
+    {
+        "csd_id": 468,
+        "cs_id": 571,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 25545404,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-21 09:11:28",
+        "updated_at": "2026-07-21 09:11:28"
+    },
+    {
+        "csd_id": 469,
+        "cs_id": 575,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9840000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-22 15:01:55",
+        "updated_at": "2026-07-22 15:01:55"
+    },
+    {
+        "csd_id": 470,
+        "cs_id": 576,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 150000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-22 15:02:46",
+        "updated_at": "2026-07-22 15:02:46"
+    },
+    {
+        "csd_id": 471,
+        "cs_id": 576,
+        "csd_notes": "BBM",
+        "csd_nominal": 98500,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-22 15:02:46",
+        "updated_at": "2026-07-22 15:02:46"
+    },
+    {
+        "csd_id": 472,
+        "cs_id": 576,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-22 15:02:46",
+        "updated_at": "2026-07-22 15:02:46"
+    },
+    {
+        "csd_id": 473,
+        "cs_id": 578,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11967770,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-22 15:27:09",
+        "updated_at": "2026-07-22 15:27:09"
+    },
+    {
+        "csd_id": 474,
+        "cs_id": 580,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 14755960,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-22 16:40:16",
+        "updated_at": "2026-07-22 16:40:16"
+    },
+    {
+        "csd_id": 475,
+        "cs_id": 584,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2043315,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-23 14:19:07",
+        "updated_at": "2026-07-23 14:19:07"
+    },
+    {
+        "csd_id": 476,
+        "cs_id": 586,
+        "csd_notes": "PENYESUIAN KAS ARMADA/SALES (MASUK)",
+        "csd_nominal": 60004,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-23 17:05:00",
+        "updated_at": "2026-07-23 17:05:00"
+    },
+    {
+        "csd_id": 477,
+        "cs_id": 587,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 12395100,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-25 16:48:23",
+        "updated_at": "2026-07-25 16:48:23"
+    },
+    {
+        "csd_id": 478,
+        "cs_id": 589,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11118000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-25 17:07:26",
+        "updated_at": "2026-07-25 17:07:26"
+    },
+    {
+        "csd_id": 479,
+        "cs_id": 590,
+        "csd_notes": "BBM",
+        "csd_nominal": 152900,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-25 17:08:25",
+        "updated_at": "2026-07-25 17:08:25"
+    },
+    {
+        "csd_id": 480,
+        "cs_id": 590,
+        "csd_notes": "Hotel",
+        "csd_nominal": 450000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-25 17:08:25",
+        "updated_at": "2026-07-25 17:08:25"
+    },
+    {
+        "csd_id": 481,
+        "cs_id": 590,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-25 17:08:25",
+        "updated_at": "2026-07-25 17:08:25"
+    },
+    {
+        "csd_id": 482,
+        "cs_id": 590,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-25 17:08:25",
+        "updated_at": "2026-07-25 17:08:25"
+    },
+    {
+        "csd_id": 483,
+        "cs_id": 594,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4250000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-25 17:48:21",
+        "updated_at": "2026-07-25 17:48:21"
+    },
+    {
+        "csd_id": 484,
+        "cs_id": 595,
+        "csd_notes": "ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-25 17:49:06",
+        "updated_at": "2026-07-25 17:49:06"
+    },
+    {
+        "csd_id": 485,
+        "cs_id": 595,
+        "csd_notes": "Hotel",
+        "csd_nominal": 210000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-25 17:49:06",
+        "updated_at": "2026-07-25 17:49:06"
+    },
+    {
+        "csd_id": 486,
+        "cs_id": 595,
+        "csd_notes": "BBM",
+        "csd_nominal": 177370,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-25 17:49:06",
+        "updated_at": "2026-07-25 17:49:06"
+    },
+    {
+        "csd_id": 487,
+        "cs_id": 597,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10539600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-27 11:35:41",
+        "updated_at": "2026-07-27 11:35:41"
+    },
+    {
+        "csd_id": 488,
+        "cs_id": 598,
+        "csd_notes": "p5",
+        "csd_nominal": 1387800,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:39:31",
+        "updated_at": "2026-07-27 11:39:31"
+    },
+    {
+        "csd_id": 489,
+        "cs_id": 601,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9442633,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-27 11:57:10",
+        "updated_at": "2026-07-27 11:57:10"
+    },
+    {
+        "csd_id": 490,
+        "cs_id": 602,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 491,
+        "cs_id": 602,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 900000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 492,
+        "cs_id": 602,
+        "csd_notes": "Hotel",
+        "csd_nominal": 810000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 493,
+        "cs_id": 602,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 300000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 494,
+        "cs_id": 602,
+        "csd_notes": "Hotel",
+        "csd_nominal": 675000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 495,
+        "cs_id": 602,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 450000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 496,
+        "cs_id": 602,
+        "csd_notes": "bus",
+        "csd_nominal": 365000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 497,
+        "cs_id": 602,
+        "csd_notes": "ojek",
+        "csd_nominal": 155000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 498,
+        "cs_id": 602,
+        "csd_notes": "BBM",
+        "csd_nominal": 238500,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 499,
+        "cs_id": 602,
+        "csd_notes": "Parkir",
+        "csd_nominal": 18000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 11:59:24",
+        "updated_at": "2026-07-27 11:59:24"
+    },
+    {
+        "csd_id": 500,
+        "cs_id": 605,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 2501799,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-27 13:29:04",
+        "updated_at": "2026-07-27 13:29:04"
+    },
+    {
+        "csd_id": 501,
+        "cs_id": 606,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 13:30:11",
+        "updated_at": "2026-07-27 13:30:11"
+    },
+    {
+        "csd_id": 502,
+        "cs_id": 606,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 13:30:11",
+        "updated_at": "2026-07-27 13:30:11"
+    },
+    {
+        "csd_id": 503,
+        "cs_id": 606,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 13:30:11",
+        "updated_at": "2026-07-27 13:30:11"
+    },
+    {
+        "csd_id": 504,
+        "cs_id": 608,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1011000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-27 14:04:40",
+        "updated_at": "2026-07-27 14:04:40"
+    },
+    {
+        "csd_id": 505,
+        "cs_id": 609,
+        "csd_notes": "BBM",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 14:05:20",
+        "updated_at": "2026-07-27 14:05:20"
+    },
+    {
+        "csd_id": 506,
+        "cs_id": 609,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 14:05:20",
+        "updated_at": "2026-07-27 14:05:20"
+    },
+    {
+        "csd_id": 507,
+        "cs_id": 609,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 14:05:20",
+        "updated_at": "2026-07-27 14:05:20"
+    },
+    {
+        "csd_id": 508,
+        "cs_id": 611,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 14:47:05",
+        "updated_at": "2026-07-27 14:47:05"
+    },
+    {
+        "csd_id": 509,
+        "cs_id": 611,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 14:47:05",
+        "updated_at": "2026-07-27 14:47:05"
+    },
+    {
+        "csd_id": 510,
+        "cs_id": 611,
+        "csd_notes": "Hotel",
+        "csd_nominal": 360000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 14:47:05",
+        "updated_at": "2026-07-27 14:47:05"
+    },
+    {
+        "csd_id": 511,
+        "cs_id": 611,
+        "csd_notes": "BBM",
+        "csd_nominal": 106500,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-27 14:47:05",
+        "updated_at": "2026-07-27 14:47:05"
+    },
+    {
+        "csd_id": 512,
+        "cs_id": 612,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 18738000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-27 14:47:59",
+        "updated_at": "2026-07-27 14:47:59"
+    },
+    {
+        "csd_id": 513,
+        "cs_id": 616,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4790200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-28 09:22:09",
+        "updated_at": "2026-07-28 09:22:09"
+    },
+    {
+        "csd_id": 514,
+        "cs_id": 618,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8589800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-30 10:21:21",
+        "updated_at": "2026-07-30 10:21:21"
+    },
+    {
+        "csd_id": 515,
+        "cs_id": 619,
+        "csd_notes": "BBM",
+        "csd_nominal": 120000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-07-30 10:21:49",
+        "updated_at": "2026-07-30 10:21:49"
+    },
+    {
+        "csd_id": 516,
+        "cs_id": 622,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8290069,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-31 09:59:25",
+        "updated_at": "2026-07-31 09:59:25"
+    },
+    {
+        "csd_id": 517,
+        "cs_id": 624,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5392000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-31 11:04:44",
+        "updated_at": "2026-07-31 11:04:44"
+    },
+    {
+        "csd_id": 518,
+        "cs_id": 626,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8290096,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-07-31 11:23:10",
+        "updated_at": "2026-07-31 11:23:10"
+    },
+    {
+        "csd_id": 519,
+        "cs_id": 628,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4284700,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 10:25:49",
+        "updated_at": "2026-08-03 10:25:49"
+    },
+    {
+        "csd_id": 520,
+        "cs_id": 629,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 10:27:23",
+        "updated_at": "2026-08-03 10:27:23"
+    },
+    {
+        "csd_id": 521,
+        "cs_id": 629,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 10:27:23",
+        "updated_at": "2026-08-03 10:27:23"
+    },
+    {
+        "csd_id": 522,
+        "cs_id": 629,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 10:27:23",
+        "updated_at": "2026-08-03 10:27:23"
+    },
+    {
+        "csd_id": 523,
+        "cs_id": 629,
+        "csd_notes": "BBM",
+        "csd_nominal": 275000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 10:27:23",
+        "updated_at": "2026-08-03 10:27:23"
+    },
+    {
+        "csd_id": 524,
+        "cs_id": 629,
+        "csd_notes": "MINGGUAN ADM",
+        "csd_nominal": 400000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 10:27:23",
+        "updated_at": "2026-08-03 10:27:23"
+    },
+    {
+        "csd_id": 525,
+        "cs_id": 631,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1755000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 11:03:47",
+        "updated_at": "2026-08-03 11:03:47"
+    },
+    {
+        "csd_id": 526,
+        "cs_id": 633,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3826000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 11:50:19",
+        "updated_at": "2026-08-03 11:50:19"
+    },
+    {
+        "csd_id": 527,
+        "cs_id": 634,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 11:51:10",
+        "updated_at": "2026-08-03 11:51:10"
+    },
+    {
+        "csd_id": 528,
+        "cs_id": 634,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 11:51:10",
+        "updated_at": "2026-08-03 11:51:10"
+    },
+    {
+        "csd_id": 529,
+        "cs_id": 634,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 11:51:10",
+        "updated_at": "2026-08-03 11:51:10"
+    },
+    {
+        "csd_id": 530,
+        "cs_id": 634,
+        "csd_notes": "Hotel",
+        "csd_nominal": 340000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 11:51:10",
+        "updated_at": "2026-08-03 11:51:10"
+    },
+    {
+        "csd_id": 531,
+        "cs_id": 636,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 17320400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 14:08:36",
+        "updated_at": "2026-08-03 14:08:36"
+    },
+    {
+        "csd_id": 532,
+        "cs_id": 637,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 14:09:27",
+        "updated_at": "2026-08-03 14:09:27"
+    },
+    {
+        "csd_id": 533,
+        "cs_id": 637,
+        "csd_notes": "BBM",
+        "csd_nominal": 80000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 14:09:27",
+        "updated_at": "2026-08-03 14:09:27"
+    },
+    {
+        "csd_id": 534,
+        "cs_id": 637,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 14:09:27",
+        "updated_at": "2026-08-03 14:09:27"
+    },
+    {
+        "csd_id": 535,
+        "cs_id": 642,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4962400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 14:15:50",
+        "updated_at": "2026-08-03 14:15:50"
+    },
+    {
+        "csd_id": 536,
+        "cs_id": 643,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 14:16:26",
+        "updated_at": "2026-08-03 14:16:26"
+    },
+    {
+        "csd_id": 537,
+        "cs_id": 643,
+        "csd_notes": "BBM",
+        "csd_nominal": 174350,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 14:16:26",
+        "updated_at": "2026-08-03 14:16:26"
+    },
+    {
+        "csd_id": 538,
+        "cs_id": 645,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3200000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 14:22:17",
+        "updated_at": "2026-08-03 14:22:17"
+    },
+    {
+        "csd_id": 539,
+        "cs_id": 647,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3310000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 17:15:25",
+        "updated_at": "2026-08-03 17:15:25"
+    },
+    {
+        "csd_id": 540,
+        "cs_id": 648,
+        "csd_notes": "Hotel",
+        "csd_nominal": 450000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 17:17:17",
+        "updated_at": "2026-08-03 17:17:17"
+    },
+    {
+        "csd_id": 541,
+        "cs_id": 648,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 17:17:17",
+        "updated_at": "2026-08-03 17:17:17"
+    },
+    {
+        "csd_id": 542,
+        "cs_id": 648,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 17:17:17",
+        "updated_at": "2026-08-03 17:17:17"
+    },
+    {
+        "csd_id": 543,
+        "cs_id": 648,
+        "csd_notes": "BBM",
+        "csd_nominal": 78900,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-03 17:17:17",
+        "updated_at": "2026-08-03 17:17:17"
+    },
+    {
+        "csd_id": 544,
+        "cs_id": 651,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11985298,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-03 17:29:06",
+        "updated_at": "2026-08-03 17:29:06"
+    },
+    {
+        "csd_id": 545,
+        "cs_id": 655,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 12833159,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-04 15:59:04",
+        "updated_at": "2026-08-04 15:59:04"
+    },
+    {
+        "csd_id": 546,
+        "cs_id": 656,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-04 16:00:09",
+        "updated_at": "2026-08-04 16:00:09"
+    },
+    {
+        "csd_id": 547,
+        "cs_id": 656,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-04 16:00:09",
+        "updated_at": "2026-08-04 16:00:09"
+    },
+    {
+        "csd_id": 548,
+        "cs_id": 656,
+        "csd_notes": "BBM",
+        "csd_nominal": 195000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-04 16:00:09",
+        "updated_at": "2026-08-04 16:00:09"
+    },
+    {
+        "csd_id": 549,
+        "cs_id": 656,
+        "csd_notes": "Parkir",
+        "csd_nominal": 18000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-04 16:00:09",
+        "updated_at": "2026-08-04 16:00:09"
+    },
+    {
+        "csd_id": 550,
+        "cs_id": 660,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7573952,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-06 09:03:56",
+        "updated_at": "2026-08-06 09:03:56"
+    },
+    {
+        "csd_id": 551,
+        "cs_id": 662,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7996800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 11:03:00",
+        "updated_at": "2026-08-10 11:03:00"
+    },
+    {
+        "csd_id": 552,
+        "cs_id": 664,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 26254750,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 11:20:10",
+        "updated_at": "2026-08-10 11:20:10"
+    },
+    {
+        "csd_id": 553,
+        "cs_id": 665,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7997380,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 11:20:19",
+        "updated_at": "2026-08-10 11:20:19"
+    },
+    {
+        "csd_id": 554,
+        "cs_id": 667,
+        "csd_notes": "BBM",
+        "csd_nominal": 229800,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 11:21:29",
+        "updated_at": "2026-08-10 11:21:29"
+    },
+    {
+        "csd_id": 555,
+        "cs_id": 667,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 11:21:29",
+        "updated_at": "2026-08-10 11:21:29"
+    },
+    {
+        "csd_id": 556,
+        "cs_id": 667,
+        "csd_notes": "Hotel",
+        "csd_nominal": 528000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 11:21:29",
+        "updated_at": "2026-08-10 11:21:29"
+    },
+    {
+        "csd_id": 557,
+        "cs_id": 667,
+        "csd_notes": "Parkir",
+        "csd_nominal": 6000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 11:21:29",
+        "updated_at": "2026-08-10 11:21:29"
+    },
+    {
+        "csd_id": 558,
+        "cs_id": 676,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 179000,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 11:43:20",
+        "updated_at": "2026-08-10 11:43:20"
+    },
+    {
+        "csd_id": 559,
+        "cs_id": 678,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7498400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 13:09:32",
+        "updated_at": "2026-08-10 13:09:32"
+    },
+    {
+        "csd_id": 560,
+        "cs_id": 679,
+        "csd_notes": "Hotel",
+        "csd_nominal": 90000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 13:10:19",
+        "updated_at": "2026-08-10 13:10:19"
+    },
+    {
+        "csd_id": 561,
+        "cs_id": 679,
+        "csd_notes": "BBM",
+        "csd_nominal": 29500,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 13:10:19",
+        "updated_at": "2026-08-10 13:10:19"
+    },
+    {
+        "csd_id": 562,
+        "cs_id": 683,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 8335998,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 13:41:57",
+        "updated_at": "2026-08-10 13:41:57"
+    },
+    {
+        "csd_id": 563,
+        "cs_id": 684,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 13:42:39",
+        "updated_at": "2026-08-10 13:42:39"
+    },
+    {
+        "csd_id": 564,
+        "cs_id": 684,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 13:42:39",
+        "updated_at": "2026-08-10 13:42:39"
+    },
+    {
+        "csd_id": 565,
+        "cs_id": 684,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 13:42:39",
+        "updated_at": "2026-08-10 13:42:39"
+    },
+    {
+        "csd_id": 566,
+        "cs_id": 686,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9309650,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 14:43:15",
+        "updated_at": "2026-08-10 14:43:15"
+    },
+    {
+        "csd_id": 567,
+        "cs_id": 687,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 14:44:08",
+        "updated_at": "2026-08-10 14:44:08"
+    },
+    {
+        "csd_id": 568,
+        "cs_id": 687,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 14:44:08",
+        "updated_at": "2026-08-10 14:44:08"
+    },
+    {
+        "csd_id": 569,
+        "cs_id": 687,
+        "csd_notes": "Hotel",
+        "csd_nominal": 270000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 14:44:08",
+        "updated_at": "2026-08-10 14:44:08"
+    },
+    {
+        "csd_id": 570,
+        "cs_id": 687,
+        "csd_notes": "BBM",
+        "csd_nominal": 77000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 14:44:08",
+        "updated_at": "2026-08-10 14:44:08"
+    },
+    {
+        "csd_id": 571,
+        "cs_id": 691,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 3550200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 15:01:01",
+        "updated_at": "2026-08-10 15:01:01"
+    },
+    {
+        "csd_id": 572,
+        "cs_id": 692,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 15:01:57",
+        "updated_at": "2026-08-10 15:01:57"
+    },
+    {
+        "csd_id": 573,
+        "cs_id": 692,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 15:01:57",
+        "updated_at": "2026-08-10 15:01:57"
+    },
+    {
+        "csd_id": 574,
+        "cs_id": 692,
+        "csd_notes": "BBM",
+        "csd_nominal": 285000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 15:01:57",
+        "updated_at": "2026-08-10 15:01:57"
+    },
+    {
+        "csd_id": 575,
+        "cs_id": 694,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11552204,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 15:39:03",
+        "updated_at": "2026-08-10 15:39:03"
+    },
+    {
+        "csd_id": 576,
+        "cs_id": 696,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 6988200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-10 15:44:32",
+        "updated_at": "2026-08-10 15:44:32"
+    },
+    {
+        "csd_id": 577,
+        "cs_id": 697,
+        "csd_notes": "BBM",
+        "csd_nominal": 125100,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 15:46:02",
+        "updated_at": "2026-08-10 15:46:02"
+    },
+    {
+        "csd_id": 578,
+        "cs_id": 698,
+        "csd_notes": "BBM",
+        "csd_nominal": 125100,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 15:49:00",
+        "updated_at": "2026-08-10 15:49:00"
+    },
+    {
+        "csd_id": 579,
+        "cs_id": 698,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-10 15:49:00",
+        "updated_at": "2026-08-10 15:49:00"
+    },
+    {
+        "csd_id": 580,
+        "cs_id": 702,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11812712,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-13 14:34:14",
+        "updated_at": "2026-08-13 14:34:14"
+    },
+    {
+        "csd_id": 581,
+        "cs_id": 703,
+        "csd_notes": "BBM",
+        "csd_nominal": 120000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-13 14:34:45",
+        "updated_at": "2026-08-13 14:34:45"
+    },
+    {
+        "csd_id": 582,
+        "cs_id": 707,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9554127,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-14 11:43:40",
+        "updated_at": "2026-08-14 11:43:40"
+    },
+    {
+        "csd_id": 583,
+        "cs_id": 709,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 10386100,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-14 13:20:59",
+        "updated_at": "2026-08-14 13:20:59"
+    },
+    {
+        "csd_id": 584,
+        "cs_id": 711,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 7965400,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-14 14:32:29",
+        "updated_at": "2026-08-14 14:32:29"
+    },
+    {
+        "csd_id": 585,
+        "cs_id": 713,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 1375200,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 10:04:48",
+        "updated_at": "2026-08-18 10:04:48"
+    },
+    {
+        "csd_id": 586,
+        "cs_id": 715,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 4901600,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 10:45:03",
+        "updated_at": "2026-08-18 10:45:03"
+    },
+    {
+        "csd_id": 587,
+        "cs_id": 716,
+        "csd_notes": "BBM",
+        "csd_nominal": 275000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:46:37",
+        "updated_at": "2026-08-18 10:46:37"
+    },
+    {
+        "csd_id": 588,
+        "cs_id": 716,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:46:37",
+        "updated_at": "2026-08-18 10:46:37"
+    },
+    {
+        "csd_id": 589,
+        "cs_id": 716,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:46:37",
+        "updated_at": "2026-08-18 10:46:37"
+    },
+    {
+        "csd_id": 590,
+        "cs_id": 716,
+        "csd_notes": "Parkir",
+        "csd_nominal": 4000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:46:37",
+        "updated_at": "2026-08-18 10:46:37"
+    },
+    {
+        "csd_id": 591,
+        "cs_id": 716,
+        "csd_notes": "Hotel",
+        "csd_nominal": 418000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:46:37",
+        "updated_at": "2026-08-18 10:46:37"
+    },
+    {
+        "csd_id": 592,
+        "cs_id": 718,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 11016240,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 10:57:34",
+        "updated_at": "2026-08-18 10:57:34"
+    },
+    {
+        "csd_id": 593,
+        "cs_id": 719,
+        "csd_notes": "BBM",
+        "csd_nominal": 72600,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:58:24",
+        "updated_at": "2026-08-18 10:58:24"
+    },
+    {
+        "csd_id": 594,
+        "cs_id": 719,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:58:24",
+        "updated_at": "2026-08-18 10:58:24"
+    },
+    {
+        "csd_id": 595,
+        "cs_id": 719,
+        "csd_notes": "Parkir",
+        "csd_nominal": 2000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 10:58:24",
+        "updated_at": "2026-08-18 10:58:24"
+    },
+    {
+        "csd_id": 596,
+        "cs_id": 724,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5362300,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 11:37:54",
+        "updated_at": "2026-08-18 11:37:54"
+    },
+    {
+        "csd_id": 597,
+        "cs_id": 725,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 28913850,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 11:38:31",
+        "updated_at": "2026-08-18 11:38:31"
+    },
+    {
+        "csd_id": 598,
+        "cs_id": 726,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:38:59",
+        "updated_at": "2026-08-18 11:38:59"
+    },
+    {
+        "csd_id": 599,
+        "cs_id": 726,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:38:59",
+        "updated_at": "2026-08-18 11:38:59"
+    },
+    {
+        "csd_id": 600,
+        "cs_id": 726,
+        "csd_notes": "BBM",
+        "csd_nominal": 240000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:38:59",
+        "updated_at": "2026-08-18 11:38:59"
+    },
+    {
+        "csd_id": 601,
+        "cs_id": 726,
+        "csd_notes": "Hotel",
+        "csd_nominal": 340000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:38:59",
+        "updated_at": "2026-08-18 11:38:59"
+    },
+    {
+        "csd_id": 602,
+        "cs_id": 731,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 100000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:41:37",
+        "updated_at": "2026-08-18 11:41:37"
+    },
+    {
+        "csd_id": 603,
+        "cs_id": 731,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:41:37",
+        "updated_at": "2026-08-18 11:41:37"
+    },
+    {
+        "csd_id": 604,
+        "cs_id": 731,
+        "csd_notes": "Hotel",
+        "csd_nominal": 370000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:41:37",
+        "updated_at": "2026-08-18 11:41:37"
+    },
+    {
+        "csd_id": 605,
+        "cs_id": 732,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 5833504,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 11:50:57",
+        "updated_at": "2026-08-18 11:50:57"
+    },
+    {
+        "csd_id": 606,
+        "cs_id": 733,
+        "csd_notes": "BBM",
+        "csd_nominal": 154000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:51:28",
+        "updated_at": "2026-08-18 11:51:28"
+    },
+    {
+        "csd_id": 607,
+        "cs_id": 733,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 180000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 11:51:28",
+        "updated_at": "2026-08-18 11:51:28"
+    },
+    {
+        "csd_id": 608,
+        "cs_id": 735,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 17595800,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 13:34:25",
+        "updated_at": "2026-08-18 13:34:25"
+    },
+    {
+        "csd_id": 609,
+        "cs_id": 738,
+        "csd_notes": "Hotel",
+        "csd_nominal": 85000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 13:37:01",
+        "updated_at": "2026-08-18 13:37:01"
+    },
+    {
+        "csd_id": 610,
+        "cs_id": 738,
+        "csd_notes": "BBM",
+        "csd_nominal": 110400,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 13:37:01",
+        "updated_at": "2026-08-18 13:37:01"
+    },
+    {
+        "csd_id": 611,
+        "cs_id": 740,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 26434470,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-18 14:35:55",
+        "updated_at": "2026-08-18 14:35:55"
+    },
+    {
+        "csd_id": 612,
+        "cs_id": 741,
+        "csd_notes": "Uang Mingguan",
+        "csd_nominal": 200000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 613,
+        "cs_id": 741,
+        "csd_notes": "Uang Makan",
+        "csd_nominal": 900000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 614,
+        "cs_id": 741,
+        "csd_notes": "Hotel",
+        "csd_nominal": 1465000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 615,
+        "cs_id": 741,
+        "csd_notes": "sewa motor",
+        "csd_nominal": 660000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 616,
+        "cs_id": 741,
+        "csd_notes": "bus",
+        "csd_nominal": 325000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 617,
+        "cs_id": 741,
+        "csd_notes": "ojek",
+        "csd_nominal": 155000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 618,
+        "cs_id": 741,
+        "csd_notes": "BBM",
+        "csd_nominal": 267090,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 619,
+        "cs_id": 741,
+        "csd_notes": "Parkir",
+        "csd_nominal": 26000,
+        "csd_type": 2,
+        "status": 1,
+        "created_at": "2026-08-18 14:38:38",
+        "updated_at": "2026-08-18 14:38:38"
+    },
+    {
+        "csd_id": 620,
+        "cs_id": 747,
+        "csd_notes": "Uang Setoran Kustomer",
+        "csd_nominal": 9149700,
+        "csd_type": 1,
+        "status": 1,
+        "created_at": "2026-08-20 16:07:45",
+        "updated_at": "2026-08-20 16:07:45"
+    }
+]

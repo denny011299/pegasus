@@ -1,0 +1,3342 @@
+[
+    {
+        "ss_id": 1,
+        "supplies_id": 1,
+        "unit_id": 9,
+        "ss_stock": 4161,
+        "status": 1,
+        "created_at": "2026-02-12 15:01:36",
+        "updated_at": "2026-08-21 09:50:25",
+        "created_by": null
+    },
+    {
+        "ss_id": 2,
+        "supplies_id": 2,
+        "unit_id": 9,
+        "ss_stock": 27848,
+        "status": 1,
+        "created_at": "2026-02-12 15:02:49",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 3,
+        "supplies_id": 3,
+        "unit_id": 9,
+        "ss_stock": 2498,
+        "status": 1,
+        "created_at": "2026-02-12 15:18:16",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 4,
+        "supplies_id": 4,
+        "unit_id": 9,
+        "ss_stock": 18436,
+        "status": 1,
+        "created_at": "2026-02-12 15:19:51",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 5,
+        "supplies_id": 5,
+        "unit_id": 9,
+        "ss_stock": 5415,
+        "status": 1,
+        "created_at": "2026-02-12 15:21:02",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 6,
+        "supplies_id": 6,
+        "unit_id": 9,
+        "ss_stock": 98574,
+        "status": 1,
+        "created_at": "2026-02-12 15:22:08",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 7,
+        "supplies_id": 7,
+        "unit_id": 9,
+        "ss_stock": 72709,
+        "status": 1,
+        "created_at": "2026-02-12 15:23:18",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 8,
+        "supplies_id": 8,
+        "unit_id": 5,
+        "ss_stock": 2,
+        "status": 1,
+        "created_at": "2026-02-12 15:26:32",
+        "updated_at": "2026-08-12 12:11:31",
+        "created_by": null
+    },
+    {
+        "ss_id": 9,
+        "supplies_id": 9,
+        "unit_id": 1,
+        "ss_stock": 333680,
+        "status": 1,
+        "created_at": "2026-02-12 15:36:21",
+        "updated_at": "2026-08-19 16:16:14",
+        "created_by": null
+    },
+    {
+        "ss_id": 10,
+        "supplies_id": 10,
+        "unit_id": 9,
+        "ss_stock": 4400,
+        "status": 0,
+        "created_at": "2026-02-13 15:48:37",
+        "updated_at": "2026-08-21 10:41:45",
+        "created_by": null
+    },
+    {
+        "ss_id": 11,
+        "supplies_id": 11,
+        "unit_id": 9,
+        "ss_stock": 890,
+        "status": 0,
+        "created_at": "2026-02-13 15:50:28",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 12,
+        "supplies_id": 12,
+        "unit_id": 9,
+        "ss_stock": 13671,
+        "status": 1,
+        "created_at": "2026-02-13 16:00:39",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 13,
+        "supplies_id": 13,
+        "unit_id": 9,
+        "ss_stock": 81201,
+        "status": 1,
+        "created_at": "2026-02-13 16:01:58",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 14,
+        "supplies_id": 14,
+        "unit_id": 9,
+        "ss_stock": 78979,
+        "status": 1,
+        "created_at": "2026-02-16 09:57:50",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 15,
+        "supplies_id": 15,
+        "unit_id": 9,
+        "ss_stock": 4084,
+        "status": 1,
+        "created_at": "2026-02-16 09:58:55",
+        "updated_at": "2026-07-30 09:30:26",
+        "created_by": null
+    },
+    {
+        "ss_id": 16,
+        "supplies_id": 16,
+        "unit_id": 9,
+        "ss_stock": 152,
+        "status": 1,
+        "created_at": "2026-02-16 10:01:12",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 17,
+        "supplies_id": 17,
+        "unit_id": 9,
+        "ss_stock": 1000,
+        "status": 1,
+        "created_at": "2026-02-16 10:03:46",
+        "updated_at": "2026-02-20 11:37:44",
+        "created_by": null
+    },
+    {
+        "ss_id": 18,
+        "supplies_id": 18,
+        "unit_id": 9,
+        "ss_stock": 12025,
+        "status": 1,
+        "created_at": "2026-02-16 10:22:43",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 19,
+        "supplies_id": 19,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-02-16 10:31:47",
+        "updated_at": "2026-05-26 14:02:57",
+        "created_by": null
+    },
+    {
+        "ss_id": 20,
+        "supplies_id": 20,
+        "unit_id": 5,
+        "ss_stock": 2,
+        "status": 1,
+        "created_at": "2026-02-16 14:08:06",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 21,
+        "supplies_id": 21,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-02-16 14:19:00",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 22,
+        "supplies_id": 19,
+        "unit_id": 1,
+        "ss_stock": 14525,
+        "status": 1,
+        "created_at": "2026-02-16 16:36:34",
+        "updated_at": "2026-08-14 15:11:02",
+        "created_by": null
+    },
+    {
+        "ss_id": 23,
+        "supplies_id": 22,
+        "unit_id": 9,
+        "ss_stock": 21536,
+        "status": 1,
+        "created_at": "2026-02-18 16:18:35",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 24,
+        "supplies_id": 23,
+        "unit_id": 9,
+        "ss_stock": 14782,
+        "status": 1,
+        "created_at": "2026-02-18 16:20:55",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 25,
+        "supplies_id": 24,
+        "unit_id": 9,
+        "ss_stock": 152,
+        "status": 1,
+        "created_at": "2026-02-18 16:24:21",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 26,
+        "supplies_id": 25,
+        "unit_id": 9,
+        "ss_stock": 152,
+        "status": 1,
+        "created_at": "2026-02-18 16:26:07",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 27,
+        "supplies_id": 26,
+        "unit_id": 9,
+        "ss_stock": 3208,
+        "status": 0,
+        "created_at": "2026-02-19 13:05:49",
+        "updated_at": "2026-08-18 17:58:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 28,
+        "supplies_id": 27,
+        "unit_id": 9,
+        "ss_stock": 330,
+        "status": 0,
+        "created_at": "2026-02-19 13:07:45",
+        "updated_at": "2026-08-18 17:58:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 29,
+        "supplies_id": 28,
+        "unit_id": 9,
+        "ss_stock": 2033,
+        "status": 0,
+        "created_at": "2026-02-19 13:10:20",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 30,
+        "supplies_id": 29,
+        "unit_id": 9,
+        "ss_stock": 2172,
+        "status": 0,
+        "created_at": "2026-02-19 13:11:36",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 31,
+        "supplies_id": 30,
+        "unit_id": 9,
+        "ss_stock": 1626,
+        "status": 0,
+        "created_at": "2026-02-19 13:12:54",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 32,
+        "supplies_id": 31,
+        "unit_id": 9,
+        "ss_stock": 1363,
+        "status": 0,
+        "created_at": "2026-02-19 13:13:56",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 33,
+        "supplies_id": 32,
+        "unit_id": 9,
+        "ss_stock": 1760,
+        "status": 0,
+        "created_at": "2026-02-19 13:14:56",
+        "updated_at": "2026-08-12 17:18:32",
+        "created_by": null
+    },
+    {
+        "ss_id": 34,
+        "supplies_id": 33,
+        "unit_id": 9,
+        "ss_stock": 845,
+        "status": 0,
+        "created_at": "2026-02-19 13:16:10",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 35,
+        "supplies_id": 34,
+        "unit_id": 9,
+        "ss_stock": 2581,
+        "status": 0,
+        "created_at": "2026-02-19 13:17:16",
+        "updated_at": "2026-08-11 17:47:21",
+        "created_by": null
+    },
+    {
+        "ss_id": 36,
+        "supplies_id": 35,
+        "unit_id": 9,
+        "ss_stock": 979,
+        "status": 0,
+        "created_at": "2026-02-19 13:18:06",
+        "updated_at": "2026-08-20 08:20:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 37,
+        "supplies_id": 36,
+        "unit_id": 9,
+        "ss_stock": 3342,
+        "status": 0,
+        "created_at": "2026-02-19 13:23:03",
+        "updated_at": "2026-08-21 10:47:10",
+        "created_by": null
+    },
+    {
+        "ss_id": 38,
+        "supplies_id": 37,
+        "unit_id": 9,
+        "ss_stock": 2326,
+        "status": 0,
+        "created_at": "2026-02-19 13:33:39",
+        "updated_at": "2026-08-01 10:53:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 39,
+        "supplies_id": 38,
+        "unit_id": 9,
+        "ss_stock": 4754,
+        "status": 1,
+        "created_at": "2026-02-19 13:49:46",
+        "updated_at": "2026-08-21 09:50:25",
+        "created_by": null
+    },
+    {
+        "ss_id": 40,
+        "supplies_id": 39,
+        "unit_id": 9,
+        "ss_stock": 120,
+        "status": 1,
+        "created_at": "2026-02-19 14:11:41",
+        "updated_at": "2026-07-22 07:26:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 41,
+        "supplies_id": 40,
+        "unit_id": 9,
+        "ss_stock": 120,
+        "status": 1,
+        "created_at": "2026-02-19 14:12:48",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 42,
+        "supplies_id": 41,
+        "unit_id": 9,
+        "ss_stock": 120,
+        "status": 1,
+        "created_at": "2026-02-19 14:13:36",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 43,
+        "supplies_id": 42,
+        "unit_id": 9,
+        "ss_stock": 11012,
+        "status": 1,
+        "created_at": "2026-02-19 14:35:37",
+        "updated_at": "2026-08-21 09:50:25",
+        "created_by": null
+    },
+    {
+        "ss_id": 44,
+        "supplies_id": 43,
+        "unit_id": 9,
+        "ss_stock": 890,
+        "status": 1,
+        "created_at": "2026-02-20 08:02:50",
+        "updated_at": "2026-08-21 09:50:25",
+        "created_by": null
+    },
+    {
+        "ss_id": 45,
+        "supplies_id": 44,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-02-20 08:40:56",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 46,
+        "supplies_id": 45,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-02-20 09:10:23",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 47,
+        "supplies_id": 46,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-02-20 09:11:59",
+        "updated_at": "2026-07-22 08:42:58",
+        "created_by": null
+    },
+    {
+        "ss_id": 48,
+        "supplies_id": 47,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-02-20 09:14:36",
+        "updated_at": "2026-07-22 08:46:18",
+        "created_by": null
+    },
+    {
+        "ss_id": 49,
+        "supplies_id": 48,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-02-20 09:16:18",
+        "updated_at": "2026-07-22 08:46:05",
+        "created_by": null
+    },
+    {
+        "ss_id": 50,
+        "supplies_id": 49,
+        "unit_id": 9,
+        "ss_stock": 124865,
+        "status": 1,
+        "created_at": "2026-02-20 12:50:43",
+        "updated_at": "2026-08-21 09:50:25",
+        "created_by": null
+    },
+    {
+        "ss_id": 51,
+        "supplies_id": 50,
+        "unit_id": 9,
+        "ss_stock": 116803,
+        "status": 1,
+        "created_at": "2026-02-20 12:51:57",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 52,
+        "supplies_id": 51,
+        "unit_id": 5,
+        "ss_stock": 18,
+        "status": 1,
+        "created_at": "2026-02-20 12:59:11",
+        "updated_at": "2026-08-06 17:55:59",
+        "created_by": null
+    },
+    {
+        "ss_id": 53,
+        "supplies_id": 52,
+        "unit_id": 9,
+        "ss_stock": 145756,
+        "status": 1,
+        "created_at": "2026-02-20 13:08:51",
+        "updated_at": "2026-08-21 10:40:28",
+        "created_by": null
+    },
+    {
+        "ss_id": 54,
+        "supplies_id": 53,
+        "unit_id": 9,
+        "ss_stock": 52525,
+        "status": 1,
+        "created_at": "2026-02-20 13:11:59",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 55,
+        "supplies_id": 54,
+        "unit_id": 9,
+        "ss_stock": 99103,
+        "status": 1,
+        "created_at": "2026-02-20 13:14:05",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 56,
+        "supplies_id": 55,
+        "unit_id": 9,
+        "ss_stock": 71143,
+        "status": 1,
+        "created_at": "2026-02-20 13:14:44",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 57,
+        "supplies_id": 56,
+        "unit_id": 9,
+        "ss_stock": 30992,
+        "status": 1,
+        "created_at": "2026-02-20 13:16:44",
+        "updated_at": "2026-08-01 10:53:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 58,
+        "supplies_id": 57,
+        "unit_id": 9,
+        "ss_stock": 46052,
+        "status": 1,
+        "created_at": "2026-02-20 13:23:04",
+        "updated_at": "2026-08-21 10:47:10",
+        "created_by": null
+    },
+    {
+        "ss_id": 59,
+        "supplies_id": 58,
+        "unit_id": 9,
+        "ss_stock": 13702,
+        "status": 1,
+        "created_at": "2026-02-20 13:24:05",
+        "updated_at": "2026-08-18 17:58:44",
+        "created_by": null
+    },
+    {
+        "ss_id": 60,
+        "supplies_id": 59,
+        "unit_id": 9,
+        "ss_stock": 18584,
+        "status": 1,
+        "created_at": "2026-02-20 13:26:04",
+        "updated_at": "2026-07-30 09:30:26",
+        "created_by": null
+    },
+    {
+        "ss_id": 61,
+        "supplies_id": 60,
+        "unit_id": 9,
+        "ss_stock": 20000,
+        "status": 1,
+        "created_at": "2026-02-20 13:26:54",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 62,
+        "supplies_id": 61,
+        "unit_id": 9,
+        "ss_stock": 8964,
+        "status": 1,
+        "created_at": "2026-02-20 13:33:04",
+        "updated_at": "2026-08-15 18:23:14",
+        "created_by": null
+    },
+    {
+        "ss_id": 63,
+        "supplies_id": 62,
+        "unit_id": 8,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-02-20 13:34:12",
+        "updated_at": "2026-08-14 18:34:04",
+        "created_by": null
+    },
+    {
+        "ss_id": 64,
+        "supplies_id": 63,
+        "unit_id": 21,
+        "ss_stock": 2,
+        "status": 1,
+        "created_at": "2026-02-20 14:11:43",
+        "updated_at": "2026-08-19 16:18:33",
+        "created_by": null
+    },
+    {
+        "ss_id": 65,
+        "supplies_id": 64,
+        "unit_id": 21,
+        "ss_stock": 8,
+        "status": 1,
+        "created_at": "2026-02-20 14:18:23",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 66,
+        "supplies_id": 65,
+        "unit_id": 21,
+        "ss_stock": 1,
+        "status": 1,
+        "created_at": "2026-02-20 14:42:27",
+        "updated_at": "2026-03-12 11:05:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 67,
+        "supplies_id": 66,
+        "unit_id": 9,
+        "ss_stock": 10652,
+        "status": 1,
+        "created_at": "2026-02-20 14:44:37",
+        "updated_at": "2026-08-13 17:33:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 68,
+        "supplies_id": 67,
+        "unit_id": 9,
+        "ss_stock": 8891,
+        "status": 1,
+        "created_at": "2026-02-20 14:45:44",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 69,
+        "supplies_id": 68,
+        "unit_id": 9,
+        "ss_stock": 9859,
+        "status": 1,
+        "created_at": "2026-02-20 14:46:41",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 70,
+        "supplies_id": 69,
+        "unit_id": 9,
+        "ss_stock": 1614,
+        "status": 0,
+        "created_at": "2026-02-20 14:49:21",
+        "updated_at": "2026-08-13 17:33:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 71,
+        "supplies_id": 70,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-02-20 14:51:35",
+        "updated_at": "2026-02-20 14:51:35",
+        "created_by": null
+    },
+    {
+        "ss_id": 72,
+        "supplies_id": 71,
+        "unit_id": 9,
+        "ss_stock": 13944,
+        "status": 1,
+        "created_at": "2026-02-20 14:53:35",
+        "updated_at": "2026-04-17 16:33:02",
+        "created_by": null
+    },
+    {
+        "ss_id": 73,
+        "supplies_id": 72,
+        "unit_id": 9,
+        "ss_stock": 27877,
+        "status": 1,
+        "created_at": "2026-02-21 14:49:16",
+        "updated_at": "2026-08-21 10:47:10",
+        "created_by": null
+    },
+    {
+        "ss_id": 74,
+        "supplies_id": 73,
+        "unit_id": 9,
+        "ss_stock": 26551,
+        "status": 1,
+        "created_at": "2026-02-21 14:50:13",
+        "updated_at": "2026-08-21 10:47:10",
+        "created_by": null
+    },
+    {
+        "ss_id": 75,
+        "supplies_id": 74,
+        "unit_id": 9,
+        "ss_stock": 5468,
+        "status": 1,
+        "created_at": "2026-02-21 14:51:10",
+        "updated_at": "2026-08-12 15:13:50",
+        "created_by": null
+    },
+    {
+        "ss_id": 76,
+        "supplies_id": 75,
+        "unit_id": 9,
+        "ss_stock": 24275,
+        "status": 1,
+        "created_at": "2026-02-21 14:51:56",
+        "updated_at": "2026-08-18 17:58:44",
+        "created_by": null
+    },
+    {
+        "ss_id": 77,
+        "supplies_id": 76,
+        "unit_id": 2,
+        "ss_stock": 55,
+        "status": 1,
+        "created_at": "2026-02-23 16:44:44",
+        "updated_at": "2026-05-06 15:10:34",
+        "created_by": null
+    },
+    {
+        "ss_id": 78,
+        "supplies_id": 77,
+        "unit_id": 1,
+        "ss_stock": 8333,
+        "status": 1,
+        "created_at": "2026-02-25 12:51:10",
+        "updated_at": "2026-06-25 15:14:10",
+        "created_by": null
+    },
+    {
+        "ss_id": 79,
+        "supplies_id": 78,
+        "unit_id": 9,
+        "ss_stock": 1208,
+        "status": 1,
+        "created_at": "2026-02-26 09:51:50",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 80,
+        "supplies_id": 79,
+        "unit_id": 9,
+        "ss_stock": 16606,
+        "status": 1,
+        "created_at": "2026-02-26 09:52:48",
+        "updated_at": "2026-08-13 17:33:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 81,
+        "supplies_id": 80,
+        "unit_id": 9,
+        "ss_stock": 2301,
+        "status": 0,
+        "created_at": "2026-03-02 11:49:08",
+        "updated_at": "2026-08-15 18:23:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 82,
+        "supplies_id": 81,
+        "unit_id": 9,
+        "ss_stock": 34252,
+        "status": 1,
+        "created_at": "2026-03-02 11:50:46",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 83,
+        "supplies_id": 82,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-02 11:51:47",
+        "updated_at": "2026-08-01 10:53:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 84,
+        "supplies_id": 83,
+        "unit_id": 9,
+        "ss_stock": 20770,
+        "status": 1,
+        "created_at": "2026-03-02 11:53:42",
+        "updated_at": "2026-08-14 18:34:05",
+        "created_by": null
+    },
+    {
+        "ss_id": 85,
+        "supplies_id": 84,
+        "unit_id": 9,
+        "ss_stock": 700,
+        "status": 0,
+        "created_at": "2026-03-02 11:56:43",
+        "updated_at": "2026-08-07 11:19:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 86,
+        "supplies_id": 85,
+        "unit_id": 9,
+        "ss_stock": 13944,
+        "status": 1,
+        "created_at": "2026-03-02 11:58:14",
+        "updated_at": "2026-08-15 18:23:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 87,
+        "supplies_id": 86,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-02 12:02:08",
+        "updated_at": "2026-03-02 12:02:08",
+        "created_by": null
+    },
+    {
+        "ss_id": 88,
+        "supplies_id": 87,
+        "unit_id": 9,
+        "ss_stock": 30000,
+        "status": 1,
+        "created_at": "2026-03-02 12:03:56",
+        "updated_at": "2026-07-22 07:26:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 89,
+        "supplies_id": 88,
+        "unit_id": 9,
+        "ss_stock": 560,
+        "status": 1,
+        "created_at": "2026-03-02 12:05:28",
+        "updated_at": "2026-07-27 09:59:03",
+        "created_by": null
+    },
+    {
+        "ss_id": 90,
+        "supplies_id": 89,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-02 12:06:11",
+        "updated_at": "2026-03-02 12:06:11",
+        "created_by": null
+    },
+    {
+        "ss_id": 91,
+        "supplies_id": 90,
+        "unit_id": 9,
+        "ss_stock": 2731,
+        "status": 0,
+        "created_at": "2026-03-02 13:14:31",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 92,
+        "supplies_id": 91,
+        "unit_id": 9,
+        "ss_stock": 9826,
+        "status": 1,
+        "created_at": "2026-03-02 13:51:50",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 93,
+        "supplies_id": 92,
+        "unit_id": 9,
+        "ss_stock": 4928,
+        "status": 1,
+        "created_at": "2026-03-02 13:56:26",
+        "updated_at": "2026-08-15 18:23:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 94,
+        "supplies_id": 93,
+        "unit_id": 9,
+        "ss_stock": 9946,
+        "status": 1,
+        "created_at": "2026-03-02 13:57:13",
+        "updated_at": "2026-08-15 18:23:14",
+        "created_by": null
+    },
+    {
+        "ss_id": 95,
+        "supplies_id": 94,
+        "unit_id": 9,
+        "ss_stock": 3630,
+        "status": 0,
+        "created_at": "2026-03-02 14:42:39",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 96,
+        "supplies_id": 95,
+        "unit_id": 9,
+        "ss_stock": 3828,
+        "status": 0,
+        "created_at": "2026-03-02 14:43:34",
+        "updated_at": "2026-08-20 08:20:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 97,
+        "supplies_id": 96,
+        "unit_id": 9,
+        "ss_stock": 467,
+        "status": 0,
+        "created_at": "2026-03-02 14:53:38",
+        "updated_at": "2026-08-08 08:11:21",
+        "created_by": null
+    },
+    {
+        "ss_id": 98,
+        "supplies_id": 97,
+        "unit_id": 9,
+        "ss_stock": 263,
+        "status": 0,
+        "created_at": "2026-03-02 14:54:47",
+        "updated_at": "2026-07-27 09:59:05",
+        "created_by": null
+    },
+    {
+        "ss_id": 99,
+        "supplies_id": 98,
+        "unit_id": 9,
+        "ss_stock": 1739,
+        "status": 1,
+        "created_at": "2026-03-02 14:55:46",
+        "updated_at": "2026-08-10 20:16:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 100,
+        "supplies_id": 99,
+        "unit_id": 9,
+        "ss_stock": 4480,
+        "status": 1,
+        "created_at": "2026-03-02 14:56:37",
+        "updated_at": "2026-08-08 08:11:21",
+        "created_by": null
+    },
+    {
+        "ss_id": 101,
+        "supplies_id": 100,
+        "unit_id": 9,
+        "ss_stock": 613,
+        "status": 0,
+        "created_at": "2026-03-02 15:01:01",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 102,
+        "supplies_id": 101,
+        "unit_id": 9,
+        "ss_stock": 1845,
+        "status": 1,
+        "created_at": "2026-03-03 11:18:34",
+        "updated_at": "2026-08-14 18:34:05",
+        "created_by": null
+    },
+    {
+        "ss_id": 103,
+        "supplies_id": 102,
+        "unit_id": 9,
+        "ss_stock": 15,
+        "status": 1,
+        "created_at": "2026-03-05 09:07:31",
+        "updated_at": "2026-07-25 18:06:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 104,
+        "supplies_id": 103,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-05 09:22:30",
+        "updated_at": "2026-08-20 08:14:57",
+        "created_by": null
+    },
+    {
+        "ss_id": 105,
+        "supplies_id": 104,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-05 09:23:31",
+        "updated_at": "2026-06-03 07:27:45",
+        "created_by": null
+    },
+    {
+        "ss_id": 106,
+        "supplies_id": 105,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-05 09:39:40",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 107,
+        "supplies_id": 106,
+        "unit_id": 8,
+        "ss_stock": 2353,
+        "status": 0,
+        "created_at": "2026-03-05 16:14:32",
+        "updated_at": "2026-04-10 21:27:01",
+        "created_by": null
+    },
+    {
+        "ss_id": 108,
+        "supplies_id": 107,
+        "unit_id": 5,
+        "ss_stock": 2,
+        "status": 1,
+        "created_at": "2026-03-06 13:13:14",
+        "updated_at": "2026-08-06 12:26:07",
+        "created_by": null
+    },
+    {
+        "ss_id": 109,
+        "supplies_id": 108,
+        "unit_id": 2,
+        "ss_stock": 1,
+        "status": 1,
+        "created_at": "2026-03-06 13:13:56",
+        "updated_at": "2026-03-06 14:03:35",
+        "created_by": null
+    },
+    {
+        "ss_id": 110,
+        "supplies_id": 109,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-06 13:33:46",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 111,
+        "supplies_id": 110,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-06 14:07:12",
+        "updated_at": "2026-07-22 08:41:55",
+        "created_by": null
+    },
+    {
+        "ss_id": 112,
+        "supplies_id": 111,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-06 14:07:56",
+        "updated_at": "2026-07-22 08:41:59",
+        "created_by": null
+    },
+    {
+        "ss_id": 113,
+        "supplies_id": 112,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-10 08:47:45",
+        "updated_at": "2026-03-12 11:23:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 114,
+        "supplies_id": 112,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-10 08:47:45",
+        "updated_at": "2026-03-12 11:23:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 115,
+        "supplies_id": 113,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-10 08:59:34",
+        "updated_at": "2026-03-12 11:23:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 116,
+        "supplies_id": 114,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-11 14:39:05",
+        "updated_at": "2026-07-22 08:42:41",
+        "created_by": null
+    },
+    {
+        "ss_id": 117,
+        "supplies_id": 115,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 08:34:41",
+        "updated_at": "2026-03-12 08:34:41",
+        "created_by": null
+    },
+    {
+        "ss_id": 118,
+        "supplies_id": 116,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 09:22:27",
+        "updated_at": "2026-05-16 09:44:34",
+        "created_by": null
+    },
+    {
+        "ss_id": 119,
+        "supplies_id": 117,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 09:49:45",
+        "updated_at": "2026-08-15 13:59:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 120,
+        "supplies_id": 117,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 09:49:45",
+        "updated_at": "2026-06-09 08:22:39",
+        "created_by": null
+    },
+    {
+        "ss_id": 121,
+        "supplies_id": 118,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 09:54:26",
+        "updated_at": "2026-08-15 13:59:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 122,
+        "supplies_id": 118,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 09:54:26",
+        "updated_at": "2026-06-09 08:25:26",
+        "created_by": null
+    },
+    {
+        "ss_id": 123,
+        "supplies_id": 119,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 10:01:14",
+        "updated_at": "2026-07-14 16:52:46",
+        "created_by": null
+    },
+    {
+        "ss_id": 124,
+        "supplies_id": 119,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 10:01:14",
+        "updated_at": "2026-07-14 15:37:38",
+        "created_by": null
+    },
+    {
+        "ss_id": 125,
+        "supplies_id": 120,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 10:04:25",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 126,
+        "supplies_id": 120,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 10:04:25",
+        "updated_at": "2026-07-16 18:41:19",
+        "created_by": null
+    },
+    {
+        "ss_id": 127,
+        "supplies_id": 121,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 10:09:20",
+        "updated_at": "2026-03-12 10:09:20",
+        "created_by": null
+    },
+    {
+        "ss_id": 128,
+        "supplies_id": 121,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-12 10:09:20",
+        "updated_at": "2026-04-10 21:22:33",
+        "created_by": null
+    },
+    {
+        "ss_id": 129,
+        "supplies_id": 122,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-12 10:11:43",
+        "updated_at": "2026-07-22 09:09:45",
+        "created_by": null
+    },
+    {
+        "ss_id": 130,
+        "supplies_id": 123,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-12 11:00:05",
+        "updated_at": "2026-07-22 08:43:55",
+        "created_by": null
+    },
+    {
+        "ss_id": 131,
+        "supplies_id": 124,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-12 11:01:16",
+        "updated_at": "2026-07-22 08:43:42",
+        "created_by": null
+    },
+    {
+        "ss_id": 132,
+        "supplies_id": 125,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-12 11:02:32",
+        "updated_at": "2026-07-22 08:43:33",
+        "created_by": null
+    },
+    {
+        "ss_id": 133,
+        "supplies_id": 126,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 11:26:48",
+        "updated_at": "2026-08-01 15:52:41",
+        "created_by": null
+    },
+    {
+        "ss_id": 134,
+        "supplies_id": 127,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 11:28:07",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 135,
+        "supplies_id": 128,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 11:31:19",
+        "updated_at": "2026-08-01 15:45:05",
+        "created_by": null
+    },
+    {
+        "ss_id": 136,
+        "supplies_id": 129,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 11:37:45",
+        "updated_at": "2026-08-01 15:52:41",
+        "created_by": null
+    },
+    {
+        "ss_id": 137,
+        "supplies_id": 130,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 11:38:54",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 138,
+        "supplies_id": 131,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 11:39:53",
+        "updated_at": "2026-08-01 15:49:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 139,
+        "supplies_id": 132,
+        "unit_id": 9,
+        "ss_stock": 799,
+        "status": 0,
+        "created_at": "2026-03-12 15:02:29",
+        "updated_at": "2026-07-12 08:27:00",
+        "created_by": null
+    },
+    {
+        "ss_id": 140,
+        "supplies_id": 126,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 15:03:45",
+        "updated_at": "2026-08-01 15:52:41",
+        "created_by": null
+    },
+    {
+        "ss_id": 141,
+        "supplies_id": 133,
+        "unit_id": 9,
+        "ss_stock": 2983,
+        "status": 0,
+        "created_at": "2026-03-12 15:03:46",
+        "updated_at": "2026-07-30 09:30:26",
+        "created_by": null
+    },
+    {
+        "ss_id": 142,
+        "supplies_id": 127,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-12 15:10:36",
+        "updated_at": "2026-08-01 14:51:31",
+        "created_by": null
+    },
+    {
+        "ss_id": 143,
+        "supplies_id": 129,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 15:23:24",
+        "updated_at": "2026-08-01 15:46:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 144,
+        "supplies_id": 130,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-12 15:23:48",
+        "updated_at": "2026-08-14 15:36:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 145,
+        "supplies_id": 134,
+        "unit_id": 9,
+        "ss_stock": 6236,
+        "status": 1,
+        "created_at": "2026-03-14 04:45:52",
+        "updated_at": "2026-08-15 18:23:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 146,
+        "supplies_id": 135,
+        "unit_id": 9,
+        "ss_stock": 2256,
+        "status": 1,
+        "created_at": "2026-03-14 04:47:06",
+        "updated_at": "2026-08-15 18:23:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 147,
+        "supplies_id": 136,
+        "unit_id": 9,
+        "ss_stock": 17058,
+        "status": 1,
+        "created_at": "2026-03-14 04:48:35",
+        "updated_at": "2026-08-14 18:34:04",
+        "created_by": null
+    },
+    {
+        "ss_id": 148,
+        "supplies_id": 62,
+        "unit_id": 9,
+        "ss_stock": 5080,
+        "status": 1,
+        "created_at": "2026-03-14 04:52:11",
+        "updated_at": "2026-08-14 18:34:04",
+        "created_by": null
+    },
+    {
+        "ss_id": 149,
+        "supplies_id": 110,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 08:35:35",
+        "updated_at": "2026-07-22 08:41:55",
+        "created_by": null
+    },
+    {
+        "ss_id": 150,
+        "supplies_id": 111,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 08:36:52",
+        "updated_at": "2026-07-22 08:41:59",
+        "created_by": null
+    },
+    {
+        "ss_id": 151,
+        "supplies_id": 137,
+        "unit_id": 9,
+        "ss_stock": 2661,
+        "status": 1,
+        "created_at": "2026-03-14 08:40:41",
+        "updated_at": "2026-08-01 10:47:30",
+        "created_by": null
+    },
+    {
+        "ss_id": 152,
+        "supplies_id": 138,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 08:42:19",
+        "updated_at": "2026-03-14 08:42:19",
+        "created_by": null
+    },
+    {
+        "ss_id": 153,
+        "supplies_id": 139,
+        "unit_id": 9,
+        "ss_stock": 822,
+        "status": 1,
+        "created_at": "2026-03-14 09:11:57",
+        "updated_at": "2026-08-18 17:58:44",
+        "created_by": null
+    },
+    {
+        "ss_id": 154,
+        "supplies_id": 140,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 09:12:48",
+        "updated_at": "2026-03-28 07:48:51",
+        "created_by": null
+    },
+    {
+        "ss_id": 155,
+        "supplies_id": 141,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 09:14:12",
+        "updated_at": "2026-03-28 07:49:05",
+        "created_by": null
+    },
+    {
+        "ss_id": 156,
+        "supplies_id": 142,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 09:15:39",
+        "updated_at": "2026-03-28 08:02:11",
+        "created_by": null
+    },
+    {
+        "ss_id": 157,
+        "supplies_id": 143,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 10:33:26",
+        "updated_at": "2026-07-22 07:26:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 158,
+        "supplies_id": 144,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 10:34:27",
+        "updated_at": "2026-07-22 07:26:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 159,
+        "supplies_id": 145,
+        "unit_id": 9,
+        "ss_stock": 5,
+        "status": 0,
+        "created_at": "2026-03-14 10:39:53",
+        "updated_at": "2026-07-07 16:24:39",
+        "created_by": null
+    },
+    {
+        "ss_id": 160,
+        "supplies_id": 146,
+        "unit_id": 9,
+        "ss_stock": 6426,
+        "status": 1,
+        "created_at": "2026-03-14 10:41:12",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 161,
+        "supplies_id": 147,
+        "unit_id": 9,
+        "ss_stock": 4060,
+        "status": 1,
+        "created_at": "2026-03-14 10:42:03",
+        "updated_at": "2026-08-15 18:23:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 162,
+        "supplies_id": 148,
+        "unit_id": 9,
+        "ss_stock": 676,
+        "status": 1,
+        "created_at": "2026-03-14 10:53:41",
+        "updated_at": "2026-08-01 10:47:30",
+        "created_by": null
+    },
+    {
+        "ss_id": 163,
+        "supplies_id": 149,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:05:40",
+        "updated_at": "2026-04-17 16:33:02",
+        "created_by": null
+    },
+    {
+        "ss_id": 164,
+        "supplies_id": 150,
+        "unit_id": 9,
+        "ss_stock": 4,
+        "status": 1,
+        "created_at": "2026-03-14 11:06:26",
+        "updated_at": "2026-06-25 09:52:03",
+        "created_by": null
+    },
+    {
+        "ss_id": 165,
+        "supplies_id": 151,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 11:07:17",
+        "updated_at": "2026-04-10 21:21:04",
+        "created_by": null
+    },
+    {
+        "ss_id": 166,
+        "supplies_id": 152,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 11:08:02",
+        "updated_at": "2026-05-21 16:13:29",
+        "created_by": null
+    },
+    {
+        "ss_id": 167,
+        "supplies_id": 153,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:19:11",
+        "updated_at": "2026-08-01 10:53:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 168,
+        "supplies_id": 154,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:21:22",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 169,
+        "supplies_id": 155,
+        "unit_id": 5,
+        "ss_stock": 25,
+        "status": 1,
+        "created_at": "2026-03-14 11:22:46",
+        "updated_at": "2026-07-27 09:59:03",
+        "created_by": null
+    },
+    {
+        "ss_id": 170,
+        "supplies_id": 156,
+        "unit_id": 9,
+        "ss_stock": 3000,
+        "status": 1,
+        "created_at": "2026-03-14 11:23:58",
+        "updated_at": "2026-08-15 13:43:10",
+        "created_by": null
+    },
+    {
+        "ss_id": 171,
+        "supplies_id": 157,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:25:19",
+        "updated_at": "2026-06-25 14:40:03",
+        "created_by": null
+    },
+    {
+        "ss_id": 172,
+        "supplies_id": 158,
+        "unit_id": 21,
+        "ss_stock": 300,
+        "status": 0,
+        "created_at": "2026-03-14 11:26:05",
+        "updated_at": "2026-04-30 17:33:20",
+        "created_by": null
+    },
+    {
+        "ss_id": 173,
+        "supplies_id": 159,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:26:46",
+        "updated_at": "2026-08-12 14:21:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 174,
+        "supplies_id": 160,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:27:55",
+        "updated_at": "2026-08-12 14:21:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 175,
+        "supplies_id": 161,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:29:02",
+        "updated_at": "2026-04-17 16:33:02",
+        "created_by": null
+    },
+    {
+        "ss_id": 176,
+        "supplies_id": 162,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 11:29:37",
+        "updated_at": "2026-08-01 10:53:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 177,
+        "supplies_id": 163,
+        "unit_id": 9,
+        "ss_stock": 3688,
+        "status": 1,
+        "created_at": "2026-03-14 11:33:38",
+        "updated_at": "2026-08-01 10:47:30",
+        "created_by": null
+    },
+    {
+        "ss_id": 178,
+        "supplies_id": 164,
+        "unit_id": 9,
+        "ss_stock": 534,
+        "status": 0,
+        "created_at": "2026-03-14 11:37:15",
+        "updated_at": "2026-08-01 10:47:30",
+        "created_by": null
+    },
+    {
+        "ss_id": 179,
+        "supplies_id": 165,
+        "unit_id": 9,
+        "ss_stock": 6,
+        "status": 1,
+        "created_at": "2026-03-14 11:41:41",
+        "updated_at": "2026-04-14 09:16:14",
+        "created_by": null
+    },
+    {
+        "ss_id": 180,
+        "supplies_id": 152,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 13:22:42",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 181,
+        "supplies_id": 157,
+        "unit_id": 7,
+        "ss_stock": 200,
+        "status": 0,
+        "created_at": "2026-03-14 13:23:05",
+        "updated_at": "2026-06-25 09:38:27",
+        "created_by": null
+    },
+    {
+        "ss_id": 182,
+        "supplies_id": 150,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 13:31:15",
+        "updated_at": "2026-03-14 13:31:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 183,
+        "supplies_id": 149,
+        "unit_id": 9,
+        "ss_stock": 14,
+        "status": 1,
+        "created_at": "2026-03-14 13:31:30",
+        "updated_at": "2026-07-07 16:24:39",
+        "created_by": null
+    },
+    {
+        "ss_id": 184,
+        "supplies_id": 82,
+        "unit_id": 7,
+        "ss_stock": 1498,
+        "status": 1,
+        "created_at": "2026-03-14 13:31:51",
+        "updated_at": "2026-08-01 10:53:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 185,
+        "supplies_id": 156,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 13:32:02",
+        "updated_at": "2026-03-14 13:32:02",
+        "created_by": null
+    },
+    {
+        "ss_id": 186,
+        "supplies_id": 151,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 13:32:25",
+        "updated_at": "2026-03-14 13:32:25",
+        "created_by": null
+    },
+    {
+        "ss_id": 187,
+        "supplies_id": 166,
+        "unit_id": 9,
+        "ss_stock": 1480,
+        "status": 0,
+        "created_at": "2026-03-14 13:34:34",
+        "updated_at": "2026-08-20 08:20:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 188,
+        "supplies_id": 167,
+        "unit_id": 9,
+        "ss_stock": 1278,
+        "status": 0,
+        "created_at": "2026-03-14 13:36:13",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 189,
+        "supplies_id": 168,
+        "unit_id": 9,
+        "ss_stock": 804,
+        "status": 0,
+        "created_at": "2026-03-14 13:42:48",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 190,
+        "supplies_id": 169,
+        "unit_id": 9,
+        "ss_stock": 32840,
+        "status": 1,
+        "created_at": "2026-03-14 13:44:24",
+        "updated_at": "2026-08-18 17:58:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 191,
+        "supplies_id": 170,
+        "unit_id": 9,
+        "ss_stock": 6100,
+        "status": 1,
+        "created_at": "2026-03-14 13:45:25",
+        "updated_at": "2026-08-20 08:20:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 192,
+        "supplies_id": 171,
+        "unit_id": 9,
+        "ss_stock": 8128,
+        "status": 1,
+        "created_at": "2026-03-14 13:46:05",
+        "updated_at": "2026-08-10 08:56:33",
+        "created_by": null
+    },
+    {
+        "ss_id": 193,
+        "supplies_id": 172,
+        "unit_id": 9,
+        "ss_stock": 10244,
+        "status": 1,
+        "created_at": "2026-03-14 13:47:00",
+        "updated_at": "2026-08-10 08:56:34",
+        "created_by": null
+    },
+    {
+        "ss_id": 194,
+        "supplies_id": 173,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 13:49:52",
+        "updated_at": "2026-03-14 13:49:52",
+        "created_by": null
+    },
+    {
+        "ss_id": 195,
+        "supplies_id": 174,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 13:50:27",
+        "updated_at": "2026-07-22 09:08:01",
+        "created_by": null
+    },
+    {
+        "ss_id": 196,
+        "supplies_id": 175,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 13:51:10",
+        "updated_at": "2026-07-22 09:06:55",
+        "created_by": null
+    },
+    {
+        "ss_id": 197,
+        "supplies_id": 176,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 13:52:02",
+        "updated_at": "2026-07-22 08:43:21",
+        "created_by": null
+    },
+    {
+        "ss_id": 198,
+        "supplies_id": 177,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 14:01:45",
+        "updated_at": "2026-07-22 08:59:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 199,
+        "supplies_id": 178,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 14:02:54",
+        "updated_at": "2026-03-14 14:02:54",
+        "created_by": null
+    },
+    {
+        "ss_id": 200,
+        "supplies_id": 179,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 14:03:47",
+        "updated_at": "2026-07-22 09:07:31",
+        "created_by": null
+    },
+    {
+        "ss_id": 201,
+        "supplies_id": 180,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 14:05:11",
+        "updated_at": "2026-07-22 09:06:38",
+        "created_by": null
+    },
+    {
+        "ss_id": 202,
+        "supplies_id": 181,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 14:06:29",
+        "updated_at": "2026-07-22 08:43:07",
+        "created_by": null
+    },
+    {
+        "ss_id": 203,
+        "supplies_id": 182,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-14 14:07:31",
+        "updated_at": "2026-03-14 14:07:31",
+        "created_by": null
+    },
+    {
+        "ss_id": 204,
+        "supplies_id": 183,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-14 14:08:28",
+        "updated_at": "2026-07-22 09:05:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 205,
+        "supplies_id": 184,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-28 07:37:12",
+        "updated_at": "2026-08-10 08:56:33",
+        "created_by": null
+    },
+    {
+        "ss_id": 206,
+        "supplies_id": 185,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-28 07:45:08",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 207,
+        "supplies_id": 186,
+        "unit_id": 9,
+        "ss_stock": 9100,
+        "status": 1,
+        "created_at": "2026-03-28 07:46:39",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 208,
+        "supplies_id": 187,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-28 07:47:15",
+        "updated_at": "2026-03-28 07:47:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 209,
+        "supplies_id": 188,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-28 08:13:06",
+        "updated_at": "2026-07-22 09:55:28",
+        "created_by": null
+    },
+    {
+        "ss_id": 210,
+        "supplies_id": 189,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-28 08:16:01",
+        "updated_at": "2026-04-10 21:25:52",
+        "created_by": null
+    },
+    {
+        "ss_id": 211,
+        "supplies_id": 190,
+        "unit_id": 9,
+        "ss_stock": 47120,
+        "status": 0,
+        "created_at": "2026-03-28 08:21:34",
+        "updated_at": "2026-07-22 08:19:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 212,
+        "supplies_id": 191,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-28 08:22:13",
+        "updated_at": "2026-03-28 08:22:13",
+        "created_by": null
+    },
+    {
+        "ss_id": 213,
+        "supplies_id": 192,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-28 08:23:46",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 214,
+        "supplies_id": 193,
+        "unit_id": 9,
+        "ss_stock": 14217,
+        "status": 1,
+        "created_at": "2026-03-28 08:25:09",
+        "updated_at": "2026-08-10 20:16:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 215,
+        "supplies_id": 194,
+        "unit_id": 9,
+        "ss_stock": 3572,
+        "status": 1,
+        "created_at": "2026-03-28 08:25:55",
+        "updated_at": "2026-07-22 09:55:28",
+        "created_by": null
+    },
+    {
+        "ss_id": 216,
+        "supplies_id": 195,
+        "unit_id": 9,
+        "ss_stock": 4000,
+        "status": 1,
+        "created_at": "2026-03-28 08:26:26",
+        "updated_at": "2026-07-22 07:26:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 217,
+        "supplies_id": 196,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-28 08:27:21",
+        "updated_at": "2026-03-28 08:27:21",
+        "created_by": null
+    },
+    {
+        "ss_id": 218,
+        "supplies_id": 197,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-28 09:28:45",
+        "updated_at": "2026-04-04 08:56:18",
+        "created_by": null
+    },
+    {
+        "ss_id": 219,
+        "supplies_id": 198,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-28 09:52:39",
+        "updated_at": "2026-03-28 09:52:39",
+        "created_by": null
+    },
+    {
+        "ss_id": 220,
+        "supplies_id": 33,
+        "unit_id": 7,
+        "ss_stock": 406,
+        "status": 1,
+        "created_at": "2026-03-28 11:14:08",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 221,
+        "supplies_id": 106,
+        "unit_id": 7,
+        "ss_stock": 1950,
+        "status": 1,
+        "created_at": "2026-03-28 11:14:10",
+        "updated_at": "2026-07-22 07:26:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 222,
+        "supplies_id": 28,
+        "unit_id": 7,
+        "ss_stock": 1995,
+        "status": 1,
+        "created_at": "2026-03-28 11:14:37",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 223,
+        "supplies_id": 32,
+        "unit_id": 7,
+        "ss_stock": 3442,
+        "status": 1,
+        "created_at": "2026-03-28 11:14:54",
+        "updated_at": "2026-08-12 17:18:32",
+        "created_by": null
+    },
+    {
+        "ss_id": 224,
+        "supplies_id": 31,
+        "unit_id": 7,
+        "ss_stock": 1510,
+        "status": 1,
+        "created_at": "2026-03-28 11:15:05",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 225,
+        "supplies_id": 34,
+        "unit_id": 7,
+        "ss_stock": 5199,
+        "status": 1,
+        "created_at": "2026-03-28 11:15:16",
+        "updated_at": "2026-08-11 17:47:21",
+        "created_by": null
+    },
+    {
+        "ss_id": 226,
+        "supplies_id": 27,
+        "unit_id": 7,
+        "ss_stock": 2222,
+        "status": 1,
+        "created_at": "2026-03-28 11:15:34",
+        "updated_at": "2026-08-18 17:58:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 227,
+        "supplies_id": 26,
+        "unit_id": 7,
+        "ss_stock": 4101,
+        "status": 1,
+        "created_at": "2026-03-28 11:15:43",
+        "updated_at": "2026-08-18 17:58:43",
+        "created_by": null
+    },
+    {
+        "ss_id": 228,
+        "supplies_id": 95,
+        "unit_id": 7,
+        "ss_stock": 5665,
+        "status": 1,
+        "created_at": "2026-03-28 11:15:52",
+        "updated_at": "2026-08-20 08:20:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 229,
+        "supplies_id": 94,
+        "unit_id": 7,
+        "ss_stock": 2188,
+        "status": 1,
+        "created_at": "2026-03-28 11:16:09",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 230,
+        "supplies_id": 35,
+        "unit_id": 7,
+        "ss_stock": 2437,
+        "status": 1,
+        "created_at": "2026-03-28 11:16:18",
+        "updated_at": "2026-08-20 08:20:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 231,
+        "supplies_id": 30,
+        "unit_id": 7,
+        "ss_stock": 3290,
+        "status": 1,
+        "created_at": "2026-03-28 11:16:27",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 232,
+        "supplies_id": 29,
+        "unit_id": 7,
+        "ss_stock": 2474,
+        "status": 1,
+        "created_at": "2026-03-28 11:16:39",
+        "updated_at": "2026-08-20 19:09:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 233,
+        "supplies_id": 166,
+        "unit_id": 7,
+        "ss_stock": 3020,
+        "status": 1,
+        "created_at": "2026-03-28 11:16:49",
+        "updated_at": "2026-08-20 08:20:16",
+        "created_by": null
+    },
+    {
+        "ss_id": 234,
+        "supplies_id": 185,
+        "unit_id": 7,
+        "ss_stock": 677,
+        "status": 1,
+        "created_at": "2026-03-28 11:16:57",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 235,
+        "supplies_id": 188,
+        "unit_id": 7,
+        "ss_stock": 409,
+        "status": 1,
+        "created_at": "2026-03-28 11:17:04",
+        "updated_at": "2026-07-22 09:55:28",
+        "created_by": null
+    },
+    {
+        "ss_id": 236,
+        "supplies_id": 132,
+        "unit_id": 7,
+        "ss_stock": 590,
+        "status": 1,
+        "created_at": "2026-03-28 11:17:17",
+        "updated_at": "2026-07-22 07:26:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 237,
+        "supplies_id": 133,
+        "unit_id": 7,
+        "ss_stock": 2461,
+        "status": 1,
+        "created_at": "2026-03-28 11:17:31",
+        "updated_at": "2026-07-30 09:30:26",
+        "created_by": null
+    },
+    {
+        "ss_id": 238,
+        "supplies_id": 37,
+        "unit_id": 7,
+        "ss_stock": 1898,
+        "status": 1,
+        "created_at": "2026-03-28 11:17:39",
+        "updated_at": "2026-08-01 10:53:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 239,
+        "supplies_id": 69,
+        "unit_id": 7,
+        "ss_stock": 1394,
+        "status": 1,
+        "created_at": "2026-03-28 11:17:47",
+        "updated_at": "2026-08-13 17:33:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 240,
+        "supplies_id": 145,
+        "unit_id": 7,
+        "ss_stock": 3260,
+        "status": 1,
+        "created_at": "2026-03-28 11:17:55",
+        "updated_at": "2026-07-22 07:26:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 241,
+        "supplies_id": 36,
+        "unit_id": 7,
+        "ss_stock": 1511,
+        "status": 1,
+        "created_at": "2026-03-28 11:18:02",
+        "updated_at": "2026-08-21 10:47:10",
+        "created_by": null
+    },
+    {
+        "ss_id": 242,
+        "supplies_id": 84,
+        "unit_id": 7,
+        "ss_stock": 335,
+        "status": 1,
+        "created_at": "2026-03-28 11:18:10",
+        "updated_at": "2026-08-07 11:19:22",
+        "created_by": null
+    },
+    {
+        "ss_id": 243,
+        "supplies_id": 80,
+        "unit_id": 7,
+        "ss_stock": 2794,
+        "status": 1,
+        "created_at": "2026-03-28 11:18:18",
+        "updated_at": "2026-08-15 18:23:15",
+        "created_by": null
+    },
+    {
+        "ss_id": 244,
+        "supplies_id": 164,
+        "unit_id": 7,
+        "ss_stock": 1016,
+        "status": 1,
+        "created_at": "2026-03-28 11:18:31",
+        "updated_at": "2026-08-01 10:47:30",
+        "created_by": null
+    },
+    {
+        "ss_id": 245,
+        "supplies_id": 100,
+        "unit_id": 7,
+        "ss_stock": 944,
+        "status": 1,
+        "created_at": "2026-03-28 11:18:45",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 246,
+        "supplies_id": 184,
+        "unit_id": 7,
+        "ss_stock": 1286,
+        "status": 1,
+        "created_at": "2026-03-28 11:18:57",
+        "updated_at": "2026-08-10 08:56:33",
+        "created_by": null
+    },
+    {
+        "ss_id": 247,
+        "supplies_id": 10,
+        "unit_id": 7,
+        "ss_stock": 2611,
+        "status": 1,
+        "created_at": "2026-03-28 11:19:10",
+        "updated_at": "2026-08-21 09:50:25",
+        "created_by": null
+    },
+    {
+        "ss_id": 248,
+        "supplies_id": 168,
+        "unit_id": 7,
+        "ss_stock": 678,
+        "status": 1,
+        "created_at": "2026-03-28 11:19:18",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 249,
+        "supplies_id": 167,
+        "unit_id": 7,
+        "ss_stock": 1335,
+        "status": 1,
+        "created_at": "2026-03-28 11:19:24",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 250,
+        "supplies_id": 11,
+        "unit_id": 7,
+        "ss_stock": 3159,
+        "status": 1,
+        "created_at": "2026-03-28 11:19:32",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": null
+    },
+    {
+        "ss_id": 251,
+        "supplies_id": 189,
+        "unit_id": 7,
+        "ss_stock": 1800,
+        "status": 1,
+        "created_at": "2026-03-28 11:19:52",
+        "updated_at": "2026-07-22 07:26:48",
+        "created_by": null
+    },
+    {
+        "ss_id": 252,
+        "supplies_id": 97,
+        "unit_id": 7,
+        "ss_stock": 624,
+        "status": 1,
+        "created_at": "2026-03-28 11:20:00",
+        "updated_at": "2026-07-27 09:59:06",
+        "created_by": null
+    },
+    {
+        "ss_id": 253,
+        "supplies_id": 90,
+        "unit_id": 7,
+        "ss_stock": 2424,
+        "status": 1,
+        "created_at": "2026-03-28 11:20:08",
+        "updated_at": "2026-08-20 08:20:17",
+        "created_by": null
+    },
+    {
+        "ss_id": 254,
+        "supplies_id": 96,
+        "unit_id": 7,
+        "ss_stock": 392,
+        "status": 1,
+        "created_at": "2026-03-28 11:20:16",
+        "updated_at": "2026-08-08 08:11:21",
+        "created_by": null
+    },
+    {
+        "ss_id": 255,
+        "supplies_id": 199,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-28 11:22:31",
+        "updated_at": "2026-03-28 11:22:31",
+        "created_by": null
+    },
+    {
+        "ss_id": 256,
+        "supplies_id": 200,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-03-28 13:09:14",
+        "updated_at": "2026-08-20 08:14:57",
+        "created_by": null
+    },
+    {
+        "ss_id": 257,
+        "supplies_id": 201,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-03-28 13:10:08",
+        "updated_at": "2026-07-22 08:45:37",
+        "created_by": null
+    },
+    {
+        "ss_id": 258,
+        "supplies_id": 202,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-01 16:37:16",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": null
+    },
+    {
+        "ss_id": 259,
+        "supplies_id": 203,
+        "unit_id": 9,
+        "ss_stock": 12912,
+        "status": 1,
+        "created_at": "2026-04-04 08:55:11",
+        "updated_at": "2026-05-06 15:24:28",
+        "created_by": null
+    },
+    {
+        "ss_id": 260,
+        "supplies_id": 161,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-08 16:36:53",
+        "updated_at": "2026-04-16 10:18:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 261,
+        "supplies_id": 106,
+        "unit_id": 9,
+        "ss_stock": 6,
+        "status": 0,
+        "created_at": "2026-04-08 16:37:08",
+        "updated_at": "2026-04-10 21:27:01",
+        "created_by": null
+    },
+    {
+        "ss_id": 262,
+        "supplies_id": 204,
+        "unit_id": 1,
+        "ss_stock": 100,
+        "status": 0,
+        "created_at": "2026-04-09 15:00:38",
+        "updated_at": "2026-06-23 19:16:30",
+        "created_by": null
+    },
+    {
+        "ss_id": 265,
+        "supplies_id": 165,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-14 09:27:12",
+        "updated_at": "2026-04-14 11:02:51",
+        "created_by": null
+    },
+    {
+        "ss_id": 266,
+        "supplies_id": 162,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-15 12:14:55",
+        "updated_at": "2026-04-15 12:16:49",
+        "created_by": null
+    },
+    {
+        "ss_id": 267,
+        "supplies_id": 205,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-17 08:22:28",
+        "updated_at": "2026-08-14 15:37:50",
+        "created_by": 6
+    },
+    {
+        "ss_id": 268,
+        "supplies_id": 206,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-17 08:23:09",
+        "updated_at": "2026-08-14 15:34:55",
+        "created_by": 6
+    },
+    {
+        "ss_id": 269,
+        "supplies_id": 207,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-17 08:24:01",
+        "updated_at": "2026-08-07 10:36:47",
+        "created_by": 6
+    },
+    {
+        "ss_id": 270,
+        "supplies_id": 208,
+        "unit_id": 8,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-04-17 08:25:13",
+        "updated_at": "2026-08-06 12:41:34",
+        "created_by": 6
+    },
+    {
+        "ss_id": 271,
+        "supplies_id": 208,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-17 08:30:07",
+        "updated_at": "2026-08-07 10:36:47",
+        "created_by": 6
+    },
+    {
+        "ss_id": 272,
+        "supplies_id": 209,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-04-18 15:28:22",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 10
+    },
+    {
+        "ss_id": 273,
+        "supplies_id": 210,
+        "unit_id": 1,
+        "ss_stock": 25,
+        "status": 1,
+        "created_at": "2026-04-23 16:50:37",
+        "updated_at": "2026-04-25 14:16:57",
+        "created_by": 9
+    },
+    {
+        "ss_id": 274,
+        "supplies_id": 211,
+        "unit_id": 1,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-04-25 14:22:18",
+        "updated_at": "2026-04-27 12:04:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 275,
+        "supplies_id": 211,
+        "unit_id": 25,
+        "ss_stock": 50,
+        "status": 1,
+        "created_at": "2026-04-25 14:26:40",
+        "updated_at": "2026-04-25 14:27:52",
+        "created_by": 9
+    },
+    {
+        "ss_id": 276,
+        "supplies_id": 155,
+        "unit_id": 7,
+        "ss_stock": 7,
+        "status": 1,
+        "created_at": "2026-05-04 09:16:18",
+        "updated_at": "2026-07-27 09:59:03",
+        "created_by": 9
+    },
+    {
+        "ss_id": 277,
+        "supplies_id": 212,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-06 14:36:37",
+        "updated_at": "2026-05-06 14:36:37",
+        "created_by": 9
+    },
+    {
+        "ss_id": 278,
+        "supplies_id": 212,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-06 14:36:37",
+        "updated_at": "2026-05-09 09:06:39",
+        "created_by": 9
+    },
+    {
+        "ss_id": 279,
+        "supplies_id": 213,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-06 14:37:27",
+        "updated_at": "2026-05-06 14:37:27",
+        "created_by": 9
+    },
+    {
+        "ss_id": 280,
+        "supplies_id": 213,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-06 14:37:27",
+        "updated_at": "2026-05-09 09:06:39",
+        "created_by": 9
+    },
+    {
+        "ss_id": 281,
+        "supplies_id": 155,
+        "unit_id": 9,
+        "ss_stock": 15,
+        "status": 1,
+        "created_at": "2026-05-07 07:50:30",
+        "updated_at": "2026-07-22 14:32:03",
+        "created_by": 9
+    },
+    {
+        "ss_id": 282,
+        "supplies_id": 160,
+        "unit_id": 7,
+        "ss_stock": 7,
+        "status": 0,
+        "created_at": "2026-05-07 08:04:15",
+        "updated_at": "2026-08-12 14:21:48",
+        "created_by": 9
+    },
+    {
+        "ss_id": 283,
+        "supplies_id": 160,
+        "unit_id": 9,
+        "ss_stock": 11,
+        "status": 0,
+        "created_at": "2026-05-07 08:04:15",
+        "updated_at": "2026-08-12 14:21:48",
+        "created_by": 9
+    },
+    {
+        "ss_id": 284,
+        "supplies_id": 214,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-09 08:54:18",
+        "updated_at": "2026-05-09 09:06:39",
+        "created_by": 9
+    },
+    {
+        "ss_id": 285,
+        "supplies_id": 214,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-09 08:54:18",
+        "updated_at": "2026-05-09 08:54:18",
+        "created_by": 9
+    },
+    {
+        "ss_id": 286,
+        "supplies_id": 215,
+        "unit_id": 1,
+        "ss_stock": 2400,
+        "status": 1,
+        "created_at": "2026-05-11 17:21:03",
+        "updated_at": "2026-08-12 13:03:38",
+        "created_by": 9
+    },
+    {
+        "ss_id": 287,
+        "supplies_id": 216,
+        "unit_id": 1,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-13 17:29:38",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 288,
+        "supplies_id": 217,
+        "unit_id": 1,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-13 17:30:38",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 289,
+        "supplies_id": 218,
+        "unit_id": 8,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 13:26:09",
+        "updated_at": "2026-05-21 13:26:09",
+        "created_by": 9
+    },
+    {
+        "ss_id": 290,
+        "supplies_id": 218,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 13:26:09",
+        "updated_at": "2026-08-07 14:09:26",
+        "created_by": 9
+    },
+    {
+        "ss_id": 291,
+        "supplies_id": 219,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:02:29",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 292,
+        "supplies_id": 220,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:03:19",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 293,
+        "supplies_id": 221,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:04:57",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 294,
+        "supplies_id": 222,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:11:47",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": 9
+    },
+    {
+        "ss_id": 295,
+        "supplies_id": 223,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:16:58",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 296,
+        "supplies_id": 224,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:17:39",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 297,
+        "supplies_id": 225,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:18:45",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 298,
+        "supplies_id": 226,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-21 16:19:16",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 299,
+        "supplies_id": 227,
+        "unit_id": 21,
+        "ss_stock": 149,
+        "status": 1,
+        "created_at": "2026-05-29 17:17:40",
+        "updated_at": "2026-06-30 15:20:07",
+        "created_by": 9
+    },
+    {
+        "ss_id": 300,
+        "supplies_id": 228,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-30 08:37:49",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 301,
+        "supplies_id": 229,
+        "unit_id": 25,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-05-30 08:38:48",
+        "updated_at": "2026-07-22 08:33:53",
+        "created_by": 9
+    },
+    {
+        "ss_id": 302,
+        "supplies_id": 230,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-06-05 15:54:52",
+        "updated_at": "2026-06-13 08:21:19",
+        "created_by": 9
+    },
+    {
+        "ss_id": 303,
+        "supplies_id": 231,
+        "unit_id": 1,
+        "ss_stock": 5,
+        "status": 1,
+        "created_at": "2026-06-05 16:10:42",
+        "updated_at": "2026-06-06 14:10:27",
+        "created_by": 9
+    },
+    {
+        "ss_id": 304,
+        "supplies_id": 200,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-06-06 15:16:29",
+        "updated_at": "2026-08-20 08:14:57",
+        "created_by": 9
+    },
+    {
+        "ss_id": 305,
+        "supplies_id": 232,
+        "unit_id": 9,
+        "ss_stock": 30000,
+        "status": 1,
+        "created_at": "2026-06-09 10:38:54",
+        "updated_at": "2026-06-09 13:09:51",
+        "created_by": 15
+    },
+    {
+        "ss_id": 306,
+        "supplies_id": 233,
+        "unit_id": 26,
+        "ss_stock": 16,
+        "status": 1,
+        "created_at": "2026-06-12 07:30:52",
+        "updated_at": "2026-06-17 13:15:42",
+        "created_by": 9
+    },
+    {
+        "ss_id": 307,
+        "supplies_id": 234,
+        "unit_id": 26,
+        "ss_stock": 16,
+        "status": 1,
+        "created_at": "2026-06-12 07:31:46",
+        "updated_at": "2026-06-17 13:15:43",
+        "created_by": 9
+    },
+    {
+        "ss_id": 308,
+        "supplies_id": 103,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-06-16 07:30:29",
+        "updated_at": "2026-08-20 08:14:57",
+        "created_by": 9
+    },
+    {
+        "ss_id": 309,
+        "supplies_id": 9,
+        "unit_id": 27,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-06-18 18:17:09",
+        "updated_at": "2026-08-10 12:02:40",
+        "created_by": 15
+    },
+    {
+        "ss_id": 310,
+        "supplies_id": 9,
+        "unit_id": 22,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-06-18 18:35:55",
+        "updated_at": "2026-06-18 18:35:55",
+        "created_by": 9
+    },
+    {
+        "ss_id": 311,
+        "supplies_id": 235,
+        "unit_id": 21,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-06-23 19:16:10",
+        "updated_at": "2026-06-23 19:16:10",
+        "created_by": 9
+    },
+    {
+        "ss_id": 312,
+        "supplies_id": 236,
+        "unit_id": 25,
+        "ss_stock": 1,
+        "status": 1,
+        "created_at": "2026-06-25 10:49:19",
+        "updated_at": "2026-06-25 15:03:28",
+        "created_by": 15
+    },
+    {
+        "ss_id": 313,
+        "supplies_id": 236,
+        "unit_id": 1,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-06-25 10:49:19",
+        "updated_at": "2026-06-25 10:49:19",
+        "created_by": 15
+    },
+    {
+        "ss_id": 314,
+        "supplies_id": 237,
+        "unit_id": 1,
+        "ss_stock": 21000,
+        "status": 1,
+        "created_at": "2026-06-29 16:18:57",
+        "updated_at": "2026-06-29 17:53:55",
+        "created_by": 15
+    },
+    {
+        "ss_id": 315,
+        "supplies_id": 238,
+        "unit_id": 5,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-07-02 14:57:34",
+        "updated_at": "2026-07-03 18:54:45",
+        "created_by": 15
+    },
+    {
+        "ss_id": 316,
+        "supplies_id": 239,
+        "unit_id": 1,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-07-05 23:44:24",
+        "updated_at": "2026-07-05 23:44:24",
+        "created_by": 13
+    },
+    {
+        "ss_id": 317,
+        "supplies_id": 240,
+        "unit_id": 1,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-07-06 00:09:41",
+        "updated_at": "2026-07-06 00:09:54",
+        "created_by": 13
+    },
+    {
+        "ss_id": 318,
+        "supplies_id": 240,
+        "unit_id": 2,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-07-06 00:09:41",
+        "updated_at": "2026-07-06 00:09:54",
+        "created_by": 13
+    },
+    {
+        "ss_id": 319,
+        "supplies_id": 64,
+        "unit_id": 1,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-07-06 10:28:59",
+        "updated_at": "2026-07-22 08:33:54",
+        "created_by": 9
+    },
+    {
+        "ss_id": 320,
+        "supplies_id": 159,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 0,
+        "created_at": "2026-07-07 15:57:08",
+        "updated_at": "2026-08-14 17:47:49",
+        "created_by": 15
+    },
+    {
+        "ss_id": 321,
+        "supplies_id": 241,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-07-13 14:22:09",
+        "updated_at": "2026-07-13 14:22:09",
+        "created_by": 15
+    },
+    {
+        "ss_id": 322,
+        "supplies_id": 241,
+        "unit_id": 2,
+        "ss_stock": 93,
+        "status": 1,
+        "created_at": "2026-07-13 14:22:09",
+        "updated_at": "2026-08-20 19:32:52",
+        "created_by": 15
+    },
+    {
+        "ss_id": 323,
+        "supplies_id": 242,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-07-13 14:32:03",
+        "updated_at": "2026-07-13 14:32:03",
+        "created_by": 15
+    },
+    {
+        "ss_id": 324,
+        "supplies_id": 242,
+        "unit_id": 2,
+        "ss_stock": 23,
+        "status": 1,
+        "created_at": "2026-07-13 14:32:03",
+        "updated_at": "2026-08-20 19:09:23",
+        "created_by": 15
+    },
+    {
+        "ss_id": 325,
+        "supplies_id": 243,
+        "unit_id": 9,
+        "ss_stock": 3600,
+        "status": 1,
+        "created_at": "2026-07-16 18:35:59",
+        "updated_at": "2026-07-18 12:23:43",
+        "created_by": 15
+    },
+    {
+        "ss_id": 326,
+        "supplies_id": 244,
+        "unit_id": 25,
+        "ss_stock": 10,
+        "status": 1,
+        "created_at": "2026-08-01 15:20:28",
+        "updated_at": "2026-08-03 15:01:26",
+        "created_by": 9
+    },
+    {
+        "ss_id": 327,
+        "supplies_id": 245,
+        "unit_id": 25,
+        "ss_stock": 2,
+        "status": 1,
+        "created_at": "2026-08-14 15:18:29",
+        "updated_at": "2026-08-19 16:18:33",
+        "created_by": 9
+    },
+    {
+        "ss_id": 328,
+        "supplies_id": 205,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-14 15:25:34",
+        "updated_at": "2026-08-14 15:37:50",
+        "created_by": 9
+    },
+    {
+        "ss_id": 329,
+        "supplies_id": 246,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 16:28:20",
+        "updated_at": "2026-08-20 08:46:38",
+        "created_by": 9
+    },
+    {
+        "ss_id": 330,
+        "supplies_id": 246,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 16:28:20",
+        "updated_at": "2026-08-19 16:28:20",
+        "created_by": 9
+    },
+    {
+        "ss_id": 331,
+        "supplies_id": 247,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 16:35:47",
+        "updated_at": "2026-08-20 08:46:38",
+        "created_by": 9
+    },
+    {
+        "ss_id": 332,
+        "supplies_id": 247,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 16:35:47",
+        "updated_at": "2026-08-19 16:35:47",
+        "created_by": 9
+    },
+    {
+        "ss_id": 333,
+        "supplies_id": 248,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 17:30:50",
+        "updated_at": "2026-08-20 08:46:38",
+        "created_by": 9
+    },
+    {
+        "ss_id": 334,
+        "supplies_id": 248,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 17:30:50",
+        "updated_at": "2026-08-19 17:30:50",
+        "created_by": 9
+    },
+    {
+        "ss_id": 335,
+        "supplies_id": 249,
+        "unit_id": 7,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 17:32:11",
+        "updated_at": "2026-08-20 08:45:47",
+        "created_by": 9
+    },
+    {
+        "ss_id": 336,
+        "supplies_id": 249,
+        "unit_id": 9,
+        "ss_stock": 0,
+        "status": 1,
+        "created_at": "2026-08-19 17:32:11",
+        "updated_at": "2026-08-19 17:32:11",
+        "created_by": 9
+    }
+]
