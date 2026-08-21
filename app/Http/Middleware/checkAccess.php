@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\RoleAccess;
+use App\Support\WarehouseMenuAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -28,7 +29,11 @@ class checkAccess
         }
 
         $user = Session::get('user');
-        if (!RoleAccess::can($user, $module, $ability)) {
+        if (! RoleAccess::can($user, $module, $ability)) {
+            abort(403, 'Unauthorized');
+        }
+
+        if (! WarehouseMenuAccess::allows($module)) {
             abort(403, 'Unauthorized');
         }
 

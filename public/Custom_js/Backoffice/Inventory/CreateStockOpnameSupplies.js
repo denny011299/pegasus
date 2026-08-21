@@ -119,6 +119,15 @@ function loadStaff() {
     $("#penanggung-jawab").empty();
     autocompleteStaff("#penanggung-jawab");
 }
+function escapeHtml(str) {
+    if (str == null) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
 function refreshStockOpname(callback) {
     // Simpan value yang sudah diinput sebelum refresh
     $(".row-stock").each(function () {
@@ -154,65 +163,38 @@ function refreshStockOpname(callback) {
 
             $("#tbStock").html("");
             e.forEach((item, indexProduct) => {
-                var st = "";
-                // if(mode==2)  {
-                //     if(stp_type==1)st =  getData(item.pr_id);
-                //     else if(stp_type==2)st =  getData(item.sup_id);
-                // }
                 var rl_stock = "";
-                var system = "";
-                var selisihArr = [];
 
-                item.stock.forEach((element, index) => {
-                    selisihArr.push("0 " + element.unit_short_name);
-                    // Setiap 3 item, buka div baru
-                    if (index % 3 === 0) {
-                        if (index > 0)
-                            rl_stock += `</div><div class="input-group mb-1 rstock">`;
-                    }
+                item.stock.forEach((element) => {
                     rl_stock += `
-                            <input type="text"
-                                class="form-control real-stock nominal_only"
-                                value=""
-                                data-unit-id="${element.unit_id}"
-                                data-unit-name="${element.unit_short_name}"
-                                data-system-qty="${element.ss_stock}">
-                            <span class="input-group-text">${element.unit_short_name}</span>
-                        `;
-                    system +=
-                        element.ss_stock + " " + element.unit_short_name + ", ";
+                        <input type="text"
+                            class="form-control real-stock nominal_only text-end"
+                            value=""
+                            data-unit-id="${element.unit_id}"
+                            data-unit-name="${element.unit_short_name}"
+                            data-system-qty="${element.ss_stock}">
+                        <span class="input-group-text">${escapeHtml(element.unit_short_name)}</span>
+                    `;
                 });
 
-                // Untuk superadmin
-                // $('#tbStock').append(`
-                //     <tr class="row-stock" data-supplies-id="${item.supplies_id}">
-                //         <td>${item.pr_name}</td>
-                //         <td class="text-center pt-2 pr_stock">${systemArr.join(', ')}</td>
-                //         <td class="text-center" style="width:10%">
-                //             <div class="input-group mb-3 rstock">
-                //                 ${rl_stock}
-                //             </div>
-                //             <input type="hidden" class="data">
-                //             <input type="hidden" class="stobd_id">
-                //         </td>
-                //         <td class="text-center pt-2 selisih">${selisihArr.join(', ')}</td>
-                // Untuk Non Admin
                 $("#tbStock").append(`
-                        <tr class="row-stock" data-supplies-id="${item.supplies_id}">
-                            <td>${item.supplies_name}</td>
-                            <td class="text-center">
-                                <div class="input-group mb-3 rstock">
-                                    ${rl_stock}
-                                </div>
-                                <input type="hidden" class="data">
-                                <input type="hidden" class="stobd_id">
-                            </td>
-                            <td class="">
-                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode == 2 ? (item.stobd_notes ?? "") : ""}">
-                                <input type="hidden" class="form-control input-selesih" placeholder="Catatan.."  >
-                            </td>
-                        </tr>
-                    `);
+                    <tr class="row-stock" data-supplies-id="${item.supplies_id}">
+                        <td>
+                            <span class="fw-semibold text-dark" style="font-size:13px;">${escapeHtml(item.supplies_name)}</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="input-group rstock">
+                                ${rl_stock}
+                            </div>
+                            <input type="hidden" class="data">
+                            <input type="hidden" class="stobd_id">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode == 2 ? escapeHtml(item.stobd_notes ?? "") : ""}">
+                            <input type="hidden" class="form-control input-selesih">
+                        </td>
+                    </tr>
+                `);
             });
             // Restore value yang sudah diinput
             $(".row-stock").each(function () {
@@ -233,7 +215,7 @@ function refreshStockOpname(callback) {
             });
             if (e.length == 0) {
                 $("#tbStock").html(
-                    `<tr><td colspan="3" class="text-center">Bahan tidak ditemukan</td></tr>`,
+                    `<tr><td colspan="3" class="text-center py-4 text-muted">Bahan tidak ditemukan</td></tr>`,
                 );
             }
             if (mode == 2 && !canEditDraft) {
@@ -299,43 +281,42 @@ function renderMode2(items) {
             });
         });
 
-        item.sp_units.forEach((element, index) => {
-            if (index % 3 === 0) {
-                if (index > 0)
-                    rl_stock += `</div><div class="input-group mb-1 rstock">`;
-            }
+        item.sp_units.forEach((element) => {
             rl_stock += `
-                    <input type="text"
-                        class="form-control real-stock nominal_only"
-                        value="${formatRupiah(String(element.real_qty))}"
-                        data-unit-id="${element.unit_id}"
-                        data-unit-name="${element.unit_short_name}"
-                        data-system-qty="${element.system_qty}">
-                    <span class="input-group-text">${element.unit_short_name}</span>
-                `;
+                <input type="text"
+                    class="form-control real-stock nominal_only text-end"
+                    value="${formatRupiah(String(element.real_qty))}"
+                    disabled
+                    data-unit-id="${element.unit_id}"
+                    data-unit-name="${element.unit_short_name}"
+                    data-system-qty="${element.system_qty}">
+                <span class="input-group-text">${escapeHtml(element.unit_short_name)}</span>
+            `;
         });
 
         $("#tbStock").append(`
-                <tr class="row-stock" data-supplies-id="${item.supplies_id}">
-                    <td>${item.supplies_name}</td>
-                    <td class="text-center">
-                        <div class="input-group mb-3 rstock">
-                            ${rl_stock}
-                        </div>
-                        <input type="hidden" class="data">
-                        <input type="hidden" class="stobd_id">
-                    </td>
-                    <td class="">
-                        <input type="text" class="form-control notes" placeholder="Catatan.." value="${item.stobd_notes ?? ""}">
-                        <input type="hidden" class="form-control input-selesih" placeholder="Catatan..">
-                    </td>
-                </tr>
-            `);
+            <tr class="row-stock" data-supplies-id="${item.supplies_id}">
+                <td>
+                    <span class="fw-semibold text-dark" style="font-size:13px;">${escapeHtml(item.supplies_name)}</span>
+                </td>
+                <td class="text-center">
+                    <div class="input-group rstock">
+                        ${rl_stock}
+                    </div>
+                    <input type="hidden" class="data">
+                    <input type="hidden" class="stobd_id">
+                </td>
+                <td>
+                    <input type="text" class="form-control notes" placeholder="Catatan.." value="${escapeHtml(item.stobd_notes ?? "")}" disabled>
+                    <input type="hidden" class="form-control input-selesih">
+                </td>
+            </tr>
+        `);
     });
 
     if (items.length == 0) {
         $("#tbStock").html(
-            `<tr><td colspan="3" class="text-center">Bahan tidak ditemukan</td></tr>`,
+            `<tr><td colspan="3" class="text-center py-4 text-muted">Bahan tidak ditemukan</td></tr>`,
         );
     }
 }

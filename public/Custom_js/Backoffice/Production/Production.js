@@ -1075,6 +1075,12 @@ $(document).on("click", ".btnAdd", function () {
     $("#production_qty").val(1);
     $("#tableProduct tr.row-product").remove();
     $(".is-invalid").removeClass("is-invalid");
+    $(".prod-detail-field").hide();
+    $("#row-production-acc-by").hide();
+    $(".prod-cancel-field").hide();
+    $("#col-production-date").removeClass("col-lg-3").addClass("col-lg-6");
+    $("#col-production-desc").removeClass("col-lg-3 col-lg-6 col-lg-9 col-12").addClass("col-lg-6");
+    $("#production_status_display").html("");
     $("#unit_id").html("");
     $("#unit_id").append("<option selected>Pilih Satuan</option>");
     $(".input_table, .add, .btn_delete_row_pr").show();
@@ -1085,7 +1091,6 @@ $(document).on("click", ".btnAdd", function () {
     $(".dos").hide();
     $("#production_date").val(getTodayStr()).prop("disabled", true);
     $("#addProduction").removeAttr("revision_source_production_id");
-    $("#row-production-acc-by").hide();
     syncProductionDestinationControl();
 });
 
@@ -1254,6 +1259,15 @@ function renderProductionAction(row) {
     );
 }
 
+function escapeHtml(str) {
+    if (str == null) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
 function inisialisasi() {
     table = $("#tableProduction").DataTable({
         processing: true,
@@ -1283,81 +1297,79 @@ function inisialisasi() {
         columns: [
             {
                 data: "date",
-                width: "11%",
+                className: "align-middle",
                 orderable: false,
             },
             {
                 data: "production_code",
-                width: "11%",
+                className: "align-middle",
                 orderable: false,
-            },
-            {
-                data: "production_desc",
-                defaultContent: "-",
-                width: "13%",
-                orderable: false,
-                render: function (data) {
-                    if (!data || data === "-") {
-                        return '<span style="color:#64748b;">-</span>';
-                    }
-                    return data;
-                },
             },
             {
                 data: "status_text",
-                width: "11%",
-                className: "text-center",
+                className: "text-center align-middle",
                 orderable: false,
             },
             {
                 data: "notes",
                 defaultContent: "-",
-                width: "11%",
+                className: "align-middle",
                 orderable: false,
                 render: function (data) {
-                    if (!data || data === "-") {
-                        return '<span style="color:#64748b;">-</span>';
+                    if (!data || data === "-" || String(data).trim() === "") {
+                        return '<span class="text-muted">-</span>';
                     }
-                    return data;
+                    return '<span class="text-dark">' + escapeHtml(data) + '</span>';
                 },
             },
             {
                 data: "created_by_name",
                 defaultContent: "-",
-                width: "11%",
+                className: "align-middle",
                 orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
                         ? renderCreatedByName(data)
-                        : data || "-";
+                        : (data ? '<span class="fw-semibold text-dark">' + escapeHtml(data) + '</span>' : '<span class="text-muted">-</span>');
                 },
             },
             {
                 data: "acc_by_name",
                 defaultContent: "-",
-                width: "11%",
+                className: "align-middle",
                 orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
                         ? renderCreatedByName(data)
-                        : data || "-";
+                        : (data ? '<span class="fw-semibold text-dark">' + escapeHtml(data) + '</span>' : '<span class="text-muted">-</span>');
                 },
             },
             {
                 data: "cancel_requested_by_name",
                 defaultContent: "-",
-                width: "10%",
+                className: "align-middle",
                 orderable: false,
                 render: function (data) {
                     return typeof renderCreatedByName === "function"
                         ? renderCreatedByName(data)
-                        : data || "-";
+                        : (data ? '<span class="fw-semibold text-dark">' + escapeHtml(data) + '</span>' : '<span class="text-muted">-</span>');
+                },
+            },
+            {
+                data: "production_desc",
+                defaultContent: "-",
+                className: "align-middle",
+                orderable: false,
+                render: function (data) {
+                    if (!data || data === "-" || String(data).trim() === "") {
+                        return '<span class="text-muted">-</span>';
+                    }
+                    return '<span class="text-dark">' + escapeHtml(data) + '</span>';
                 },
             },
             {
                 data: "action",
                 className: "text-center align-middle",
-                width: "11%",
                 orderable: false,
                 searchable: false,
             },
@@ -1404,10 +1416,11 @@ function refreshProduction() {
             table.clear().draw();
             for (let i = 0; i < e.length; i++) {
                 e[i].date =
-                    `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;"><i class="fe fe-calendar"></i></div><span class="fw-semibold text-dark">${moment(e[i].production_date).format("D MMM YYYY")}</span></div>`;
+                    `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fe fe-calendar" style="font-size:14px;"></i></div><span class="fw-semibold text-dark">${moment(e[i].production_date).format("D MMM YYYY")}</span></div>`;
                 if (e[i].production_code) {
+                    var cleanCode = $('<div>').html(e[i].production_code).text();
                     e[i].production_code =
-                        `<span class="badge" style="background:#f0f9ff;color:#0284c7;border:1px solid #e0f2fe;padding:6px 10px;font-family:monospace;font-weight:700;">${e[i].production_code}</span>`;
+                        `<span class="badge" style="background:#f0f9ff;color:#0284c7;border:1px solid #bae6fd;padding:6px 12px;border-radius:8px;font-family:monospace;font-weight:700;font-size:12px;">${escapeHtml(cleanCode)}</span>`;
                 }
                 e[i].status_text = renderProductionStatus(e[i].status);
                 e[i].action = renderProductionAction(e[i]);
@@ -1497,6 +1510,12 @@ function openProductionRevisionFromDashboardLink() {
         $("#production_qty").val(1);
         $("#tableProduct tr.row-product").remove();
         $(".is-invalid").removeClass("is-invalid");
+        $(".prod-detail-field").hide();
+        $("#row-production-acc-by").hide();
+        $(".prod-cancel-field").hide();
+        $("#col-production-date").removeClass("col-lg-3").addClass("col-lg-6");
+        $("#col-production-desc").removeClass("col-lg-3 col-lg-6 col-lg-9 col-12").addClass("col-lg-6");
+        $("#production_status_display").html("");
         $("#unit_id").html("");
 
         $("#production_date").val(getTodayStr()).prop("disabled", true);
@@ -1535,7 +1554,6 @@ function openProductionRevisionFromDashboardLink() {
             "revision_source_production_id",
             rowData.production_id,
         );
-        $("#row-production-acc-by").hide();
         $("#addProduction").modal("show");
         syncProductionDestinationControl();
 
@@ -1940,12 +1958,12 @@ $(document).on("click", ".btn_view", function () {
     $("#production_date").val(data.production_date);
     $("#production_desc").val(data.production_desc).attr("disabled", true);
 
-    // Info umum (Kode Produksi/Dibuat Oleh) — selalu tampil di mode lihat detail. Status
-    // ditampilkan sebagai badge di header modal, bukan field terpisah.
-    $('#production_code_display').val(data.production_code);
+    // Info umum (Kode Produksi/Dibuat Oleh/Status) — selalu tampil di mode lihat detail.
+    $('#production_code_display').val($('<div>').html(data.production_code).text());
     $('#production_created_by_display').val(data.created_by_name || '-');
-    $('#row-production-detail-info').show();
-    $('#production_status_badge_header').html(data.status_text || '').show();
+    $('.prod-detail-field').show();
+    $('#col-production-date').removeClass('col-lg-6').addClass('col-lg-3');
+    $('#production_status_display').html(data.status_text || '-');
 
     // "Dibatalkan" dibedakan dari sekadar "Tolak" lewat cancel_requested_by — hanya terisi
     // kalau produksi ini pernah lewat alur pengajuan batal (status 4) lalu disetujui
@@ -1958,16 +1976,19 @@ $(document).on("click", ".btn_view", function () {
     if (data.status == 2 && data.acc_by_name && data.acc_by_name !== '-') {
         $('#production_acc_by_name').val(data.acc_by_name);
         $('#row-production-acc-by').show();
+        $('#col-production-desc').removeClass('col-lg-6 col-12').addClass('col-lg-9');
     } else {
         $('#row-production-acc-by').hide();
+        $('#col-production-desc').removeClass('col-lg-9 col-lg-6').addClass('col-12');
     }
 
     if (isDibatalkan) {
         $('#production_cancel_requested_by_display').val(data.cancel_requested_by_name || '-');
         $('#production_cancel_notes_display').val(data.notes || '-');
-        $('#row-production-cancel-info').show();
+        $('.prod-cancel-field').show();
+        $('#col-production-desc').removeClass('col-lg-9 col-12').addClass('col-lg-6');
     } else {
-        $('#row-production-cancel-info').hide();
+        $('.prod-cancel-field').hide();
     }
 
     var total_dos = 0;

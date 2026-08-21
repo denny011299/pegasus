@@ -23,6 +23,7 @@ $(document).on("click", ".btnAdd", function () {
     $("#warehouse_type_id").val(null).trigger("change");
     setWarehouseKepala(null, []);
     setWarehouseSidebarMenus(null);
+    syncWarehouseMainOnlyMenus();
     $(".is-invalid").removeClass("is-invalid");
     $("#add_warehouse .btn-save").html(
         mode == 1 ? "Tambah Gudang" : "Update Gudang",
@@ -74,7 +75,7 @@ function setWarehouseKepala(selectedId, assignedStaff) {
 
 function getWarehouseSidebarMenus() {
     var menus = [];
-    $(".warehouse-sidebar-menu:checked").each(function () {
+    $(".warehouse-sidebar-menu:visible:checked").each(function () {
         menus.push($(this).val());
     });
     return menus.length ? menus : null;
@@ -83,6 +84,7 @@ function getWarehouseSidebarMenus() {
 function setWarehouseSidebarMenus(menus) {
     $(".warehouse-sidebar-menu").prop("checked", false);
     if (!menus || !Array.isArray(menus) || !menus.length) {
+        updateAllModuleChecks();
         return;
     }
     var set = {};
@@ -96,28 +98,71 @@ function setWarehouseSidebarMenus(menus) {
     updateAllModuleChecks();
 }
 
+function isSelectedWarehouseTypeMain() {
+    var $sel = $("#warehouse_type_id");
+    var data = $sel.select2("data");
+    if (data && data.length) {
+        var item = data[0] || {};
+        if (item.is_main_warehouse != null && item.is_main_warehouse !== "") {
+            return parseInt(item.is_main_warehouse, 10) === 1;
+        }
+        var text = String(item.text || "");
+        if (text.indexOf("(Gudang Utama)") !== -1) return true;
+    }
+    var $opt = $sel.find("option:selected");
+    if ($opt.length && $opt.data("is_main_warehouse") != null) {
+        return parseInt($opt.data("is_main_warehouse"), 10) === 1;
+    }
+    return false;
+}
+
+/** Produksi dkk: hanya tampil di checklist bila tipe = gudang utama. */
+function syncWarehouseMainOnlyMenus() {
+    var isMain = isSelectedWarehouseTypeMain();
+    $(".warehouse-menu-main-only").each(function () {
+        var $wrap = $(this);
+        var $cb = $wrap.find(".warehouse-sidebar-menu");
+        if (isMain) {
+            $wrap.removeClass("d-none");
+        } else {
+            $wrap.addClass("d-none");
+            $cb.prop("checked", false);
+        }
+    });
+    updateAllModuleChecks();
+}
+
+function visibleWarehouseMenus($container) {
+    return $container.find(".warehouse-sidebar-menu").filter(function () {
+        return $(this).closest(".warehouse-menu-main-only").hasClass("d-none") === false;
+    });
+}
+
 function updateAllModuleChecks() {
     $(".module-check-all").each(function () {
         var $container = $(this).closest(".menu-card");
-        var total = $container.find(".warehouse-sidebar-menu").length;
-        var checked = $container.find(".warehouse-sidebar-menu:checked").length;
+        var $menus = visibleWarehouseMenus($container);
+        var total = $menus.length;
+        var checked = $menus.filter(":checked").length;
         $(this).prop("checked", total > 0 && total === checked);
         $(this).prop("indeterminate", checked > 0 && checked < total);
     });
 }
 
+$(document).on("change", "#warehouse_type_id", function () {
+    syncWarehouseMainOnlyMenus();
+});
+
 $(document).on("change", ".module-check-all", function () {
     var isChecked = $(this).is(":checked");
-    $(this)
-        .closest(".menu-card")
-        .find(".warehouse-sidebar-menu")
-        .prop("checked", isChecked);
+    visibleWarehouseMenus($(this).closest(".menu-card")).prop("checked", isChecked);
 });
 
 $(document).on("change", ".warehouse-sidebar-menu", function () {
     var $container = $(this).closest(".menu-card");
-    var total = $container.find(".warehouse-sidebar-menu").length;
-    var checked = $container.find(".warehouse-sidebar-menu:checked").length;
+    var $menus = visibleWarehouseMenus($container);
+    var total = $menus.length;
+    var checked = $menus.filter(":checked").length;
     var $headerCheck = $container.find(".module-check-all");
 
     $headerCheck.prop("checked", total > 0 && total === checked);
@@ -125,7 +170,10 @@ $(document).on("change", ".warehouse-sidebar-menu", function () {
 });
 
 $(document).on("click", "#btn-sidebar-menus-all", function () {
-    $(".warehouse-sidebar-menu").prop("checked", true);
+    $(".warehouse-sidebar-menu").each(function () {
+        if ($(this).closest(".warehouse-menu-main-only").hasClass("d-none")) return;
+        $(this).prop("checked", true);
+    });
     updateAllModuleChecks();
 });
 
@@ -133,7 +181,6 @@ $(document).on("click", "#btn-sidebar-menus-none", function () {
     $(".warehouse-sidebar-menu").prop("checked", false);
     updateAllModuleChecks();
 });
-
 function inisialisasi() {
     table = $("#tableWarehouse").DataTable({
         ajax: {
@@ -547,11 +594,20 @@ $(document).on("click", ".btn_edit", function () {
             typeName += " (Gudang Utama)";
         }
         var opt = new Option(typeName, data.warehouse_type_id, true, true);
+        $(opt).data(
+            "is_main_warehouse",
+            data.type &&
+                (data.type.is_main_warehouse == 1 ||
+                    data.type.is_main_warehouse === true)
+                ? 1
+                : 0,
+        );
         $("#warehouse_type_id").append(opt).trigger("change");
     }
 
     setWarehouseKepala(data.kepala_staff_id, data.assigned_staff);
     setWarehouseSidebarMenus(data.sidebar_menus);
+    syncWarehouseMainOnlyMenus();
 
     $("#add_warehouse").attr("data-id", data.id).modal("show");
 });

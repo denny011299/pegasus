@@ -2,61 +2,27 @@
 @extends('layout.mainlayout')
 @section('custom_css')
     <style>
-        /* table-layout:fixed membuat lebar kolom (di bawah) benar-benar dipaksakan — tanpa ini,
-           max-width/word-wrap di satu kolom cuma "saran" dan teks panjang tanpa jeda bisa
-           meluber/tumpang tindih ke kolom sebelah (kolom Status jadi korban paling sering,
-           karena badge-nya kecil dan gampang ketiban teks Keterangan yang membanjir). */
         #tableProduction {
-            width: 100% !important;
-            table-layout: fixed;
-            min-width: 1250px;
-        }
-        #tableProduction thead th {
-            color: #64748b !important;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-            background: #f1f5f9 !important;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        #tableProduction tbody td {
-            color: #475569;
-            font-size: 13px;
-            vertical-align: middle;
-        }
-        #tableProduction tbody > tr {
-            border-bottom: 1px solid #f1f5f9;
-            transition: all 0.2s ease;
-        }
-        #tableProduction tbody > tr:hover {
-            background-color: #f8fafc;
-        }
-        #tableProduction td, #tableProduction th {
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            white-space: normal;
-        }
-        #tableProduction td:nth-child(1), #tableProduction th:nth-child(1) { width: 10%; }
-        #tableProduction td:nth-child(2), #tableProduction th:nth-child(2) { width: 10%; }
-        #tableProduction td:nth-child(3), #tableProduction th:nth-child(3) { width: 19%; } /* Keterangan */
-        #tableProduction td:nth-child(4), #tableProduction th:nth-child(4) { width: 8%; }  /* Status */
-        #tableProduction td:nth-child(5), #tableProduction th:nth-child(5) { width: 12%; } /* Notes Pembatalan */
-        #tableProduction td:nth-child(6), #tableProduction th:nth-child(6) { width: 11%; }
-        #tableProduction td:nth-child(7), #tableProduction th:nth-child(7) { width: 11%; }
-        #tableProduction td:nth-child(8), #tableProduction th:nth-child(8) { width: 11%; }
-        #tableProduction td:nth-child(9), #tableProduction th:nth-child(9) { width: 8%; }  /* Aksi */
-        #addProduction .select2-container {
             width: 100% !important;
         }
 
+        #tableProduction th,
+        #tableProduction td {
+            vertical-align: middle;
+            padding: 12px 16px !important;
+            white-space: nowrap !important;
+        }
+
         #tableProduction thead th {
+            vertical-align: middle;
+            white-space: nowrap !important;
+            padding: 14px 16px !important;
             color: #64748b;
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: .4px;
-            background: #f1f5f9;
+            background: #f8fafc;
             border-bottom: 1px solid #e2e8f0;
         }
 
@@ -65,11 +31,19 @@
             font-size: 13px;
         }
 
+        #tableProduction tbody tr {
+            border-bottom: 1px solid #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        #tableProduction tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
         #tableProduction td:last-child,
         #tableProduction th:last-child {
             white-space: nowrap !important;
-            width: 11% !important;
-            min-width: 110px !important;
+            text-align: center;
         }
 
         #tableProduction td:last-child .d-flex {
@@ -86,20 +60,8 @@
             flex-shrink: 0;
         }
 
-        #tableProduction tbody tr {
-            border-bottom: 1px solid #f1f5f9;
-            transition: all 0.2s ease;
-        }
-
-        #tableProduction_wrapper .dataTables_scrollHead,
-        #tableProduction_wrapper .dataTables_scrollBody {
-            width: 100% !important;
-        }
-
         #tableProduction-wrap {
             position: relative;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
         }
 
         #tableProduction_wrapper .dataTables_processing {
@@ -117,6 +79,7 @@
             background: rgba(255, 255, 255, 0.72) !important;
             box-shadow: none !important;
             z-index: 20;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             color: #1e293b;
@@ -230,12 +193,12 @@
                                         <tr>
                                             <th>Tanggal</th>
                                             <th>Kode Produksi</th>
-                                            <th>Keterangan</th>
                                             <th class="text-center">Status</th>
                                             <th>Notes Pembatalan</th>
                                             <th>Dibuat Oleh</th>
                                             <th>Diapprove Oleh</th>
                                             <th>Pengajuan Batal Oleh</th>
+                                            <th>Keterangan</th>
                                             <th class="no-sort text-center">Aksi</th>
                                         </tr>
                                     </thead>

@@ -14,7 +14,7 @@
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
             autoWidth: false,
-            scrollX: true,
+            scrollX: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

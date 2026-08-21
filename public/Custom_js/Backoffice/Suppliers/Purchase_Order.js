@@ -291,7 +291,7 @@
             ordering: false,
             searching: true,
             autoWidth: false,
-            scrollX: true,
+            scrollX: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

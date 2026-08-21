@@ -20,7 +20,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
-            scrollX: true,
+            scrollX: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',

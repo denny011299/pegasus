@@ -294,8 +294,9 @@ function inisialisasi() {
         lengthMenu: [10, 25, 50, 100],
         ordering: true,
         order: [[0, "desc"]],
-        scrollX: true,
-        autoWidth: true,
+        // scrollX + wrap overflow-x = header/body desync; scroll horizontal lewat #tableStockTransfer-wrap
+        scrollX: false,
+        autoWidth: false,
         language: {
             search: " ",
             sLengthMenu: "_MENU_",

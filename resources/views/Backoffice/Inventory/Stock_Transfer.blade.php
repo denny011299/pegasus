@@ -17,8 +17,9 @@
             overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
         }
+        /* Satu tabel (tanpa clone scrollX) — header & body ikut scroll yang sama */
         #tableStockTransfer {
-            width: max-content !important;
+            width: 100% !important;
             min-width: 1400px;
             table-layout: auto !important;
         }

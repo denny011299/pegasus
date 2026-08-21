@@ -822,10 +822,7 @@
             if (! $akses->firstWhere('name', $name)) {
                 return false;
             }
-            if (! $activeWh) {
-                return true;
-            }
-            return $activeWh->allowsSidebarMenu($name);
+            return \App\Support\WarehouseMenuAccess::allows($name, $activeWh);
         };
     @endphp
                     <li class="menu-title"><span>Menu Utama</span></li>
