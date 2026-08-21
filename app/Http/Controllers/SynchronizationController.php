@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\SyncExecution;
+use App\Synchronization\Contracts\PaginatedStepHandler;
 use App\Synchronization\PrerequisiteChecker;
 use App\Synchronization\PrerequisiteNotMetException;
 use App\Synchronization\Pmo\PmoClient;
+use App\Synchronization\Pmo\PmoException;
 use App\Synchronization\SyncExecutionRepository;
 use App\Synchronization\SyncFlow;
 use App\Synchronization\SyncFlowRegistry;
 use App\Synchronization\SyncRunner;
 use App\Synchronization\SyncStatus;
+use App\Synchronization\SyncStep;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Pusat Sinkronisasi.
@@ -60,19 +64,14 @@ class SynchronizationController extends Controller
     }
 
     /**
-     * Jalankan tepat satu langkah. Tidak pernah otomatis melanjutkan ke
-     * langkah berikutnya.
+     * Jalankan tepat satu langkah (jalur sekali-jalan). Tidak pernah otomatis
+     * melanjutkan ke langkah berikutnya.
      */
     public function execute(string $flow, string $step): JsonResponse
     {
-        $flow = $this->registry->findOrFail($flow);
-        $syncStep = $flow->findStep($step);
-
-        if (! $syncStep) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Langkah sinkronisasi "'.$step.'" tidak ditemukan.',
-            ], 404);
+        [$flow, $syncStep, $notFound] = $this->resolveStep($flow, $step);
+        if ($notFound) {
+            return $notFound;
         }
 
         try {
@@ -92,6 +91,88 @@ class SynchronizationController extends Controller
             'execution' => $execution->toWizardArray(),
             'state' => $this->state($flow),
         ]);
+    }
+
+    /**
+     * Ambil TEPAT SATU halaman dari PMO untuk langkah berbasis halaman
+     * (SyncStep::$paginated) — dipanggil berulang oleh wizard, satu request
+     * per halaman, supaya progresnya terlihat berjalan. Belum menulis
+     * riwayat eksekusi apa pun; itu baru terjadi di finalize().
+     */
+    public function fetchPage(string $flow, string $step, Request $request): JsonResponse
+    {
+        [$flow, $syncStep, $notFound] = $this->resolveStep($flow, $step);
+        if ($notFound) {
+            return $notFound;
+        }
+
+        $handler = $syncStep->makeHandler();
+        if (! $syncStep->paginated || ! $handler instanceof PaginatedStepHandler) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Langkah "'.$syncStep->key.'" bukan langkah berbasis halaman.',
+            ], 422);
+        }
+
+        $page = max(1, (int) $request->input('page', 1));
+
+        try {
+            $progress = $handler->fetchPage($page);
+        } catch (PmoException $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['ok' => true] + $progress);
+    }
+
+    /**
+     * Selesaikan langkah berbasis halaman setelah wizard memanggil
+     * fetchPage() sampai halaman terakhir — memindahkan buffer sesi ke
+     * potret sungguhan, menjalankan validasi, dan mencatat riwayat eksekusi
+     * seperti execute() pada langkah biasa.
+     */
+    public function finalize(string $flow, string $step): JsonResponse
+    {
+        [$flow, $syncStep, $notFound] = $this->resolveStep($flow, $step);
+        if ($notFound) {
+            return $notFound;
+        }
+
+        try {
+            $execution = app(SyncRunner::class)->runFinalize($flow, $syncStep);
+        } catch (PrerequisiteNotMetException $e) {
+            return response()->json([
+                'ok' => false,
+                'message' => $e->getMessage(),
+                'state' => $this->state($flow),
+            ], 422);
+        }
+
+        return response()->json([
+            'ok' => $execution->status === SyncStatus::SUCCESS,
+            'message' => $execution->message,
+            'step' => $syncStep->key,
+            'execution' => $execution->toWizardArray(),
+            'state' => $this->state($flow),
+        ]);
+    }
+
+    /**
+     * @return array{0: SyncFlow, 1: ?SyncStep, 2: ?JsonResponse}
+     */
+    private function resolveStep(string $flow, string $step): array
+    {
+        $flowObj = $this->registry->findOrFail($flow);
+        $syncStep = $flowObj->findStep($step);
+
+        if (! $syncStep) {
+            return [$flowObj, null, response()->json([
+                'ok' => false,
+                'message' => 'Langkah sinkronisasi "'.$step.'" tidak ditemukan.',
+            ], 404)];
+        }
+
+        return [$flowObj, $syncStep, null];
     }
 
     /**
@@ -147,7 +228,7 @@ class SynchronizationController extends Controller
     private function blockedReason(array $unmet): ?string
     {
         if (! $this->pmo->isConfigured()) {
-            return 'Alamat server PMO belum dikonfigurasi. Isi PMO_BASE_URL pada file .env terlebih dahulu.';
+            return 'Alamat server PMO belum dikonfigurasi. Isi PMO_BASE_URL dan PMO_API_KEY pada file .env terlebih dahulu.';
         }
 
         if ($unmet !== []) {

@@ -36,13 +36,43 @@ abstract class ProductFlowStep implements SyncStepHandler
     }
 
     /**
-     * Potret /getUnits.
+     * Daftar satuan unik, diturunkan dari items[].units[] tiap produk pada
+     * potret /getProducts. PMO tidak menyediakan endpoint satuan terpisah
+     * (dikonfirmasi 2026-08-20) — jadi ini bukan pemanggilan PMO lagi,
+     * hanya agregasi atas potret yang sudah ada.
+     *
+     * Konsekuensinya: unit_short_name dan status aktif per satuan tidak
+     * pernah dikirim PMO. SyncUnitStep menjaga unit_short_name yang sudah
+     * ada di Pegasus saat pembaruan, dan status baru selalu dianggap aktif.
      *
      * @throws PmoException
      */
     protected function units(): PmoSnapshot
     {
-        return $this->snapshots->get(self::FLOW_KEY, 'units');
+        $products = $this->products();
+
+        $rows = [];
+        foreach ($products->rows as $product) {
+            foreach ($this->pickList($product, ['units', 'unit']) as $unit) {
+                $unitId = $this->pickInt($unit, ['unit_id', 'id']);
+                if ($unitId === 0) {
+                    continue;
+                }
+
+                $rows[$unitId] ??= [
+                    'unit_id' => $unitId,
+                    'unit_name' => $this->pickString($unit, ['unit_name', 'name']),
+                ];
+            }
+        }
+
+        return new PmoSnapshot(
+            rows: array_values($rows),
+            meta: $products->meta,
+            fetchedAt: $products->fetchedAt,
+            url: $products->url,
+            justFetched: $products->justFetched,
+        );
     }
 
     /**

@@ -23,6 +23,9 @@ class SyncStep
      * @param  array<int, string>  $prerequisites  Daftar key langkah yang wajib berhasil lebih dulu.
      * @param  class-string<SyncStepHandler>  $handler
      * @param  array<int, string>  $notes  Catatan/peringatan tambahan.
+     * @param  bool  $paginated  Handler-nya mengimplementasikan PaginatedStepHandler — wizard
+     *                           menjalankannya halaman demi halaman (lihat Wizard.js) alih-alih
+     *                           satu panggilan handle() yang menunggu seluruh halaman selesai.
      */
     public function __construct(
         public readonly string $key,
@@ -35,6 +38,7 @@ class SyncStep
         public readonly array $prerequisites,
         public readonly string $handler,
         public readonly array $notes = [],
+        public readonly bool $paginated = false,
     ) {
     }
 
@@ -66,6 +70,7 @@ class SyncStep
             'expectation' => $this->expectation,
             'prerequisites' => $this->prerequisites,
             'notes' => $this->notes,
+            'paginated' => $this->paginated,
         ];
     }
 }

@@ -34,7 +34,13 @@
         });
 
         $('.btn-execute-step').on('click', function () {
-            executeStep($(this).data('step'));
+            var stepKey = $(this).data('step');
+            var pane = $('.sync-step-pane[data-step="' + stepKey + '"]');
+            if (pane.data('paginated') == 1) {
+                executePaginatedStep(stepKey);
+            } else {
+                executeStep(stepKey);
+            }
         });
     });
 
@@ -77,8 +83,6 @@
             return;
         }
 
-        var pane = $('.sync-step-pane[data-step="' + stepKey + '"]');
-
         running = true;
         markRunning(stepKey);
         LoadingButton('.sync-step-pane[data-step="' + stepKey + '"] .btn-execute-step');
@@ -88,41 +92,153 @@
             method: 'post',
             data: { _token: token },
             success: function (res) {
-                renderState(res.state);
-                if (res.ok) {
-                    notifikasi('success', 'Sinkronisasi Berhasil', res.message || 'Langkah berhasil dijalankan.');
+                handleExecutionSuccess(res);
+            },
+            error: function (xhr) {
+                handleExecutionError(stepKey, xhr);
+            },
+            complete: function () {
+                finishExecuting(stepKey);
+            }
+        });
+    }
+
+    /**
+     * Langkah berbasis halaman (SyncStep::paginated): tarik PMO satu halaman
+     * per panggilan supaya progresnya terlihat berjalan, alih-alih satu
+     * panggilan yang menunggu seluruh halaman selesai. Berhenti otomatis
+     * begitu halaman terakhir selesai, lalu finalize() seperti execute()
+     * pada langkah biasa.
+     */
+    function executePaginatedStep(stepKey) {
+        if (running) {
+            return;
+        }
+
+        running = true;
+        markRunning(stepKey);
+        LoadingButton('.sync-step-pane[data-step="' + stepKey + '"] .btn-execute-step');
+        showPageProgress(stepKey, 'Mengambil halaman 1…', 0);
+
+        fetchNextPage(stepKey, 1);
+    }
+
+    function fetchNextPage(stepKey, page) {
+        $.ajax({
+            url: '/synchronization/' + syncFlowKey + '/' + stepKey + '/fetch-page',
+            method: 'post',
+            data: { _token: token, page: page },
+            success: function (res) {
+                if (!res.ok) {
+                    failPageProgress(stepKey, res.message || 'Gagal mengambil halaman dari PMO.');
+                    return;
+                }
+
+                var percent = res.total_pages > 0 ? Math.round((res.page / res.total_pages) * 100) : 100;
+                updatePageProgress(
+                    stepKey,
+                    'Mengambil halaman ' + res.page + ' dari ' + res.total_pages + '…',
+                    res.rows_so_far + ' baris terkumpul',
+                    percent
+                );
+
+                if (res.is_last_page) {
+                    finalizePaginatedStep(stepKey);
                 } else {
-                    notifikasi('error', 'Sinkronisasi Gagal', res.message || 'Langkah gagal dijalankan.');
+                    fetchNextPage(stepKey, res.page + 1);
                 }
             },
             error: function (xhr) {
                 if (handlePermissionError(xhr)) return;
                 var res = xhr.responseJSON || {};
-                if (res.state) {
-                    renderState(res.state);
-                } else {
-                    resetStep(stepKey);
-                }
-                notifikasi(
-                    'error',
-                    xhr.status === 422 ? 'Prasyarat Belum Terpenuhi' : 'Sinkronisasi Gagal',
-                    res.message || 'Terjadi kesalahan saat menjalankan sinkronisasi.'
-                );
-            },
-            complete: function () {
-                running = false;
-                ResetLoadingButton(
-                    '.sync-step-pane[data-step="' + stepKey + '"] .btn-execute-step',
-                    '<i class="fe fe-refresh-cw me-2"></i>Jalankan Sinkronisasi'
-                );
-                // ResetLoadingButton selalu mengaktifkan tombol, jadi status
-                // "boleh dijalankan" harus dipasang ulang setelahnya.
-                applyExecutable(pane.find('.btn-execute-step'), currentState && currentState.steps[stepKey]);
-                if (typeof feather !== 'undefined') {
-                    feather.replace();
-                }
+                failPageProgress(stepKey, res.message || 'Terjadi kesalahan saat mengambil data dari PMO.');
             }
         });
+    }
+
+    function finalizePaginatedStep(stepKey) {
+        updatePageProgress(stepKey, 'Memeriksa data yang terkumpul…', '', 100);
+
+        $.ajax({
+            url: '/synchronization/' + syncFlowKey + '/' + stepKey + '/finalize',
+            method: 'post',
+            data: { _token: token },
+            success: function (res) {
+                handleExecutionSuccess(res);
+            },
+            error: function (xhr) {
+                handleExecutionError(stepKey, xhr);
+            },
+            complete: function () {
+                hidePageProgress(stepKey);
+                finishExecuting(stepKey);
+            }
+        });
+    }
+
+    function failPageProgress(stepKey, message) {
+        hidePageProgress(stepKey);
+        finishExecuting(stepKey);
+        resetStep(stepKey);
+        notifikasi('error', 'Sinkronisasi Gagal', message);
+    }
+
+    function showPageProgress(stepKey, text, percent) {
+        var box = $('.sync-step-pane[data-step="' + stepKey + '"] .sync-page-progress');
+        box.removeClass('d-none');
+        updatePageProgress(stepKey, text, '', percent);
+    }
+
+    function updatePageProgress(stepKey, text, rowsText, percent) {
+        var box = $('.sync-step-pane[data-step="' + stepKey + '"] .sync-page-progress');
+        box.find('.sync-page-progress-text').text(text);
+        box.find('.sync-page-progress-rows').text(rowsText);
+        box.find('.sync-page-progress-bar').css('width', percent + '%').attr('aria-valuenow', percent);
+    }
+
+    function hidePageProgress(stepKey) {
+        $('.sync-step-pane[data-step="' + stepKey + '"] .sync-page-progress').addClass('d-none');
+    }
+
+    /** Dipakai bersama oleh execute() dan finalize() (jalur biasa maupun berbasis halaman). */
+    function handleExecutionSuccess(res) {
+        renderState(res.state);
+        if (res.ok) {
+            notifikasi('success', 'Sinkronisasi Berhasil', res.message || 'Langkah berhasil dijalankan.');
+        } else {
+            notifikasi('error', 'Sinkronisasi Gagal', res.message || 'Langkah gagal dijalankan.');
+        }
+    }
+
+    function handleExecutionError(stepKey, xhr) {
+        if (handlePermissionError(xhr)) return;
+        var res = xhr.responseJSON || {};
+        if (res.state) {
+            renderState(res.state);
+        } else {
+            resetStep(stepKey);
+        }
+        notifikasi(
+            'error',
+            xhr.status === 422 ? 'Prasyarat Belum Terpenuhi' : 'Sinkronisasi Gagal',
+            res.message || 'Terjadi kesalahan saat menjalankan sinkronisasi.'
+        );
+    }
+
+    function finishExecuting(stepKey) {
+        var pane = $('.sync-step-pane[data-step="' + stepKey + '"]');
+
+        running = false;
+        ResetLoadingButton(
+            '.sync-step-pane[data-step="' + stepKey + '"] .btn-execute-step',
+            '<i class="fe fe-refresh-cw me-2"></i>Jalankan Sinkronisasi'
+        );
+        // ResetLoadingButton selalu mengaktifkan tombol, jadi status
+        // "boleh dijalankan" harus dipasang ulang setelahnya.
+        applyExecutable(pane.find('.btn-execute-step'), currentState && currentState.steps[stepKey]);
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
     }
 
     function markRunning(stepKey) {

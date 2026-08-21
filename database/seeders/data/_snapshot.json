@@ -1,7 +1,7 @@
 {
-    "generated_at": "2026-08-17T02:18:41+07:00",
+    "generated_at": "2026-08-20T22:06:27+07:00",
     "database": "pegasus",
-    "last_migration": "2026_08_17_090000_create_external_api_endpoints_table",
+    "last_migration": "2026_08_20_090000_widen_pmo_reference_id_columns",
     "label": null,
     "description": null,
     "order": [
@@ -100,7 +100,7 @@
     ],
     "tables": {
         "roles": {
-            "rows": 6,
+            "rows": 7,
             "columns": [
                 "role_id",
                 "role_name",
@@ -112,7 +112,7 @@
             "capped": null
         },
         "staffs": {
-            "rows": 27,
+            "rows": 31,
             "columns": [
                 "staff_id",
                 "staff_name",
@@ -149,7 +149,7 @@
             "capped": null
         },
         "settings": {
-            "rows": 13,
+            "rows": 11,
             "columns": [
                 "setting_id",
                 "setting_key",
@@ -252,7 +252,7 @@
             "capped": null
         },
         "cash_categories": {
-            "rows": 46,
+            "rows": 47,
             "columns": [
                 "cc_id",
                 "cc_name",
@@ -265,7 +265,7 @@
             "capped": null
         },
         "customers": {
-            "rows": 11,
+            "rows": 10,
             "columns": [
                 "customer_id",
                 "area_id",
@@ -290,7 +290,7 @@
             "capped": null
         },
         "suppliers": {
-            "rows": 43,
+            "rows": 44,
             "columns": [
                 "supplier_id",
                 "supplier_name",
@@ -318,7 +318,7 @@
             "capped": null
         },
         "products": {
-            "rows": 80,
+            "rows": 82,
             "columns": [
                 "product_id",
                 "ref_product_id",
@@ -335,7 +335,7 @@
             "capped": null
         },
         "product_variants": {
-            "rows": 234,
+            "rows": 236,
             "columns": [
                 "product_variant_id",
                 "product_id",
@@ -359,9 +359,10 @@
             "capped": null
         },
         "supplies": {
-            "rows": 234,
+            "rows": 238,
             "columns": [
                 "supplies_id",
+                "ref_supplies_id",
                 "supplies_name",
                 "supplies_image",
                 "supplies_desc",
@@ -379,7 +380,7 @@
             "capped": null
         },
         "supplies_variants": {
-            "rows": 279,
+            "rows": 285,
             "columns": [
                 "supplies_variant_id",
                 "supplier_id",
@@ -397,7 +398,7 @@
             "capped": null
         },
         "boms": {
-            "rows": 150,
+            "rows": 152,
             "columns": [
                 "bom_id",
                 "product_id",
@@ -411,7 +412,7 @@
             "capped": null
         },
         "bom_details": {
-            "rows": 557,
+            "rows": 566,
             "columns": [
                 "bom_detail_id",
                 "bom_id",
@@ -426,7 +427,7 @@
             "capped": null
         },
         "cash_admin_details": {
-            "rows": 128,
+            "rows": 171,
             "columns": [
                 "cad_id",
                 "ca_id",
@@ -439,7 +440,7 @@
             "capped": null
         },
         "cash_admins": {
-            "rows": 47,
+            "rows": 61,
             "columns": [
                 "ca_id",
                 "staff_id",
@@ -459,7 +460,7 @@
             "capped": null
         },
         "cash_armada_details": {
-            "rows": 587,
+            "rows": 785,
             "columns": [
                 "crd_id",
                 "cr_id",
@@ -473,7 +474,7 @@
             "capped": null
         },
         "cash_armadas": {
-            "rows": 498,
+            "rows": 661,
             "columns": [
                 "cr_id",
                 "ref_payment_id",
@@ -495,7 +496,7 @@
             "capped": null
         },
         "cash_gudang_details": {
-            "rows": 149,
+            "rows": 190,
             "columns": [
                 "cgd_id",
                 "cg_id",
@@ -509,7 +510,7 @@
             "capped": null
         },
         "cash_gudangs": {
-            "rows": 86,
+            "rows": 104,
             "columns": [
                 "cg_id",
                 "staff_id",
@@ -529,7 +530,7 @@
             "capped": null
         },
         "cash_sales": {
-            "rows": 334,
+            "rows": 461,
             "columns": [
                 "cs_id",
                 "ref_payment_id",
@@ -552,7 +553,7 @@
             "capped": null
         },
         "cash_sales_details": {
-            "rows": 272,
+            "rows": 364,
             "columns": [
                 "csd_id",
                 "cs_id",
@@ -566,7 +567,7 @@
             "capped": null
         },
         "cashes": {
-            "rows": 376,
+            "rows": 532,
             "columns": [
                 "cash_id",
                 "person_id",
@@ -604,7 +605,7 @@
             "capped": 500
         },
         "dashboard_queue_dismissals": {
-            "rows": 13,
+            "rows": 14,
             "columns": [
                 "id",
                 "staff_id",
@@ -639,7 +640,7 @@
             "capped": null
         },
         "external_api_request_logs": {
-            "rows": 17,
+            "rows": 0,
             "columns": [
                 "external_api_request_log_id",
                 "external_application_id",
@@ -743,7 +744,7 @@
             "capped": null
         },
         "product_issues": {
-            "rows": 71,
+            "rows": 92,
             "columns": [
                 "pi_id",
                 "pi_code",
@@ -765,7 +766,7 @@
             "capped": null
         },
         "product_issues_details": {
-            "rows": 183,
+            "rows": 235,
             "columns": [
                 "pid_id",
                 "pi_id",
@@ -779,7 +780,7 @@
             "capped": null
         },
         "product_relations": {
-            "rows": 319,
+            "rows": 322,
             "columns": [
                 "pr_id",
                 "product_variant_id",
@@ -796,7 +797,7 @@
             "capped": null
         },
         "product_stocks": {
-            "rows": 513,
+            "rows": 4594,
             "columns": [
                 "ps_id",
                 "product_variant_id",
@@ -815,7 +816,7 @@
             "capped": null
         },
         "production_details": {
-            "rows": 1116,
+            "rows": 1339,
             "columns": [
                 "pd_id",
                 "production_id",
@@ -844,7 +845,7 @@
             "capped": null
         },
         "productions": {
-            "rows": 165,
+            "rows": 207,
             "columns": [
                 "production_id",
                 "production_date",
@@ -862,7 +863,7 @@
             "capped": null
         },
         "purchase_delivery_orders": {
-            "rows": 405,
+            "rows": 453,
             "columns": [
                 "pdo_id",
                 "po_id",
@@ -879,7 +880,7 @@
             "capped": null
         },
         "purchase_delivery_orders_details": {
-            "rows": 902,
+            "rows": 988,
             "columns": [
                 "pdod_id",
                 "pdo_id",
@@ -893,7 +894,7 @@
             "capped": null
         },
         "purchase_order_detail_invoices": {
-            "rows": 405,
+            "rows": 450,
             "columns": [
                 "poi_id",
                 "po_id",
@@ -909,7 +910,7 @@
             "capped": null
         },
         "purchase_order_tts": {
-            "rows": 192,
+            "rows": 219,
             "columns": [
                 "tt_id",
                 "tt_date",
@@ -930,7 +931,7 @@
             "capped": null
         },
         "purchase_orders": {
-            "rows": 445,
+            "rows": 506,
             "columns": [
                 "po_id",
                 "po_number",
@@ -954,7 +955,7 @@
             "capped": null
         },
         "purchase_orders_details": {
-            "rows": 984,
+            "rows": 1093,
             "columns": [
                 "pod_id",
                 "po_id",
@@ -991,7 +992,7 @@
             "capped": null
         },
         "return_supplies": {
-            "rows": 11,
+            "rows": 12,
             "columns": [
                 "rs_id",
                 "po_id",
@@ -1006,7 +1007,7 @@
             "capped": null
         },
         "return_supplies_detail": {
-            "rows": 20,
+            "rows": 23,
             "columns": [
                 "rsd_id",
                 "rs_id",
@@ -1068,7 +1069,7 @@
             "capped": null
         },
         "sales_order_details": {
-            "rows": 3374,
+            "rows": 4023,
             "columns": [
                 "sod_id",
                 "so_id",
@@ -1088,7 +1089,7 @@
             "capped": null
         },
         "sales_orders": {
-            "rows": 439,
+            "rows": 529,
             "columns": [
                 "so_id",
                 "so_number",
@@ -1126,7 +1127,7 @@
             "capped": null
         },
         "stock_opname_bahans": {
-            "rows": 49,
+            "rows": 57,
             "columns": [
                 "stob_id",
                 "stob_date",
@@ -1143,7 +1144,7 @@
             "capped": null
         },
         "stock_opname_detail_bahans": {
-            "rows": 8862,
+            "rows": 10678,
             "columns": [
                 "stobd_id",
                 "stob_id",
@@ -1160,7 +1161,7 @@
             "capped": null
         },
         "stock_opname_details": {
-            "rows": 7906,
+            "rows": 7908,
             "columns": [
                 "stod_id",
                 "sto_id",
@@ -1196,7 +1197,7 @@
             "capped": null
         },
         "supplies_relations": {
-            "rows": 31,
+            "rows": 33,
             "columns": [
                 "sr_id",
                 "supplies_id",
@@ -1211,7 +1212,7 @@
             "capped": null
         },
         "supplies_stocks": {
-            "rows": 308,
+            "rows": 2813,
             "columns": [
                 "ss_id",
                 "supplies_id",
@@ -1238,7 +1239,7 @@
             "capped": null
         },
         "sync_executions": {
-            "rows": 4,
+            "rows": 0,
             "columns": [
                 "sync_execution_id",
                 "flow_key",
@@ -1279,7 +1280,7 @@
             "capped": null
         },
         "warehouse_types": {
-            "rows": 2,
+            "rows": 8,
             "columns": [
                 "id",
                 "warehouse_type_name",
@@ -1292,7 +1293,7 @@
             "capped": null
         },
         "warehouses": {
-            "rows": 2,
+            "rows": 14,
             "columns": [
                 "id",
                 "warehouse_name",
@@ -1316,7 +1317,7 @@
             "capped": null
         },
         "customer_product_return_details": {
-            "rows": 0,
+            "rows": 6,
             "columns": [
                 "return_detail_id",
                 "return_id",
@@ -1332,7 +1333,7 @@
             "capped": null
         },
         "customer_product_returns": {
-            "rows": 0,
+            "rows": 4,
             "columns": [
                 "return_id",
                 "return_number",
@@ -1352,7 +1353,7 @@
             "capped": null
         },
         "customer_supply_return_details": {
-            "rows": 0,
+            "rows": 5,
             "columns": [
                 "return_detail_id",
                 "return_id",
@@ -1367,7 +1368,7 @@
             "capped": null
         },
         "customer_supply_returns": {
-            "rows": 0,
+            "rows": 4,
             "columns": [
                 "return_id",
                 "return_number",
@@ -1475,7 +1476,7 @@
             "capped": null
         },
         "staff_warehouses": {
-            "rows": 0,
+            "rows": 19,
             "columns": [
                 "id",
                 "staff_id",
@@ -1487,7 +1488,7 @@
             "capped": null
         },
         "stock_transfer_details": {
-            "rows": 0,
+            "rows": 47,
             "columns": [
                 "std_id",
                 "st_id",
@@ -1504,7 +1505,7 @@
             "capped": null
         },
         "stock_transfers": {
-            "rows": 0,
+            "rows": 22,
             "columns": [
                 "st_id",
                 "transfer_code",

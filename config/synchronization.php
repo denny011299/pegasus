@@ -6,13 +6,13 @@ return [
     | Sumber Data PMO
     |--------------------------------------------------------------------------
     |
-    | Integrasi PMO saat ini berupa pemanggilan HTTP biasa ke server lain
-    | (tanpa token / tanpa auth). Kalau nanti PMO butuh autentikasi, tambahkan
-    | header di App\Synchronization\Pmo\PmoClient.
+    | Setiap request ke PMO mengirim header X-API-Key berisi PMO_API_KEY.
+    | Header ini ditambahkan di App\Synchronization\Pmo\PmoClient.
     |
     */
     'pmo' => [
         'base_url' => env('PMO_BASE_URL', ''),
+        'api_key' => env('PMO_API_KEY', ''),
         'timeout' => (int) env('PMO_TIMEOUT', 60),
         'connect_timeout' => (int) env('PMO_CONNECT_TIMEOUT', 10),
         'verify_ssl' => filter_var(env('PMO_VERIFY_SSL', true), FILTER_VALIDATE_BOOLEAN),
@@ -30,16 +30,21 @@ return [
     | IPM". Hanya base_url yang diambil dari .env; path endpoint ditetapkan di
     | sini karena sudah didefinisikan pada dokumen tersebut.
     |
-    | Catatan: /getProducts memuat kategori, varian, dan konversi satuan
-    | sekaligus, jadi hampir semua langkah alur Produk memakai endpoint itu.
-    | Master satuan diambil dari endpoint terpisah (/getUnits) yang sedang
-    | disiapkan PMO — format yang diminta ada di
-    | cdocs/specs/202607260130-product-sync-flow.design.md (§8.1).
+    | Mau memanggil salah satu endpoint ini langsung (di luar alur
+    | sinkronisasi)? Pakai App\Synchronization\Pmo\PmoApi, jangan panggil
+    | PmoClient langsung — satu method per endpoint di sana, jauh lebih
+    | mudah dibaca (mis. PmoApi::getProducts(), PmoApi::getProduct($id)).
+    |
+    | Hanya 3 endpoint yang benar-benar disediakan PMO (dikonfirmasi
+    | 2026-08-20): products, shipments, armada. PMO TIDAK menyediakan
+    | /getUnits — master satuan Pegasus diturunkan dari items[].units[] pada
+    | /getProducts, bukan dipanggil terpisah. Lihat
+    | App\Synchronization\Steps\ProductFlow\ProductFlowStep::units() dan
+    | cdocs/integrations/202607260130-product-sync-flow.design.md (§8.1).
     |
     */
     'endpoints' => [
         'products' => '/getProducts',
-        'units' => '/getUnits',
         'shipments' => '/getShipments',
         'armada' => '/getArmada',
     ],

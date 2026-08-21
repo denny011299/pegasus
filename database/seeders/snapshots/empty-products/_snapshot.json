@@ -1,0 +1,1553 @@
+{
+    "generated_at": "2026-08-20T22:06:34+07:00",
+    "database": "pegasus",
+    "last_migration": "2026_08_20_090000_widen_pmo_reference_id_columns",
+    "label": "Empty product catalog",
+    "description": "Derived from \"default\" via snapshot:derive-empty-products: product catalog (products/product_variants/product_stocks/product_relations/units/variants/categories) and its order/production/BOM/stock dependents wiped, everything else (roles, staff, users, customers, suppliers, supplies, purchasing, warehouses, cash) kept as-is.",
+    "source_snapshot": "default",
+    "order": [
+        "roles",
+        "staffs",
+        "users",
+        "settings",
+        "pengaturans",
+        "provinces",
+        "cities",
+        "districts",
+        "areas",
+        "banks",
+        "units",
+        "variants",
+        "categories",
+        "cash_categories",
+        "customers",
+        "suppliers",
+        "products",
+        "product_variants",
+        "supplies",
+        "supplies_variants",
+        "boms",
+        "bom_details",
+        "cash_admin_details",
+        "cash_admins",
+        "cash_armada_details",
+        "cash_armadas",
+        "cash_gudang_details",
+        "cash_gudangs",
+        "cash_sales",
+        "cash_sales_details",
+        "cashes",
+        "customer_product_return_details",
+        "customer_product_returns",
+        "customer_supply_return_details",
+        "customer_supply_returns",
+        "dashboard_change_logs",
+        "dashboard_queue_dismissals",
+        "external_api_endpoints",
+        "external_api_keys",
+        "external_api_request_logs",
+        "external_applications",
+        "inward_outwards",
+        "log_stocks",
+        "manage_stocks",
+        "petty_cash_details",
+        "petty_cashes",
+        "product_issues",
+        "product_issues_details",
+        "product_relations",
+        "product_stocks",
+        "production_details",
+        "production_photos",
+        "productions",
+        "purchase_delivery_orders",
+        "purchase_delivery_orders_details",
+        "purchase_order_deliveries",
+        "purchase_order_delivery_details",
+        "purchase_order_detail_invoices",
+        "purchase_order_receipts",
+        "purchase_order_tts",
+        "purchase_orders",
+        "purchase_orders_details",
+        "report_losses",
+        "report_profits",
+        "return_supplies",
+        "return_supplies_detail",
+        "return_supplies_details",
+        "sales_delivery_orders",
+        "sales_delivery_orders_details",
+        "sales_order_deliveries",
+        "sales_order_delivery_details",
+        "sales_order_detail_invoices",
+        "sales_order_details",
+        "sales_orders",
+        "shipment_shortage_documents",
+        "staff",
+        "staff_warehouses",
+        "stock_alerts",
+        "stock_opname_bahans",
+        "stock_opname_detail_bahans",
+        "stock_opname_details",
+        "stock_opnames",
+        "stock_transfer_details",
+        "stock_transfers",
+        "stocks",
+        "supplies_relations",
+        "supplies_stocks",
+        "supplies_units",
+        "sync_executions",
+        "sync_snapshots",
+        "warehouse_types",
+        "warehouses"
+    ],
+    "tables": {
+        "product_issues": {
+            "rows": 27,
+            "columns": [
+                "pi_id",
+                "pi_code",
+                "ref_num",
+                "po_id",
+                "pi_type",
+                "tipe_return",
+                "pi_date",
+                "pi_notes",
+                "source_type",
+                "source_id",
+                "pi_img",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by",
+                "acc_by"
+            ],
+            "capped": null
+        },
+        "roles": {
+            "rows": 7,
+            "columns": [
+                "role_id",
+                "role_name",
+                "role_access",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "staffs": {
+            "rows": 31,
+            "columns": [
+                "staff_id",
+                "staff_name",
+                "staff_code",
+                "external_ref_id",
+                "staff_email",
+                "staff_phone",
+                "staff_address",
+                "staff_notes",
+                "staff_username",
+                "staff_password",
+                "staff_saldo",
+                "role_id",
+                "last_active_warehouse_id",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "users": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "name",
+                "email",
+                "email_verified_at",
+                "password",
+                "remember_token",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "settings": {
+            "rows": 11,
+            "columns": [
+                "setting_id",
+                "setting_key",
+                "setting_value",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "pengaturans": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "provinces": {
+            "rows": 34,
+            "columns": [
+                "prov_id",
+                "prov_name",
+                "locationid",
+                "status"
+            ],
+            "capped": null
+        },
+        "cities": {
+            "rows": 474,
+            "columns": [
+                "city_id",
+                "city_name",
+                "prov_id"
+            ],
+            "capped": null
+        },
+        "districts": {
+            "rows": 7277,
+            "columns": [
+                "id",
+                "city_id",
+                "name"
+            ],
+            "capped": null
+        },
+        "areas": {
+            "rows": 0,
+            "columns": [
+                "area_id",
+                "area_code",
+                "area_name",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "banks": {
+            "rows": 6,
+            "columns": [
+                "bank_id",
+                "bank_kode",
+                "status",
+                "created_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "units": {
+            "rows": 0,
+            "columns": [
+                "unit_id",
+                "ref_unit_id",
+                "unit_name",
+                "unit_short_name",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "variants": {
+            "rows": 0,
+            "columns": [
+                "variant_id",
+                "variant_name",
+                "variant_attribute",
+                "created_by",
+                "acc_by",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "categories": {
+            "rows": 0,
+            "columns": [
+                "category_id",
+                "category_name",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "cash_categories": {
+            "rows": 47,
+            "columns": [
+                "cc_id",
+                "cc_name",
+                "cc_type",
+                "status",
+                "created_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "customers": {
+            "rows": 10,
+            "columns": [
+                "customer_id",
+                "area_id",
+                "customer_name",
+                "customer_code",
+                "customer_email",
+                "customer_pic",
+                "customer_pic_phone",
+                "customer_address",
+                "customer_notes",
+                "sales_id",
+                "state_id",
+                "city_id",
+                "district_id",
+                "customer_zipcode",
+                "customer_saldo",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "suppliers": {
+            "rows": 44,
+            "columns": [
+                "supplier_id",
+                "supplier_name",
+                "supplier_code",
+                "supplier_email",
+                "supplier_phone",
+                "supplier_pic",
+                "supplier_address",
+                "supplier_notes",
+                "state_id",
+                "city_id",
+                "supplier_bank",
+                "supplier_branch",
+                "supplier_account_name",
+                "supplier_account_number",
+                "supplier_top",
+                "bank_id",
+                "supplier_payment",
+                "supplier_image",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "products": {
+            "rows": 0,
+            "columns": [
+                "product_id",
+                "ref_product_id",
+                "product_name",
+                "category_id",
+                "product_unit",
+                "product_alert",
+                "unit_id",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "product_variants": {
+            "rows": 0,
+            "columns": [
+                "product_variant_id",
+                "product_id",
+                "product_variant_name",
+                "product_variant_sku",
+                "product_variant_price",
+                "product_variant_barcode",
+                "product_variant_stock",
+                "retail_unit",
+                "product_variant_alert",
+                "lead_time_days",
+                "safety_stock",
+                "safety_unit_id",
+                "unit_id",
+                "qty_per_pallet",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "supplies": {
+            "rows": 238,
+            "columns": [
+                "supplies_id",
+                "ref_supplies_id",
+                "supplies_name",
+                "supplies_image",
+                "supplies_desc",
+                "supplies_min_stock",
+                "supplies_unit",
+                "supplies_alert",
+                "lead_time_days",
+                "safety_stock",
+                "supplies_default_unit",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "supplies_variants": {
+            "rows": 285,
+            "columns": [
+                "supplies_variant_id",
+                "supplier_id",
+                "supplies_id",
+                "supplies_variant_name",
+                "supplies_variant_sku",
+                "supplies_variant_price",
+                "supplies_variant_barcode",
+                "supplies_variant_stock",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "boms": {
+            "rows": 0,
+            "columns": [
+                "bom_id",
+                "product_id",
+                "bom_qty",
+                "unit_id",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "bom_details": {
+            "rows": 0,
+            "columns": [
+                "bom_detail_id",
+                "bom_id",
+                "supplies_id",
+                "bom_detail_qty",
+                "unit_id",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "cash_admin_details": {
+            "rows": 171,
+            "columns": [
+                "cad_id",
+                "ca_id",
+                "cad_notes",
+                "cad_nominal",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cash_admins": {
+            "rows": 61,
+            "columns": [
+                "ca_id",
+                "staff_id",
+                "cash_id",
+                "ca_date",
+                "ca_nominal",
+                "ca_notes",
+                "ca_type",
+                "ca_aksi",
+                "ca_img",
+                "status",
+                "created_by",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cash_armada_details": {
+            "rows": 785,
+            "columns": [
+                "crd_id",
+                "cr_id",
+                "crd_notes",
+                "crd_nominal",
+                "crd_type",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cash_armadas": {
+            "rows": 661,
+            "columns": [
+                "cr_id",
+                "ref_payment_id",
+                "customer_id",
+                "cash_id",
+                "source_cgd_id",
+                "cr_date",
+                "cr_nominal",
+                "cr_type",
+                "cr_aksi",
+                "cr_notes",
+                "cr_img",
+                "status",
+                "created_by",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cash_gudang_details": {
+            "rows": 190,
+            "columns": [
+                "cgd_id",
+                "cg_id",
+                "customer_id",
+                "cgd_notes",
+                "cgd_nominal",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cash_gudangs": {
+            "rows": 104,
+            "columns": [
+                "cg_id",
+                "staff_id",
+                "cash_id",
+                "cg_date",
+                "cg_nominal",
+                "cg_notes",
+                "cg_type",
+                "cg_aksi",
+                "cg_img",
+                "status",
+                "created_by",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cash_sales": {
+            "rows": 461,
+            "columns": [
+                "cs_id",
+                "ref_payment_id",
+                "cash_id",
+                "staff_id",
+                "bank_id",
+                "cs_date",
+                "cs_nominal",
+                "cs_type",
+                "cs_aksi",
+                "cs_transaction",
+                "cs_notes",
+                "cs_img",
+                "status",
+                "created_by",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cash_sales_details": {
+            "rows": 364,
+            "columns": [
+                "csd_id",
+                "cs_id",
+                "csd_notes",
+                "csd_nominal",
+                "csd_type",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "cashes": {
+            "rows": 532,
+            "columns": [
+                "cash_id",
+                "person_id",
+                "cash_date",
+                "cash_type",
+                "cash_tujuan",
+                "cash_description",
+                "cash_nominal",
+                "status",
+                "created_by",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "customer_product_return_details": {
+            "rows": 0,
+            "columns": [
+                "return_detail_id",
+                "return_id",
+                "product_variant_id",
+                "unit_id",
+                "warehouse_id",
+                "destination_warehouse_id",
+                "qty",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "customer_product_returns": {
+            "rows": 0,
+            "columns": [
+                "return_id",
+                "return_number",
+                "return_group",
+                "customer_id",
+                "return_date",
+                "ref_number",
+                "notes",
+                "proof_path",
+                "status",
+                "created_by",
+                "qc_staff_id",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "customer_supply_return_details": {
+            "rows": 5,
+            "columns": [
+                "return_detail_id",
+                "return_id",
+                "supplies_id",
+                "unit_id",
+                "warehouse_id",
+                "qty",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "customer_supply_returns": {
+            "rows": 4,
+            "columns": [
+                "return_id",
+                "return_number",
+                "return_group",
+                "so_id",
+                "customer_id",
+                "return_date",
+                "ref_number",
+                "notes",
+                "proof_path",
+                "status",
+                "created_by",
+                "qc_staff_id",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "dashboard_change_logs": {
+            "rows": 500,
+            "columns": [
+                "id",
+                "module_key",
+                "activity_type",
+                "module_label",
+                "reference",
+                "what_changed",
+                "summary",
+                "url",
+                "url_label",
+                "created_by",
+                "meta",
+                "duration_seconds",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": 500
+        },
+        "dashboard_queue_dismissals": {
+            "rows": 14,
+            "columns": [
+                "id",
+                "staff_id",
+                "queue_section",
+                "queue_key",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "external_api_endpoints": {
+            "rows": 33,
+            "columns": [
+                "external_api_endpoint_id",
+                "endpoint_key",
+                "is_active",
+                "is_public_docs_show",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "external_api_keys": {
+            "rows": 1,
+            "columns": [
+                "external_api_key_id",
+                "external_application_id",
+                "key_name",
+                "environment",
+                "key_prefix",
+                "key_hash",
+                "key_last_four",
+                "key_status",
+                "expires_at",
+                "last_used_at",
+                "revoked_at",
+                "revoked_by",
+                "created_by",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "external_api_request_logs": {
+            "rows": 0,
+            "columns": [
+                "external_api_request_log_id",
+                "external_application_id",
+                "external_api_key_id",
+                "application_name",
+                "key_name",
+                "method",
+                "endpoint",
+                "route_name",
+                "api_version",
+                "status_code",
+                "duration_ms",
+                "ip_address",
+                "user_agent",
+                "requested_at",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": 200
+        },
+        "external_applications": {
+            "rows": 1,
+            "columns": [
+                "external_application_id",
+                "application_code",
+                "application_name",
+                "company",
+                "contact_name",
+                "contact_email",
+                "description",
+                "application_status",
+                "created_by",
+                "updated_by",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "inward_outwards": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "log_stocks": {
+            "rows": 689,
+            "columns": [
+                "log_id",
+                "log_date",
+                "log_kode",
+                "log_type",
+                "log_category",
+                "log_item_id",
+                "log_notes",
+                "log_jumlah",
+                "log_saldo",
+                "unit_id",
+                "status",
+                "staff_id",
+                "warehouse_id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": 1000
+        },
+        "manage_stocks": {
+            "rows": 0,
+            "columns": [
+                "ms_id",
+                "ms_type",
+                "product_variant_id",
+                "supplies_id",
+                "ms_stock",
+                "ms_created_by",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "petty_cash_details": {
+            "rows": 0,
+            "columns": [
+                "pcd_id",
+                "pcd_notes",
+                "cc_id",
+                "pcd_nominal",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "petty_cashes": {
+            "rows": 0,
+            "columns": [
+                "pc_id",
+                "pc_date",
+                "staff_id",
+                "status",
+                "created_by",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "product_issues_details": {
+            "rows": 40,
+            "columns": [
+                "pid_id",
+                "pi_id",
+                "item_id",
+                "pid_qty",
+                "unit_id",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "product_relations": {
+            "rows": 0,
+            "columns": [
+                "pr_id",
+                "product_variant_id",
+                "pr_unit_id_1",
+                "pr_unit_value_1",
+                "pr_unit_id_2",
+                "pr_unit_value_2",
+                "pr_default",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "product_stocks": {
+            "rows": 0,
+            "columns": [
+                "ps_id",
+                "product_variant_id",
+                "product_id",
+                "unit_id",
+                "warehouse_id",
+                "ps_stock",
+                "ps_safety_stock",
+                "ps_alert_stock",
+                "ps_min_order",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "production_details": {
+            "rows": 0,
+            "columns": [
+                "pd_id",
+                "production_id",
+                "product_variant_id",
+                "pd_qty",
+                "unit_id",
+                "destination_warehouse_id",
+                "bom_id",
+                "list_bahan",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "production_photos": {
+            "rows": 0,
+            "columns": [
+                "pp_id",
+                "pp_date",
+                "pp_photo",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "productions": {
+            "rows": 0,
+            "columns": [
+                "production_id",
+                "production_date",
+                "production_code",
+                "production_desc",
+                "production_created_by",
+                "notes",
+                "cancel_requested_by",
+                "status",
+                "created_at",
+                "updated_at",
+                "acc_by",
+                "resolved_by_system"
+            ],
+            "capped": null
+        },
+        "purchase_delivery_orders": {
+            "rows": 453,
+            "columns": [
+                "pdo_id",
+                "po_id",
+                "pdo_number",
+                "pdo_receiver",
+                "staff_id",
+                "pdo_date",
+                "pdo_phone",
+                "pdo_desc",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "purchase_delivery_orders_details": {
+            "rows": 988,
+            "columns": [
+                "pdod_id",
+                "pdo_id",
+                "supplies_variant_id",
+                "pdod_sku",
+                "pdod_qty",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "purchase_order_deliveries": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "purchase_order_delivery_details": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "purchase_order_detail_invoices": {
+            "rows": 450,
+            "columns": [
+                "poi_id",
+                "po_id",
+                "poi_date",
+                "poi_due",
+                "poi_code",
+                "poi_total",
+                "bank_id",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "purchase_order_receipts": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "purchase_order_tts": {
+            "rows": 219,
+            "columns": [
+                "tt_id",
+                "tt_date",
+                "tt_due",
+                "tt_kode",
+                "tt_total",
+                "staff_name",
+                "staffFinance_name",
+                "supplier_id",
+                "tt_image",
+                "tt_desc",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by",
+                "acc_by"
+            ],
+            "capped": null
+        },
+        "purchase_orders": {
+            "rows": 506,
+            "columns": [
+                "po_id",
+                "po_number",
+                "po_date",
+                "po_supplier",
+                "po_total",
+                "jenis_discount",
+                "po_discount",
+                "po_ppn",
+                "po_cost",
+                "po_desc",
+                "po_img",
+                "pembayaran",
+                "tt_id",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by",
+                "acc_by"
+            ],
+            "capped": null
+        },
+        "purchase_orders_details": {
+            "rows": 1093,
+            "columns": [
+                "pod_id",
+                "po_id",
+                "supplies_variant_id",
+                "pod_nama",
+                "pod_variant",
+                "unit_id",
+                "pod_sku",
+                "pod_harga",
+                "pod_qty",
+                "pod_subtotal",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "report_losses": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "report_profits": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "return_supplies": {
+            "rows": 12,
+            "columns": [
+                "rs_id",
+                "po_id",
+                "pi_id",
+                "rs_date",
+                "rs_notes",
+                "rs_total",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "return_supplies_detail": {
+            "rows": 23,
+            "columns": [
+                "rsd_id",
+                "rs_id",
+                "pid_id",
+                "supplies_variant_id",
+                "unit_id",
+                "rsd_qty",
+                "rsd_price",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "return_supplies_details": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sales_delivery_orders": {
+            "rows": 0,
+            "columns": [
+                "sdo_id",
+                "so_id",
+                "sdo_number",
+                "sdo_receiver",
+                "sdo_date",
+                "sdo_phone",
+                "sdo_desc",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sales_delivery_orders_details": {
+            "rows": 0,
+            "columns": [
+                "sdod_id",
+                "sdo_id",
+                "product_variant_id",
+                "sdod_sku",
+                "sdod_qty",
+                "unit_id",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sales_order_deliveries": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sales_order_delivery_details": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sales_order_detail_invoices": {
+            "rows": 0,
+            "columns": [
+                "soi_id",
+                "so_id",
+                "soi_date",
+                "soi_due",
+                "soi_code",
+                "soi_total",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sales_order_details": {
+            "rows": 0,
+            "columns": [
+                "sod_id",
+                "so_id",
+                "product_variant_id",
+                "unit_id",
+                "warehouse_id",
+                "sod_nama",
+                "sod_variant",
+                "sod_sku",
+                "sod_harga",
+                "sod_qty",
+                "sod_subtotal",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sales_orders": {
+            "rows": 0,
+            "columns": [
+                "so_id",
+                "so_number",
+                "so_date",
+                "so_customer",
+                "retail_warehouse_id",
+                "so_invoice_no",
+                "so_ref_number",
+                "ref_shipment_id",
+                "notes",
+                "cancel_reason",
+                "so_total",
+                "so_discount",
+                "so_ppn",
+                "so_cost",
+                "so_img",
+                "status",
+                "so_paid",
+                "so_difference",
+                "so_cashier",
+                "acc_by",
+                "created_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "shipment_shortage_documents": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "doc_number",
+                "so_id",
+                "ref_shipment_id",
+                "items",
+                "status",
+                "created_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "staff": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "staff_warehouses": {
+            "rows": 19,
+            "columns": [
+                "id",
+                "staff_id",
+                "warehouse_id",
+                "is_kepala_cabang",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "stock_alerts": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "stock_opname_bahans": {
+            "rows": 57,
+            "columns": [
+                "stob_id",
+                "stob_date",
+                "stob_code",
+                "staff_id",
+                "stob_notes",
+                "status",
+                "is_draft",
+                "created_by",
+                "created_at",
+                "updated_at",
+                "acc_by"
+            ],
+            "capped": null
+        },
+        "stock_opname_detail_bahans": {
+            "rows": 10678,
+            "columns": [
+                "stobd_id",
+                "stob_id",
+                "supplies_id",
+                "stobd_system",
+                "stobd_real",
+                "stobd_selisih",
+                "stobd_notes",
+                "stobd_touched",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "stock_opname_details": {
+            "rows": 0,
+            "columns": [
+                "stod_id",
+                "sto_id",
+                "product_id",
+                "product_variant_id",
+                "stod_system",
+                "stod_real",
+                "stod_selisih",
+                "stod_notes",
+                "stod_touched",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "stock_opnames": {
+            "rows": 0,
+            "columns": [
+                "sto_id",
+                "sto_date",
+                "sto_code",
+                "staff_id",
+                "category_id",
+                "sto_notes",
+                "status",
+                "is_draft",
+                "created_by",
+                "created_at",
+                "updated_at",
+                "acc_by"
+            ],
+            "capped": null
+        },
+        "stock_transfer_details": {
+            "rows": 0,
+            "columns": [
+                "std_id",
+                "st_id",
+                "product_id",
+                "product_variant_id",
+                "unit_id",
+                "received_unit_id",
+                "qty",
+                "qty_received",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "stock_transfers": {
+            "rows": 0,
+            "columns": [
+                "st_id",
+                "transfer_code",
+                "transfer_date",
+                "sender_id",
+                "receiver_id",
+                "from_warehouse_id",
+                "to_warehouse_id",
+                "note",
+                "accept_note",
+                "source_type",
+                "source_id",
+                "disposition",
+                "status",
+                "created_by",
+                "acc_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "stocks": {
+            "rows": 0,
+            "columns": [
+                "id",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "supplies_relations": {
+            "rows": 33,
+            "columns": [
+                "sr_id",
+                "supplies_id",
+                "su_id_1",
+                "su_id_2",
+                "sr_value_1",
+                "sr_value_2",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "supplies_stocks": {
+            "rows": 2813,
+            "columns": [
+                "ss_id",
+                "supplies_id",
+                "unit_id",
+                "warehouse_id",
+                "ss_stock",
+                "status",
+                "created_at",
+                "updated_at",
+                "created_by"
+            ],
+            "capped": null
+        },
+        "supplies_units": {
+            "rows": 0,
+            "columns": [
+                "su_id",
+                "supplies_id",
+                "unit_id",
+                "status",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sync_executions": {
+            "rows": 0,
+            "columns": [
+                "sync_execution_id",
+                "flow_key",
+                "step_key",
+                "status",
+                "started_at",
+                "finished_at",
+                "duration_ms",
+                "total_processed",
+                "total_inserted",
+                "total_updated",
+                "total_failed",
+                "total_skipped",
+                "message",
+                "details",
+                "errors",
+                "notices",
+                "executed_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "sync_snapshots": {
+            "rows": 0,
+            "columns": [
+                "sync_snapshot_id",
+                "flow_key",
+                "endpoint_key",
+                "url",
+                "payload",
+                "row_count",
+                "fetched_at",
+                "fetched_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "warehouse_types": {
+            "rows": 8,
+            "columns": [
+                "id",
+                "warehouse_type_name",
+                "is_main_warehouse",
+                "status",
+                "created_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        },
+        "warehouses": {
+            "rows": 14,
+            "columns": [
+                "id",
+                "warehouse_name",
+                "warehouse_type_id",
+                "warehouse_address",
+                "sidebar_menus",
+                "status",
+                "created_by",
+                "created_at",
+                "updated_at"
+            ],
+            "capped": null
+        }
+    }
+}
