@@ -63,9 +63,10 @@ Route::middleware(checkLogin::class)->group(function () {
 
     // Riwayat Stok Produk / Bahan Mentah modal (Stock_Product.js & Stock_Supplies.js) -- dulu
     // salah tergabung ke grup 'Peran & Perizinan|view' sehingga staf QC & Gudang yang cuma
-    // punya akses 'Stok Produk'/'Stok Bahan Mentah' kena 403 saat buka histori stok (GitHub #68).
-    // Sama seperti endpoint autocomplete di atas: dipakai lintas modul & datanya sudah terlindungi
-    // oleh akses view halaman Stok Produk/Stok Bahan Mentah itu sendiri, cukup gate login saja.
+    // punya akses 'Daftar Produk'/'Daftar Bahan Mentah' kena 403 saat buka histori stok
+    // (GitHub #68). Modul yang dicek tergantung request-nya (log_type: produk vs bahan mentah),
+    // jadi check.access middleware yang statis per-route tidak bisa mengekspresikan ini --
+    // GeneralController::getLog() sendiri yang memvalidasi lewat RoleAccess.
     Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
 
     Route::middleware('check.access:Kategori|view')->group(function () {
