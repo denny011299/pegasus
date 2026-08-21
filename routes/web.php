@@ -69,41 +69,6 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
 
     Route::middleware('check.access:Kategori|view')->group(function () {
-    });
-    Route::middleware('check.access:Satuan|view')->group(function () {
-    });
-    Route::middleware('check.access:Variasi|view')->group(function () {
-    });
-    Route::middleware('check.access:Resep Bahan Mentah|view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Daftar Produk,Stok Produk,Pengiriman,Produksi,Produk Bermasalah,view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Daftar Bahan Mentah,Stok Bahan Mentah,Pembelian,Produksi,Resep Bahan Mentah,Pengelolaan Bahan Mentah,Produk Bermasalah,view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Armada,Pengiriman,view')->group(function () {
-
-    });
-    Route::middleware('check.access.any:Pemasok,Pembelian,view')->group(function () {
-    });
-    Route::middleware('check.access.any:Pengguna,Pengiriman,Pembelian,Produksi,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,view')->group(function () {
-    });
-    Route::middleware('check.access:Pengiriman|view')->group(function () {
-    });
-    Route::middleware('check.access.any:Kategori Kas,Kas Operasional Admin,Kas Admin,Kas Operasional Gudang,Kas Gudang,Kas Operasional Armada,Kas Armada,Kas Operasional Sales,Kas Sales,Kas Operasional,Kas,view')->group(function () {
-    });
-    Route::middleware('check.access:Peran & Perizinan|view')->group(function () {
-    });
-    Route::middleware('check.access.any:Bank Account,Hutang,view')->group(function () {
-    });
-    Route::middleware('check.access:Pembelian|view')->group(function () {
-    });
-    Route::middleware('check.access:Pengiriman|view')->group(function () {
-    });
-
-    Route::middleware('check.access:Kategori|view')->group(function () {
         Route::get('/category', [ProductController::class, 'Category'])->name('category');
         Route::get('/getCategory', [ProductController::class, 'getCategory'])->name('getCategory');
     });
