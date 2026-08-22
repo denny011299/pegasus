@@ -13,6 +13,27 @@
     var bahanTableFilter = "all";
     var visibleDashboardWidgets = null;
 
+    // Skeleton shimmer per tabel dashboard (pola dt-pending/dt-ready, sama seperti /product).
+    var DASH_TABLE_WRAP_IDS = [
+        "dash_changelog_wrap",
+        "dash_confirmation_wrap",
+        "dash_revision_wrap",
+        "dash_payables_wrap",
+        "dash_top_yearly_wrap",
+        "dash_top_accum_wrap",
+        "dash_stock_aging_wrap",
+        "dash_bahan_alert_wrap",
+        "dash_recommended_wrap",
+    ];
+
+    function setDashTablesLoading(isLoading) {
+        for (var i = 0; i < DASH_TABLE_WRAP_IDS.length; i++) {
+            var $wrap = $("#" + DASH_TABLE_WRAP_IDS[i]);
+            if (!$wrap.length) continue;
+            $wrap.toggleClass("dt-pending", !!isLoading).toggleClass("dt-ready", !isLoading);
+        }
+    }
+
     function getVisibleDashboardWidgets() {
         if (!window.permissionList || !Array.isArray(window.permissionList)) return null;
         var row = window.permissionList.find(function (p) {
@@ -228,9 +249,13 @@
                       ? "revision"
                       : "changelog";
             var queueKey = String(r.queue_key || "");
+            var staffCell =
+                typeof renderCreatedByName === "function"
+                    ? renderCreatedByName(r.staff_name)
+                    : escHtml(r.staff_name || "-");
             var extraCols = isChangelog
                 ? "<td>" +
-                  escHtml(r.staff_name || "-") +
+                  staffCell +
                   "</td><td>" +
                   escHtml(r.opened_at || "-") +
                   (r.duration_label
@@ -659,6 +684,7 @@
 
     function loadDashboard() {
         var period = $("#dash_filter_period").val() || "year";
+        setDashTablesLoading(true);
         $.ajax({
             url: "/getDashboardOverview",
             method: "get",
@@ -771,8 +797,11 @@
                 maybeDashBahanToast(lastBahanPack);
                 tryBrowserNotifyBahan(lastBahanPack);
                 renderChart(data);
+                setDashTablesLoading(false);
+                if (typeof feather !== "undefined") feather.replace();
             },
             error: function (xhr) {
+                setDashTablesLoading(false);
                 if (handlePermissionError(xhr)) return;
                 $("#dash_filter_label").text("Gagal memuat dashboard.");
             },
