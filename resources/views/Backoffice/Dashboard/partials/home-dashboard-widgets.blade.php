@@ -1,3 +1,28 @@
+@php
+    // Skeleton shimmer markup untuk tabel dashboard, mengikuti pola dt-skeleton
+    // yang dipakai di halaman list (mis. /product) — lihat public/assets/css/custom-premium.css.
+    $dashSkeletonRows = function (array $cols, int $rows = 4) {
+        $template = implode(' ', $cols);
+        $head = '<div class="dt-skeleton-head" style="grid-template-columns:' . $template . ';">';
+        foreach ($cols as $c) {
+            $head .= '<span></span>';
+        }
+        $head .= '</div>';
+
+        $body = '<div class="dt-skeleton-body">';
+        for ($i = 0; $i < $rows; $i++) {
+            $body .= '<div class="dt-skeleton-row" style="grid-template-columns:' . $template . ';">';
+            foreach ($cols as $c) {
+                $body .= '<span class="skel-text" style="width:' . rand(55, 85) . '%"></span>';
+            }
+            $body .= '</div>';
+        }
+        $body .= '</div>';
+
+        return $head . $body;
+    };
+@endphp
+
 <style>
     .dash-home {
         --dash-surface: #ffffff;
@@ -173,22 +198,26 @@
         margin-bottom: 0;
     }
 
+    /* Header/body sama seperti .card-table (mis. /product): gradient thead-light,
+       ukuran font & padding baris yang sama — dash-scroll/dash-table-wrap tetap
+       dipertahankan untuk perilaku scroll & max-height panel dashboard. */
     .dash-table thead th {
-        background: #f8fafc !important;
-        font-size: 0.6875rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #475569 !important;
-        border-bottom: 1px solid var(--dash-border) !important;
-        padding: 0.55rem 0.65rem !important;
+        background: linear-gradient(320deg, #ddeeff 0%, #dbecff 100%) !important;
+        font-size: 13px;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: normal;
+        color: #28084b !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        padding: 10px 16px !important;
+        white-space: nowrap;
     }
 
     .dash-table tbody td {
-        font-size: 0.8125rem;
-        color: #334155;
-        padding: 0.55rem 0.65rem !important;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+        font-size: 14px;
+        color: #1f0066;
+        padding: 10px 16px !important;
+        border-bottom: 1px solid #f5f5f5;
         vertical-align: middle;
     }
 
@@ -197,7 +226,14 @@
     }
 
     .dash-table-hover tbody tr:hover td {
-        background-color: #f8fafc;
+        background-color: #f6f6f7;
+    }
+
+    /* Skeleton shimmer (dt-pending/dt-ready/dt-skeleton) di-load global lewat
+       head.blade.php — di sini hanya menyesuaikan lebar minimum untuk kartu
+       dashboard yang lebih sempit dari card-table biasa. */
+    .dash-home .dt-skeleton {
+        min-width: 0;
     }
 
     .dash-table td,
@@ -239,7 +275,7 @@
         position: sticky;
         top: 0;
         z-index: 5;
-        background: #f8fafc !important;
+        background: linear-gradient(320deg, #ddeeff 0%, #dbecff 100%) !important;
     }
 
     .dash-payable-customer {
@@ -675,23 +711,28 @@
         <div class="col-12">
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Changelog</h3>
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Modul</th>
-                                <th class="text-nowrap">Ref</th>
-                                <th>Perubahan / status</th>
-                                <th class="text-nowrap">User</th>
-                                <th class="text-nowrap">Jam / Durasi</th>
-                                <th class="text-end text-nowrap">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_changelog_body">
-                            <tr><td colspan="6" class="text-center text-muted">Memuat…</td></tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_changelog_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['12%', '10%', '30%', '18%', '18%', '12%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="text-nowrap">Modul</th>
+                                    <th class="text-nowrap">Ref</th>
+                                    <th>Perubahan / status</th>
+                                    <th class="text-nowrap">User</th>
+                                    <th class="text-nowrap">Jam / Durasi</th>
+                                    <th class="text-end text-nowrap">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_changelog_body">
+                                <tr><td colspan="6" class="text-center text-muted">Memuat…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -704,21 +745,26 @@
                         <option value="all">Semua modul</option>
                     </select>
                 </div>
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Modul</th>
-                                <th class="text-nowrap">Ref</th>
-                                <th>Perlu ACC</th>
-                                <th class="text-end text-nowrap">Buka</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_confirmation_body">
-                            <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_confirmation_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['15%', '12%', '55%', '18%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="text-nowrap">Modul</th>
+                                    <th class="text-nowrap">Ref</th>
+                                    <th>Perlu ACC</th>
+                                    <th class="text-end text-nowrap">Buka</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_confirmation_body">
+                                <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -731,21 +777,26 @@
                         <option value="all">Semua modul</option>
                     </select>
                 </div>
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Modul</th>
-                                <th class="text-nowrap">Ref</th>
-                                <th>Alasan</th>
-                                <th class="text-end text-nowrap">Buka</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_revision_body">
-                            <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_revision_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['15%', '12%', '55%', '18%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-approval-table mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="text-nowrap">Modul</th>
+                                    <th class="text-nowrap">Ref</th>
+                                    <th>Alasan</th>
+                                    <th class="text-end text-nowrap">Buka</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_revision_body">
+                                <tr><td colspan="4" class="text-center text-muted">Memuat…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -754,22 +805,27 @@
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title mb-2">Jatuh tempo hutang customer</h3>
                 {{-- <p class="dash-muted-note mb-2">Menampilkan invoice belum dibayar dengan status: Akan jatuh tempo dalam 1-2 hari, Hari ini, atau sudah lewat jatuh tempo.</p> --}}
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-approval-table dash-freeze-head mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Jatuh Tempo</th>
-                                <th class="text-nowrap">Invoice</th>
-                                <th>Customer</th>
-                                <th class="text-end text-nowrap">Total Hutang</th>
-                                <th class="text-end text-nowrap">Buka</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_payables_due_body">
-                            <tr><td colspan="5" class="text-center text-muted">Memuat…</td></tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_payables_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['16%', '16%', '34%', '20%', '14%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-approval-table dash-freeze-head mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="text-nowrap">Jatuh Tempo</th>
+                                    <th class="text-nowrap">Invoice</th>
+                                    <th>Customer</th>
+                                    <th class="text-end text-nowrap">Total Hutang</th>
+                                    <th class="text-end text-nowrap">Buka</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_payables_due_body">
+                                <tr><td colspan="5" class="text-center text-muted">Memuat…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -799,22 +855,27 @@
             <div class="dash-card mb-3">
                 <h3 class="dash-card-title-sub" id="dash_top_yearly_title">Top 5 pengiriman tahunan</h3>
                 <p class="dash-muted-note mb-2" id="dash_top_yearly_sub">—</p>
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Produk</th>
-                                <th class="text-end">Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_top_yearly">
-                            <tr>
-                                <td colspan="3" class="text-center text-muted">Memuat...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_top_yearly_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['8%', '72%', '20%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Produk</th>
+                                    <th class="text-end">Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_top_yearly">
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Memuat...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -823,22 +884,27 @@
             <div class="dash-card">
                 <h3 class="dash-card-title-sub" id="dash_top_accum_title">Top 5 pengiriman bulan ini</h3>
                 <p class="dash-muted-note mb-2" id="dash_top_accum_sub">—</p>
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Produk</th>
-                                <th class="text-end">Qty</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_top_accum">
-                            <tr>
-                                <td colspan="3" class="text-center text-muted">Memuat...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_top_accum_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['8%', '72%', '20%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-top5-table mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Produk</th>
+                                    <th class="text-end">Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_top_accum">
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Memuat...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -855,24 +921,29 @@
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Stock aging (FIFO)</h3>
                 {{-- <p class="dash-muted-note mb-3">Umur lapisan stok belum keluar (sampai akhir periode filter). Gunakan <strong>Lihat</strong> untuk rincian barang jadi &amp; bahan per kelompok.</p> --}}
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-stock-aging-table mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Umur Stok</th>
-                                <th>Status</th>
-                                <th class="text-end text-nowrap">Qty</th>
-                                <th class="text-end text-nowrap">Nilai</th>
-                                <th class="text-nowrap">Rincian</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_stock_aging_body">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">Memuat...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_stock_aging_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['18%', '20%', '16%', '20%', '26%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-stock-aging-table mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="text-nowrap">Umur Stok</th>
+                                    <th>Status</th>
+                                    <th class="text-end text-nowrap">Qty</th>
+                                    <th class="text-end text-nowrap">Nilai</th>
+                                    <th class="text-nowrap">Rincian</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_stock_aging_body">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Memuat...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -907,24 +978,29 @@
                         <a class="btn btn-outline-primary btn-sm" id="dash_bahan_link_po" href="{{ url('purchaseOrder') }}">Purchase order</a>
                     </div>
                 </div>
-                <div class="dash-scroll-tall">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover mb-0 dash-bahan-alert-table">
-                        <thead>
-                            <tr>
-                                <th class="text-nowrap">Status</th>
-                                <th>Bahan</th>
-                                <th>Stok</th>
-                                <th class="text-end text-nowrap">Batas min.</th>
-                                <th>Catatan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_bahan_alert_body">
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">Memuat…</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_bahan_alert_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['14%', '26%', '20%', '16%', '24%']) !!}
+                    </div>
+                    <div class="dash-scroll-tall">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover mb-0 dash-bahan-alert-table">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th class="text-nowrap">Status</th>
+                                    <th>Bahan</th>
+                                    <th>Stok</th>
+                                    <th class="text-end text-nowrap">Batas min.</th>
+                                    <th>Catatan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_bahan_alert_body">
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">Memuat…</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -944,22 +1020,27 @@
             <div class="dash-card dash-card-fill">
                 <h3 class="dash-card-title">Rekomendasi stok produksi</h3>
                 <p class="dash-muted-note mb-2" id="dash_recommended_note"></p>
-                <div class="dash-scroll">
-                    <div class="dash-table-wrap">
-                    <table class="table table-sm dash-table dash-table-hover dash-reco-table mb-0">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Produk</th>
-                                <th class="text-end text-nowrap">Rekomendasi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dash_recommended_body">
-                            <tr>
-                                <td colspan="3" class="text-center text-muted">Memuat…</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="dt-pending" id="dash_recommended_wrap">
+                    <div class="dt-skeleton" aria-hidden="true">
+                        {!! $dashSkeletonRows(['8%', '72%', '20%']) !!}
+                    </div>
+                    <div class="dash-scroll">
+                        <div class="dash-table-wrap">
+                        <table class="table table-sm dash-table dash-table-hover dash-reco-table mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Produk</th>
+                                    <th class="text-end text-nowrap">Rekomendasi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash_recommended_body">
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">Memuat…</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>
                     </div>
                 </div>
             </div>
