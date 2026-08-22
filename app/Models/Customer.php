@@ -29,7 +29,17 @@ class Customer extends Model
         return self::where('status', 1)
             ->orderBy('created_at', 'asc')
             ->orderBy('customer_id', 'asc')
-            ->select(['customer_id', 'customer_code', 'customer_pic', 'customer_pic_phone', 'customer_notes']);
+            ->select([
+                'customer_id',
+                'customer_code',
+                'customer_pic',
+                'customer_pic_phone',
+                'customer_notes',
+                'customer_category',
+                'customer_merk_model',
+                'customer_tahun_kendaraan',
+                'customer_lokasi',
+            ]);
     }
 
     function getCustomer($data = [])
