@@ -58,3 +58,5 @@ pegasuso_pegasus.sql
 # database/seeders/README.md. The generated snapshot under
 # database/seeders/{data,snapshots/<name>}/*.json is what gets committed.
 /*.sql
+
+/database/seeders/snapshots/prod_21082026
