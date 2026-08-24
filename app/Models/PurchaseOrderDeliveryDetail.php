@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UnitRollUp;
 use Illuminate\Database\Eloquent\Model;
 
 class PurchaseOrderDeliveryDetail extends Model
@@ -47,13 +48,52 @@ class PurchaseOrderDeliveryDetail extends Model
         $t->status = $data["status"]??1;
         $t->save();
         if(isset($data["statusPO"])&&$data["statusPO"]==2){
-            $s = SuppliesVariant::find($data["supplies_variant_id"]);
-            $s = SuppliesStock::where("supplies_id", "=", $s->supplies_id)
-                ->where("unit_id", "=", $data["unit_id"])
+            $sv = SuppliesVariant::find($data["supplies_variant_id"]);
+
+            // Ditambahkan (2026-08-25): penerimaan barang PO dulu flat (`ss_stock += pdod_qty`)
+            // tanpa konversi satuan -- 24 Piece yang dibeli tetap 24 Piece walaupun 1 DOS = 12 Piece,
+            // padahal 24 Piece hasil PRODUKSI sudah naik jadi 2 DOS sejak GitHub #19. Barang fisik
+            // yang sama jadi terepresentasi beda tergantung cara masuknya. Sekarang dinaikkan
+            // berjenjang lewat UnitRollUp, yang hanya menaikkan ke satuan yang SUDAH punya baris
+            // stok aktif (tidak membuat baris baru diam-diam).
+            //
+            // PENTING: tolakPO() -- pembatalan PO yang sudah di-ACC -- ikut disesuaikan di
+            // SupplierController supaya bisa membongkar satuan besar saat mengembalikan stok.
+            // Tanpa itu, roll-up di sini membuat pembatalan PO selalu gagal "Stok bahan tidak
+            // mencukupi", karena stoknya sudah tidak lagi berada di satuan yang dipesan.
+            $rollUp = UnitRollUp::planSupplies(
+                (int) $sv->supplies_id,
+                (int) $data["unit_id"],
+                (int) $data["pdod_qty"]
+            );
+
+            // Entry ke-0 selalu satuan asal. Baris stoknya SENGAJA tidak di-null-guard: kalau
+            // kombinasi supplies_id + unit_id tidak ketemu, itu unit_id yang salah dan harus
+            // meledak seperti perilaku sebelumnya supaya transaksi accPO() rollback -- bukan
+            // di-skip diam-diam, yang berarti "barang diterima tapi stok tidak pernah bertambah"
+            // tanpa ada yang tahu (antipattern yang sudah pernah diperbaiki di accProduction()).
+            $base = array_shift($rollUp);
+            $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+                ->where("unit_id", "=", $base['unit_id'])
                 ->where("status", "=", 1)
                 ->first();
-            $s->ss_stock += $data["pdod_qty"];
+            $s->ss_stock += $base['qty'];
             $s->save();
+
+            // Level di atasnya dijamin punya baris stok aktif — UnitRollUp hanya menaikkan ke
+            // satuan yang sudah punya baris (lihat allowedSuppliesUnitIds()).
+            foreach ($rollUp as $credit) {
+                if ($credit['qty'] <= 0) continue;
+
+                $row = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+                    ->where("unit_id", "=", $credit['unit_id'])
+                    ->where("status", "=", 1)
+                    ->first();
+                if (!$row) continue;
+
+                $row->ss_stock += $credit['qty'];
+                $row->save();
+            }
         }
         return $t->pdod_id;
     }
