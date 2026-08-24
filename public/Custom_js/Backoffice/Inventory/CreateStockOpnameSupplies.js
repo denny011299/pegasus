@@ -732,17 +732,30 @@ $(document).on("click", "#btn-acc-stob", function () {
         suppliesSubmit.push(item);
     });
 
+    submitAccStockOpnameBahan(data.stob_id, false);
+});
+
+// Mirror submitAccStockOpname() di CreateStockOpname.js — accStockOpnameBahan bisa membalas
+// status:-3 kalau stok bahan yang di-opname sudah bergerak setelah dokumen ini diajukan.
+function submitAccStockOpnameBahan(stobId, confirmStale) {
     $.ajax({
         url: "/accStockOpnameBahan",
         data: {
-            stob_id: data.stob_id,
+            stob_id: stobId,
             item: JSON.stringify(suppliesSubmit),
+            confirm_stale: confirmStale ? 1 : 0,
             _token: token,
         },
         method: "post",
         success: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
             if (typeof e === "object" && e !== null) {
+                if (e.status == -3) {
+                    showModalKonfirmasi(e.message, "btn-confirm-stale-stob");
+                    $("#btn-confirm-stale-stob").attr("stob_id", stobId);
+                    $(".btn-konfirmasi").html("Konfirmasi");
+                    return false;
+                }
                 notifikasi("error", e.header, e.message);
                 return false;
             }
@@ -761,6 +774,11 @@ $(document).on("click", "#btn-acc-stob", function () {
             console.log(e);
         },
     });
+}
+
+$(document).on("click", "#btn-confirm-stale-stob", function () {
+    LoadingButton(this);
+    submitAccStockOpnameBahan($(this).attr("stob_id"), true);
 });
 
 $(document).on("click", ".save-tolak", function () {

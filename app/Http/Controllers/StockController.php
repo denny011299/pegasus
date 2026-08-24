@@ -260,6 +260,62 @@ class StockController extends Controller
         return (new StockOpnameDetail())->deleteDetailStockOpname($data);
     }
 
+    /**
+     * Nama item yang stoknya BERGERAK setelah dokumen opname terakhir diajukan/diedit.
+     *
+     * Kenapa perlu (2026-08-25): hitungan fisik staf dibekukan di stod_real saat dokumen dibuat,
+     * tapi accStockOpname() menimpa stok dengan angka itu APA ADANYA saat approve. Kalau ada
+     * pergerakan stok di antara penghitungan dan approval (barang masuk, SO dikirim, produksi
+     * selesai), approve akan diam-diam MENGHAPUS pergerakan itu -- stok balik ke angka hasil hitung
+     * yang sudah basi. Refresh live di generateStockOpname() cuma membuatnya terlihat (selisih
+     * membengkak), tidak mencegahnya.
+     *
+     * Sengaja memakai log_stocks, bukan membandingkan stod_system dengan stok live: stod_system
+     * ikut di-refresh setiap kali PDF-nya di-download (lihat refreshLiveSystemQty()), jadi
+     * perbandingan itu bisa "sembuh sendiri" hanya karena dokumennya dibuka -- padahal hitungan
+     * fisiknya tetap basi. Patokan waktunya header stock_opnames.updated_at (bukan updated_at baris
+     * detail, yang ikut bergerak saat PDF di-download).
+     *
+     * @param  array<int, int>  $itemIds
+     * @return array<int, string>
+     */
+    private function itemsMovedSinceOpname(array $itemIds, int $logType, $since): array
+    {
+        $itemIds = array_values(array_unique(array_filter(array_map('intval', $itemIds))));
+        if ($itemIds === [] || !$since) {
+            return [];
+        }
+
+        $movedIds = LogStock::whereIn('log_item_id', $itemIds)
+            ->where('log_type', $logType)
+            ->where('log_date', '>', $since)
+            ->pluck('log_item_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($movedIds === []) {
+            return [];
+        }
+
+        $names = [];
+        foreach ($movedIds as $id) {
+            if ($logType === 1) {
+                $pv = ProductVariant::find($id);
+                if (!$pv) { $names[] = "id {$id}"; continue; }
+                $pr = Product::find($pv->product_id);
+                $label = trim(($pr->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                $names[] = $label !== '' ? $label : ($pv->product_variant_name ?? "id {$id}");
+            } else {
+                $sp = Supplies::find($id);
+                $names[] = $sp->supplies_name ?? "id {$id}";
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
     function accStockOpname(Request $req) {
         $data = $req->all();
         $stod = json_decode($data['item'], true);
@@ -289,6 +345,31 @@ class StockController extends Controller
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
+        }
+
+        // Gerbang opname basi (2026-08-25) — lihat itemsMovedSinceOpname(). Minta konfirmasi
+        // eksplisit kalau stok produk yang di-opname sudah bergerak setelah dokumen ini diajukan,
+        // karena approve akan menimpa stok dengan hitungan fisik yang sudah tidak mencerminkan
+        // kondisi sekarang (pergerakan di antaranya akan hilang). Pakai status -3 + flag konfirmasi,
+        // pola yang sama dengan accProduction()'s confirm_create_stock.
+        if (!$req->boolean('confirm_stale')) {
+            $movedNames = $this->itemsMovedSinceOpname(
+                collect($stod)->pluck('product_variant_id')->all(),
+                1,
+                $sto->updated_at
+            );
+
+            if ($movedNames !== []) {
+                return response()->json([
+                    "status" => -3,
+                    "header" => "Konfirmasi Diperlukan",
+                    "message" => "Stok berikut sudah berubah setelah opname ini diajukan: "
+                        . implode(', ', $movedNames)
+                        . ". Menyetujui akan menimpa stok dengan hasil hitung yang lama, sehingga"
+                        . " perubahan setelah penghitungan akan hilang. Lanjutkan?",
+                    "moved" => $movedNames,
+                ]);
+            }
         }
 
         // GitHub #53 follow-up: bekukan stod_system/stod_selisih ke nilai SEBENARNYA yang dipakai
@@ -552,6 +633,27 @@ class StockController extends Controller
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
+        }
+
+        // Gerbang opname basi — mirror accStockOpname() di atas, lihat itemsMovedSinceOpname().
+        if (!$req->boolean('confirm_stale')) {
+            $movedNames = $this->itemsMovedSinceOpname(
+                collect($stod)->pluck('supplies_id')->all(),
+                2,
+                $stob->updated_at
+            );
+
+            if ($movedNames !== []) {
+                return response()->json([
+                    "status" => -3,
+                    "header" => "Konfirmasi Diperlukan",
+                    "message" => "Stok berikut sudah berubah setelah opname ini diajukan: "
+                        . implode(', ', $movedNames)
+                        . ". Menyetujui akan menimpa stok dengan hasil hitung yang lama, sehingga"
+                        . " perubahan setelah penghitungan akan hilang. Lanjutkan?",
+                    "moved" => $movedNames,
+                ]);
+            }
         }
 
         // GitHub #53 follow-up: mirrors accStockOpname() above -- bekukan stobd_system/

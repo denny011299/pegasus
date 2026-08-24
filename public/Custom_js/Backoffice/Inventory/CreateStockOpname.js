@@ -670,17 +670,33 @@ $(document).on("click", "#btn-acc-sto", function () {
         productSubmit.push(item);
     });
 
+    submitAccStockOpname(data.sto_id, false);
+});
+
+// Dipakai baik oleh konfirmasi approve awal maupun konfirmasi "stok sudah berubah" di bawah —
+// accStockOpname bisa membalas status:-3 kalau stok produk yang di-opname sudah bergerak setelah
+// dokumen ini diajukan, SEBELUM mengubah apa pun. confirmStale=true dikirim setelah user setuju.
+function submitAccStockOpname(stoId, confirmStale) {
     $.ajax({
         url: "/accStockOpname",
         data: {
-            sto_id: data.sto_id,
+            sto_id: stoId,
             item: JSON.stringify(productSubmit),
+            confirm_stale: confirmStale ? 1 : 0,
             _token: token,
         },
         method: "post",
         success: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
             if (typeof e === "object" && e !== null) {
+                if (e.status == -3) {
+                    // Hitungan fisiknya sudah basi — stok bergerak setelah opname diajukan.
+                    // Approve tetap bisa dilanjutkan, tapi harus disadari user.
+                    showModalKonfirmasi(e.message, "btn-confirm-stale-sto");
+                    $("#btn-confirm-stale-sto").attr("sto_id", stoId);
+                    $(".btn-konfirmasi").html("Konfirmasi");
+                    return false;
+                }
                 notifikasi("error", e.header, e.message);
                 return false;
             }
@@ -699,6 +715,11 @@ $(document).on("click", "#btn-acc-sto", function () {
             console.log(e);
         },
     });
+}
+
+$(document).on("click", "#btn-confirm-stale-sto", function () {
+    LoadingButton(this);
+    submitAccStockOpname($(this).attr("sto_id"), true);
 });
 
 $(document).on("click", ".save-tolak", function () {
