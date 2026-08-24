@@ -790,13 +790,15 @@ class ProductionController extends Controller
             }
 
             $jumlahTambah = (int) $value['pd_qty'];
-            $r = ProductRelation::where('pr_unit_id_2', '=', $v->unit_id)
-                ->where('product_variant_id', '=', $value['product_variant_id'])
-                ->where('status', '=', 1)
-                ->first();
+            // Ditambahkan (2026-08-24): dulu cuma cek satu hop ke atas ($r tunggal) — sekarang
+            // menyusuri seluruh rantai lewat creditProductOutputUpChain() (read-only) supaya
+            // konfirmasi "baris stok baru akan dibuat" ini juga menyebutkan level KEDUA/KETIGA dst,
+            // bukan cuma level pertama, sebelum accProduction() benar-benar mengkreditnya di bawah.
+            $chain = $this->creditProductOutputUpChain((int) $value['product_variant_id'], (int) $v->unit_id, $jumlahTambah);
 
-            if ($r && $jumlahTambah >= $r->pr_unit_value_2) {
-                foreach ([$r->pr_unit_id_1, $r->pr_unit_id_2] as $unitId) {
+            if (count($chain) > 1) {
+                foreach ($chain as $credit) {
+                    $unitId = $credit['unit_id'];
                     $exists = ProductStock::where('product_variant_id', $value['product_variant_id'])
                         ->where('unit_id', $unitId)
                         ->where('status', 1)
@@ -1039,53 +1041,32 @@ class ProductionController extends Controller
             }
             $jumlahTambah = (int) $value['pd_qty'];
             if ($v && $v->unit_id == $unitIdInputUser) {
-                // cek ada relasi endak
-                    // cek dulu ada endak yang belakangnya relasi itu
-                    $r = ProductRelation::where('pr_unit_id_2', '=', $v->unit_id)
-                        ->where('product_variant_id', '=', $value["product_variant_id"])->where('status','=',1)->first();
-                   
-                    // cek jumlahnya melibih penglipatnya endak
-                    if ($r&&$jumlahTambah >= $r->pr_unit_value_2) {
-                        //kalau isa cari berapa tambah dan sisanya
-                        $tambah = floor($jumlahTambah / $r->pr_unit_value_2);
-                        $sisa = $jumlahTambah%$r->pr_unit_value_2;
-                        //sekarang kita tambah yang awal dulu
-                        $ps_depan = $this->ensureProductStockRow((int) $value["product_variant_id"], (int) $r->pr_unit_id_1);
-                        $ps_depan->ps_stock += $tambah;
-                        $ps_depan->save();
+                // GitHub #19 fix (2026-08-24): naik berjenjang lewat SELURUH rantai product_relations
+                // (bukan cuma satu hop) -- lihat creditProductOutputUpChain() di atas. Setiap level
+                // yang dilewati dikredit dan dicatat log_stocks-nya sendiri; level yang sisa
+                // hasil-baginya 0 (semuanya habis naik ke level berikutnya) tidak perlu disentuh sama
+                // sekali.
+                $chain = $this->creditProductOutputUpChain((int) $value["product_variant_id"], (int) $v->unit_id, $jumlahTambah);
 
-                        //sekarang kita tambah yang belakang
-                        $ps_belakang = $this->ensureProductStockRow((int) $value["product_variant_id"], (int) $r->pr_unit_id_2);
-                        $ps_belakang->ps_stock += $sisa;
-                        $ps_belakang->save();
+                if (count($chain) > 1) {
+                    foreach ($chain as $credit) {
+                        if ($credit['qty'] <= 0) continue;
+
+                        $ps = $this->ensureProductStockRow((int) $value["product_variant_id"], $credit['unit_id']);
+                        $ps->ps_stock += $credit['qty'];
+                        $ps->save();
+
                         $insertProductLogOnce([
                             'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                             'log_kode' => $p->production_code,
                             'log_type' => 1, 'log_category' => 1,
                             'log_item_id' => $value["product_variant_id"],
                             'log_notes' => "Hasil Produksi Produk " . LogStock::actorSuffix(),
-                            'log_jumlah' => $tambah, 'unit_id' => $r->pr_unit_id_1,
+                            'log_jumlah' => $credit['qty'], 'unit_id' => $credit['unit_id'],
                         ]);
-                        
-                        if($sisa>0){
-                            $insertProductLogOnce([
-                                'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
-                                'log_kode' => $p->production_code,
-                                'log_type' => 1, 'log_category' => 1,
-                                'log_item_id' => $value["product_variant_id"],
-                                'log_notes' => "Hasil Produksi Produk " . LogStock::actorSuffix(),
-                                'log_jumlah' => $sisa, 'unit_id' => $r->pr_unit_id_2,
-                            ]);
-                        }
-
-                        //cek lagi ada endak atasnya kalau ada tapi ya jumlah e gak iso ya gak akan motong cuman taku kalau bertingkat
-                        $cek = $r = ProductRelation::where('pr_unit_id_2', '=', $r->pr_unit_id_1)
-                            ->where('product_variant_id', '=', $value["product_variant_id"]);
-                        if ($cek->count() <= 0) {
-                            $ada = -1;
-                        }
-                    } else  {
-                          //sekarang kita tambah yang belakang 
+                    }
+                } else  {
+                          //sekarang kita tambah yang belakang
                         $v->ps_stock += $jumlahTambah;
                         $v->save();
 
@@ -1656,6 +1637,56 @@ class ProductionController extends Controller
         }
 
         return $qty;
+    }
+
+    /**
+     * PM task (2026-08-24): accProduction()'s finished-goods output crediting used to roll a
+     * produced quantity up ONE level of product_relations only (see the dead $cek/$ada lookup this
+     * replaced) — a quantity that was an exact multiple of a SECOND level (e.g. 24 Piece = 2 DOS =
+     * 1 Sak) stalled at DOS and never reached Sak. This walks the WHOLE chain, mirroring the
+     * already-correct "bongkar" direction (convertQtyToSmallestUnit()/$siapkanStok above), just
+     * upward instead of downward.
+     *
+     * Pure/read-only — does no DB writes itself, just returns the list of {unit_id, qty} to credit,
+     * ordered from $startUnitId up to the highest level actually reached. The caller (accProduction())
+     * does the ProductStock += and logging. Reused as-is by the pre-check block above to find every
+     * unit level a split might touch, not just the first hop.
+     *
+     * @return array<int, array{unit_id:int, qty:int}>
+     */
+    private function creditProductOutputUpChain(int $productVariantId, int $startUnitId, int $qty): array
+    {
+        $relations = ProductRelation::where('product_variant_id', $productVariantId)
+            ->where('status', 1)
+            ->get();
+
+        $credits = [];
+        $currentUnitId = $startUnitId;
+        $remaining = $qty;
+        $guard = 0;
+
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_2 === (int) $currentUnitId);
+            if (!$rel || $remaining < $rel->pr_unit_value_2) {
+                break;
+            }
+
+            $tambah = (int) floor($remaining / $rel->pr_unit_value_2);
+            $sisa = $remaining % $rel->pr_unit_value_2;
+
+            $credits[] = ['unit_id' => (int) $currentUnitId, 'qty' => (int) $sisa];
+
+            $currentUnitId = (int) $rel->pr_unit_id_1;
+            $remaining = $tambah;
+        }
+
+        // Sisa/titik teratas yang benar-benar dicapai (baik karena rantainya habis, atau qty yang
+        // dibawa tidak cukup untuk naik lagi) — kalau tidak pernah ada hop sama sekali, ini satu-satunya
+        // entri dan sama dengan {startUnitId, qty} apa adanya (perilaku lama untuk produk tanpa ladder).
+        $credits[] = ['unit_id' => $currentUnitId, 'qty' => (int) $remaining];
+
+        return $credits;
     }
 
     private function getBatchCount(
