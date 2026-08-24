@@ -16,6 +16,7 @@ use App\Models\SalesOrderDetail;
 use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class CustomerController extends Controller
@@ -81,6 +82,18 @@ class CustomerController extends Controller
             return 'Sales order tidak ditemukan';
         }
 
+        // Ditambahkan (2026-08-24): dulu method ini TIDAK punya DB::transaction() sama sekali
+        // (dokumentasi di cdocs/testing/guides/DATABASE_TRANSACTION_GUIDE.md sempat salah menyebut
+        // file ini sudah transaksional -- baris yang dirujuknya ternyata query ProductRelation biasa).
+        // Ini yang paling berbahaya dari semua celah atomicity stok: TAHAP 1 di bawah MENGEMBALIKAN
+        // stok lama dulu, baru TAHAP 4 memotong stok baru. Kalau gagal di antara keduanya (stok
+        // kurang, baris stok hilang, error apa pun), stok lama terlanjur balik permanen tapi tidak
+        // pernah dipotong lagi -- stok hantu tercipta dari ketiadaan. Bahkan jalur "gagal" yang
+        // normal pun bocor: `if($valid == -1) return ...` di bawah keluar SETELAH TAHAP 1 menulis
+        // revert ke DB. Sekarang semuanya satu transaksi, jadi setiap keluar-gagal ikut ter-rollback.
+        DB::beginTransaction();
+        try {
+
         // Mutasi stok/log hanya jika SO sudah disetujui (ACC). Sebelum itu stok belum dipotong (accSO);
         // jika revert+potong dijalankan saat status 1/3, stok ikut berubah padahal belum konfirmasi.
         if ((int) ($soBefore->status ?? 0) !== 2) {
@@ -95,6 +108,7 @@ class CustomerController extends Controller
             }
             SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
 
+            DB::commit();
             return 1;
         }
 
@@ -242,7 +256,9 @@ class CustomerController extends Controller
             }
         }
 
-        if($valid == -1) { return implode(", ", $p); }
+        // Rollback dulu sebelum keluar: TAHAP 1 sudah menulis revert stok lama ke DB, dan tanpa
+        // rollback revert itu ikut permanen padahal update-nya sendiri dibatalkan (stok hantu).
+        if($valid == -1) { DB::rollBack(); return implode(", ", $p); }
 
         // --- TAHAP 4: UPDATE DATA SO & POTONG STOK FINAL ---
         $so = (new SalesOrder())->updateSalesOrder($data);
@@ -278,7 +294,12 @@ class CustomerController extends Controller
 
         SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $list_id_detail)->update(['status' => 0]);
 
+        DB::commit();
         return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function deleteSalesOrder(Request $req){
@@ -536,6 +557,15 @@ class CustomerController extends Controller
         }
 
         // ─── Langkah 4: EKSEKUSI – semua produk lolos, baru simpan ke DB ─────────────
+        // Ditambahkan (2026-08-24): dulu seluruh fase eksekusi ini TIDAK transaksional. Langkah 1-3
+        // di atas murni simulasi in-memory ($virtualStock, tidak ada ->save()), jadi batas transaksi
+        // yang benar memang tepat di sini -- sama persis bentuknya dengan accProduction() yang
+        // pre-check dulu di luar, baru beginTransaction() untuk fase tulisnya. Tanpa ini, gagal di
+        // tengah loop (satu produk sudah ter-save, produk berikutnya error) meninggalkan stok
+        // terpotong sebagian sementara status SO tetap 1/menunggu -- user meng-ACC ulang dan produk
+        // yang tadi sudah terpotong kena potong DUA KALI. Status flip di akhir ikut masuk transaksi.
+        DB::beginTransaction();
+        try {
         foreach ($simulasiHasil as $hasil) {
             $virtualStock = $hasil['virtualStock'];
             $logSummary   = $hasil['logSummary'];
@@ -578,7 +608,12 @@ class CustomerController extends Controller
         }
 
         (new SalesOrder())->accSO($data);
+        DB::commit();
         return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function declineSO(Request $req){

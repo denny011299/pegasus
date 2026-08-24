@@ -820,11 +820,23 @@ class StockController extends Controller
 
         // insert
         // if ($data['tipe_return'] == 1) $data['po_id'] = $po->po_id;
+        // Ditambahkan (2026-08-24): ProductIssues::insertProductIssues() dan
+        // ProductIssuesDetail::insertProductIssuesDetail() sama-sama memutasi ps_stock/ss_stock,
+        // dan dulu tidak ada transaksi -- gagal di tengah loop item meninggalkan header
+        // ProductIssues yang sudah jadi dengan sebagian detail + sebagian stok saja yang termutasi.
+        // Semua pre-check (stockCheck dkk) di atas murni baca, jadi tetap di luar transaksi.
+        DB::beginTransaction();
+        try {
         $t = (new ProductIssues())->insertProductIssues($data);
         foreach (json_decode($data['items'], true) as $key => $value) {
             $value['pi_id'] = $t->pi_id;
             // if (isset($t->ref_num)) $value['ref_num'] = $t->ref_num;
             (new ProductIssuesDetail())->insertProductIssuesDetail($value);
+        }
+        DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
 
@@ -855,6 +867,14 @@ class StockController extends Controller
         //     $po = PurchaseOrder::find($inv->po_id);
         //     $data['po_id'] = $po->po_id;
         // }
+        // Ditambahkan (2026-08-24): dulu tidak ada transaksi di sini sama sekali. Perhatikan
+        // urutannya -- updateProductIssues() di bawah SUDAH memutasi stok, baru setelah itu blok
+        // "Cek stock" menjalankan stockCheck() yang bisa `return -1`. Artinya jalur gagal yang
+        // normal pun meninggalkan mutasi stok yang terlanjur tersimpan. Sekarang seluruh method
+        // (write + cek + loop detail di bawah) satu transaksi, jadi setiap `return -1` ikut
+        // ter-rollback bersih.
+        DB::beginTransaction();
+        try {
         $pi = (new ProductIssues())->updateProductIssues($data);
 
         // Cek stock
@@ -867,7 +887,7 @@ class StockController extends Controller
                             $val['tipe_return'] = $data['tipe_return'];
                             $val['pid_qty'] = $value['pid_qty'];
                             $c = (new ProductIssuesDetail())->stockCheck($val);
-                            if ($c == -1) return -1;
+                            if ($c == -1) { DB::rollBack(); return -1; }
                         }
                     }
                     if ($data['tipe_return'] == 2) {
@@ -875,7 +895,7 @@ class StockController extends Controller
                             $val['tipe_return'] = $data['tipe_return'];
                             $val['pid_qty'] = $value['pid_qty'];
                             $c = (new ProductIssuesDetail())->stockCheck($val);
-                            if ($c == -1) return -1;
+                            if ($c == -1) { DB::rollBack(); return -1; }
                         }
                     }
                 }
@@ -1091,9 +1111,14 @@ class StockController extends Controller
                 ]);
             }
             array_push($id, $t);
-            
+
         }
         ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
+        DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     // UI-unreachable (confirmed 2026-08-02) — this route's delete trigger icon is commented out in
@@ -1107,6 +1132,16 @@ class StockController extends Controller
 
         $pi = ProductIssues::find($data['pi_id']);
         $w = ProductIssuesDetail::where('pi_id','=',$data["pi_id"])->where('status', '>=', 1)->get();
+
+        // Ditambahkan (2026-08-24): dulu tidak ada transaksi sama sekali. Transaksi sengaja dibuka
+        // di sini (sebelum percabangan tipe_return) supaya KEDUA cabang ikut terlindungi -- kalau
+        // dibuka di dalam blok tipe_return==2 saja, deleteProductIssues() + loop penghapusan detail
+        // di bawahnya (yang jalan untuk semua tipe) tetap tanpa proteksi. Fase 1-3 di bawah murni
+        // simulasi in-memory, jadi ikut masuk transaksi pun tidak menambah biaya tulis.
+        // Jalur gagal yang paling berbahaya: `$del == -1` ("Invoice sudah terbayar") keluar SETELAH
+        // Fase 4 menulis semua perubahan stok ke DB.
+        DB::beginTransaction();
+        try {
 
         if ($pi->tipe_return == 2) {
             // ─── Fase 1: Agregasi ───────────────────────────────────────────
@@ -1255,6 +1290,7 @@ class StockController extends Controller
 
             // ─── Fase 3: Validasi ────────────────────────────────────────────
             if (count($kurang) > 0) {
+                DB::rollBack();
                 return [
                     "status"  => -1,
                     "header"  => "Gagal menghapus",
@@ -1302,6 +1338,9 @@ class StockController extends Controller
 
         $del = (new ProductIssues())->deleteProductIssues($data);
         if ($del == -1) {
+            // Rollback dulu: Fase 4 di atas sudah menulis seluruh perubahan stok ke DB, dan tanpa
+            // ini perubahan itu tetap permanen padahal penghapusannya sendiri dibatalkan.
+            DB::rollBack();
             return response()->json([
                 "status"  => 0,
                 "header"  => "Gagal Delete",
@@ -1364,6 +1403,11 @@ class StockController extends Controller
                 'log_jumlah'   => $value['pid_qty'],
                 'unit_id'      => $value['unit_id'],
             ]);
+        }
+        DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
 

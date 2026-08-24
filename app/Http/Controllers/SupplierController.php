@@ -564,6 +564,14 @@ class SupplierController extends Controller
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
         }
+        // Ditambahkan (2026-08-24): dulu penerimaan barang ini TIDAK transaksional sama sekali,
+        // padahal insertPoDeliveryDetail() di dalam loop menambah ss_stock per item. Gagal di tengah
+        // (item ke-3 dari 5 error) meninggalkan stok bahan bertambah sebagian, PurchaseOrderDelivery
+        // header sudah terlanjur dibuat, invoice belum, dan po->status masih 1 -- user meng-ACC ulang
+        // lalu item yang tadi sudah masuk ditambahkan LAGI. Guard status di atas sengaja tetap di
+        // luar transaksi (murni baca, sama seperti accProduction()/accStockOpname()).
+        DB::beginTransaction();
+        try {
         $pod_id = (new PurchaseOrderDelivery())->insertPoDelivery(["po_id"=>$data["po_id"],"pdo_receiver"=>"Auto Generated","status"=>2]);
 
         foreach ($data['items'] as $key => $value) {
@@ -594,7 +602,12 @@ class SupplierController extends Controller
         $po->status = 2; // Lunas
         $po->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $po->save();
+        DB::commit();
         return $due;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function tolakPO(Request $req) {
@@ -721,10 +734,14 @@ class SupplierController extends Controller
                 ->where('unit_id', $value['unit_id'])
                 ->where('status', 1)
                 ->first();
-            
-            if (($ss->ss_stock - $value['rsd_qty'] < 0)){
+
+            // Ditambahkan (2026-08-24): dulu langsung $ss->ss_stock tanpa null-check -- baris stok
+            // yang tidak ada (kombinasi supplies_id + unit_id yang tidak match) meledak jadi
+            // "Attempt to read property on null" di tengah pre-check. Diperlakukan sama dengan stok
+            // tidak mencukupi, karena memang tidak ada stok yang bisa diretur.
+            if (!$ss || ($ss->ss_stock - $value['rsd_qty'] < 0)){
                 $svr = SuppliesVariant::find($value['supplies_variant_id']);
-                array_push($kurang, $svr->supplies_variant_name);
+                array_push($kurang, $svr->supplies_variant_name ?? ('id '.$value['supplies_variant_id']));
             }
         }
         if (count($bermasalah) > 0) {
@@ -740,6 +757,14 @@ class SupplierController extends Controller
             ];
         }
 
+        // Ditambahkan (2026-08-24): mulai dari sini semuanya menulis ke DB (po_total, ProductIssues,
+        // ReturnSupplies, lalu pengurangan ss_stock per item di loop bawah) dan dulu TIDAK ada
+        // transaksi sama sekali. Paling parah: `return -1` di dalam loop bawah (stok tidak cukup)
+        // keluar begitu saja padahal po_total sudah dikurangi, ProductIssues/ReturnSupplies sudah
+        // dibuat, dan item-item sebelumnya sudah dipotong stoknya -- dan itu jalur bisnis normal,
+        // bukan cuma skenario crash. Semua pre-check yang murni baca tetap di luar transaksi.
+        DB::beginTransaction();
+        try {
         $po->po_total -= $total;
         $po->save();
 
@@ -775,12 +800,15 @@ class SupplierController extends Controller
             $s = SuppliesStock::where('supplies_id','=',$value['supplies_id'])->where('unit_id','=',$value["unit_id"])->where('status', 1)->first();
 
             // pengurangan qty stok
+            // Ditambahkan (2026-08-24): null-check eksplisit untuk $s -- dulu `$s->ss_stock ?? 0`
+            // aman saat MEMBACA, tapi `$s->ss_stock = ...` di bawah tetap meledak kalau $s null
+            // (mis. rsd_qty = 0 sehingga cek di bawah lolos). Sekarang rollback + pesan jelas.
             $stocks = $s->ss_stock ?? 0;
-            if ($stocks - $value["rsd_qty"] >= 0) {
-                $stocks -= $value["rsd_qty"];
-            } else {
+            if (!$s || $stocks - $value["rsd_qty"] < 0) {
+                DB::rollBack();
                 return -1;
             }
+            $stocks -= $value["rsd_qty"];
 
             $s->ss_stock = $stocks;
             $s->save();
@@ -803,9 +831,14 @@ class SupplierController extends Controller
             $value['pid_id'] = $pid_id;
             (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
         }
-        
 
+
+        DB::commit();
         return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function updateReturnSupplies(Request $req){
@@ -825,6 +858,12 @@ class SupplierController extends Controller
             $total += ($value['rsd_price'] * $value['rsd_qty']);
         }
 
+        // Ditambahkan (2026-08-24): kebalikan dari insertReturnSupplies() di atas -- method ini
+        // MENGEMBALIKAN stok bahan (lewat deleteProductIssuesDetail() di loop bawah) sekaligus
+        // mengembalikan po_total. Dulu tanpa transaksi: gagal di tengah meninggalkan po_total sudah
+        // bertambah tapi stok baru sebagian yang dikembalikan, atau sebaliknya.
+        DB::beginTransaction();
+        try {
         $po = PurchaseOrder::find($data['po_id']);
         $po->po_total += $total;
         $po->save();
@@ -865,6 +904,11 @@ class SupplierController extends Controller
             (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($value);
         }
 
+        DB::commit();
         return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 }
