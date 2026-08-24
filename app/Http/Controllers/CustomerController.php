@@ -16,6 +16,7 @@ use App\Models\SalesOrderDetail;
 use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use App\Support\UnitRollUp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -130,16 +131,54 @@ class CustomerController extends Controller
             $revertAgregat[$key]['qty'] += $oldDetail->sod_qty;
         }
 
+        // Baris (varian_satuan) yang MASIH ada di daftar produk baru. Untuk baris-baris ini, revert
+        // TAHAP 1 di bawah akan langsung dipotong lagi di TAHAP 4 dalam request yang sama, jadi
+        // menaikkan satuannya di sini cuma churn: naik satuan lalu langsung dibongkar lagi oleh
+        // TAHAP 3, plus sepasang log konversi bolak-balik yang menyesatkan. Baris yang DIHAPUS dari
+        // SO tidak punya pasangan pemotongan — revert-nya jadi kondisi akhir, jadi ITU yang perlu
+        // naik satuan supaya konsisten dengan jalur pengembalian stok lain (2026-08-25).
+        $masihDipakai = [];
+        foreach ($productsData as $val) {
+            if (isset($val['product_variant_id'], $val['unit_id'])) {
+                $masihDipakai[$val['product_variant_id'] . '_' . $val['unit_id']] = true;
+            }
+        }
+
         // Eksekusi Revert Real ke DB & Log (Sekali per Satuan)
-        foreach ($revertAgregat as $rev) {
+        foreach ($revertAgregat as $revKey => $rev) {
             $sOld = ProductStock::where("product_variant_id", $rev['pvr_id'])
                 ->where("unit_id", $rev['unit_id'])
                 ->where("status", 1)
                 ->first();
-            
+
             if($sOld) {
                 $sOld->ps_stock += $rev['qty'];
                 $sOld->save();
+
+                // Baris dihapus dari SO → revert ini final, naikkan satuannya berjenjang.
+                if (!isset($masihDipakai[$revKey])) {
+                    $rollUp = UnitRollUp::planProduct((int) $rev['pvr_id'], (int) $rev['unit_id'], (int) $rev['qty']);
+                    $naikLevel = array_slice($rollUp, 1);
+
+                    if ($naikLevel !== []) {
+                        // Turunkan lagi yang sudah terlanjur ditambahkan flat di atas, lalu
+                        // distribusikan sesuai rencana roll-up.
+                        $sOld->ps_stock -= $rev['qty'];
+                        $sOld->ps_stock += (int) $rollUp[0]['qty'];
+                        $sOld->save();
+
+                        foreach ($naikLevel as $credit) {
+                            if ($credit['qty'] <= 0) continue;
+                            $row = ProductStock::where('product_variant_id', $rev['pvr_id'])
+                                ->where('unit_id', $credit['unit_id'])
+                                ->where('status', 1)
+                                ->first();
+                            if (!$row) continue;
+                            $row->ps_stock += $credit['qty'];
+                            $row->save();
+                        }
+                    }
+                }
 
                 (new LogStock())->insertLog([                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
                     'log_date' => now(), 
@@ -196,20 +235,50 @@ class CustomerController extends Controller
 
                 if ($keyTarget === null) { $valid = -1; continue; }
 
-                $siapkanStok = function($targetKey, $units) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
-                    if (!isset($units[$targetKey + 1])) return false; 
-                    $stokSekarang = $units[$targetKey];
-                    $stokAtas = $units[$targetKey + 1];
+                // Diperbaiki (2026-08-25): dulu unit di atasnya diambil lewat POSISI ARRAY
+                // ($units[$targetKey + 1]) pada koleksi yang diurutkan `ps_id DESC` -- padahal ps_id
+                // itu urutan pembuatan baris stok, sama sekali tidak ada hubungannya dengan urutan
+                // hierarki satuan. Relasi yang benar sudah di-query ($sr), tapi hasilnya
+                // ($sr->pr_unit_id_1) TIDAK pernah dipakai untuk menentukan baris mana yang dipotong
+                // -- jadi kalau urutan ps_id kebetulan tidak sama dengan urutan ladder, stok dipotong
+                // dari satuan YANG SALAH dengan rasio milik satuan lain (korupsi stok, bukan cuma
+                // gagal). Ini bug yang PERSIS sama dengan yang sudah diperbaiki 2026-08-05 di
+                // ProductIssuesDetail::stockCheck() (dua closure-nya) dan 2026-08-06 di
+                // StockController::deleteProductIssue() -- lihat
+                // tests/Regression/ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest.php.
+                // Sales Order kelewatan di sapuan itu. Sekarang pola-nya disamakan: cari relasi
+                // dulu, baru cari index baris stok yang unit_id-nya cocok dengan pr_unit_id_1.
+                $siapkanStok = function($targetKey, $units, $depth = 0) use (&$virtualStock, &$logSummary, &$siapkanStok, $variantId) {
+                    // Depth guard, sama seperti StockController::deleteProductIssue() -- $keyAtas
+                    // dicari lewat lookup relasi, jadi rantai yang sirkular bisa rekursi selamanya.
+                    if ($depth >= 20) return false;
 
-                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
-                        if (!$siapkanStok($targetKey + 1, $units)) return false;
-                    }
+                    $stokSekarang = $units[$targetKey];
 
                     $sr = ProductRelation::where('product_variant_id', $variantId)
                         ->where('pr_unit_id_2', $stokSekarang->unit_id)
                         ->where('status', 1)->first();
 
-                    if ($sr && $virtualStock[$stokAtas->ps_id]['current'] > 0) {
+                    if (!$sr) return false;
+
+                    // Cari index baris stok milik unit atas berdasarkan RELASI, bukan posisi array.
+                    $keyAtas = null;
+                    foreach ($units as $idx => $stok) {
+                        if ((int) $stok->unit_id === (int) $sr->pr_unit_id_1) {
+                            $keyAtas = $idx;
+                            break;
+                        }
+                    }
+
+                    if ($keyAtas === null) return false;
+
+                    $stokAtas = $units[$keyAtas];
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] <= 0) {
+                        if (!$siapkanStok($keyAtas, $units, $depth + 1)) return false;
+                    }
+
+                    if ($virtualStock[$stokAtas->ps_id]['current'] > 0) {
                         $virtualStock[$stokAtas->ps_id]['current'] -= 1;
                         $hasilBongkar = (float)$sr['pr_unit_value_2'];
                         $virtualStock[$stokSekarang->ps_id]['current'] += $hasilBongkar;
