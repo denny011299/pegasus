@@ -13,24 +13,32 @@ use Tests\TestCase;
 
 /**
  * Extends the Phase 3 pilot (tests/Workflow/PurchaseOrderFlowTest.php,
- * cdocs/testing/workflows/PURCHASE_ORDER_FLOW.md). `accPO` has no
- * DB::transaction() (unlike `tolakPO` — see guides/DATABASE_TRANSACTION_GUIDE.md),
- * so this documents exactly how far a mid-loop failure gets before it stops,
- * rather than assuming the whole request either fully applies or fully
- * doesn't.
+ * cdocs/testing/workflows/PURCHASE_ORDER_FLOW.md).
  *
  * Trigger: PurchaseOrderDeliveryDetail::insertPoDeliveryDetail() saves the
  * delivery-detail row FIRST, then looks up SuppliesStock by
  * supplies_id+unit_id — if that lookup misses (e.g. a bad unit_id), it calls
  * `$s->ss_stock += ...` on null and throws, uncaught, all the way up through
- * accPO. A second, valid line item processed earlier in the same request
- * has already been fully committed by that point.
+ * accPO.
+ *
+ * ✅ FIXED 2026-08-24: this test used to DOCUMENT the partial-commit bug — a
+ * valid line item processed earlier in the same request kept its stock
+ * increment, its log_stocks row, and its delivery-detail row permanently,
+ * while the PO itself stayed pending, so re-approving double-credited that
+ * item. `accPO()` now wraps its whole write phase (delivery header + per-item
+ * loop + invoice + status flip) in DB::beginTransaction()/commit with a
+ * rollBack on throw, mirroring accProduction()/accStockOpname(). The
+ * assertions below are flipped accordingly: nothing survives the failure.
+ *
+ * The uncaught 500 itself is unchanged and still asserted — this fix is about
+ * atomicity, not about converting the underlying null-lookup crash into a
+ * clean business-rule response.
  */
 class PurchaseOrderApprovalAtomicityTest extends TestCase
 {
     use ActingAsStaff;
 
-    public function test_a_mid_loop_failure_leaves_earlier_items_partially_committed(): void
+    public function test_a_mid_loop_failure_now_rolls_back_every_earlier_item(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -96,30 +104,30 @@ class PurchaseOrderApprovalAtomicityTest extends TestCase
             ],
         ]);
 
-        // Documents current behavior: an uncaught error, not a clean
-        // {status:-1, message:...} business-rule response.
+        // Still an uncaught error, not a clean {status:-1, message:...} business-rule
+        // response — unchanged by the atomicity fix.
         $response->assertStatus(500);
 
-        // Item A (processed first) is fully, permanently committed.
+        // FIXED: item A (processed first) is rolled back completely.
         $stockA->refresh();
         $this->assertSame(
-            $startingStockA + $qty,
+            $startingStockA,
             $stockA->ss_stock,
-            'the first, valid line item keeps its stock increment despite the later failure'
+            'the first, valid line item must NOT keep its stock increment once a later item fails'
         );
         $this->assertSame(
-            $logCountBefore + 1,
+            $logCountBefore,
             DB::table('log_stocks')->count(),
-            'the first line item still gets its log_stocks entry'
+            'no log_stocks entry survives the rollback either'
         );
-        $this->assertDatabaseHas('purchase_delivery_orders_details', [
+        $this->assertDatabaseMissing('purchase_delivery_orders_details', [
             'pdod_qty' => $qty,
             'supplies_variant_id' => $variantA->supplies_variant_id,
         ]);
 
-        // Item B's delivery-detail row is created (save() runs before the
-        // stock lookup) but its stock is never touched and no log is written.
-        $this->assertDatabaseHas('purchase_delivery_orders_details', [
+        // Item B's delivery-detail row (save() runs before the stock lookup that
+        // throws) is rolled back too, rather than being left orphaned.
+        $this->assertDatabaseMissing('purchase_delivery_orders_details', [
             'supplies_variant_id' => $variantB->supplies_variant_id,
             'pdod_qty' => $qty,
         ]);
