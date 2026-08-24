@@ -14,6 +14,7 @@ use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use App\Support\UnitRollUp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -189,6 +190,13 @@ class CustomerController extends Controller
             ]);
         }
 
+        // NB (merged from main's 51684f3/PR #75, 2026-08-28): main's version of this conflict was
+        // its OWN inline revert-then-deduct loop (ProductStock reads/writes directly in this
+        // method), including a fix making a deleted line's stock revert roll up the unit ladder.
+        // fase2's updateSalesOrder() delegates all of that to SalesOrderStock::executeRestore()/
+        // buildPlan()/executeDeduct() below -- the equivalent roll-up-on-restore fix has been
+        // ported there instead (see SalesOrderStock::executeRestore()), since that's what actually
+        // writes the revert.
         $oldRetailWh = (int) ($soBefore->retail_warehouse_id ?? 0);
         $newRetailWh = (int) ($data['retail_warehouse_id'] ?? $oldRetailWh);
 
@@ -235,6 +243,15 @@ class CustomerController extends Controller
                     }
                 }
 
+                // NB (merged from main's 51684f3/PR #75, 2026-08-28): main's version of this
+                // conflict was its OWN inline "bongkar" closure (same position-vs-relation unit
+                // bug already fixed elsewhere on 2026-08-05/08-06 -- see
+                // ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest.php). fase2's
+                // updateSalesOrder() has no such inline closure -- deduction runs entirely through
+                // SalesOrderStock::executeDeduct() below, so this doesn't transplant. Confirmed
+                // the actual bongkar logic executeDeduct() delegates to,
+                // ProductUnitStock::deductQty()'s ensure() closure, already resolves the parent
+                // unit via the ProductRelation lookup (`pr_unit_id_1`), not array position.
                 $plan = SalesOrderStock::buildPlan($newLines, $newRetailWh > 0 ? $newRetailWh : null);
                 if (! ($plan['ok'] ?? false)) {
                     throw new \RuntimeException($plan['message'] ?? 'Stok tidak mencukupi');
