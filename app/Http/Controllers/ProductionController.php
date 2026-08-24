@@ -849,6 +849,16 @@ class ProductionController extends Controller
                     continue;
                 }
 
+                // NB (merged from main's ebadabf/GH #19, 2026-08-28): main's version of this
+                // pre-check walked the whole product_relations ladder via creditProductOutputUpChain()
+                // instead of a single exists() check, because main's accProduction() still credited
+                // finished goods itself via ProductRelation/ensureProductStockRow(). fase2's
+                // accProduction() has since been rearchitected around buildProductionTransferPlan()
+                // + ProductUnitStock::addQty(), which credits flatly at the produced unit with no
+                // ladder rollup of its own -- so that ladder-walking code doesn't transplant here.
+                // The equivalent GH #19 fix (rolling a produced qty up multiple product_relations
+                // levels, not just one) has been ported into ProductUnitStock::addQty() itself
+                // instead, which is what actually credits the stock below.
                 $exists = ProductStock::withoutGlobalScope('active_warehouse')
                     ->where('warehouse_id', (int) $mainWarehouse->id)
                     ->where('product_variant_id', $output['product_variant_id'])
@@ -1163,6 +1173,11 @@ class ProductionController extends Controller
         } catch (Throwable $e) {
             DB::rollBack();
             return response()->json([
+                // NB (merged from main's ebadabf/GH #19, 2026-08-28): this conflict was mostly
+                // main's old ProductRelation/ensureProductStockRow ladder-crediting block (already
+                // replaced on fase2 by buildProductionTransferPlan() + ProductUnitStock::addQty(),
+                // see the pre-check above) misaligned by diff onto this catch{} block. Nothing to
+                // port here -- see that pre-check's comment for where the actual GH #19 fix went.
                 'status' => -1,
                 'header' => 'Gagal ACC',
                 'message' => $e->getMessage() ?: 'Gagal membuat Stock Transfer hasil produksi.',
@@ -1638,6 +1653,56 @@ class ProductionController extends Controller
         }
 
         return $qty;
+    }
+
+    /**
+     * PM task (2026-08-24): accProduction()'s finished-goods output crediting used to roll a
+     * produced quantity up ONE level of product_relations only (see the dead $cek/$ada lookup this
+     * replaced) — a quantity that was an exact multiple of a SECOND level (e.g. 24 Piece = 2 DOS =
+     * 1 Sak) stalled at DOS and never reached Sak. This walks the WHOLE chain, mirroring the
+     * already-correct "bongkar" direction (convertQtyToSmallestUnit()/$siapkanStok above), just
+     * upward instead of downward.
+     *
+     * Pure/read-only — does no DB writes itself, just returns the list of {unit_id, qty} to credit,
+     * ordered from $startUnitId up to the highest level actually reached. The caller (accProduction())
+     * does the ProductStock += and logging. Reused as-is by the pre-check block above to find every
+     * unit level a split might touch, not just the first hop.
+     *
+     * @return array<int, array{unit_id:int, qty:int}>
+     */
+    private function creditProductOutputUpChain(int $productVariantId, int $startUnitId, int $qty): array
+    {
+        $relations = ProductRelation::where('product_variant_id', $productVariantId)
+            ->where('status', 1)
+            ->get();
+
+        $credits = [];
+        $currentUnitId = $startUnitId;
+        $remaining = $qty;
+        $guard = 0;
+
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_2 === (int) $currentUnitId);
+            if (!$rel || $remaining < $rel->pr_unit_value_2) {
+                break;
+            }
+
+            $tambah = (int) floor($remaining / $rel->pr_unit_value_2);
+            $sisa = $remaining % $rel->pr_unit_value_2;
+
+            $credits[] = ['unit_id' => (int) $currentUnitId, 'qty' => (int) $sisa];
+
+            $currentUnitId = (int) $rel->pr_unit_id_1;
+            $remaining = $tambah;
+        }
+
+        // Sisa/titik teratas yang benar-benar dicapai (baik karena rantainya habis, atau qty yang
+        // dibawa tidak cukup untuk naik lagi) — kalau tidak pernah ada hop sama sekali, ini satu-satunya
+        // entri dan sama dengan {startUnitId, qty} apa adanya (perilaku lama untuk produk tanpa ladder).
+        $credits[] = ['unit_id' => $currentUnitId, 'qty' => (int) $remaining];
+
+        return $credits;
     }
 
     private function getBatchCount(
