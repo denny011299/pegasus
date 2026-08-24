@@ -191,12 +191,21 @@ class StockController extends Controller
      * dengan angka sistem yang sudah basi. getDetail()/getDetailBulk() sudah menempelkan koleksi
      * stok LIVE per unit (`->stock`, lihat ProductVariant::getProductVariantBulk()/
      * Supplies::getSuppliesBulk()) -- pakai itu, bukan string yang tersimpan, TAPI HANYA untuk
-     * dokumen yang belum diputuskan (status masih 1/menunggu). Snapshot dokumen yang sudah
-     * disetujui/ditolak adalah catatan historis yang sengaja dibekukan (lihat accStockOpname() --
-     * dibekukan ke nilai sebenarnya saat itu terjadi) dan TIDAK BOLEH dihitung ulang live, atau
-     * dokumen yang sudah disetujui akan selalu terlihat "tidak ada selisih" selamanya setelahnya.
+     * dokumen yang belum diputuskan (status masih 1/menunggu -- ini juga mencakup dokumen yang
+     * masih draft/fase 2, karena is_draft tidak mengubah status, lihat StockOpname::insertStockOpname()).
+     * Snapshot dokumen yang sudah disetujui/ditolak adalah catatan historis yang sengaja dibekukan
+     * (lihat accStockOpname() -- dibekukan ke nilai sebenarnya saat itu terjadi) dan TIDAK BOLEH
+     * dihitung ulang live, atau dokumen yang sudah disetujui akan selalu terlihat "tidak ada
+     * selisih" selamanya setelahnya.
+     *
+     * PM task (2026-08-24): dulu hasil refresh ini cuma dipakai untuk tampilan PDF sesaat ($item di
+     * sini adalah clone ProductVariant/Supplies, bukan row StockOpnameDetail/StockOpnameDetailBahan
+     * asli -- lihat StockOpnameDetail::getDetail() -- jadi memanggil save() di atasnya akan salah
+     * tabel). Sekarang juga ditulis balik ke baris detail ASLI (lewat $detailModelClass::find())
+     * supaya data yang tersimpan di DB ikut mengikuti stok live setiap kali PDF-nya di-download,
+     * bukan cuma pas di-ACC.
      */
-    private function refreshLiveSystemQty($detail, string $realKey, string $systemKey, string $selisihKey, string $stockQtyKey)
+    private function refreshLiveSystemQty($detail, string $realKey, string $systemKey, string $selisihKey, string $stockQtyKey, string $detailModelClass, string $detailIdKey)
     {
         foreach ($detail as $item) {
             $liveByUnit = [];
@@ -215,6 +224,13 @@ class StockController extends Controller
 
             $item->{$systemKey} = $this->buildQtyString($liveByUnit);
             $item->{$selisihKey} = $this->buildQtyString($selisihByUnit);
+
+            $row = $detailModelClass::find($item->{$detailIdKey} ?? null);
+            if ($row) {
+                $row->{$systemKey} = $item->{$systemKey};
+                $row->{$selisihKey} = $item->{$selisihKey};
+                $row->save();
+            }
         }
 
         return $detail;
@@ -400,7 +416,7 @@ class StockController extends Controller
         $param["detail"] = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
 
         if ((int) $param['stockOpname']['status'] === 1) {
-            $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock');
+            $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock', StockOpnameDetail::class, 'stod_id');
         }
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
@@ -654,7 +670,7 @@ class StockController extends Controller
         $param["detail"] = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
 
         if ((int) $param['stockOpname']['status'] === 1) {
-            $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock');
+            $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock', StockOpnameDetailBahan::class, 'stobd_id');
         }
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
