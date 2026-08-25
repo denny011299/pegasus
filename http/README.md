@@ -35,13 +35,20 @@ If your local host isn't `pegasus.test`, edit `@baseUrl` at the top of the
   a request with `# @name someName` above it and reference
   `{{someName.response.body.$.data.id}}` later in the file.
 
-## Where the endpoint contracts live
+## Where the examples come from
 
-This file is for manual testing, not documentation — field names, error
-codes, and business rules for each endpoint are documented in:
+Every request body in `external-api-v1.http` is copied from that
+endpoint's own `requestExample()` in its doc class under
+`app/ExternalApi/Docs/Endpoints/V1/` — the same example shown on the
+in-app API Documentation page, not invented separately. If a doc class's
+example changes, re-sync the matching request here rather than guessing.
+
+For full field-by-field docs (types, required/optional, error codes,
+notes) see:
+- The in-app API Documentation page itself, or `config('externalapi.docs')`
+  (registers which doc class backs which endpoint)
+- `app/ExternalApi/Docs/Endpoints/V1/` (one class per endpoint)
 - `cdocs/integrations/202607282149-external-api-v1/` (specs/design docs)
-- `config('externalapi.docs')` (source of truth also rendered as the
-  in-app API docs pages)
 - The controller docblocks under `app/Http/Controllers/ExternalApi/V1/`
 
 For automated coverage, see the PHPUnit tests under `tests/` instead (see
