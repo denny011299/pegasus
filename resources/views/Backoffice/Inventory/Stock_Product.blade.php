@@ -26,12 +26,12 @@
         #tableStockRetail tbody tr {
             cursor: pointer;
         }
-        #tableStock td.cell-safety,
-        #tableStockRetail td.cell-safety {
+        #tableStock td.cell-min-order,
+        #tableStockRetail td.cell-min-order {
             background: #fafbfc;
         }
-        #tableStock td.cell-safety:hover,
-        #tableStockRetail td.cell-safety:hover {
+        #tableStock td.cell-min-order:hover,
+        #tableStockRetail td.cell-min-order:hover {
             background: #eff6ff;
         }
 
@@ -155,6 +155,7 @@
                                             <th>Kategori</th>
                                             <th>Gudang</th>
                                             <th>Stok</th>
+                                            <th class="col-min-order">Dasar Pemesanan Min.</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -197,6 +198,7 @@
                                             <th>Kategori</th>
                                             <th>Gudang</th>
                                             <th>Stok</th>
+                                            <th class="col-min-order">Dasar Pemesanan Min.</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -226,6 +228,54 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- Modal Edit Pemesanan Min. -->
+    <div class="modal fade custom-modal pg-modal--form" id="modal-edit-min-order" tabindex="-1" aria-labelledby="modalEditMinOrderLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+            <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none;">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="pg-modal-icon">
+                            <i class="fe fe-shopping-cart"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0 fw-bold modal-title" id="modalEditMinOrderLabel">Edit Pemesanan Min.</h5>
+                            <small class="modal-subtitle">Atur jumlah pembelian minimum ke supplier</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-4">
+                    <div class="mb-4">
+                        <label class="form-label text-muted fw-semibold mb-1" style="font-size:11px; text-transform:uppercase; letter-spacing:.4px;">Nama Produk</label>
+                        <div class="fw-semibold" id="emo-product-name" style="font-size:14px; color:#0f172a;">—</div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-8">
+                            <label class="form-label fw-semibold" style="font-size:12px;" for="emo-min-order">Dasar Pemesanan Min.</label>
+                            <input type="number" id="emo-min-order" class="form-control" min="0" step="1" placeholder="0" style="border-radius:8px;">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label fw-semibold" style="font-size:12px;">Satuan</label>
+                            <input type="text" id="emo-min-order-unit" class="form-control" readonly style="background:#f1f5f9; border-radius:8px; color:#64748b;">
+                        </div>
+                    </div>
+                    <div class="small text-muted mt-3" id="emo-calculated-hint" style="font-size:12px;"></div>
+                    <input type="hidden" id="emo-product-id">
+                    <input type="hidden" id="emo-variant-id">
+                    <input type="hidden" id="emo-unit-id">
+                    <input type="hidden" id="emo-warehouse-id">
+                </div>
+                <div class="modal-footer pg-modal-footer">
+                    <button type="button" class="btn pg-btn-cancel" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn pg-btn-save" id="emo-save-btn">
+                        <span id="emo-save-spinner" class="spinner-border spinner-border-sm me-1 d-none" role="status"></span>
+                        Simpan
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 @endsection

@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Support\BatchLookup;
+use App\Support\SalesOrderStock;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
@@ -134,6 +136,16 @@ class SalesOrder extends Model
         $orderColIdx = (int) data_get($data, 'order.0.column', 4);
         $orderDir = strtolower((string) data_get($data, 'order.0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
 
+        $activeWh = (int) ($data['active_warehouse_id'] ?? $data['warehouse_id'] ?? Session::get('active_warehouse_id') ?? 0);
+        if ($activeWh <= 0) {
+            return [
+                'draw' => $draw,
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+            ];
+        }
+
         $hasCreatedBy = Schema::hasColumn($this->getTable(), 'created_by');
         $hasAccBy = Schema::hasColumn($this->getTable(), 'acc_by');
         $hasRetailWh = Schema::hasColumn($this->getTable(), 'retail_warehouse_id');
@@ -162,9 +174,12 @@ class SalesOrder extends Model
             $base->leftJoin('staffs as approver', 'approver.staff_id', '=', 'sales_orders.acc_by');
         }
 
-        $recordsTotal = SalesOrder::query()
-            ->where('status', '>=', 1)
-            ->count('so_id');
+        $this->applyActiveWarehouseFilter($base, $activeWh, $hasRetailWh);
+
+        $countBase = SalesOrder::query()->where('status', '>=', 1);
+        $this->applyActiveWarehouseFilter($countBase, $activeWh, $hasRetailWh);
+
+        $recordsTotal = $countBase->count('so_id');
 
         if ($search !== '') {
             $like = '%' . $search . '%';
@@ -256,6 +271,94 @@ class SalesOrder extends Model
             'recordsFiltered' => $recordsFiltered,
             'data' => $dataOut,
         ];
+    }
+
+    /**
+     * List pengiriman hanya yang relevan dengan gudang aktif:
+     * - gudang utama → SO dengan item non-eceran
+     * - gudang eceran → SO dengan item eceran dari gudang tersebut
+     */
+    private function applyActiveWarehouseFilter($query, int $activeWh, bool $hasRetailWh): void
+    {
+        $isMain = Warehouse::query()
+            ->active()
+            ->whereKey($activeWh)
+            ->whereHas('type', fn ($q) => $q->where('is_main_warehouse', 1))
+            ->exists();
+
+        $hasDetailWh = Schema::hasColumn('sales_order_details', 'warehouse_id');
+        $hasRetailUnit = Schema::hasColumn('product_variants', 'retail_unit');
+
+        if ($isMain || ! $hasRetailUnit) {
+            if (! $hasRetailUnit) {
+                return;
+            }
+
+            $query->where(function ($q) use ($activeWh, $hasRetailWh, $hasDetailWh) {
+                // Item non-eceran → stok dari gudang utama
+                $q->whereExists(function ($sub) {
+                    $sub->from('sales_order_details as sod')
+                        ->join('product_variants as pv', 'pv.product_variant_id', '=', 'sod.product_variant_id')
+                        ->whereColumn('sod.so_id', 'sales_orders.so_id')
+                        ->where('sod.status', 1)
+                        ->where(function ($w) {
+                            $w->whereNull('pv.retail_unit')
+                                ->orWhere('pv.retail_unit', 0)
+                                ->orWhereColumn('sod.unit_id', '!=', 'pv.retail_unit');
+                        });
+                });
+
+                // Item eceran yang eksplisit dari gudang utama (data legacy / fallback header)
+                if ($hasDetailWh) {
+                    $q->orWhereExists(function ($sub) use ($activeWh, $hasRetailWh) {
+                        $sub->from('sales_order_details as sod')
+                            ->join('product_variants as pv', 'pv.product_variant_id', '=', 'sod.product_variant_id')
+                            ->whereColumn('sod.so_id', 'sales_orders.so_id')
+                            ->where('sod.status', 1)
+                            ->where('pv.retail_unit', '>', 0)
+                            ->whereColumn('sod.unit_id', '=', 'pv.retail_unit')
+                            ->where(function ($w) use ($activeWh, $hasRetailWh) {
+                                $w->where('sod.warehouse_id', $activeWh);
+                                if ($hasRetailWh) {
+                                    $w->orWhere(function ($w2) use ($activeWh) {
+                                        $w2->whereNull('sod.warehouse_id')
+                                            ->where('sales_orders.retail_warehouse_id', $activeWh);
+                                    });
+                                }
+                            });
+                    });
+                } elseif ($hasRetailWh) {
+                    $q->orWhere('sales_orders.retail_warehouse_id', $activeWh);
+                }
+            });
+
+            return;
+        }
+
+        $query->whereExists(function ($sub) use ($activeWh, $hasRetailWh, $hasDetailWh) {
+            $sub->from('sales_order_details as sod')
+                ->join('product_variants as pv', 'pv.product_variant_id', '=', 'sod.product_variant_id')
+                ->whereColumn('sod.so_id', 'sales_orders.so_id')
+                ->where('sod.status', 1)
+                ->where('pv.retail_unit', '>', 0)
+                ->whereColumn('sod.unit_id', '=', 'pv.retail_unit');
+
+            if ($hasDetailWh) {
+                $sub->where(function ($w) use ($activeWh, $hasRetailWh) {
+                    $w->where('sod.warehouse_id', $activeWh);
+                    if ($hasRetailWh) {
+                        $w->orWhere(function ($w2) use ($activeWh) {
+                            $w2->whereNull('sod.warehouse_id')
+                                ->where('sales_orders.retail_warehouse_id', $activeWh);
+                        });
+                    }
+                });
+            } elseif ($hasRetailWh) {
+                $sub->where('sales_orders.retail_warehouse_id', $activeWh);
+            } else {
+                $sub->whereRaw('1 = 0');
+            }
+        });
     }
 
     function insertSalesOrder($data){

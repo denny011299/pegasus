@@ -636,12 +636,14 @@ class ProductUnitStock
                 'qty' => (float) $takeParent,
                 'category' => 2,
                 'note' => 'Stock Transfer - bongkar satuan',
+                'saldo' => round((float) ($virtual[$parentId] ?? 0), 4),
             ];
             $logs[] = [
                 'unit_id' => $targetUnitId,
                 'qty' => (float) $got,
                 'category' => 1,
                 'note' => 'Stock Transfer - hasil bongkar',
+                'saldo' => round((float) ($virtual[$targetUnitId] ?? 0), 4),
             ];
 
             return ($virtual[$targetUnitId] ?? 0) + 1e-9 >= $need;
@@ -668,6 +670,7 @@ class ProductUnitStock
             'qty' => $qty,
             'category' => 2,
             'note' => $logNotes,
+            'saldo' => round((float) ($virtual[$unitId] ?? 0), 4),
         ];
 
         foreach ($byUnit as $uid => $row) {
@@ -692,7 +695,7 @@ class ProductUnitStock
                 'log_item_id' => $productVariantId,
                 'log_notes' => $log['note'],
                 'log_jumlah' => $log['qty'],
-                'log_saldo' => round((float) ($virtual[$log['unit_id']] ?? 0), 4),
+                'log_saldo' => $log['saldo'] ?? round((float) ($virtual[$log['unit_id']] ?? 0), 4),
                 'unit_id' => $log['unit_id'],
                 'warehouse_id' => $warehouseId,
             ]);

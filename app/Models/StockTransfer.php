@@ -30,6 +30,10 @@ class StockTransfer extends Model
         'status',
         'created_by',
         'acc_by',
+        'qc_approved_by',
+        'qc_approved_at',
+        'ops_approved_by',
+        'ops_approved_at',
     ];
 
     public function details()

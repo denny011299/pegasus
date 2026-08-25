@@ -164,31 +164,6 @@
                         " " +
                         (item.default_unit || "") +
                         "<\/span>" +
-                        '<button type="button" class="btn btn-link p-0 ms-1 btn-edit-min-order-supplies" style="font-size:13px;line-height:1;color:#6c757d;" ' +
-                        'data-supplies-id="' +
-                        item.supplies_id +
-                        '" ' +
-                        'data-min-order="' +
-                        orderThreshold +
-                        '" ' +
-                        'data-calculated-min-order="' +
-                        calculatedMinOrder +
-                        '" ' +
-                        'data-current-stock="' +
-                        currentStock +
-                        '" ' +
-                        'data-alert-qty="' +
-                        alertQty +
-                        '" ' +
-                        'data-unit-name="' +
-                        (item.default_unit || "") +
-                        '" ' +
-                        'data-supplies-name="' +
-                        (item.supplies_name || "") +
-                        '" ' +
-                        'title="Edit dasar pemesanan min.">' +
-                        '<i data-feather="edit-2" style="width:13px;height:13px;"><\/i>' +
-                        "<\/button>" +
                         "<\/div>" +
                         (isManual
                             ? '<div class="small text-muted" style="margin-top:2px;">Dasar manual: ' +
@@ -278,81 +253,6 @@
         var number = parseFloat(value) || 0;
         return Number.isInteger(number) ? number.toString() : number.toFixed(2).replace(/\.?0+$/, "");
     }
-
-    // ── Modal Edit Pemesanan Min. (bahan) ──────────────────────────────────
-    $(document).on("click", ".btn-edit-min-order-supplies", function () {
-        var $btn = $(this);
-        $("#emos-supplies-name").text($btn.data("supplies-name") || "—");
-        $("#emos-min-order").val($btn.data("min-order") || 0);
-        $("#emos-min-order-unit").val($btn.data("unit-name") || "");
-        $("#emos-supplies-id").val($btn.data("supplies-id") || "");
-        var unitName = $btn.data("unit-name") || "";
-        var stock = parseFloat($btn.data("current-stock")) || 0;
-        var alertQty = parseFloat($btn.data("alert-qty")) || 0;
-        $("#emos-calculated-hint").text(
-            "Tampil = dasar − stok (" +
-                formatLeadTimeQty(stock) +
-                "). Kosongkan override → pakai peringatan stok (" +
-                formatLeadTimeQty(alertQty) +
-                " " +
-                unitName +
-                ")."
-        );
-        var modal = new bootstrap.Modal(document.getElementById("modal-edit-min-order-supplies"));
-        modal.show();
-    });
-
-    $("#emos-save-btn").on("click", function () {
-        var minOrder = parseInt($("#emos-min-order").val(), 10);
-        if (isNaN(minOrder) || minOrder < 0) {
-            notifikasi("error", "Peringatan", "Nilai pemesanan minimum tidak valid.");
-            return;
-        }
-
-        var $btn = $(this);
-        var $spinner = $("#emos-save-spinner");
-        $btn.prop("disabled", true);
-        $spinner.removeClass("d-none");
-
-        $.ajax({
-            url: "/updateMinOrderSupplies",
-            method: "POST",
-            data: {
-                _token: $('meta[name="csrf-token"]').attr("content"),
-                supplies_id: $("#emos-supplies-id").val(),
-                min_order: minOrder,
-            },
-            success: function (res) {
-                if (!res.success) {
-                    notifikasi("error", "Gagal", res.message || "Gagal menyimpan pemesanan minimum.");
-                    return;
-                }
-                var modal = bootstrap.Modal.getInstance(
-                    document.getElementById("modal-edit-min-order-supplies")
-                );
-                if (modal) modal.hide();
-                refreshStockAlert();
-                Swal.fire({
-                    icon: "success",
-                    title: "Berhasil",
-                    text: res.message || "Pemesanan minimum berhasil diperbarui.",
-                    confirmButtonText: "OK",
-                    confirmButtonColor: "#3b82f6",
-                });
-            },
-            error: function (err) {
-                var msg =
-                    err.responseJSON && err.responseJSON.message
-                        ? err.responseJSON.message
-                        : "Gagal menyimpan pemesanan minimum.";
-                notifikasi("error", "Gagal", msg);
-            },
-            complete: function () {
-                $btn.prop("disabled", false);
-                $spinner.addClass("d-none");
-            },
-        });
-    });
 
     // ── Modal Edit Peringatan Stok (bahan) ─────────────────────────────────
     $(document).on("click", ".btn-edit-stok-alert-supplies", function () {

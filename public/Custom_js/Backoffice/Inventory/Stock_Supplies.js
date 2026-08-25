@@ -74,6 +74,57 @@
             });
     }
 
+    function formatLeadTimeQty(value) {
+        var number = parseFloat(value) || 0;
+        return Number.isInteger(number) ? number.toString() : number.toFixed(2).replace(/\.?0+$/, "");
+    }
+
+    function renderMinOrderCell(row) {
+        var unitName = row.min_order_unit_name || "";
+        var orderThreshold = parseFloat(row.min_order) || 0;
+        var isManual = !!row.min_order_is_manual;
+        var label =
+            formatLeadTimeQty(orderThreshold) + (unitName ? " " + unitName : "");
+
+        return (
+            '<div class="min-order-cell-label" style="cursor:pointer; min-height:20px;">' +
+            '<div class="d-inline-flex align-items-center">' +
+            '<span class="fw-semibold" style="color:#475569;">' +
+            (label.trim() || "—") +
+            "</span>" +
+            '<i class="fe fe-edit-2 text-primary flex-shrink-0" style="font-size:13px; opacity:0.6; margin-left:4px;"></i>' +
+            "</div>" +
+            (!isManual
+                ? '<div class="small text-muted" style="margin-top:2px;">Otomatis (peringatan stok)</div>'
+                : "") +
+            "</div>"
+        );
+    }
+
+    function openMinOrderModal(row) {
+        if (!row) return;
+        var unitName = row.min_order_unit_name || "";
+        var orderThreshold = parseFloat(row.min_order) || 0;
+
+        $("#emos-supplies-name").text(row.supplies_name || "—");
+        $("#emos-min-order").val(orderThreshold);
+        $("#emos-min-order-unit").val(unitName);
+        $("#emos-supplies-id").val(row.supplies_id || "");
+        var stock = parseFloat(row.min_order_current_stock) || 0;
+        var alertQty = parseFloat(row.min_order_alert_qty) || 0;
+        $("#emos-calculated-hint").text(
+            "Tampil = dasar − stok (" +
+                formatLeadTimeQty(stock) +
+                "). Kosongkan override → pakai peringatan stok (" +
+                formatLeadTimeQty(alertQty) +
+                " " +
+                unitName +
+                ")."
+        );
+        var modal = new bootstrap.Modal(document.getElementById("modal-edit-min-order-supplies"));
+        modal.show();
+    }
+
     function inisialisasi() {
         table = $("#tableStock").DataTable({
             processing: true,
@@ -108,19 +159,31 @@
             columns: [
                 { 
                     data: "supplies_name", 
-                    width: "75%",
+                    width: "55%",
                     render: function (data, type, row) {
                         return '<span style="font-weight: 600; color: #334155; font-size: 13px;">' + (data || '-') + '</span>';
                     }
                 },
                 {
                     data: "supplies_variant_stock_text",
-                    width: "25%",
+                    width: "20%",
                     orderable: false,
                     searchable: false,
                     render: function (data, type, row) {
                         return '<span style="background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;">' + (data || '-') + '</span>';
                     }
+                },
+                {
+                    data: "min_order",
+                    className: "cell-min-order",
+                    width: "25%",
+                    orderable: false,
+                    searchable: false,
+                    defaultContent: "—",
+                    render: function (data, type, row) {
+                        if (type !== "display") return data || 0;
+                        return renderMinOrderCell(row);
+                    },
                 },
             ],
             initComplete: function () {
@@ -141,7 +204,12 @@
         bindStockLoadingEvents($("#tableStock"));
     }
 
-    $(document).on("click", "#tableStock tbody tr", function () {
+    $(document).on("click", "#tableStock tbody tr", function (e) {
+        if ($(e.target).closest("td.cell-min-order").length) {
+            var data = table.row(this).data();
+            if (data) openMinOrderModal(data);
+            return;
+        }
         var data = table.row(this).data();
         if (!data) return;
         activeId = data.supplies_id;
@@ -385,4 +453,63 @@
         $("#add_stock_supplies #start_date").val("");
         $("#add_stock_supplies #end_date").val("");
         getLog(activeId);
+    });
+
+    function refreshStock() {
+        if (table) {
+            table.ajax.reload(null, false);
+        }
+    }
+
+    // ── Modal Edit Pemesanan Min. (bahan) ──────────────────────────────────
+    $("#emos-save-btn").on("click", function () {
+        var minOrder = parseInt($("#emos-min-order").val(), 10);
+        if (isNaN(minOrder) || minOrder < 0) {
+            notifikasi("error", "Peringatan", "Nilai pemesanan minimum tidak valid.");
+            return;
+        }
+
+        var $btn = $(this);
+        var $spinner = $("#emos-save-spinner");
+        $btn.prop("disabled", true);
+        $spinner.removeClass("d-none");
+
+        $.ajax({
+            url: "/updateMinOrderSupplies",
+            method: "POST",
+            data: {
+                _token: $('meta[name="csrf-token"]').attr("content"),
+                supplies_id: $("#emos-supplies-id").val(),
+                min_order: minOrder,
+            },
+            success: function (res) {
+                if (!res.success) {
+                    notifikasi("error", "Gagal", res.message || "Gagal menyimpan pemesanan minimum.");
+                    return;
+                }
+                var modal = bootstrap.Modal.getInstance(
+                    document.getElementById("modal-edit-min-order-supplies")
+                );
+                if (modal) modal.hide();
+                refreshStock();
+                Swal.fire({
+                    icon: "success",
+                    title: "Berhasil",
+                    text: res.message || "Pemesanan minimum berhasil diperbarui.",
+                    confirmButtonText: "OK",
+                    confirmButtonColor: "#3b82f6",
+                });
+            },
+            error: function (err) {
+                var msg =
+                    err.responseJSON && err.responseJSON.message
+                        ? err.responseJSON.message
+                        : "Gagal menyimpan pemesanan minimum.";
+                notifikasi("error", "Gagal", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", false);
+                $spinner.addClass("d-none");
+            },
+        });
     });

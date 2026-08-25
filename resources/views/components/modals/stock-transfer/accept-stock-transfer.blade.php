@@ -149,9 +149,10 @@
                   <th
                     style="width: 140px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;"
                     class="text-center">Qty Kirim</th>
+                  {{-- Sembunyikan sementara: terima langsung = qty kirim (toggle class d-none untuk tampilkan lagi) --}}
                   <th
                     style="width: 180px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;"
-                    class="text-center">Qty Terima</th>
+                    class="text-center d-none st-col-qty-terima">Qty Terima</th>
                   <th
                     style="width: 160px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 14px 16px;"
                     class="text-center">Hasil Konversi</th>
@@ -177,7 +178,9 @@
         {{-- ── FOOTER ── --}}
         <div class="modal-footer pg-modal-footer">
           <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
-          <button type="button" class="btn pg-btn-accept btn-accept-transfer"><i class="fe fe-check-circle me-1"></i>Terima Transfer</button>
+          {{-- Tolak terima: di-hide dulu (jangan hapus) — client belum pakai --}}
+          <button type="button" class="btn pg-btn-decline btn-reject-accept-transfer d-none"><i class="fe fe-x me-1"></i>Tolak</button>
+          <button type="button" class="btn pg-btn-accept btn-accept-transfer"><i class="fe fe-check-circle me-1"></i>Terima</button>
         </div>
 
       </form>

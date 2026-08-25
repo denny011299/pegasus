@@ -28,6 +28,7 @@ use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
 use App\Support\UnitStockSorter;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -1902,12 +1903,20 @@ class StockController extends Controller
 
             $warehouseName = $warehouse->warehouse_name ?? '-';
 
+            $hasAlertCol = Schema::hasColumn('product_stocks', 'ps_alert_stock');
+            $hasMinOrderCol = Schema::hasColumn('product_stocks', 'ps_min_order');
+
             $rows = $base
                 ->select([
                     'product_variants.product_variant_id',
                     'product_variants.product_variant_sku',
                     'product_variants.product_variant_name',
                     'product_variants.product_id',
+                    'product_variants.unit_id as variant_unit_id',
+                    'product_variants.product_variant_alert',
+                    Schema::hasColumn('product_variants', 'retail_unit')
+                        ? 'product_variants.retail_unit'
+                        : DB::raw('NULL as retail_unit'),
                     'pr.product_name as pr_name',
                     'cat.category_name as product_category',
                 ])
@@ -1947,13 +1956,20 @@ class StockController extends Controller
                     }
                 }
 
-                $stockRows = $stockQuery->get([
+                $stockSelect = [
                     'product_stocks.ps_id',
                     'product_stocks.product_variant_id',
                     'product_stocks.unit_id',
                     'product_stocks.ps_stock',
                     'product_stocks.ps_safety_stock',
-                ]);
+                ];
+                if ($hasAlertCol) {
+                    $stockSelect[] = 'product_stocks.ps_alert_stock';
+                }
+                if ($hasMinOrderCol) {
+                    $stockSelect[] = 'product_stocks.ps_min_order';
+                }
+                $stockRows = $stockQuery->get($stockSelect);
 
                 $unitIds = $stockRows->pluck('unit_id')->unique()->filter()->values()->all();
                 $units = $unitIds !== []
@@ -2011,6 +2027,10 @@ class StockController extends Controller
                     $parts[] = number_format($qty, 0, ',', '.') . ' ' . $unitName;
                 }
 
+                $defaultUnitId = $isMain
+                    ? (int) ($row->variant_unit_id ?? 0)
+                    : (int) ($row->retail_unit ?? 0);
+
                 $rowData = [
                     'product_variant_id' => $row->product_variant_id,
                     'product_id' => $row->product_id,
@@ -2020,6 +2040,8 @@ class StockController extends Controller
                     'product_category' => $row->product_category ?: '-',
                     'warehouse_id' => $warehouseId,
                     'warehouse_name' => $warehouseName,
+                    'is_main_warehouse' => $isMain ? 1 : 0,
+                    'default_unit_id' => $defaultUnitId > 0 ? $defaultUnitId : null,
                     'image_url' => null,
                     'units' => $unitsPayload,
                     'product_variant_stock_text' => $parts !== [] ? implode(', ', $parts) : '-',
@@ -2029,6 +2051,11 @@ class StockController extends Controller
                         ? implode(', ', $safetyParts)
                         : '-';
                 }
+
+                $rowData = array_merge(
+                    $rowData,
+                    $this->buildProductMinOrderMeta($row, $stocks, $isMain, $units, $hasAlertCol, $hasMinOrderCol)
+                );
 
                 $data[] = $rowData;
             }
@@ -2075,8 +2102,14 @@ class StockController extends Controller
         $warehouseId = $warehouseId ? (int) $warehouseId : null;
 
         $warehouse = null;
+        $isMain = true;
         if ($warehouseId) {
-            $warehouse = Warehouse::query()->find($warehouseId);
+            $warehouse = Warehouse::query()
+                ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+                ->find($warehouseId);
+            $isMain = $warehouse
+                && $warehouse->type
+                && (int) $warehouse->type->is_main_warehouse === 1;
         }
 
         // Server-side DataTables
@@ -2106,8 +2139,10 @@ class StockController extends Controller
             $columns = [
                 0 => 'supplies.supplies_name',
                 1 => 'supplies.supplies_name',
+                2 => 'supplies.supplies_name',
             ];
             $orderCol = $columns[$orderColIdx] ?? 'supplies.supplies_name';
+            $hasSuppliesMinCol = Schema::hasColumn('supplies', 'supplies_min_stock');
 
             $base = Supplies::query()
                 ->from('supplies')
@@ -2131,6 +2166,9 @@ class StockController extends Controller
                 ->select([
                     'supplies.supplies_id',
                     'supplies.supplies_name',
+                    'supplies.supplies_default_unit',
+                    'supplies.supplies_alert',
+                    $hasSuppliesMinCol ? 'supplies.supplies_min_stock' : DB::raw('NULL as supplies_min_stock'),
                 ])
                 ->orderBy($orderCol, $orderDir)
                 ->orderBy('supplies.supplies_id', 'asc')
@@ -2140,6 +2178,8 @@ class StockController extends Controller
 
             $suppliesIds = $rows->pluck('supplies_id')->all();
             $stocksBySupply = [];
+            $relationsBySupply = collect();
+            $units = collect();
 
             if ($suppliesIds !== []) {
                 $stockRows = SuppliesStock::withoutGlobalScope('active_warehouse')
@@ -2149,8 +2189,10 @@ class StockController extends Controller
                     ->get(['ss_id', 'supplies_id', 'unit_id', 'ss_stock', 'warehouse_id']);
 
                 $unitIds = $stockRows->pluck('unit_id')->unique()->filter()->values()->all();
-                $units = $unitIds !== []
-                    ? Unit::whereIn('unit_id', $unitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id')
+                $defaultUnitIds = $rows->pluck('supplies_default_unit')->filter()->unique()->values()->all();
+                $allUnitIds = array_values(array_unique(array_merge($unitIds, $defaultUnitIds)));
+                $units = $allUnitIds !== []
+                    ? Unit::whereIn('unit_id', $allUnitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id')
                     : collect();
 
                 foreach ($stockRows as $stock) {
@@ -2163,13 +2205,12 @@ class StockController extends Controller
                 $relationsBySupply = \App\Models\SuppliesRelation::query()
                     ->where('status', 1)
                     ->whereIn('supplies_id', $suppliesIds)
-                    ->get(['supplies_id', 'su_id_1', 'su_id_2'])
+                    ->get(['supplies_id', 'su_id_1', 'su_id_2', 'sr_value_2'])
                     ->groupBy('supplies_id');
-            } else {
-                $relationsBySupply = collect();
             }
 
             $data = [];
+            $isEceranWarehouse = ! $isMain;
             foreach ($rows as $row) {
                 $stocks = $stocksBySupply[$row->supplies_id] ?? [];
                 $relations = $relationsBySupply->get($row->supplies_id, collect());
@@ -2185,13 +2226,13 @@ class StockController extends Controller
                     $parts[] = number_format($qty, 0, ',', '.') . ' ' . $unitLabel;
                 }
 
-                $data[] = [
+                $data[] = array_merge([
                     'supplies_id' => $row->supplies_id,
                     'supplies_name' => $row->supplies_name,
                     'warehouse_id' => $warehouseId,
                     'warehouse_name' => $warehouseName,
                     'supplies_variant_stock_text' => $parts !== [] ? implode(', ', $parts) : '-',
-                ];
+                ], $this->buildSuppliesMinOrderMeta($row, $stocks, $relations, $isEceranWarehouse, $units));
             }
 
             return response()->json([
@@ -2351,5 +2392,212 @@ class StockController extends Controller
 
             return response()->json(['status' => 0, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Meta pemesanan min produk untuk Daftar Stok (sama rumus Peringatan Stok).
+     *
+     * @param  array<int, object>  $stocks
+     */
+    private function buildProductMinOrderMeta(
+        object $row,
+        array $stocks,
+        bool $isMain,
+        $units,
+        bool $hasAlertCol,
+        bool $hasMinOrderCol
+    ): array {
+        $vid = (int) $row->product_variant_id;
+        $variantUnitId = (int) ($row->variant_unit_id ?? 0);
+        $retailUnitId = (int) ($row->retail_unit ?? 0);
+        $displayUnitId = (! $isMain && $retailUnitId > 0)
+            ? $retailUnitId
+            : ($variantUnitId > 0 ? $variantUnitId : 0);
+
+        $alertQty = (float) ($row->product_variant_alert ?? 0);
+        $alertUnitId = $variantUnitId > 0 ? $variantUnitId : 0;
+        if ($hasAlertCol) {
+            foreach ($stocks as $stockRow) {
+                if ((float) ($stockRow->ps_alert_stock ?? 0) > 0) {
+                    $alertQty = (float) $stockRow->ps_alert_stock;
+                    $alertUnitId = (int) $stockRow->unit_id;
+                    break;
+                }
+            }
+        }
+        if ($alertUnitId > 0 && $displayUnitId > 0 && $alertUnitId !== $displayUnitId) {
+            $alertQty = ProductUnitStock::convertQty($alertQty, $alertUnitId, $displayUnitId, $vid);
+        }
+
+        $currentStock = 0.0;
+        foreach ($stocks as $stockRow) {
+            if ((int) $stockRow->unit_id === $displayUnitId) {
+                $currentStock += (float) ($stockRow->ps_stock ?? 0);
+            }
+        }
+
+        $storedMinOrder = null;
+        if ($hasMinOrderCol) {
+            foreach ($stocks as $stockRow) {
+                if ($stockRow->ps_min_order !== null) {
+                    $minStored = (float) $stockRow->ps_min_order;
+                    $minUnitId = (int) $stockRow->unit_id;
+                    if ($minUnitId > 0 && $displayUnitId > 0 && $minUnitId !== $displayUnitId) {
+                        $minStored = ProductUnitStock::convertQty($minStored, $minUnitId, $displayUnitId, $vid);
+                    }
+                    $storedMinOrder = (int) round($minStored);
+                    break;
+                }
+            }
+        }
+
+        $orderThreshold = $storedMinOrder !== null ? $storedMinOrder : $alertQty;
+        $calculatedMinOrder = (int) max(0, round($orderThreshold - $currentStock));
+        $displayUnitName = '-';
+        if ($displayUnitId > 0) {
+            foreach ($stocks as $stockRow) {
+                if ((int) $stockRow->unit_id === $displayUnitId) {
+                    $displayUnitName = $stockRow->unit_name ?? '-';
+                    break;
+                }
+            }
+            if ($displayUnitName === '-') {
+                $unit = $units->get($displayUnitId);
+                $displayUnitName = $unit->unit_name ?? ($unit->unit_short_name ?? '-');
+            }
+        }
+
+        return [
+            'min_order' => (int) round($orderThreshold),
+            'minim_order' => $calculatedMinOrder,
+            'min_order_is_manual' => $storedMinOrder !== null,
+            'min_order_unit_id' => $displayUnitId,
+            'min_order_unit_name' => $displayUnitName,
+            'min_order_current_stock' => round($currentStock, 4),
+            'min_order_alert_qty' => round($alertQty, 4),
+            'product_display_name' => trim(($row->pr_name ?? '') . ' ' . ($row->product_variant_name ?? '')),
+        ];
+    }
+
+    /**
+     * Meta pemesanan min bahan untuk Daftar Stok (sama rumus Peringatan Stok Bahan).
+     *
+     * @param  array<int, object>  $stocks
+     */
+    private function buildSuppliesMinOrderMeta(
+        object $row,
+        array $stocks,
+        $relations,
+        bool $isEceranWarehouse,
+        $units
+    ): array {
+        $defaultUnitId = (int) ($row->supplies_default_unit ?? 0);
+        $eceranUnitId = $this->resolveSuppliesEceranUnitId($defaultUnitId, $relations);
+        $displayUnitId = ($isEceranWarehouse && $eceranUnitId > 0)
+            ? $eceranUnitId
+            : ($defaultUnitId > 0 ? $defaultUnitId : $eceranUnitId);
+
+        $alertStored = max(0, (float) ($row->supplies_alert ?? 0));
+        $alertDisplay = $this->convertSuppliesQty($alertStored, $defaultUnitId, $displayUnitId, $relations);
+
+        $currentStock = 0.0;
+        foreach ($stocks as $stockRow) {
+            if ((int) $stockRow->unit_id === $displayUnitId) {
+                $currentStock += (float) ($stockRow->ss_stock ?? 0);
+            }
+        }
+
+        $storedMinOrder = null;
+        if ($row->supplies_min_stock !== null && $row->supplies_min_stock !== '') {
+            $storedMinOrder = (int) round($this->convertSuppliesQty(
+                (float) $row->supplies_min_stock,
+                $defaultUnitId,
+                $displayUnitId,
+                $relations
+            ));
+        }
+
+        $orderThreshold = $storedMinOrder !== null ? $storedMinOrder : $alertDisplay;
+        $calculatedMinOrder = (int) max(0, round($orderThreshold - $currentStock));
+        $displayUnit = $units->get($displayUnitId) ?: $units->get($defaultUnitId);
+        $displayUnitName = $displayUnit
+            ? ($displayUnit->unit_name ?? $displayUnit->unit_short_name ?? '-')
+            : '-';
+
+        return [
+            'min_order' => (int) round($orderThreshold),
+            'minim_order' => $calculatedMinOrder,
+            'min_order_is_manual' => $storedMinOrder !== null,
+            'min_order_unit_name' => $displayUnitName,
+            'min_order_current_stock' => round($currentStock, 4),
+            'min_order_alert_qty' => round($alertDisplay, 4),
+        ];
+    }
+
+    private function resolveSuppliesEceranUnitId(int $defaultUnitId, $relations): int
+    {
+        $relations = collect($relations);
+        if ($relations->isEmpty()) {
+            return $defaultUnitId > 0 ? $defaultUnitId : 0;
+        }
+
+        $parents = [];
+        $children = [];
+        foreach ($relations as $rel) {
+            $parent = (int) ($rel->su_id_1 ?? 0);
+            $child = (int) ($rel->su_id_2 ?? 0);
+            if ($parent <= 0 || $child <= 0) {
+                continue;
+            }
+            $parents[$parent] = true;
+            $children[$child] = true;
+        }
+
+        $leaves = array_keys(array_diff_key($children, $parents));
+        if ($leaves === []) {
+            return $defaultUnitId > 0 ? $defaultUnitId : 0;
+        }
+        if ($defaultUnitId > 0 && isset($children[$defaultUnitId]) && ! isset($parents[$defaultUnitId])) {
+            return $defaultUnitId;
+        }
+        sort($leaves);
+
+        return (int) $leaves[0];
+    }
+
+    private function convertSuppliesQty(float $qty, int $fromUnitId, int $toUnitId, $relations): float
+    {
+        if ($fromUnitId === $toUnitId) {
+            return $qty;
+        }
+
+        $queue = [[$fromUnitId, 1.0]];
+        $visited = [];
+        while ($queue !== []) {
+            [$unitId, $factor] = array_shift($queue);
+            if ($unitId === $toUnitId) {
+                return $qty * $factor;
+            }
+            if (isset($visited[$unitId])) {
+                continue;
+            }
+            $visited[$unitId] = true;
+
+            foreach ($relations as $rel) {
+                $parent = (int) $rel->su_id_1;
+                $child = (int) $rel->su_id_2;
+                $value = (float) $rel->sr_value_2;
+                if ($value <= 0) {
+                    continue;
+                }
+                if ($unitId === $parent && ! isset($visited[$child])) {
+                    $queue[] = [$child, $factor * $value];
+                } elseif ($unitId === $child && ! isset($visited[$parent])) {
+                    $queue[] = [$parent, $factor / $value];
+                }
+            }
+        }
+
+        return $qty;
     }
 }

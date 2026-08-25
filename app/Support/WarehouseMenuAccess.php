@@ -18,10 +18,30 @@ class WarehouseMenuAccess
         'Produksi',
     ];
 
+    /**
+     * Modul role yang bukan item sidebar gudang (tidak bisa di-whitelist di form Gudang).
+     * Cek akses tetap via RoleAccess; jangan digagalkan oleh sidebar_menus gudang.
+     */
+    public const NON_SIDEBAR_MODULES = [
+        'Safety Stock',
+    ];
+
     public static function isMainOnlyMenu(string $module): bool
     {
         $needle = strtolower(trim($module));
         foreach (self::MAIN_ONLY_MENUS as $name) {
+            if (strtolower($name) === $needle) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function isNonSidebarModule(string $module): bool
+    {
+        $needle = strtolower(trim($module));
+        foreach (self::NON_SIDEBAR_MODULES as $name) {
             if (strtolower($name) === $needle) {
                 return true;
             }
@@ -63,6 +83,11 @@ class WarehouseMenuAccess
     {
         $module = trim($module);
         if ($module === '') {
+            return true;
+        }
+
+        // Safety Stock dll. bukan menu sidebar gudang — akses cukup dari role.
+        if (self::isNonSidebarModule($module)) {
             return true;
         }
 

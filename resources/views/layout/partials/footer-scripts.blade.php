@@ -1364,6 +1364,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             '_token': $('meta[name="csrf-token"]').attr('content')
           };
           if (opts.retailOnly) payload.retail_only = 1;
+          if (opts.mainFirst) payload.main_first = 1;
+          if (opts.mainOnly) payload.main_only = 1;
           return payload;
         },
         processResults: function processResults(data) {

@@ -65,6 +65,15 @@ class CustomerController extends Controller
                 'message' => 'Data produk tidak valid',
             ]);
         }
+        $productsData = SalesOrderStock::assignBulkWarehouseToProducts($productsData);
+        $retailErr = SalesOrderStock::validateRetailWarehouseUnits($productsData);
+        if ($retailErr) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Satuan tidak valid',
+                'message' => $retailErr,
+            ]);
+        }
         $retailErr = SalesOrderStock::validateRetailSelection($productsData, $data['retail_warehouse_id'] ?? null);
         if ($retailErr) {
             return response()->json([
@@ -118,6 +127,7 @@ class CustomerController extends Controller
         if (! is_array($productsData)) {
             return 'Data produk tidak valid';
         }
+        $productsData = SalesOrderStock::assignBulkWarehouseToProducts($productsData);
 
         $soBefore = SalesOrder::find($data['so_id'] ?? null);
         if (! $soBefore) {
@@ -127,6 +137,14 @@ class CustomerController extends Controller
         // Mutasi stok/log hanya jika SO sudah disetujui (ACC). Sebelum itu stok belum dipotong (accSO);
         // jika revert+potong dijalankan saat status 1/3, stok ikut berubah padahal belum konfirmasi.
         if ((int) ($soBefore->status ?? 0) !== 2) {
+            $retailErr = SalesOrderStock::validateRetailWarehouseUnits($productsData);
+            if ($retailErr) {
+                return response()->json([
+                    'status' => 0,
+                    'header' => 'Satuan tidak valid',
+                    'message' => $retailErr,
+                ]);
+            }
             $retailErr = SalesOrderStock::validateRetailSelection($productsData, $data['retail_warehouse_id'] ?? null);
             if ($retailErr) {
                 return response()->json([
@@ -153,6 +171,14 @@ class CustomerController extends Controller
             return 1;
         }
 
+        $retailErr = SalesOrderStock::validateRetailWarehouseUnits($productsData);
+        if ($retailErr) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Satuan tidak valid',
+                'message' => $retailErr,
+            ]);
+        }
         $retailErr = SalesOrderStock::validateRetailSelection($productsData, $data['retail_warehouse_id'] ?? $soBefore->retail_warehouse_id);
         if ($retailErr) {
             return response()->json([

@@ -24,6 +24,7 @@ use App\Models\Variant;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Session;
 
 class AutocompleteController extends Controller
 {
@@ -607,13 +608,27 @@ class AutocompleteController extends Controller
     {
         $keyword = trim((string) ($req->keyword ?? $req->q ?? $req->term ?? ''));
 
+        $mainFirst = filter_var($req->main_first ?? false, FILTER_VALIDATE_BOOLEAN);
+
         $query = Warehouse::query()
             ->active()
-            ->with(['type' => fn($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
-            ->orderBy('warehouse_name');
+            ->with(['type' => fn($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')]);
+
+        if ($mainFirst) {
+            $query->leftJoin('warehouse_types as wt', 'warehouses.warehouse_type_id', '=', 'wt.id')
+                ->orderByDesc('wt.is_main_warehouse')
+                ->orderBy('warehouses.warehouse_name')
+                ->select('warehouses.id', 'warehouses.warehouse_name', 'warehouses.warehouse_type_id');
+        } else {
+            $query->orderBy('warehouse_name');
+        }
 
         if ($keyword !== '') {
-            $query->where('warehouse_name', 'like', '%' . $keyword . '%');
+            $query->where(
+                $mainFirst ? 'warehouses.warehouse_name' : 'warehouse_name',
+                'like',
+                '%' . $keyword . '%'
+            );
         }
 
         // Gudang eceran saja (bukan tipe utama)
@@ -621,9 +636,23 @@ class AutocompleteController extends Controller
             $query->whereHas('type', function ($q) {
                 $q->where('is_main_warehouse', 0);
             });
+            $user = Session::get('user');
+            $assignedIds = Staff::assignedWarehouseIds($user);
+            if ($assignedIds !== []) {
+                $query->whereIn($mainFirst ? 'warehouses.id' : 'id', $assignedIds);
+            }
         }
 
-        $rows = $query->limit(30)->get(['id', 'warehouse_name', 'warehouse_type_id']);
+        // Semua gudang tipe utama (untuk request eceran)
+        if (filter_var($req->main_only ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $query->whereHas('type', function ($q) {
+                $q->where('is_main_warehouse', 1);
+            });
+        }
+
+        $rows = $mainFirst
+            ? $query->limit(30)->get()
+            : $query->limit(30)->get(['id', 'warehouse_name', 'warehouse_type_id']);
 
         $data = $rows->map(static function ($wh) {
             $typeName = $wh->type->warehouse_type_name ?? null;

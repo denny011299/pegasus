@@ -39,31 +39,33 @@
             </button>
 
             <div class="collapse show" id="collapseStockTransferForm">
-              <div class="row g-3 align-items-stretch mb-3">
+              <div class="row g-3 align-items-stretch mb-3 st-route-row">
 
-                {{-- Card Asal --}}
-                <div class="col-md-5">
+                {{-- Card Asal / Request (BE: from) — di mode request dipindah ke kanan via CSS order --}}
+                <div class="col-md-5 st-card-asal">
                   <div class="d-flex flex-column"
                     style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
                     <div class="d-flex align-items-center gap-2 mb-2">
-                      <span
+                      <span class="st-card-asal-icon"
                         style="width:28px;height:28px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;">
                         <i class="fe fe-log-out" style="font-size:13px;color:#3b82f6;"></i>
                       </span>
-                      <span class="fw-semibold text-primary"
+                      <span class="fw-semibold text-primary st-label-from-card"
                         style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;">Dari (Asal)</span>
                     </div>
                     <div class="row g-3 mt-0 flex-grow-1">
-                      <div class="col-6">
-                        <label class="text-muted mb-1"
-                          style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Pengirim</label>
-                        <select class="form-select form-control fill select2 mt-1" id="transfer_sender_id"
-                          style="border-radius:8px;font-size:13px;" disabled>
-                          <option value="">Pilih Staff</option>
-                        </select>
+                      <div class="col-6" id="st-sender-slot-asal">
+                        <div id="st-sender-block">
+                          <label class="text-muted mb-1 st-label-sender-field"
+                            style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Pengirim</label>
+                          <select class="form-select form-control fill select2 mt-1" id="transfer_sender_id"
+                            style="border-radius:8px;font-size:13px;" disabled>
+                            <option value="">Pilih Staff</option>
+                          </select>
+                        </div>
                       </div>
-                      <div class="col-6">
-                        <label class="text-muted mb-1"
+                      <div class="col-6" id="st-from-warehouse-col">
+                        <label class="text-muted mb-1 st-label-from-field"
                           style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang /
                           Toko Asal</label>
                         <select class="form-select form-control fill select2 mt-1" id="transfer_from_warehouse_id"
@@ -71,36 +73,39 @@
                           <option value="">Pilih toko atau gudang</option>
                         </select>
                       </div>
-                      <div class="col-12 d-flex flex-column" style="margin-top: 1.5rem;">
-                        <label class="text-muted mb-1"
-                          style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i
-                            class="fe fe-calendar me-1"></i>Tanggal Pengiriman</label>
-                        <div class="position-relative mt-1">
-                          <input type="text" class="form-control datetimepicker" id="transfer_date"
-                            placeholder="Pilih Tanggal"
-                            style="border-radius:8px;font-size:13px;min-height:38px;padding-right:36px;width:100%;">
-                          <i class="fe fe-calendar position-absolute"
-                            style="right:12px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none; font-size:14px;"></i>
+                      <div class="col-12" id="st-date-slot-asal">
+                        <div id="st-date-block" class="d-flex flex-column" style="margin-top: 1.5rem;">
+                          <label class="text-muted mb-1"
+                            style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i
+                              class="fe fe-calendar me-1"></i>Tanggal Pengiriman</label>
+                          <div class="position-relative mt-1">
+                            <input type="text" class="form-control datetimepicker" id="transfer_date"
+                              placeholder="Pilih Tanggal"
+                              style="border-radius:8px;font-size:13px;min-height:38px;padding-right:36px;width:100%;">
+                            <i class="fe fe-calendar position-absolute"
+                              style="right:12px; top:50%; transform:translateY(-50%); color:#94a3b8; pointer-events:none; font-size:14px;"></i>
+                          </div>
                         </div>
                       </div>
+                      <div class="col-12 d-none" id="st-note-slot-asal"></div>
                     </div>
                   </div>
                 </div>
 
                 {{-- Arrow --}}
-                <div class="col-md-2 d-flex align-items-center justify-content-center">
+                <div class="col-md-2 d-flex align-items-center justify-content-center st-card-arrow">
                   <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
                     <div
                       style="width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(59,130,246,.3);">
-                      <i class="fe fe-arrow-right text-white" style="font-size:18px;"></i>
+                      <i class="fe fe-arrow-right text-white st-route-arrow-icon" style="font-size:18px;"></i>
                     </div>
-                    <span class="text-muted"
+                    <span class="text-muted st-route-arrow-text"
                       style="font-size:10px;font-weight:600;letter-spacing:.5px;">TRANSFER</span>
                   </div>
                 </div>
 
-                {{-- Card Tujuan --}}
-                <div class="col-md-5">
+                {{-- Card Tujuan / Penerima (BE: to) — di mode request dipindah ke kiri via CSS order --}}
+                <div class="col-md-5 st-card-tujuan">
                   <div class="d-flex flex-column"
                     style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:14px 16px; height:100%;">
                     <div class="d-flex align-items-center gap-2 mb-2">
@@ -108,13 +113,14 @@
                         style="width:28px;height:28px;background:#f0fdf4;border-radius:8px;display:flex;align-items:center;justify-content:center;">
                         <i class="fe fe-log-in" style="font-size:13px;color:#22c55e;"></i>
                       </span>
-                      <span class="fw-semibold"
+                      <span class="fw-semibold st-label-to-card"
                         style="font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#16a34a;">Ke
                         (Tujuan)</span>
                     </div>
                     <div class="row g-3 mt-0 flex-grow-1">
-                      <div class="col-12">
-                        <label class="text-muted mb-1"
+                      <div class="col-6 d-none" id="st-sender-slot-tujuan"></div>
+                      <div class="col-12" id="st-to-warehouse-col">
+                        <label class="text-muted mb-1 st-label-to-field"
                           style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang
                           Tujuan</label>
                         <select class="form-select form-control fill select2 mt-1" id="transfer_to_warehouse_id"
@@ -122,12 +128,15 @@
                           <option value="">Pilih toko atau gudang</option>
                         </select>
                       </div>
-                      <div class="col-12 d-flex flex-column" style="margin-top: 1.5rem;">
-                        <label class="text-muted mb-1"
-                          style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i
-                            class="fe fe-file-text me-1"></i>Catatan (Opsional)</label>
-                        <textarea class="form-control flex-grow-1 mt-1" id="transfer_note" placeholder="Masukkan catatan tambahan..."
-                          style="border-radius:8px;font-size:13px;resize:none; min-height:80px;"></textarea>
+                      <div class="col-12 d-none" id="st-date-slot-tujuan"></div>
+                      <div class="col-12" id="st-note-slot-tujuan">
+                        <div id="st-note-block" class="d-flex flex-column" style="margin-top: 1.5rem;">
+                          <label class="text-muted mb-1"
+                            style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;"><i
+                              class="fe fe-file-text me-1"></i>Catatan (Opsional)</label>
+                          <textarea class="form-control flex-grow-1 mt-1" id="transfer_note" placeholder="Masukkan catatan tambahan..."
+                            style="border-radius:8px;font-size:13px;resize:none; min-height:80px;"></textarea>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -239,10 +248,12 @@
           </div>{{-- /.pg-modal-body-content --}}
         </div>
 
-        {{-- ── FOOTER: semua aksi di kanan — Batal, Tolak, Simpan/Transfer ── --}}
+        {{-- ── FOOTER: Batal, Tolak, Approve QC, Approve Ops, Transfer, Simpan ── --}}
         <div class="modal-footer pg-modal-footer">
           <button type="button" class="btn pg-btn-cancel btn-cancel-transfer">Batal</button>
           <button type="button" class="btn pg-btn-decline btn-reject-transfer d-none"><i class="fe fe-x me-1"></i>Tolak</button>
+          <button type="button" class="btn pg-btn-accept btn-approve-qc-transfer d-none"><i class="fe fe-check me-1"></i>Terima</button>
+          <button type="button" class="btn pg-btn-accept btn-approve-ops-transfer d-none"><i class="fe fe-check-circle me-1"></i>Terima</button>
           <button type="button" class="btn pg-btn-accept btn-acc-transfer d-none"><i class="fe fe-send me-1"></i>Transfer</button>
           <button type="button" class="btn pg-btn-save btn-save-transfer"><i class="fe fe-save me-1"></i>Simpan</button>
         </div>

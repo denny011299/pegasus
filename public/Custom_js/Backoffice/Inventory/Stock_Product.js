@@ -169,6 +169,10 @@
             if (!table) return;
             var data = table.row(this).data();
             if (!data) return;
+            if ($(e.target).closest("td.cell-min-order").length) {
+                openMinOrderModal(data);
+                return;
+            }
             if ($(e.target).closest("td.cell-safety").length) {
                 openSafetyModal(data);
                 return;
@@ -181,9 +185,9 @@
     function renderSafetyLabel(text) {
         var label = text && text !== "-" ? text : "-";
         return (
-            '<div class="safety-cell-label d-inline-flex align-items-center" style="cursor:pointer; min-height:20px;">' +
-                '<span style="font-weight:500; color:#475569; display:inline-block; width:65px; text-align:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + escapeHtml(label) + '</span>' +
-                '<i class="fe fe-edit-2 text-primary flex-shrink-0" style="font-size:13px; opacity:0.6; margin-left:4px;"></i>' +
+            '<div class="safety-cell-label d-flex align-items-center justify-content-between" style="cursor:pointer; width:120px; max-width:100%; min-height:20px; pe-1">' +
+                '<div style="text-align:left; word-break:break-word; flex-grow:1;">' + escapeHtml(label) + '</div>' +
+                '<i class="fe fe-edit-2 text-muted ms-2" style="font-size:13px; flex-shrink:0;" title="Edit Safety Stock"></i>' +
             '</div>'
         );
     }
@@ -194,6 +198,50 @@
             if (Number(units[i].ps_safety_stock) > 0) return units[i];
         }
         return units[0];
+    }
+
+    /** Stok < safety → true. Gudang utama: parent (satuan di depan) harus 0 dulu. */
+    function isStockBelowSafety(row) {
+        if (!canViewSafetyStock || !row) return false;
+        var units = row.units || [];
+        var safetyUnit = pickSafetyUnit(units);
+        var safetyQty = safetyUnit ? Number(safetyUnit.ps_safety_stock) || 0 : 0;
+        if (safetyQty <= 0) return false;
+
+        var isMain = Number(row.is_main_warehouse) === 1;
+        if (!isMain) {
+            return (Number(safetyUnit.ps_stock) || 0) < safetyQty;
+        }
+
+        // Gudang utama — units sudah urut besar→kecil (UnitStockSorter).
+        // Selama masih ada stok di satuan parent di depannya, belum dianggap kurang.
+        var safetyUnitId = Number(safetyUnit.unit_id);
+        var safetyIdx = -1;
+        for (var i = 0; i < units.length; i++) {
+            if (Number(units[i].unit_id) === safetyUnitId) {
+                safetyIdx = i;
+                break;
+            }
+        }
+        if (safetyIdx < 0) return false;
+
+        for (var j = 0; j < safetyIdx; j++) {
+            if (Number(units[j].ps_stock) > 0) return false;
+        }
+
+        return (Number(safetyUnit.ps_stock) || 0) < safetyQty;
+    }
+
+    function renderStockLabel(text, row) {
+        var label = text && text !== "-" ? text : "-";
+        if (isStockBelowSafety(row)) {
+            return (
+                '<span class="text-danger fw-bold" title="Stok di bawah safety stock">' +
+                escapeHtml(label) +
+                "</span>"
+            );
+        }
+        return '<span class="fw-bold">' + escapeHtml(label) + "</span>";
     }
 
     function openSafetyModal(row) {
@@ -275,100 +323,6 @@
         return $('meta[name="csrf-token"]').attr("content") || "";
     }
 
-    $(document).on("click", "#btn_save_safety", function () {
-        if (!safetyRow || !canEditSafetyStock) return;
-        var unitId = Number($("#table_safety_edit .safety-edit-unit").val()) || 0;
-        var qty = Math.max(0, parseInt($("#table_safety_edit .safety-edit-qty").val(), 10) || 0);
-        if (unitId <= 0) return;
-        var $btn = $(this);
-        $btn.prop("disabled", true);
-        $.ajax({
-            url: "/updateProductSafetyStock",
-            method: "post",
-            data: {
-                _token: csrfToken(),
-                product_variant_id: safetyRow.product_variant_id,
-                warehouse_id: safetyRow.warehouse_id || getActiveWarehouseId(),
-                unit_id: unitId,
-                ps_safety_stock: qty,
-            },
-            success: function (res) {
-                if (res && res.status == 1) {
-                    if (typeof toastr !== "undefined") toastr.success("", res.message || "Tersimpan");
-                    $("#modal_safety_stock").modal("hide");
-                    refreshStock();
-                } else if (typeof toastr !== "undefined") {
-                    toastr.error("", (res && res.message) || "Gagal menyimpan");
-                }
-            },
-            error: function (xhr) {
-                if (handlePermissionError(xhr)) return;
-                var msg =
-                    (xhr.responseJSON && xhr.responseJSON.message) || "Gagal menyimpan";
-                if (typeof toastr !== "undefined") toastr.error("", msg);
-            },
-            complete: function () {
-                $btn.prop("disabled", !canEditSafetyStock);
-            },
-        });
-    });
-
-    $(document).on("click", "#btn_transfer_safety", function () {
-        if (!safetyRow || !canEditSafetyStock) return;
-        var items = [];
-        $("#table_safety_transfer tbody tr[data-unit-id]").each(function () {
-            var qty = Math.max(0, parseFloat($(this).find(".safety-transfer-qty").val()) || 0);
-            var max = Number($(this).data("max")) || 0;
-            if (qty <= 0) return;
-            if (qty > max) {
-                if (typeof toastr !== "undefined") {
-                    toastr.warning("", "Qty transfer melebihi safety stock");
-                }
-                items = null;
-                return false;
-            }
-            items.push({
-                unit_id: Number($(this).data("unit-id")),
-                qty: qty,
-            });
-        });
-        if (items === null) return;
-        if (!items.length) {
-            if (typeof toastr !== "undefined") toastr.warning("", "Isi qty transfer");
-            return;
-        }
-        var $btn = $(this);
-        $btn.prop("disabled", true);
-        $.ajax({
-            url: "/transferSafetyToStock",
-            method: "post",
-            data: {
-                _token: csrfToken(),
-                product_variant_id: safetyRow.product_variant_id,
-                warehouse_id: safetyRow.warehouse_id || getActiveWarehouseId(),
-                items: JSON.stringify(items),
-            },
-            success: function (res) {
-                if (res && res.status == 1) {
-                    if (typeof toastr !== "undefined") toastr.success("", res.message || "Transfer berhasil");
-                    $("#modal_safety_stock").modal("hide");
-                    refreshStock();
-                } else if (typeof toastr !== "undefined") {
-                    toastr.error("", (res && res.message) || "Gagal transfer");
-                }
-            },
-            error: function (xhr) {
-                if (handlePermissionError(xhr)) return;
-                var msg =
-                    (xhr.responseJSON && xhr.responseJSON.message) || "Gagal transfer";
-                if (typeof toastr !== "undefined") toastr.error("", msg);
-            },
-            complete: function () {
-                $btn.prop("disabled", !canEditSafetyStock);
-            },
-        });
-    });
-
     function escapeHtml(str) {
         return String(str)
             .replace(/&/g, "&amp;")
@@ -409,6 +363,63 @@
             escapeHtml(data || "-") +
             "</span>"
         );
+    }
+
+    function formatLeadTimeQty(value) {
+        var number = parseFloat(value) || 0;
+        return Number.isInteger(number) ? number.toString() : number.toFixed(2).replace(/\.?0+$/, "");
+    }
+
+    function renderMinOrderCell(row) {
+        var unitName = row.min_order_unit_name || "";
+        var orderThreshold = parseFloat(row.min_order) || 0;
+        var isManual = !!row.min_order_is_manual;
+        var label =
+            formatLeadTimeQty(orderThreshold) + (unitName ? " " + unitName : "");
+
+        return (
+            '<div class="min-order-cell-label" style="cursor:pointer; min-height:20px;">' +
+            '<div class="d-inline-flex align-items-center">' +
+            '<span class="fw-semibold" style="color:#475569;">' +
+            escapeHtml(label.trim() || "—") +
+            "</span>" +
+            '<i class="fe fe-edit-2 text-primary flex-shrink-0" style="font-size:13px; opacity:0.6; margin-left:4px;"></i>' +
+            "</div>" +
+            (!isManual
+                ? '<div class="small text-muted" style="margin-top:2px;">Otomatis (peringatan stok)</div>'
+                : "") +
+            "</div>"
+        );
+    }
+
+    function openMinOrderModal(row) {
+        if (!row) return;
+        var unitName = row.min_order_unit_name || "";
+        var orderThreshold = parseFloat(row.min_order) || 0;
+        var productName =
+            row.product_display_name ||
+            ((row.pr_name || "") + " " + (row.product_variant_name || "")).trim();
+
+        $("#emo-product-name").text(productName || "—");
+        $("#emo-min-order").val(orderThreshold);
+        $("#emo-min-order-unit").val(unitName);
+        $("#emo-product-id").val(row.product_id || "");
+        $("#emo-variant-id").val(row.product_variant_id || "");
+        $("#emo-unit-id").val(row.min_order_unit_id || "");
+        $("#emo-warehouse-id").val(row.warehouse_id || "");
+        var stock = parseFloat(row.min_order_current_stock) || 0;
+        var alertQty = parseFloat(row.min_order_alert_qty) || 0;
+        $("#emo-calculated-hint").text(
+            "Tampil = dasar − stok (" +
+                formatLeadTimeQty(stock) +
+                "). Kosongkan override → pakai peringatan stok (" +
+                formatLeadTimeQty(alertQty) +
+                " " +
+                unitName +
+                ")."
+        );
+        var modal = new bootstrap.Modal(document.getElementById("modal-edit-min-order"));
+        modal.show();
     }
 
     function buildStockTableColumns() {
@@ -474,9 +485,25 @@
             {
                 data: "product_variant_stock_text",
                 class: "fw-bold",
-                width: "15%",
+                width: "12%",
                 orderable: false,
                 searchable: false,
+                render: function (data, type, row) {
+                    if (type !== "display") return data || "";
+                    return renderStockLabel(data || "-", row);
+                },
+            },
+            {
+                data: "min_order",
+                className: "cell-min-order",
+                width: "14%",
+                orderable: false,
+                searchable: false,
+                defaultContent: "—",
+                render: function (data, type, row) {
+                    if (type !== "display") return data || 0;
+                    return renderMinOrderCell(row);
+                },
             },
         ];
 
@@ -508,6 +535,9 @@
 
         var opts = dtBaseOptions("Cari Produk", [[1, "asc"]]);
         opts.columns = buildStockTableColumns();
+        opts.drawCallback = function () {
+            setStockTableLoading(false);
+        };
         opts.initComplete = function () {
             moveSearchFilter();
             $("#tableStock-wrap").removeClass("dt-pending").addClass("dt-ready");
@@ -529,6 +559,9 @@
         var opts = dtBaseOptions("Cari Produk", [[1, "asc"]]);
         opts.columns = buildStockTableColumns();
         opts.autoWidth = false;
+        opts.drawCallback = function () {
+            setStockTableLoading(false);
+        };
         opts.initComplete = function () {
             moveSearchFilter();
             $("#tableStockRetail-wrap").removeClass("dt-pending").addClass("dt-ready");
@@ -788,4 +821,150 @@
         $("#start_date").val("");
         $("#end_date").val("");
         getLog(activeId);
+    });
+
+    $(document).on("click", "#btn_save_safety", function () {
+        if (!safetyRow || !canEditSafetyStock) return;
+        var unitId = Number($("#table_safety_edit .safety-edit-unit").val()) || 0;
+        var qty = Math.max(0, parseInt($("#table_safety_edit .safety-edit-qty").val(), 10) || 0);
+        if (unitId <= 0) return;
+        var $btn = $(this);
+        $btn.prop("disabled", true);
+        $.ajax({
+            url: "/updateProductSafetyStock",
+            method: "post",
+            data: {
+                _token: csrfToken(),
+                product_variant_id: safetyRow.product_variant_id,
+                warehouse_id: safetyRow.warehouse_id || getActiveWarehouseId(),
+                unit_id: unitId,
+                ps_safety_stock: qty,
+            },
+            success: function (res) {
+                if (res && res.status == 1) {
+                    if (typeof toastr !== "undefined") toastr.success("", res.message || "Tersimpan");
+                    $("#modal_safety_stock").modal("hide");
+                    refreshStock();
+                } else if (typeof toastr !== "undefined") {
+                    toastr.error("", (res && res.message) || "Gagal menyimpan");
+                }
+            },
+            error: function (xhr) {
+                var msg =
+                    (xhr.responseJSON && xhr.responseJSON.message) || "Gagal menyimpan";
+                if (typeof toastr !== "undefined") toastr.error("", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", !canEditSafetyStock);
+            },
+        });
+    });
+
+    $(document).on("click", "#btn_transfer_safety", function () {
+        if (!safetyRow || !canEditSafetyStock) return;
+        var items = [];
+        $("#table_safety_transfer tbody tr[data-unit-id]").each(function () {
+            var qty = Math.max(0, parseFloat($(this).find(".safety-transfer-qty").val()) || 0);
+            var max = Number($(this).data("max")) || 0;
+            if (qty <= 0) return;
+            if (qty > max) {
+                if (typeof toastr !== "undefined") {
+                    toastr.warning("", "Qty transfer melebihi safety stock");
+                }
+                items = null;
+                return false;
+            }
+            items.push({
+                unit_id: Number($(this).data("unit-id")),
+                qty: qty,
+            });
+        });
+        if (items === null) return;
+        if (!items.length) {
+            if (typeof toastr !== "undefined") toastr.warning("", "Isi qty transfer");
+            return;
+        }
+        var $btn = $(this);
+        $btn.prop("disabled", true);
+        $.ajax({
+            url: "/transferSafetyToStock",
+            method: "post",
+            data: {
+                _token: csrfToken(),
+                product_variant_id: safetyRow.product_variant_id,
+                warehouse_id: safetyRow.warehouse_id || getActiveWarehouseId(),
+                items: JSON.stringify(items),
+            },
+            success: function (res) {
+                if (res && res.status == 1) {
+                    if (typeof toastr !== "undefined") toastr.success("", res.message || "Transfer berhasil");
+                    $("#modal_safety_stock").modal("hide");
+                    refreshStock();
+                } else if (typeof toastr !== "undefined") {
+                    toastr.error("", (res && res.message) || "Gagal transfer");
+                }
+            },
+            error: function (xhr) {
+                var msg =
+                    (xhr.responseJSON && xhr.responseJSON.message) || "Gagal transfer";
+                if (typeof toastr !== "undefined") toastr.error("", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", !canEditSafetyStock);
+            },
+        });
+    });
+
+    // ── Modal Edit Pemesanan Min. ──────────────────────────────────────────
+    $("#emo-save-btn").on("click", function () {
+        var minOrder = parseInt($("#emo-min-order").val(), 10);
+        if (isNaN(minOrder) || minOrder < 0) {
+            notifikasi("error", "Peringatan", "Nilai pemesanan minimum tidak valid.");
+            return;
+        }
+
+        var $btn = $(this);
+        var $spinner = $("#emo-save-spinner");
+        $btn.prop("disabled", true);
+        $spinner.removeClass("d-none");
+
+        $.ajax({
+            url: "/updateMinOrder",
+            method: "POST",
+            data: {
+                _token: $('meta[name="csrf-token"]').attr("content"),
+                product_id: $("#emo-product-id").val(),
+                product_variant_id: $("#emo-variant-id").val(),
+                min_order: minOrder,
+                min_order_unit_id: $("#emo-unit-id").val(),
+                warehouse_id: $("#emo-warehouse-id").val(),
+            },
+            success: function (res) {
+                if (!res.success) {
+                    notifikasi("error", "Gagal", res.message || "Gagal menyimpan pemesanan minimum.");
+                    return;
+                }
+                var modal = bootstrap.Modal.getInstance(document.getElementById("modal-edit-min-order"));
+                if (modal) modal.hide();
+                refreshStock();
+                Swal.fire({
+                    icon: "success",
+                    title: "Berhasil",
+                    text: res.message || "Pemesanan minimum berhasil diperbarui.",
+                    confirmButtonText: "OK",
+                    confirmButtonColor: "#3b82f6",
+                });
+            },
+            error: function (err) {
+                var msg =
+                    err.responseJSON && err.responseJSON.message
+                        ? err.responseJSON.message
+                        : "Gagal menyimpan pemesanan minimum.";
+                notifikasi("error", "Gagal", msg);
+            },
+            complete: function () {
+                $btn.prop("disabled", false);
+                $spinner.addClass("d-none");
+            },
+        });
     });

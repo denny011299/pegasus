@@ -32,10 +32,14 @@ class WarehouseController extends Controller
     /** List gudang non-utama (eceran/toko), filter by is_main_warehouse=0 */
     public function getRetailWarehouse(Request $req)
     {
+        $user = Session::get('user');
+        $assignedIds = Staff::assignedWarehouseIds($user);
+
         $data = Warehouse::query()
             ->active()
             ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
             ->whereHas('type', fn ($q) => $q->where('is_main_warehouse', 0))
+            ->when($assignedIds !== [], fn ($q) => $q->whereIn('id', $assignedIds))
             ->when(
                 trim((string) ($req->warehouse_name ?? '')) !== '',
                 fn ($q) => $q->where('warehouse_name', 'like', '%' . trim($req->warehouse_name) . '%')

@@ -420,63 +420,16 @@ function doScanAddSo() {
             }
 
             var data = results[0];
-            var defaultUnitId =
-                data.unit_id ||
-                (data.pr_unit && data.pr_unit.length > 0
-                    ? data.pr_unit[0].unit_id
-                    : 0);
-            var defaultUnitName = "";
-            if (data.pr_unit && Array.isArray(data.pr_unit)) {
-                data.pr_unit.forEach(function (u) {
-                    if (u.unit_id == defaultUnitId)
-                        defaultUnitName = u.unit_name;
-                });
-            }
-
-            var idx = -1;
-            products.forEach(function (el, i) {
-                if (
-                    parseInt(el.product_variant_id) ===
-                        parseInt(data.product_variant_id) &&
-                    parseInt(el.unit_id) === parseInt(defaultUnitId)
-                ) {
-                    idx = i;
+            if (isActiveRetailWarehouse()) {
+                var retailScan = pickRetailUnitInfo(data);
+                if (!retailScan) {
+                    promptSoRetailUnitSetup(data, function (updated) {
+                        doScanAddSoProduct(updated, qty);
+                    });
+                    return;
                 }
-            });
-
-            if (idx === -1) {
-                products.push({
-                    product_variant_id: data.product_variant_id,
-                    product_name: data.pr_name || "-",
-                    product_variant_name: data.product_variant_name,
-                    product_variant_sku: data.product_variant_sku,
-                    product_variant_price: data.product_variant_price || 0,
-                    so_qty: qty,
-                    unit_id: defaultUnitId,
-                    unit_name: defaultUnitName,
-                    pr_unit: data.pr_unit || [],
-                    retail_unit: data.retail_unit || 0,
-                    warehouse_id: null,
-                    warehouse_name: null,
-                });
-            } else {
-                products[idx].so_qty =
-                    (parseInt(products[idx].so_qty) || 0) + qty;
             }
-
-            toastr.success(
-                "",
-                "Berhasil menambahkan: " +
-                    (data.pr_name || "") +
-                    " " +
-                    data.product_variant_name +
-                    " (x" +
-                    qty +
-                    ")",
-            );
-            refreshTableProduct();
-
-            $("#so_scan_barcode").val("").focus();
+            doScanAddSoProduct(data, qty);
         },
         error: function (xhr) {
             if (handlePermissionError(xhr)) return;
@@ -484,6 +437,77 @@ function doScanAddSo() {
             $("#so_scan_barcode").val("").focus();
         },
     });
+}
+
+function doScanAddSoProduct(data, qty) {
+    var defaultUnitId =
+        data.unit_id ||
+        (data.pr_unit && data.pr_unit.length > 0
+            ? data.pr_unit[0].unit_id
+            : 0);
+    if (isActiveRetailWarehouse()) {
+        var retailScan = pickRetailUnitInfo(data);
+        if (!retailScan) {
+            $("#so_scan_barcode").val("").focus();
+            return;
+        }
+        defaultUnitId = retailScan.unit_id;
+    }
+    var defaultUnitName = "";
+    if (data.pr_unit && Array.isArray(data.pr_unit)) {
+        data.pr_unit.forEach(function (u) {
+            if (u.unit_id == defaultUnitId) defaultUnitName = u.unit_name;
+        });
+    }
+
+    var idx = -1;
+    products.forEach(function (el, i) {
+        if (
+            parseInt(el.product_variant_id) ===
+                parseInt(data.product_variant_id) &&
+            parseInt(el.unit_id) === parseInt(defaultUnitId)
+        ) {
+            idx = i;
+        }
+    });
+
+    if (idx === -1) {
+        products.push(
+            normalizeProductForActiveWarehouse(
+                applyDefaultMainWarehouse(
+                    applyDefaultRetailWarehouse({
+                        product_variant_id: data.product_variant_id,
+                        product_name: data.pr_name || "-",
+                        product_variant_name: data.product_variant_name,
+                        product_variant_sku: data.product_variant_sku,
+                        product_variant_price: data.product_variant_price || 0,
+                        so_qty: qty,
+                        unit_id: defaultUnitId,
+                        unit_name: defaultUnitName,
+                        pr_unit: data.pr_unit || [],
+                        retail_unit: data.retail_unit || 0,
+                        warehouse_id: null,
+                        warehouse_name: null,
+                    }),
+                ),
+            ),
+        );
+    } else {
+        products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+    }
+
+    toastr.success(
+        "",
+        "Berhasil menambahkan: " +
+            (data.pr_name || "") +
+            " " +
+            data.product_variant_name +
+            " (x" +
+            qty +
+            ")",
+    );
+    refreshTableProduct();
+    $("#so_scan_barcode").val("").focus();
 }
 
 $(document).on("click", "#btn_scan_add_so", function () {
@@ -546,7 +570,7 @@ $(document).on("click", ".btnAdd", function () {
         .addClass("btn-outline-secondary");
     $("#so_scan_barcode").val("");
     $("#so_scan_qty").val(1);
-    // $('#so_qty_input').val(""");
+    $("#so_qty_input").val(1);
     $("#so_unit_input").html('<option value="" selected>Pilih Satuan</option>');
     let today = new Date();
     let yyyy = today.getFullYear();
@@ -572,25 +596,9 @@ $(document).on("blur", "#so_discount", function () {
 });
 
 $("#so_sku").on("change", function () {
-    var data = $(this).select2("data")[0];
-    $("#so_unit_input").html('<option value="" selected>Pilih Satuan</option>');
-    if (!data) return;
-
-    if (Array.isArray(data.pr_unit) && data.pr_unit.length > 0) {
-        data.pr_unit.forEach((unit) => {
-            $("#so_unit_input").append(
-                `<option value="${unit.unit_id}">${unit.unit_name}</option>`,
-            );
-        });
-        $("#so_unit_input").val(
-            data.default_unit || data.unit_id || data.pr_unit[0].unit_id,
-        );
-    } else if (data.unit_id && data.unit_name) {
-        $("#so_unit_input").append(
-            `<option value="${data.unit_id}">${data.unit_name}</option>`,
-        );
-        $("#so_unit_input").val(data.unit_id);
-    }
+    var data = $(this).select2("data")[0] || null;
+    fillSoUnitInput(data);
+    $("#so_qty_input").val(data && data.product_variant_id ? 1 : "");
 });
 
 $(document).on("click", "#btn-add-product-so", function () {
@@ -615,6 +623,21 @@ $(document).on("click", "#btn-add-product-so", function () {
         notifikasi("error", "Gagal Insert", "Silahkan pilih satuan produk");
         $("#so_unit_input").addClass("is-invalid");
         return false;
+    }
+    if (isActiveRetailWarehouse()) {
+        var retailAdd = pickRetailUnitInfo(temp);
+        if (!retailAdd) {
+            promptSoRetailUnitSetup(temp);
+            return false;
+        }
+        if (unitId !== retailAdd.unit_id) {
+            notifikasi(
+                "error",
+                "Satuan tidak valid",
+                "Gudang eceran hanya boleh memakai satuan eceran default",
+            );
+            return false;
+        }
     }
 
     $("#so_qty_input").removeClass("is-invalid");
@@ -647,7 +670,11 @@ $(document).on("click", "#btn-add-product-so", function () {
             warehouse_id: null,
             warehouse_name: null,
         };
-        products.push(data);
+        products.push(
+            normalizeProductForActiveWarehouse(
+                applyDefaultMainWarehouse(applyDefaultRetailWarehouse(data)),
+            ),
+        );
     } else {
         products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
     }
@@ -656,8 +683,8 @@ $(document).on("click", "#btn-add-product-so", function () {
     refreshTableProduct();
 
     $("#so_sku").val(null).trigger("change");
-    $("#so_unit_input").html('<option value="" selected>Pilih Satuan</option>');
-    $("#so_qty_input").val("");
+    fillSoUnitInput(null);
+    $("#so_qty_input").val(1);
 });
 
 var soXhr = null;
@@ -680,15 +707,426 @@ function bindSalesOrderLoadingEvents($table) {
         });
 }
 
+function soMainWarehousesFromDom() {
+    var list = [];
+    document
+        .querySelectorAll('.warehouse-dropdown-item[data-is-main="1"]')
+        .forEach(function (el) {
+            var id = parseInt(el.getAttribute("data-id"), 10);
+            if (id > 0) {
+                var span = el.querySelector("span");
+                list.push({
+                    id: id,
+                    warehouse_name: span
+                        ? span.textContent.trim()
+                        : "Gudang #" + id,
+                });
+            }
+        });
+    return list;
+}
+
+/** Gudang utama untuk setup satuan eceran — sama logika crMainWarehouse di Pengembalian. */
+function soMainWarehouse() {
+    var warehouses = soMainWarehousesFromDom();
+    if (warehouses.length) {
+        var activeId = parseInt(getActiveWarehouseId() || 0, 10);
+        var activeMain = warehouses.find(function (warehouse) {
+            return parseInt(warehouse.id, 10) === activeId;
+        });
+        return activeMain || warehouses[0];
+    }
+    if (
+        typeof getMainWarehouseId === "function" &&
+        typeof getMainWarehouseName === "function"
+    ) {
+        var domId = parseInt(getMainWarehouseId(), 10);
+        var domName = getMainWarehouseName();
+        if (domId > 0 && domName) {
+            return { id: domId, warehouse_name: domName };
+        }
+    }
+    return null;
+}
+
+function activeMainWarehouseMeta() {
+    if (
+        typeof isActiveMainWarehouse !== "function" ||
+        isActiveMainWarehouse() !== true
+    ) {
+        return { id: null, name: null };
+    }
+    var id =
+        typeof getActiveWarehouseId === "function"
+            ? parseInt(getActiveWarehouseId() || 0, 10)
+            : 0;
+    if (id <= 0) {
+        return { id: null, name: null };
+    }
+    var wh = window.activeWarehouse || {};
+    var name =
+        (typeof getActiveWarehouseName === "function"
+            ? getActiveWarehouseName()
+            : null) ||
+        wh.name ||
+        wh.warehouse_name ||
+        null;
+    if (!name) {
+        var el =
+            typeof getActiveWarehouseEl === "function"
+                ? getActiveWarehouseEl()
+                : null;
+        if (el) {
+            var span = el.querySelector("span");
+            name = span ? span.textContent.trim() : null;
+        }
+    }
+    return {
+        id: id,
+        name: name || "Gudang #" + id,
+    };
+}
+
+function applyDefaultMainWarehouse(product) {
+    if (!product || isActiveRetailWarehouse()) {
+        return product;
+    }
+    var retailUnit = parseInt(product.retail_unit || 0, 10);
+    var unitId = parseInt(product.unit_id || 0, 10);
+    if (retailUnit > 0 && unitId === retailUnit) {
+        return product;
+    }
+    if (parseInt(product.warehouse_id || 0, 10) > 0) {
+        return product;
+    }
+    var meta = activeMainWarehouseMeta();
+    if (!meta.id) {
+        return product;
+    }
+    product.warehouse_id = meta.id;
+    product.warehouse_name = meta.name;
+    return product;
+}
+
+function activeRetailWarehouseMeta() {
+    if (
+        typeof isActiveMainWarehouse === "function" &&
+        isActiveMainWarehouse() === true
+    ) {
+        return { id: null, name: null };
+    }
+    var id =
+        typeof getActiveWarehouseId === "function"
+            ? parseInt(getActiveWarehouseId() || 0, 10)
+            : 0;
+    if (id <= 0) {
+        return { id: null, name: null };
+    }
+    var wh = window.activeWarehouse || {};
+    var name =
+        (typeof getActiveWarehouseName === "function"
+            ? getActiveWarehouseName()
+            : null) ||
+        wh.name ||
+        wh.warehouse_name ||
+        null;
+    if (!name) {
+        var el =
+            typeof getActiveWarehouseEl === "function"
+                ? getActiveWarehouseEl()
+                : null;
+        if (el) {
+            var span = el.querySelector("span");
+            name = span ? span.textContent.trim() : null;
+        }
+    }
+    return {
+        id: id,
+        name: name || "Gudang #" + id,
+    };
+}
+
+function isActiveRetailWarehouse() {
+    return (
+        typeof isActiveMainWarehouse === "function" &&
+        isActiveMainWarehouse() === false
+    );
+}
+
+function pickRetailUnitInfo(data) {
+    if (!data) return null;
+    var retailUnit = parseInt(data.retail_unit || 0, 10);
+    if (retailUnit <= 0) return null;
+    var unitName = "";
+    if (Array.isArray(data.pr_unit)) {
+        data.pr_unit.forEach(function (u) {
+            if (parseInt(u.unit_id, 10) === retailUnit) {
+                unitName = u.unit_name || unitName;
+            }
+        });
+    }
+    if (!unitName && parseInt(data.unit_id, 10) === retailUnit) {
+        unitName = data.unit_name || "";
+    }
+    return {
+        unit_id: retailUnit,
+        unit_name: unitName || "Satuan eceran",
+    };
+}
+
+function soProductLabel(product) {
+    if (!product) return "produk ini";
+    var name = (
+        (product.product_name || product.pr_name || "") +
+        " " +
+        (product.product_variant_name || "")
+    ).trim();
+    return name || "produk ini";
+}
+
+function updateSoProductRetailUnit(product, retailUnitId) {
+    if (!product) return;
+    product.retail_unit = parseInt(retailUnitId, 10) || null;
+    var sel = $("#so_sku").select2("data");
+    if (
+        sel &&
+        sel[0] &&
+        parseInt(sel[0].product_variant_id, 10) ===
+            parseInt(product.product_variant_id, 10)
+    ) {
+        sel[0].retail_unit = product.retail_unit;
+    }
+}
+
+function promptSoRetailUnitSetup(product, onDone) {
+    if (!product || typeof Swal === "undefined") return;
+    var main = soMainWarehouse();
+    var retailId = parseInt(getActiveWarehouseId() || 0, 10);
+    if (!main || !main.id || !isActiveRetailWarehouse() || retailId <= 0) {
+        if (typeof toastr !== "undefined") {
+            toastr.warning(
+                "",
+                "Pilih gudang eceran di menu atas untuk mengatur satuan eceran produk.",
+            );
+        }
+        return;
+    }
+    $.post("/getTransferRetailUnitSetup", {
+        product_variant_id: product.product_variant_id,
+        from_warehouse_id: main.id,
+        to_warehouse_id: retailId,
+        _token: $('meta[name="csrf-token"]').attr("content"),
+    })
+        .done(function (res) {
+            if (!res || res.status !== 1) {
+                if (typeof toastr !== "undefined") {
+                    toastr.error(
+                        "",
+                        (res && res.message) ||
+                            "Gagal memeriksa satuan eceran",
+                    );
+                }
+                return;
+            }
+            if (!res.requires_setup) {
+                updateSoProductRetailUnit(product, res.retail_unit_id);
+                fillSoUnitInput(product);
+                if (typeof onDone === "function") onDone(product);
+                return;
+            }
+            var units = res.units || [];
+            if (!units.length) {
+                if (typeof toastr !== "undefined") {
+                    toastr.error(
+                        "",
+                        res.message ||
+                            "Satuan produk tidak tersedia untuk dijadikan satuan eceran.",
+                    );
+                }
+                return;
+            }
+            var options = {};
+            units.forEach(function (unit) {
+                options[String(unit.unit_id)] =
+                    unit.unit_name || unit.unit_short_name || "-";
+            });
+            Swal.fire({
+                icon: "warning",
+                title: "Satuan eceran belum diatur",
+                html:
+                    "Pilih satuan eceran untuk <strong>" +
+                    escapeHtmlSo(soProductLabel(product)) +
+                    "</strong>.",
+                input: "select",
+                inputOptions: options,
+                inputPlaceholder: "Pilih satuan eceran",
+                showCancelButton: true,
+                confirmButtonText: "Simpan",
+                cancelButtonText: "Batal",
+                allowOutsideClick: false,
+                inputValidator: function (value) {
+                    return value ? undefined : "Satuan eceran wajib dipilih";
+                },
+                preConfirm: function (unitId) {
+                    return $.post("/saveTransferRetailUnit", {
+                        product_variant_id: product.product_variant_id,
+                        unit_id: unitId,
+                        from_warehouse_id: main.id,
+                        to_warehouse_id: retailId,
+                        _token: $('meta[name="csrf-token"]').attr("content"),
+                    })
+                        .then(function (saveRes) {
+                            if (!saveRes || saveRes.status !== 1) {
+                                throw new Error(
+                                    (saveRes && saveRes.message) ||
+                                        "Gagal menyimpan satuan eceran",
+                                );
+                            }
+                            return saveRes;
+                        })
+                        .catch(function (xhr) {
+                            Swal.showValidationMessage(
+                                (xhr.responseJSON &&
+                                    xhr.responseJSON.message) ||
+                                    xhr.message ||
+                                    "Gagal menyimpan satuan eceran",
+                            );
+                        });
+                },
+            }).then(function (result) {
+                if (!result.isConfirmed || !result.value) return;
+                updateSoProductRetailUnit(
+                    product,
+                    result.value.retail_unit_id,
+                );
+                fillSoUnitInput(product);
+                if (typeof onDone === "function") onDone(product);
+            });
+        })
+        .fail(function (xhr) {
+            if (handlePermissionError(xhr)) return;
+            if (typeof toastr !== "undefined") {
+                toastr.error("", "Gagal memeriksa satuan eceran");
+            }
+        });
+}
+
+function normalizeProductForActiveWarehouse(product) {
+    if (!product || !isActiveRetailWarehouse()) {
+        return product;
+    }
+    var retail = pickRetailUnitInfo(product);
+    if (!retail) {
+        return product;
+    }
+    product.unit_id = retail.unit_id;
+    product.unit_name = retail.unit_name;
+    return applyDefaultRetailWarehouse(product);
+}
+
+function fillSoUnitInput(data) {
+    var $unit = $("#so_unit_input");
+    $unit.html('<option value="" selected>Pilih Satuan</option>');
+    if (!data) {
+        $unit.prop("disabled", false);
+        return;
+    }
+
+    if (isActiveRetailWarehouse()) {
+        if (!parseInt(data.retail_unit || 0, 10)) {
+            $unit
+                .html('<option value="">Atur satuan eceran dulu</option>')
+                .prop("disabled", true);
+            promptSoRetailUnitSetup(data);
+            return;
+        }
+        var retail = pickRetailUnitInfo(data);
+        if (!retail) {
+            $unit
+                .html('<option value="">Atur satuan eceran dulu</option>')
+                .prop("disabled", true);
+            promptSoRetailUnitSetup(data);
+            return;
+        }
+        $unit.append(
+            '<option value="' +
+                retail.unit_id +
+                '">' +
+                escapeHtmlSo(retail.unit_name) +
+                "</option>",
+        );
+        $unit.val(String(retail.unit_id)).prop("disabled", true);
+        return;
+    }
+
+    $unit.prop("disabled", false);
+    if (Array.isArray(data.pr_unit) && data.pr_unit.length > 0) {
+        data.pr_unit.forEach(function (unit) {
+            $unit.append(
+                '<option value="' +
+                    unit.unit_id +
+                    '">' +
+                    escapeHtmlSo(unit.unit_name) +
+                    "</option>",
+            );
+        });
+        $unit.val(
+            String(data.default_unit || data.unit_id || data.pr_unit[0].unit_id),
+        );
+    } else if (data.unit_id && data.unit_name) {
+        $unit.append(
+            '<option value="' +
+                data.unit_id +
+                '">' +
+                escapeHtmlSo(data.unit_name) +
+                "</option>",
+        );
+        $unit.val(String(data.unit_id));
+    }
+}
+
+function applyDefaultRetailWarehouse(product) {
+    if (!product) return product;
+    var retailUnit = parseInt(product.retail_unit || 0, 10);
+    var unitId = parseInt(product.unit_id || 0, 10);
+    if (retailUnit <= 0 || unitId !== retailUnit) {
+        return product;
+    }
+    if (parseInt(product.warehouse_id || 0, 10) > 0) {
+        return product;
+    }
+    var meta = activeRetailWarehouseMeta();
+    if (!meta.id) {
+        return product;
+    }
+    product.warehouse_id = meta.id;
+    product.warehouse_name = meta.name;
+    return product;
+}
+
 function salesOrderAjax(data, callback) {
     if (soXhr && soXhr.readyState !== 4) {
         soXhr.abort();
     }
 
+    var warehouseId =
+        typeof getActiveWarehouseId === "function"
+            ? getActiveWarehouseId()
+            : null;
+    if (!warehouseId) {
+        callback({
+            draw: data.draw,
+            recordsTotal: 0,
+            recordsFiltered: 0,
+            data: [],
+        });
+        return;
+    }
+
     soXhr = $.ajax({
         url: "/getSalesOrder",
         type: "GET",
-        data: data,
+        data: $.extend({}, data, { active_warehouse_id: warehouseId }),
         beforeSend: function () {
             setSalesOrderTableLoading(true);
         },
@@ -959,26 +1397,60 @@ function refreshTableProduct() {
     $("#tableSalesModal").html("");
     var html = "";
     products.forEach((p, index) => {
+        normalizeProductForActiveWarehouse(p);
         let options = "";
-        if (p.pr_unit && Array.isArray(p.pr_unit)) {
-            p.pr_unit.forEach((u) => {
-                options += `<option value="${u.unit_id}" ${u.unit_id == p.unit_id ? "selected" : ""}>${u.unit_name}</option>`;
+        var unitList =
+            isActiveRetailWarehouse() && parseInt(p.retail_unit || 0, 10) > 0
+                ? (p.pr_unit || []).filter(function (u) {
+                      return (
+                          parseInt(u.unit_id, 10) ===
+                          parseInt(p.retail_unit || 0, 10)
+                      );
+                  })
+                : p.pr_unit || [];
+        if (unitList && Array.isArray(unitList) && unitList.length > 0) {
+            unitList.forEach((u) => {
+                options += `<option value="${u.unit_id}" ${u.unit_id == p.unit_id ? "selected" : ""}>${escapeHtmlSo(u.unit_name)}</option>`;
             });
         } else {
-            options = `<option value="${p.unit_id}" ${p.unit_id == p.unit_id ? "selected" : ""}>${p.unit_name}</option>`;
+            options = `<option value="${p.unit_id}" ${p.unit_id == p.unit_id ? "selected" : ""}>${escapeHtmlSo(p.unit_name)}</option>`;
         }
+        var unitSelectDisabled = isActiveRetailWarehouse() ? "disabled" : "";
+        applyDefaultRetailWarehouse(p);
+        applyDefaultMainWarehouse(p);
         var isRetail =
             parseInt(p.retail_unit || 0, 10) > 0 &&
             parseInt(p.unit_id || 0, 10) === parseInt(p.retail_unit || 0, 10);
-        var warehouseCell = isRetail
-            ? `<select class="form-control so-retail-warehouse" data-index="${index}">
+        var warehouseCell;
+        if (isActiveRetailWarehouse()) {
+            var whMeta = activeRetailWarehouseMeta();
+            if (whMeta.id) {
+                p.warehouse_id = whMeta.id;
+                p.warehouse_name = whMeta.name;
+            }
+            warehouseCell =
+                '<span class="so-retail-warehouse-label"><i class="fe fe-home"></i> ' +
+                escapeHtmlSo(whMeta.name || "Gudang aktif") +
+                "</span>";
+        } else if (isRetail) {
+            warehouseCell = `<select class="form-control so-retail-warehouse" data-index="${index}">
                         ${
                             p.warehouse_id
                                 ? `<option value="${p.warehouse_id}" selected>${escapeHtmlSo(p.warehouse_name || "Gudang #" + p.warehouse_id)}</option>`
                                 : ""
                         }
-                   </select>`
-            : `<span class="so-main-warehouse"><i class="fe fe-home"></i> Gudang Utama</span>`;
+                   </select>`;
+        } else {
+            var mainWhMeta = activeMainWarehouseMeta();
+            warehouseCell =
+                '<span class="so-main-warehouse"><i class="fe fe-home"></i> ' +
+                escapeHtmlSo(
+                    p.warehouse_name ||
+                        mainWhMeta.name ||
+                        "Gudang Utama",
+                ) +
+                "</span>";
+        }
 
         html += `
                 <tr class="align-middle" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
@@ -994,7 +1466,7 @@ function refreshTableProduct() {
                             <input type="text" class="form-control fill number-only so_qty text-center px-2"
                                 data-price="${p.product_variant_price}"
                                 data-index="${index}" style="width: 4rem; border-radius: 8px 0 0 8px; border-right: none;" value="${p.so_qty || 1}">
-                            <select class="form-select fill so_unit" style="width: 7.5rem; border-radius: 0 8px 8px 0; background-color: #f8fafc;" data-index="${index}">${options}</select>
+                            <select class="form-select fill so_unit" style="width: 7.5rem; border-radius: 0 8px 8px 0; background-color: #f8fafc;" data-index="${index}" ${unitSelectDisabled}>${options}</select>
                         </div>
                     </td>
                     <td style="padding: 12px 16px;">${warehouseCell}</td>
@@ -1049,7 +1521,13 @@ $(document).on("blur", ".so_qty", function () {
 
 $(document).on("change", ".so_unit", function () {
     const index = $(this).data("index");
-    let unit = parseInt($(this).val());
+    let unit = parseInt($(this).val(), 10);
+    if (isActiveRetailWarehouse()) {
+        var retailUnit = parseInt(products[index].retail_unit || 0, 10);
+        if (retailUnit > 0) {
+            unit = retailUnit;
+        }
+    }
     products[index].unit_id = unit;
     if (parseInt(products[index].retail_unit || 0, 10) !== unit) {
         products[index].warehouse_id = null;
@@ -1227,7 +1705,14 @@ $(document).on("click", ".btn-save", function () {
     }
 
     var missingRetailWarehouse = false;
+    var invalidRetailUnit = false;
     (products || []).forEach(function (p, index) {
+        if (isActiveRetailWarehouse()) {
+            var retailUnit = parseInt(p.retail_unit || 0, 10);
+            if (retailUnit <= 0 || parseInt(p.unit_id || 0, 10) !== retailUnit) {
+                invalidRetailUnit = true;
+            }
+        }
         var isRetail =
             parseInt(p.retail_unit || 0, 10) > 0 &&
             parseInt(p.unit_id || 0, 10) === parseInt(p.retail_unit || 0, 10);
@@ -1236,6 +1721,9 @@ $(document).on("click", ".btn-save", function () {
             markSelect2Invalid($("#so_retail_warehouse_" + index));
         }
     });
+    if (invalidRetailUnit) {
+        missing.push("Satuan eceran default pada item produk");
+    }
     if (missingRetailWarehouse) {
         missing.push("Gudang Eceran pada item produk");
     }
