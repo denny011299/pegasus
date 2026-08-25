@@ -330,6 +330,82 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
   }
 
+  /**
+   * Kolom "Dibuat Oleh" untuk tabel yang barisnya BISA berasal dari Pusat
+   * Sinkronisasi (Produk, Satuan, Armada). Dipakai menggantikan
+   * renderCreatedByName pada tabel-tabel itu saja — tabel lain tetap
+   * memakai renderCreatedByName apa adanya.
+   *
+   * Penandanya adalah kolom id rujukan PMO pada barisnya
+   * (ref_product_id/ref_unit_id/ref_armada_id), BUKAN created_by: created_by
+   * kosong juga terjadi pada data lama/data dari Platform API Eksternal,
+   * jadi tidak bisa dipakai sebagai bukti. Tiga keadaan:
+   *
+   * - Ada id PMO, tanpa pembuat -> memang dibuat oleh sinkronisasi.
+   * - Ada id PMO, ADA pembuat   -> dibuat manusia lalu diadopsi/disambungkan
+   *                               ke PMO (lihat ReferenceMatcher fase adopsi).
+   *                               Keduanya ditampilkan, jangan disembunyikan.
+   * - Tanpa id PMO              -> perilaku lama, murni data lokal.
+   *
+   * Intinya untuk operator: baris bertanda PMO akan DITIMPA data PMO pada
+   * sinkronisasi berikutnya, jadi menyuntingnya manual di sini percuma.
+   */
+  var PMO_REF_KEYS = ['ref_product_id', 'ref_unit_id', 'ref_armada_id'];
+
+  function pmoRefIdOf(row) {
+    if (!row || typeof row !== 'object') {
+      return null;
+    }
+    for (var i = 0; i < PMO_REF_KEYS.length; i++) {
+      var value = row[PMO_REF_KEYS[i]];
+      if (value !== null && typeof value !== 'undefined' && value !== '' && value !== 0 && value !== '0') {
+        return String(value);
+      }
+    }
+    return null;
+  }
+
+  function renderCreatedBySync(data, row) {
+    try {
+      var refId = pmoRefIdOf(row);
+      if (refId === null) {
+        return renderCreatedByName(data);
+      }
+
+      // Id PMO SENGAJA tidak ditampilkan di sini: nilainya 16 digit dan
+      // sebagian melewati Number.MAX_SAFE_INTEGER JavaScript (mis.
+      // 9506012026014615 terbaca 9506012026014616), jadi yang tampil bisa
+      // meleset satu digit. Untuk mendeteksi "ada/tidak" saja nilainya tetap
+      // aman. Kalau id aslinya perlu dilihat, ambil dari database.
+      var tip = 'Dikelola Sinkronisasi PMO. '
+        + 'Perubahan manual akan ditimpa pada sinkronisasi berikutnya.';
+
+      var creator = data;
+      if (typeof creator === 'object' && creator !== null) {
+        creator = creator.name || creator.text || creator.staff_name || '';
+      }
+      var hasCreator = !(creator == null || creator === '' || creator === '-'
+        || creator === false || String(creator).trim() === '');
+
+      if (!hasCreator) {
+        return '<div style="display:flex;align-items:center;gap:10px;" title="' + tip + '">' +
+          '<div style="width:32px;height:32px;border-radius:8px;background:#e0f2fe;border:1px solid #bae6fd;display:flex;align-items:center;justify-content:center;color:#0284c7;flex-shrink:0;">' +
+          '<i class="fe fe-refresh-cw"></i>' +
+          '</div>' +
+          '<span class="fw-semibold text-dark">Sinkronisasi PMO</span>' +
+          '</div>';
+      }
+
+      return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;" title="' + tip + '">' +
+        renderCreatedByName(data) +
+        '<span class="badge badge-soft-info"><i class="fe fe-refresh-cw me-1"></i>PMO</span>' +
+        '</div>';
+    } catch (err) {
+      console.error('renderCreatedBySync error:', err);
+      return renderCreatedByName(data);
+    }
+  }
+
   function notifikasi(simbol, title, deskripsi) {
     Swal.fire({
       icon: simbol,

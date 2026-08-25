@@ -30,4 +30,17 @@ class PmoEndpoints
 
         return $endpoint;
     }
+
+    /**
+     * Nama kunci pembungkus daftar baris pada respons endpoint ini —
+     * "items" untuk hampir semua endpoint, kecuali yang didaftarkan lain di
+     * config/synchronization.php ("endpoint_items_keys"). Dikonfirmasi
+     * 2026-08-22: /getArmada membalas "data", bukan "items".
+     */
+    public static function itemsKey(string $key): string
+    {
+        $overrides = (array) config('synchronization.endpoint_items_keys', []);
+
+        return (string) ($overrides[$key] ?? 'items');
+    }
 }

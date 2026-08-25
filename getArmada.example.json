@@ -1,0 +1,59 @@
+{
+    "pagination": {
+        "total": 7,
+        "page": 1,
+        "limit": 10,
+        "total_pages": 1
+    },
+    "data": [
+        {
+            "armada_id": 5626032026134718,
+            "pic_name": "KENDARAAN CUSTOMER",
+            "nomer_pol": "0000",
+            "nomer_telp": null,
+            "saldo_armada": 0
+        },
+        {
+            "armada_id": 9720042026130717,
+            "pic_name": "TRUK DOUBLE BOX",
+            "nomer_pol": "0000",
+            "nomer_telp": null,
+            "saldo_armada": 0
+        },
+        {
+            "armada_id": 8824042026164147,
+            "pic_name": "GUDANG ECERAN",
+            "nomer_pol": "9999",
+            "nomer_telp": null,
+            "saldo_armada": 0
+        },
+        {
+            "armada_id": 4518022026044429,
+            "pic_name": "TRUK DOUBLE BOX PIR",
+            "nomer_pol": "L 8278 VN",
+            "nomer_telp": null,
+            "saldo_armada": 0
+        },
+        {
+            "armada_id": 9818022026044148,
+            "pic_name": "TRAGA BOX KHOIRUL",
+            "nomer_pol": "L 8533 N",
+            "nomer_telp": null,
+            "saldo_armada": 0
+        },
+        {
+            "armada_id": 7318022026044557,
+            "pic_name": "TRUK DOUBLE BOX",
+            "nomer_pol": "W 8280 NN SUWANDI",
+            "nomer_telp": null,
+            "saldo_armada": 0
+        },
+        {
+            "armada_id": 3018022026044744,
+            "pic_name": "TRUK DOUBLE BOX AGUS",
+            "nomer_pol": "W 9518 PG",
+            "nomer_telp": null,
+            "saldo_armada": 0
+        }
+    ]
+}

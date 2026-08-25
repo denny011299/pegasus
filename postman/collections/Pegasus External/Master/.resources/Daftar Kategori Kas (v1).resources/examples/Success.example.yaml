@@ -1,0 +1,235 @@
+$kind: http-example
+request:
+  url: "{{ENDPOINT}}/v1/master/cash_categories"
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    server: nginx/1.25.4
+    content-type: application/json
+    transfer-encoding: chunked
+    connection: keep-alive
+    vary: Accept-Encoding
+    x-powered-by: PHP/8.4.23
+    cache-control: no-cache, private
+    date: Wed, 29 Jul 2026 16:17:09 GMT
+    access-control-allow-origin: "*"
+    content-encoding: gzip
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "data": [
+          {
+            "cc_id": 1,
+            "cc_name": "Uang Setoran Kustomer",
+            "cc_type": "Masuk"
+          },
+          {
+            "cc_id": 2,
+            "cc_name": "Uang Makan",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 3,
+            "cc_name": "BBM",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 6,
+            "cc_name": "Hotel",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 8,
+            "cc_name": "E Tol",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 10,
+            "cc_name": "Izin",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 11,
+            "cc_name": "Galon",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 12,
+            "cc_name": "Uang Mingguan",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 13,
+            "cc_name": "Parkir",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 14,
+            "cc_name": "Kuli / Krani",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 15,
+            "cc_name": "SATPAM",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 16,
+            "cc_name": "PAK WANDI SORE",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 17,
+            "cc_name": "BAYAR EXP",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 18,
+            "cc_name": "UANG MUAT SORE",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 19,
+            "cc_name": "anak produksi",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 20,
+            "cc_name": "Uang pir + IL",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 21,
+            "cc_name": "Santoso",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 22,
+            "cc_name": "Maestro",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 23,
+            "cc_name": "MINGGUAN ADM",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 24,
+            "cc_name": "GANTI BAN",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 25,
+            "cc_name": "kernet",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 27,
+            "cc_name": "P5 UD METRO MOTOR",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 28,
+            "cc_name": "SERVICE BENGKEL",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 29,
+            "cc_name": "Penyesuaian Kas Sales/Armada (KELUAR)",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 30,
+            "cc_name": "PENYESUIAN KAS ARMADA/SALES (MASUK)",
+            "cc_type": "Masuk"
+          },
+          {
+            "cc_id": 31,
+            "cc_name": "sewa motor",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 32,
+            "cc_name": "bus",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 33,
+            "cc_name": "ojek",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 34,
+            "cc_name": "ADM",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 35,
+            "cc_name": "pompa ban",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 36,
+            "cc_name": "lampu+pitingan",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 37,
+            "cc_name": "KIR",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 38,
+            "cc_name": "GAJI SALES",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 39,
+            "cc_name": "PETUGAS SPBU",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 40,
+            "cc_name": "CONTAINER",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 41,
+            "cc_name": "PENGELUARAN NR",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 42,
+            "cc_name": "PENGELUARAN DIKA",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 43,
+            "cc_name": "PENGELUARAN BISMA",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 44,
+            "cc_name": "PENGELUARAN BAGAS",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 45,
+            "cc_name": "TAMBAL BAN",
+            "cc_type": "Keluar"
+          },
+          {
+            "cc_id": 46,
+            "cc_name": "PENGELUARAN SAIFUL",
+            "cc_type": "Keluar"
+          }
+        ],
+        "meta": {
+          "total": 41
+        }
+      }
+order: 1943560803661366

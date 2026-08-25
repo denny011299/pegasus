@@ -79,7 +79,8 @@
                     @foreach ($steps as $index => $step)
                         <div class="sync-step-pane {{ $index === 0 ? 'is-active' : '' }}"
                             data-step="{{ $step->key }}" data-index="{{ $index }}"
-                            data-paginated="{{ $step->paginated ? '1' : '0' }}">
+                            data-paginated="{{ $step->paginated ? '1' : '0' }}"
+                            data-review-queue="{{ $step->reviewQueue ? '1' : '0' }}">
                             <div class="card">
                                 <div class="card-body">
                                     <div class="d-flex align-items-start justify-content-between">
@@ -143,6 +144,29 @@
                             <!-- Eksekusi -->
                             <div class="card">
                                 <div class="card-body">
+                                    @if ($step->queryFields)
+                                        <div class="sync-query-fields row g-2 mb-3">
+                                            @foreach ($step->queryFields as $field)
+                                                <div class="col-sm-6">
+                                                    <label class="form-label" style="font-size: 13px;">
+                                                        {{ $field['label'] }}
+                                                        @if (!empty($field['required']))
+                                                            <span class="text-danger">*</span>
+                                                        @endif
+                                                    </label>
+                                                    <input type="{{ $field['type'] ?? 'text' }}"
+                                                        class="form-control form-control-sm sync-query-field"
+                                                        data-key="{{ $field['key'] }}"
+                                                        data-label="{{ $field['label'] }}"
+                                                        @if (!empty($field['required'])) data-required="1" @endif>
+                                                    @if (!empty($field['help']))
+                                                        <small class="text-muted">{{ $field['help'] }}</small>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
                                     <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                                         <div>
                                             <h6 class="mb-1">Status Saat Ini</h6>
@@ -243,6 +267,36 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @if ($step->reviewQueue)
+                                <!-- Antrean konfirmasi manual (ReviewQueueStepHandler) -->
+                                <div class="card sync-review-card">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <h6 class="mb-0">Menunggu Konfirmasi</h6>
+                                            <span class="text-muted sync-review-count">-</span>
+                                        </div>
+
+                                        <div class="alert alert-warning d-flex align-items-start mb-3"
+                                            style="font-size: 13px;">
+                                            <i class="fe fe-alert-triangle me-2 mt-1"></i>
+                                            <div>
+                                                Menyambungkan (<strong>Hubungkan</strong>) akan MENIMPA data
+                                                pelanggan/armada yang dipilih dengan data dari PMO (PIC, No Pol,
+                                                telepon, saldo). Mengabaikan (<strong>Abaikan</strong>) bersifat
+                                                permanen. Tidak melakukan apa pun berarti baris itu tetap
+                                                menggantung di sini sampai diselesaikan.
+                                            </div>
+                                        </div>
+
+                                        <p class="text-muted mb-0 sync-review-empty d-none" style="font-size: 13px;">
+                                            Tidak ada baris yang menunggu konfirmasi.
+                                        </p>
+
+                                        <div class="sync-review-list"></div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     @endforeach
 

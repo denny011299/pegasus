@@ -1,0 +1,93 @@
+$kind: http-example
+request:
+  url: "{{ENDPOINT}}/v1/master/sales"
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    server: nginx/1.25.4
+    content-type: application/json
+    transfer-encoding: chunked
+    connection: keep-alive
+    vary: Accept-Encoding
+    x-powered-by: PHP/8.4.23
+    cache-control: no-cache, private
+    date: Wed, 29 Jul 2026 17:52:19 GMT
+    access-control-allow-origin: "*"
+    content-encoding: gzip
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "data": [
+          {
+            "staff_id": 20,
+            "nama": "Bisma ",
+            "kode": null,
+            "email": "-",
+            "telepon": "08",
+            "alamat": "-",
+            "role": "Sales"
+          },
+          {
+            "staff_id": 21,
+            "nama": "Dika ",
+            "kode": null,
+            "email": "-",
+            "telepon": "0",
+            "alamat": "-",
+            "role": "Sales"
+          },
+          {
+            "staff_id": 22,
+            "nama": "Nur ",
+            "kode": null,
+            "email": "-",
+            "telepon": "0",
+            "alamat": "-",
+            "role": "Sales"
+          },
+          {
+            "staff_id": 23,
+            "nama": "Adi ",
+            "kode": null,
+            "email": "-",
+            "telepon": "0",
+            "alamat": "-",
+            "role": "Sales"
+          },
+          {
+            "staff_id": 24,
+            "nama": "Suki ",
+            "kode": null,
+            "email": "-",
+            "telepon": "0",
+            "alamat": "-",
+            "role": "Sales"
+          },
+          {
+            "staff_id": 25,
+            "nama": "Nanang ",
+            "kode": null,
+            "email": "-",
+            "telepon": "0",
+            "alamat": "-",
+            "role": "Sales"
+          },
+          {
+            "staff_id": 26,
+            "nama": "Sales Counter",
+            "kode": null,
+            "email": "-",
+            "telepon": "0",
+            "alamat": "-",
+            "role": "Sales"
+          }
+        ],
+        "meta": {
+          "total": 7
+        }
+      }
+order: 1785347556531

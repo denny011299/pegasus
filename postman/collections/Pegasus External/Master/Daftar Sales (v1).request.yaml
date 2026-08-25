@@ -1,0 +1,5 @@
+$kind: http-request
+url: "{{ENDPOINT}}/v1/master/sales"
+method: GET
+examples: .resources/Daftar Sales (v1).resources/examples
+order: 3834389311003631

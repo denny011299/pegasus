@@ -30,10 +30,41 @@ class PmoSnapshotStore
     {
         $row = $this->find($flowKey, $endpointKey);
 
+        return $row ? $this->fromRow($row) : $this->refresh($flowKey, $endpointKey);
+    }
+
+    /**
+     * Sama seperti get(), tapi TIDAK PERNAH menarik ulang PMO saat potretnya
+     * belum ada — gagal jelas sebagai gantinya.
+     *
+     * get() aman auto-refresh untuk endpoint tanpa parameter wajib (mis.
+     * /getProducts, yang selalu bisa "ambil semua tanpa filter"). Untuk
+     * endpoint yang query-nya wajib (mis. /getShipments dengan
+     * date_start/date_end, lihat SyncStep::$queryFields), auto-refresh di
+     * sini berarti memanggil PMO tanpa parameter itu — request yang salah,
+     * bukan cuma potret yang basi. Langkah lanjutan (mis. Step 2 "Sinkronisasi
+     * Pengiriman") pakai method ini supaya SELALU membaca hasil fetchPage()+
+     * finalizePages() milik langkah pengambilan datanya sendiri, tidak pernah
+     * memanggil PMO sendiri.
+     *
+     * @throws PmoException
+     */
+    public function getExisting(string $flowKey, string $endpointKey): PmoSnapshot
+    {
+        $row = $this->find($flowKey, $endpointKey);
+
         if (! $row) {
-            return $this->refresh($flowKey, $endpointKey);
+            throw new PmoException(
+                'Belum ada data "'.$endpointKey.'" yang diambil untuk alur ini — jalankan langkah '
+                .'pengambilan data PMO terlebih dahulu.'
+            );
         }
 
+        return $this->fromRow($row);
+    }
+
+    private function fromRow(SyncSnapshot $row): PmoSnapshot
+    {
         $payload = $this->decode($row->payload);
 
         return new PmoSnapshot(
@@ -56,7 +87,10 @@ class PmoSnapshotStore
      */
     public function refresh(string $flowKey, string $endpointKey): PmoSnapshot
     {
-        $response = $this->client->fetchCollection(PmoEndpoints::resolve($endpointKey));
+        $response = $this->client->fetchCollection(
+            PmoEndpoints::resolve($endpointKey),
+            itemsKey: PmoEndpoints::itemsKey($endpointKey),
+        );
 
         return $this->persist($flowKey, $endpointKey, $response->rows, $response->meta, $response->url);
     }
@@ -75,7 +109,12 @@ class PmoSnapshotStore
      */
     public function fetchPage(string $flowKey, string $endpointKey, int $page, array $query = []): array
     {
-        $pageResult = $this->client->fetchPage(PmoEndpoints::resolve($endpointKey), $query, $page);
+        $pageResult = $this->client->fetchPage(
+            PmoEndpoints::resolve($endpointKey),
+            $query,
+            $page,
+            PmoEndpoints::itemsKey($endpointKey),
+        );
         $bufferKey = $this->bufferKey($flowKey, $endpointKey);
 
         $buffer = $page > 1 ? Session::get($bufferKey) : null;

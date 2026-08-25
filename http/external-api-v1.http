@@ -1,0 +1,495 @@
+### Pegasus External API v1 — request collection
+#
+# Requires the "REST Client" VS Code extension (id: humao.rest-client).
+# Install it, then open this file — every request below gets a clickable
+# "Send Request" link right above it, no Postman/Insomnia/cloud involved;
+# requests go straight from your machine to the app.
+#
+# One-time setup:
+#   1. Install the extension: code --install-extension humao.rest-client
+#   2. Copy http/.env.example to http/.env and fill in EXTERNAL_API_KEY
+#      with a real key (Backoffice > Aplikasi Eksternal > tambah kunci).
+#      http/.env is gitignored (matches the root ".env" pattern) — never
+#      commit a real key.
+#   3. Adjust @baseUrl below if it doesn't match the environment you're
+#      pointing at.
+#
+# Every request body below is copied from that endpoint's own
+# requestExample()/responseExample() in app/ExternalApi/Docs/Endpoints/V1/
+# — the exact same examples shown on the in-app API Documentation page —
+# not invented separately. If a doc class changes, re-sync this file from
+# it rather than guessing. Full field-by-field docs (types, required/
+# optional, error codes, notes) live there and in
+# cdocs/integrations/202607282149-external-api-v1/.
+
+@baseUrl = https://pegasus.okejob.id/api/external/v1
+@apiKey = {{$dotenv EXTERNAL_API_KEY}}
+
+
+##############################################################################
+# Data Master — Satuan (units)                                    API-001
+##############################################################################
+
+### List units
+# Query params (all optional): page, per_page (default 20, max 100),
+# sort ("kunci:arah" comma-separated — id, ref_unit_id, unit_name,
+# unit_short_name, created_at, updated_at), search (matches unit_name OR
+# unit_short_name). Same shape on every "list" endpoint in this file.
+GET {{baseUrl}}/master/units
+X-API-Key: {{apiKey}}
+
+### List units — paginated/sorted/searched example
+# Same page/per_page/sort/search pattern works on every list endpoint below;
+# not repeated for each one after this.
+GET {{baseUrl}}/master/units?page=1&per_page=20&sort=unit_name:asc&search=kg
+X-API-Key: {{apiKey}}
+
+### Create unit (ref_unit_id = id satuan di sistem PMO; not upsert — rejects an already-used ref_unit_id)
+POST {{baseUrl}}/master/units
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_unit_id": 1042,
+  "unit_name": "Kilogram",
+  "unit_short_name": "kg"
+}
+
+### Update unit profile (path param = ref_unit_id, PMO's id — not Pegasus unit_id; full replace, both fields required)
+PUT {{baseUrl}}/master/units/1042
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "unit_name": "Kilogram",
+  "unit_short_name": "kg"
+}
+
+### Delete unit (soft delete; ref_unit_id stays attached to the old row, can't be reused via POST)
+DELETE {{baseUrl}}/master/units/1042
+X-API-Key: {{apiKey}}
+
+### Connect existing units in bulk (connections[].id = Pegasus internal unit_id, NOT ref_unit_id — see GET /master/units)
+PATCH {{baseUrl}}/master/units/connect
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "connections": [
+    { "id": 1, "ref_unit_id": 1042 },
+    { "id": 2, "ref_unit_id": 1043 }
+  ]
+}
+
+### Cash categories (read-only)
+GET {{baseUrl}}/master/cash_categories
+X-API-Key: {{apiKey}}
+
+
+##############################################################################
+# Data Master — Gudang (warehouses)                                API-002
+##############################################################################
+
+### List warehouses
+GET {{baseUrl}}/master/warehouses
+X-API-Key: {{apiKey}}
+
+### Create warehouse (tipe_id/tipe_nama upsert warehouse_types — renames the type for EVERY warehouse using that tipe_id, not just this one)
+POST {{baseUrl}}/master/warehouses
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "nama": "Gudang Surabaya Pusat",
+  "tipe_nama": "Gudang Utama",
+  "tipe_id": 1,
+  "alamat": "Jl. Raya Darmo No. 25, Surabaya"
+}
+
+### Update warehouse (path param = gudang_id, Pegasus internal id; full replace, all 4 fields required)
+PUT {{baseUrl}}/master/warehouses/101
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "nama": "Gudang Surabaya Pusat",
+  "tipe_nama": "Gudang Utama",
+  "tipe_id": 1,
+  "alamat": "Jl. Raya Darmo No. 25, Surabaya"
+}
+
+### Delete warehouse (rejected with WAREHOUSE_HAS_STOCK if it still holds stock, unless force=1)
+DELETE {{baseUrl}}/master/warehouses/101
+X-API-Key: {{apiKey}}
+
+### Delete warehouse — force past existing stock
+DELETE {{baseUrl}}/master/warehouses/101?force=1
+X-API-Key: {{apiKey}}
+
+### Warehouse types (read-only, standalone export — not meant to be matched to warehouses' tipe_id)
+GET {{baseUrl}}/master/warehouse_types
+X-API-Key: {{apiKey}}
+
+
+##############################################################################
+# Data Master — Sales (staff)
+##############################################################################
+
+### List sales
+GET {{baseUrl}}/master/sales
+X-API-Key: {{apiKey}}
+
+### Create sales (staff_id = caller's own id, NOT a Pegasus id; not upsert — rejects an already-used staff_id)
+POST {{baseUrl}}/master/sales
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "staff_id": 2,
+  "nama_depan": "Willian",
+  "nama_belakang": "Hartanto",
+  "email": "wilha.h@gmail.com",
+  "alamat": "Jl. Sudirman Block A No. 12"
+}
+
+### Update sales profile (path param = staff_id, i.e. caller's own external_ref_id; full replace — only nama_depan required)
+PUT {{baseUrl}}/master/sales/2
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "nama_depan": "Willian",
+  "nama_belakang": "Hartanto",
+  "email": "wilha.h@gmail.com",
+  "alamat": "Jl. Sudirman Block A No. 12"
+}
+
+### Delete sales (soft delete; only ever touches staff with the Sales role)
+DELETE {{baseUrl}}/master/sales/2
+X-API-Key: {{apiKey}}
+
+### Connect existing sales in bulk (connections[].staff_id = Pegasus internal staff id, map_staff_id = caller's own id — opposite direction from PUT/DELETE above)
+PATCH {{baseUrl}}/master/sales/connect
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "connections": [
+    { "staff_id": 20, "map_staff_id": "SLS-002" },
+    { "staff_id": 21, "map_staff_id": "SLS-003" }
+  ]
+}
+
+
+##############################################################################
+# Pembayaran Kas                                                   API-005
+##############################################################################
+
+### Create cash payment (idempotent by ref_payment_id; payment_type 1=Armada [armada_id required], 2=Sales [staff_id required]; every item must share the same type)
+POST {{baseUrl}}/payments/cash
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_payment_id": "PMO-2026-000123",
+  "payment_type": 1,
+  "armada_id": 4,
+  "payment_date": "2026-07-29",
+  "payment_amount": 150000,
+  "auto_accept": false,
+  "items": [
+    { "amount": 100000, "type": 2, "notes": "BBM" },
+    { "amount": 50000, "type": 2, "notes": "Uang makan" }
+  ]
+}
+
+### Show cash payment by ref_payment_id (status: pending/accepted/declined/deleted)
+GET {{baseUrl}}/payments/cash/PMO-2026-000123
+X-API-Key: {{apiKey}}
+
+
+##############################################################################
+# Data Armada
+##############################################################################
+# "Armada" rows live in the customers table (code = customers.customer_code)
+# — no separate armada table, and no /connect endpoint (every customer
+# always already has a customer_code).
+
+### List armada
+GET {{baseUrl}}/armada
+X-API-Key: {{apiKey}}
+
+### Create armada (code is the caller-supplied universal id, max 10 chars; not upsert — rejects an already-used code)
+POST {{baseUrl}}/armada
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "code": "ARM-JKT-001",
+  "pic": "Agus",
+  "pic_phone": "08123456789",
+  "nomor_polisi": "W 9518 PG",
+  "category": "Truk Engkel",
+  "merk_model": "Mitsubishi Colt Diesel",
+  "tahun_kendaraan": "2019",
+  "lokasi": "Pool Surabaya"
+}
+
+### Update armada (path param = code; full replace — fields left out are saved EMPTY, not left unchanged)
+PUT {{baseUrl}}/armada/ARM-JKT-001
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "pic": "Agus",
+  "pic_phone": "08123456789",
+  "nomor_polisi": "W 9518 PG",
+  "category": "Truk Engkel",
+  "merk_model": "Mitsubishi Colt Diesel",
+  "tahun_kendaraan": "2019",
+  "lokasi": "Pool Surabaya"
+}
+
+### Delete armada (soft delete; code stays attached to the old row, can't be reused via POST)
+DELETE {{baseUrl}}/armada/ARM-JKT-001
+X-API-Key: {{apiKey}}
+
+
+##############################################################################
+# Data Produk
+##############################################################################
+
+### List produk
+# Extra optional flags: show_units, show_category, show_variants (each adds
+# its named field to every row — see the variant request right below).
+GET {{baseUrl}}/produk
+X-API-Key: {{apiKey}}
+
+### List produk — with units/category/variants included
+GET {{baseUrl}}/produk?show_units=true&show_category=true&show_variants=true
+X-API-Key: {{apiKey}}
+
+### Create produk (ref_product_id = id produk di sistem PMO; category_id/unit_id/product_unit[] must all point at active rows; not upsert)
+POST {{baseUrl}}/produk
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_product_id": 12,
+  "product_name": "AIR AKI HIKARI",
+  "category_id": 4,
+  "unit_id": 1,
+  "product_unit": [1, 7]
+}
+
+### Update produk profile (path param = ref_product_id; full replace, all 4 fields required)
+PUT {{baseUrl}}/produk/12
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "product_name": "AIR AKI HIKARI",
+  "category_id": 4,
+  "unit_id": 1,
+  "product_unit": [1, 7]
+}
+
+### Delete produk (soft delete; variants and stock rows deactivated too)
+DELETE {{baseUrl}}/produk/12
+X-API-Key: {{apiKey}}
+
+### Connect existing products in bulk (connections[].id = Pegasus internal product id, NOT ref_product_id)
+PATCH {{baseUrl}}/produk/connect
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "connections": [
+    { "id": 1, "ref_product_id": 12 },
+    { "id": 2, "ref_product_id": 13 }
+  ]
+}
+
+
+##############################################################################
+# Data Bahan
+##############################################################################
+
+### List bahan
+# Extra optional flag: show_units (adds "units": resolved supplies_unit + supplies_default_unit).
+GET {{baseUrl}}/bahan
+X-API-Key: {{apiKey}}
+
+### List bahan — with units included
+GET {{baseUrl}}/bahan?show_units=true
+X-API-Key: {{apiKey}}
+
+### Create bahan (ref_supplies_id = id bahan di sistem PMO; supplies_default_unit/supplies_unit[] must be active units; not upsert)
+POST {{baseUrl}}/bahan
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_supplies_id": 12,
+  "supplies_name": "Aki Zuur",
+  "supplies_desc": "Cairan pengisi aki",
+  "supplies_default_unit": 1,
+  "supplies_unit": [1, 7]
+}
+
+### Update bahan profile (path param = ref_supplies_id; full replace, all fields except supplies_desc required)
+PUT {{baseUrl}}/bahan/12
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "supplies_name": "Aki Zuur (Kemasan Baru)",
+  "supplies_desc": "Cairan pengisi aki, kemasan drum",
+  "supplies_default_unit": 1,
+  "supplies_unit": [1, 7]
+}
+
+### Delete bahan (soft delete; can no longer be used as items[].ref_id type=1 on POST /shipments/returns afterwards)
+DELETE {{baseUrl}}/bahan/12
+X-API-Key: {{apiKey}}
+
+### Connect existing bahan in bulk (connections[].id = Pegasus internal supplies id, NOT ref_supplies_id)
+PATCH {{baseUrl}}/bahan/connect
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "connections": [
+    { "id": 1, "ref_supplies_id": 12 },
+    { "id": 2, "ref_supplies_id": 13 }
+  ]
+}
+
+
+##############################################################################
+# Stok (read-only)
+##############################################################################
+
+### Check stock availability for a batch of SKUs against one warehouse
+# gudang_id refers to warehouses.id directly (omit it to use the main
+# warehouse) — items[].unit_id is units.ref_unit_id (PMO's id), not the
+# internal Pegasus unit id. Pure read: nothing is reserved or deducted.
+POST {{baseUrl}}/stock/check
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_shipment_id": "SHP-2026-000123",
+  "gudang_id": 1,
+  "items": [
+    { "sku": "MRP300P", "qty": 50, "unit_id": 5 },
+    { "sku": "SOHP", "qty": 10, "unit_id": 3 }
+  ]
+}
+
+
+##############################################################################
+# Shipment (Pengiriman)
+##############################################################################
+# Field-name gotcha across this group: /scheduled uses items[].sku (like
+# /stock/check), but /shipments/shipped uses items[].variant_sku instead —
+# same meaning, deliberately different field name per the PMO contract.
+
+### Schedule a shipment (rejects a reused ref_shipment_id with DUPLICATE_REF_ID — NOT idempotent, unlike /shipped)
+# Always schedules the shipment even if items are short on stock;
+# auto_create_shortage_doc only controls whether a separate shortage
+# document is created for the warehouse/purchasing team.
+POST {{baseUrl}}/shipments/scheduled
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_shipment_id": "SHP-7788",
+  "scheduled_date": "2026-07-25",
+  "armada_code": "L8533N",
+  "auto_create_shortage_doc": true,
+  "items": [
+    { "sku": "AAHK400ML", "qty": 24, "unit_id": 5 }
+  ]
+}
+
+### Mark as shipped (idempotent by ref_shipment_id; actually deducts stock and moves status to "Berjalan")
+# detail_handler: "force" (default) overwrites stored data if it differs
+# from this request; "validate" rejects with SHIPMENT_DETAIL_MISMATCH
+# instead. Only matters when ref_shipment_id already exists and isn't
+# "Berjalan" yet.
+POST {{baseUrl}}/shipments/shipped
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_shipment_id": "SHP-7788",
+  "shipment_date": "2026-07-25",
+  "armada_code": "L8533N",
+  "notes": "Pengiriman PMO SHP-7788",
+  "detail_handler": "force",
+  "items": [
+    {
+      "variant_sku": "AAHK400ML",
+      "qty": 24,
+      "unit_id": 2,
+      "product_name": "AIR AKI HIKARI",
+      "variant_name": "20 x 400ml"
+    }
+  ]
+}
+
+### Show shipment by ref_shipment_id
+GET {{baseUrl}}/shipments/SHP-7788
+X-API-Key: {{apiKey}}
+
+### Show shipment — with resolved unit info per item
+GET {{baseUrl}}/shipments/SHP-7788?show_unit=true
+X-API-Key: {{apiKey}}
+
+### Change status (only "Dijadwalkan" -> "Sudah terkirim" is allowed today; this deducts stock same as /shipped)
+PATCH {{baseUrl}}/shipments/SHP-7788/change-status
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "status": "Sudah terkirim"
+}
+
+### Cancel shipment (restores stock if it had already been deducted; idempotent — cancelling twice doesn't double-restore)
+PUT {{baseUrl}}/shipments/SHP-7788/cancel
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "reason": "Dibatalkan di PMO karena armada rusak"
+}
+
+### Create a return (GitHub #58) — NOT idempotent, every valid request creates a new document
+# items[].type: 1 = bahan mentah/kemasan (ref_id = supplies.ref_supplies_id,
+# register/connect it first via POST or PATCH /bahan/connect), 2 = produk
+# jadi (ref_id = product_variants.product_variant_sku). items[].satuan_id
+# is units.ref_unit_id, like unit_id elsewhere in this group.
+# items[].gudang_id only actually applies to type=2 rows whose unit is that
+# product's eceran unit — every other row's warehouse is auto-resolved
+# (bahan/non-eceran produk -> gudang utama); left off on an eceran row, that
+# row's warehouse_id is simply left empty (reported via
+# pending_warehouse_items) until staff fill it in via the admin page.
+# proof is a real file upload (multipart/form-data); proof_base64 below is
+# the simpler path for pure-JSON testing — send exactly one of the two.
+POST {{baseUrl}}/shipments/returns
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "return_date": "2026-08-17",
+  "armada_code": "L8533N",
+  "ref_number": "RTN-7788",
+  "notes": "Sisa muatan setelah rute selesai",
+  "proof_base64": "data:image/jpeg;base64,/9j/4AAQSkZJRg...",
+  "items": [
+    { "type": 1, "ref_id": 12, "qty": 5, "satuan_id": 2 },
+    { "type": 2, "ref_id": "AAHK400ML", "qty": 3, "satuan_id": 2 },
+    { "type": 2, "ref_id": "AAHK400ML", "qty": 2, "satuan_id": 7, "gudang_id": 4 }
+  ]
+}

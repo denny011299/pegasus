@@ -51,6 +51,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Kunci Pembungkus Daftar Baris (per endpoint)
+    |--------------------------------------------------------------------------
+    |
+    | Default "items" untuk endpoint yang tidak disebut di sini. Dikonfirmasi
+    | 2026-08-22: /getArmada membalas "data", bukan "items", beda dari
+    | /getProducts dan /getShipments. Lihat App\Synchronization\Pmo\PmoEndpoints::itemsKey().
+    |
+    */
+    'endpoint_items_keys' => [
+        'armada' => 'data',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Umur Potret Data PMO
     |--------------------------------------------------------------------------
     |
@@ -74,5 +88,7 @@ return [
     */
     'flows' => [
         \App\Synchronization\Flows\ProductSyncFlow::class,
+        \App\Synchronization\Flows\ShipmentSyncFlow::class,
+        \App\Synchronization\Flows\ArmadaSyncFlow::class,
     ],
 ];

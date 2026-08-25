@@ -1,0 +1,6 @@
+name: Pegasus
+values:
+  - key: ENDPOINT
+    value: ''
+  - key: API_KEY
+    value: ''

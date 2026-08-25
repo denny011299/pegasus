@@ -804,11 +804,13 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/synchronization', [SynchronizationController::class, 'center'])->name('synchronization');
         Route::get('/synchronization/{flow}', [SynchronizationController::class, 'wizard'])->name('synchronizationWizard');
         Route::get('/synchronization/{flow}/status', [SynchronizationController::class, 'status'])->name('synchronizationStatus');
+        Route::get('/synchronization/{flow}/{step}/pending', [SynchronizationController::class, 'pendingReviews'])->name('synchronizationPendingReviews');
     });
     Route::middleware('check.access:Sinkronisasi|others')->group(function () {
         Route::post('/synchronization/{flow}/{step}/execute', [SynchronizationController::class, 'execute'])->name('synchronizationExecute');
         Route::post('/synchronization/{flow}/{step}/fetch-page', [SynchronizationController::class, 'fetchPage'])->name('synchronizationFetchPage');
         Route::post('/synchronization/{flow}/{step}/finalize', [SynchronizationController::class, 'finalize'])->name('synchronizationFinalize');
+        Route::post('/synchronization/{flow}/{step}/resolve', [SynchronizationController::class, 'resolveReview'])->name('synchronizationResolveReview');
     });
 
     // Platform API Eksternal — halaman administrasi di modul Integrasi.
