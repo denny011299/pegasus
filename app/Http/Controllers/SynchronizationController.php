@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SyncExecution;
 use App\Synchronization\Contracts\PaginatedStepHandler;
+use App\Synchronization\Contracts\ReviewQueueStepHandler;
 use App\Synchronization\PrerequisiteChecker;
 use App\Synchronization\PrerequisiteNotMetException;
 use App\Synchronization\Pmo\PmoClient;
@@ -16,6 +17,7 @@ use App\Synchronization\SyncStatus;
 use App\Synchronization\SyncStep;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 
 /**
  * Pusat Sinkronisasi.
@@ -115,9 +117,10 @@ class SynchronizationController extends Controller
         }
 
         $page = max(1, (int) $request->input('page', 1));
+        $query = (array) $request->input('query', []);
 
         try {
-            $progress = $handler->fetchPage($page);
+            $progress = $handler->fetchPage($page, $query);
         } catch (PmoException $e) {
             return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
         }
@@ -155,6 +158,61 @@ class SynchronizationController extends Controller
             'execution' => $execution->toWizardArray(),
             'state' => $this->state($flow),
         ]);
+    }
+
+    /**
+     * Daftar baris yang menunggu konfirmasi manual untuk langkah berbasis
+     * antrean (SyncStep::$reviewQueue) — dipanggil saat pane langkah itu
+     * ditampilkan, dan sesudah setiap aksi resolve().
+     */
+    public function pendingReviews(string $flow, string $step): JsonResponse
+    {
+        [, $syncStep, $notFound] = $this->resolveStep($flow, $step);
+        if ($notFound) {
+            return $notFound;
+        }
+
+        $handler = $syncStep->makeHandler();
+        if (! $syncStep->reviewQueue || ! $handler instanceof ReviewQueueStepHandler) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Langkah "'.$syncStep->key.'" bukan langkah konfirmasi manual.',
+            ], 422);
+        }
+
+        return response()->json(['ok' => true, 'reviews' => $handler->pendingReviews()]);
+    }
+
+    /**
+     * Selesaikan satu baris pada langkah berbasis antrean — "connect" (perlu
+     * customer_id, harus salah satu kandidat baris itu) atau "discard".
+     */
+    public function resolveReview(string $flow, string $step, Request $request): JsonResponse
+    {
+        [, $syncStep, $notFound] = $this->resolveStep($flow, $step);
+        if ($notFound) {
+            return $notFound;
+        }
+
+        $handler = $syncStep->makeHandler();
+        if (! $syncStep->reviewQueue || ! $handler instanceof ReviewQueueStepHandler) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Langkah "'.$syncStep->key.'" bukan langkah konfirmasi manual.',
+            ], 422);
+        }
+
+        $reviewId = (int) $request->input('review_id');
+        $action = (string) $request->input('action');
+        $customerId = $request->filled('customer_id') ? (int) $request->input('customer_id') : null;
+
+        try {
+            $reviews = $handler->resolveReview($reviewId, $action, $customerId);
+        } catch (InvalidArgumentException|PmoException $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['ok' => true, 'reviews' => $reviews]);
     }
 
     /**

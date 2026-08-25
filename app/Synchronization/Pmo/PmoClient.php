@@ -10,14 +10,19 @@ use Illuminate\Support\Facades\Http;
  *
  * Setiap request membawa header X-API-Key (dari PMO_API_KEY di .env).
  *
- * Kontrak respons PMO (dikonfirmasi PMO, dipakai seluruh endpoint):
- * `{"items": [...], "pagination": {"total", "page", "limit", "total_pages"}}`.
- * Tanpa query params, endpoint otomatis membalas halaman pertama — satu-
- * satunya parameter paginasi yang boleh kita kirim adalah "page" (PMO tidak
- * menerima permintaan mengubah "limit"). Kalau $query membawa filter yang
- * membuat PMO menganggapnya "single get" (mis. product_id), responsnya tidak
- * mengandung "pagination" dan "items" berisi maksimal satu baris — dalam hal
- * ini fetchCollection() otomatis berhenti setelah satu kali panggilan.
+ * Kontrak respons PMO (dikonfirmasi PMO): `{"<itemsKey>": [...], "pagination":
+ * {"total", "page", "limit", "total_pages"}}`. Tanpa query params, endpoint
+ * otomatis membalas halaman pertama — satu-satunya parameter paginasi yang
+ * boleh kita kirim adalah "page" (PMO tidak menerima permintaan mengubah
+ * "limit"). Kalau $query membawa filter yang membuat PMO menganggapnya
+ * "single get" (mis. product_id), responsnya tidak mengandung "pagination"
+ * dan daftar barisnya berisi maksimal satu baris — dalam hal ini
+ * fetchCollection() otomatis berhenti setelah satu kali panggilan.
+ *
+ * Nama kunci daftar baris TERNYATA tidak seragam antar endpoint (dikonfirmasi
+ * 2026-08-22): /getProducts dan /getShipments memakai "items", tapi
+ * /getArmada memakai "data". $itemsKey (default "items") mengakomodasi itu —
+ * lihat App\Synchronization\Pmo\PmoEndpoints::itemsKey().
  */
 class PmoClient
 {
@@ -60,7 +65,7 @@ class PmoClient
      *
      * @throws PmoException
      */
-    public function fetchCollection(string $endpoint, array $query = []): PmoResponse
+    public function fetchCollection(string $endpoint, array $query = [], string $itemsKey = 'items'): PmoResponse
     {
         $rows = [];
         $meta = [];
@@ -70,7 +75,7 @@ class PmoClient
         $url = $this->url($endpoint);
 
         while ($page <= $totalPages && $page <= $maxPages) {
-            $pageResult = $this->fetchPage($endpoint, $query, $page);
+            $pageResult = $this->fetchPage($endpoint, $query, $page, $itemsKey);
 
             $rows = array_merge($rows, $pageResult->rows);
 
@@ -96,13 +101,14 @@ class PmoClient
      *
      * $page=1 selalu dikirim tanpa parameter "page" (mengikuti kontrak PMO:
      * tanpa query params = halaman pertama); $page>1 menambahkan "page" ke
-     * $query.
+     * $query. $itemsKey menyesuaikan endpoint yang membungkus barisnya
+     * dengan kunci lain daripada "items" (mis. /getArmada memakai "data").
      *
      * @param  array<string, mixed>  $query
      *
      * @throws PmoException
      */
-    public function fetchPage(string $endpoint, array $query, int $page): PmoPage
+    public function fetchPage(string $endpoint, array $query, int $page, string $itemsKey = 'items'): PmoPage
     {
         if (! $this->isConfigured()) {
             throw new PmoException(
@@ -114,7 +120,7 @@ class PmoClient
         $payload = $this->request($url, $page > 1 ? $query + ['page' => $page] : $query);
 
         return new PmoPage(
-            rows: $this->extractRows($payload, $url),
+            rows: $this->extractRows($payload, $url, $itemsKey),
             meta: $this->extractMeta($payload),
             page: $page,
             totalPages: $this->extractTotalPages($payload),
@@ -156,7 +162,7 @@ class PmoClient
     }
 
     /**
-     * "items" wajib ada dan berupa daftar — bukan sinyal "PMO tidak punya
+     * $itemsKey wajib ada dan berupa daftar — bukan sinyal "PMO tidak punya
      * data" (itu sah, hasilnya cukup daftar kosong), melainkan kegagalan di
      * level payload: kontraknya dilanggar, jadi seluruh langkah harus gagal
      * (bukan diam-diam dianggap nol baris).
@@ -166,12 +172,12 @@ class PmoClient
      *
      * @throws PmoException
      */
-    private function extractRows(array $payload, string $url): array
+    private function extractRows(array $payload, string $url, string $itemsKey): array
     {
-        $items = $payload['items'] ?? null;
+        $items = $payload[$itemsKey] ?? null;
 
         if (! is_array($items) || ! array_is_list($items)) {
-            throw new PmoException('Respons PMO dari '.$url.' tidak memiliki "items" berupa daftar.');
+            throw new PmoException('Respons PMO dari '.$url.' tidak memiliki "'.$itemsKey.'" berupa daftar.');
         }
 
         $rows = [];

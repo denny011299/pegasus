@@ -34,7 +34,7 @@
                 { data: "customer_pic_phone", width: "14%" },
                 { data: "saldo", width: "14%" },
                 { data: "created", width: "12%" },
-                { data: "created_by_name", defaultContent: "-", width: "16%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
+                { data: "created_by_name", defaultContent: "-", width: "16%" , render: function(data, type, row) { return typeof renderCreatedBySync === "function" ? renderCreatedBySync(data, row) : data; } },
                 {
                     data: "action",
                     className: "text-center align-middle",
