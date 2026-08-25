@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Support\WarehouseMenuAccess;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Session;
 
@@ -285,7 +286,10 @@ class Warehouse extends Model
             'warehouse_name' => trim((string) $data['warehouse_name']),
             'warehouse_type_id' => $data['warehouse_type_id'],
             'warehouse_address' => $this->normalizeAddress($data['warehouse_address'] ?? null),
-            'sidebar_menus' => $this->normalizeSidebarMenus($data['sidebar_menus'] ?? null),
+            'sidebar_menus' => WarehouseMenuAccess::stripMainOnlyMenusUnlessMain(
+                $this->normalizeSidebarMenus($data['sidebar_menus'] ?? null),
+                $data['warehouse_type_id'] ?? null
+            ),
             'status' => 1,
             'created_by' => Session::get('user')->staff_id ?? null,
         ]);
@@ -321,7 +325,10 @@ class Warehouse extends Model
         $row->warehouse_type_id = $data['warehouse_type_id'];
         $row->warehouse_address = $this->normalizeAddress($data['warehouse_address'] ?? null);
         if (array_key_exists('sidebar_menus', $data)) {
-            $row->sidebar_menus = $this->normalizeSidebarMenus($data['sidebar_menus']);
+            $row->sidebar_menus = WarehouseMenuAccess::stripMainOnlyMenusUnlessMain(
+                $this->normalizeSidebarMenus($data['sidebar_menus']),
+                $data['warehouse_type_id'] ?? $row->warehouse_type_id
+            );
         }
         $row->created_by = Session::get('user')->staff_id ?? null;
         $row->save();

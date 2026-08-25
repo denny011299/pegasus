@@ -307,10 +307,15 @@ class MasterSalesController extends Controller
     }
 
     /**
-     * nama_belakang dan alamat bersifat nullable: kalau tidak dikirim,
-     * nilainya disimpan/ditimpa jadi null/kosong, bukan mempertahankan
-     * nilai lama — body selalu dianggap representasi penuh sales ini, sama
-     * seperti endpoint gudang.
+     * nama_belakang, email, dan alamat bersifat nullable: kalau tidak
+     * dikirim, nilainya disimpan/ditimpa jadi null/kosong, bukan
+     * mempertahankan nilai lama — body selalu dianggap representasi penuh
+     * sales ini, sama seperti endpoint gudang. Satu-satunya field profil
+     * yang wajib adalah nama_depan.
+     *
+     * email tetap divalidasi bentuknya kalau memang dikirim, tapi boleh
+     * dikosongkan karena staffs.staff_email nullable dan tidak semua sales
+     * punya alamat surel.
      *
      * @return array<string, array<int, mixed>>
      */
@@ -319,7 +324,7 @@ class MasterSalesController extends Controller
         return [
             'nama_depan' => ['required', 'string', 'max:120'],
             'nama_belakang' => ['nullable', 'string', 'max:120'],
-            'email' => ['required', 'email', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
             'alamat' => ['nullable', 'string'],
         ];
     }
@@ -338,7 +343,7 @@ class MasterSalesController extends Controller
         $namaBelakang = trim((string) ($data['nama_belakang'] ?? ''));
 
         $staff->staff_name = $namaBelakang !== '' ? $namaDepan.' '.$namaBelakang : $namaDepan;
-        $staff->staff_email = $data['email'];
+        $staff->staff_email = $data['email'] ?? null;
         $staff->staff_address = $data['alamat'] ?? null;
     }
 

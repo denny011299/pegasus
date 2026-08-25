@@ -1331,7 +1331,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             results: $.map(data.data, function(item) {
               return {
                 id: item.id,
-                text: item.text || item.warehouse_type_name
+                text: item.text || item.warehouse_type_name,
+                is_main_warehouse: item.is_main_warehouse
               };
             }),
           };

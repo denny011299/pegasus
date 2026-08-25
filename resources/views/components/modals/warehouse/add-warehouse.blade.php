@@ -87,6 +87,7 @@
                 $warehousePermissionGrouped = collect($warehousePermissionMenus)
                     ->filter(fn($p) => ($p['SubModules'] ?? '') !== 'Safety Stock')
                     ->groupBy('Modules');
+                $warehouseMainOnlyMenus = \App\Support\WarehouseMenuAccess::MAIN_ONLY_MENUS;
               @endphp
               <style>
                 #add_warehouse.modal {
@@ -176,9 +177,14 @@
                       </div>
                       <div class="d-flex flex-column gap-2 px-1">
                         @foreach ($items as $item)
-                          <div class="form-check m-0 d-flex align-items-center gap-2">
+                          @php
+                            $isMainOnlyMenu = in_array($item['SubModules'] ?? '', $warehouseMainOnlyMenus, true);
+                          @endphp
+                          <div class="form-check m-0 d-flex align-items-center gap-2{{ $isMainOnlyMenu ? ' warehouse-menu-main-only d-none' : '' }}"
+                            @if ($isMainOnlyMenu) data-main-only-menu="1" @endif>
                             <input class="form-check-input warehouse-sidebar-menu m-0" type="checkbox"
                               value="{{ $item['SubModules'] }}" id="wh_menu_{{ $item['Id'] }}"
+                              @if ($isMainOnlyMenu) data-main-only-menu="1" @endif
                               style="cursor:pointer; width:14px; height:14px; margin-top:0;">
                             <label class="form-check-label text-secondary mb-0" for="wh_menu_{{ $item['Id'] }}"
                               style="font-size:12.5px; cursor:pointer;">

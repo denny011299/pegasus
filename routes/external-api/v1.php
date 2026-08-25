@@ -94,17 +94,17 @@ Route::prefix('payments')->name('payments.')->group(function () {
  * dari data master yang statis (satuan, gudang, dst.) sehingga sengaja
  * dilayani lewat rute dan halaman dokumentasi sendiri ("Data Armada").
  *
- * {customer_code} pada PUT/DELETE adalah id universal yang ditentukan
- * pemanggil sendiri saat POST. TIDAK ADA endpoint connect di sini —
- * customer_code selalu sudah terisi otomatis untuk setiap pelanggan, jadi
- * tidak ada baris "belum tersambung" yang perlu dihubungkan belakangan
- * seperti pada sales/satuan.
+ * {code} pada PUT/DELETE adalah id universal yang ditentukan pemanggil
+ * sendiri saat POST (tersimpan di customers.customer_code). TIDAK ADA
+ * endpoint connect di sini — kolom itu selalu sudah terisi otomatis untuk
+ * setiap pelanggan, jadi tidak ada baris "belum tersambung" yang perlu
+ * dihubungkan belakangan seperti pada sales/satuan.
  */
 Route::prefix('armada')->name('armada.')->group(function () {
     Route::get('/', [MasterArmadaController::class, 'index'])->name('index');
     Route::post('/', [MasterArmadaController::class, 'store'])->name('store');
-    Route::put('/{customer_code}', [MasterArmadaController::class, 'update'])->name('update');
-    Route::delete('/{customer_code}', [MasterArmadaController::class, 'destroy'])->name('destroy');
+    Route::put('/{code}', [MasterArmadaController::class, 'update'])->name('update');
+    Route::delete('/{code}', [MasterArmadaController::class, 'destroy'])->name('destroy');
 });
 
 /*

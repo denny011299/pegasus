@@ -103,6 +103,15 @@ function loadStaff() {
     $("#penanggung-jawab").empty();
     autocompleteStaff("#penanggung-jawab");
 }
+function escapeHtml(str) {
+    if (str == null) return "";
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
 function refreshStockOpname(callback) {
     // Simpan value yang sudah diinput sebelum refresh
     $(".row-stock").each(function () {
@@ -128,6 +137,8 @@ function refreshStockOpname(callback) {
     if (stockOpnameXhr) stockOpnameXhr.abort();
     var reqId = ++stockOpnameReqSeq;
 
+    $("#tb-stock-wrap").addClass("is-loading");
+
     stockOpnameXhr = $.ajax({
         url: "/getProductVariant",
         method: "get",
@@ -142,47 +153,42 @@ function refreshStockOpname(callback) {
 
             $("#tbStock").html("");
             e.forEach((item, indexProduct) => {
-                var st = "";
                 var rl_stock = "";
-                var system = "";
-                var selisihArr = [];
 
-                item.stock.forEach((element, index) => {
-                    selisihArr.push("0 " + element.unit_short_name);
-                    if (index % 3 === 0) {
-                        if (index > 0)
-                            rl_stock += `</div><div class="input-group mb-1 rstock">`;
-                    }
+                item.stock.forEach((element) => {
                     rl_stock += `
-                            <input type="text"
-                                class="form-control real-stock nominal_only"
-                                value=""
-                                data-unit-id="${element.unit_id}"
-                                data-unit-name="${element.unit_short_name}"
-                                data-system-qty="${element.ps_stock}">
-                            <span class="input-group-text">${element.unit_short_name}</span>
-                        `;
-                    system +=
-                        element.ps_stock + " " + element.unit_short_name + ", ";
+                        <input type="text"
+                            class="form-control real-stock nominal_only text-end"
+                            value=""
+                            data-unit-id="${element.unit_id}"
+                            data-unit-name="${element.unit_short_name}"
+                            data-system-qty="${element.ps_stock}">
+                        <span class="input-group-text">${escapeHtml(element.unit_short_name)}</span>
+                    `;
                 });
 
                 $("#tbStock").append(`
-                        <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
-                            <td>${item.product_variant_sku}</td>
-                            <td>${item.pr_name} ${item.product_variant_name}</td>
-                            <td class="text-center">
-                                <div class="input-group mb-3 rstock">
-                                    ${rl_stock}
-                                </div>
-                                <input type="hidden" class="data">
-                                <input type="hidden" class="stod_id">
-                            </td>
-                            <td class="">
-                                <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode == 2 ? (item.stod_notes ?? "") : ""}">
-                                <input type="hidden" class="form-control input-selesih" placeholder="Catatan..">
-                            </td>
-                        </tr>
-                    `);
+                    <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
+                        <td>
+                            <span class="text-dark">${escapeHtml(item.product_variant_sku || "-")}</span>
+                        </td>
+                        <td>
+                            <span class="fw-semibold text-dark d-block" style="font-size:13px;">${escapeHtml(item.pr_name)}</span>
+                            ${item.product_variant_name ? `<span class="d-block mt-1" style="font-size:12px;font-weight:700;color:#475569;">${escapeHtml(item.product_variant_name)}</span>` : ''}
+                        </td>
+                        <td class="text-center">
+                            <div class="input-group rstock">
+                                ${rl_stock}
+                            </div>
+                            <input type="hidden" class="data">
+                            <input type="hidden" class="stod_id">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control notes" placeholder="Catatan.." value="${mode == 2 ? escapeHtml(item.stod_notes ?? "") : ""}">
+                            <input type="hidden" class="form-control input-selesih">
+                        </td>
+                    </tr>
+                `);
             });
             // Restore value yang sudah diinput
             $(".row-stock").each(function () {
@@ -204,7 +210,7 @@ function refreshStockOpname(callback) {
             });
             if (e.length == 0) {
                 $("#tbStock").html(
-                    `<tr><td colspan="6" class="text-center">Produk tidak ditemukan</td></tr>`,
+                    `<tr><td colspan="4" class="text-center py-4 text-muted">Produk tidak ditemukan</td></tr>`,
                 );
             }
             if (mode == 2 && !canEditDraft) {
@@ -214,9 +220,14 @@ function refreshStockOpname(callback) {
             if (typeof callback === "function") callback();
         },
         error: function (e) {
+            if (e && e.statusText === "abort") return;
             if (handlePermissionError(e)) return;
             if (reqId !== stockOpnameReqSeq) return;
             console.log(e);
+        },
+        complete: function () {
+            if (reqId !== stockOpnameReqSeq) return;
+            $("#tb-stock-wrap").removeClass("is-loading");
         },
     });
 }
@@ -227,44 +238,46 @@ function renderMode2(items) {
         console.log(item);
         var rl_stock = "";
 
-        item.units.forEach((element, index) => {
-            if (index % 4 === 0) {
-                if (index > 0)
-                    rl_stock += `</div><div class="input-group mb-1 rstock">`;
-            }
+        item.units.forEach((element) => {
             rl_stock += `
-                    <input type="text"
-                        class="form-control real-stock nominal_only"
-                        value="${formatRupiah(String(element.real_qty))}"
-                        data-unit-id="${element.unit_id}"
-                        data-unit-name="${element.unit_short_name}"
-                        data-system-qty="${element.system_qty}">
-                    <span class="input-group-text">${element.unit_short_name}</span>
-                `;
+                <input type="text"
+                    class="form-control real-stock nominal_only text-end"
+                    value="${formatRupiah(String(element.real_qty))}"
+                    disabled
+                    data-unit-id="${element.unit_id}"
+                    data-unit-name="${element.unit_short_name}"
+                    data-system-qty="${element.system_qty}">
+                <span class="input-group-text">${escapeHtml(element.unit_short_name)}</span>
+            `;
         });
 
         $("#tbStock").append(`
-                <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
-                    <td>${item.product_variant_sku}</td>
-                    <td>${item.pr_name} ${item.product_variant_name}</td>
-                    <td class="text-center">
-                        <div class="input-group mb-3 rstock">
-                            ${rl_stock}
-                        </div>
-                        <input type="hidden" class="data">
-                        <input type="hidden" class="stod_id">
-                    </td>
-                    <td class="">
-                        <input type="text" class="form-control notes" placeholder="Catatan.." value="${item.stod_notes ?? ""}">
-                        <input type="hidden" class="form-control input-selesih" placeholder="Catatan..">
-                    </td>
-                </tr>
-            `);
+            <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
+                <td>
+                    <span class="text-dark">${escapeHtml(item.product_variant_sku || "-")}</span>
+                </td>
+                <td>
+                    <span class="fw-semibold text-dark d-block" style="font-size:13px;">${escapeHtml(item.pr_name)}</span>
+                    ${item.product_variant_name ? `<span class="d-block mt-1" style="font-size:12px;font-weight:700;color:#475569;">${escapeHtml(item.product_variant_name)}</span>` : ''}
+                </td>
+                <td class="text-center">
+                    <div class="input-group rstock">
+                        ${rl_stock}
+                    </div>
+                    <input type="hidden" class="data">
+                    <input type="hidden" class="stod_id">
+                </td>
+                <td>
+                    <input type="text" class="form-control notes" placeholder="Catatan.." value="${escapeHtml(item.stod_notes ?? "")}" disabled>
+                    <input type="hidden" class="form-control input-selesih">
+                </td>
+            </tr>
+        `);
     });
 
     if (items.length == 0) {
         $("#tbStock").html(
-            `<tr><td colspan="6" class="text-center">Produk tidak ditemukan</td></tr>`,
+            `<tr><td colspan="4" class="text-center py-4 text-muted">Produk tidak ditemukan</td></tr>`,
         );
     }
 }

@@ -68,6 +68,18 @@ class StockController extends Controller
         return $user && (int) $sto->created_by === (int) ($user->staff_id ?? 0);
     }
 
+    /** Nama gudang aktif di navbar (untuk field disabled di form create/detail). */
+    private function activeWarehouseLabel(): string
+    {
+        $id = (int) (Session::get('active_warehouse_id') ?? 0);
+        if ($id <= 0) {
+            return '';
+        }
+        $name = Warehouse::query()->whereKey($id)->value('warehouse_name');
+
+        return trim((string) ($name ?? ''));
+    }
+
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
@@ -145,7 +157,8 @@ class StockController extends Controller
         if ($id == -1) {
             return view('Backoffice.Inventory.CreateStockOpname', [
                 'data' => [],
-                'mode' => 1
+                'mode' => 1,
+                'warehouse_name' => $this->activeWarehouseLabel(),
             ]);
         }
 
@@ -196,6 +209,8 @@ class StockController extends Controller
             'category_id' => $sto->category_id,
             'sto_notes'   => $sto->sto_notes,
             'status'      => $sto->status,
+            'warehouse_id' => $sto->warehouse_id ?? null,
+            'warehouse_name' => $sto->warehouse_name ?? '-',
             // Ditambahkan (2026-08-05): CreateStockOpname.js membaca data.is_draft/data.created_by
             // untuk canEditDraft — sebelumnya keduanya tidak ada di array ini sama sekali, jadi
             // selalu undefined di frontend (draft tidak pernah terdeteksi sebagai draft).
@@ -206,7 +221,8 @@ class StockController extends Controller
 
         return view('Backoffice.Inventory.CreateStockOpname', [
             'data' => $data,
-            'mode' => 2
+            'mode' => 2,
+            'warehouse_name' => trim((string) ($sto->warehouse_name ?? '')) ?: $this->activeWarehouseLabel(),
         ]);
     }
 
@@ -617,9 +633,12 @@ class StockController extends Controller
                 $param['data']->item = $sorted;
             }
             $param['mode'] = 2;
+            $param['warehouse_name'] = trim((string) ($param['data']->warehouse_name ?? ''))
+                ?: $this->activeWarehouseLabel();
         } else {
             $param["data"] = [];
             $param["mode"] = 1;
+            $param['warehouse_name'] = $this->activeWarehouseLabel();
         }
         return view('Backoffice.Inventory.CreateStockOpnameSupplies')->with($param);
     }

@@ -66,6 +66,22 @@ class ExternalApiMasterSalesFlowTest extends TestCase
         $this->assertNull($staff->staff_password);
     }
 
+    public function test_store_accepts_a_missing_email(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $refId = 'ext-'.uniqid();
+
+        $response = $this->postJson('/api/external/v1/master/sales', [
+            'staff_id' => $refId,
+            'nama_depan' => 'NoEmail',
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true, 'data' => ['email' => null]]);
+
+        $staff = Staff::where('external_ref_id', $refId)->firstOrFail();
+        $this->assertNull($staff->staff_email);
+    }
+
     public function test_store_rejects_a_duplicate_external_ref_id(): void
     {
         $headers = $this->externalApiHeaders();
@@ -104,6 +120,20 @@ class ExternalApiMasterSalesFlowTest extends TestCase
         $this->deleteJson('/api/external/v1/master/sales/'.$refId, [], $headers)
             ->assertStatus(200)->assertJson(['success' => true]);
         $this->assertSame(0, (int) $staff->fresh()->status, 'delete must soft-delete via Staff::deletestaff()');
+    }
+
+    public function test_update_omitting_email_blanks_it_since_put_is_a_full_replacement(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $refId = 'ext-'.uniqid();
+        $staff = $this->createManagedSalesStaff($refId);
+        $this->assertNotNull($staff->staff_email);
+
+        $this->putJson('/api/external/v1/master/sales/'.$refId, [
+            'nama_depan' => 'Updated',
+        ], $headers)->assertStatus(200)->assertJson(['success' => true, 'data' => ['email' => null]]);
+
+        $this->assertNull($staff->fresh()->staff_email);
     }
 
     public function test_a_staff_outside_the_sales_role_is_invisible_to_this_endpoint(): void

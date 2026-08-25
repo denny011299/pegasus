@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Support\RoleAccess;
+use App\Support\WarehouseMenuAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -38,6 +39,9 @@ class checkAccessAny
 
         $user = Session::get('user');
         foreach ($parts as $module) {
+            if (! WarehouseMenuAccess::allows($module)) {
+                continue;
+            }
             if ($allowAnyAbility) {
                 foreach (RoleAccess::ABILITIES as $ab) {
                     if (RoleAccess::can($user, $module, $ab)) {
