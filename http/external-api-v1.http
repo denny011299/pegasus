@@ -17,7 +17,7 @@
 # error codes) live in cdocs/integrations/202607282149-external-api-v1/
 # and config('externalapi.docs').
 
-@baseUrl = https://pegasus.test/api/external/v1
+@baseUrl = https://pegasus.okejob.id/api/external/v1
 @apiKey = {{$dotenv EXTERNAL_API_KEY}}
 
 

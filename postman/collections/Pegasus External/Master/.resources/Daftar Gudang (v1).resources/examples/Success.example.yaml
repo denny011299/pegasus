@@ -1,0 +1,44 @@
+$kind: http-example
+request:
+  url: "{{ENDPOINT}}/v1/master/warehouses"
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    server: nginx/1.25.4
+    content-type: application/json
+    transfer-encoding: chunked
+    connection: keep-alive
+    vary: Accept-Encoding
+    x-powered-by: PHP/8.4.23
+    cache-control: no-cache, private
+    date: Wed, 29 Jul 2026 17:51:28 GMT
+    access-control-allow-origin: "*"
+    content-encoding: gzip
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "data": [
+          {
+            "id": 1,
+            "nama": "Gudang Surabaya",
+            "tipe_nama": "Gol A",
+            "tipe_id": 1,
+            "alamat": "Jl. Surabaya"
+          },
+          {
+            "id": 2,
+            "nama": "Jakarta Warehouse",
+            "tipe_nama": "Gol A",
+            "tipe_id": 1,
+            "alamat": "Jl. Jayakarta"
+          }
+        ],
+        "meta": {
+          "total": 2
+        }
+      }
+order: 1785347491051
