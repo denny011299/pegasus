@@ -1,0 +1,96 @@
+$kind: http-example
+request:
+  url: "{{ENDPOINT}}/v1/master/units"
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  headers:
+    server: nginx/1.25.4
+    content-type: application/json
+    transfer-encoding: chunked
+    connection: keep-alive
+    vary: Accept-Encoding
+    x-powered-by: PHP/8.4.23
+    cache-control: no-cache, private
+    date: Wed, 29 Jul 2026 16:17:37 GMT
+    access-control-allow-origin: "*"
+    content-encoding: gzip
+  body:
+    type: json
+    content: |-
+      {
+        "success": true,
+        "data": [
+          {
+            "unit_id": 21,
+            "ref_unit_id": null,
+            "unit_name": "pail",
+            "unit_short_name": "pail"
+          },
+          {
+            "unit_id": 1,
+            "ref_unit_id": null,
+            "unit_name": "Kilogram",
+            "unit_short_name": "kg"
+          },
+          {
+            "unit_id": 2,
+            "ref_unit_id": null,
+            "unit_name": "Jerigen",
+            "unit_short_name": "jerigen"
+          },
+          {
+            "unit_id": 3,
+            "ref_unit_id": null,
+            "unit_name": "Liter",
+            "unit_short_name": "LTR"
+          },
+          {
+            "unit_id": 5,
+            "ref_unit_id": null,
+            "unit_name": "Drum",
+            "unit_short_name": "drum"
+          },
+          {
+            "unit_id": 7,
+            "ref_unit_id": null,
+            "unit_name": "DOS",
+            "unit_short_name": "DOS"
+          },
+          {
+            "unit_id": 8,
+            "ref_unit_id": null,
+            "unit_name": "Pack",
+            "unit_short_name": "pack"
+          },
+          {
+            "unit_id": 9,
+            "ref_unit_id": null,
+            "unit_name": "Piece",
+            "unit_short_name": "pcs"
+          },
+          {
+            "unit_id": 22,
+            "ref_unit_id": null,
+            "unit_name": "Gram",
+            "unit_short_name": "Gr"
+          },
+          {
+            "unit_id": 25,
+            "ref_unit_id": null,
+            "unit_name": "Sak",
+            "unit_short_name": "Sak"
+          },
+          {
+            "unit_id": 26,
+            "ref_unit_id": null,
+            "unit_name": "RIM",
+            "unit_short_name": "RIM"
+          }
+        ],
+        "meta": {
+          "total": 11
+        }
+      }
+order: 1785341859596

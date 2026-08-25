@@ -1,0 +1,16 @@
+$kind: http-request
+description: ""
+url: "{{ENDPOINT}}/v1/master/units"
+method: GET
+auth:
+  type: apikey
+  credentials:
+    value: "{{API_KEY}}"
+    key: X-API-Key
+settings:
+  strictSSL: false
+  followRedirects: true
+  disableCookies: false
+  maxResponseSize: 52428800
+examples: .resources/Daftar Satuan (v1).resources/examples
+order: 1785347367677

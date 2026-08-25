@@ -1,0 +1,27 @@
+$kind: http-example
+request:
+  url: "{{ENDPOINT}}/v1/master/cash_categories"
+  method: GET
+response:
+  statusCode: 401
+  statusText: Unauthorized
+  headers:
+    server: nginx/1.25.4
+    content-type: application/json
+    transfer-encoding: chunked
+    connection: keep-alive
+    x-powered-by: PHP/8.4.23
+    cache-control: no-cache, private
+    date: Wed, 29 Jul 2026 16:03:53 GMT
+    access-control-allow-origin: "*"
+  body:
+    type: json
+    content: |-
+      {
+        "success": false,
+        "error": {
+          "code": "invalid_api_key",
+          "message": "API Key tidak valid."
+        }
+      }
+order: 1785341037218

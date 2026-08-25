@@ -1,0 +1,9 @@
+$kind: collection
+name: Pegasus External
+auth:
+  - id: 95a8b258-f989-415f-bde8-418fe8ee8580
+    type: apikey
+    name: API Key
+    credentials:
+      key: X-API-Key
+      value: "{{API_KEY}}"

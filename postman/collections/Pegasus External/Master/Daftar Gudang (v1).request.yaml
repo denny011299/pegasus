@@ -1,0 +1,5 @@
+$kind: http-request
+url: "{{ENDPOINT}}/v1/master/warehouses"
+method: GET
+examples: .resources/Daftar Gudang (v1).resources/examples
+order: 3718878061976258
