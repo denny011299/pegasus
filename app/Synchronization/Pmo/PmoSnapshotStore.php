@@ -87,7 +87,10 @@ class PmoSnapshotStore
      */
     public function refresh(string $flowKey, string $endpointKey): PmoSnapshot
     {
-        $response = $this->client->fetchCollection(PmoEndpoints::resolve($endpointKey));
+        $response = $this->client->fetchCollection(
+            PmoEndpoints::resolve($endpointKey),
+            itemsKey: PmoEndpoints::itemsKey($endpointKey),
+        );
 
         return $this->persist($flowKey, $endpointKey, $response->rows, $response->meta, $response->url);
     }
@@ -106,7 +109,12 @@ class PmoSnapshotStore
      */
     public function fetchPage(string $flowKey, string $endpointKey, int $page, array $query = []): array
     {
-        $pageResult = $this->client->fetchPage(PmoEndpoints::resolve($endpointKey), $query, $page);
+        $pageResult = $this->client->fetchPage(
+            PmoEndpoints::resolve($endpointKey),
+            $query,
+            $page,
+            PmoEndpoints::itemsKey($endpointKey),
+        );
         $bufferKey = $this->bufferKey($flowKey, $endpointKey);
 
         $buffer = $page > 1 ? Session::get($bufferKey) : null;

@@ -61,9 +61,11 @@
                     data: "created_by_name",
                     defaultContent: "-",
                     width: "13%",
-                    render: function (data) {
-                        return typeof renderCreatedByName === "function"
-                            ? renderCreatedByName(data)
+                    render: function (data, type, row) {
+                        // renderCreatedBySync: menandai baris yang berasal dari
+                        // Sinkronisasi PMO (ref_product_id terisi).
+                        return typeof renderCreatedBySync === "function"
+                            ? renderCreatedBySync(data, row)
                             : data;
                     },
                 },

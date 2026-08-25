@@ -42,6 +42,33 @@
                 executeStep(stepKey);
             }
         });
+
+        $('.sync-step-pane[data-review-queue="1"]').each(function () {
+            loadPendingReviews($(this).data('step'));
+        });
+
+        $('.sync-review-list').on('click', '.btn-review-connect', function () {
+            var btn = $(this);
+            resolveReview(btn.data('step'), btn.data('review-id'), 'connect', btn.data('customer-id'));
+        });
+
+        $('.sync-review-list').on('click', '.btn-review-discard', function () {
+            var btn = $(this);
+            showModalKonfirmasi(
+                'Abaikan armada #' + btn.data('ref-armada-id') + ' ini? Tindakan ini permanen — '
+                    + 'tidak akan ditawarkan lagi pada sinkronisasi berikutnya.',
+                'btn-armada-discard-confirm'
+            );
+            $('#modalKonfirmasi #btn-armada-discard-confirm')
+                .attr('data-step', btn.data('step'))
+                .attr('data-review-id', btn.data('review-id'));
+        });
+
+        $(document).on('click', '#btn-armada-discard-confirm', function () {
+            var btn = $(this);
+            $('#modalKonfirmasi').modal('hide');
+            resolveReview(btn.data('step'), btn.data('review-id'), 'discard', null);
+        });
     });
 
     /** Langkah pertama yang belum berhasil — titik masuk yang paling masuk akal. */
@@ -72,6 +99,11 @@
         $('#syncStepCounter').text((index + 1) + ' / ' + syncStepKeys.length);
         $('#btnPrevStep').prop('disabled', index === 0);
         $('#btnNextStep').prop('disabled', index === syncStepKeys.length - 1);
+
+        var pane = $('.sync-step-pane[data-step="' + key + '"]');
+        if (pane.data('review-queue') == 1) {
+            loadPendingReviews(key);
+        }
 
         if (typeof feather !== 'undefined') {
             feather.replace();
@@ -275,6 +307,124 @@
         if (typeof feather !== 'undefined') {
             feather.replace();
         }
+    }
+
+    /**
+     * Langkah berbasis antrean (SyncStep::reviewQueue): daftar barisnya
+     * ditampilkan langsung di pane, dimuat lewat GET terpisah dari
+     * execute()/status() — tidak ikut renderState(), supaya membuka pane ini
+     * (atau menyelesaikan satu baris) tidak perlu menunggu seluruh state
+     * alur digambar ulang.
+     */
+    function loadPendingReviews(stepKey) {
+        $.ajax({
+            url: '/synchronization/' + syncFlowKey + '/' + stepKey + '/pending',
+            method: 'get',
+            success: function (res) {
+                if (res.ok) {
+                    renderReviewList(stepKey, res.reviews);
+                }
+            },
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
+            }
+        });
+    }
+
+    function resolveReview(stepKey, reviewId, action, customerId) {
+        $.ajax({
+            url: '/synchronization/' + syncFlowKey + '/' + stepKey + '/resolve',
+            method: 'post',
+            data: { _token: token, review_id: reviewId, action: action, customer_id: customerId },
+            success: function (res) {
+                if (!res.ok) {
+                    notifikasi('error', 'Gagal', res.message || 'Baris ini gagal diselesaikan.');
+                    return;
+                }
+                renderReviewList(stepKey, res.reviews);
+                notifikasi(
+                    'success',
+                    action === 'connect' ? 'Tersambung' : 'Diabaikan',
+                    action === 'connect' ? 'Armada berhasil disambungkan.' : 'Armada berhasil diabaikan.'
+                );
+            },
+            error: function (xhr) {
+                if (handlePermissionError(xhr)) return;
+                var res = xhr.responseJSON || {};
+                notifikasi('error', 'Gagal', res.message || 'Terjadi kesalahan saat menyelesaikan baris ini.');
+            }
+        });
+    }
+
+    function renderReviewList(stepKey, reviews) {
+        var pane = $('.sync-step-pane[data-step="' + stepKey + '"]');
+        var list = pane.find('.sync-review-list').empty();
+
+        pane.find('.sync-review-count').text(reviews.length + ' menunggu');
+        pane.find('.sync-review-empty').toggleClass('d-none', reviews.length > 0);
+
+        reviews.forEach(function (review) {
+            list.append(buildReviewRow(stepKey, review));
+        });
+
+        if (typeof feather !== 'undefined') {
+            feather.replace();
+        }
+    }
+
+    function buildReviewRow(stepKey, review) {
+        var row = $('<div>').addClass('sync-review-row mb-3 p-3 border rounded');
+
+        row.append(
+            $('<div>').addClass('sync-review-row-pmo mb-2').html(
+                '<strong>Armada #' + escapeHtml(review.ref_armada_id) + '</strong> — '
+                    + escapeHtml(review.pic_name || '-')
+                    + ' &middot; No Pol: ' + escapeHtml(review.nomer_pol || '-')
+                    + ' &middot; Telp: ' + escapeHtml(review.nomer_telp || '-')
+                    + ' &middot; Saldo: ' + escapeHtml(review.saldo_armada)
+            )
+        );
+
+        var candidateList = $('<div>').addClass('sync-review-candidates mb-2');
+        review.candidates.forEach(function (candidate) {
+            var candidateRow = $('<div>').addClass(
+                'sync-review-candidate d-flex align-items-center justify-content-between mb-1'
+            );
+            candidateRow.append(
+                $('<span>').text(
+                    (candidate.customer_code || '-') + ' — '
+                        + (candidate.customer_pic || '-')
+                        + ' (No Pol: ' + (candidate.customer_notes || '-') + ')'
+                )
+            );
+            candidateRow.append(
+                $('<button>')
+                    .attr('type', 'button')
+                    .addClass('btn btn-sm btn-outline-primary btn-review-connect')
+                    .data('step', stepKey)
+                    .data('review-id', review.id)
+                    .data('customer-id', candidate.customer_id)
+                    .text('Hubungkan')
+            );
+            candidateList.append(candidateRow);
+        });
+        row.append(candidateList);
+
+        row.append(
+            $('<button>')
+                .attr('type', 'button')
+                .addClass('btn btn-sm btn-outline-danger btn-review-discard')
+                .data('step', stepKey)
+                .data('review-id', review.id)
+                .data('ref-armada-id', review.ref_armada_id)
+                .text('Abaikan')
+        );
+
+        return row;
+    }
+
+    function escapeHtml(value) {
+        return $('<div>').text(value === null || typeof value === 'undefined' ? '-' : value).html();
     }
 
     function markRunning(stepKey) {

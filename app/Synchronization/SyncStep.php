@@ -33,6 +33,10 @@ class SyncStep
      *                           Dipakai endpoint yang mewajibkan parameter query (mis. /getShipments
      *                           dengan date_start/date_end) — endpoint yang bisa "ambil semua tanpa
      *                           filter" seperti /getProducts tidak butuh ini, biarkan array kosong.
+     * @param  bool  $reviewQueue  Handler-nya mengimplementasikan ReviewQueueStepHandler — wizard
+     *                             menampilkan antrean baris yang menunggu konfirmasi manual
+     *                             langsung di pane langkah ini (lihat Wizard.js), di luar tombol
+     *                             "Jalankan Sinkronisasi" biasa.
      */
     public function __construct(
         public readonly string $key,
@@ -47,6 +51,7 @@ class SyncStep
         public readonly array $notes = [],
         public readonly bool $paginated = false,
         public readonly array $queryFields = [],
+        public readonly bool $reviewQueue = false,
     ) {
     }
 
@@ -80,6 +85,7 @@ class SyncStep
             'notes' => $this->notes,
             'paginated' => $this->paginated,
             'query_fields' => $this->queryFields,
+            'review_queue' => $this->reviewQueue,
         ];
     }
 }
