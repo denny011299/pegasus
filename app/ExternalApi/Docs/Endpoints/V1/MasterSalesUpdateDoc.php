@@ -51,7 +51,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
         return [
             ['name' => 'nama_depan', 'type' => 'string', 'required' => true, 'description' => 'Nama depan.'],
             ['name' => 'nama_belakang', 'type' => 'string', 'required' => false, 'description' => 'Nama belakang. Boleh dikosongkan.'],
-            ['name' => 'email', 'type' => 'string', 'required' => true, 'description' => 'Alamat email.'],
+            ['name' => 'email', 'type' => 'string', 'required' => false, 'description' => 'Alamat email. Boleh dikosongkan; kalau dikirim, harus berbentuk alamat email yang sah.'],
             ['name' => 'alamat', 'type' => 'string', 'required' => false, 'description' => 'Alamat. Boleh dikosongkan.'],
         ];
     }
@@ -85,7 +85,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
     {
         return [
             ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sales yang sudah dihapus).'],
-            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan atau email kosong/tidak valid.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan kosong, atau salah satu field lain tidak valid (mis. email dikirim tapi bukan alamat email yang sah).'],
         ];
     }
 
@@ -93,8 +93,8 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
     {
         return [
             'staff_id pada path adalah rujukan milik sistem Anda sendiri (external_ref_id), BUKAN id Pegasus — endpoint yang path parameternya id Pegasus adalah PATCH /master/sales/{id}.',
-            'nama_depan dan email wajib diisi meski hanya satu yang berubah; nama_belakang dan alamat boleh dikosongkan.',
-            'Body selalu dianggap representasi penuh sales ini: nama_belakang/alamat yang tidak dikirim disimpan sebagai kosong, bukan mempertahankan nilai lama.',
+            'Hanya nama_depan yang wajib diisi, meski hanya satu field yang berubah; email, nama_belakang, dan alamat boleh dikosongkan.',
+            'Body selalu dianggap representasi penuh sales ini: email/nama_belakang/alamat yang tidak dikirim disimpan sebagai kosong, bukan mempertahankan nilai lama. Kirim ulang email lama kalau tidak ingin menghapusnya.',
             'Endpoint ini HANYA boleh menyentuh staf yang berperan Sales (dan aktif) — staff_id yang menunjuk staf lain dijawab NOT_FOUND, bukan diizinkan mengubah data staf itu.',
             'kode (staff_code), telepon (staff_phone), dan role tidak dikelola lewat endpoint ini — nilainya tidak berubah walau tidak dikirim.',
         ];
