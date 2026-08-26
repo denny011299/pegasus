@@ -170,10 +170,15 @@ function refreshStockOpname(callback) {
                         if (index > 0)
                             rl_stock += `</div><div class="input-group mb-1 rstock">`;
                     }
+                    // GitHub #78 follow-up: element.ss_stock here IS already the live stock (this
+                    // list just came fresh from /getSupplies) -- show it as a grey placeholder
+                    // hint, not as the actual value, so a blank input still submits as "not
+                    // counted" instead of silently becoming a fabricated real count again.
                     rl_stock += `
                             <input type="text"
                                 class="form-control real-stock nominal_only"
                                 value=""
+                                placeholder="${element.ss_stock}"
                                 data-unit-id="${element.unit_id}"
                                 data-unit-name="${element.unit_short_name}"
                                 data-system-qty="${element.ss_stock}">
@@ -284,6 +289,14 @@ function renderMode2(items) {
             });
         }
 
+        // GitHub #78 follow-up: item.stock is already the LIVE SuppliesStock list (same object
+        // this page loaded the whole document with -- no extra query), used only as a placeholder
+        // hint below for units the staff hasn't counted yet.
+        let liveMap = {};
+        (item.stock || []).forEach((s) => {
+            liveMap[s.unit_short_name] = s.ss_stock;
+        });
+
         item.sp_units = [];
         item.units.forEach((unit) => {
             let realQty = realMap[unit.unit_short_name] ?? -1; // -1 = tidak diinput
@@ -298,6 +311,7 @@ function renderMode2(items) {
                 // diam ke stok sistem (PM sudah konfirmasi fallback lama tidak wajib dipertahankan).
                 real_qty: realQty !== -1 ? realQty : null,
                 selisih_qty: selisihQty,
+                live_qty: liveMap[unit.unit_short_name] ?? systemQty,
             });
         });
 
@@ -306,14 +320,18 @@ function renderMode2(items) {
                 if (index > 0)
                     rl_stock += `</div><div class="input-group mb-1 rstock">`;
             }
-            let prefill =
-                element.real_qty === null || element.real_qty === undefined
-                    ? ""
-                    : formatRupiah(String(element.real_qty));
+            // Placeholder BUKAN value -- .val() tetap "" sampai staf benar-benar mengetik, jadi
+            // submit-nya tetap "-" (tidak dihitung); lihat CreateStockOpname.js untuk penjelasan
+            // lengkap.
+            let untouched = element.real_qty === null || element.real_qty === undefined;
+            let prefill = untouched ? "" : formatRupiah(String(element.real_qty));
+            let placeholderAttr = untouched
+                ? ` placeholder="${formatRupiah(String(element.live_qty))}"`
+                : "";
             rl_stock += `
                     <input type="text"
                         class="form-control real-stock nominal_only"
-                        value="${prefill}"
+                        value="${prefill}"${placeholderAttr}
                         data-unit-id="${element.unit_id}"
                         data-unit-name="${element.unit_short_name}"
                         data-system-qty="${element.system_qty}">

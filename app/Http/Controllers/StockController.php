@@ -117,6 +117,13 @@ class StockController extends Controller
                     'system_qty'       => $this->getQty($detail->stod_system, $s->unit_short_name),
                     'real_qty'         => $this->getQty($detail->stod_real, $s->unit_short_name),
                     'selisih_qty'      => $this->getQty($detail->stod_selisih, $s->unit_short_name),
+                    // GitHub #78 follow-up: $detail->stock is already the LIVE ProductStock
+                    // collection (see ProductVariant::getProductVariantBulk(), joined once in bulk
+                    // for the whole document -- no extra query here). Handed to the frontend purely
+                    // as a placeholder hint for units the staff hasn't counted yet (renderMode2() in
+                    // CreateStockOpname.js) -- NEVER as real_qty itself, so an untouched unit still
+                    // submits as "-" (not counted), not a value copy-pasted from this hint.
+                    'live_qty'         => (int) $s->ps_stock,
                 ];
             }
 

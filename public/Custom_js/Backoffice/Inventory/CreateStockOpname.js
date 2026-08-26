@@ -153,10 +153,15 @@ function refreshStockOpname(callback) {
                         if (index > 0)
                             rl_stock += `</div><div class="input-group mb-1 rstock">`;
                     }
+                    // GitHub #78 follow-up: element.ps_stock here IS already the live stock (this
+                    // whole list just came fresh from /getProductVariant) -- show it as a grey
+                    // placeholder hint, not as the actual value, so a blank input still submits as
+                    // "not counted" instead of silently becoming a fabricated real count again.
                     rl_stock += `
                             <input type="text"
                                 class="form-control real-stock nominal_only"
                                 value=""
+                                placeholder="${element.ps_stock}"
                                 data-unit-id="${element.unit_id}"
                                 data-unit-name="${element.unit_short_name}"
                                 data-system-qty="${element.ps_stock}">
@@ -233,15 +238,19 @@ function renderMode2(items) {
                     rl_stock += `</div><div class="input-group mb-1 rstock">`;
             }
             // GitHub #78: real_qty null = satuan ini tidak pernah benar-benar dihitung staf --
-            // input harus tampil KOSONG, bukan diisi angka fallback (dulu stok sistem lama).
-            let prefill =
-                element.real_qty === null || element.real_qty === undefined
-                    ? ""
-                    : formatRupiah(String(element.real_qty));
+            // input harus tampil KOSONG (bukan diisi angka fallback lagi), TAPI tetap tampilkan
+            // stok live sebagai placeholder abu-abu supaya staf punya rujukan tanpa pindah halaman.
+            // Placeholder BUKAN value -- .val() tetap "" sampai staf benar-benar mengetik, jadi
+            // submit-nya tetap "-" (tidak dihitung), tidak menghidupkan lagi bug fallback lama.
+            let untouched = element.real_qty === null || element.real_qty === undefined;
+            let prefill = untouched ? "" : formatRupiah(String(element.real_qty));
+            let placeholderAttr = untouched
+                ? ` placeholder="${formatRupiah(String(element.live_qty ?? element.system_qty ?? 0))}"`
+                : "";
             rl_stock += `
                     <input type="text"
                         class="form-control real-stock nominal_only"
-                        value="${prefill}"
+                        value="${prefill}"${placeholderAttr}
                         data-unit-id="${element.unit_id}"
                         data-unit-name="${element.unit_short_name}"
                         data-system-qty="${element.system_qty}">

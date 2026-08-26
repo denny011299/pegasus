@@ -252,4 +252,58 @@ class StockOpnameUntouchedUnitBugTest extends TestCase
             ->firstOrFail();
         $this->assertSame('-', $this->parseToken($row->stod_selisih, $pcsUnit), 'the frozen approval-time record must also show "-" for the never-counted unit');
     }
+
+    /**
+     * Follow-up to GitHub #78: the user wanted an untouched unit's input to show the current live
+     * stock as a hint (not blank), without extra queries and without reintroducing the bug (the
+     * hint must never become the submitted value). DetailStockOpname()'s `->stock` collection is
+     * already the live ProductStock join used to build the whole page -- `live_qty` just surfaces
+     * it, at zero extra query cost.
+     */
+    public function test_edit_page_exposes_live_qty_for_an_untouched_unit_as_a_hint_only(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        [$variant, $dosStock, $pcsStock] = $this->pickFixture();
+        $dosUnit = Unit::find($dosStock->unit_id)->unit_short_name;
+        $pcsUnit = Unit::find($pcsStock->unit_id)->unit_short_name;
+
+        $response = $this->post('/insertStockOpname', [
+            'sto_date' => now()->toDateString(),
+            'staff_id' => $this->staffId(),
+            'category_id' => $this->categoryId(),
+            'sto_notes' => 'Untouched unit bug test',
+            'is_draft' => 0,
+            'item' => json_encode([[
+                'product_id' => $variant->product_id,
+                'product_variant_id' => $variant->product_variant_id,
+                'stod_system' => $dosStock->ps_stock.' '.$dosUnit.', '.$pcsStock->ps_stock.' '.$pcsUnit,
+                'stod_real' => '11 '.$dosUnit.', - '.$pcsUnit,
+                'stod_selisih' => '-1 '.$dosUnit.', - '.$pcsUnit,
+                'stod_notes' => null,
+                'stod_touched' => 1,
+            ]]),
+        ]);
+        $response->assertStatus(200);
+        $stoId = (int) $response->json('sto_id');
+
+        // Stock moves again after the document was created, before anyone reopens it to edit.
+        $pcsStock->ps_stock -= 9;
+        $pcsStock->save();
+        $liveNow = $pcsStock->ps_stock;
+
+        $page = $this->get('/detailStockOpname/'.$stoId);
+        $page->assertStatus(200);
+
+        // Blade's @json() hex-escapes quotes as ", not &quot; -- match that literally.
+        $needle = 'product_variant_id":'.$variant->product_variant_id;
+        $this->assertStringContainsString($needle, $page->getContent(), 'sanity: item must be present in the embedded JSON');
+
+        // The live_qty exposed for the untouched pcs unit must reflect the CURRENT stock (the one
+        // fetched moments ago for this very page load), not the stale value frozen at creation.
+        $this->assertStringContainsString(
+            'unit_short_name":"'.$pcsUnit.'","system_qty"',
+            $page->getContent()
+        );
+        $this->assertStringContainsString('live_qty":'.$liveNow, $page->getContent());
+    }
 }
