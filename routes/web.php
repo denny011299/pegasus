@@ -10,7 +10,6 @@ use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
-use App\Http\Controllers\StockOpnameHealController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Middleware\checkLogin;
@@ -18,20 +17,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [GeneralController::class, 'login'])->name('login');
 Route::post('/loginUser', [UserController::class, 'loginUser'])->name('loginUser');
-
-// Browser-triggerable runner for GitHub #78's one-time repair tool (see
-// App\Http\Controllers\StockOpnameHealController), for a production host with neither SSH/
-// terminal access nor direct DB access the team is willing to use. Sengaja di luar checkLogin —
-// proteksi murni via DEPLOY_TOKEN acak di .env, mirroring DeployController's pattern (fase2/main,
-// not merged into main). Read-only preview is throttled looser than the writing apply route.
-Route::middleware('throttle:10,1')->prefix('deploy')->group(function () {
-    Route::get('/heal-stock-opname', [StockOpnameHealController::class, 'console'])->name('deploy.healStockOpname.console');
-    Route::get('/heal-stock-opname/preview', [StockOpnameHealController::class, 'preview'])->name('deploy.healStockOpname.preview');
-});
-Route::middleware('throttle:5,1')->prefix('deploy')->group(function () {
-    Route::post('/heal-stock-opname/apply', [StockOpnameHealController::class, 'apply'])->name('deploy.healStockOpname.apply');
-});
-
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
 
