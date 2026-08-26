@@ -40,47 +40,85 @@ use Illuminate\Support\Facades\DB;
  * Never touches ps_stock/ss_stock, never touches the STO/STOB header, never touches stod_system/
  * stobd_system — purely rewrites stod_real/stod_selisih (only the specific unit tokens it converts,
  * every other token stays byte-for-byte as stored) on the detail rows of ONE given document.
- * Defaults to a dry run: pass $apply=true to actually persist anything.
+ *
+ * Every entry point returns ['report' => per-unit classification lines, 'updates' => per-row new
+ * values for whichever rows actually changed]. Three ways to use the result, for hosts with no CLI/
+ * artisan access on the production box: (1) $apply=true writes via Eloquent directly — needs
+ * artisan or a route that can reach this class on that same box; (2) $apply=false + toSql() turns
+ * 'updates' into copy-pasteable UPDATE statements — run this against a LOCAL copy of the production
+ * DB (a SQL dump import) to generate SQL that's then pasted into whatever the host DOES offer
+ * (phpMyAdmin/Adminer/a raw SQL console); (3) inspect 'updates'/'report' programmatically.
  */
 class StockOpnameUntouchedUnitHealer
 {
-    /** @return array<int, array<string, mixed>> */
+    /** @return array{report: array<int, array<string, mixed>>, updates: array<int, array<string, mixed>>} */
     public function healProduct(int $stoId, bool $apply = false): array
     {
         $sto = StockOpname::find($stoId);
         if (! $sto) {
-            return [['status' => 'ERROR', 'detail' => "sto_id {$stoId} tidak ditemukan"]];
+            return ['report' => [['status' => 'ERROR', 'detail' => "sto_id {$stoId} tidak ditemukan"]], 'updates' => []];
         }
 
         $rows = StockOpnameDetail::where('sto_id', $stoId)->where('status', 1)->get();
 
-        $run = fn () => $this->healRows($rows, $sto->created_at, 'stod_real', 'stod_selisih', 'stod_touched', 'product_variant_id', 1, $apply);
+        $run = fn () => $this->healRows($rows, $sto->created_at, 'stod_real', 'stod_selisih', 'stod_touched', 'product_variant_id', 1, 'stock_opname_details', 'stod_id', $apply);
 
         return $apply ? DB::transaction($run) : $run();
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array{report: array<int, array<string, mixed>>, updates: array<int, array<string, mixed>>} */
     public function healSupplies(int $stobId, bool $apply = false): array
     {
         $stob = StockOpnameBahan::find($stobId);
         if (! $stob) {
-            return [['status' => 'ERROR', 'detail' => "stob_id {$stobId} tidak ditemukan"]];
+            return ['report' => [['status' => 'ERROR', 'detail' => "stob_id {$stobId} tidak ditemukan"]], 'updates' => []];
         }
 
         $rows = StockOpnameDetailBahan::where('stob_id', $stobId)->where('status', 1)->get();
 
-        $run = fn () => $this->healRows($rows, $stob->created_at, 'stobd_real', 'stobd_selisih', 'stobd_touched', 'supplies_id', 2, $apply);
+        $run = fn () => $this->healRows($rows, $stob->created_at, 'stobd_real', 'stobd_selisih', 'stobd_touched', 'supplies_id', 2, 'stock_opname_detail_bahans', 'stobd_id', $apply);
 
         return $apply ? DB::transaction($run) : $run();
     }
 
     /**
-     * @param  \Illuminate\Support\Collection  $rows
-     * @return array<int, array<string, mixed>>
+     * Turn a healProduct()/healSupplies() result's 'updates' into copy-pasteable SQL, for a host
+     * where artisan/the app itself can't reach the target database directly. Run the analysis
+     * against a LOCAL copy of the production data (an imported SQL dump), then paste this output
+     * into whatever raw-SQL access the host DOES offer.
+     *
+     * @param  array<int, array<string, mixed>>  $updates
+     * @return array<int, string>
      */
-    private function healRows($rows, $createdAt, string $realKey, string $selisihKey, string $touchedKey, string $itemIdKey, int $logType, bool $apply): array
+    public function toSql(array $updates): array
+    {
+        $pdo = DB::connection()->getPdo();
+        $statements = [];
+
+        foreach ($updates as $u) {
+            $statements[] = sprintf(
+                'UPDATE %s SET %s = %s, %s = %s WHERE %s = %d;',
+                $u['table'],
+                $u['real_key'],
+                $pdo->quote($u['real_value']),
+                $u['selisih_key'],
+                $pdo->quote($u['selisih_value']),
+                $u['key_column'],
+                $u['key_value']
+            );
+        }
+
+        return $statements;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection  $rows
+     * @return array{report: array<int, array<string, mixed>>, updates: array<int, array<string, mixed>>}
+     */
+    private function healRows($rows, $createdAt, string $realKey, string $selisihKey, string $touchedKey, string $itemIdKey, int $logType, string $table, string $keyColumn, bool $apply): array
     {
         $report = [];
+        $updates = [];
 
         foreach ($rows as $row) {
             $realTokens = $this->parseTokens($row->{$realKey});
@@ -123,14 +161,29 @@ class StockOpnameUntouchedUnitHealer
                 }
             }
 
-            if ($changed && $apply) {
-                $row->{$realKey} = $this->buildString($realTokens);
-                $row->{$selisihKey} = $this->buildString($selisihTokens);
-                $row->save();
+            if ($changed) {
+                $newReal = $this->buildString($realTokens);
+                $newSelisih = $this->buildString($selisihTokens);
+
+                $updates[] = [
+                    'table' => $table,
+                    'key_column' => $keyColumn,
+                    'key_value' => $row->getKey(),
+                    'real_key' => $realKey,
+                    'real_value' => $newReal,
+                    'selisih_key' => $selisihKey,
+                    'selisih_value' => $newSelisih,
+                ];
+
+                if ($apply) {
+                    $row->{$realKey} = $newReal;
+                    $row->{$selisihKey} = $newSelisih;
+                    $row->save();
+                }
             }
         }
 
-        return $report;
+        return ['report' => $report, 'updates' => $updates];
     }
 
     /** Titik-waktu stok sistem: entry log_category=1 ("setelah") terakhir pada atau sebelum $at. */

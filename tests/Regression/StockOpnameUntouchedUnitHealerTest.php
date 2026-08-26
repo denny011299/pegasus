@@ -153,8 +153,8 @@ class StockOpnameUntouchedUnitHealerTest extends TestCase
         $healer = new StockOpnameUntouchedUnitHealer();
 
         // --- Dry run: nothing written, but the report classifies everything correctly.
-        $dryReport = $healer->healProduct($sto->sto_id, apply: false);
-        $byRow = collect($dryReport)->groupBy('detail_id');
+        $dryResult = $healer->healProduct($sto->sto_id, apply: false);
+        $byRow = collect($dryResult['report'])->groupBy('detail_id');
 
         $this->assertTrue($byRow[$rowA->stod_id]->every(fn ($r) => $r['status'] === 'TIER1_UNTOUCHED_ROW'));
 
@@ -171,6 +171,25 @@ class StockOpnameUntouchedUnitHealerTest extends TestCase
         // Dry run must not have written anything.
         $this->assertDatabaseHas('stock_opname_details', ['stod_id' => $rowA->stod_id, 'stod_real' => '10 '.$dosName.', 5 '.$pcsName]);
         $this->assertDatabaseHas('stock_opname_details', ['stod_id' => $rowB->stod_id, 'stod_real' => '8 '.$dosName.', 5 '.$pcsName]);
+
+        // --- --sql mode: for a host with no artisan/DB access from the app, the same dry-run
+        // result must yield copy-pasteable UPDATE statements for exactly the changed rows.
+        $sqlStatements = $healer->toSql($dryResult['updates']);
+        $sqlByRow = [];
+        foreach ($sqlStatements as $stmt) {
+            if (str_contains($stmt, 'stod_id = '.$rowA->stod_id.';')) $sqlByRow['A'] = $stmt;
+            if (str_contains($stmt, 'stod_id = '.$rowB->stod_id.';')) $sqlByRow['B'] = $stmt;
+            if (str_contains($stmt, 'stod_id = '.$rowC->stod_id.';')) $sqlByRow['C'] = $stmt;
+        }
+        $this->assertArrayHasKey('A', $sqlByRow, 'row A (fully untouched) must produce an UPDATE');
+        $this->assertStringContainsString('stock_opname_details', $sqlByRow['A']);
+        $this->assertStringContainsString("stod_real = '- {$dosName}, - {$pcsName}'", $sqlByRow['A']);
+        $this->assertArrayHasKey('B', $sqlByRow, 'row B (partially phantom) must produce an UPDATE');
+        $this->assertStringContainsString("stod_real = '8 {$dosName}, - {$pcsName}'", $sqlByRow['B']);
+        $this->assertArrayNotHasKey('C', $sqlByRow, 'row C (unresolved) must NOT produce an UPDATE');
+
+        // --sql analysis itself must not have written anything either.
+        $this->assertDatabaseHas('stock_opname_details', ['stod_id' => $rowA->stod_id, 'stod_real' => '10 '.$dosName.', 5 '.$pcsName]);
 
         // --- Apply: only TIER1/TIER2 units actually change.
         $healer->healProduct($sto->sto_id, apply: true);
