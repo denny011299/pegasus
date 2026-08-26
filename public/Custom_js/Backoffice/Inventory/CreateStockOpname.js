@@ -153,10 +153,15 @@ function refreshStockOpname(callback) {
                         if (index > 0)
                             rl_stock += `</div><div class="input-group mb-1 rstock">`;
                     }
+                    // GitHub #78 follow-up: only hint the live stock on an EXISTING document being
+                    // re-edited (mode 2, e.g. a draft reload) -- a brand-new create form (mode 1)
+                    // stays fully blank, per the user's explicit request.
+                    let createPlaceholder =
+                        mode == 2 ? ` placeholder="${element.ps_stock}"` : "";
                     rl_stock += `
                             <input type="text"
                                 class="form-control real-stock nominal_only"
-                                value=""
+                                value=""${createPlaceholder}
                                 data-unit-id="${element.unit_id}"
                                 data-unit-name="${element.unit_short_name}"
                                 data-system-qty="${element.ps_stock}">
@@ -232,10 +237,20 @@ function renderMode2(items) {
                 if (index > 0)
                     rl_stock += `</div><div class="input-group mb-1 rstock">`;
             }
+            // GitHub #78: real_qty null = satuan ini tidak pernah benar-benar dihitung staf --
+            // input harus tampil KOSONG (bukan diisi angka fallback lagi), TAPI tetap tampilkan
+            // stok live sebagai placeholder abu-abu supaya staf punya rujukan tanpa pindah halaman.
+            // Placeholder BUKAN value -- .val() tetap "" sampai staf benar-benar mengetik, jadi
+            // submit-nya tetap "-" (tidak dihitung), tidak menghidupkan lagi bug fallback lama.
+            let untouched = element.real_qty === null || element.real_qty === undefined;
+            let prefill = untouched ? "" : formatRupiah(String(element.real_qty));
+            let placeholderAttr = untouched
+                ? ` placeholder="${formatRupiah(String(element.live_qty ?? element.system_qty ?? 0))}"`
+                : "";
             rl_stock += `
                     <input type="text"
                         class="form-control real-stock nominal_only"
-                        value="${formatRupiah(String(element.real_qty))}"
+                        value="${prefill}"${placeholderAttr}
                         data-unit-id="${element.unit_id}"
                         data-unit-name="${element.unit_short_name}"
                         data-system-qty="${element.system_qty}">
@@ -509,22 +524,21 @@ function insertData(options) {
                 val === "" || val === null || val === undefined
                     ? -1
                     : (convertToAngka(String(val)) || 0);
+            // GitHub #78: satuan yang dibiarkan kosong TIDAK dianggap "dihitung = stok sistem" --
+            // PM sudah konfirmasi fallback lama itu bukan perilaku yang wajib dipertahankan.
+            // Kirim null / token "-" apa adanya supaya backend tahu ini belum pernah dihitung.
+            let counted = realQty !== -1;
 
             units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty != -1 ? realQty : systemQty,
+                real_qty: counted ? realQty : null,
             });
 
             systemArr.push(systemQty + " " + unitName);
-            realArr.push(
-                (realQty != -1 ? realQty : systemQty) + " " + unitName,
-            );
+            realArr.push((counted ? realQty : "-") + " " + unitName);
             selisihArr.push(
-                (realQty != -1 ? realQty : systemQty) -
-                    systemQty +
-                    " " +
-                    unitName,
+                (counted ? realQty - systemQty : "-") + " " + unitName,
             );
         });
 
@@ -643,22 +657,19 @@ $(document).on("click", "#btn-acc-sto", function () {
                 val === "" || val === null || val === undefined
                     ? -1
                     : (convertToAngka(String(val)) || 0);
+            // GitHub #78: mirrors insertData() above -- blank stays blank, no fallback to system.
+            let counted = realQty !== -1;
 
             units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty != -1 ? realQty : systemQty,
+                real_qty: counted ? realQty : null,
             });
 
             systemArr.push(systemQty + " " + unitName);
-            realArr.push(
-                (realQty != -1 ? realQty : systemQty) + " " + unitName,
-            );
+            realArr.push((counted ? realQty : "-") + " " + unitName);
             selisihArr.push(
-                (realQty != -1 ? realQty : systemQty) -
-                    systemQty +
-                    " " +
-                    unitName,
+                (counted ? realQty - systemQty : "-") + " " + unitName,
             );
         });
 

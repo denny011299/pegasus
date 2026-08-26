@@ -117,6 +117,13 @@ class StockController extends Controller
                     'system_qty'       => $this->getQty($detail->stod_system, $s->unit_short_name),
                     'real_qty'         => $this->getQty($detail->stod_real, $s->unit_short_name),
                     'selisih_qty'      => $this->getQty($detail->stod_selisih, $s->unit_short_name),
+                    // GitHub #78 follow-up: $detail->stock is already the LIVE ProductStock
+                    // collection (see ProductVariant::getProductVariantBulk(), joined once in bulk
+                    // for the whole document -- no extra query here). Handed to the frontend purely
+                    // as a placeholder hint for units the staff hasn't counted yet (renderMode2() in
+                    // CreateStockOpname.js) -- NEVER as real_qty itself, so an untouched unit still
+                    // submits as "-" (not counted), not a value copy-pasted from this hint.
+                    'live_qty'         => (int) $s->ps_stock,
                 ];
             }
 
@@ -162,24 +169,30 @@ class StockController extends Controller
         ]);
     }
 
-    private function getQty($string, $unit)
+    /**
+     * @return int|null  null berarti satuan ini SENGAJA tidak dihitung staf (token "-", lihat
+     *                    GitHub #78) atau tidak ditemukan sama sekali di string -- BUKAN nol.
+     */
+    private function getQty($string, $unit): ?int
     {
-        // contoh: "12 jerigen, 0 DOS, 0 pcs"
-        foreach (explode(',', $string) as $part) {
-            [$qty, $u] = explode(' ', trim($part));
+        // contoh: "12 jerigen, 0 DOS, - pcs" ("-" = tidak dihitung)
+        foreach (explode(',', (string) $string) as $part) {
+            $part = trim($part);
+            if ($part === '') continue;
+            [$qty, $u] = array_pad(explode(' ', $part, 2), 2, '');
             if ($u === $unit) {
-                return (int) $qty;
+                return $qty === '-' ? null : (int) $qty;
             }
         }
-        return 0;
+        return null;
     }
 
-    // Kebalikan dari getQty() -- rakit ['DOS' => 10, 'pcs' => 2] jadi "10 DOS, 2 pcs".
+    // Kebalikan dari getQty() -- rakit ['DOS' => 10, 'pcs' => null] jadi "10 DOS, - pcs".
     private function buildQtyString(array $qtyByUnit): string
     {
         $parts = [];
         foreach ($qtyByUnit as $unit => $qty) {
-            $parts[] = $qty . ' ' . $unit;
+            $parts[] = ($qty === null ? '-' : $qty) . ' ' . $unit;
         }
         return implode(', ', $parts);
     }
@@ -219,7 +232,11 @@ class StockController extends Controller
             $selisihByUnit = [];
             foreach ($liveByUnit as $unitName => $systemQty) {
                 $realQty = $this->getQty($item->{$realKey} ?? '', $unitName);
-                $selisihByUnit[$unitName] = $realQty - $systemQty;
+                // Satuan yang tidak pernah benar-benar dihitung (real "-", GitHub #78) tidak boleh
+                // dibandingkan terhadap stok live yang terus bergerak -- selisihnya tetap "-"
+                // selamanya sampai staf benar-benar menghitungnya, bukan dihitung dari nilai
+                // fallback basi yang sebelumnya diam-diam disamakan dengan stok sistem lama.
+                $selisihByUnit[$unitName] = $realQty === null ? null : ($realQty - $systemQty);
             }
 
             $item->{$systemKey} = $this->buildQtyString($liveByUnit);
@@ -231,6 +248,46 @@ class StockController extends Controller
                 $row->{$selisihKey} = $item->{$selisihKey};
                 $row->save();
             }
+        }
+
+        return $detail;
+    }
+
+    /**
+     * PDF-only cosmetic pass (GitHub #78 follow-up): the user wants an untouched unit's Real/
+     * Selisih columns to read as "matches system" (system qty / 0) instead of a bare "-", since a
+     * dash alone reads as missing data on a printed document. This must NOT touch the underlying
+     * stod_real/stod_selisih strings in the DB -- "-" stays the stored, authoritative "not counted"
+     * marker everywhere else (getQty()/accStockOpname()/refreshLiveSystemQty()) so the corruption
+     * this whole chain of fixes closed stays closed. Only mutates the in-memory $item handed to the
+     * PDF view, never calls ->save(), and runs for every status (a decided document's frozen
+     * selisih is real historical data and untouched by this — only the "-" placeholder is
+     * humanized).
+     */
+    private function humanizeUntouchedForPdf($detail, string $realKey, string $systemKey, string $selisihKey)
+    {
+        foreach ($detail as $item) {
+            $systemMap = [];
+            foreach (explode(',', (string) ($item->{$systemKey} ?? '')) as $part) {
+                $part = trim($part);
+                if ($part === '') continue;
+                [$qty, $u] = array_pad(explode(' ', $part, 2), 2, '');
+                $systemMap[$u] = (int) $qty;
+            }
+
+            $realOut = [];
+            $selisihOut = [];
+            foreach (explode(',', (string) ($item->{$realKey} ?? '')) as $part) {
+                $part = trim($part);
+                if ($part === '') continue;
+                [$qty, $u] = array_pad(explode(' ', $part, 2), 2, '');
+                $untouched = $qty === '-';
+                $realOut[$u] = $untouched ? ($systemMap[$u] ?? 0) : (int) $qty;
+                $selisihOut[$u] = $untouched ? 0 : ($this->getQty($item->{$selisihKey} ?? '', $u) ?? 0);
+            }
+
+            $item->{$realKey} = $this->buildQtyString($realOut);
+            $item->{$selisihKey} = $this->buildQtyString($selisihOut);
         }
 
         return $detail;
@@ -335,6 +392,18 @@ class StockController extends Controller
                     continue;
                 }
 
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+
+                // GitHub #78: satuan yang tidak diisi staf sama sekali (real_qty null, dulu
+                // diam-diam di-fallback ke stok sistem oleh JS) TIDAK BOLEH menimpa stok live --
+                // itu bukan hasil hitung fisik, cuma snapshot lama yang sudah basi begitu ada
+                // pergerakan stok wajar (penjualan/produksi) di antara input dan approve. Cukup
+                // catat stok live sekarang untuk histori dokumen, jangan disentuh sama sekali.
+                if (!array_key_exists('real_qty', $u) || $u['real_qty'] === null) {
+                    $liveSystemByUnit[$unitName] = (int) $s->ps_stock;
+                    continue;
+                }
+
                 $beforeStock = $s->ps_stock;
 
                 // Catat log
@@ -364,7 +433,6 @@ class StockController extends Controller
                     'unit_id'    => $u['unit_id'],
                 ]);
 
-                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
                 $liveSystemByUnit[$unitName] = (int) $beforeStock;
                 $realByUnit[$unitName] = (int) $u['real_qty'];
             }
@@ -373,7 +441,9 @@ class StockController extends Controller
             if ($detailRow && !empty($liveSystemByUnit)) {
                 $selisihByUnit = [];
                 foreach ($liveSystemByUnit as $unitName => $systemQty) {
-                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                    $selisihByUnit[$unitName] = array_key_exists($unitName, $realByUnit)
+                        ? ($realByUnit[$unitName] - $systemQty)
+                        : null;
                 }
                 $detailRow->stod_system = $this->buildQtyString($liveSystemByUnit);
                 $detailRow->stod_selisih = $this->buildQtyString($selisihByUnit);
@@ -418,6 +488,7 @@ class StockController extends Controller
         if ((int) $param['stockOpname']['status'] === 1) {
             $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock', StockOpnameDetail::class, 'stod_id');
         }
+        $this->humanizeUntouchedForPdf($param['detail'], 'stod_real', 'stod_system', 'stod_selisih');
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
@@ -589,6 +660,16 @@ class StockController extends Controller
                     continue;
                 }
 
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+
+                // GitHub #78: mirrors accStockOpname() above -- satuan yang tidak diisi staf
+                // (real_qty null) tidak boleh menimpa stok live, cukup catat stok live untuk
+                // histori dokumen.
+                if (!array_key_exists('real_qty', $u) || $u['real_qty'] === null) {
+                    $liveSystemByUnit[$unitName] = (int) $s->ss_stock;
+                    continue;
+                }
+
                 $beforeStock = $s->ss_stock;
 
                 // Catat log
@@ -618,7 +699,6 @@ class StockController extends Controller
                     'unit_id'    => $u['unit_id'],
                 ]);
 
-                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
                 $liveSystemByUnit[$unitName] = (int) $beforeStock;
                 $realByUnit[$unitName] = (int) $u['real_qty'];
             }
@@ -627,7 +707,9 @@ class StockController extends Controller
             if ($detailRow && !empty($liveSystemByUnit)) {
                 $selisihByUnit = [];
                 foreach ($liveSystemByUnit as $unitName => $systemQty) {
-                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                    $selisihByUnit[$unitName] = array_key_exists($unitName, $realByUnit)
+                        ? ($realByUnit[$unitName] - $systemQty)
+                        : null;
                 }
                 $detailRow->stobd_system = $this->buildQtyString($liveSystemByUnit);
                 $detailRow->stobd_selisih = $this->buildQtyString($selisihByUnit);
@@ -672,6 +754,7 @@ class StockController extends Controller
         if ((int) $param['stockOpname']['status'] === 1) {
             $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock', StockOpnameDetailBahan::class, 'stobd_id');
         }
+        $this->humanizeUntouchedForPdf($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih');
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
