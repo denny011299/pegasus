@@ -232,10 +232,16 @@ function renderMode2(items) {
                 if (index > 0)
                     rl_stock += `</div><div class="input-group mb-1 rstock">`;
             }
+            // GitHub #78: real_qty null = satuan ini tidak pernah benar-benar dihitung staf --
+            // input harus tampil KOSONG, bukan diisi angka fallback (dulu stok sistem lama).
+            let prefill =
+                element.real_qty === null || element.real_qty === undefined
+                    ? ""
+                    : formatRupiah(String(element.real_qty));
             rl_stock += `
                     <input type="text"
                         class="form-control real-stock nominal_only"
-                        value="${formatRupiah(String(element.real_qty))}"
+                        value="${prefill}"
                         data-unit-id="${element.unit_id}"
                         data-unit-name="${element.unit_short_name}"
                         data-system-qty="${element.system_qty}">
@@ -509,22 +515,21 @@ function insertData(options) {
                 val === "" || val === null || val === undefined
                     ? -1
                     : (convertToAngka(String(val)) || 0);
+            // GitHub #78: satuan yang dibiarkan kosong TIDAK dianggap "dihitung = stok sistem" --
+            // PM sudah konfirmasi fallback lama itu bukan perilaku yang wajib dipertahankan.
+            // Kirim null / token "-" apa adanya supaya backend tahu ini belum pernah dihitung.
+            let counted = realQty !== -1;
 
             units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty != -1 ? realQty : systemQty,
+                real_qty: counted ? realQty : null,
             });
 
             systemArr.push(systemQty + " " + unitName);
-            realArr.push(
-                (realQty != -1 ? realQty : systemQty) + " " + unitName,
-            );
+            realArr.push((counted ? realQty : "-") + " " + unitName);
             selisihArr.push(
-                (realQty != -1 ? realQty : systemQty) -
-                    systemQty +
-                    " " +
-                    unitName,
+                (counted ? realQty - systemQty : "-") + " " + unitName,
             );
         });
 
@@ -643,22 +648,19 @@ $(document).on("click", "#btn-acc-sto", function () {
                 val === "" || val === null || val === undefined
                     ? -1
                     : (convertToAngka(String(val)) || 0);
+            // GitHub #78: mirrors insertData() above -- blank stays blank, no fallback to system.
+            let counted = realQty !== -1;
 
             units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty != -1 ? realQty : systemQty,
+                real_qty: counted ? realQty : null,
             });
 
             systemArr.push(systemQty + " " + unitName);
-            realArr.push(
-                (realQty != -1 ? realQty : systemQty) + " " + unitName,
-            );
+            realArr.push((counted ? realQty : "-") + " " + unitName);
             selisihArr.push(
-                (realQty != -1 ? realQty : systemQty) -
-                    systemQty +
-                    " " +
-                    unitName,
+                (counted ? realQty - systemQty : "-") + " " + unitName,
             );
         });
 

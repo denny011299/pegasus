@@ -162,24 +162,30 @@ class StockController extends Controller
         ]);
     }
 
-    private function getQty($string, $unit)
+    /**
+     * @return int|null  null berarti satuan ini SENGAJA tidak dihitung staf (token "-", lihat
+     *                    GitHub #78) atau tidak ditemukan sama sekali di string -- BUKAN nol.
+     */
+    private function getQty($string, $unit): ?int
     {
-        // contoh: "12 jerigen, 0 DOS, 0 pcs"
-        foreach (explode(',', $string) as $part) {
-            [$qty, $u] = explode(' ', trim($part));
+        // contoh: "12 jerigen, 0 DOS, - pcs" ("-" = tidak dihitung)
+        foreach (explode(',', (string) $string) as $part) {
+            $part = trim($part);
+            if ($part === '') continue;
+            [$qty, $u] = array_pad(explode(' ', $part, 2), 2, '');
             if ($u === $unit) {
-                return (int) $qty;
+                return $qty === '-' ? null : (int) $qty;
             }
         }
-        return 0;
+        return null;
     }
 
-    // Kebalikan dari getQty() -- rakit ['DOS' => 10, 'pcs' => 2] jadi "10 DOS, 2 pcs".
+    // Kebalikan dari getQty() -- rakit ['DOS' => 10, 'pcs' => null] jadi "10 DOS, - pcs".
     private function buildQtyString(array $qtyByUnit): string
     {
         $parts = [];
         foreach ($qtyByUnit as $unit => $qty) {
-            $parts[] = $qty . ' ' . $unit;
+            $parts[] = ($qty === null ? '-' : $qty) . ' ' . $unit;
         }
         return implode(', ', $parts);
     }
@@ -219,7 +225,11 @@ class StockController extends Controller
             $selisihByUnit = [];
             foreach ($liveByUnit as $unitName => $systemQty) {
                 $realQty = $this->getQty($item->{$realKey} ?? '', $unitName);
-                $selisihByUnit[$unitName] = $realQty - $systemQty;
+                // Satuan yang tidak pernah benar-benar dihitung (real "-", GitHub #78) tidak boleh
+                // dibandingkan terhadap stok live yang terus bergerak -- selisihnya tetap "-"
+                // selamanya sampai staf benar-benar menghitungnya, bukan dihitung dari nilai
+                // fallback basi yang sebelumnya diam-diam disamakan dengan stok sistem lama.
+                $selisihByUnit[$unitName] = $realQty === null ? null : ($realQty - $systemQty);
             }
 
             $item->{$systemKey} = $this->buildQtyString($liveByUnit);
@@ -335,6 +345,18 @@ class StockController extends Controller
                     continue;
                 }
 
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+
+                // GitHub #78: satuan yang tidak diisi staf sama sekali (real_qty null, dulu
+                // diam-diam di-fallback ke stok sistem oleh JS) TIDAK BOLEH menimpa stok live --
+                // itu bukan hasil hitung fisik, cuma snapshot lama yang sudah basi begitu ada
+                // pergerakan stok wajar (penjualan/produksi) di antara input dan approve. Cukup
+                // catat stok live sekarang untuk histori dokumen, jangan disentuh sama sekali.
+                if (!array_key_exists('real_qty', $u) || $u['real_qty'] === null) {
+                    $liveSystemByUnit[$unitName] = (int) $s->ps_stock;
+                    continue;
+                }
+
                 $beforeStock = $s->ps_stock;
 
                 // Catat log
@@ -364,7 +386,6 @@ class StockController extends Controller
                     'unit_id'    => $u['unit_id'],
                 ]);
 
-                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
                 $liveSystemByUnit[$unitName] = (int) $beforeStock;
                 $realByUnit[$unitName] = (int) $u['real_qty'];
             }
@@ -373,7 +394,9 @@ class StockController extends Controller
             if ($detailRow && !empty($liveSystemByUnit)) {
                 $selisihByUnit = [];
                 foreach ($liveSystemByUnit as $unitName => $systemQty) {
-                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                    $selisihByUnit[$unitName] = array_key_exists($unitName, $realByUnit)
+                        ? ($realByUnit[$unitName] - $systemQty)
+                        : null;
                 }
                 $detailRow->stod_system = $this->buildQtyString($liveSystemByUnit);
                 $detailRow->stod_selisih = $this->buildQtyString($selisihByUnit);
@@ -589,6 +612,16 @@ class StockController extends Controller
                     continue;
                 }
 
+                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
+
+                // GitHub #78: mirrors accStockOpname() above -- satuan yang tidak diisi staf
+                // (real_qty null) tidak boleh menimpa stok live, cukup catat stok live untuk
+                // histori dokumen.
+                if (!array_key_exists('real_qty', $u) || $u['real_qty'] === null) {
+                    $liveSystemByUnit[$unitName] = (int) $s->ss_stock;
+                    continue;
+                }
+
                 $beforeStock = $s->ss_stock;
 
                 // Catat log
@@ -618,7 +651,6 @@ class StockController extends Controller
                     'unit_id'    => $u['unit_id'],
                 ]);
 
-                $unitName = $unitNames[$u['unit_id']] ?? ('unit#'.$u['unit_id']);
                 $liveSystemByUnit[$unitName] = (int) $beforeStock;
                 $realByUnit[$unitName] = (int) $u['real_qty'];
             }
@@ -627,7 +659,9 @@ class StockController extends Controller
             if ($detailRow && !empty($liveSystemByUnit)) {
                 $selisihByUnit = [];
                 foreach ($liveSystemByUnit as $unitName => $systemQty) {
-                    $selisihByUnit[$unitName] = ($realByUnit[$unitName] ?? 0) - $systemQty;
+                    $selisihByUnit[$unitName] = array_key_exists($unitName, $realByUnit)
+                        ? ($realByUnit[$unitName] - $systemQty)
+                        : null;
                 }
                 $detailRow->stobd_system = $this->buildQtyString($liveSystemByUnit);
                 $detailRow->stobd_selisih = $this->buildQtyString($selisihByUnit);

@@ -294,7 +294,9 @@ function renderMode2(items) {
                 unit_id: unit.unit_id,
                 unit_short_name: unit.unit_short_name,
                 system_qty: systemQty,
-                real_qty: realQty !== -1 ? realQty : systemQty, // 0 tetap 0, -1 baru fallback ke system
+                // GitHub #78: satuan yang tidak diinput TETAP null -- tidak lagi fallback diam-
+                // diam ke stok sistem (PM sudah konfirmasi fallback lama tidak wajib dipertahankan).
+                real_qty: realQty !== -1 ? realQty : null,
                 selisih_qty: selisihQty,
             });
         });
@@ -304,10 +306,14 @@ function renderMode2(items) {
                 if (index > 0)
                     rl_stock += `</div><div class="input-group mb-1 rstock">`;
             }
+            let prefill =
+                element.real_qty === null || element.real_qty === undefined
+                    ? ""
+                    : formatRupiah(String(element.real_qty));
             rl_stock += `
                     <input type="text"
                         class="form-control real-stock nominal_only"
-                        value="${formatRupiah(String(element.real_qty))}"
+                        value="${prefill}"
                         data-unit-id="${element.unit_id}"
                         data-unit-name="${element.unit_short_name}"
                         data-system-qty="${element.system_qty}">
@@ -572,22 +578,20 @@ function insertData(options) {
                 val === "" || val === null || val === undefined
                     ? -1
                     : (convertToAngka(String(val)) || 0);
+            // GitHub #78: satuan kosong dikirim null apa adanya, tidak lagi fallback ke stok
+            // sistem -- PM sudah konfirmasi fallback lama tidak wajib dipertahankan.
+            let counted = realQty !== -1;
 
             sp_units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty != -1 ? realQty : systemQty,
+                real_qty: counted ? realQty : null,
             });
 
             systemArr.push(systemQty + " " + unitName);
-            realArr.push(
-                (realQty != -1 ? realQty : systemQty) + " " + unitName,
-            );
+            realArr.push((counted ? realQty : "-") + " " + unitName);
             selisihArr.push(
-                (realQty != -1 ? realQty : systemQty) -
-                    systemQty +
-                    " " +
-                    unitName,
+                (counted ? realQty - systemQty : "-") + " " + unitName,
             );
         });
 
@@ -705,22 +709,19 @@ $(document).on("click", "#btn-acc-stob", function () {
                 val === "" || val === null || val === undefined
                     ? -1
                     : (convertToAngka(String(val)) || 0);
+            // GitHub #78: mirrors insertData() above -- blank stays blank, no fallback to system.
+            let counted = realQty !== -1;
 
             sp_units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
-                real_qty: realQty != -1 ? realQty : systemQty,
+                real_qty: counted ? realQty : null,
             });
 
             systemArr.push(systemQty + " " + unitName);
-            realArr.push(
-                (realQty != -1 ? realQty : systemQty) + " " + unitName,
-            );
+            realArr.push((counted ? realQty : "-") + " " + unitName);
             selisihArr.push(
-                (realQty != -1 ? realQty : systemQty) -
-                    systemQty +
-                    " " +
-                    unitName,
+                (counted ? realQty - systemQty : "-") + " " + unitName,
             );
         });
 
