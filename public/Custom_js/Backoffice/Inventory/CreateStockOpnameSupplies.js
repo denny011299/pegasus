@@ -170,15 +170,15 @@ function refreshStockOpname(callback) {
                         if (index > 0)
                             rl_stock += `</div><div class="input-group mb-1 rstock">`;
                     }
-                    // GitHub #78 follow-up: element.ss_stock here IS already the live stock (this
-                    // list just came fresh from /getSupplies) -- show it as a grey placeholder
-                    // hint, not as the actual value, so a blank input still submits as "not
-                    // counted" instead of silently becoming a fabricated real count again.
+                    // GitHub #78 follow-up: only hint the live stock on an EXISTING document being
+                    // re-edited (mode 2, e.g. a draft reload) -- a brand-new create form (mode 1)
+                    // stays fully blank, per the user's explicit request.
+                    let createPlaceholder =
+                        mode == 2 ? ` placeholder="${element.ss_stock}"` : "";
                     rl_stock += `
                             <input type="text"
                                 class="form-control real-stock nominal_only"
-                                value=""
-                                placeholder="${element.ss_stock}"
+                                value=""${createPlaceholder}
                                 data-unit-id="${element.unit_id}"
                                 data-unit-name="${element.unit_short_name}"
                                 data-system-qty="${element.ss_stock}">
