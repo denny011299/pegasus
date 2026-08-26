@@ -2,6 +2,7 @@
 
 namespace Tests\Regression;
 
+use App\Http\Controllers\StockController;
 use App\Models\Category;
 use App\Models\LogStock;
 use App\Models\Product;
@@ -10,6 +11,7 @@ use App\Models\ProductVariant;
 use App\Models\StockOpnameDetail;
 use App\Models\Unit;
 use Illuminate\Support\Facades\DB;
+use ReflectionMethod;
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
@@ -305,5 +307,69 @@ class StockOpnameUntouchedUnitBugTest extends TestCase
             $page->getContent()
         );
         $this->assertStringContainsString('live_qty":'.$liveNow, $page->getContent());
+    }
+
+    /**
+     * Follow-up to GitHub #78: the user found the printed PDF's Real/Selisih columns still showing
+     * a bare "-" for an untouched unit and asked for it to read as "matches system" instead (system
+     * qty / 0) — a bare dash reads as missing data on a printed document. This is PDF-display-only:
+     * the stored stod_real/stod_selisih must stay "-" so the rest of the #78 fix (no phantom
+     * selisih, no stock corruption on approve) keeps working.
+     */
+    public function test_pdf_humanizes_the_dash_to_system_qty_without_touching_the_stored_row(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        [$variant, $dosStock, $pcsStock] = $this->pickFixture();
+        $dosUnit = Unit::find($dosStock->unit_id)->unit_short_name;
+        $pcsUnit = Unit::find($pcsStock->unit_id)->unit_short_name;
+
+        $response = $this->post('/insertStockOpname', [
+            'sto_date' => now()->toDateString(),
+            'staff_id' => $this->staffId(),
+            'category_id' => $this->categoryId(),
+            'sto_notes' => 'Untouched unit bug test',
+            'is_draft' => 0,
+            'item' => json_encode([[
+                'product_id' => $variant->product_id,
+                'product_variant_id' => $variant->product_variant_id,
+                'stod_system' => $dosStock->ps_stock.' '.$dosUnit.', '.$pcsStock->ps_stock.' '.$pcsUnit,
+                'stod_real' => '11 '.$dosUnit.', - '.$pcsUnit,
+                'stod_selisih' => '-1 '.$dosUnit.', - '.$pcsUnit,
+                'stod_notes' => null,
+                'stod_touched' => 1,
+            ]]),
+        ]);
+        $response->assertStatus(200);
+        $stoId = (int) $response->json('sto_id');
+
+        $detail = StockOpnameDetail::getDetail(['sto_id' => $stoId]);
+        $humanize = new ReflectionMethod(StockController::class, 'humanizeUntouchedForPdf');
+        $humanize->setAccessible(true);
+        $humanize->invoke(new StockController(), $detail, 'stod_real', 'stod_system', 'stod_selisih');
+
+        $row = $detail->firstWhere('product_variant_id', $variant->product_variant_id);
+        $this->assertSame((string) $pcsStock->ps_stock, $this->parseToken($row->stod_real, $pcsUnit), 'PDF display must show the system qty, not a bare dash');
+        $this->assertSame('0', $this->parseToken($row->stod_selisih, $pcsUnit), 'PDF display selisih for an untouched unit must read as 0, not a bare dash');
+        // The touched unit is untouched by this cosmetic pass.
+        $this->assertSame('11', $this->parseToken($row->stod_real, $dosUnit));
+        $this->assertSame('-1', $this->parseToken($row->stod_selisih, $dosUnit));
+
+        // The underlying DB row must still say "-" — this is display-only, GitHub #78's fix (no
+        // phantom selisih, no approve-time corruption) depends on that staying true forever.
+        $this->assertDatabaseHas('stock_opname_details', [
+            'sto_id' => $stoId,
+            'product_variant_id' => $variant->product_variant_id,
+            'stod_real' => '11 '.$dosUnit.', - '.$pcsUnit,
+            'stod_selisih' => '-1 '.$dosUnit.', - '.$pcsUnit,
+        ]);
+
+        // The real PDF endpoint must actually run this pass and not blow up.
+        $this->get('/generateStockOpname/'.$stoId)->assertStatus(200);
+        $this->assertDatabaseHas('stock_opname_details', [
+            'sto_id' => $stoId,
+            'product_variant_id' => $variant->product_variant_id,
+            'stod_real' => '11 '.$dosUnit.', - '.$pcsUnit,
+            'stod_selisih' => '-1 '.$dosUnit.', - '.$pcsUnit,
+        ]);
     }
 }

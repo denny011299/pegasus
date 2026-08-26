@@ -253,6 +253,46 @@ class StockController extends Controller
         return $detail;
     }
 
+    /**
+     * PDF-only cosmetic pass (GitHub #78 follow-up): the user wants an untouched unit's Real/
+     * Selisih columns to read as "matches system" (system qty / 0) instead of a bare "-", since a
+     * dash alone reads as missing data on a printed document. This must NOT touch the underlying
+     * stod_real/stod_selisih strings in the DB -- "-" stays the stored, authoritative "not counted"
+     * marker everywhere else (getQty()/accStockOpname()/refreshLiveSystemQty()) so the corruption
+     * this whole chain of fixes closed stays closed. Only mutates the in-memory $item handed to the
+     * PDF view, never calls ->save(), and runs for every status (a decided document's frozen
+     * selisih is real historical data and untouched by this — only the "-" placeholder is
+     * humanized).
+     */
+    private function humanizeUntouchedForPdf($detail, string $realKey, string $systemKey, string $selisihKey)
+    {
+        foreach ($detail as $item) {
+            $systemMap = [];
+            foreach (explode(',', (string) ($item->{$systemKey} ?? '')) as $part) {
+                $part = trim($part);
+                if ($part === '') continue;
+                [$qty, $u] = array_pad(explode(' ', $part, 2), 2, '');
+                $systemMap[$u] = (int) $qty;
+            }
+
+            $realOut = [];
+            $selisihOut = [];
+            foreach (explode(',', (string) ($item->{$realKey} ?? '')) as $part) {
+                $part = trim($part);
+                if ($part === '') continue;
+                [$qty, $u] = array_pad(explode(' ', $part, 2), 2, '');
+                $untouched = $qty === '-';
+                $realOut[$u] = $untouched ? ($systemMap[$u] ?? 0) : (int) $qty;
+                $selisihOut[$u] = $untouched ? 0 : ($this->getQty($item->{$selisihKey} ?? '', $u) ?? 0);
+            }
+
+            $item->{$realKey} = $this->buildQtyString($realOut);
+            $item->{$selisihKey} = $this->buildQtyString($selisihOut);
+        }
+
+        return $detail;
+    }
+
     function getDetailStockOpname(Request $req)
     {
         $data = StockOpnameDetail::getDetail($req->all());
@@ -448,6 +488,7 @@ class StockController extends Controller
         if ((int) $param['stockOpname']['status'] === 1) {
             $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock', StockOpnameDetail::class, 'stod_id');
         }
+        $this->humanizeUntouchedForPdf($param['detail'], 'stod_real', 'stod_system', 'stod_selisih');
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
@@ -713,6 +754,7 @@ class StockController extends Controller
         if ((int) $param['stockOpname']['status'] === 1) {
             $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock', StockOpnameDetailBahan::class, 'stobd_id');
         }
+        $this->humanizeUntouchedForPdf($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih');
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
