@@ -18,7 +18,7 @@
     }
     .dt-skeleton-head {
         display: grid;
-        grid-template-columns: 20% 12% 26% 14% 12% 8% 8%;
+        grid-template-columns: 20% 12% 22% 16% 14% 8% 8%;
         gap: 0;
         background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%);
         border-bottom: 2px solid #bfdbfe;
@@ -36,7 +36,7 @@
     }
     .dt-skeleton-row {
         display: grid;
-        grid-template-columns: 20% 12% 26% 14% 12% 8% 8%;
+        grid-template-columns: 20% 12% 22% 16% 14% 8% 8%;
         gap: 0;
         align-items: center;
         min-height: 65px;
@@ -114,7 +114,7 @@
                                     <span style="width:65%;justify-self:center"></span>
                                     <span style="width:55%"></span>
                                     <span style="width:60%"></span>
-                                    <span style="width:60%"></span>
+                                    <span style="width:70%"></span>
                                     <span style="width:50%;justify-self:center"></span>
                                     <span style="width:40%;justify-self:center"></span>
                                 </div>
@@ -127,13 +127,13 @@
                                             </div>
                                             <span class="skel-badge" style="width:55%;justify-self:center"></span>
                                             <span class="skel-text" style="width:60%"></span>
-                                            <div style="display:flex;align-items:center;gap:6px;">
-                                                <span class="skel-avatar" style="width:16px;height:16px;"></span>
-                                                <span class="skel-text" style="width:60%"></span>
+                                            <div style="display:flex;align-items:center;gap:8px;">
+                                                <span class="skel-avatar"></span>
+                                                <span class="skel-text" style="width:70%"></span>
                                             </div>
                                             <div style="display:flex;align-items:center;gap:8px;">
                                                 <span class="skel-avatar"></span>
-                                                <span class="skel-text" style="width:65%"></span>
+                                                <span class="skel-text" style="width:70%"></span>
                                             </div>
                                             <span class="skel-badge" style="width:40%;justify-self:center"></span>
                                             <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
@@ -152,7 +152,7 @@
                                         <th class="text-start">Nama Gudang</th>
                                         <th class="text-center">Tipe Gudang</th>
                                         <th class="text-start">Alamat</th>
-                                        <th class="text-start">Dibuat Pada</th>
+                                        <th class="text-start">Kepala Operasional</th>
                                         <th class="text-start">Dibuat Oleh</th>
                                         <th class="text-center">Status</th>
                                         <th class="no-sort text-center">Aksi</th>

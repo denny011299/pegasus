@@ -68,6 +68,7 @@ class AppServiceProvider extends ServiceProvider
             'layout.partials.sidebar',
             'layout.mainlayout',
             'components.page-header',
+            'components.search-filter',
             'Backoffice.Inventory.Stock_Transfer',
         ], function ($view) {
             static $payload = null;

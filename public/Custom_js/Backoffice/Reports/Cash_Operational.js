@@ -84,7 +84,7 @@
 
         if (type === 'admin') {
             inisialisasi();
-            $('#tableCash thead th').eq(2).text('Staff');
+            $('#tableCash thead th').eq(3).text('Staff');
             $('.filter_person').html(`
                 <label class="form-label mb-1">Staff</label>
                 <select class="form-select" id="filter_staff_id"></select>
@@ -96,7 +96,7 @@
         
         else if (type === 'gudang') {
             inisialisasi();
-            $('#tableCash thead th').eq(2).text('Staff');
+            $('#tableCash thead th').eq(3).text('Staff');
             $('.filter_person').html(`
                 <label class="form-label mb-1">Staff</label>
                 <select class="form-select" id="filter_staff_id"></select>
@@ -108,7 +108,7 @@
         
         else if (type === 'armada') {
             inisialisasi();
-            $('#tableCash thead th').eq(2).text('Armada');
+            $('#tableCash thead th').eq(3).text('Armada');
             $('.filter_person').html(`
                 <label class="form-label mb-1">Armada</label>
                 <select class="form-select" id="filter_customer_id"></select>
@@ -125,7 +125,7 @@
 
         else if (type === 'sales') {
             inisialisasi();
-            $('#tableCash thead th').eq(2).text('Sales');
+            $('#tableCash thead th').eq(3).text('Sales');
             $('.filter_person').html(`
                 <label class="form-label mb-1">Sales</label>
                 <select class="form-select" id="filter_sales_id"></select>
@@ -511,13 +511,13 @@
                     width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
+                { data: "status_text", width: "13%" },
                 { data: "staff_name", width: "12%" },
                 { data: "ca_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
                 { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
-                { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
             searchText = "Cari Kas Admin";
@@ -532,13 +532,13 @@
                     width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
+                { data: "status_text", width: "13%" },
                 { data: "staff_name", width: "12%" },
                 { data: "cg_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
                 { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
-                { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
             searchText = "Cari Kas Gudang";
@@ -553,13 +553,13 @@
                     width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
+                { data: "status_text", width: "13%" },
                 { data: "customer_notes", width: "12%" },
                 { data: "cr_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
                 { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
-                { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
             searchText = "Cari Kas Armada";
@@ -574,13 +574,13 @@
                     width: "1.5rem"
                 },
                 { data: "date", width: "12%" },
+                { data: "status_text", width: "13%" },
                 { data: "staff_name", width: "12%" },
                 { data: "cs_notes", width: "22%" },
                 { data: "debit_text", className: "text-end", width: "15%" },
                 { data: "credit_text", className: "text-end", width: "15%" },
                 { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
-                { data: "status_text", width: "13%" },
                 { data: "action", className: "d-flex align-items-center", width: "80px" },
             ];
             searchText = "Cari Kas Sales";

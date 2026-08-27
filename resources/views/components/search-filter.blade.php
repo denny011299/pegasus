@@ -926,8 +926,17 @@
                 <select class="form-select" id="st_filter_status">
                     <option value="">Semua Status</option>
                     <option value="1">Pending</option>
+                    @php
+                        // Fase request eceran hanya di gudang utama — render Blade (tanpa hide JS / tanpa blink).
+                        $stFilterAw = $activeWarehouse ?? null;
+                        $stFilterIsMain = $stFilterAw
+                            && isset($stFilterAw->type)
+                            && (int) ($stFilterAw->type->is_main_warehouse ?? 0) === 1;
+                    @endphp
+                    @if ($stFilterIsMain)
                     <option value="requested">Requested (tunggu QC)</option>
                     <option value="need_approval">Need Approval (tunggu Ops)</option>
+                    @endif
                     <option value="2">Kirim</option>
                     <option value="4">Terkirim</option>
                     <option value="3">Cancel</option>
