@@ -382,9 +382,23 @@ class StockTransferController extends Controller
         $statusFilter = trim((string) ($req->status ?? ''));
         if ($statusFilter !== '') {
             if (ctype_digit($statusFilter)) {
-                $query->where('status', (int) $statusFilter);
+                $statusInt = (int) $statusFilter;
+                $query->where('status', $statusInt);
+                // Pending (1): jangan campur retail_request di gudang asal —
+                // badge-nya Requested / Need Approval / Siap Kirim (ada filter sendiri).
+                if ($statusInt === 1 && $activeWh > 0) {
+                    $query->where(function ($q) use ($activeWh) {
+                        $q->where(function ($inner) {
+                            $inner->whereNull('source_type')
+                                ->orWhere('source_type', '<>', 'retail_request');
+                        })->orWhere('from_warehouse_id', '<>', $activeWh);
+                    });
+                }
             } elseif (in_array($statusFilter, ['requested', 'need_approval', 'ready'], true)) {
-                $query->where('status', 1)->where('source_type', 'retail_request');
+                // Fase hanya di gudang asal (besar); di eceran badge-nya cuma Pending
+                $query->where('status', 1)
+                    ->where('source_type', 'retail_request')
+                    ->where('from_warehouse_id', $activeWh);
             }
         }
 

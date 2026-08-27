@@ -496,6 +496,60 @@ function inisialisasi() {
                 }
             },
             {
+                data: "status",
+                width: "10%",
+                className: "text-center",
+                render: function (data, type, row) {
+                    var status = parseInt(data, 10);
+                    var isRetailReq =
+                        row.is_retail_request === true ||
+                        row.is_retail_request === 1 ||
+                        row.source_type === "retail_request";
+                    var activeWh =
+                        typeof getActiveWarehouseId === "function"
+                            ? String(getActiveWarehouseId() || "")
+                            : "";
+                    var fromWh = String(row.from_warehouse_id || "");
+                    // Request eceran status=1 di gudang besar:
+                    // Requested → Need Approval → (approval lengkap auto-Kirim, jarang "Siap Kirim")
+                    if (status === 1 && isRetailReq && activeWh && activeWh === fromWh) {
+                        var phase = row.approval_phase || "";
+                        if (!phase) {
+                            var qcReq = row.qc_required === true || row.qc_required === 1;
+                            var opsReq = row.ops_required === true || row.ops_required === 1;
+                            var qcOk = row.qc_approved === true || row.qc_approved === 1;
+                            var opsOk = row.ops_approved === true || row.ops_approved === 1;
+                            if (qcReq && !qcOk) phase = "requested";
+                            else if (opsReq && !opsOk) phase = "need_approval";
+                            else phase = "ready";
+                        }
+                        if (phase === "need_approval") {
+                            return '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>';
+                        }
+                        if (phase === "ready") {
+                            return '<span class="badge" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Siap Kirim</span>';
+                        }
+                        return '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Requested</span>';
+                    }
+                    if (status == 1) {
+                        return '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>';
+                    }
+                    if (data == 2) {
+                        return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Kirim</span>';
+                    }
+                    if (data == 3) {
+                        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Cancel</span>';
+                    }
+                    if (data == 4) {
+                        return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Terkirim</span>';
+                    }
+                    if (data == 5) {
+                        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-rotate-ccw me-1"></i> Cancel Kirim</span>';
+                    }
+                    return "-";
+                },
+            },
+            {
                 data: "transfer_code",
                 width: "10%",
                 render: function(data, type, row) {
@@ -571,60 +625,6 @@ function inisialisasi() {
                                 <span class="text-dark text-nowrap">${data}</span>
                             </div>`;
                 }
-            },
-            {
-                data: "status",
-                width: "10%",
-                className: "text-center",
-                render: function (data, type, row) {
-                    var status = parseInt(data, 10);
-                    var isRetailReq =
-                        row.is_retail_request === true ||
-                        row.is_retail_request === 1 ||
-                        row.source_type === "retail_request";
-                    var activeWh =
-                        typeof getActiveWarehouseId === "function"
-                            ? String(getActiveWarehouseId() || "")
-                            : "";
-                    var fromWh = String(row.from_warehouse_id || "");
-                    // Request eceran status=1 di gudang besar:
-                    // Requested → Need Approval → (approval lengkap auto-Kirim, jarang "Siap Kirim")
-                    if (status === 1 && isRetailReq && activeWh && activeWh === fromWh) {
-                        var phase = row.approval_phase || "";
-                        if (!phase) {
-                            var qcReq = row.qc_required === true || row.qc_required === 1;
-                            var opsReq = row.ops_required === true || row.ops_required === 1;
-                            var qcOk = row.qc_approved === true || row.qc_approved === 1;
-                            var opsOk = row.ops_approved === true || row.ops_approved === 1;
-                            if (qcReq && !qcOk) phase = "requested";
-                            else if (opsReq && !opsOk) phase = "need_approval";
-                            else phase = "ready";
-                        }
-                        if (phase === "need_approval") {
-                            return '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>';
-                        }
-                        if (phase === "ready") {
-                            return '<span class="badge" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Siap Kirim</span>';
-                        }
-                        return '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Requested</span>';
-                    }
-                    if (status == 1) {
-                        return '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>';
-                    }
-                    if (data == 2) {
-                        return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Kirim</span>';
-                    }
-                    if (data == 3) {
-                        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Cancel</span>';
-                    }
-                    if (data == 4) {
-                        return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Terkirim</span>';
-                    }
-                    if (data == 5) {
-                        return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-rotate-ccw me-1"></i> Cancel Kirim</span>';
-                    }
-                    return "-";
-                },
             },
             {
                 data: null,

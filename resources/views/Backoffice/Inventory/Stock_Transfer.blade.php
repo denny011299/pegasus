@@ -342,28 +342,28 @@
                                     <div style="padding: 16px 25px 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 10% 10% 11% 11% 11% 12% 12% 9% 6%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 10% 9% 10% 11% 11% 11% 12% 12% 6%;">
                                         <span style="width:60%"></span>
+                                        <span style="width:50%;justify-self:center"></span>
                                         <span style="width:70%"></span>
                                         <span style="width:50%"></span>
                                         <span style="width:50%"></span>
                                         <span style="width:50%"></span>
                                         <span style="width:60%"></span>
                                         <span style="width:60%"></span>
-                                        <span style="width:50%;justify-self:center"></span>
                                         <span style="width:40%;justify-self:center"></span>
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 10% 10% 11% 11% 11% 12% 12% 9% 6%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 10% 9% 10% 11% 11% 11% 12% 12% 6%;">
                                                 <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-badge" style="width:70%;justify-self:center"></span>
                                                 <span class="skel-text" style="width:80%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-text" style="width:90%"></span>
                                                 <span class="skel-text" style="width:90%"></span>
-                                                <span class="skel-badge" style="width:70%;justify-self:center"></span>
                                                 <div style="display:flex;align-items:center;gap:6px;justify-content:center;">
                                                     <span class="skel-btn"></span>
                                                 </div>
@@ -375,13 +375,13 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th style="width:10%">Tanggal</th>
+                                            <th class="text-center" style="width:9%">Status</th>
                                             <th style="width:10%">Kode</th>
                                             <th style="width:11%">Request</th>
                                             <th style="width:11%">Pengirim</th>
                                             <th style="width:11%">Penerima</th>
                                             <th style="width:12%">Dari</th>
                                             <th style="width:12%">Ke</th>
-                                            <th class="text-center" style="width:9%">Status</th>
                                             <th class="no-sort text-center" style="width:6%">Aksi</th>
                                         </tr>
                                     </thead>

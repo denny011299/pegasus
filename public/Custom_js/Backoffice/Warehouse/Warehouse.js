@@ -190,11 +190,9 @@ function inisialisasi() {
                     json = json.original || json.data || [];
                 }
                 return json.map(function (row) {
-                    row.warehouse_date = row.created_at
-                        ? moment(row.created_at).format("D MMM YYYY")
-                        : "-";
                     row.warehouse_address = row.warehouse_address || "-";
                     row.created_by_name = row.created_by_name || "-";
+                    row.kepala_staff_name = row.kepala_staff_name || "-";
                     return row;
                 });
             },
@@ -290,27 +288,32 @@ function inisialisasi() {
                 data: "warehouse_address",
                 defaultContent: "-",
                 className: "text-start align-middle",
-                width: "26%",
+                width: "22%",
                 render: function (data, type) {
                     if (type !== "display") return data;
                     return (
-                        '<span style="color:#475569;display:inline-block;text-align:left;">' +
+                        '<span style="color:#475569;display:inline-block;text-align:left;line-height:1.4;">' +
                         (data || "-") +
                         "</span>"
                     );
                 },
             },
             {
-                data: "warehouse_date",
+                data: "kepala_staff_name",
+                defaultContent: "-",
                 className: "text-start align-middle",
-                width: "14%",
+                width: "16%",
                 render: function (data, type) {
                     if (type !== "display") return data;
+                    if (!data || data === "-")
+                        return '<span class="text-muted">-</span>';
                     return (
-                        '<div style="color:#64748b;font-size:13px;font-weight:500;text-align:left;">' +
-                        '<i class="far fa-calendar-alt me-1 text-muted"></i> ' +
+                        '<div style="display:flex;align-items:center;justify-content:flex-start;gap:10px;min-width:140px;padding:4px 8px 4px 0;">' +
+                        '<div style="width:28px;height:28px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;font-size:11px;flex-shrink:0;">' +
+                        '<i class="fas fa-user-tie"></i></div>' +
+                        '<span style="color:#1e293b;font-weight:600;white-space:nowrap;">' +
                         data +
-                        "</div>"
+                        "</span></div>"
                     );
                 },
             },
@@ -318,16 +321,16 @@ function inisialisasi() {
                 data: "created_by_name",
                 defaultContent: "-",
                 className: "text-start align-middle",
-                width: "12%",
+                width: "14%",
                 render: function (data, type) {
                     if (type !== "display") return data;
                     if (!data || data === "-")
                         return '<span class="text-muted">-</span>';
                     return (
-                        '<div style="display:flex;align-items:center;justify-content:flex-start;gap:8px;">' +
-                        '<div style="width:24px;height:24px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:10px;">' +
+                        '<div style="display:flex;align-items:center;justify-content:flex-start;gap:10px;min-width:120px;padding:4px 8px 4px 0;">' +
+                        '<div style="width:28px;height:28px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:11px;flex-shrink:0;">' +
                         '<i class="fas fa-user"></i></div>' +
-                        '<span style="color:#475569;font-weight:500;">' +
+                        '<span style="color:#475569;font-weight:500;white-space:nowrap;">' +
                         data +
                         "</span></div>"
                     );
