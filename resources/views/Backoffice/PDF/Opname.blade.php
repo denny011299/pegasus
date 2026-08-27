@@ -110,25 +110,39 @@
             <tbody>
                 @foreach ($detail as $item)
                     @php
-                        $hasSelisih = false;
-                        if (!empty($item['stod_selisih'])) {
-                            // Cek apakah ada angka yang bukan 0 di stod_selisih
-                            // Format: "0 DOS, 2 Piece" — cari angka selain 0
-                            preg_match_all('/(-?\d+)/', $item['stod_selisih'], $matches);
-                            foreach ($matches[1] as $angka) {
-                                if ((int)$angka !== 0) {
-                                    $hasSelisih = true;
-                                    break;
+                        // Dokumen versi BARU sudah membawa keputusan warnanya sendiri dari
+                        // App\Support\StockOpname\OpnameLineReader -- angka dan warna berasal dari
+                        // satu sumber yang sama, jadi tidak mungkin bertentangan.
+                        $token = is_array($item) && array_key_exists('highlight', $item)
+                            ? $item['highlight']
+                            : null;
+
+                        if ($token === null) {
+                            // Dokumen LAMA: hitung dari string tersimpan, seperti selama ini.
+                            $hasSelisih = false;
+                            if (!empty($item['stod_selisih'])) {
+                                // Format: "0 DOS, 2 Piece" -- cari angka selain 0
+                                preg_match_all('/(-?\d+)/', $item['stod_selisih'], $matches);
+                                foreach ($matches[1] as $angka) {
+                                    if ((int) $angka !== 0) {
+                                        $hasSelisih = true;
+                                        break;
+                                    }
                                 }
                             }
+                            // Kuning ikut ANGKA, tidak digantung pada stod_touched (perbaikan
+                            // 2026-08-27, lihat SP0071 baris MRHK1LM: sistem 3 DOS, real 8 DOS,
+                            // selisih 5 DOS, tapi tampil tanpa highlight sama sekali). Hijau tetap
+                            // butuh flag: selisih 0 terlihat sama persis antara baris yang dihitung
+                            // dan yang dibiarkan kosong, itu memang tidak bisa disimpulkan.
+                            $token = $hasSelisih ? 'yellow' : (!empty($item['stod_touched']) ? 'green' : null);
                         }
-                        // GitHub #53: kuning kalau diisi dan ada selisih, hijau kalau diisi dan
-                        // stok real cocok dengan sistem, tanpa highlight kalau memang tidak
-                        // pernah diisi stok real-nya (bukan sekadar default = stok sistem).
-                        $highlight = '';
-                        if (!empty($item['stod_touched'])) {
-                            $highlight = $hasSelisih ? 'background-color: #FFF9C4;' : 'background-color: #C8E6C9;';
-                        }
+
+                        $highlight = match ($token) {
+                            'yellow' => 'background-color: #FFF9C4;',
+                            'green' => 'background-color: #C8E6C9;',
+                            default => '',
+                        };
                     @endphp
                     <tr>
                         <td>{{ empty($item['product_variant_sku']) ? '-' : $item['product_variant_sku'] }}</td>

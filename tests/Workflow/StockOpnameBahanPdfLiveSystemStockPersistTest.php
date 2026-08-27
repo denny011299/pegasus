@@ -5,6 +5,7 @@ namespace Tests\Workflow;
 use App\Models\Category;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
+use App\Models\StockOpnameBahan;
 use App\Models\StockOpnameDetailBahan;
 use App\Models\Unit;
 use Illuminate\Support\Facades\DB;
@@ -57,25 +58,40 @@ class StockOpnameBahanPdfLiveSystemStockPersistTest extends TestCase
         return (string) (Unit::find($stock->unit_id)->unit_short_name ?? 'pcs');
     }
 
+    /**
+     * Bangun dokumen LAMA secara langsung.
+     *
+     * Sejak rancang ulang 2026-08-27, /insertStockOpnameBahan membuat dokumen VERSI BARU,
+     * sementara berkas test ini subjeknya justru mekanika penyimpanan LAMA: string stobd_system
+     * yang dibekukan sekali lalu ditulis ULANG oleh refreshLiveSystemQty() setiap kali PDF
+     * diunduh. Jalur itu masih hidup dan masih harus dijaga selama dokumen lama masih ada di
+     * produksi, jadi test-nya diarahkan ke sana, bukan diubah maknanya.
+     *
+     * Padanan versi barunya berperilaku BERBEDA dengan sengaja -- membaca dokumen yang masih
+     * menunggu tidak lagi menulis apa pun ke DB. Lihat Tests\Workflow\StockOpnameBahanV2LifecycleTest.
+     */
     private function insertStockOpnameBahan(SuppliesStock $stock, string $unit, int $realQty, bool $isDraft = false): int
     {
-        $response = $this->post('/insertStockOpnameBahan', [
-            'stob_date' => now()->toDateString(),
-            'staff_id' => $this->staffId(),
-            'stob_notes' => 'PDF persistence Bahan test',
-            'is_draft' => $isDraft ? 1 : 0,
-            'item' => json_encode([[
-                'supplies_id' => $stock->supplies_id,
-                'stobd_system' => $stock->ss_stock.' '.$unit,
-                'stobd_real' => $realQty.' '.$unit,
-                'stobd_selisih' => ($realQty - $stock->ss_stock).' '.$unit,
-                'stobd_notes' => null,
-                'stobd_touched' => 1,
-            ]]),
-        ]);
-        $response->assertStatus(200);
+        $stob = new StockOpnameBahan();
+        $stob->stob_date = now()->toDateString();
+        $stob->stob_code = 'LB'.substr((string) microtime(true), -4);
+        $stob->staff_id = $this->staffId();
+        $stob->status = 1;
+        $stob->is_draft = $isDraft;
+        $stob->save();
+        $this->assertTrue((bool) $stob->refresh()->is_old_version);
 
-        return (int) $response->json('stob_id');
+        $d = new StockOpnameDetailBahan();
+        $d->stob_id = $stob->stob_id;
+        $d->supplies_id = $stock->supplies_id;
+        $d->stobd_system = $stock->ss_stock.' '.$unit;
+        $d->stobd_real = $realQty.' '.$unit;
+        $d->stobd_selisih = ($realQty - $stock->ss_stock).' '.$unit;
+        $d->stobd_touched = 1;
+        $d->status = 1;
+        $d->save();
+
+        return (int) $stob->stob_id;
     }
 
     private function approve(SuppliesStock $stock, int $stobId, int $realQty): void
