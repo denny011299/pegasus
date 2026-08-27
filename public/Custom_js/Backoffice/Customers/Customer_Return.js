@@ -712,11 +712,24 @@
         if (!isRetailProductLine(line)) {
             return '<span class="cr-main-warehouse"><i class="fe fe-home"></i> ' + esc(line.warehouse_name || crMainWarehouseName()) + "</span>";
         }
+        // Kalau belum diisi tapi gudang aktif eceran → isi otomatis
+        if (!parseInt(line.destination_warehouse_id || 0, 10)) {
+            var activeId = crActiveWarehouseId();
+            if (isRetailWarehouse(activeId)) {
+                line.destination_warehouse_id = activeId;
+                line.destination_warehouse_name = crActiveWarehouseName();
+            }
+        }
         if (!editable) {
             return esc(line.destination_warehouse_name || line.warehouse_name || "Gudang eceran");
         }
         var selected = parseInt(line.destination_warehouse_id || 0, 10);
         var label = esc(line.destination_warehouse_name || (selected ? ("Gudang #" + selected) : ""));
+        // Gudang aktif = eceran yang sama → tampil teks (tidak perlu pilih ulang)
+        if (selected && selected === crActiveWarehouseId() && isRetailWarehouse(selected)) {
+            return '<span class="cr-retail-warehouse-locked"><i class="fe fe-map-pin me-1"></i>' +
+                (label || esc(crActiveWarehouseName())) + "</span>";
+        }
         return '<select class="form-select form-select-sm cr-retail-warehouse" id="cr_retail_wh_' + index + '" data-index="' + index + '">' +
             (selected ? '<option value="' + selected + '" selected>' + label + "</option>" : "") +
             "</select>";
@@ -1235,7 +1248,19 @@
             setSelectInvalid("#cr-product-unit", true);
             return false;
         }
-        var destWhId = retail ? 0 : dest.id;
+        // Tujuan ST eceran: kalau gudang aktif sudah eceran, isi otomatis (jangan minta pilih lagi).
+        var destWhId = 0;
+        var destWhName = "";
+        if (retail) {
+            var activeId = crActiveWarehouseId();
+            if (isRetailWarehouse(activeId)) {
+                destWhId = activeId;
+                destWhName = crActiveWarehouseName();
+            }
+        } else {
+            destWhId = dest.id;
+            destWhName = dest.name;
+        }
         var existing = productLines.find(function (line) {
             return line.product_variant_id === parseInt(product.product_variant_id, 10) &&
                 line.unit_id === unitId &&
@@ -1254,7 +1279,7 @@
                 warehouse_name: dest.name,
                 retail_unit: parseInt(product.retail_unit || 0, 10) || null,
                 destination_warehouse_id: destWhId || null,
-                destination_warehouse_name: retail ? "" : dest.name,
+                destination_warehouse_name: destWhName || null,
                 qty: qty,
             });
         }
