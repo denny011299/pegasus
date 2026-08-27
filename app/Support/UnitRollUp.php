@@ -88,6 +88,179 @@ class UnitRollUp
         return $credits;
     }
 
+    /**
+     * Gulung SEMUA satuan yang benar-benar diisi (bukan null) di satu baris Stock Opname jadi
+     * representasi kanonik di sepanjang tangganya -- rekursif menembus berapa pun tingkat
+     * (pcs -> DOS -> SAK -> ...), dibangun di atas plan() tanpa mengubahnya sama sekali. Dipakai
+     * oleh App\Support\StockOpname\OpnameLifecycle/BahanOpnameLifecycle.
+     *
+     * Contoh (PM, 2026-08-27): 1 DOS = 12 pcs. Staf mengisi 30 pcs, DOS dibiarkan kosong ->
+     * tersimpan jadi 2 DOS + 6 pcs.
+     *
+     * ATURAN KESELAMATAN, setara GitHub #78: TIDAK PERNAH mengisi satuan yang lebih KECIL
+     * daripada satuan TERKECIL yang benar-benar diisi. Menggulung KE ATAS dari yang sudah diisi
+     * itu wajar (angka yang SAMA, cuma direpresentasikan ulang) -- tapi menyimpulkan satuan lebih
+     * kecil dari satuan besar yang diisi (mis. DOS diisi 0 sendirian, pcs ikut disimpulkan 0)
+     * berarti mengarang data yang tidak pernah benar-benar diperiksa staf, persis pelanggaran yang
+     * GitHub #78 tutup. Makanya titik mulai gulungnya BUKAN dasar tangga (seperti plan()), tapi
+     * satuan diisi yang paling kecil -- satuan-satuan di bawahnya yang tidak diisi tetap NULL,
+     * satuan-satuan di atasnya ikut menyerap kelebihannya (plus nilai yang mereka isi sendiri,
+     * kalau ada) sepanjang jalan naik.
+     *
+     * Satuan yang diisi tapi sama sekali tidak terhubung ke $chain (relasi tidak dikenal untuk
+     * satuan itu) TIDAK ikut dihitung/ditulis di sini -- tetap seperti aslinya.
+     *
+     * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
+     * @param  array<int, int|null>  $qtyByUnitId  null = satuan ini TIDAK diisi
+     * @param  array<int, int>  $allowedUnitIds
+     * @return array<int, array{unit_id: int, qty: int}>  hanya satuan yang benar-benar
+     *         disentuh/dihasilkan gulungan ini -- satuan yang tidak diisi dan tidak ikut tergulung
+     *         TIDAK muncul di sini sama sekali (biarkan tetap NULL, jangan ditulis ulang).
+     */
+    public static function collapse(array $chain, array $qtyByUnitId, array $allowedUnitIds): array
+    {
+        $entered = array_filter($qtyByUnitId, fn ($q) => $q !== null);
+        if ($entered === [] || $chain === []) {
+            return [];
+        }
+
+        $multipliers = self::multipliersFromBottom($chain);
+        $enteredInChain = array_intersect_key($entered, $multipliers);
+        if ($enteredInChain === []) {
+            return [];
+        }
+
+        // Satuan terkecil yang BENAR-BENAR diisi -- titik mulai gulung (bukan dasar tangga penuh).
+        asort($multipliers);
+        $startUnit = null;
+        foreach (array_keys($multipliers) as $unitId) {
+            if (array_key_exists($unitId, $enteredInChain)) {
+                $startUnit = $unitId;
+                break;
+            }
+        }
+
+        $allowed = array_flip(array_map('intval', $allowedUnitIds));
+        $current = $startUnit;
+        $carry = (int) $enteredInChain[$startUnit];
+        $credits = [];
+        $visited = [$startUnit => true];
+        $hops = 0;
+
+        while ($hops < self::MAX_HOPS) {
+            $hops++;
+
+            $rel = null;
+            foreach ($chain as $link) {
+                if ($link['small'] === $current) {
+                    $rel = $link;
+                    break;
+                }
+            }
+
+            if ($rel === null || $rel['ratio'] <= 0 || $carry < $rel['ratio'] || ! isset($allowed[$rel['big']])) {
+                break;
+            }
+
+            $credits[] = ['unit_id' => $current, 'qty' => $carry % $rel['ratio']];
+            // Lipat nilai yang staf isi SENDIRI di tingkat ini (kalau ada) ke dalam bawaan naik --
+            // inilah yang membuat "DOS diisi 1 DAN pcs diisi 15" digabung benar (bukan cuma
+            // menggulung salah satu lalu mengabaikan yang lain).
+            $carry = (int) floor($carry / $rel['ratio']) + (int) ($enteredInChain[$rel['big']] ?? 0);
+            $current = $rel['big'];
+            $visited[$current] = true;
+        }
+
+        $credits[] = ['unit_id' => $current, 'qty' => $carry];
+
+        // Satuan yang diisi tapi TIDAK PERNAH disinggahi jalan naik ini (carry-nya berhenti duluan
+        // sebelum sempat mencapainya -- lihat test idempotency) tetap harus muncul di hasil dengan
+        // nilai aslinya, tidak berubah. Tanpa ini, menjalankan collapse() dua kali pada hasilnya
+        // sendiri bisa diam-diam "kehilangan" satuan yang sudah benar dari daftar yang dikembalikan
+        // -- efek akhirnya tetap benar (baris itu memang sudah punya nilai yang tepat, jadi tidak
+        // perlu ditulis ulang), tapi kontraknya jadi tidak bisa diandalkan pemanggil.
+        foreach ($enteredInChain as $unitId => $qty) {
+            if (! isset($visited[$unitId])) {
+                $credits[] = ['unit_id' => $unitId, 'qty' => (int) $qty];
+            }
+        }
+
+        return $credits;
+    }
+
+    /**
+     * Convenience wrapper: gulung satu baris produk, dibatasi ke satuan yang sudah punya baris
+     * stok aktif (kebijakan yang sama dengan planProduct()).
+     *
+     * @param  array<int, int|null>  $qtyByUnitId
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function collapseProduct(int $productVariantId, array $qtyByUnitId): array
+    {
+        return self::collapse(
+            self::productChain($productVariantId),
+            $qtyByUnitId,
+            self::allowedProductUnitIds($productVariantId)
+        );
+    }
+
+    /**
+     * Convenience wrapper: gulung satu baris bahan, dibatasi ke satuan yang sudah punya baris
+     * stok aktif (kebijakan yang sama dengan planSupplies()).
+     *
+     * @param  array<int, int|null>  $qtyByUnitId
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function collapseSupplies(int $suppliesId, array $qtyByUnitId): array
+    {
+        return self::collapse(
+            self::suppliesChain($suppliesId),
+            $qtyByUnitId,
+            self::allowedSuppliesUnitIds($suppliesId)
+        );
+    }
+
+    /**
+     * Pengali tiap satuan pada $chain relatif terhadap satuan PALING BAWAH tangga itu (satuan
+     * yang tidak pernah muncul sebagai `big`). Dipakai HANYA untuk mengurutkan "mana yang paling
+     * kecil di antara yang diisi" di collapse() -- bukan untuk konversi langsung.
+     *
+     * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
+     * @return array<int, int> unit_id => pengali relatif terhadap satuan paling bawah
+     */
+    private static function multipliersFromBottom(array $chain): array
+    {
+        $smalls = array_unique(array_map(fn ($l) => $l['small'], $chain));
+        $bigs = array_unique(array_map(fn ($l) => $l['big'], $chain));
+        $bottomCandidates = array_values(array_diff($smalls, $bigs));
+        $bottom = $bottomCandidates[0] ?? $smalls[0];
+
+        $multipliers = [$bottom => 1];
+        $current = $bottom;
+        $hops = 0;
+
+        while ($hops < self::MAX_HOPS) {
+            $hops++;
+
+            $rel = null;
+            foreach ($chain as $link) {
+                if ($link['small'] === $current) {
+                    $rel = $link;
+                    break;
+                }
+            }
+
+            if ($rel === null || $rel['ratio'] <= 0 || isset($multipliers[$rel['big']])) {
+                break; // rel null/rusak, atau sudah pernah dikunjungi (rantai melingkar) -- berhenti
+            }
+
+            $multipliers[$rel['big']] = $multipliers[$current] * $rel['ratio'];
+            $current = $rel['big'];
+        }
+
+        return $multipliers;
+    }
+
     /** @return array<int, array{small: int, big: int, ratio: int}> */
     public static function productChain(int $productVariantId): array
     {

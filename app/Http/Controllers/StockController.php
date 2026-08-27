@@ -22,6 +22,8 @@ use App\Models\StockOpname;
 use App\Models\StockOpnameBahan;
 use App\Models\StockOpnameDetail;
 use App\Models\StockOpnameDetailBahan;
+use App\Models\StockOpnameLine;
+use App\Models\StockOpnameBahanLine;
 use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
@@ -31,6 +33,10 @@ use App\Models\Warehouse;
 use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
 use App\Support\UnitStockSorter;
+use App\Support\StockOpname\OpnameLifecycle;
+use App\Support\StockOpname\OpnameLineReader;
+use App\Support\StockOpname\BahanOpnameLifecycle;
+use App\Support\StockOpname\BahanOpnameLineReader;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,15 +87,38 @@ class StockController extends Controller
         return trim((string) ($name ?? ''));
     }
 
+    /**
+     * Rancang ulang 2026-08-27 (merged from main's efef95e): dokumen baru ditulis ke
+     * stock_opname_lines (satu baris per satuan, angka betulan), BUKAN lagi ke
+     * stock_opname_details (tiga longtext siap-cetak). Dokumen lama tidak dimigrasikan dan tetap
+     * dibaca lewat cabang legacy OpnameLineReader.
+     *
+     * Tidak butuh perubahan frontend: units[] dengan real_qty null-able sudah dikirim
+     * CreateStockOpname.js sejak dulu, cuma dulu dibuang begitu saja di sini.
+     */
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
-        $id =  (new StockOpname())->insertStockOpname($data);
-        foreach (json_decode($req->item, true) ?? [] as $key => $value) {
-            $value["sto_id"] = $id;
-            (new StockOpnameDetail())->insertDetail($value);
-        }
-        return ["status" => 1, "sto_id" => $id];
+        $items = json_decode($req->item, true) ?: [];
+
+        return DB::transaction(function () use ($data, $items) {
+            $id = (new StockOpname())->insertStockOpname($data);
+            StockOpnameLine::writeFromPayload($id, $items);
+
+            $lifecycle = new OpnameLifecycle();
+            // Keputusan PM 2026-08-27: gulung satuan (mis. 1 DOS = 12 pcs, isi 30 pcs -> tersimpan
+            // 2 DOS + 6 pcs) di SETIAP simpan -- draft ATAUPUN langsung menunggu, bukan cuma saat
+            // diajukan/diputuskan. Dipanggil SEBELUM publish() supaya identitas satuan yang baru
+            // ikut tercipta dari gulungan (kalaupun ada) turut dibekukan pada publish yang sama.
+            $lifecycle->rollUpUnits(StockOpname::find($id));
+
+            // UI sekarang membuat dokumen LANGSUNG non-draft (.btn-save mengirim is_draft = 0 dan
+            // tidak pernah lewat /submitStockOpname), jadi publish-nya terjadi di sini. Aman juga
+            // untuk draft: publish() sendiri yang menolak selama is_draft masih true.
+            $lifecycle->publish(StockOpname::find($id));
+
+            return response()->json(['status' => 1, 'sto_id' => $id]);
+        });
     }
 
     function updateStockOpname(Request $req)
@@ -103,18 +132,40 @@ class StockController extends Controller
 
         // Draft tetap draft sampai benar-benar diajukan lewat /submitStockOpname.
         $data['is_draft'] = true;
-        $id = (new StockOpname())->updateStockOpname($data);
+        $items = json_decode($req->item, true) ?: [];
 
-        // Ganti seluruh detail lama dengan detail yang dikirim — draft boleh
-        // menambah/menghapus item bebas, jadi diffing per-baris tidak perlu.
-        foreach (StockOpnameDetail::where('sto_id', $id)->where('status', 1)->get() as $old) {
-            $old->status = 0;
-            $old->save();
-        }
-        foreach (json_decode($req->item, true) ?? [] as $value) {
-            $value["sto_id"] = $id;
-            (new StockOpnameDetail())->insertDetail($value);
-        }
+        // NB (merged from main's efef95e, 2026-08-28): the is_old_version branch below keeps
+        // fase2's own wipe-and-reinsert semantics (a draft may freely add/remove line items, so
+        // diffing per-row isn't worth it) instead of main's update-or-insert-only version -- that's
+        // what this endpoint has always done for fase2's draft feature, which main never had.
+        DB::transaction(function () use ($data, $items) {
+            $id = (new StockOpname())->updateStockOpname($data);
+            $sto = StockOpname::find($id);
+            if (! $sto) {
+                return;
+            }
+
+            if ($sto->is_old_version) {
+                foreach (StockOpnameDetail::where('sto_id', $id)->where('status', 1)->get() as $old) {
+                    $old->status = 0;
+                    $old->save();
+                }
+                foreach ($items as $value) {
+                    $value["sto_id"] = $id;
+                    (new StockOpnameDetail())->insertDetail($value);
+                }
+
+                return;
+            }
+
+            // Upsert lewat identitas alami baris (unique index) -- menyimpan ulang tidak bisa
+            // menggandakan baris seperti alur lama.
+            StockOpnameLine::writeFromPayload($id, $items);
+
+            $lifecycle = new OpnameLifecycle();
+            $lifecycle->rollUpUnits($sto->refresh());
+            $lifecycle->publish($sto->refresh());
+        });
 
         return 1;
     }
@@ -136,6 +187,15 @@ class StockController extends Controller
 
         $sto->is_draft = false;
         $sto->save();
+
+        // NB (merged from main's efef95e, 2026-08-28): main's version called
+        // (new StockOpname())->submitStockOpname($data), a model method that doesn't exist in this
+        // tree -- it comes from an earlier main-only commit never merged into fase2/main. Kept
+        // fase2's own is_draft flip above and only ported the new bit this commit actually added:
+        // dokumen keluar dari draft di sini -- inilah saat snapshot identitas dibekukan untuk
+        // alur draft (tombol .btn-ajukan). Idempoten, jadi tidak masalah kalau dokumen ini
+        // ternyata sudah pernah publish lewat insert.
+        (new OpnameLifecycle())->publish($sto->refresh());
 
         return 1;
     }
@@ -168,8 +228,14 @@ class StockController extends Controller
             abort(404);
         }
 
-        $items = [];
-        foreach ($sto->item ?? [] as $detail) {
+        // Dokumen versi baru: isi $items dari stock_opname_lines lewat adaptor, dalam struktur
+        // yang sama persis -- sisa method ini (urutan, $data, view) dipakai bersama, dan
+        // renderMode2() di CreateStockOpname.js tidak berubah sama sekali.
+        $items = ! $sto->is_old_version
+            ? (new OpnameLineReader())->legacyItems(StockOpname::find($id))
+            : [];
+
+        foreach (($sto->is_old_version ? ($sto->item ?? []) : []) as $detail) {
             $units = [];
 
             foreach ($detail->stock as $s) {
@@ -328,6 +394,17 @@ class StockController extends Controller
      * PDF view, never calls ->save(), and runs for every status (a decided document's frozen
      * selisih is real historical data and untouched by this — only the "-" placeholder is
      * humanized).
+     *
+     * Perbaikan 2026-08-27: kolom Selisih yang dicetak TIDAK lagi dibaca dari string tersimpan,
+     * tapi selalu dihitung ulang di sini sebagai (real - sistem) per satuan, dari dua kolom yang
+     * persis dicetak di sebelahnya. Alasannya bukan karena string tersimpan pasti salah, tapi
+     * karena tidak ada yang menjamin ketiganya konsisten: stod_system bisa ditulis ulang belakangan
+     * oleh refreshLiveSystemQty() sementara stod_selisih berasal dari penyimpanan lain, dan dokumen
+     * pra-#78 bisa membawa kombinasi apa pun. Dihitung ulang, aritmetika di satu baris cetakan
+     * dijamin benar menurut definisi, bukan kebetulan. Ini juga yang membuat highlight di
+     * Opname.blade.php/OpnameBahan.blade.php ikut benar, karena blade membaca hasil pass ini.
+     * Pencocokan per NAMA satuan, bukan per posisi -- urutan satuan di kolom Sistem dan Real bisa
+     * berbeda (lihat SP0071 baris SHPWW5L: sistem "0 pcs, 0 DOS", real "0 DOS, 0 pcs").
      */
     private function humanizeUntouchedForPdf($detail, string $realKey, string $systemKey, string $selisihKey)
     {
@@ -348,7 +425,7 @@ class StockController extends Controller
                 [$qty, $u] = array_pad(explode(' ', $part, 2), 2, '');
                 $untouched = $qty === '-';
                 $realOut[$u] = $untouched ? ($systemMap[$u] ?? 0) : (int) $qty;
-                $selisihOut[$u] = $untouched ? 0 : ($this->getQty($item->{$selisihKey} ?? '', $u) ?? 0);
+                $selisihOut[$u] = $realOut[$u] - ($systemMap[$u] ?? 0);
             }
 
             $item->{$realKey} = $this->buildQtyString($realOut);
@@ -419,6 +496,15 @@ class StockController extends Controller
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
+        }
+
+        // Rancang ulang 2026-08-27: dokumen versi baru mengambil angkanya DARI DATABASE.
+        // Alur lama menulis ps_stock = $u['real_qty'] yang dikirim ULANG oleh browser penyetuju
+        // (#btn-acc-sto di CreateStockOpname.js men-scrape ulang tabel di layar lalu POST lagi) --
+        // artinya isi stok live ditentukan oleh halaman di layar orang yang menyetujui, bukan oleh
+        // dokumen yang disetujui. Untuk dokumen versi baru $data['item'] DIABAIKAN TOTAL.
+        if (! $sto->is_old_version) {
+            return $this->accStockOpnameV2($sto, $warehouseId);
         }
 
         // GitHub #53 follow-up: bekukan stod_system/stod_selisih ke nilai SEBENARNYA yang dipakai
@@ -557,6 +643,118 @@ class StockController extends Controller
         }
     }
 
+    /**
+     * ACC dokumen Stock Opname versi baru. Sumber angka: stock_opname_lines, bukan request body.
+     *
+     * Urutan wajib (lihat OpnameLifecycle::freezeSystemQty()):
+     *   kunci baris stok -> bekukan stok sistem -> tulis ps_stock -> cap keputusan
+     * Membekukan SESUDAH menulis akan menyimpan hasil hitung sebagai "stok sistem" dan membuat
+     * selisih dokumen 0 selamanya.
+     *
+     * \$warehouseId (merged from main's efef95e, 2026-08-28): main has no real multi-warehouse
+     * stock, so its version of this method queried ProductStock ambiently (whichever warehouse
+     * happens to be active in the ACC-ing staff's OWN session) -- on fase2 that can silently write
+     * the wrong warehouse's stock if it differs from the document's own \$sto->warehouse_id. Scoped
+     * explicitly here, matching the legacy is_old_version branch above (accStockOpname()'s own
+     * \$warehouseId, already resolved from \$sto->warehouse_id there).
+     */
+    private function accStockOpnameV2(StockOpname $sto, int $warehouseId)
+    {
+        $lines = StockOpnameLine::getLines($sto->sto_id);
+        $lifecycle = new OpnameLifecycle();
+
+        DB::beginTransaction();
+        try {
+            // Kunci semua baris stok yang terlibat lebih dulu, sekali, supaya pembekuan dan
+            // penulisan di bawah melihat angka yang sama dan tidak bisa disusupi transaksi lain
+            // di antaranya (TOCTOU).
+            $scopeStock = function () use ($warehouseId) {
+                return $warehouseId > 0
+                    ? ProductStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                    : ProductStock::query();
+            };
+
+            $scopeStock()
+                ->where('status', 1)
+                ->whereIn('product_variant_id', $lines->pluck('product_variant_id')->filter()->unique()->all())
+                ->lockForUpdate()
+                ->get();
+
+            $lifecycle->freezeSystemQty($sto);
+
+            $produk_gagal = [];
+            foreach ($lines as $line) {
+                // NULL = satuan ini tidak pernah dihitung. Stok live TIDAK BOLEH disentuh
+                // (inti GitHub #78) -- sekarang keadaannya terbaca langsung dari tipe datanya.
+                if ($line->sol_counted_qty === null) {
+                    continue;
+                }
+
+                $stock = $scopeStock()
+                    ->where('product_variant_id', $line->product_variant_id)
+                    ->where('unit_id', $line->unit_id)
+                    ->first();
+
+                if (! $stock) {
+                    $nama = trim(($line->sol_product_name ?? '-').' '.($line->sol_variant_name ?? ''));
+                    if (! in_array($nama, $produk_gagal, true)) $produk_gagal[] = $nama;
+                    continue;
+                }
+
+                $beforeStock = (int) $stock->ps_stock;
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $sto->sto_code,
+                    'log_type' => 1,
+                    'log_category' => 2,
+                    'log_item_id' => $line->product_variant_id,
+                    'log_notes' => "Stock Opname Produk",
+                    'log_jumlah' => $beforeStock,
+                    'unit_id' => $line->unit_id,
+                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                ]);
+
+                $stock->ps_stock = (int) $line->sol_counted_qty;
+                $stock->save();
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $sto->sto_code,
+                    'log_type' => 1,
+                    'log_category' => 1,
+                    'log_item_id' => $line->product_variant_id,
+                    'log_notes' => "Stock Opname Produk",
+                    'log_jumlah' => (int) $stock->ps_stock,
+                    'unit_id' => $line->unit_id,
+                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                ]);
+            }
+
+            if (count($produk_gagal) > 0) {
+                DB::rollBack();
+
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal ACC",
+                    "message" => "Baris stok tidak ditemukan untuk: ".implode(', ', $produk_gagal),
+                ]);
+            }
+
+            $sto->status = 2;
+            $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
+            $sto->save();
+            $lifecycle->stampDecision($sto, $sto->acc_by);
+
+            DB::commit();
+
+            return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
     function tolakStockOpname(Request $req)
     {
         $data = $req->all();
@@ -568,28 +766,54 @@ class StockController extends Controller
         $sto->status = 3; // Tolak
         $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
+
+        // Dokumen yang DITOLAK pun harus berhenti bergerak: tidak ada stok yang ditulis, tapi
+        // angkanya dibekukan supaya cetakan ulang tahun depan menunjukkan hal yang sama persis.
+        // Persis inilah yang tidak terjadi pada SP0071 (ditolak, tapi stod_system-nya masih ikut
+        // ditulis ulang refreshLiveSystemQty() setiap kali PDF-nya di-download).
+        if (! $sto->is_old_version) {
+            DB::transaction(function () use ($sto) {
+                $lifecycle = new OpnameLifecycle();
+                $lifecycle->freezeSystemQty($sto);
+                $lifecycle->stampDecision($sto, $sto->acc_by);
+            });
+        }
     }
 
     function generateStockOpname($id)
     {
-        $param['stockOpname'] = StockOpname::find($id);
-        if (!$param['stockOpname']) {
+        $sto = StockOpname::find($id);
+        $param['stockOpname'] = $sto;
+        if (!$sto) {
             abort(404);
         }
-        if ($param['stockOpname']->is_draft && !$this->canManageStockOpnameDraft($param['stockOpname'])) {
+        if ($sto->is_draft && !$this->canManageStockOpnameDraft($sto)) {
             abort(404);
         }
-        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
-        $rawDetail = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
-        $param["detail"] = collect($rawDetail)
-            ->sortBy(fn($item) => strtolower((data_get($item, 'pr_name') ?? '') . '|' . (data_get($item, 'product_variant_name') ?? '')))
-            ->values()
-            ->all();
 
-        if ((int) $param['stockOpname']['status'] === 1) {
-            $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock', StockOpnameDetail::class, 'stod_id');
+        if ($sto && ! $sto->is_old_version) {
+            // Dokumen versi baru: satu pembaca untuk semuanya. Selisih diturunkan saat dibaca,
+            // stok sistem live selama menunggu dan beku setelah diputuskan -- dan MEMBACA TIDAK
+            // MENULIS APA PUN (bandingkan cabang lama di bawah: refreshLiveSystemQty() menyimpan
+            // balik ke DB tiap kali PDF di-download, itu yang membuat selisih SP0071 bergeser).
+            $param['detail'] = (new OpnameLineReader())->read($sto);
+            // Penanggung jawab dari snapshot: dokumen final tidak boleh gagal dicetak cuma karena
+            // staff-nya sudah dihapus (cabang lama meneruskan Staff::find() yang bisa null ke
+            // blade yang langsung mengakses ['staff_name']).
+            $param['staff_name'] = ['staff_name' => $sto->sto_staff_name ?: '-'];
+        } else {
+            $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
+            $rawDetail = (new StockOpnameDetail())->getDetail(['sto_id' => $id]);
+            $param["detail"] = collect($rawDetail)
+                ->sortBy(fn($item) => strtolower((data_get($item, 'pr_name') ?? '') . '|' . (data_get($item, 'product_variant_name') ?? '')))
+                ->values()
+                ->all();
+
+            if ((int) $param['stockOpname']['status'] === 1) {
+                $this->refreshLiveSystemQty($param['detail'], 'stod_real', 'stod_system', 'stod_selisih', 'ps_stock', StockOpnameDetail::class, 'stod_id');
+            }
+            $this->humanizeUntouchedForPdf($param['detail'], 'stod_real', 'stod_system', 'stod_selisih');
         }
-        $this->humanizeUntouchedForPdf($param['detail'], 'stod_real', 'stod_system', 'stod_selisih');
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";
@@ -635,15 +859,28 @@ class StockController extends Controller
         return $user && (int) $stob->created_by === (int) ($user->staff_id ?? 0);
     }
 
+    /**
+     * Rancang ulang 2026-08-27 (kembaran insertStockOpname() Produk): dokumen baru ditulis ke
+     * stock_opname_bahan_lines, BUKAN lagi stock_opname_detail_bahans. Dokumen lama tidak
+     * dimigrasikan, tetap dibaca via BahanOpnameLineReader cabang legacy.
+     */
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $id =  (new StockOpnameBahan())->insertStockOpnameBahan($data);
-        foreach (json_decode($req->item, true) as $key => $value) {
-            $value["stob_id"] = $id;
-            (new StockOpnameDetailBahan())->insertDetail($value);
-        }
-        return ["status" => 1, "stob_id" => $id];
+        $items = json_decode($req->item, true) ?: [];
+
+        return DB::transaction(function () use ($data, $items) {
+            $id = (new StockOpnameBahan())->insertStockOpnameBahan($data);
+            StockOpnameBahanLine::writeFromPayload($id, $items);
+
+            $lifecycle = new BahanOpnameLifecycle();
+            // Kembaran keputusan PM di insertStockOpname() Produk -- gulung di SETIAP simpan,
+            // draft ataupun langsung menunggu, sebelum publish() membekukan identitasnya.
+            $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
+            $lifecycle->publish(StockOpnameBahan::find($id));
+
+            return response()->json(['status' => 1, 'stob_id' => $id]);
+        });
     }
 
     function updateStockOpnameBahan(Request $req)
@@ -657,18 +894,37 @@ class StockController extends Controller
 
         // Draft tetap draft sampai benar-benar diajukan lewat /submitStockOpnameBahan.
         $data['is_draft'] = true;
-        $id = (new StockOpnameBahan())->updateStockOpnameBahan($data);
+        $items = json_decode($req->item, true) ?: [];
 
-        // Ganti seluruh detail lama dengan detail yang dikirim — draft boleh
-        // menambah/menghapus item bebas, jadi diffing per-baris tidak perlu.
-        foreach (StockOpnameDetailBahan::where('stob_id', $id)->where('status', 1)->get() as $old) {
-            $old->status = 0;
-            $old->save();
-        }
-        foreach (json_decode($req->item, true) ?? [] as $value) {
-            $value["stob_id"] = $id;
-            (new StockOpnameDetailBahan())->insertDetail($value);
-        }
+        // NB (merged from main's efef95e, 2026-08-28): kembaran updateStockOpname() Produk -- lihat
+        // komentarnya untuk alasan is_old_version branch di bawah tetap pakai wipe-and-reinsert
+        // fase2, bukan update-or-insert-only main.
+        DB::transaction(function () use ($data, $items) {
+            $id = (new StockOpnameBahan())->updateStockOpnameBahan($data);
+            $stob = StockOpnameBahan::find($id);
+            if (! $stob) {
+                return;
+            }
+
+            if ($stob->is_old_version) {
+                foreach (StockOpnameDetailBahan::where('stob_id', $id)->where('status', 1)->get() as $old) {
+                    $old->status = 0;
+                    $old->save();
+                }
+                foreach ($items as $value) {
+                    $value["stob_id"] = $id;
+                    (new StockOpnameDetailBahan())->insertDetail($value);
+                }
+
+                return;
+            }
+
+            StockOpnameBahanLine::writeFromPayload($id, $items);
+
+            $lifecycle = new BahanOpnameLifecycle();
+            $lifecycle->rollUpUnits($stob->refresh());
+            $lifecycle->publish($stob->refresh());
+        });
 
         return 1;
     }
@@ -690,6 +946,11 @@ class StockController extends Controller
 
         $stob->is_draft = false;
         $stob->save();
+
+        // NB (merged from main's efef95e, 2026-08-28): main called
+        // (new StockOpnameBahan())->submitStockOpnameBahan($data), a model method that doesn't
+        // exist in this tree -- see submitStockOpname()'s (Produk) matching note.
+        (new BahanOpnameLifecycle())->publish($stob->refresh());
 
         return 1;
     }
@@ -715,6 +976,17 @@ class StockController extends Controller
                 abort(404);
             }
             $param['data'] = $rows[0];
+
+            // Dokumen versi baru: ->item di atas datang dari getStockOpnameBahan() yang membaca
+            // stock_opname_detail_bahans -- tabel itu tidak lagi ditulis untuk dokumen ini. Timpa
+            // dengan bentuk yang SAMA PERSIS lewat adaptor, supaya CreateStockOpnameSupplies.js
+            // (renderMode2()) tidak berubah sama sekali. Di-cast ke object supaya kompatibel
+            // dengan sortBy() di bawah, yang mengharap akses ->supplies_name seperti item lama.
+            if (! $param['data']->is_old_version) {
+                $param['data']->item = collect((new BahanOpnameLineReader())->legacyItems(StockOpnameBahan::find($id)))
+                    ->map(fn ($a) => (object) $a);
+            }
+
             if (!empty($param['data']->item)) {
                 $sorted = collect($param['data']->item)
                     ->sortBy(fn($i) => strtolower($i->supplies_name ?? ''), SORT_STRING)
@@ -786,6 +1058,14 @@ class StockController extends Controller
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
+        }
+
+        // Rancang ulang 2026-08-27 (kembaran accStockOpname() Produk): dokumen versi baru
+        // mengambil angkanya DARI DATABASE, mengabaikan total $data['item'] -- lihat
+        // accStockOpnameV2() untuk alasan lengkap (isi stok live tidak boleh ditentukan oleh
+        // halaman di layar orang yang menyetujui).
+        if (! $stob->is_old_version) {
+            return $this->accStockOpnameBahanV2($stob, $warehouseId);
         }
 
         // GitHub #53 follow-up: mirrors accStockOpname() above -- bekukan stobd_system/
@@ -912,6 +1192,103 @@ class StockController extends Controller
         }
     }
 
+    /**
+     * ACC dokumen Stock Opname Bahan versi baru. Kembaran persis accStockOpnameV2() (Produk) --
+     * lihat kelas itu untuk alasan urutan wajib (kunci -> bekukan stok sistem -> tulis ss_stock
+     * -> cap keputusan) dan alasan \$warehouseId dipin ke gudang dokumen ini.
+     */
+    private function accStockOpnameBahanV2(StockOpnameBahan $stob, int $warehouseId)
+    {
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id);
+        $lifecycle = new BahanOpnameLifecycle();
+
+        DB::beginTransaction();
+        try {
+            $scopeStock = function () use ($warehouseId) {
+                return $warehouseId > 0
+                    ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                    : SuppliesStock::query();
+            };
+
+            $scopeStock()
+                ->where('status', 1)
+                ->whereIn('supplies_id', $lines->pluck('supplies_id')->filter()->unique()->all())
+                ->lockForUpdate()
+                ->get();
+
+            $lifecycle->freezeSystemQty($stob);
+
+            $bahan_gagal = [];
+            foreach ($lines as $line) {
+                if ($line->sobl_counted_qty === null) {
+                    continue;
+                }
+
+                $stock = $scopeStock()
+                    ->where('supplies_id', $line->supplies_id)
+                    ->where('unit_id', $line->unit_id)
+                    ->first();
+
+                if (! $stock) {
+                    $nama = $line->sobl_supplies_name ?? "id {$line->supplies_id}";
+                    if (! in_array($nama, $bahan_gagal, true)) $bahan_gagal[] = $nama;
+                    continue;
+                }
+
+                $beforeStock = (int) $stock->ss_stock;
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $stob->stob_code,
+                    'log_type' => 2,
+                    'log_category' => 2,
+                    'log_item_id' => $line->supplies_id,
+                    'log_notes' => "Stock Opname Bahan Mentah",
+                    'log_jumlah' => $beforeStock,
+                    'unit_id' => $line->unit_id,
+                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                ]);
+
+                $stock->ss_stock = (int) $line->sobl_counted_qty;
+                $stock->save();
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $stob->stob_code,
+                    'log_type' => 2,
+                    'log_category' => 1,
+                    'log_item_id' => $line->supplies_id,
+                    'log_notes' => "Stock Opname Bahan Mentah",
+                    'log_jumlah' => (int) $stock->ss_stock,
+                    'unit_id' => $line->unit_id,
+                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                ]);
+            }
+
+            if (count($bahan_gagal) > 0) {
+                DB::rollBack();
+
+                return response()->json([
+                    "status" => 0,
+                    "header" => "Gagal ACC",
+                    "message" => "Baris stok tidak ditemukan untuk: ".implode(', ', $bahan_gagal),
+                ]);
+            }
+
+            $stob->status = 2;
+            $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
+            $stob->save();
+            $lifecycle->stampDecision($stob, $stob->acc_by);
+
+            DB::commit();
+
+            return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
     function tolakStockOpnameBahan(Request $req)
     {
         $data = $req->all();
@@ -923,28 +1300,46 @@ class StockController extends Controller
         $stob->status = 3; // Tolak
         $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $stob->save();
+
+        // Kembaran tolakStockOpname() Produk -- dokumen yang ditolak pun harus berhenti bergerak.
+        if (! $stob->is_old_version) {
+            DB::transaction(function () use ($stob) {
+                $lifecycle = new BahanOpnameLifecycle();
+                $lifecycle->freezeSystemQty($stob);
+                $lifecycle->stampDecision($stob, $stob->acc_by);
+            });
+        }
     }
 
     function generateStockOpnameBahan($id)
     {
-        $param['stockOpname'] = StockOpnameBahan::find($id);
-        if (!$param['stockOpname']) {
+        $stob = StockOpnameBahan::find($id);
+        $param['stockOpname'] = $stob;
+        if (!$stob) {
             abort(404);
         }
-        if ($param['stockOpname']->is_draft && !$this->canManageStockOpnameBahanDraft($param['stockOpname'])) {
+        if ($stob->is_draft && !$this->canManageStockOpnameBahanDraft($stob)) {
             abort(404);
         }
-        $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
-        $rawDetailBahan = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
-        $param["detail"] = collect($rawDetailBahan)
-            ->sortBy(fn($item) => strtolower(data_get($item, 'supplies_name') ?? ''))
-            ->values()
-            ->all();
 
-        if ((int) $param['stockOpname']['status'] === 1) {
-            $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock', StockOpnameDetailBahan::class, 'stobd_id');
+        if ($stob && ! $stob->is_old_version) {
+            // Kembaran cabang versi-baru generateStockOpname() Produk -- lihat itu untuk alasan
+            // lengkap (satu pembaca, selisih diturunkan, membaca tidak menulis apa pun).
+            $param['detail'] = (new BahanOpnameLineReader())->read($stob);
+            $param['staff_name'] = ['staff_name' => $stob->stob_staff_name ?: '-'];
+        } else {
+            $param['staff_name'] = Staff::find($param['stockOpname']['staff_id']);
+            $rawDetailBahan = (new StockOpnameDetailBahan())->getDetail(['stob_id' => $id]);
+            $param["detail"] = collect($rawDetailBahan)
+                ->sortBy(fn($item) => strtolower(data_get($item, 'supplies_name') ?? ''))
+                ->values()
+                ->all();
+
+            if ((int) $param['stockOpname']['status'] === 1) {
+                $this->refreshLiveSystemQty($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih', 'ss_stock', StockOpnameDetailBahan::class, 'stobd_id');
+            }
+            $this->humanizeUntouchedForPdf($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih');
         }
-        $this->humanizeUntouchedForPdf($param['detail'], 'stobd_real', 'stobd_system', 'stobd_selisih');
 
         if ($param['stockOpname']['status'] == 1) $param['status'] = "Menunggu";
         else if ($param['stockOpname']['status'] == 2) $param['status'] = "Disetujui";

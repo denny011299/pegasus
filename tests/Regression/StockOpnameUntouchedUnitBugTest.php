@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\StockOpnameDetail;
+use App\Models\StockOpnameLine;
 use App\Models\Unit;
 use Illuminate\Support\Facades\DB;
 use ReflectionMethod;
@@ -138,10 +139,22 @@ class StockOpnameUntouchedUnitBugTest extends TestCase
         $response->assertStatus(200);
         $stoId = (int) $response->json('sto_id');
 
-        $this->assertDatabaseHas('stock_opname_details', [
+        // Rancang ulang 2026-08-27: "tidak dihitung" sekarang NULL betulan di stock_opname_lines,
+        // bukan token "-" yang diselundupkan ke dalam longtext. Inti GitHub #78 dijaga persis
+        // sama, cuma keadaannya kini bisa diwakili tipe datanya sendiri. (Payload di atas masih
+        // bentuk lama tanpa units[] -- sengaja: itu sekaligus menguji jalur pemulihan
+        // StockOpnameLine::unitsFromLegacyPayload(), supaya payload lama tidak pernah gagal senyap.)
+        $this->assertDatabaseHas('stock_opname_lines', [
             'sto_id' => $stoId,
             'product_variant_id' => $variant->product_variant_id,
-            'stod_real' => '11 '.$dosUnit.', - '.$pcsUnit,
+            'unit_id' => $dosStock->unit_id,
+            'sol_counted_qty' => 11,
+        ]);
+        $this->assertDatabaseHas('stock_opname_lines', [
+            'sto_id' => $stoId,
+            'product_variant_id' => $variant->product_variant_id,
+            'unit_id' => $pcsStock->unit_id,
+            'sol_counted_qty' => null,
         ]);
     }
 
@@ -179,14 +192,17 @@ class StockOpnameUntouchedUnitBugTest extends TestCase
         // Printing the still-pending doc's PDF must not turn that movement into a fake selisih.
         $this->get('/generateStockOpname/'.$stoId)->assertStatus(200);
 
-        $row = StockOpnameDetail::where('sto_id', $stoId)
-            ->where('product_variant_id', $variant->product_variant_id)
-            ->firstOrFail();
+        // Rancang ulang 2026-08-27: mencetak dokumen yang masih menunggu TIDAK MENULIS APA PUN --
+        // dulu refreshLiveSystemQty() menyimpan balik ke DB tiap kali PDF di-download, dan itulah
+        // yang membuat selisih SP0071 bergeser diam-diam setelah dokumen dibuat.
+        $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
 
-        $this->assertSame('-', $this->parseToken($row->stod_real, $pcsUnit), 'an untouched unit must stay "-", never a fabricated real qty');
-        $this->assertSame('-', $this->parseToken($row->stod_selisih, $pcsUnit), 'an untouched unit must never show a selisih, no matter how live stock moved');
-        // The touched unit (DOS) still behaves exactly as before: a genuine selisih is preserved.
-        $this->assertSame('-1', $this->parseToken($row->stod_selisih, $dosUnit));
+        $this->assertNull($lines[$pcsStock->unit_id]->sol_counted_qty, 'satuan tak dihitung harus tetap NULL, bukan angka karangan');
+        $this->assertNull($lines[$pcsStock->unit_id]->selisih(999), 'satuan tak dihitung tidak boleh punya selisih, sejauh apa pun stok live bergerak');
+        $this->assertNull($lines[$pcsStock->unit_id]->sol_system_qty_final, 'dokumen menunggu belum boleh dibekukan');
+        // Satuan yang dihitung tetap berperilaku sama: selisih aslinya utuh.
+        $this->assertSame(11, (int) $lines[$dosStock->unit_id]->sol_counted_qty);
+        $this->assertSame(-1, $lines[$dosStock->unit_id]->selisih(12));
     }
 
     public function test_approving_never_overwrites_live_stock_for_a_unit_the_staff_never_counted(): void
@@ -249,10 +265,12 @@ class StockOpnameUntouchedUnitBugTest extends TestCase
             'log_notes' => 'Stock Opname Produk',
         ]);
 
-        $row = StockOpnameDetail::where('sto_id', $stoId)
-            ->where('product_variant_id', $variant->product_variant_id)
-            ->firstOrFail();
-        $this->assertSame('-', $this->parseToken($row->stod_selisih, $pcsUnit), 'the frozen approval-time record must also show "-" for the never-counted unit');
+        // Catatan beku saat approval: satuan yang tidak pernah dihitung tetap NULL, jadi selisihnya
+        // juga NULL -- bukan 0 yang seolah-olah "sudah dicek dan cocok".
+        $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
+        $this->assertNull($lines[$pcsStock->unit_id]->sol_counted_qty);
+        $this->assertNull($lines[$pcsStock->unit_id]->selisih($lines[$pcsStock->unit_id]->sol_system_qty_final));
+        $this->assertNotNull($lines[$dosStock->unit_id]->sol_system_qty_final, 'dokumen yang sudah diputuskan harus beku');
     }
 
     /**
@@ -323,24 +341,31 @@ class StockOpnameUntouchedUnitBugTest extends TestCase
         $dosUnit = Unit::find($dosStock->unit_id)->unit_short_name;
         $pcsUnit = Unit::find($pcsStock->unit_id)->unit_short_name;
 
-        $response = $this->post('/insertStockOpname', [
-            'sto_date' => now()->toDateString(),
-            'staff_id' => $this->staffId(),
-            'category_id' => $this->categoryId(),
-            'sto_notes' => 'Untouched unit bug test',
-            'is_draft' => 0,
-            'item' => json_encode([[
-                'product_id' => $variant->product_id,
-                'product_variant_id' => $variant->product_variant_id,
-                'stod_system' => $dosStock->ps_stock.' '.$dosUnit.', '.$pcsStock->ps_stock.' '.$pcsUnit,
-                'stod_real' => '11 '.$dosUnit.', - '.$pcsUnit,
-                'stod_selisih' => '-1 '.$dosUnit.', - '.$pcsUnit,
-                'stod_notes' => null,
-                'stod_touched' => 1,
-            ]]),
-        ]);
-        $response->assertStatus(200);
-        $stoId = (int) $response->json('sto_id');
+        // Dokumen LAMA dibangun langsung, bukan lewat /insertStockOpname: sejak rancang ulang
+        // 2026-08-27 endpoint itu membuat dokumen versi baru. Test ini memang subjeknya mekanika
+        // penyimpanan LAMA (token "-" + humanizeUntouchedForPdf), yang masih hidup dan masih
+        // harus dijaga selama dokumen lama masih ada di produksi.
+        $sto = new \App\Models\StockOpname();
+        $sto->sto_date = now()->toDateString();
+        $sto->sto_code = 'LG'.substr((string) microtime(true), -4);
+        $sto->staff_id = $this->staffId();
+        $sto->category_id = -1;
+        $sto->status = 1;
+        $sto->is_draft = 0;
+        $sto->save();
+        $this->assertTrue((bool) $sto->refresh()->is_old_version, 'dokumen yang dibangun langsung harus terbaca sebagai versi lama');
+        $stoId = (int) $sto->sto_id;
+
+        $d = new StockOpnameDetail();
+        $d->sto_id = $stoId;
+        $d->product_id = $variant->product_id;
+        $d->product_variant_id = $variant->product_variant_id;
+        $d->stod_system = $dosStock->ps_stock.' '.$dosUnit.', '.$pcsStock->ps_stock.' '.$pcsUnit;
+        $d->stod_real = '11 '.$dosUnit.', - '.$pcsUnit;
+        $d->stod_selisih = '-1 '.$dosUnit.', - '.$pcsUnit;
+        $d->stod_touched = 1;
+        $d->status = 1;
+        $d->save();
 
         $detail = StockOpnameDetail::getDetail(['sto_id' => $stoId]);
         $humanize = new ReflectionMethod(StockController::class, 'humanizeUntouchedForPdf');
