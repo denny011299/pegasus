@@ -298,7 +298,6 @@ function syncTransferSaveButton() {
 }
 
 $(document).ready(function () {
-    syncStockTransferAddButton();
     initStockTransferFilters();
     inisialisasi();
 });
@@ -436,21 +435,9 @@ function initStockTransferFilters() {
     });
 }
 
+/** Tombol Tambah: show/hide dari Blade (page-header). Guard klik tetap di sini. */
 function syncStockTransferAddButton() {
-    var $btn = $(".page-header .btnAdd, .btnAdd").filter(function () {
-        return $(this).closest("li").length || $(this).text().toLowerCase().indexOf("stock transfer") >= 0;
-    });
-    if (!$btn.length) {
-        $btn = $(".btnAdd").first();
-    }
-    // Gudang utama: hide tambah (sementara). Eceran / belum pilih: tampilkan.
-    if (typeof isActiveMainWarehouse === "function" && isActiveMainWarehouse() === true) {
-        $btn.closest("li").addClass("d-none");
-        $btn.addClass("d-none");
-    } else {
-        $btn.closest("li").removeClass("d-none");
-        $btn.removeClass("d-none");
-    }
+    // no-op — visibility di-render server-side biar tidak kedip saat F5
 }
 
 function inisialisasi() {

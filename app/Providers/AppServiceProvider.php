@@ -62,8 +62,14 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
-        // Global: $warehouses + $warehousesGrouped + $activeWarehouse untuk layout/header/sidebar
-        View::composer(['layout.partials.header', 'layout.partials.sidebar', 'layout.mainlayout'], function ($view) {
+        // Global: $warehouses + $warehousesGrouped + $activeWarehouse untuk layout/header/sidebar/page-header
+        View::composer([
+            'layout.partials.header',
+            'layout.partials.sidebar',
+            'layout.mainlayout',
+            'components.page-header',
+            'Backoffice.Inventory.Stock_Transfer',
+        ], function ($view) {
             static $payload = null;
 
             if ($payload === null) {
