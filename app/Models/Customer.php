@@ -56,7 +56,7 @@ class Customer extends Model
         // if($data["city_id"]) $result->where('city_id','=',$data["city_id"]);
         if($data["customer_notes"]) $result->where('customer_notes','like','%'.$data["customer_notes"].'%');
         if($data["customer_id"]) $result->where('customer_id','=',$data["customer_id"]);
-        $result->orderBy('created_at', 'asc');
+        $result->orderBy('created_at', 'desc')->orderBy('customer_id', 'desc');
         $result = $result->get();
 
         $staffNames = BatchLookup::staffNames($result->pluck('created_by'));
