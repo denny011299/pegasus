@@ -14,6 +14,7 @@
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             ordering: true,
+            order: [[4, "desc"]],
             autoWidth: false,
             scrollX: false,
             language: {
@@ -33,7 +34,16 @@
                 { data: "customer_pic", width: "16%" },
                 { data: "customer_pic_phone", width: "14%" },
                 { data: "saldo", width: "14%" },
-                { data: "created", width: "12%" },
+                {
+                    data: "created",
+                    width: "12%",
+                    render: function (data, type, row) {
+                        if (type === "sort" || type === "type") {
+                            return row.created_at || "";
+                        }
+                        return data;
+                    },
+                },
                 { data: "created_by_name", defaultContent: "-", width: "16%" , render: function(data, type, row) { return typeof renderCreatedBySync === "function" ? renderCreatedBySync(data, row) : data; } },
                 {
                     data: "action",

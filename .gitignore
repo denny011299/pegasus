@@ -57,5 +57,12 @@ pegasuso_pegasus.sql
 # database/seeders/README.md. The generated snapshot under
 # database/seeders/{data,snapshots/<name>}/*.json is what gets committed.
 /*.sql
+/database/*.sql
+
+# Local issue screenshot dumps (jangan commit foto baru)
+/public/issue/photo_*.png
+
+# Scratch / temp local scripts
+scratch_modals.*
 
 /database/seeders/snapshots/prod_21082026

@@ -51,23 +51,23 @@ X-API-Key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "ref_unit_id": 1042,
-  "unit_name": "Kilogram",
-  "unit_short_name": "kg"
+  "ref_unit_id": 1044,
+  "unit_name": "Ons",
+  "unit_short_name": "on"
 }
 
 ### Update unit profile (path param = ref_unit_id, PMO's id — not Pegasus unit_id; full replace, both fields required)
-PUT {{baseUrl}}/master/units/1042
+PUT {{baseUrl}}/master/units/1043
 X-API-Key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "unit_name": "Kilogram",
-  "unit_short_name": "kg"
+  "unit_name": "Ons2",
+  "unit_short_name": "bolong"
 }
 
 ### Delete unit (soft delete; ref_unit_id stays attached to the old row, can't be reused via POST)
-DELETE {{baseUrl}}/master/units/1042
+DELETE {{baseUrl}}/master/units/1043
 X-API-Key: {{apiKey}}
 
 ### Connect existing units in bulk (connections[].id = Pegasus internal unit_id, NOT ref_unit_id — see GET /master/units)
@@ -147,8 +147,8 @@ Content-Type: application/json
 
 {
   "staff_id": 2,
-  "nama_depan": "Willian",
-  "nama_belakang": "Hartanto",
+  "nama_depan": "Yason",
+  "nama_belakang": "Susastro",
   "email": "wilha.h@gmail.com",
   "alamat": "Jl. Sudirman Block A No. 12"
 }
@@ -159,8 +159,8 @@ X-API-Key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "nama_depan": "Willian",
-  "nama_belakang": "Hartanto",
+  "nama_depan": "Winarta",
+  "nama_belakang": "Susastro",
   "email": "wilha.h@gmail.com",
   "alamat": "Jl. Sudirman Block A No. 12"
 }
@@ -204,6 +204,26 @@ Content-Type: application/json
   ]
 }
 
+
+### Create cash payment (idempotent by ref_payment_id; payment_type 1=Armada [armada_id required], 2=Sales [staff_id required]; every item must share the same type)
+POST {{baseUrl}}/payments/cash
+X-API-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "ref_payment_id": "PMO-2026-12321",
+  "payment_type": 2,
+  "staff_id": 21,
+  "payment_date": "2026-07-29",
+  "payment_amount": 200000,
+  "auto_accept": false,
+  "items": [
+    { "amount": 100000, "type": 2, "notes": "BBM" },
+    { "amount": 50000, "type": 2, "notes": "Uang makan" },
+    { "amount": 50000, "type": 2, "notes": "Uang Suapan" }
+  ]
+}
+
 ### Show cash payment by ref_payment_id (status: pending/accepted/declined/deleted)
 GET {{baseUrl}}/payments/cash/PMO-2026-000123
 X-API-Key: {{apiKey}}
@@ -226,23 +246,23 @@ X-API-Key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "code": "ARM-JKT-001",
-  "pic": "Agus",
+  "code": "1234567892",
+  "pic": "Ruben Susastro",
   "pic_phone": "08123456789",
-  "nomor_polisi": "W 9518 PG",
-  "category": "Truk Engkel",
-  "merk_model": "Mitsubishi Colt Diesel",
+  "nomor_polisi": "26 12 2003",
+  "category": "Truk Motor",
+  "merk_model": "BMW Garis Keras",
   "tahun_kendaraan": "2019",
   "lokasi": "Pool Surabaya"
 }
 
 ### Update armada (path param = code; full replace — fields left out are saved EMPTY, not left unchanged)
-PUT {{baseUrl}}/armada/ARM-JKT-001
+PUT {{baseUrl}}/armada/1234567891
 X-API-Key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "pic": "Agus",
+  "pic": "Denny Susastro",
   "pic_phone": "08123456789",
   "nomor_polisi": "W 9518 PG",
   "category": "Truk Engkel",
@@ -252,7 +272,7 @@ Content-Type: application/json
 }
 
 ### Delete armada (soft delete; code stays attached to the old row, can't be reused via POST)
-DELETE {{baseUrl}}/armada/ARM-JKT-001
+DELETE {{baseUrl}}/armada/1234567891
 X-API-Key: {{apiKey}}
 
 
@@ -276,10 +296,11 @@ X-API-Key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "ref_product_id": 12,
+  "ref_product_id": 14,
   "product_name": "AIR AKI HIKARI",
-  "category_id": 4,
-  "unit_id": 1,
+  "category_id": 26,
+  "product_sku": "AAHK400ML",
+  "unit_id": 2,
   "product_unit": [1, 7]
 }
 
@@ -405,12 +426,12 @@ X-API-Key: {{apiKey}}
 Content-Type: application/json
 
 {
-  "ref_shipment_id": "SHP-7788",
+  "ref_shipment_id": "SHP-001",
   "scheduled_date": "2026-07-25",
-  "armada_code": "L8533N",
+  "armada_code": "1234567892",
   "auto_create_shortage_doc": true,
   "items": [
-    { "sku": "AAHK400ML", "qty": 24, "unit_id": 5 }
+    { "sku": "Aap1000ml", "qty": 24, "unit_id": 1044 }
   ]
 }
 
@@ -449,7 +470,7 @@ GET {{baseUrl}}/shipments/SHP-7788?show_unit=true
 X-API-Key: {{apiKey}}
 
 ### Change status (only "Dijadwalkan" -> "Sudah terkirim" is allowed today; this deducts stock same as /shipped)
-PATCH {{baseUrl}}/shipments/SHP-7788/change-status
+PATCH {{baseUrl}}/shipments/SHP-001/change-status
 X-API-Key: {{apiKey}}
 Content-Type: application/json
 
@@ -458,7 +479,7 @@ Content-Type: application/json
 }
 
 ### Cancel shipment (restores stock if it had already been deducted; idempotent — cancelling twice doesn't double-restore)
-PUT {{baseUrl}}/shipments/SHP-7788/cancel
+PUT {{baseUrl}}/shipments/SHP-001/cancel
 X-API-Key: {{apiKey}}
 Content-Type: application/json
 
