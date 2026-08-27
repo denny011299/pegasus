@@ -37,7 +37,12 @@ class StockOpnameFlowTest extends TestCase
         return (int) DB::table('staffs')->where('status', 1)->value('staff_id');
     }
 
-    private function insertStockOpname(ProductStock $stock, bool $isDraft = false): int
+    /**
+     * Rancang ulang 2026-08-27: hasil hitung sekarang ikut DOKUMEN, bukan body request saat ACC.
+     * Karena itu $realQty harus dititipkan di sini (units[]), persis seperti yang memang dikirim
+     * CreateStockOpname.js. Default null = tidak dihitung, stok tidak akan disentuh saat ACC.
+     */
+    private function insertStockOpname(ProductStock $stock, bool $isDraft = false, ?int $realQty = null): int
     {
         $response = $this->post('/insertStockOpname', [
             'sto_date' => now()->toDateString(),
@@ -48,9 +53,14 @@ class StockOpnameFlowTest extends TestCase
             'item' => json_encode([[
                 'product_id' => $stock->product_id,
                 'product_variant_id' => $stock->product_variant_id,
+                'units' => [[
+                    'unit_id' => $stock->unit_id,
+                    'system_qty' => $stock->ps_stock,
+                    'real_qty' => $realQty ?? $stock->ps_stock,
+                ]],
                 'stod_system' => $stock->ps_stock.' pcs',
-                'stod_real' => $stock->ps_stock.' pcs',
-                'stod_selisih' => '0 pcs',
+                'stod_real' => ($realQty ?? $stock->ps_stock).' pcs',
+                'stod_selisih' => (($realQty ?? $stock->ps_stock) - $stock->ps_stock).' pcs',
                 'stod_notes' => null,
             ]]),
         ]);
@@ -83,15 +93,20 @@ class StockOpnameFlowTest extends TestCase
         $realQty = $startingStock - 5; // simulate a shrinkage found during the count
         $logCountBefore = DB::table('log_stocks')->count();
 
-        $stoId = $this->insertStockOpname($stock);
+        $stoId = $this->insertStockOpname($stock, realQty: $realQty);
 
         $sto = StockOpname::find($stoId);
         $this->assertSame(1, (int) $sto->status, 'a freshly inserted, non-draft opname should be pending approval');
         $this->assertFalse((bool) $sto->is_draft);
-        $this->assertDatabaseHas('stock_opname_details', [
+        // Dokumen baru disimpan di stock_opname_lines (satu baris per satuan, angka betulan);
+        // stock_opname_details khusus dokumen lama dan sengaja tidak ikut ditulis lagi.
+        $this->assertDatabaseHas('stock_opname_lines', [
             'sto_id' => $stoId,
             'product_variant_id' => $stock->product_variant_id,
+            'unit_id' => $stock->unit_id,
+            'sol_counted_qty' => $realQty,
         ]);
+        $this->assertDatabaseMissing('stock_opname_details', ['sto_id' => $stoId]);
 
         $stock->refresh();
         $this->assertSame($startingStock, $stock->ps_stock, 'inserting an opname must not touch stock before approval');
@@ -128,7 +143,7 @@ class StockOpnameFlowTest extends TestCase
         $stock = $this->pickFixtureStock();
         $startingStock = $stock->ps_stock;
 
-        $stoId = $this->insertStockOpname($stock);
+        $stoId = $this->insertStockOpname($stock, realQty: $startingStock - 5);
 
         $this->post('/tolakStockOpname', ['sto_id' => $stoId])->assertStatus(200);
 
@@ -147,7 +162,7 @@ class StockOpnameFlowTest extends TestCase
         $startingStock = $stock->ps_stock;
         $realQty = $startingStock - 5;
 
-        $stoId = $this->insertStockOpname($stock, isDraft: true);
+        $stoId = $this->insertStockOpname($stock, isDraft: true, realQty: $realQty);
 
         $sto = StockOpname::find($stoId);
         $this->assertTrue((bool) $sto->is_draft, 'inserting with is_draft should keep the document as a draft');

@@ -64,17 +64,23 @@ class StockOpnameApprovalAtomicityTest extends TestCase
                 [
                     'product_id' => $stockA->product_id,
                     'product_variant_id' => $stockA->product_variant_id,
-                    'stod_system' => $stockA->ps_stock.' pcs',
-                    'stod_real' => ($stockA->ps_stock - 1).' pcs',
-                    'stod_selisih' => '1 pcs',
+                    'units' => [[
+                        'unit_id' => $stockA->unit_id,
+                        'system_qty' => $stockA->ps_stock,
+                        'real_qty' => $stockA->ps_stock - 1,
+                    ]],
                     'stod_notes' => null,
                 ],
                 [
+                    // Rancang ulang 2026-08-27: satuan rusaknya sekarang harus ada di DOKUMEN,
+                    // bukan diselipkan saat ACC -- ACC tidak lagi membaca angka dari body request.
                     'product_id' => $stockB->product_id,
                     'product_variant_id' => $stockB->product_variant_id,
-                    'stod_system' => $stockB->ps_stock.' pcs',
-                    'stod_real' => ($stockB->ps_stock - 1).' pcs',
-                    'stod_selisih' => '1 pcs',
+                    'units' => [[
+                        'unit_id' => $bogusUnitId,
+                        'system_qty' => $stockB->ps_stock,
+                        'real_qty' => $stockB->ps_stock - 1,
+                    ]],
                     'stod_notes' => null,
                 ],
             ]),

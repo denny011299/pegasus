@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
+use App\Models\StockOpname;
 use App\Models\StockOpnameDetail;
 use App\Models\Unit;
 use Illuminate\Support\Facades\DB;
@@ -109,27 +110,43 @@ class StockOpnamePdfLiveSystemStockTest extends TestCase
         return (string) (Unit::find($stock->unit_id)->unit_short_name ?? 'pcs');
     }
 
+    /**
+     * Bangun dokumen LAMA secara langsung.
+     *
+     * Sejak rancang ulang 2026-08-27, /insertStockOpname membuat dokumen VERSI BARU, sementara
+     * seluruh berkas test ini subjeknya justru mekanika penyimpanan LAMA: string stod_system yang
+     * dibekukan sekali lalu ditulis ULANG oleh refreshLiveSystemQty() setiap kali PDF diunduh.
+     * Jalur itu masih hidup dan masih harus dijaga selama dokumen lama masih ada di produksi,
+     * jadi test-nya diarahkan ke sana, bukan diubah maknanya.
+     *
+     * Padanan versi barunya sudah ada dan berperilaku BERBEDA dengan sengaja -- membaca dokumen
+     * yang masih menunggu tidak lagi menulis apa pun ke DB. Lihat
+     * Tests\Workflow\StockOpnameV2LifecycleTest.
+     */
     private function insertStockOpname(ProductStock $stock, string $unit, int $realQty): int
     {
-        $response = $this->post('/insertStockOpname', [
-            'sto_date' => now()->toDateString(),
-            'staff_id' => $this->staffId(),
-            'category_id' => $this->categoryId(),
-            'sto_notes' => 'Live system stock race test',
-            'is_draft' => 0,
-            'item' => json_encode([[
-                'product_id' => $stock->product_id,
-                'product_variant_id' => $stock->product_variant_id,
-                'stod_system' => $stock->ps_stock.' '.$unit,
-                'stod_real' => $realQty.' '.$unit,
-                'stod_selisih' => ($realQty - $stock->ps_stock).' '.$unit,
-                'stod_notes' => null,
-                'stod_touched' => 1,
-            ]]),
-        ]);
-        $response->assertStatus(200);
+        $sto = new StockOpname();
+        $sto->sto_date = now()->toDateString();
+        $sto->sto_code = 'LG'.substr((string) microtime(true), -4);
+        $sto->staff_id = $this->staffId();
+        $sto->category_id = -1;
+        $sto->status = 1;
+        $sto->is_draft = 0;
+        $sto->save();
+        $this->assertTrue((bool) $sto->refresh()->is_old_version);
 
-        return (int) $response->json('sto_id');
+        $d = new StockOpnameDetail();
+        $d->sto_id = $sto->sto_id;
+        $d->product_id = $stock->product_id;
+        $d->product_variant_id = $stock->product_variant_id;
+        $d->stod_system = $stock->ps_stock.' '.$unit;
+        $d->stod_real = $realQty.' '.$unit;
+        $d->stod_selisih = ($realQty - $stock->ps_stock).' '.$unit;
+        $d->stod_touched = 1;
+        $d->status = 1;
+        $d->save();
+
+        return (int) $sto->sto_id;
     }
 
     private function approve(ProductStock $stock, int $stoId, int $realQty): void
@@ -214,25 +231,12 @@ class StockOpnamePdfLiveSystemStockTest extends TestCase
         $unit = $this->unitShortName($stock);
         $startingStock = $stock->ps_stock;
 
-        // Fase 2 draft (is_draft=1) — still status==1 under the hood (see StockOpname::insertStockOpname()).
-        $draftResponse = $this->post('/insertStockOpname', [
-            'sto_date' => now()->toDateString(),
-            'staff_id' => $this->staffId(),
-            'category_id' => $this->categoryId(),
-            'sto_notes' => 'PDF persistence draft test',
-            'is_draft' => 1,
-            'item' => json_encode([[
-                'product_id' => $stock->product_id,
-                'product_variant_id' => $stock->product_variant_id,
-                'stod_system' => $startingStock.' '.$unit,
-                'stod_real' => $startingStock.' '.$unit,
-                'stod_selisih' => '0 '.$unit,
-                'stod_notes' => null,
-                'stod_touched' => 0,
-            ]]),
-        ]);
-        $draftResponse->assertStatus(200);
-        $stoIdDraft = (int) $draftResponse->json('sto_id');
+        // Draft fase 2 (is_draft=1) — status-nya tetap 1 di bawah kap. Dibangun langsung sebagai
+        // dokumen LAMA, sama alasannya dengan insertStockOpname() di atas.
+        $stoIdDraft = $this->insertStockOpname($stock, $unit, $startingStock);
+        $draft = StockOpname::find($stoIdDraft);
+        $draft->is_draft = 1;
+        $draft->save();
         $this->assertDatabaseHas('stock_opnames', ['sto_id' => $stoIdDraft, 'is_draft' => 1, 'status' => 1]);
 
         // Some OTHER opname moves the live stock before the draft's PDF is ever downloaded.

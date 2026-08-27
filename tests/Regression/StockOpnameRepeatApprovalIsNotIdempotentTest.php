@@ -43,7 +43,11 @@ class StockOpnameRepeatApprovalIsNotIdempotentTest extends TestCase
         return (int) DB::table('staffs')->where('status', 1)->value('staff_id');
     }
 
-    private function insertStockOpname(ProductStock $stock): int
+    /**
+     * Rancang ulang 2026-08-27: hasil hitung ikut DOKUMEN, bukan body request saat ACC -- jadi
+     * $realQty dititipkan di insert (units[]), seperti yang memang dikirim CreateStockOpname.js.
+     */
+    private function insertStockOpname(ProductStock $stock, ?int $realQty = null): int
     {
         $response = $this->post('/insertStockOpname', [
             'sto_date' => now()->toDateString(),
@@ -54,9 +58,11 @@ class StockOpnameRepeatApprovalIsNotIdempotentTest extends TestCase
             'item' => json_encode([[
                 'product_id' => $stock->product_id,
                 'product_variant_id' => $stock->product_variant_id,
-                'stod_system' => $stock->ps_stock.' pcs',
-                'stod_real' => $stock->ps_stock.' pcs',
-                'stod_selisih' => '0 pcs',
+                'units' => [[
+                    'unit_id' => $stock->unit_id,
+                    'system_qty' => $stock->ps_stock,
+                    'real_qty' => $realQty ?? $stock->ps_stock,
+                ]],
                 'stod_notes' => null,
             ]]),
         ]);
@@ -85,7 +91,7 @@ class StockOpnameRepeatApprovalIsNotIdempotentTest extends TestCase
 
         $stock = $this->pickFixtureStock();
         $startingStock = $stock->ps_stock;
-        $stoId = $this->insertStockOpname($stock);
+        $stoId = $this->insertStockOpname($stock, realQty: $startingStock - 5);
 
         $this->approve($stock, $stoId, $startingStock - 5);
 

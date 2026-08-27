@@ -84,6 +84,10 @@ class StockOpnameBahan extends Model
         // Mirrors StockOpname::insertStockOpname() — see KNOWN_ISSUES.md "Stock Opname's draft
         // feature is entirely non-functional".
         $t->is_draft = !empty($data['is_draft']);
+        // Rancang ulang 2026-08-27 (kembaran StockOpname::insertStockOpname()): dokumen BARU
+        // selalu versi baru (stock_opname_bahan_lines). Ditulis EKSPLISIT, tidak boleh
+        // mengandalkan default kolom -- default-nya sengaja true untuk dokumen lama.
+        $t->is_old_version = false;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
