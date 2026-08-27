@@ -25,7 +25,7 @@
                 <label class="text-muted mb-2"
                   style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Tanggal <span
                     class="text-danger">*</span></label>
-                <input type="date" class="form-control fill" id="production_date" disabled
+                <input type="date" class="form-control fill" id="production_date"
                   style="font-size:14px;border-radius:8px;height:42px;">
               </div>
               <div class="col-lg-6 col-12">

@@ -187,6 +187,40 @@ function getTodayStr() {
     return yyyy + "-" + mm + "-" + dd;
 }
 
+function getProductionDateMaxStr() {
+    return moment().add(1, "days").format("YYYY-MM-DD");
+}
+
+/** Tanggal produksi: min hari ini, max +1 hari. Past dates disabled di picker. */
+function syncProductionDateField(opts) {
+    opts = opts || {};
+    var today = getTodayStr();
+    var $date = $("#production_date");
+    $date.attr("min", today).attr("max", getProductionDateMaxStr());
+    if (opts.value) {
+        $date.val(opts.value);
+    } else if (!$date.val() || moment($date.val()).isBefore(today, "day")) {
+        $date.val(today);
+    }
+    if (opts.disabled === true) {
+        $date.prop("disabled", true);
+    } else if (opts.disabled === false) {
+        $date.prop("disabled", false);
+    }
+}
+
+function isProductionDateValid(dateStr) {
+    if (!dateStr) return false;
+    var m = moment(dateStr, "YYYY-MM-DD", true);
+    if (!m.isValid()) {
+        m = moment(dateStr);
+    }
+    if (!m.isValid()) return false;
+    if (m.isBefore(moment().startOf("day"))) return false;
+    if (m.isAfter(moment().add(1, "days"), "day")) return false;
+    return true;
+}
+
 function convertQtyToSmallestUnit(qty, unitId, productData) {
     var multiplier = 1;
     var relations = productData.relasi || [];
@@ -1089,7 +1123,7 @@ $(document).on("click", ".btnAdd", function () {
     $(".btn-cancel").html("Batal");
     $("#addProduction").modal("show");
     $(".dos").hide();
-    $("#production_date").val(getTodayStr()).prop("disabled", true);
+    syncProductionDateField({ value: getTodayStr(), disabled: false });
     $("#addProduction").removeAttr("revision_source_production_id");
     syncProductionDestinationControl();
 });
@@ -1105,8 +1139,19 @@ $(document).on("keyup", "#production_qty", function () {
     updateProductionPalletHint();
 });
 
-$(document).on("change", "#unit_id", function () {
-    updateProductionPalletHint();
+$(document).on("change", "#production_date", function () {
+    var val = $(this).val();
+    if (!isProductionDateValid(val)) {
+        $(this).addClass("is-invalid");
+        if (typeof toastr !== "undefined") {
+            toastr.error("Tanggal tidak valid. Minimal hari ini.");
+        } else {
+            notifikasi("error", "Tanggal Tidak Valid", "Tanggal produksi minimal hari ini.");
+        }
+        syncProductionDateField({ value: getTodayStr() });
+        return;
+    }
+    $(this).removeClass("is-invalid");
 });
 
 function updateProductionPalletHint() {
@@ -1175,7 +1220,10 @@ $(document).on("change", "#product_id", function () {
     $("#production_qty").trigger("keyup");
 });
 
-$(document).on("change", "#unit_id", syncProductionDestinationControl);
+$(document).on("change", "#unit_id", function () {
+    updateProductionPalletHint();
+    syncProductionDestinationControl();
+});
 
 // Cegah Enter menutup modal secara tidak sengaja (form action="#" menyebabkan page navigation)
 $(document).on(
@@ -1518,7 +1566,7 @@ function openProductionRevisionFromDashboardLink() {
         $("#production_status_display").html("");
         $("#unit_id").html("");
 
-        $("#production_date").val(getTodayStr()).prop("disabled", true);
+        syncProductionDateField({ value: getTodayStr(), disabled: true });
         $("#production_desc")
             .val(rowData.production_desc || "")
             .attr("disabled", false);
@@ -1601,6 +1649,19 @@ $(document).on("click", ".btn-save", function () {
             "error",
             "Gagal Insert",
             "Silahkan cek kembali inputan anda",
+        );
+        ResetLoadingButton(
+            ".btn-save",
+            mode == 1 ? "Tambah Produksi" : "Update Produksi",
+        );
+        return false;
+    }
+    if (!isProductionDateValid($("#production_date").val())) {
+        $("#production_date").addClass("is-invalid");
+        notifikasi(
+            "error",
+            "Tanggal Tidak Valid",
+            "Tanggal produksi minimal hari ini (tanggal sebelumnya tidak diizinkan).",
         );
         ResetLoadingButton(
             ".btn-save",
@@ -1956,6 +2017,7 @@ $(document).on("click", ".btn_view", function () {
     $(".is-invalid").removeClass("is-invalid");
     $("#unit_id").html("");
     $("#production_date").val(data.production_date);
+    syncProductionDateField({ value: data.production_date, disabled: true });
     $("#production_desc").val(data.production_desc).attr("disabled", true);
 
     // Info umum (Kode Produksi/Dibuat Oleh/Status) — selalu tampil di mode lihat detail.
