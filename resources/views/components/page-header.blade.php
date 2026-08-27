@@ -208,10 +208,17 @@
                 @endif
                 @if (Route::is(['stockTransfer']))
                     @roleCan('Stock Transfer', 'create')
+                    @php
+                        $stActiveIsMain = isset($activeWarehouse)
+                            && isset($activeWarehouse->type)
+                            && (int) ($activeWarehouse->type->is_main_warehouse ?? 0) === 1;
+                    @endphp
+                    @if (! $stActiveIsMain)
                     <li>
                         <a class="btn btn-primary btnAdd" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Stock Transfer</a>
                     </li>
+                    @endif
                     @endroleCan
                 @endif
 

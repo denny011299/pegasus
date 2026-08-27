@@ -898,3 +898,48 @@
     </div>
     <!-- /Filter Pencarian -->
 @endif
+
+@if(Route::is(['stockTransfer']))
+{{-- Hanya Tanggal + Status + Gudang Dari + Clear. JANGAN tambah Gudang Ke (tujuan = gudang aktif). --}}
+<div class="profit-menu card stock-transfer-filter">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Tanggal</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="form-control" id="st_filter_date"
+                        placeholder="Pilih rentang / hari" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Status</label>
+                <select class="form-select" id="st_filter_status">
+                    <option value="">Semua</option>
+                    <option value="1">Pending</option>
+                    <option value="requested">Requested (tunggu QC)</option>
+                    <option value="need_approval">Need Approval (tunggu Ops)</option>
+                    <option value="2">Kirim</option>
+                    <option value="4">Terkirim</option>
+                    <option value="3">Cancel</option>
+                    <option value="5">Cancel Kirim</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Gudang Dari</label>
+                <select class="form-select" id="st_filter_from_warehouse">
+                    <option value="">Semua</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
+                <a href="javascript:void(0);" class="btn btn-outline-secondary btn-clear-st-filter">Clear</a>
+            </div>
+        </div>
+    </div>
+</div>
+@endif

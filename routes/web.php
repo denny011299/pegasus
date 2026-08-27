@@ -226,6 +226,9 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/getTransferSourceStock', [StockTransferController::class, 'getTransferSourceStock'])->name('getTransferSourceStock');
         Route::get('/getStockTransferLogs', [StockTransferController::class, 'getStockTransferLogs'])->name('getStockTransferLogs');
         Route::post('/checkTransferStock', [StockTransferController::class, 'checkTransferStock'])->name('checkTransferStock');
+        // QC/Ops approve + reject retail: gate di controller (actor role / pemohon), bukan permission others
+        Route::post('/approveStockTransfer', [StockTransferController::class, 'approveStockTransfer'])->name('approveStockTransfer');
+        Route::post('/rejectStockTransfer', [StockTransferController::class, 'rejectStockTransfer'])->name('rejectStockTransfer');
     });
     Route::post('/getTransferRetailUnitSetup', [StockTransferController::class, 'getTransferRetailUnitSetup'])->name('getTransferRetailUnitSetup');
     Route::post('/saveTransferRetailUnit', [StockTransferController::class, 'saveTransferRetailUnit'])->name('saveTransferRetailUnit');
@@ -241,9 +244,7 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stock Transfer|others')->group(function () {
         Route::post('/shipStockTransfer', [StockTransferController::class, 'shipStockTransfer'])->name('shipStockTransfer');
         Route::post('/accStockTransfer', [StockTransferController::class, 'accStockTransfer'])->name('accStockTransfer');
-        Route::post('/rejectStockTransfer', [StockTransferController::class, 'rejectStockTransfer'])->name('rejectStockTransfer');
         Route::post('/cancelKirimStockTransfer', [StockTransferController::class, 'cancelKirimStockTransfer'])->name('cancelKirimStockTransfer');
-        Route::post('/approveStockTransfer', [StockTransferController::class, 'approveStockTransfer'])->name('approveStockTransfer');
     });
 
     Route::middleware('check.access:Stok Opname Bahan Mentah|view')->group(function () {

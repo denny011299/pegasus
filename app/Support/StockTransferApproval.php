@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
  *
  * 1. Staf QC & Gudang (jika ada di gudang asal)
  * 2. Kepala Operasional (jika ada di gudang asal)
- * 3. Kirim / potong stok
+ * 3. Setelah approval lengkap → otomatis Kirim (potong stok); eceran hanya Terima
  *
  * Transfer lain (utama buat sendiri, eceran↔eceran, produksi): tanpa QC/Ops —
  * Acc/Tolak Kirim & Acc/Tolak Terima seperti alur lama.
@@ -129,28 +129,28 @@ class StockTransferApproval
 
     /**
      * Tolak request di gudang asal (besar): hanya QC / Kepala Ops.
-     * Ops belum boleh muncul sebelum QC approve (jika QC wajib).
+     * QC hanya sebelum QC approve; Ops hanya setelah QC approve (jika QC wajib).
      */
     public static function canRejectAtOrigin($user, $header, int $fromWarehouseId): bool
     {
-        $actor = self::resolveActorRole($user, $fromWarehouseId);
+        $actor = self::resolveActorRole($user, $fromWarehouseId, $header);
         if ($actor === 'qc') {
-            return true;
+            return ! self::isQcApproved($header);
         }
         if ($actor === 'ops') {
             if (self::qcRequiredAtWarehouse($fromWarehouseId) && ! self::isQcApproved($header)) {
                 return false;
             }
 
-            return true;
+            return ! self::isOpsApproved($header);
         }
 
         return false;
     }
 
     /**
-     * Cancel request dari gudang eceran: hanya pemohon (sender).
-     * Kepala Ops gudang asal tidak boleh — harus lewat alur QC dulu di gudang besar.
+     * Cancel request dari gudang eceran: hanya pemohon (sender), sebelum ada approval.
+     * Setelah QC/Ops approve → tidak bisa cancel dari eceran.
      */
     public static function canCancelRetailRequestAtDestination(
         $user,
@@ -169,7 +169,10 @@ class StockTransferApproval
         if ((int) ($header->sender_id ?? 0) !== $staffId) {
             return false;
         }
-        if ($fromWarehouseId > 0 && self::resolveActorRole($user, $fromWarehouseId) === 'ops') {
+        if (self::isQcApproved($header) || self::isOpsApproved($header)) {
+            return false;
+        }
+        if ($fromWarehouseId > 0 && self::resolveActorRole($user, $fromWarehouseId, $header) === 'ops') {
             return false;
         }
 
@@ -187,9 +190,31 @@ class StockTransferApproval
     }
 
     /**
+     * Fase badge list (gudang asal / besar) untuk retail_request status=1.
+     *
+     * @return 'requested'|'need_approval'|'ready'|null
+     */
+    public static function retailRequestPhase($header, int $fromWarehouseId): ?string
+    {
+        if ($fromWarehouseId <= 0) {
+            return null;
+        }
+        $qcReq = self::qcRequiredAtWarehouse($fromWarehouseId);
+        $opsReq = self::opsRequiredAtWarehouse($fromWarehouseId);
+        if ($qcReq && ! self::isQcApproved($header)) {
+            return 'requested';
+        }
+        if ($opsReq && ! self::isOpsApproved($header)) {
+            return 'need_approval';
+        }
+
+        return 'ready';
+    }
+
+    /**
      * @return 'qc'|'ops'|null
      */
-    public static function resolveActorRole($user, int $warehouseId): ?string
+    public static function resolveActorRole($user, int $warehouseId, $header = null): ?string
     {
         if (! $user || $warehouseId <= 0) {
             return null;
@@ -203,7 +228,19 @@ class StockTransferApproval
         $isKepala = self::isKepalaOfWarehouse($staffId, $warehouseId);
         $isQc = self::isQcAssignedToWarehouse($user, $warehouseId);
 
+        // Dual role: QC dulu, setelah QC approve baru bertindak sebagai Ops.
         if ($isKepala && $isQc) {
+            if ($header !== null
+                && self::qcRequiredAtWarehouse($warehouseId)
+                && ! self::isQcApproved($header)) {
+                return 'qc';
+            }
+            if ($header !== null
+                && self::opsRequiredAtWarehouse($warehouseId)
+                && ! self::isOpsApproved($header)) {
+                return 'ops';
+            }
+
             return null;
         }
         if ($isKepala) {
@@ -243,7 +280,7 @@ class StockTransferApproval
         }
 
         $assigned = Staff::assignedWarehouseIds($user);
-
-        return $assigned === [] || in_array($warehouseId, $assigned, true);
+        // Harus assigned ke gudang ini (kosong = bukan QC gudang mana pun)
+        return $assigned !== [] && in_array($warehouseId, $assigned, true);
     }
 }

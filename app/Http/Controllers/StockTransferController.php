@@ -25,10 +25,10 @@ use Throwable;
  * Status: 0=deleted, 1=pending, 2=kirim, 3=cancel, 4=terkirim, 5=cancel_kirim
  *
  * Create       → status=1 (Pending), stok belum dipotong
- * Approve      → hanya request eceran (source_type=retail_request): QC → Kepala Ops sebelum Kirim
+ * Approve      → request eceran: QC → Kepala Ops; approval lengkap → auto Kirim (potong stok)
  * Reject/Tolak → pending langsung Cancel (status=3); QC/Kepala Ops di gudang asal boleh tolak
  * Transfer lain → Acc/Tolak Kirim & Acc/Tolak Terima (tanpa QC/Ops, tanpa edit qty terima)
- * Ship (ACC)   → Pending→Kirim: potong stok sumber, status=2
+ * Ship (ACC)   → Pending→Kirim (manual untuk non-retail; retail auto setelah Ops ACC)
  * Accept (ACC) → Kirim→Terkirim: konversi + tambah stok tujuan, status=4
  * Cancel       → Pending→Cancel (status=3); stok tetap di sumber (produksi: tidak hangus)
  * Cancel Kirim → Kirim→Cancel Kirim (status=5), restore stok sumber
@@ -351,11 +351,59 @@ class StockTransferController extends Controller
             return response()->json([]);
         }
 
-        $rows = $query
-            ->orderByDesc('transfer_date')
-            ->orderByDesc('st_id')
-            ->orderByRaw('CASE WHEN status = 1 THEN 0 WHEN status = 2 THEN 1 WHEN status = 4 THEN 2 ELSE 3 END')
-            ->get();
+        $dateFrom = trim((string) ($req->date_from ?? $req->start_date ?? ''));
+        $dateTo = trim((string) ($req->date_to ?? $req->end_date ?? ''));
+        if ($dateFrom !== '') {
+            try {
+                $fromYmd = Carbon::hasFormat($dateFrom, 'Y-m-d')
+                    ? $dateFrom
+                    : Carbon::createFromFormat('d-m-Y', $dateFrom)->format('Y-m-d');
+                $query->whereDate('transfer_date', '>=', $fromYmd);
+            } catch (Throwable $e) {
+                // ignore bad date
+            }
+        }
+        if ($dateTo !== '') {
+            try {
+                $toYmd = Carbon::hasFormat($dateTo, 'Y-m-d')
+                    ? $dateTo
+                    : Carbon::createFromFormat('d-m-Y', $dateTo)->format('Y-m-d');
+                $query->whereDate('transfer_date', '<=', $toYmd);
+            } catch (Throwable $e) {
+                // ignore bad date
+            }
+        }
+
+        $fromWhFilter = (int) ($req->from_warehouse_id ?? 0);
+        if ($fromWhFilter > 0) {
+            $query->where('from_warehouse_id', $fromWhFilter);
+        }
+
+        $statusFilter = trim((string) ($req->status ?? ''));
+        if ($statusFilter !== '') {
+            if (ctype_digit($statusFilter)) {
+                $query->where('status', (int) $statusFilter);
+            } elseif (in_array($statusFilter, ['requested', 'need_approval', 'ready'], true)) {
+                $query->where('status', 1)->where('source_type', 'retail_request');
+            }
+        }
+
+        // Sort UI lewat DataTables; default BE: tanggal terbaru
+        $query->orderByDesc('transfer_date')->orderByDesc('st_id');
+
+        $rows = $query->get();
+
+        // Phase filter (retail pending): filter in PHP after approval fields known
+        $phaseFilter = in_array($statusFilter, ['requested', 'need_approval', 'ready'], true)
+            ? $statusFilter
+            : null;
+        if ($phaseFilter) {
+            $rows = $rows->filter(function ($row) use ($phaseFilter) {
+                $phase = StockTransferApproval::retailRequestPhase($row, (int) $row->from_warehouse_id);
+
+                return $phase === $phaseFilter;
+            })->values();
+        }
 
         if ($rows->isEmpty()) {
             return response()->json([]);
@@ -469,9 +517,9 @@ class StockTransferController extends Controller
                 $assignedWh,
                 $isRetailRequest
             );
-            $actorRole = $canOthersAccess
-                ? StockTransferApproval::resolveActorRole($user, $fromWh)
-                : null;
+            $actorRole = StockTransferApproval::resolveActorRole($user, $fromWh, $row);
+            $atOrigin = $activeWh === $fromWh
+                && ($assignedWh === [] || in_array($fromWh, $assignedWh, true));
 
             return [
                 'id' => (int) $row->st_id,
@@ -506,35 +554,36 @@ class StockTransferController extends Controller
                 'qc_approved_by_name' => $row->qc_approved_by ? ($staffMap[$row->qc_approved_by] ?? '-') : null,
                 'ops_approved_by' => $row->ops_approved_by ? (int) $row->ops_approved_by : null,
                 'ops_approved_by_name' => $row->ops_approved_by ? ($staffMap[$row->ops_approved_by] ?? '-') : null,
+                'approval_phase' => $isRetailRequest && $status === 1
+                    ? StockTransferApproval::retailRequestPhase($row, $fromWh)
+                    : null,
                 'can_ship' => $canOthersAccess && $canShipByWarehouse && $approvalsComplete,
                 'can_acc' => $canOthersAccess && $canAccByWarehouse,
                 'can_edit' => $canEditAccess && $canEditByWarehouse,
-                'can_delete' => ! $isProduction && $canDeleteAccess && $canEditByWarehouse,
-                'can_reject' => $canOthersAccess
-                    && $status === 1
+                // Retail request: cancel via reject (bukan soft-delete)
+                'can_delete' => ! $isProduction && ! $isRetailRequest && $canDeleteAccess && $canEditByWarehouse,
+                // Retail QC/Ops/pemohon: tidak wajib "others"; transfer biasa tetap butuh others
+                'can_reject' => $status === 1
                     && (
-                        ($isRetailRequest && $activeWh === $fromWh
-                            && ($assignedWh === [] || in_array($fromWh, $assignedWh, true))
+                        ($isRetailRequest && $atOrigin
                             && StockTransferApproval::canRejectAtOrigin($user, $row, $fromWh))
                         || ($isRetailRequest && $activeWh === $toWh
                             && ($assignedWh === [] || in_array($toWh, $assignedWh, true))
                             && StockTransferApproval::canCancelRetailRequestAtDestination($user, $row, $toWh, $fromWh))
-                        || (! $isRetailRequest && $activeWh === $fromWh
-                            && ($assignedWh === [] || in_array($fromWh, $assignedWh, true)))
+                        || (! $isRetailRequest && $canOthersAccess && $atOrigin)
                     ),
                 'can_cancel_kirim' => $canOthersAccess && $canCancelKirimByWarehouse,
-                'can_approve_qc' => $canOthersAccess
-                    && $isRetailRequest
-                    && StockTransferApproval::canApproveQc($row, $fromWh)
+                // Approve QC/Ops: actor role + akses gudang asal (tidak wajib permission "others")
+                'can_approve_qc' => $isRetailRequest
+                    && $atOrigin
                     && $status === 1
-                    && $activeWh === $fromWh
-                    && $actorRole === 'qc',
-                'can_approve_ops' => $canOthersAccess
-                    && $isRetailRequest
-                    && StockTransferApproval::canApproveOps($row, $fromWh)
+                    && $actorRole === 'qc'
+                    && StockTransferApproval::canApproveQc($row, $fromWh),
+                'can_approve_ops' => $isRetailRequest
+                    && $atOrigin
                     && $status === 1
-                    && $activeWh === $fromWh
-                    && $actorRole === 'ops',
+                    && $actorRole === 'ops'
+                    && StockTransferApproval::canApproveOps($row, $fromWh),
             ];
         })->values();
 
@@ -720,18 +769,31 @@ class StockTransferController extends Controller
             $fromWh
         );
         $approvalsComplete = ! $requiresApproval || StockTransferApproval::isFullyApproved($header, $fromWh);
-        $actorRole = $canOthersAccess
-            ? StockTransferApproval::resolveActorRole($user, $fromWh)
-            : null;
+        $atOrigin = $activeWh === $fromWh
+            && ($assignedWh === [] || in_array($fromWh, $assignedWh, true));
+        $actorRole = StockTransferApproval::resolveActorRole($user, $fromWh, $header);
         $qcBy = $header->qc_approved_by ? (int) $header->qc_approved_by : null;
         $opsBy = $header->ops_approved_by ? (int) $header->ops_approved_by : null;
+        $shipBy = $header->acc_by ? (int) $header->acc_by : null;
         $approverNames = [];
-        if ($qcBy || $opsBy) {
+        $nameIds = array_filter([$qcBy, $opsBy, $shipBy]);
+        if ($nameIds !== []) {
             $approverNames = Staff::query()
-                ->whereIn('staff_id', array_filter([$qcBy, $opsBy]))
+                ->whereIn('staff_id', $nameIds)
                 ->pluck('staff_name', 'staff_id')
                 ->all();
         }
+
+        $fmtAt = static function ($raw) {
+            if (! $raw) {
+                return null;
+            }
+            try {
+                return Carbon::parse($raw)->format('d-m-Y H:i');
+            } catch (Throwable $e) {
+                return null;
+            }
+        };
 
         return response()->json([
             'id' => (int) $header->st_id,
@@ -760,8 +822,12 @@ class StockTransferController extends Controller
             'ops_approved' => StockTransferApproval::isOpsApproved($header) ? 1 : 0,
             'qc_approved_by' => $qcBy,
             'qc_approved_by_name' => $qcBy ? ($approverNames[$qcBy] ?? '-') : null,
+            'qc_approved_at' => $fmtAt($header->qc_approved_at ?? null),
             'ops_approved_by' => $opsBy,
             'ops_approved_by_name' => $opsBy ? ($approverNames[$opsBy] ?? '-') : null,
+            'ops_approved_at' => $fmtAt($header->ops_approved_at ?? null),
+            'ship_acc_by' => $shipBy,
+            'ship_acc_by_name' => $shipBy ? ($approverNames[$shipBy] ?? '-') : null,
             'can_ship' => $canOthersAccess
                 && $approvalsComplete
                 && $this->canShipTransferRow(
@@ -790,17 +856,14 @@ class StockTransferController extends Controller
                     $isRetailRequest,
                     $header
                 ),
-            'can_reject' => $canOthersAccess
-                && $status === 1
+            'can_reject' => $status === 1
                 && (
-                    ($isRetailRequest && $activeWh === $fromWh
-                        && ($assignedWh === [] || in_array($fromWh, $assignedWh, true))
+                    ($isRetailRequest && $atOrigin
                         && StockTransferApproval::canRejectAtOrigin($user, $header, $fromWh))
                     || ($isRetailRequest && $activeWh === $toWh
                         && ($assignedWh === [] || in_array($toWh, $assignedWh, true))
                         && StockTransferApproval::canCancelRetailRequestAtDestination($user, $header, $toWh, $fromWh))
-                    || (! $isRetailRequest && $activeWh === $fromWh
-                        && ($assignedWh === [] || in_array($fromWh, $assignedWh, true)))
+                    || (! $isRetailRequest && $canOthersAccess && $atOrigin)
                 ),
             'can_cancel_kirim' => $canOthersAccess && $this->canCancelKirimTransferRow(
                 $status,
@@ -811,18 +874,19 @@ class StockTransferController extends Controller
                 $assignedWh,
                 $isRetailRequest
             ),
-            'can_approve_qc' => $canOthersAccess
-                && $isRetailRequest
-                && StockTransferApproval::canApproveQc($header, $fromWh)
+            'approval_phase' => $isRetailRequest && $status === 1
+                ? StockTransferApproval::retailRequestPhase($header, $fromWh)
+                : null,
+            'can_approve_qc' => $isRetailRequest
+                && $atOrigin
                 && $status === 1
-                && $activeWh === $fromWh
-                && $actorRole === 'qc',
-            'can_approve_ops' => $canOthersAccess
-                && $isRetailRequest
-                && StockTransferApproval::canApproveOps($header, $fromWh)
+                && $actorRole === 'qc'
+                && StockTransferApproval::canApproveQc($header, $fromWh),
+            'can_approve_ops' => $isRetailRequest
+                && $atOrigin
                 && $status === 1
-                && $activeWh === $fromWh
-                && $actorRole === 'ops',
+                && $actorRole === 'ops'
+                && StockTransferApproval::canApproveOps($header, $fromWh),
             'items' => $items,
         ]);
     }
@@ -1222,11 +1286,27 @@ class StockTransferController extends Controller
             }
         }
 
-        // Request eceran: kunci rute utama → eceran + source_type.
+        // Request eceran: penerima + pemohon terkunci; Gudang Request (from) boleh diganti (harus utama).
         if ($header->source_type === 'retail_request') {
-            $payload['from_warehouse_id'] = (int) $header->from_warehouse_id;
             $payload['to_warehouse_id'] = (int) $header->to_warehouse_id;
             $payload['source_type'] = 'retail_request';
+            $payload['sender_id'] = (int) $header->sender_id;
+            $newFrom = (int) ($payload['from_warehouse_id'] ?? 0);
+            if ($newFrom <= 0) {
+                return response()->json(['status' => -1, 'message' => 'Pilih gudang request']);
+            }
+            if ($this->warehouseIsMain($newFrom) !== true) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => 'Gudang request harus gudang utama',
+                ]);
+            }
+            if ($newFrom === (int) $header->to_warehouse_id) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => 'Gudang request dan gudang penerima tidak boleh sama',
+                ]);
+            }
         }
 
         $items = $this->normalizeItems($req->input('items', []));
@@ -1329,6 +1409,12 @@ class StockTransferController extends Controller
                 'message' => 'Transfer hasil produksi harus ditolak (stok tetap di gudang asal), bukan dihapus.',
             ]);
         }
+        if ($header->source_type === 'retail_request') {
+            return response()->json([
+                'status' => -1,
+                'message' => 'Request eceran dibatalkan lewat Cancel/Tolak, bukan hapus.',
+            ]);
+        }
 
         $gate = $this->assertCanEditSource($header);
         if ($gate !== true) {
@@ -1410,7 +1496,7 @@ class StockTransferController extends Controller
             ]);
         }
 
-        $actorRole = StockTransferApproval::resolveActorRole($user, $fromWh);
+        $actorRole = StockTransferApproval::resolveActorRole($user, $fromWh, $header);
         if ($actorRole !== $type) {
             return response()->json([
                 'status' => -1,
@@ -1428,8 +1514,9 @@ class StockTransferController extends Controller
         }
 
         $before = $this->snapshotTransfer($stId);
+        $autoShipped = false;
         try {
-            DB::transaction(function () use ($stId, $type, $staffId, $fromWh) {
+            DB::transaction(function () use ($stId, $type, $staffId, $fromWh, &$autoShipped) {
                 $locked = StockTransfer::query()
                     ->where('st_id', $stId)
                     ->where('status', 1)
@@ -1456,6 +1543,18 @@ class StockTransferController extends Controller
                     $locked->ops_approved_at = now();
                 }
                 $locked->save();
+
+                // Request eceran: approval terakhir (Ops / QC bila Ops tidak ada) = langsung Kirim.
+                // Gudang eceran tinggal Terima — tidak perlu Kirim manual lagi.
+                $isRetail = StockTransferApproval::isRetailRequestRoute(
+                    $locked->source_type,
+                    $this->warehouseIsMain($fromWh),
+                    $this->warehouseIsMain((int) $locked->to_warehouse_id)
+                );
+                if ($isRetail && StockTransferApproval::isFullyApproved($locked, $fromWh)) {
+                    $this->shipLockedTransfer($locked, $staffId);
+                    $autoShipped = true;
+                }
             });
         } catch (Throwable $e) {
             return response()->json([
@@ -1467,16 +1566,28 @@ class StockTransferController extends Controller
         $after = $this->snapshotTransfer($stId);
         $this->logTransferAction('approve_' . $type, $after['header'] ?: $before['header'], [
             'type' => $type,
+            'auto_shipped' => $autoShipped ? 1 : 0,
         ], $before, $after);
+        if ($autoShipped) {
+            $this->logTransferAction('ship', $after['header'] ?: $before['header'], [
+                'items_count' => count($after['items']),
+                'via' => 'approve_' . $type,
+            ], $before, $after);
+        }
 
         $label = $type === 'qc' ? 'QC' : 'Kepala Operasional';
         $afterHeader = $after['header'] ?? [];
+        $message = $autoShipped
+            ? ('Approval ' . $label . ' berhasil. Stok dipotong, status menjadi Kirim — gudang eceran dapat menerima.')
+            : ('Approval ' . $label . ' berhasil');
 
         return response()->json([
             'status' => 1,
-            'message' => 'Approval ' . $label . ' berhasil',
+            'message' => $message,
             'qc_approved' => (int) ($afterHeader['qc_approved_by'] ?? 0) > 0 ? 1 : 0,
             'ops_approved' => (int) ($afterHeader['ops_approved_by'] ?? 0) > 0 ? 1 : 0,
+            'auto_shipped' => $autoShipped ? 1 : 0,
+            'transfer_status' => (int) ($afterHeader['status'] ?? 1),
         ]);
     }
 
@@ -1510,69 +1621,11 @@ class StockTransferController extends Controller
                 if (! $lockedHeader) {
                     throw new \RuntimeException('Transfer sudah diproses');
                 }
-
-                $details = StockTransferDetail::query()
-                    ->where('st_id', $stId)
-                    ->where('status', 1)
-                    ->lockForUpdate()
-                    ->get();
-                if ($details->isEmpty()) {
-                    throw new \RuntimeException('Detail transfer kosong');
+                $gateLocked = $this->assertCanShip($lockedHeader);
+                if ($gateLocked !== true) {
+                    throw new \RuntimeException($gateLocked);
                 }
-
-                $items = $this->normalizeItems($details->map(fn ($d) => [
-                    'product_variant_id' => (int) $d->product_variant_id,
-                    'unit_id' => (int) $d->unit_id,
-                    'qty' => (float) $d->qty,
-                ])->values()->all());
-                $isProduction = $lockedHeader->source_type === 'production';
-                $matrix = $this->validateTransferItems(
-                    (int) $lockedHeader->from_warehouse_id,
-                    (int) $lockedHeader->to_warehouse_id,
-                    $items,
-                    $isProduction
-                );
-                if (! $matrix['ok']) {
-                    throw new \RuntimeException($matrix['message']);
-                }
-
-                ProductUnitStock::clearCache();
-                $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
-                // Kirim: packing/rapikan OFF. Gudang utama boleh unpack ancestor
-                // (DOS→Piece) agar stok ekuivalen cukup; eceran tetap exact unit.
-                // Konversi satuan tujuan hanya di Terima (eceran → retail_unit).
-                $check = ProductUnitStock::checkItems(
-                    (int) $lockedHeader->from_warehouse_id,
-                    $this->applySourceAvailabilityMode($items, $sourceIsMain, $isProduction)
-                );
-                if (! $check['ok']) {
-                    $names = array_map(fn ($s) => $s['label'], $check['shortages']);
-                    throw new \RuntimeException('Stok tidak mencukupi: ' . implode(', ', $names));
-                }
-
-                $code = $lockedHeader->transfer_code;
-                $allowUnpack = $sourceIsMain === true;
-                foreach ($items as $item) {
-                    $cut = ProductUnitStock::deductQty(
-                        (int) $lockedHeader->from_warehouse_id,
-                        (int) $item['product_variant_id'],
-                        (int) $item['unit_id'],
-                        (float) $item['qty'],
-                        $code,
-                        'Stock Transfer ' . $code . ' - keluar gudang asal',
-                        false,
-                        $allowUnpack
-                    );
-                    if (! $cut['ok']) {
-                        throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
-                    }
-                }
-
-                $lockedHeader->status = 2; // Kirim
-                if ($accBy > 0) {
-                    $lockedHeader->acc_by = $accBy;
-                }
-                $lockedHeader->save();
+                $this->shipLockedTransfer($lockedHeader, $accBy);
             });
         } catch (Throwable $e) {
             return response()->json([
@@ -1590,6 +1643,73 @@ class StockTransferController extends Controller
             'status' => 1,
             'message' => 'Stock transfer dikirim, stok gudang asal dipotong',
         ]);
+    }
+
+    /**
+     * Potong stok + set status=2. Caller harus sudah lockForUpdate header status=1.
+     */
+    protected function shipLockedTransfer(StockTransfer $lockedHeader, int $accBy): void
+    {
+        $stId = (int) $lockedHeader->st_id;
+        $details = StockTransferDetail::query()
+            ->where('st_id', $stId)
+            ->where('status', 1)
+            ->lockForUpdate()
+            ->get();
+        if ($details->isEmpty()) {
+            throw new \RuntimeException('Detail transfer kosong');
+        }
+
+        $items = $this->normalizeItems($details->map(fn ($d) => [
+            'product_variant_id' => (int) $d->product_variant_id,
+            'unit_id' => (int) $d->unit_id,
+            'qty' => (float) $d->qty,
+        ])->values()->all());
+        $isProduction = $lockedHeader->source_type === 'production';
+        $matrix = $this->validateTransferItems(
+            (int) $lockedHeader->from_warehouse_id,
+            (int) $lockedHeader->to_warehouse_id,
+            $items,
+            $isProduction
+        );
+        if (! $matrix['ok']) {
+            throw new \RuntimeException($matrix['message']);
+        }
+
+        ProductUnitStock::clearCache();
+        $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
+        $check = ProductUnitStock::checkItems(
+            (int) $lockedHeader->from_warehouse_id,
+            $this->applySourceAvailabilityMode($items, $sourceIsMain, $isProduction)
+        );
+        if (! $check['ok']) {
+            $names = array_map(fn ($s) => $s['label'], $check['shortages']);
+            throw new \RuntimeException('Stok tidak mencukupi: ' . implode(', ', $names));
+        }
+
+        $code = $lockedHeader->transfer_code;
+        $allowUnpack = $sourceIsMain === true;
+        foreach ($items as $item) {
+            $cut = ProductUnitStock::deductQty(
+                (int) $lockedHeader->from_warehouse_id,
+                (int) $item['product_variant_id'],
+                (int) $item['unit_id'],
+                (float) $item['qty'],
+                $code,
+                'Stock Transfer ' . $code . ' - keluar gudang asal',
+                false,
+                $allowUnpack
+            );
+            if (! $cut['ok']) {
+                throw new \RuntimeException($cut['message'] ?? 'Gagal potong stok');
+            }
+        }
+
+        $lockedHeader->status = 2; // Kirim
+        if ($accBy > 0) {
+            $lockedHeader->acc_by = $accBy;
+        }
+        $lockedHeader->save();
     }
 
     public function accStockTransfer(Request $req)
@@ -2074,6 +2194,11 @@ class StockTransferController extends Controller
         $toIsMain = $this->warehouseIsMain($toId);
         $activeIsMain = $this->warehouseIsMain($activeWh);
 
+        // Sementara: buat ST manual hanya dari gudang eceran (request ke gudang utama).
+        if ($activeIsMain === true) {
+            return 'Pembuatan Stock Transfer dari gudang utama sementara dinonaktifkan. Request stok lewat gudang eceran.';
+        }
+
         // Request eceran: aktif = eceran = penerima, request = gudang utama
         if ($activeIsMain === false && $fromIsMain === true && $toIsMain === false) {
             if ($toId !== $activeWh) {
@@ -2498,12 +2623,16 @@ class StockTransferController extends Controller
         if ($status !== 1 || $activeWarehouseId <= 0) {
             return false;
         }
+        // Request eceran: setelah QC/Ops approve → tidak bisa edit (eceran maupun besar).
+        if ($isRetailRequest
+            && (StockTransferApproval::isQcApproved($header)
+                || StockTransferApproval::isOpsApproved($header))) {
+            return false;
+        }
         // Request eceran→besar: eceran (tujuan) boleh edit selama belum ada approval.
         if ($isRetailRequest
             && $toWarehouseId > 0
-            && $activeWarehouseId === $toWarehouseId
-            && ! StockTransferApproval::isQcApproved($header)
-            && ! StockTransferApproval::isOpsApproved($header)) {
+            && $activeWarehouseId === $toWarehouseId) {
             return true;
         }
         if ($fromWarehouseId <= 0) {
@@ -2637,9 +2766,11 @@ class StockTransferController extends Controller
             $this->warehouseIsMain($toWh)
         );
         if ($isRetailRequest
-            && $activeWh === $toWh
-            && ! StockTransferApproval::isQcApproved($header)
-            && ! StockTransferApproval::isOpsApproved($header)) {
+            && (StockTransferApproval::isQcApproved($header)
+                || StockTransferApproval::isOpsApproved($header))) {
+            return 'Request sudah di-approve; tidak bisa diedit. Tolak lalu buat request baru jika perlu ubah.';
+        }
+        if ($isRetailRequest && $activeWh === $toWh) {
             return true;
         }
         if ($activeWh !== $fromWh) {
@@ -2680,6 +2811,9 @@ class StockTransferController extends Controller
             if ($isRetailRequest && ! StockTransferApproval::canRejectAtOrigin($user, $header, $fromWh)) {
                 return 'Tolak request di gudang besar hanya oleh Staf QC atau Kepala Operasional (Ops setelah QC approve)';
             }
+            if (! $isRetailRequest && ! RoleAccess::can($user, 'Stock Transfer', 'others')) {
+                return 'Anda tidak punya akses cancel transfer';
+            }
 
             return true;
         }
@@ -2688,14 +2822,14 @@ class StockTransferController extends Controller
                 return 'Anda tidak punya akses ke gudang eceran transfer ini';
             }
             if (! StockTransferApproval::canCancelRetailRequestAtDestination($user, $header, $toWh, $fromWh)) {
-                return 'Cancel hanya oleh pemohon request. Kepala Operasional gudang asal menunggu approval QC terlebih dahulu';
+                return 'Cancel hanya oleh pemohon sebelum approval. Setelah di-approve, cancel hanya di gudang besar (QC/Ops).';
             }
 
             return true;
         }
 
         return 'Cancel hanya bisa dilakukan di gudang asal'
-            . ($isRetailRequest ? ' atau gudang eceran pemohon' : '')
+            . ($isRetailRequest ? ' atau gudang eceran pemohon (sebelum approval)' : '')
             . '.';
     }
 
