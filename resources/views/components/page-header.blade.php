@@ -209,9 +209,11 @@
                 @if (Route::is(['stockTransfer']))
                     @roleCan('Stock Transfer', 'create')
                     @php
-                        $stActiveIsMain = isset($activeWarehouse)
-                            && isset($activeWarehouse->type)
-                            && (int) ($activeWarehouse->type->is_main_warehouse ?? 0) === 1;
+                        // Hide Tambah di gudang utama (server-side) — hindari kedip F5 dari JS.
+                        $stAw = $activeWarehouse ?? null;
+                        $stActiveIsMain = $stAw
+                            && isset($stAw->type)
+                            && (int) ($stAw->type->is_main_warehouse ?? 0) === 1;
                     @endphp
                     @if (! $stActiveIsMain)
                     <li>

@@ -900,7 +900,7 @@
 @endif
 
 @if(Route::is(['stockTransfer']))
-{{-- Hanya Tanggal + Status + Gudang Dari + Clear. JANGAN tambah Gudang Ke (tujuan = gudang aktif). --}}
+{{-- Filter urutan: Tanggal (3) + Gudang Dari (5) + Status (2) + Reset (2) = 12 Kolom Penuh --}}
 <div class="profit-menu card stock-transfer-filter">
     <div class="row card-body pb-0 g-3 align-items-end">
         <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
@@ -912,11 +912,19 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Gudang Dari</label>
+                <select class="form-select" id="st_filter_from_warehouse">
+                    <option value="">Semua Gudang Asal</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Status</label>
                 <select class="form-select" id="st_filter_status">
-                    <option value="">Semua</option>
+                    <option value="">Semua Status</option>
                     <option value="1">Pending</option>
                     <option value="requested">Requested (tunggu QC)</option>
                     <option value="need_approval">Need Approval (tunggu Ops)</option>
@@ -927,17 +935,13 @@
                 </select>
             </div>
         </div>
-        <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12">
-            <div class="input-block mb-3">
-                <label>Gudang Dari</label>
-                <select class="form-select" id="st_filter_from_warehouse">
-                    <option value="">Semua</option>
-                </select>
-            </div>
-        </div>
         <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
-            <div class="d-flex gap-2 justify-content-xl-end justify-content-lg-end justify-content-md-end justify-content-end mb-3">
-                <a href="javascript:void(0);" class="btn btn-outline-secondary btn-clear-st-filter">Clear</a>
+            <div class="input-block mb-3">
+                <a href="javascript:void(0);" class="btn btn-outline-secondary w-100 btn-clear-st-filter d-flex align-items-center justify-content-center gap-1.5"
+                    style="height: 42px; border-radius: 8px; font-size: 13px; font-weight: 600;" title="Reset Filter">
+                    <i class="fe fe-rotate-ccw" style="font-size: 13px;"></i>
+                    <span>Reset</span>
+                </a>
             </div>
         </div>
     </div>

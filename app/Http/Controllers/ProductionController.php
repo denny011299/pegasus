@@ -128,6 +128,34 @@ class ProductionController extends Controller
         if ($isRevisionResubmit) {
             // Revisi wajib dianggap pengajuan baru di tanggal hari ini.
             $data['production_date'] = now()->toDateString();
+        } else {
+            $rawDate = trim((string) ($data['production_date'] ?? ''));
+            try {
+                $prodDate = \Carbon\Carbon::hasFormat($rawDate, 'Y-m-d')
+                    ? \Carbon\Carbon::createFromFormat('Y-m-d', $rawDate)->startOfDay()
+                    : \Carbon\Carbon::parse($rawDate)->startOfDay();
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'status' => 0,
+                    'header' => 'Tanggal Tidak Valid',
+                    'message' => 'Format tanggal produksi tidak valid.',
+                ]);
+            }
+            if ($prodDate->lt(now()->startOfDay())) {
+                return response()->json([
+                    'status' => 0,
+                    'header' => 'Tanggal Tidak Valid',
+                    'message' => 'Tanggal produksi minimal hari ini (tanggal sebelumnya tidak diizinkan).',
+                ]);
+            }
+            if ($prodDate->gt(now()->startOfDay()->addDay())) {
+                return response()->json([
+                    'status' => 0,
+                    'header' => 'Tanggal Tidak Valid',
+                    'message' => 'Tanggal produksi maksimal 1 hari setelah hari ini.',
+                ]);
+            }
+            $data['production_date'] = $prodDate->toDateString();
         }
         $item = json_decode($req->detail, true);
         $bahan = json_decode($req->list_bahan, true);
@@ -494,16 +522,9 @@ class ProductionController extends Controller
             }
         }
 
-        if (!$isRevisionResubmit && $data['production_date'] != now()->toDateString()) {
-            $req->merge(['production_id' => $p->production_id]);
-            $approval = $this->accProduction($req);
-            if (
-                $approval instanceof \Illuminate\Http\JsonResponse
-                && (int) ($approval->getData(true)['status'] ?? 0) !== 1
-            ) {
-                return $approval;
-            }
-        }
+        // Jangan auto-ACC di sini. Simpan = Pending di list Produksi.
+        // Stock Transfer (tujuan eceran) baru dibuat saat Acc produksi manual
+        // (atau lewat production:resolve-overdue).
 
         return response()->json([
             "status" => 1,
