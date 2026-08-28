@@ -31,9 +31,19 @@ class StockOpnameDetailBahan extends Model
             return $result;
         }
 
+        // Pin ->stock ke gudang dokumen ini (bukan gudang aktif sesi yang generate PDF-nya) --
+        // lihat catatan di ProductVariant::getProductVariantBulk(). Hanya bisa diresolve kalau
+        // dipanggil untuk satu dokumen spesifik (filter stob_id diberikan).
+        $warehouseId = null;
+        if ($data['stob_id']) {
+            $stob = StockOpnameBahan::find($data['stob_id']);
+            $warehouseId = $stob && $stob->warehouse_id ? (int) $stob->warehouse_id : null;
+        }
+
         // Enrich sekali via bulk (hindari N+1 getSupplies per baris).
         $suppliesMap = (new Supplies())->getSuppliesBulk(
-            $result->pluck('supplies_id')->unique()->filter()->values()->all()
+            $result->pluck('supplies_id')->unique()->filter()->values()->all(),
+            $warehouseId
         );
 
         foreach ($result as $key => $value) {
