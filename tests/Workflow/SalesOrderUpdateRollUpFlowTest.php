@@ -123,6 +123,64 @@ class SalesOrderUpdateRollUpFlowTest extends TestCase
         return $so;
     }
 
+    /**
+     * A second, unrelated product line added to an SO alongside the ladder product under test, and
+     * always kept unchanged across the edit -- SalesOrderStock::buildPlan() rejects an update that
+     * would leave an SO with zero lines ("Tidak ada item pengiriman"), so a test of "the ladder
+     * product's line gets removed entirely" needs a second line to keep the SO non-empty. Simple
+     * product, no unit ladder of its own, so it can't interfere with the DOS/Piece assertions.
+     *
+     * @return array{0: ProductStock, 1: ProductVariant}
+     */
+    private function createAnchorProduct(SalesOrder $so, int $qty): array
+    {
+        $category = Category::first() ?? tap(new Category(), function ($c) {
+            $c->category_name = 'SO RollUp Anchor Category';
+            $c->status = 1;
+            $c->save();
+        });
+
+        $product = new Product();
+        $product->product_name = 'SO RollUp Anchor Product '.uniqid();
+        $product->category_id = $category->category_id;
+        $product->product_unit = json_encode([self::PIECE]);
+        $product->unit_id = self::PIECE;
+        $product->status = 1;
+        $product->save();
+
+        $variant = new ProductVariant();
+        $variant->product_id = $product->product_id;
+        $variant->product_variant_name = 'SO RollUp Anchor Variant';
+        $variant->product_variant_sku = 'WF-SOROLL-ANCHOR-'.uniqid();
+        $variant->product_variant_price = 1000;
+        $variant->status = 1;
+        $variant->save();
+
+        $stock = new ProductStock();
+        $stock->product_id = $product->product_id;
+        $stock->product_variant_id = $variant->product_variant_id;
+        $stock->unit_id = self::PIECE;
+        $stock->warehouse_id = 1;
+        $stock->ps_stock = 100;
+        $stock->status = 1;
+        $stock->save();
+
+        $sod = new SalesOrderDetail();
+        $sod->so_id = $so->so_id;
+        $sod->product_variant_id = $variant->product_variant_id;
+        $sod->sod_nama = 'SO RollUp Anchor Product';
+        $sod->sod_variant = $variant->product_variant_name;
+        $sod->sod_sku = $variant->product_variant_sku;
+        $sod->unit_id = self::PIECE;
+        $sod->sod_harga = 1000;
+        $sod->sod_qty = $qty;
+        $sod->sod_subtotal = $qty * 1000;
+        $sod->status = 1;
+        $sod->save();
+
+        return [$stock, $variant];
+    }
+
     public function test_removing_a_line_rolls_its_returned_stock_up_the_ladder(): void
     {
         $this->actingAsSuperAdminStaff();
@@ -130,17 +188,33 @@ class SalesOrderUpdateRollUpFlowTest extends TestCase
         // Start with 0 Piece / 0 DOS on hand; the SO has consumed 24 Piece.
         [$pieceStock, $dosStock, $variant] = $this->createFixture(0, 0);
         $so = $this->createApprovedSo($variant, 24);
+        // Kept unchanged across the edit -- see createAnchorProduct()'s doc for why this is here.
+        [, $anchorVariant] = $this->createAnchorProduct($so, 5);
+        $anchorSodId = SalesOrderDetail::where('so_id', $so->so_id)
+            ->where('product_variant_id', $anchorVariant->product_variant_id)
+            ->value('sod_id');
 
-        // Edit the SO down to an empty product list — the line is removed entirely.
+        // Edit the SO down to just the anchor line — the ladder product's line is removed entirely.
         $response = $this->post('/updateSalesOrder', [
             'so_id' => $so->so_id,
             'so_number' => $so->so_number,
             'so_invoice_no' => $so->so_invoice_no,
             'so_customer' => $so->so_customer,
             'so_date' => now()->toDateString(),
-            'so_total' => 0,
+            'so_total' => 5 * 1000,
             'so_img' => json_encode([]),
-            'products' => json_encode([]),
+            'products' => json_encode([[
+                'sod_id' => $anchorSodId,
+                'product_variant_id' => $anchorVariant->product_variant_id,
+                'product_name' => 'SO RollUp Anchor Product',
+                'pr_name' => 'SO RollUp Anchor Product',
+                'product_variant_name' => $anchorVariant->product_variant_name,
+                'product_variant_sku' => $anchorVariant->product_variant_sku,
+                'unit_id' => self::PIECE,
+                'product_variant_price' => 1000,
+                'so_qty' => 5,
+                'so_subtotal' => 5 * 1000,
+            ]]),
         ]);
         $response->assertStatus(200);
 

@@ -126,12 +126,28 @@ class StockController extends Controller
         $data = $req->all();
         $sto = StockOpname::find($data['sto_id'] ?? null);
 
-        if (!$sto || !$sto->is_draft || !$this->canManageStockOpnameDraft($sto)) {
+        if (!$sto) {
+            return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
+        }
+        // Draft: hanya pembuatnya (atau super admin) boleh mengedit -- lihat
+        // canManageStockOpnameDraft(). Menunggu (bukan draft, belum diputuskan): siapa pun yang
+        // berhak mengakses modul ini boleh mengoreksi hasil hitung sebelum ACC/tolak (merged from
+        // main's efef95e, 2026-08-28 -- redesign v2's "koreksi ketikan sebelum ACC" scenario is
+        // load-bearing in its own test suite; user confirmed 2026-08-28 this should be allowed the
+        // same way accStockOpname()/tolakStockOpname() already aren't creator-restricted, loosening
+        // fase2's original drafts-only gate here). Sudah diputuskan (disetujui/ditolak): snapshot
+        // final, tidak boleh diedit lagi lewat endpoint ini sama sekali.
+        if ($sto->is_draft) {
+            if (!$this->canManageStockOpnameDraft($sto)) {
+                return ["status" => -1, "message" => "Tidak diizinkan mengubah draft milik staff lain"];
+            }
+        } elseif ((int) $sto->status !== 1) {
             return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
         }
 
-        // Draft tetap draft sampai benar-benar diajukan lewat /submitStockOpname.
-        $data['is_draft'] = true;
+        // Jangan diam-diam mengubah status draft/menunggu di sini -- itu keputusan
+        // /submitStockOpname, bukan /updateStockOpname.
+        $data['is_draft'] = $sto->is_draft;
         $items = json_decode($req->item, true) ?: [];
 
         // NB (merged from main's efef95e, 2026-08-28): the is_old_version branch below keeps
@@ -888,12 +904,20 @@ class StockController extends Controller
         $data = $req->all();
         $stob = StockOpnameBahan::find($data['stob_id'] ?? null);
 
-        if (!$stob || !$stob->is_draft || !$this->canManageStockOpnameBahanDraft($stob)) {
+        if (!$stob) {
+            return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
+        }
+        // Kembaran updateStockOpname() Produk -- lihat komentarnya untuk alasan lengkap kenapa
+        // menunggu (bukan draft) juga boleh diedit sekarang.
+        if ($stob->is_draft) {
+            if (!$this->canManageStockOpnameBahanDraft($stob)) {
+                return ["status" => -1, "message" => "Tidak diizinkan mengubah draft milik staff lain"];
+            }
+        } elseif ((int) $stob->status !== 1) {
             return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
         }
 
-        // Draft tetap draft sampai benar-benar diajukan lewat /submitStockOpnameBahan.
-        $data['is_draft'] = true;
+        $data['is_draft'] = $stob->is_draft;
         $items = json_decode($req->item, true) ?: [];
 
         // NB (merged from main's efef95e, 2026-08-28): kembaran updateStockOpname() Produk -- lihat

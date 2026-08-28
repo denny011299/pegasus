@@ -58,6 +58,12 @@ class ProductionOutputConversionDoesNotCascadeMultipleLevelsTest extends TestCas
     public function test_producing_an_exact_multiple_of_the_second_ladder_level_now_rolls_all_the_way_up(): void
     {
         $this->actingAsSuperAdminStaff();
+        // pegasus_testing has more than one active main-type warehouse (see memory
+        // pegasus-testing-db-multiwarehouse-drift) -- without this, accProduction()'s implicit
+        // default-warehouse pick could land on a DIFFERENT one than self::WAREHOUSE_ID below,
+        // leaving this test's own fixture rows untouched and silently "passing" the 0-remainder
+        // assertions for the wrong reason.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $category = new Category();
         $category->category_name = 'Output Cascade Regression Category';
