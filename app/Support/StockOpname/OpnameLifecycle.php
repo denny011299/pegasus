@@ -144,6 +144,9 @@ class OpnameLifecycle
         }
 
         $lines = StockOpnameLine::getLines($sto->sto_id)->groupBy('product_variant_id');
+        // Gudang DOKUMEN, bukan gudang aktif sesi yang kebetulan menyimpan -- lihat
+        // UnitRollUp::collapseProduct() untuk alasannya.
+        $warehouseId = $sto->warehouse_id ?: null;
 
         foreach ($lines as $productVariantId => $group) {
             if (! $productVariantId) {
@@ -151,7 +154,7 @@ class OpnameLifecycle
             }
 
             $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sol_counted_qty])->all();
-            $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit);
+            $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit, $warehouseId);
             if ($collapsed === []) {
                 continue;
             }

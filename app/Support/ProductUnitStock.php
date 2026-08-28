@@ -1062,14 +1062,28 @@ class ProductUnitStock
         float $qty,
         string $logCode,
         string $logNotes = 'Stock Transfer - masuk',
-        bool $rollUp = false
+        bool $rollUp = false,
+        ?array $rollUpAllowedUnitIds = null
     ): array {
         if ($qty <= 0) {
             return ['ok' => true];
         }
 
+        // Daftar "satuan yang boleh dikredit" (lihat UnitRollUp's design notes):
+        //  - default (null): HANYA satuan yang sudah punya baris stok DI GUDANG INI. $warehouseId
+        //    wajib diteruskan -- dihitung dari gudang aktif sesi malah bisa meloloskan satuan yang
+        //    tak punya baris di gudang tujuan, dan creditOneProductUnit() akan MEMBUAT baris itu
+        //    (persis yang dicegah allow-list-nya).
+        //  - eksplisit: caller yang memang sengaja menyediakan baris baru dengan konfirmasi user
+        //    lebih dulu (accProduction() + confirm_create_stock) meneruskan seluruh tangga satuan
+        //    lewat UnitRollUp::ladderUnitIds().
         $credits = $rollUp
-            ? UnitRollUp::planProduct($productVariantId, $unitId, (int) $qty)
+            ? UnitRollUp::plan(
+                UnitRollUp::productChain($productVariantId),
+                $unitId,
+                (int) $qty,
+                $rollUpAllowedUnitIds ?? UnitRollUp::allowedProductUnitIds($productVariantId, $warehouseId)
+            )
             : [['unit_id' => $unitId, 'qty' => $qty]];
 
         foreach ($credits as $credit) {

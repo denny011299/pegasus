@@ -192,31 +192,38 @@ class UnitRollUp
      * Convenience wrapper: gulung satu baris produk, dibatasi ke satuan yang sudah punya baris
      * stok aktif (kebijakan yang sama dengan planProduct()).
      *
+     * $warehouseId: sama seperti allowedProductUnitIds() -- untuk Stock Opname ini WAJIB diisi
+     * gudang dokumennya sendiri, bukan gudang aktif sesi yang kebetulan menyimpan. Kalau tidak,
+     * dokumen bisa tergulung ke satuan yang tidak punya baris stok di gudangnya sendiri, dan ACC-nya
+     * nanti (accStockOpnameV2(), yang memang dipin ke gudang dokumen) menolak dengan "Baris stok
+     * tidak ditemukan".
+     *
      * @param  array<int, int|null>  $qtyByUnitId
      * @return array<int, array{unit_id: int, qty: int}>
      */
-    public static function collapseProduct(int $productVariantId, array $qtyByUnitId): array
+    public static function collapseProduct(int $productVariantId, array $qtyByUnitId, ?int $warehouseId = null): array
     {
         return self::collapse(
             self::productChain($productVariantId),
             $qtyByUnitId,
-            self::allowedProductUnitIds($productVariantId)
+            self::allowedProductUnitIds($productVariantId, $warehouseId)
         );
     }
 
     /**
      * Convenience wrapper: gulung satu baris bahan, dibatasi ke satuan yang sudah punya baris
      * stok aktif (kebijakan yang sama dengan planSupplies()).
+     * $warehouseId: lihat catatan di collapseProduct().
      *
      * @param  array<int, int|null>  $qtyByUnitId
      * @return array<int, array{unit_id: int, qty: int}>
      */
-    public static function collapseSupplies(int $suppliesId, array $qtyByUnitId): array
+    public static function collapseSupplies(int $suppliesId, array $qtyByUnitId, ?int $warehouseId = null): array
     {
         return self::collapse(
             self::suppliesChain($suppliesId),
             $qtyByUnitId,
-            self::allowedSuppliesUnitIds($suppliesId)
+            self::allowedSuppliesUnitIds($suppliesId, $warehouseId)
         );
     }
 
@@ -275,6 +282,29 @@ class UnitRollUp
             ->all();
     }
 
+    /**
+     * EVERY unit appearing in a product's ladder, regardless of whether it currently has a stock
+     * row — the permissive counterpart to allowedProductUnitIds().
+     *
+     * Only for callers that provision a missing row deliberately and visibly: today that is
+     * ProductionController::accProduction(), whose `confirm_create_stock` round-trip asks the user
+     * before creating anything (see this class's "Design notes" above, and
+     * tests/Regression/ProductionOutputLadderNullGuardCrashTest.php which pins that behavior).
+     * Any caller WITHOUT such a confirmation step must keep using allowedProductUnitIds().
+     *
+     * @return array<int, int>
+     */
+    public static function ladderUnitIds(int $productVariantId): array
+    {
+        $units = [];
+        foreach (self::productChain($productVariantId) as $link) {
+            $units[$link['small']] = true;
+            $units[$link['big']] = true;
+        }
+
+        return array_map('intval', array_keys($units));
+    }
+
     /** @return array<int, array{small: int, big: int, ratio: int}> */
     public static function suppliesChain(int $suppliesId): array
     {
@@ -289,20 +319,40 @@ class UnitRollUp
             ->all();
     }
 
-    /** Units that already have an active ProductStock row — the default crediting policy. */
-    public static function allowedProductUnitIds(int $productVariantId): array
+    /**
+     * Units that already have an active ProductStock row — the default crediting policy.
+     *
+     * $warehouseId pins the lookup to ONE warehouse instead of ProductStock's ambient
+     * "active session warehouse" global scope (added 2026-08-28 with the fase2/main merge, see
+     * cdocs/docs/fase2-merge-plan.md Batch 11). This has to match whichever warehouse the CALLER
+     * will actually credit: a plan built against warehouse A's unit list but applied to warehouse
+     * B can roll into a unit that has no row in B, and ProductUnitStock::creditOneProductUnit()
+     * CREATES a missing row — silently provisioning exactly the stock row this allow-list exists
+     * to prevent. Pass null (default) only when the caller itself also writes through the ambient
+     * scope, so both sides agree.
+     */
+    public static function allowedProductUnitIds(int $productVariantId, ?int $warehouseId = null): array
     {
-        return ProductStock::where('product_variant_id', $productVariantId)
+        return (($warehouseId !== null)
+                ? ProductStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : ProductStock::query())
+            ->where('product_variant_id', $productVariantId)
             ->where('status', 1)
             ->pluck('unit_id')
             ->map(fn ($u) => (int) $u)
             ->all();
     }
 
-    /** Units that already have an active SuppliesStock row — the default crediting policy. */
-    public static function allowedSuppliesUnitIds(int $suppliesId): array
+    /**
+     * Units that already have an active SuppliesStock row — the default crediting policy.
+     * $warehouseId behaves exactly as in allowedProductUnitIds(); see that method's note.
+     */
+    public static function allowedSuppliesUnitIds(int $suppliesId, ?int $warehouseId = null): array
     {
-        return SuppliesStock::where('supplies_id', $suppliesId)
+        return (($warehouseId !== null)
+                ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : SuppliesStock::query())
+            ->where('supplies_id', $suppliesId)
             ->where('status', 1)
             ->pluck('unit_id')
             ->map(fn ($u) => (int) $u)
@@ -314,13 +364,13 @@ class UnitRollUp
      *
      * @return array<int, array{unit_id: int, qty: int}>
      */
-    public static function planProduct(int $productVariantId, int $startUnitId, int $qty): array
+    public static function planProduct(int $productVariantId, int $startUnitId, int $qty, ?int $warehouseId = null): array
     {
         return self::plan(
             self::productChain($productVariantId),
             $startUnitId,
             $qty,
-            self::allowedProductUnitIds($productVariantId)
+            self::allowedProductUnitIds($productVariantId, $warehouseId)
         );
     }
 
@@ -329,13 +379,13 @@ class UnitRollUp
      *
      * @return array<int, array{unit_id: int, qty: int}>
      */
-    public static function planSupplies(int $suppliesId, int $startUnitId, int $qty): array
+    public static function planSupplies(int $suppliesId, int $startUnitId, int $qty, ?int $warehouseId = null): array
     {
         return self::plan(
             self::suppliesChain($suppliesId),
             $startUnitId,
             $qty,
-            self::allowedSuppliesUnitIds($suppliesId)
+            self::allowedSuppliesUnitIds($suppliesId, $warehouseId)
         );
     }
 }

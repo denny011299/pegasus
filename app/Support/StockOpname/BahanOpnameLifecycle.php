@@ -97,6 +97,8 @@ class BahanOpnameLifecycle
         }
 
         $lines = StockOpnameBahanLine::getLines($stob->stob_id)->groupBy('supplies_id');
+        // Gudang DOKUMEN -- lihat OpnameLifecycle::rollUpUnits().
+        $warehouseId = $stob->warehouse_id ?: null;
 
         foreach ($lines as $suppliesId => $group) {
             if (! $suppliesId) {
@@ -104,7 +106,7 @@ class BahanOpnameLifecycle
             }
 
             $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sobl_counted_qty])->all();
-            $collapsed = UnitRollUp::collapseSupplies((int) $suppliesId, $qtyByUnit);
+            $collapsed = UnitRollUp::collapseSupplies((int) $suppliesId, $qtyByUnit, $warehouseId);
             if ($collapsed === []) {
                 continue;
             }
