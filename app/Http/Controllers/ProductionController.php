@@ -1120,6 +1120,10 @@ class ProductionController extends Controller
             }
             ProductUnitStock::clearCache();
             foreach ($inventoryBuckets as $output) {
+                // rollUp: true (GH #19, merged from main's ebadabf/51684f3, 2026-08-28) -- an exact
+                // multiple of a higher product_relations unit (e.g. 24 Piece = 2 DOS) is credited as
+                // that higher unit, mirroring physical packing, instead of always staying flat at
+                // the produced unit. See ProductUnitStock::addQty()'s $rollUp doc.
                 $add = ProductUnitStock::addQty(
                     (int) $mainWarehouse->id,
                     (int) $output['product_id'],
@@ -1127,7 +1131,8 @@ class ProductionController extends Controller
                     (int) $output['unit_id'],
                     (float) $output['qty'],
                     $p->production_code,
-                    'Hasil produksi ' . $p->production_code
+                    'Hasil produksi ' . $p->production_code,
+                    true
                 );
                 if (! $add['ok']) {
                     throw new \RuntimeException(

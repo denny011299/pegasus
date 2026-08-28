@@ -1041,7 +1041,16 @@ class ProductUnitStock
     }
 
     /**
-     * Tambah stok di gudang (satuan yang sama). Buat baris stok jika belum ada.
+     * Tambah stok di gudang (satuan yang sama, kecuali $rollUp). Buat baris stok jika belum ada.
+     *
+     * $rollUp (merged from main's GH #19 + PR #75, 2026-08-28): kalau true, $qty di $unitId
+     * dinaikkan berjenjang lewat UnitRollUp::planProduct() sebelum dikredit -- 24 Piece yang
+     * exact-multiple dari rasio DOS/Sak masuk sebagai DOS/Sak, bukan menumpuk sebagai Piece.
+     * UnitRollUp hanya menaikkan ke satuan yang SUDAH punya baris ProductStock aktif, jadi tidak
+     * ada baris baru yang dibuat diam-diam oleh roll-up itu sendiri -- baris di satuan awal
+     * ($unitId) tetap dibuat otomatis seperti biasa kalau belum ada (lihat di bawah). Default
+     * false supaya caller lain (Stock Transfer, retur SO, dll -- lihat pemanggil addQty()
+     * lainnya) tetap kredit flat persis di satuan yang diminta, tanpa reinterpretasi.
      *
      * @return array{ok: bool, message?: string}
      */
@@ -1052,12 +1061,46 @@ class ProductUnitStock
         int $unitId,
         float $qty,
         string $logCode,
-        string $logNotes = 'Stock Transfer - masuk'
+        string $logNotes = 'Stock Transfer - masuk',
+        bool $rollUp = false
     ): array {
         if ($qty <= 0) {
             return ['ok' => true];
         }
 
+        $credits = $rollUp
+            ? UnitRollUp::planProduct($productVariantId, $unitId, (int) $qty)
+            : [['unit_id' => $unitId, 'qty' => $qty]];
+
+        foreach ($credits as $credit) {
+            if ($credit['qty'] <= 0) {
+                continue;
+            }
+            self::creditOneProductUnit(
+                $warehouseId,
+                $productId,
+                $productVariantId,
+                (int) $credit['unit_id'],
+                (float) $credit['qty'],
+                $logCode,
+                $logNotes
+            );
+        }
+
+        self::clearCache();
+
+        return ['ok' => true];
+    }
+
+    private static function creditOneProductUnit(
+        int $warehouseId,
+        int $productId,
+        int $productVariantId,
+        int $unitId,
+        float $qty,
+        string $logCode,
+        string $logNotes
+    ): void {
         $rows = ProductStock::withoutGlobalScope('active_warehouse')
             ->where('status', 1)
             ->where('warehouse_id', $warehouseId)
@@ -1100,10 +1143,6 @@ class ProductUnitStock
             'unit_id' => $unitId,
             'warehouse_id' => $warehouseId,
         ]);
-
-        self::clearCache();
-
-        return ['ok' => true];
     }
 
     /**

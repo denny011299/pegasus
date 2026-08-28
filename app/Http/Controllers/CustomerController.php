@@ -195,8 +195,10 @@ class CustomerController extends Controller
         // method), including a fix making a deleted line's stock revert roll up the unit ladder.
         // fase2's updateSalesOrder() delegates all of that to SalesOrderStock::executeRestore()/
         // buildPlan()/executeDeduct() below -- the equivalent roll-up-on-restore fix has been
-        // ported there instead (see SalesOrderStock::executeRestore()), since that's what actually
-        // writes the revert.
+        // ported there instead (see SalesOrderStock::executeRestore()'s $rollUp param), since
+        // that's what actually writes the revert. $oldLines is split below into kept-vs-removed so
+        // only removed lines' revert rolls up (a kept line is re-deducted by executeDeduct() in
+        // this same transaction, so rolling it up first is pure churn).
         $oldRetailWh = (int) ($soBefore->retail_warehouse_id ?? 0);
         $newRetailWh = (int) ($data['retail_warehouse_id'] ?? $oldRetailWh);
 
@@ -220,6 +222,21 @@ class CustomerController extends Controller
             ];
         }
 
+        $newLineKeys = [];
+        foreach ($newLines as $newLine) {
+            $newLineKeys[$newLine['product_variant_id'] . '_' . $newLine['unit_id']] = true;
+        }
+        $oldLinesKept = [];
+        $oldLinesRemoved = [];
+        foreach ($oldLines as $oldLine) {
+            $key = $oldLine['product_variant_id'] . '_' . $oldLine['unit_id'];
+            if (isset($newLineKeys[$key])) {
+                $oldLinesKept[] = $oldLine;
+            } else {
+                $oldLinesRemoved[] = $oldLine;
+            }
+        }
+
         // Diperbaiki (2026-08-08): buildPlan() (cek kecukupan stok untuk item BARU) dulu dijalankan
         // di sini, SEBELUM executeRestore() di bawah mengembalikan stok item LAMA — jadi SO yang
         // stoknya sudah habis terpakai (kasus normal: menjual persis sisa stok) ditolak "Stok tidak
@@ -230,13 +247,27 @@ class CustomerController extends Controller
         // catch kalau gagal.
         $plan = null;
         try {
-            DB::transaction(function () use ($data, $productsData, $oldLines, $oldRetailWh, $newLines, $newRetailWh, $soBefore, &$plan) {
-                if ($oldLines !== []) {
+            DB::transaction(function () use ($data, $productsData, $oldLinesKept, $oldLinesRemoved, $oldRetailWh, $newLines, $newRetailWh, $soBefore, &$plan) {
+                if ($oldLinesKept !== []) {
                     $restore = SalesOrderStock::executeRestore(
-                        $oldLines,
+                        $oldLinesKept,
                         $oldRetailWh > 0 ? $oldRetailWh : null,
                         $data['so_number'] ?? ($soBefore->so_number ?? '-'),
                         'Update Pengiriman (kembalikan stok)'
+                    );
+                    if (! ($restore['ok'] ?? false)) {
+                        throw new \RuntimeException($restore['message'] ?? 'Gagal kembalikan stok lama');
+                    }
+                }
+                if ($oldLinesRemoved !== []) {
+                    // rollUp: true -- these lines were deleted from the SO, so this revert is
+                    // final (nothing re-deducts them later in this same request).
+                    $restore = SalesOrderStock::executeRestore(
+                        $oldLinesRemoved,
+                        $oldRetailWh > 0 ? $oldRetailWh : null,
+                        $data['so_number'] ?? ($soBefore->so_number ?? '-'),
+                        'Update Pengiriman (kembalikan stok)',
+                        true
                     );
                     if (! ($restore['ok'] ?? false)) {
                         throw new \RuntimeException($restore['message'] ?? 'Gagal kembalikan stok lama');
