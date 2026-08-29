@@ -1,0 +1,1902 @@
+[
+    {
+        "cgd_id": 1,
+        "cg_id": 2,
+        "customer_id": 4,
+        "cgd_notes": "Kas Harian",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-20 14:44:39",
+        "updated_at": "2026-04-20 14:44:39"
+    },
+    {
+        "cgd_id": 2,
+        "cg_id": 3,
+        "customer_id": 4,
+        "cgd_notes": "Kas harian",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-20 14:45:32",
+        "updated_at": "2026-04-20 14:45:32"
+    },
+    {
+        "cgd_id": 3,
+        "cg_id": 4,
+        "customer_id": 6,
+        "cgd_notes": "Kas Harian",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-21 11:14:18",
+        "updated_at": "2026-04-21 11:14:18"
+    },
+    {
+        "cgd_id": 4,
+        "cg_id": 5,
+        "customer_id": 6,
+        "cgd_notes": "Kas Harian",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-28 07:54:14",
+        "updated_at": "2026-04-28 07:54:14"
+    },
+    {
+        "cgd_id": 5,
+        "cg_id": 6,
+        "customer_id": 6,
+        "cgd_notes": "Kas Harian",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-28 08:18:56",
+        "updated_at": "2026-04-28 08:18:56"
+    },
+    {
+        "cgd_id": 6,
+        "cg_id": 8,
+        "customer_id": 4,
+        "cgd_notes": "Kas Harian",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-04-28 10:12:25",
+        "updated_at": "2026-04-28 10:12:25"
+    },
+    {
+        "cgd_id": 7,
+        "cg_id": 8,
+        "customer_id": 5,
+        "cgd_notes": "-",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-28 10:12:25",
+        "updated_at": "2026-04-28 10:12:25"
+    },
+    {
+        "cgd_id": 8,
+        "cg_id": 8,
+        "customer_id": 6,
+        "cgd_notes": "-",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-28 10:12:25",
+        "updated_at": "2026-04-28 10:12:25"
+    },
+    {
+        "cgd_id": 9,
+        "cg_id": 9,
+        "customer_id": 6,
+        "cgd_notes": "-",
+        "cgd_nominal": 1500000,
+        "status": 1,
+        "created_at": "2026-04-28 10:14:41",
+        "updated_at": "2026-04-28 10:14:41"
+    },
+    {
+        "cgd_id": 10,
+        "cg_id": 9,
+        "customer_id": 5,
+        "cgd_notes": "-",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-28 10:14:41",
+        "updated_at": "2026-04-28 10:14:41"
+    },
+    {
+        "cgd_id": 11,
+        "cg_id": 12,
+        "customer_id": 6,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-04-30 15:08:55",
+        "updated_at": "2026-04-30 15:08:55"
+    },
+    {
+        "cgd_id": 12,
+        "cg_id": 15,
+        "customer_id": 3,
+        "cgd_notes": "Untuk revisi Penyesuaian Kas",
+        "cgd_nominal": 2500000,
+        "status": 1,
+        "created_at": "2026-04-30 15:23:09",
+        "updated_at": "2026-04-30 15:23:09"
+    },
+    {
+        "cgd_id": 13,
+        "cg_id": 17,
+        "customer_id": 4,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-30 15:31:11",
+        "updated_at": "2026-04-30 15:31:11"
+    },
+    {
+        "cgd_id": 14,
+        "cg_id": 17,
+        "customer_id": 5,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-30 15:31:11",
+        "updated_at": "2026-04-30 15:31:11"
+    },
+    {
+        "cgd_id": 15,
+        "cg_id": 17,
+        "customer_id": 7,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-04-30 15:31:11",
+        "updated_at": "2026-04-30 15:31:11"
+    },
+    {
+        "cgd_id": 16,
+        "cg_id": 19,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-04 09:52:12",
+        "updated_at": "2026-05-04 09:52:12"
+    },
+    {
+        "cgd_id": 17,
+        "cg_id": 19,
+        "customer_id": 4,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-04 09:52:12",
+        "updated_at": "2026-05-04 09:52:12"
+    },
+    {
+        "cgd_id": 18,
+        "cg_id": 19,
+        "customer_id": 8,
+        "cgd_notes": "um Hadi",
+        "cgd_nominal": 100000,
+        "status": 1,
+        "created_at": "2026-05-04 09:52:12",
+        "updated_at": "2026-05-04 09:52:12"
+    },
+    {
+        "cgd_id": 19,
+        "cg_id": 19,
+        "customer_id": 8,
+        "cgd_notes": "Gaji produksi",
+        "cgd_nominal": 9831000,
+        "status": 1,
+        "created_at": "2026-05-04 09:52:12",
+        "updated_at": "2026-05-04 09:52:12"
+    },
+    {
+        "cgd_id": 20,
+        "cg_id": 19,
+        "customer_id": 8,
+        "cgd_notes": "bonus produksi",
+        "cgd_nominal": 595000,
+        "status": 1,
+        "created_at": "2026-05-04 09:52:12",
+        "updated_at": "2026-05-04 09:52:12"
+    },
+    {
+        "cgd_id": 21,
+        "cg_id": 21,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-04 11:51:10",
+        "updated_at": "2026-05-04 11:51:10"
+    },
+    {
+        "cgd_id": 22,
+        "cg_id": 21,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-04 11:51:10",
+        "updated_at": "2026-05-04 11:51:10"
+    },
+    {
+        "cgd_id": 23,
+        "cg_id": 21,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan pijam dari tabungan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-04 11:51:10",
+        "updated_at": "2026-05-04 11:51:10"
+    },
+    {
+        "cgd_id": 24,
+        "cg_id": 22,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-05 10:49:49",
+        "updated_at": "2026-05-05 10:49:49"
+    },
+    {
+        "cgd_id": 25,
+        "cg_id": 22,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-05 10:49:49",
+        "updated_at": "2026-05-05 10:49:49"
+    },
+    {
+        "cgd_id": 26,
+        "cg_id": 23,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-05 10:53:42",
+        "updated_at": "2026-05-05 10:53:42"
+    },
+    {
+        "cgd_id": 27,
+        "cg_id": 24,
+        "customer_id": 4,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-06 07:08:20",
+        "updated_at": "2026-05-06 07:08:20"
+    },
+    {
+        "cgd_id": 28,
+        "cg_id": 24,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-06 07:08:20",
+        "updated_at": "2026-05-06 07:08:20"
+    },
+    {
+        "cgd_id": 29,
+        "cg_id": 24,
+        "customer_id": 6,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-06 07:08:20",
+        "updated_at": "2026-05-06 07:08:20"
+    },
+    {
+        "cgd_id": 30,
+        "cg_id": 25,
+        "customer_id": 5,
+        "cgd_notes": "Uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-07 10:19:26",
+        "updated_at": "2026-05-07 10:19:26"
+    },
+    {
+        "cgd_id": 31,
+        "cg_id": 25,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jln",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-07 10:19:26",
+        "updated_at": "2026-05-07 10:19:26"
+    },
+    {
+        "cgd_id": 32,
+        "cg_id": 26,
+        "customer_id": 4,
+        "cgd_notes": "Uang jln",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-07 10:22:57",
+        "updated_at": "2026-05-07 10:22:57"
+    },
+    {
+        "cgd_id": 33,
+        "cg_id": 27,
+        "customer_id": 4,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-08 07:05:43",
+        "updated_at": "2026-05-08 07:05:43"
+    },
+    {
+        "cgd_id": 34,
+        "cg_id": 27,
+        "customer_id": 5,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-08 07:05:43",
+        "updated_at": "2026-05-08 07:05:43"
+    },
+    {
+        "cgd_id": 35,
+        "cg_id": 27,
+        "customer_id": 7,
+        "cgd_notes": "uang jln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-08 07:05:43",
+        "updated_at": "2026-05-08 07:05:43"
+    },
+    {
+        "cgd_id": 36,
+        "cg_id": 28,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-09 07:07:49",
+        "updated_at": "2026-05-09 07:07:49"
+    },
+    {
+        "cgd_id": 37,
+        "cg_id": 28,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-09 07:07:49",
+        "updated_at": "2026-05-09 07:07:49"
+    },
+    {
+        "cgd_id": 38,
+        "cg_id": 28,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-09 07:07:49",
+        "updated_at": "2026-05-09 07:07:49"
+    },
+    {
+        "cgd_id": 39,
+        "cg_id": 28,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-09 07:07:49",
+        "updated_at": "2026-05-09 07:07:49"
+    },
+    {
+        "cgd_id": 40,
+        "cg_id": 30,
+        "customer_id": 4,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-11 18:51:59",
+        "updated_at": "2026-05-11 18:51:59"
+    },
+    {
+        "cgd_id": 41,
+        "cg_id": 30,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-11 18:51:59",
+        "updated_at": "2026-05-11 18:51:59"
+    },
+    {
+        "cgd_id": 42,
+        "cg_id": 30,
+        "customer_id": 6,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-11 18:51:59",
+        "updated_at": "2026-05-11 18:51:59"
+    },
+    {
+        "cgd_id": 43,
+        "cg_id": 31,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-12 07:11:13",
+        "updated_at": "2026-05-12 07:11:13"
+    },
+    {
+        "cgd_id": 44,
+        "cg_id": 31,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-12 07:11:13",
+        "updated_at": "2026-05-12 07:11:13"
+    },
+    {
+        "cgd_id": 45,
+        "cg_id": 31,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-12 07:11:13",
+        "updated_at": "2026-05-12 07:11:13"
+    },
+    {
+        "cgd_id": 46,
+        "cg_id": 32,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-12 17:56:34",
+        "updated_at": "2026-05-12 17:56:34"
+    },
+    {
+        "cgd_id": 47,
+        "cg_id": 33,
+        "customer_id": 4,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-13 07:11:18",
+        "updated_at": "2026-05-13 07:11:18"
+    },
+    {
+        "cgd_id": 48,
+        "cg_id": 33,
+        "customer_id": 7,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-13 07:11:18",
+        "updated_at": "2026-05-13 07:11:18"
+    },
+    {
+        "cgd_id": 49,
+        "cg_id": 33,
+        "customer_id": 8,
+        "cgd_notes": "uang makan",
+        "cgd_nominal": 100000,
+        "status": 1,
+        "created_at": "2026-05-13 07:11:18",
+        "updated_at": "2026-05-13 07:11:18"
+    },
+    {
+        "cgd_id": 50,
+        "cg_id": 34,
+        "customer_id": 4,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-15 07:06:43",
+        "updated_at": "2026-05-15 07:06:43"
+    },
+    {
+        "cgd_id": 51,
+        "cg_id": 34,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-15 07:06:43",
+        "updated_at": "2026-05-15 07:06:43"
+    },
+    {
+        "cgd_id": 52,
+        "cg_id": 34,
+        "customer_id": 6,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-15 07:06:43",
+        "updated_at": "2026-05-15 07:06:43"
+    },
+    {
+        "cgd_id": 53,
+        "cg_id": 35,
+        "customer_id": 7,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-15 14:29:22",
+        "updated_at": "2026-05-15 14:29:22"
+    },
+    {
+        "cgd_id": 54,
+        "cg_id": 35,
+        "customer_id": 6,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-15 14:29:22",
+        "updated_at": "2026-05-15 14:29:22"
+    },
+    {
+        "cgd_id": 55,
+        "cg_id": 36,
+        "customer_id": 4,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-16 07:33:40",
+        "updated_at": "2026-05-16 07:33:40"
+    },
+    {
+        "cgd_id": 56,
+        "cg_id": 36,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-16 07:33:40",
+        "updated_at": "2026-05-16 07:33:40"
+    },
+    {
+        "cgd_id": 57,
+        "cg_id": 36,
+        "customer_id": 7,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-16 07:33:40",
+        "updated_at": "2026-05-16 07:33:40"
+    },
+    {
+        "cgd_id": 58,
+        "cg_id": 38,
+        "customer_id": 4,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-18 20:05:39",
+        "updated_at": "2026-05-18 20:05:39"
+    },
+    {
+        "cgd_id": 59,
+        "cg_id": 38,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-18 20:05:39",
+        "updated_at": "2026-05-18 20:05:39"
+    },
+    {
+        "cgd_id": 60,
+        "cg_id": 38,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-18 20:05:39",
+        "updated_at": "2026-05-18 20:05:39"
+    },
+    {
+        "cgd_id": 61,
+        "cg_id": 38,
+        "customer_id": 7,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-18 20:05:39",
+        "updated_at": "2026-05-18 20:05:39"
+    },
+    {
+        "cgd_id": 62,
+        "cg_id": 38,
+        "customer_id": 6,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 1500000,
+        "status": 1,
+        "created_at": "2026-05-18 20:05:39",
+        "updated_at": "2026-05-18 20:05:39"
+    },
+    {
+        "cgd_id": 63,
+        "cg_id": 39,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-19 07:04:45",
+        "updated_at": "2026-05-19 07:04:45"
+    },
+    {
+        "cgd_id": 64,
+        "cg_id": 39,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-19 07:04:45",
+        "updated_at": "2026-05-19 07:04:45"
+    },
+    {
+        "cgd_id": 65,
+        "cg_id": 40,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-19 17:44:41",
+        "updated_at": "2026-05-19 17:44:41"
+    },
+    {
+        "cgd_id": 66,
+        "cg_id": 41,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-20 07:07:15",
+        "updated_at": "2026-05-20 07:07:15"
+    },
+    {
+        "cgd_id": 67,
+        "cg_id": 41,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-20 07:07:15",
+        "updated_at": "2026-05-20 07:07:15"
+    },
+    {
+        "cgd_id": 68,
+        "cg_id": 42,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-21 07:07:19",
+        "updated_at": "2026-05-21 07:07:19"
+    },
+    {
+        "cgd_id": 69,
+        "cg_id": 42,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-21 07:07:19",
+        "updated_at": "2026-05-21 07:07:19"
+    },
+    {
+        "cgd_id": 70,
+        "cg_id": 43,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-21 17:19:18",
+        "updated_at": "2026-05-21 17:19:18"
+    },
+    {
+        "cgd_id": 71,
+        "cg_id": 44,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-22 07:07:36",
+        "updated_at": "2026-05-22 07:07:36"
+    },
+    {
+        "cgd_id": 72,
+        "cg_id": 44,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jaln",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-22 07:07:36",
+        "updated_at": "2026-05-22 07:07:36"
+    },
+    {
+        "cgd_id": 73,
+        "cg_id": 44,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-22 07:07:36",
+        "updated_at": "2026-05-22 07:07:36"
+    },
+    {
+        "cgd_id": 74,
+        "cg_id": 46,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-23 07:08:35",
+        "updated_at": "2026-05-23 07:08:35"
+    },
+    {
+        "cgd_id": 75,
+        "cg_id": 46,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-23 07:08:35",
+        "updated_at": "2026-05-23 07:08:35"
+    },
+    {
+        "cgd_id": 76,
+        "cg_id": 46,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-23 07:08:35",
+        "updated_at": "2026-05-23 07:08:35"
+    },
+    {
+        "cgd_id": 77,
+        "cg_id": 47,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-25 07:07:34",
+        "updated_at": "2026-05-25 07:07:34"
+    },
+    {
+        "cgd_id": 78,
+        "cg_id": 47,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-25 07:07:34",
+        "updated_at": "2026-05-25 07:07:34"
+    },
+    {
+        "cgd_id": 79,
+        "cg_id": 47,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-25 07:07:34",
+        "updated_at": "2026-05-25 07:07:34"
+    },
+    {
+        "cgd_id": 80,
+        "cg_id": 48,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-25 10:27:17",
+        "updated_at": "2026-05-25 10:27:17"
+    },
+    {
+        "cgd_id": 81,
+        "cg_id": 49,
+        "customer_id": 5,
+        "cgd_notes": "Uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-25 17:39:27",
+        "updated_at": "2026-05-25 17:39:27"
+    },
+    {
+        "cgd_id": 82,
+        "cg_id": 50,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan sopir Suwandi",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-26 06:57:23",
+        "updated_at": "2026-05-26 06:57:23"
+    },
+    {
+        "cgd_id": 83,
+        "cg_id": 51,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-28 07:09:13",
+        "updated_at": "2026-05-28 07:09:13"
+    },
+    {
+        "cgd_id": 84,
+        "cg_id": 51,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-28 07:09:13",
+        "updated_at": "2026-05-28 07:09:13"
+    },
+    {
+        "cgd_id": 85,
+        "cg_id": 51,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-28 07:09:13",
+        "updated_at": "2026-05-28 07:09:13"
+    },
+    {
+        "cgd_id": 86,
+        "cg_id": 52,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-28 09:48:53",
+        "updated_at": "2026-05-28 09:48:53"
+    },
+    {
+        "cgd_id": 87,
+        "cg_id": 53,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-29 07:27:55",
+        "updated_at": "2026-05-29 07:27:55"
+    },
+    {
+        "cgd_id": 88,
+        "cg_id": 53,
+        "customer_id": 6,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-05-29 07:27:55",
+        "updated_at": "2026-05-29 07:27:55"
+    },
+    {
+        "cgd_id": 89,
+        "cg_id": 53,
+        "customer_id": 7,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-29 07:27:55",
+        "updated_at": "2026-05-29 07:27:55"
+    },
+    {
+        "cgd_id": 90,
+        "cg_id": 53,
+        "customer_id": 4,
+        "cgd_notes": "kir mobil",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-29 07:27:55",
+        "updated_at": "2026-05-29 07:27:55"
+    },
+    {
+        "cgd_id": 91,
+        "cg_id": 55,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-29 14:48:54",
+        "updated_at": "2026-05-29 14:48:54"
+    },
+    {
+        "cgd_id": 92,
+        "cg_id": 56,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-29 19:08:43",
+        "updated_at": "2026-05-29 19:08:43"
+    },
+    {
+        "cgd_id": 93,
+        "cg_id": 57,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-30 07:00:40",
+        "updated_at": "2026-05-30 07:00:40"
+    },
+    {
+        "cgd_id": 94,
+        "cg_id": 57,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-05-30 07:00:40",
+        "updated_at": "2026-05-30 07:00:40"
+    },
+    {
+        "cgd_id": 95,
+        "cg_id": 58,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-02 07:21:34",
+        "updated_at": "2026-06-02 07:21:34"
+    },
+    {
+        "cgd_id": 96,
+        "cg_id": 58,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-02 07:21:34",
+        "updated_at": "2026-06-02 07:21:34"
+    },
+    {
+        "cgd_id": 97,
+        "cg_id": 58,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-02 07:21:34",
+        "updated_at": "2026-06-02 07:21:34"
+    },
+    {
+        "cgd_id": 98,
+        "cg_id": 58,
+        "customer_id": 7,
+        "cgd_notes": "Uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-02 07:21:34",
+        "updated_at": "2026-06-02 07:21:34"
+    },
+    {
+        "cgd_id": 99,
+        "cg_id": 59,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-03 07:01:39",
+        "updated_at": "2026-06-03 07:01:39"
+    },
+    {
+        "cgd_id": 100,
+        "cg_id": 59,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-03 07:01:39",
+        "updated_at": "2026-06-03 07:01:39"
+    },
+    {
+        "cgd_id": 101,
+        "cg_id": 59,
+        "customer_id": 7,
+        "cgd_notes": "Uang JALAN",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-03 07:01:39",
+        "updated_at": "2026-06-03 07:01:39"
+    },
+    {
+        "cgd_id": 102,
+        "cg_id": 60,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-03 16:20:47",
+        "updated_at": "2026-06-03 16:20:47"
+    },
+    {
+        "cgd_id": 103,
+        "cg_id": 61,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-04 07:09:49",
+        "updated_at": "2026-06-04 07:09:49"
+    },
+    {
+        "cgd_id": 104,
+        "cg_id": 61,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-04 07:09:49",
+        "updated_at": "2026-06-04 07:09:49"
+    },
+    {
+        "cgd_id": 105,
+        "cg_id": 62,
+        "customer_id": 8,
+        "cgd_notes": "Uang Jalan suwandi",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-04 08:53:35",
+        "updated_at": "2026-06-04 08:53:35"
+    },
+    {
+        "cgd_id": 106,
+        "cg_id": 63,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-05 07:10:00",
+        "updated_at": "2026-06-05 07:10:00"
+    },
+    {
+        "cgd_id": 107,
+        "cg_id": 63,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-05 07:10:00",
+        "updated_at": "2026-06-05 07:10:00"
+    },
+    {
+        "cgd_id": 108,
+        "cg_id": 63,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-05 07:10:00",
+        "updated_at": "2026-06-05 07:10:00"
+    },
+    {
+        "cgd_id": 109,
+        "cg_id": 64,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-05 08:13:23",
+        "updated_at": "2026-06-05 08:13:23"
+    },
+    {
+        "cgd_id": 110,
+        "cg_id": 66,
+        "customer_id": 7,
+        "cgd_notes": "Kas Harian pembenahan 4 Juni 2026",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-05 09:22:11",
+        "updated_at": "2026-06-05 09:22:11"
+    },
+    {
+        "cgd_id": 111,
+        "cg_id": 68,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-06 14:27:57",
+        "updated_at": "2026-06-06 14:27:57"
+    },
+    {
+        "cgd_id": 112,
+        "cg_id": 68,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-06 14:27:57",
+        "updated_at": "2026-06-06 14:27:57"
+    },
+    {
+        "cgd_id": 113,
+        "cg_id": 68,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-06 14:27:57",
+        "updated_at": "2026-06-06 14:27:57"
+    },
+    {
+        "cgd_id": 114,
+        "cg_id": 68,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-06 14:27:57",
+        "updated_at": "2026-06-06 14:27:57"
+    },
+    {
+        "cgd_id": 115,
+        "cg_id": 69,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-08 07:18:59",
+        "updated_at": "2026-06-08 07:18:59"
+    },
+    {
+        "cgd_id": 116,
+        "cg_id": 69,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-08 07:18:59",
+        "updated_at": "2026-06-08 07:18:59"
+    },
+    {
+        "cgd_id": 117,
+        "cg_id": 69,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-08 07:18:59",
+        "updated_at": "2026-06-08 07:18:59"
+    },
+    {
+        "cgd_id": 118,
+        "cg_id": 69,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-08 07:18:59",
+        "updated_at": "2026-06-08 07:18:59"
+    },
+    {
+        "cgd_id": 119,
+        "cg_id": 70,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1500000,
+        "status": 1,
+        "created_at": "2026-06-08 18:37:53",
+        "updated_at": "2026-06-08 18:37:53"
+    },
+    {
+        "cgd_id": 120,
+        "cg_id": 71,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-09 07:06:45",
+        "updated_at": "2026-06-09 07:06:45"
+    },
+    {
+        "cgd_id": 121,
+        "cg_id": 72,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-09 17:50:08",
+        "updated_at": "2026-06-09 17:50:08"
+    },
+    {
+        "cgd_id": 122,
+        "cg_id": 73,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-10 07:44:04",
+        "updated_at": "2026-06-10 07:44:04"
+    },
+    {
+        "cgd_id": 123,
+        "cg_id": 73,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-10 07:44:04",
+        "updated_at": "2026-06-10 07:44:04"
+    },
+    {
+        "cgd_id": 124,
+        "cg_id": 74,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-10 18:38:39",
+        "updated_at": "2026-06-10 18:38:39"
+    },
+    {
+        "cgd_id": 125,
+        "cg_id": 76,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-11 19:14:58",
+        "updated_at": "2026-06-11 19:14:58"
+    },
+    {
+        "cgd_id": 126,
+        "cg_id": 76,
+        "customer_id": 7,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-11 19:14:58",
+        "updated_at": "2026-06-11 19:14:58"
+    },
+    {
+        "cgd_id": 127,
+        "cg_id": 76,
+        "customer_id": 7,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-11 19:14:58",
+        "updated_at": "2026-06-11 19:14:58"
+    },
+    {
+        "cgd_id": 128,
+        "cg_id": 77,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-12 09:11:49",
+        "updated_at": "2026-06-12 09:11:49"
+    },
+    {
+        "cgd_id": 129,
+        "cg_id": 77,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-12 09:11:49",
+        "updated_at": "2026-06-12 09:11:49"
+    },
+    {
+        "cgd_id": 130,
+        "cg_id": 78,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-12 16:30:51",
+        "updated_at": "2026-06-12 16:30:51"
+    },
+    {
+        "cgd_id": 131,
+        "cg_id": 79,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-13 07:19:32",
+        "updated_at": "2026-06-13 07:19:32"
+    },
+    {
+        "cgd_id": 132,
+        "cg_id": 79,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-13 07:19:32",
+        "updated_at": "2026-06-13 07:19:32"
+    },
+    {
+        "cgd_id": 133,
+        "cg_id": 80,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-15 07:11:35",
+        "updated_at": "2026-06-15 07:11:35"
+    },
+    {
+        "cgd_id": 134,
+        "cg_id": 80,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-15 07:11:35",
+        "updated_at": "2026-06-15 07:11:35"
+    },
+    {
+        "cgd_id": 135,
+        "cg_id": 80,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-15 07:11:35",
+        "updated_at": "2026-06-15 07:11:35"
+    },
+    {
+        "cgd_id": 136,
+        "cg_id": 80,
+        "customer_id": 7,
+        "cgd_notes": "Uag Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-15 07:11:35",
+        "updated_at": "2026-06-15 07:11:35"
+    },
+    {
+        "cgd_id": 137,
+        "cg_id": 81,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-17 20:19:43",
+        "updated_at": "2026-06-17 20:19:43"
+    },
+    {
+        "cgd_id": 138,
+        "cg_id": 81,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-17 20:19:43",
+        "updated_at": "2026-06-17 20:19:43"
+    },
+    {
+        "cgd_id": 139,
+        "cg_id": 81,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-17 20:19:43",
+        "updated_at": "2026-06-17 20:19:43"
+    },
+    {
+        "cgd_id": 140,
+        "cg_id": 81,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-17 20:19:43",
+        "updated_at": "2026-06-17 20:19:43"
+    },
+    {
+        "cgd_id": 141,
+        "cg_id": 81,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-17 20:19:43",
+        "updated_at": "2026-06-17 20:19:43"
+    },
+    {
+        "cgd_id": 142,
+        "cg_id": 82,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-18 20:46:08",
+        "updated_at": "2026-06-18 20:46:08"
+    },
+    {
+        "cgd_id": 143,
+        "cg_id": 82,
+        "customer_id": 5,
+        "cgd_notes": "uang jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-18 20:46:08",
+        "updated_at": "2026-06-18 20:46:08"
+    },
+    {
+        "cgd_id": 144,
+        "cg_id": 84,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-19 18:35:38",
+        "updated_at": "2026-06-19 18:35:38"
+    },
+    {
+        "cgd_id": 145,
+        "cg_id": 84,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-19 18:35:38",
+        "updated_at": "2026-06-19 18:35:38"
+    },
+    {
+        "cgd_id": 146,
+        "cg_id": 85,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-19 18:39:25",
+        "updated_at": "2026-06-19 18:39:25"
+    },
+    {
+        "cgd_id": 147,
+        "cg_id": 85,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-19 18:39:25",
+        "updated_at": "2026-06-19 18:39:25"
+    },
+    {
+        "cgd_id": 148,
+        "cg_id": 86,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-20 13:50:10",
+        "updated_at": "2026-06-20 13:50:10"
+    },
+    {
+        "cgd_id": 149,
+        "cg_id": 86,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-20 13:50:10",
+        "updated_at": "2026-06-20 13:50:10"
+    },
+    {
+        "cgd_id": 150,
+        "cg_id": 87,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-22 13:57:14",
+        "updated_at": "2026-06-22 13:57:14"
+    },
+    {
+        "cgd_id": 151,
+        "cg_id": 87,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-22 13:57:14",
+        "updated_at": "2026-06-22 13:57:14"
+    },
+    {
+        "cgd_id": 152,
+        "cg_id": 87,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-22 13:57:14",
+        "updated_at": "2026-06-22 13:57:14"
+    },
+    {
+        "cgd_id": 153,
+        "cg_id": 87,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-22 13:57:14",
+        "updated_at": "2026-06-22 13:57:14"
+    },
+    {
+        "cgd_id": 154,
+        "cg_id": 88,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-22 20:47:28",
+        "updated_at": "2026-06-22 20:47:28"
+    },
+    {
+        "cgd_id": 155,
+        "cg_id": 89,
+        "customer_id": 4,
+        "cgd_notes": "Uang  Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-23 14:34:49",
+        "updated_at": "2026-06-23 14:34:49"
+    },
+    {
+        "cgd_id": 156,
+        "cg_id": 89,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-23 14:34:49",
+        "updated_at": "2026-06-23 14:34:49"
+    },
+    {
+        "cgd_id": 157,
+        "cg_id": 90,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-24 13:29:48",
+        "updated_at": "2026-06-24 13:29:48"
+    },
+    {
+        "cgd_id": 158,
+        "cg_id": 90,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-24 13:29:48",
+        "updated_at": "2026-06-24 13:29:48"
+    },
+    {
+        "cgd_id": 159,
+        "cg_id": 90,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-24 13:29:48",
+        "updated_at": "2026-06-24 13:29:48"
+    },
+    {
+        "cgd_id": 160,
+        "cg_id": 92,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-25 17:25:42",
+        "updated_at": "2026-06-25 17:25:42"
+    },
+    {
+        "cgd_id": 161,
+        "cg_id": 92,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-25 17:25:42",
+        "updated_at": "2026-06-25 17:25:42"
+    },
+    {
+        "cgd_id": 162,
+        "cg_id": 92,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-25 17:25:42",
+        "updated_at": "2026-06-25 17:25:42"
+    },
+    {
+        "cgd_id": 163,
+        "cg_id": 92,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-25 17:25:42",
+        "updated_at": "2026-06-25 17:25:42"
+    },
+    {
+        "cgd_id": 164,
+        "cg_id": 93,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-26 11:39:10",
+        "updated_at": "2026-06-26 11:39:10"
+    },
+    {
+        "cgd_id": 165,
+        "cg_id": 93,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-26 11:39:10",
+        "updated_at": "2026-06-26 11:39:10"
+    },
+    {
+        "cgd_id": 166,
+        "cg_id": 93,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-26 11:39:10",
+        "updated_at": "2026-06-26 11:39:10"
+    },
+    {
+        "cgd_id": 167,
+        "cg_id": 94,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-27 13:16:12",
+        "updated_at": "2026-06-27 13:16:12"
+    },
+    {
+        "cgd_id": 168,
+        "cg_id": 94,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jaaaalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-27 13:16:12",
+        "updated_at": "2026-06-27 13:16:12"
+    },
+    {
+        "cgd_id": 169,
+        "cg_id": 94,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-27 13:16:12",
+        "updated_at": "2026-06-27 13:16:12"
+    },
+    {
+        "cgd_id": 170,
+        "cg_id": 95,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-06-29 20:26:53",
+        "updated_at": "2026-06-29 20:26:53"
+    },
+    {
+        "cgd_id": 171,
+        "cg_id": 95,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-29 20:26:53",
+        "updated_at": "2026-06-29 20:26:53"
+    },
+    {
+        "cgd_id": 172,
+        "cg_id": 95,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-29 20:26:53",
+        "updated_at": "2026-06-29 20:26:53"
+    },
+    {
+        "cgd_id": 173,
+        "cg_id": 95,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-29 20:26:53",
+        "updated_at": "2026-06-29 20:26:53"
+    },
+    {
+        "cgd_id": 174,
+        "cg_id": 95,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1500000,
+        "status": 1,
+        "created_at": "2026-06-29 20:26:53",
+        "updated_at": "2026-06-29 20:26:53"
+    },
+    {
+        "cgd_id": 175,
+        "cg_id": 95,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-29 20:26:53",
+        "updated_at": "2026-06-29 20:26:53"
+    },
+    {
+        "cgd_id": 176,
+        "cg_id": 97,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-06-30 15:08:35",
+        "updated_at": "2026-06-30 15:08:35"
+    },
+    {
+        "cgd_id": 177,
+        "cg_id": 98,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-01 18:22:54",
+        "updated_at": "2026-07-01 18:22:54"
+    },
+    {
+        "cgd_id": 178,
+        "cg_id": 98,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-01 18:22:54",
+        "updated_at": "2026-07-01 18:22:54"
+    },
+    {
+        "cgd_id": 179,
+        "cg_id": 98,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 1000000,
+        "status": 1,
+        "created_at": "2026-07-01 18:22:54",
+        "updated_at": "2026-07-01 18:22:54"
+    },
+    {
+        "cgd_id": 180,
+        "cg_id": 99,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-02 13:19:56",
+        "updated_at": "2026-07-02 13:19:56"
+    },
+    {
+        "cgd_id": 181,
+        "cg_id": 99,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-02 13:19:56",
+        "updated_at": "2026-07-02 13:19:56"
+    },
+    {
+        "cgd_id": 182,
+        "cg_id": 100,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-03 14:03:13",
+        "updated_at": "2026-07-03 14:03:13"
+    },
+    {
+        "cgd_id": 183,
+        "cg_id": 100,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-03 14:03:13",
+        "updated_at": "2026-07-03 14:03:13"
+    },
+    {
+        "cgd_id": 184,
+        "cg_id": 100,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-03 14:03:13",
+        "updated_at": "2026-07-03 14:03:13"
+    },
+    {
+        "cgd_id": 185,
+        "cg_id": 100,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-03 14:03:13",
+        "updated_at": "2026-07-03 14:03:13"
+    },
+    {
+        "cgd_id": 186,
+        "cg_id": 101,
+        "customer_id": 4,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-04 07:23:32",
+        "updated_at": "2026-07-04 07:23:32"
+    },
+    {
+        "cgd_id": 187,
+        "cg_id": 101,
+        "customer_id": 5,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-04 07:23:32",
+        "updated_at": "2026-07-04 07:23:32"
+    },
+    {
+        "cgd_id": 188,
+        "cg_id": 101,
+        "customer_id": 6,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-04 07:23:32",
+        "updated_at": "2026-07-04 07:23:32"
+    },
+    {
+        "cgd_id": 189,
+        "cg_id": 102,
+        "customer_id": 7,
+        "cgd_notes": "Uang Jalan",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-04 13:42:09",
+        "updated_at": "2026-07-04 13:42:09"
+    },
+    {
+        "cgd_id": 190,
+        "cg_id": 103,
+        "customer_id": 7,
+        "cgd_notes": "perbaikan lampu",
+        "cgd_nominal": 500000,
+        "status": 1,
+        "created_at": "2026-07-04 19:40:00",
+        "updated_at": "2026-07-04 19:40:00"
+    }
+]
