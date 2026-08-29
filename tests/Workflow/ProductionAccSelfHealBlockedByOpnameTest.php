@@ -10,34 +10,28 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Production;
+use App\Models\StockOpnameBahan;
+use App\Models\StockOpnameBahanLine;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
-use Illuminate\Support\Facades\DB;
+use App\Support\StockOpname\BahanOpnameLifecycle;
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Covers the self-heal guard wired into `ProductionController::accProduction()` for GitHub #83
- * (`App\Support\ProductionPendingStockRestorer::activeLogsFor()`/`findLockingOpnameCode()`) — see
- * `docs/production-acc-stock-safety.md` for the current ACC flow and
- * `docs/laporan-opname-vs-pending-production-2026-08-01.md` for the real incident this recovers
- * from (`PR0258`: an ACC attempt crashed partway through, leaving `supplies_stocks` already
- * decremented and `log_stocks` already written while `productions.status` stayed at `1`/pending).
+ * Covers the guard half of GitHub #83's self-heal fix (companion to
+ * ProductionAccSelfHealTest): self-heal must NOT auto-revert an orphaned production stock cut
+ * if a Stock Opname Bahan has already been APPROVED for the same item+warehouse since the
+ * orphan was cut. See docs/laporan-opname-vs-pending-production-2026-08-01.md (the PR0258
+ * incident) — by that point the opname's approved physical count already reflects the
+ * (incorrectly) reduced quantity as ground truth, so silently adding the quantity back would
+ * inject stock that was never physically found on the shelf.
  *
- * Before this fix, retrying ACC on such a stuck production would apply ANOTHER full ingredient
- * deduction on top of the orphaned one already sitting in stock — silently doubling the loss and,
- * per the real incident report, making the "bahan baku tidak mencukupi" shortfall message grow
- * worse on every retry rather than resolving it. This test reproduces that exact stuck state by
- * hand (the original crash path is already closed by PR #74's transaction wrapping — reproducing
- * it isn't the point here) and confirms a plain retry recovers cleanly: self-heal reverts the
- * orphaned mutation BEFORE the pre-check runs, then the real ACC applies the correct deduction
- * exactly once.
- *
- * The companion test below covers the guard itself: self-heal must NOT run if a Stock Opname has
- * already been approved for the same item+warehouse since the orphan was cut — see
- * `ProductionAccSelfHealBlockedByOpnameTest`.
+ * In that situation ACC must refuse with a clear "needs manual review" response instead of
+ * either (a) auto-restoring and corrupting the approved opname, or (b) the pre-fix behavior of
+ * silently double-deducting.
  */
-class ProductionAccSelfHealTest extends TestCase
+class ProductionAccSelfHealBlockedByOpnameTest extends TestCase
 {
     use ActingAsStaff;
 
@@ -50,12 +44,12 @@ class ProductionAccSelfHealTest extends TestCase
     private function createFixture(): array
     {
         $category = new Category();
-        $category->category_name = 'Self-Heal Test Category';
+        $category->category_name = 'Self-Heal Blocked Test Category';
         $category->status = 1;
         $category->save();
 
         $product = new Product();
-        $product->product_name = 'Self-Heal Test Product';
+        $product->product_name = 'Self-Heal Blocked Test Product';
         $product->category_id = $category->category_id;
         $product->product_unit = json_encode([self::UNIT_ID]);
         $product->unit_id = self::UNIT_ID;
@@ -64,8 +58,8 @@ class ProductionAccSelfHealTest extends TestCase
 
         $variant = new ProductVariant();
         $variant->product_id = $product->product_id;
-        $variant->product_variant_name = 'Self-Heal Test Variant';
-        $variant->product_variant_sku = 'WF-SELFHEAL-'.uniqid();
+        $variant->product_variant_name = 'Self-Heal Blocked Test Variant';
+        $variant->product_variant_sku = 'WF-SELFHEAL-BLOCKED-'.uniqid();
         $variant->product_variant_price = 0;
         $variant->status = 1;
         $variant->save();
@@ -80,7 +74,7 @@ class ProductionAccSelfHealTest extends TestCase
         $productStock->save();
 
         $supplies = new Supplies();
-        $supplies->supplies_name = 'Self-Heal Test Supplies';
+        $supplies->supplies_name = 'Self-Heal Blocked Test Supplies';
         $supplies->supplies_unit = json_encode([self::UNIT_ID]);
         $supplies->supplies_default_unit = self::UNIT_ID;
         $supplies->status = 1;
@@ -112,13 +106,9 @@ class ProductionAccSelfHealTest extends TestCase
         return compact('variant', 'productStock', 'supplies', 'suppliesStock', 'bom');
     }
 
-    public function test_retrying_acc_on_a_stuck_pending_production_self_heals_before_reapplying(): void
+    public function test_retrying_acc_is_blocked_when_an_opname_already_locked_the_orphaned_cut(): void
     {
-        $this->actingAsSuperAdminStaff();
-        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
-        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
-        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
-        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $staff = $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
@@ -127,7 +117,7 @@ class ProductionAccSelfHealTest extends TestCase
 
         $insertResponse = $this->post('/insertProduction', [
             'production_date' => now()->toDateString(),
-            'production_desc' => 'Self-heal test production',
+            'production_desc' => 'Self-heal blocked-by-opname test production',
             'detail' => json_encode([[
                 'bom_id' => $fx['bom']->bom_id,
                 'product_variant_id' => $fx['variant']->product_variant_id,
@@ -143,9 +133,8 @@ class ProductionAccSelfHealTest extends TestCase
         $insertResponse->assertStatus(200);
         $production = Production::orderByDesc('production_id')->firstOrFail();
 
-        // Hand-simulate the OLD bug's aftermath: an ACC attempt that already cut ingredient stock
-        // and wrote its log, but crashed before ever reaching the status update — bypassing the
-        // (now-fixed) crash path entirely, since reproducing it isn't the point of this test.
+        // Same hand-simulated stuck state as ProductionAccSelfHealTest: an ACC attempt that
+        // already cut ingredient stock and wrote its log, but never reached the status update.
         $fx['suppliesStock']->ss_stock = self::STARTING_SUPPLIES_STOCK - $correctDeduction;
         $fx['suppliesStock']->save();
         (new LogStock())->insertLog([
@@ -158,32 +147,61 @@ class ProductionAccSelfHealTest extends TestCase
             'log_jumlah' => $correctDeduction,
             'unit_id' => self::UNIT_ID,
         ]);
-        $this->assertSame(1, (int) $production->fresh()->status, 'the production must still look pending, exactly like the real stuck-production incident');
 
-        // A plain retry — no special payload, this is exactly what a user clicking ACC again does.
+        // Unlike the happy-path test: a Stock Opname Bahan now counts this exact item in this
+        // exact warehouse AFTER the orphan cut, finds it matches the (already reduced) system
+        // stock, and gets approved — freezing 980 as the physically-verified truth.
+        $stob = new StockOpnameBahan();
+        $stob->stob_date = now()->toDateString();
+        $stob->stob_code = 'SB'.substr((string) microtime(true), -4);
+        $stob->staff_id = (int) $staff->staff_id;
+        $stob->status = 1;
+        $stob->is_draft = false;
+        $stob->is_old_version = false;
+        $stob->warehouse_id = self::WAREHOUSE_ID;
+        $stob->save();
+
+        StockOpnameBahanLine::upsertLine([
+            'stob_id' => $stob->stob_id,
+            'supplies_id' => $fx['supplies']->supplies_id,
+            'unit_id' => self::UNIT_ID,
+            'sobl_counted_qty' => (int) $fx['suppliesStock']->fresh()->ss_stock,
+            'sobl_notes' => null,
+        ]);
+
+        $lifecycle = new BahanOpnameLifecycle();
+        $lifecycle->publish($stob);
+        $lifecycle->freezeSystemQty($stob); // membekukan 980 sebagai "sistem" yang disetujui
+        $stob->status = 2;
+        $stob->save();
+        $lifecycle->stampDecision($stob, (int) $staff->staff_id);
+
+        // A plain retry — the same request a user clicking ACC again sends.
         $accResponse = $this->post('/accProduction', ['production_id' => $production->production_id]);
         $accResponse->assertStatus(200);
+        $accResponse->assertJson(['status' => -4]);
+        $accResponse->assertJsonFragment(['header' => 'Perlu Peninjauan Manual']);
+        $this->assertStringContainsString(
+            $stob->stob_code,
+            $accResponse->json('message'),
+            'the rejection must name the specific Stock Opname blocking the auto-restore, for whoever has to review it'
+        );
 
         $production->refresh();
-        $this->assertSame(2, (int) $production->status, 'the retried ACC must succeed cleanly once self-heal clears the orphaned state');
+        $this->assertSame(1, (int) $production->status, 'ACC must be refused outright — not silently processed with a stale deduction');
 
         $fx['suppliesStock']->refresh();
         $this->assertSame(
             self::STARTING_SUPPLIES_STOCK - $correctDeduction,
             $fx['suppliesStock']->ss_stock,
-            'self-heal must undo the orphaned cut, then the real ACC deducts the correct amount exactly ONCE — not double-deducted (1000-20-20=960) and not left under-deducted'
+            'stock must be left exactly as the approved opname already verified it — neither restored (phantom stock) nor double-deducted'
         );
 
-        $fx['productStock']->refresh();
-        $this->assertSame($pdQty, $fx['productStock']->ps_stock, 'output credit must apply normally once the retry succeeds');
-
-        // The orphaned log is gone (deleted by self-heal); only fresh logs from the successful
-        // retry remain for this production_code.
-        $this->assertDatabaseMissing('log_stocks', [
+        // The orphaned log must survive untouched — self-heal never ran.
+        $this->assertDatabaseHas('log_stocks', [
             'log_kode' => $production->production_code,
             'log_notes' => 'Pengurangan bahan untuk produksi (orphaned, simulating a pre-fix crash)',
+            'status' => 1,
         ]);
-        $remainingLogs = DB::table('log_stocks')->where('log_kode', $production->production_code)->get();
-        $this->assertTrue($remainingLogs->every(fn ($l) => $l->log_notes !== 'Pengurangan bahan untuk produksi (orphaned, simulating a pre-fix crash)'));
     }
 }
