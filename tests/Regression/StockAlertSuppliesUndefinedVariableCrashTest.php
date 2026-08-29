@@ -8,28 +8,31 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Confirmed 2026-08-09, NOT fixed here — deliberately left for the team to fix (GitHub issue #35,
- * KNOWN_ISSUES.md). Found while adding test coverage for rubenyw's Stock Alert rewrite, which
- * shipped with no tests: App\Models\StockAlertSupplies::getStockAlertSupplies() references an
- * undefined `$leadTimeDays` variable (only `$leadTime`, one line above, is ever assigned) when
- * building the response row. Under Laravel's default error handling this undefined-variable
- * warning is converted to an ErrorException, so the request 500s — meaning
- * `GET /getStockAlertSupplies` (the whole "Peringatan Stok Bahan Mentah" page's data endpoint)
- * crashes unconditionally for ANY warehouse with at least one active `supplies` row. Since every
- * real warehouse has active supplies, the page is 100% broken as shipped.
+ * ✅ FIXED UPSTREAM (confirmed 2026-08-29) — GitHub issue #35 can be closed.
  *
- * This asserts the CURRENT (buggy) behavior on purpose, per this repo's regression-test
- * convention for a confirmed-but-deferred bug — flip the assertion to `assertStatus(200)` once
- * the one-line fix (`$leadTimeDays` -> `$leadTime` on the assignment line) lands upstream.
+ * History: confirmed 2026-08-09 while adding test coverage for rubenyw's Stock Alert rewrite,
+ * which shipped with no tests. `App\Models\StockAlertSupplies::getStockAlertSupplies()` referenced
+ * an undefined `$leadTimeDays` variable (only `$leadTime`, one line above, was ever assigned) when
+ * building the response row. Under Laravel's default error handling that undefined-variable warning
+ * becomes an ErrorException, so `GET /getStockAlertSupplies` — the whole "Peringatan Stok Bahan
+ * Mentah" page's data endpoint — 500'd unconditionally for ANY warehouse with at least one active
+ * `supplies` row, i.e. every real warehouse. It was left unfixed on purpose then, per this repo's
+ * "queue bugs, don't fix someone else's code" policy.
  *
- * See KNOWN_ISSUES.md. The full intended behavioral coverage already exists but is skipped
- * pending this fix — tests/Workflow/StockAlertSuppliesFlowTest.php.
+ * rubenyw has since fixed it upstream (the assignment and the read both use `$leadTime` now — see
+ * StockAlertSupplies.php's `$leadTime = max(0, (int) ($value->lead_time_days ?? 0));` and
+ * `$value->lead_time_days = $leadTime;`). This test therefore now asserts the CORRECT behavior,
+ * exactly as its previous docblock instructed ("flip the assertion to assertStatus(200) once the
+ * one-line fix lands upstream"), and stands as a plain regression guard against it coming back.
+ *
+ * The full behavioral coverage in tests/Workflow/StockAlertSuppliesFlowTest.php was skipped
+ * pending this fix and has been un-skipped in the same change.
  */
 class StockAlertSuppliesUndefinedVariableCrashTest extends TestCase
 {
     use ActingAsStaff;
 
-    public function test_getStockAlertSupplies_currently_crashes_on_an_active_supply_row(): void
+    public function test_getStockAlertSupplies_no_longer_crashes_on_an_active_supply_row(): void
     {
         $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(1);
@@ -51,6 +54,6 @@ class StockAlertSuppliesUndefinedVariableCrashTest extends TestCase
 
         $response = $this->get('/getStockAlertSupplies?warehouse_id=1');
 
-        $response->assertStatus(500);
+        $response->assertStatus(200);
     }
 }

@@ -78,6 +78,11 @@ class ProductionUnitConversionFlowTest extends TestCase
     public function test_ingredient_stocked_in_a_larger_unit_is_broken_down_via_supplies_relations(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createProductFixture();
 
@@ -179,6 +184,11 @@ class ProductionUnitConversionFlowTest extends TestCase
     public function test_dos_pack_ingredient_floors_leftover_units_with_zero_packaging(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createProductFixture();
         $dos = 7; // real "DOS" unit from the seed snapshot
@@ -310,6 +320,11 @@ class ProductionUnitConversionFlowTest extends TestCase
     public function test_bom_mixing_a_bongkar_ingredient_and_a_dos_pack_ingredient_in_the_same_production(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createProductFixture();
         $liter = 3;
@@ -503,6 +518,11 @@ class ProductionUnitConversionFlowTest extends TestCase
     public function test_producing_directly_in_an_already_converted_unit_still_applies_the_output_ladder_one_level_up(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $dos = 7;
         $sak = 25;

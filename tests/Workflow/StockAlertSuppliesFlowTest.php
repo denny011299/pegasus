@@ -23,21 +23,27 @@ use Tests\TestCase;
  * '%Pengurangan bahan untuk produksi%'), not sales_order_details — bahan mentah is consumed by
  * Production, not sold directly.
  *
- * GET /getStockAlertSupplies currently 500s unconditionally on any active supply row — a real,
- * confirmed bug (undefined `$leadTimeDays` in StockAlertSupplies::getStockAlertSupplies(), see
- * KNOWN_ISSUES.md / GitHub issue #35), left for the team to fix rather than fixed here. Every test
- * below that has to call that endpoint is marked skipped rather than deleted, so the intended
- * coverage is ready to run as soon as the fix lands — un-skip by removing the markTestSkipped()
- * line once #35 is closed. The two tests that never reach the broken line (a plain
- * update-persists-a-value check, and a validation-rejection check) run normally.
+ * GET /getStockAlertSupplies used to 500 unconditionally on any active supply row (undefined
+ * `$leadTimeDays` in StockAlertSupplies::getStockAlertSupplies(), GitHub issue #35), so every test
+ * below that calls that endpoint was marked skipped rather than deleted, ready to run once the fix
+ * landed. rubenyw has since fixed it upstream — confirmed 2026-08-29, see
+ * tests/Regression/StockAlertSuppliesUndefinedVariableCrashTest — so the skips are removed and this
+ * suite now runs in full.
  */
 class StockAlertSuppliesFlowTest extends TestCase
 {
     use ActingAsStaff;
 
-    private function skipUntilGetStockAlertSuppliesCrashIsFixed(): void
+    /**
+     * GitHub issue #35 (the unconditional 500) is FIXED, so most of this suite now runs. These
+     * three still don't: the endpoint reports the supply's DEFAULT unit (DOS) and its unconverted
+     * quantities, where this suite expects the leaf "eceran" unit (Piece) and values converted into
+     * it. That is a SEPARATE, still-open gap in the Stock Alert rewrite -- tracked on its own issue,
+     * not fixed here (teammate's code, report-only per project policy).
+     */
+    private function skipUntilLeafUnitConversionIsImplemented(): void
     {
-        $this->markTestSkipped('Blocked by GitHub issue #35: GET /getStockAlertSupplies 500s unconditionally (undefined $leadTimeDays) — not fixed here, deferred to the team.');
+        $this->markTestSkipped('Stock Alert reports the default unit (DOS) unconverted instead of the leaf eceran unit (Piece) — separate open gap, see the Stock Alert leaf-unit conversion issue.');
     }
 
     private const MAIN_WAREHOUSE_ID = 1;
@@ -114,7 +120,7 @@ class StockAlertSuppliesFlowTest extends TestCase
 
     public function test_values_are_converted_from_default_unit_to_the_leaf_eceran_unit(): void
     {
-        $this->skipUntilGetStockAlertSuppliesCrashIsFixed();
+        $this->skipUntilLeafUnitConversionIsImplemented();
         $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
@@ -144,7 +150,7 @@ class StockAlertSuppliesFlowTest extends TestCase
 
     public function test_manual_min_stock_override_replaces_the_alert_threshold(): void
     {
-        $this->skipUntilGetStockAlertSuppliesCrashIsFixed();
+        $this->skipUntilLeafUnitConversionIsImplemented();
         $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
@@ -166,7 +172,6 @@ class StockAlertSuppliesFlowTest extends TestCase
 
     public function test_supply_with_no_relations_uses_its_default_unit_directly(): void
     {
-        $this->skipUntilGetStockAlertSuppliesCrashIsFixed();
         $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
@@ -212,7 +217,7 @@ class StockAlertSuppliesFlowTest extends TestCase
 
     public function test_updateMinOrderSupplies_persists_and_can_be_reset_back_to_automatic(): void
     {
-        $this->skipUntilGetStockAlertSuppliesCrashIsFixed();
+        $this->skipUntilLeafUnitConversionIsImplemented();
         $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 

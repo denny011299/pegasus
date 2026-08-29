@@ -3,6 +3,7 @@
 namespace Tests\Support;
 
 use App\ExternalApi\ApiKeyManager;
+use App\Models\ExternalApiEndpointStatus;
 use App\Models\ExternalApiKey;
 use App\Models\ExternalApplication;
 
@@ -17,6 +18,17 @@ trait ActingAsExternalApiClient
     /** @return array<string, string> */
     protected function externalApiHeaders(array $overrides = []): array
     {
+        // Saklar "Endpoint Aktif" (halaman Status API Eksternal) adalah fitur admin yang berdiri
+        // sendiri, TERPISAH dari apa yang diuji test-test fungsional ini. Endpoint yang dimatikan
+        // dijawab 503 oleh App\Http\Middleware\AuthenticateExternalApi SEBELUM autentikasi jalan,
+        // jadi test yang endpoint-nya kebetulan mati di DB lokal gagal dengan 503 yang menyesatkan
+        // — bukan menguji apa pun. Karena itu saklarnya dipastikan menyala di sini, sebagai bagian
+        // dari menyiapkan klien, supaya test tidak bergantung pada keadaan DB lokal.
+        //
+        // Perilaku "endpoint dimatikan" TETAP diuji, sengaja dan eksplisit, di
+        // Tests\Workflow\ExternalApiDisabledEndpointFlowTest lewat disableExternalApiEndpoint().
+        $this->enableAllExternalApiEndpoints();
+
         $application = new ExternalApplication();
         $application->application_code = 'test-app-'.uniqid();
         $application->application_name = 'Test External Application';
@@ -43,5 +55,41 @@ trait ActingAsExternalApiClient
         $key->save();
 
         return [$manager->header() => $generated['plain']];
+    }
+
+    /**
+     * Nyalakan saklar "Endpoint Aktif" untuk SEMUA endpoint.
+     *
+     * Aman: Tests\TestCase memakai DatabaseTransactions, jadi perubahan ini di-rollback setiap
+     * selesai satu test dan tidak pernah mengubah DB developer secara permanen. Baris yang memang
+     * belum pernah ada sengaja TIDAK dibuat — ApiEndpointSettings::isActive() sudah menganggap
+     * "tidak ada baris" = aktif (lihat docblock ExternalApiEndpointStatus).
+     */
+    protected function enableAllExternalApiEndpoints(): void
+    {
+        ExternalApiEndpointStatus::query()
+            ->where('is_active', 0)
+            ->update(['is_active' => 1]);
+    }
+
+    /**
+     * Matikan saklar "Endpoint Aktif" untuk satu endpoint, meniru persis apa yang dilakukan
+     * halaman Status API Eksternal lewat ApiEndpointSettings::setActive() — termasuk upsert
+     * manualnya (model ini sengaja tanpa $fillable, ikut konvensi model lain di app).
+     *
+     * $endpointKey memakai kosakata yang sama dengan ApiEndpointDoc::key(), mis. 'shipment-show'.
+     */
+    protected function disableExternalApiEndpoint(string $endpointKey): void
+    {
+        $row = ExternalApiEndpointStatus::where('endpoint_key', '=', $endpointKey)->first();
+
+        if (! $row) {
+            $row = new ExternalApiEndpointStatus();
+            $row->endpoint_key = $endpointKey;
+            $row->is_public_docs_show = false;
+        }
+
+        $row->is_active = false;
+        $row->save();
     }
 }

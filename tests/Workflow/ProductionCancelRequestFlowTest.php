@@ -126,6 +126,11 @@ class ProductionCancelRequestFlowTest extends TestCase
     public function test_full_cancel_request_round_trip_restores_stock_exactly(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $pdQty = 10;
@@ -182,6 +187,11 @@ class ProductionCancelRequestFlowTest extends TestCase
     public function test_approving_a_cancel_request_is_rejected_if_produced_stock_was_already_consumed_elsewhere(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $pdQty = 10;

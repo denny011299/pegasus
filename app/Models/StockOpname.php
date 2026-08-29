@@ -163,6 +163,11 @@ class StockOpname extends Model
             $warehouseId = (int) ProductStock::resolveWarehouseId($data['warehouse_id'] ?? null);
             $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
         }
+        // Rancang ulang 2026-08-27: dokumen BARU selalu versi baru (stock_opname_lines).
+        // Ditulis EKSPLISIT, tidak boleh mengandalkan default kolom -- default-nya sengaja true
+        // supaya migrasinya murni ADD COLUMN untuk dokumen lama, jadi diam di sini berarti
+        // dokumen baru salah dilabeli sebagai dokumen lama dan tampil kosong.
+        $t->is_old_version = false;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 

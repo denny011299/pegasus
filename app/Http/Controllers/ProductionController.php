@@ -22,6 +22,7 @@ use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Support\ProductUnitStock;
+use App\Support\UnitRollUp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -841,41 +842,73 @@ class ProductionController extends Controller
         // (stok awal 0) kalau belum ada untuk kombinasi varian+satuan itu — TANPA mutasi
         // apa pun di sini. Kalau ada baris yang bakal dibuat baru, minta konfirmasi user dulu
         // (lewat confirm_create_stock), supaya user sadar ada baris stok baru yang akan dibuat.
+        // NB (merged from main's ebadabf/GH #19, 2026-08-28): main's version of this pre-check
+        // walked the whole product_relations ladder via creditProductOutputUpChain(), because
+        // main's accProduction() still credited finished goods itself via ProductRelation/
+        // ensureProductStockRow(). fase2's accProduction() has since been rearchitected around
+        // buildProductionTransferPlan() + ProductUnitStock::addQty(), so that ladder-walking code
+        // doesn't transplant -- the GH #19 fix lives in addQty()'s $rollUp instead.
+        //
+        // This block must therefore ask addQty() what it will ACTUALLY do rather than assume the
+        // credit lands flat on the produced unit: with $rollUp on, a qty that divides evenly into a
+        // higher unit is credited THERE instead, so (a) warning about the produced unit would be
+        // wrong when its remainder rolls up to 0 -- no row gets created for it, addQty() skips
+        // qty <= 0 credits -- and (b) a higher unit could be the one needing a row. Same planner,
+        // same warehouse, so this preview can't drift from the real thing.
+        //
+        // Produksi meneruskan SELURUH tangga satuan (ladderUnitIds()), bukan cuma satuan yang sudah
+        // punya baris stok: justru blok inilah mekanisme "provisioning yang disetujui user" yang
+        // membuat itu aman -- satuan yang belum punya baris dilaporkan di sini, dan barulah setelah
+        // user menekan konfirmasi (confirm_create_stock) addQty() membuatnya. Caller lain yang
+        // TIDAK punya langkah konfirmasi tetap memakai kebijakan ketat bawaan addQty().
         $missingProductStockRows = [];
         foreach ($transferPlan['groups'] as $group) {
             foreach ($group['items'] as $output) {
-                $key = (int) $output['product_variant_id'] . '_' . (int) $output['unit_id'];
-                if (isset($missingProductStockRows[$key])) {
-                    continue;
-                }
+                $credits = UnitRollUp::plan(
+                    UnitRollUp::productChain((int) $output['product_variant_id']),
+                    (int) $output['unit_id'],
+                    (int) $output['qty'],
+                    UnitRollUp::ladderUnitIds((int) $output['product_variant_id'])
+                );
 
-                $exists = ProductStock::withoutGlobalScope('active_warehouse')
-                    ->where('warehouse_id', (int) $mainWarehouse->id)
-                    ->where('product_variant_id', $output['product_variant_id'])
-                    ->where('unit_id', $output['unit_id'])
-                    ->where('status', 1)
-                    ->exists();
-
-                if ($exists) {
-                    continue;
-                }
-
-                $pv = ProductVariant::find($output['product_variant_id']);
-                $productName = '-';
-                if ($pv) {
-                    $prName = Product::find($pv->product_id);
-                    $productName = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
-                    if ($productName === '') {
-                        $productName = $pv->product_variant_name ?? '-';
+                foreach ($credits as $credit) {
+                    if ($credit['qty'] <= 0) {
+                        continue; // addQty() tidak menyentuh satuan ini, jadi tidak ada baris baru
                     }
+
+                    $key = (int) $output['product_variant_id'] . '_' . (int) $credit['unit_id'];
+                    if (isset($missingProductStockRows[$key])) {
+                        continue;
+                    }
+
+                    $exists = ProductStock::withoutGlobalScope('active_warehouse')
+                        ->where('warehouse_id', (int) $mainWarehouse->id)
+                        ->where('product_variant_id', $output['product_variant_id'])
+                        ->where('unit_id', $credit['unit_id'])
+                        ->where('status', 1)
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
+                    }
+
+                    $pv = ProductVariant::find($output['product_variant_id']);
+                    $productName = '-';
+                    if ($pv) {
+                        $prName = Product::find($pv->product_id);
+                        $productName = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                        if ($productName === '') {
+                            $productName = $pv->product_variant_name ?? '-';
+                        }
+                    }
+                    $unit = Unit::find($credit['unit_id']);
+                    $missingProductStockRows[$key] = [
+                        'product_variant_id' => (int) $output['product_variant_id'],
+                        'unit_id' => (int) $credit['unit_id'],
+                        'product_name' => $productName,
+                        'unit_name' => $unit->unit_name ?? '-',
+                    ];
                 }
-                $unit = Unit::find($output['unit_id']);
-                $missingProductStockRows[$key] = [
-                    'product_variant_id' => (int) $output['product_variant_id'],
-                    'unit_id' => (int) $output['unit_id'],
-                    'product_name' => $productName,
-                    'unit_name' => $unit->unit_name ?? '-',
-                ];
             }
         }
 
@@ -1110,6 +1143,14 @@ class ProductionController extends Controller
             }
             ProductUnitStock::clearCache();
             foreach ($inventoryBuckets as $output) {
+                // rollUp: true (GH #19, merged from main's ebadabf/51684f3, 2026-08-28) -- an exact
+                // multiple of a higher product_relations unit (e.g. 24 Piece = 2 DOS) is credited as
+                // that higher unit, mirroring physical packing, instead of always staying flat at
+                // the produced unit. See ProductUnitStock::addQty()'s $rollUp doc.
+                //
+                // Allow-list = SELURUH tangga satuan, sama persis dengan yang dipakai pre-check di
+                // atas -- kalau keduanya tidak sama, user bisa dimintai konfirmasi untuk baris yang
+                // ternyata tidak dibuat (atau lebih buruk: baris dibuat tanpa pernah dikonfirmasi).
                 $add = ProductUnitStock::addQty(
                     (int) $mainWarehouse->id,
                     (int) $output['product_id'],
@@ -1117,7 +1158,9 @@ class ProductionController extends Controller
                     (int) $output['unit_id'],
                     (float) $output['qty'],
                     $p->production_code,
-                    'Hasil produksi ' . $p->production_code
+                    'Hasil produksi ' . $p->production_code,
+                    true,
+                    UnitRollUp::ladderUnitIds((int) $output['product_variant_id'])
                 );
                 if (! $add['ok']) {
                     throw new \RuntimeException(
@@ -1163,6 +1206,11 @@ class ProductionController extends Controller
         } catch (Throwable $e) {
             DB::rollBack();
             return response()->json([
+                // NB (merged from main's ebadabf/GH #19, 2026-08-28): this conflict was mostly
+                // main's old ProductRelation/ensureProductStockRow ladder-crediting block (already
+                // replaced on fase2 by buildProductionTransferPlan() + ProductUnitStock::addQty(),
+                // see the pre-check above) misaligned by diff onto this catch{} block. Nothing to
+                // port here -- see that pre-check's comment for where the actual GH #19 fix went.
                 'status' => -1,
                 'header' => 'Gagal ACC',
                 'message' => $e->getMessage() ?: 'Gagal membuat Stock Transfer hasil produksi.',

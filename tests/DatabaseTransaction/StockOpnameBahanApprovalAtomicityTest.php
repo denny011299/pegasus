@@ -49,16 +49,22 @@ class StockOpnameBahanApprovalAtomicityTest extends TestCase
             'item' => json_encode([
                 [
                     'supplies_id' => $stockA->supplies_id,
-                    'stobd_system' => $stockA->ss_stock.' pcs',
-                    'stobd_real' => ($stockA->ss_stock - 1).' pcs',
-                    'stobd_selisih' => '1 pcs',
+                    'sp_units' => [[
+                        'unit_id' => $stockA->unit_id,
+                        'system_qty' => $stockA->ss_stock,
+                        'real_qty' => $stockA->ss_stock - 1,
+                    ]],
                     'stobd_notes' => null,
                 ],
                 [
+                    // Rancang ulang 2026-08-27: satuan rusaknya sekarang harus ada di DOKUMEN,
+                    // bukan diselipkan saat ACC -- ACC tidak lagi membaca angka dari body request.
                     'supplies_id' => $stockB->supplies_id,
-                    'stobd_system' => $stockB->ss_stock.' pcs',
-                    'stobd_real' => ($stockB->ss_stock - 1).' pcs',
-                    'stobd_selisih' => '1 pcs',
+                    'sp_units' => [[
+                        'unit_id' => $bogusUnitId,
+                        'system_qty' => $stockB->ss_stock,
+                        'real_qty' => $stockB->ss_stock - 1,
+                    ]],
                     'stobd_notes' => null,
                 ],
             ]),

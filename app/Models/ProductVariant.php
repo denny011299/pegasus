@@ -262,10 +262,18 @@ class ProductVariant extends Model
      * Same enrichment as getProductVariant(), but one round-trip for many IDs
      * (used by stock opname list to avoid N+1).
      *
+     * $warehouseId pins the `->stock` collection to one specific warehouse instead of
+     * ProductStock's default "ambient session active warehouse" global scope. Needed by
+     * Stock Opname (fix/unit-conversion-coverage TODO, 2026-08-24): a document is bound to the
+     * warehouse it was created in, but whoever generates its PDF later may have a *different*
+     * warehouse active in their own session — without this, refreshLiveSystemQty() would key
+     * `->stock` by unit_short_name against the wrong warehouse's row. Pass null (default) to
+     * keep the old ambient-scope behavior for every other caller.
+     *
      * @param  array<int>  $productVariantIds
      * @return \Illuminate\Support\Collection<string|int, self>
      */
-    public function getProductVariantBulk(array $productVariantIds)
+    public function getProductVariantBulk(array $productVariantIds, ?int $warehouseId = null)
     {
         $productVariantIds = array_values(array_unique(array_filter(array_map('intval', $productVariantIds))));
         if ($productVariantIds === []) {
@@ -304,7 +312,11 @@ class ProductVariant extends Model
             $allUnitIds[(int) $rel->pr_unit_id_2] = true;
         }
 
-        $stocks = ProductStock::where('status', '=', 1)
+        $stocks = ($warehouseId !== null
+                ? ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', $warehouseId)
+                : ProductStock::query())
+            ->where('status', '=', 1)
             ->whereIn('product_variant_id', $productVariantIds)
             ->orderBy('created_at', 'asc')
             ->get();

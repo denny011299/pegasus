@@ -33,9 +33,19 @@ class StockOpnameDetail extends Model
             return $result;
         }
 
+        // Pin ->stock ke gudang dokumen ini (bukan gudang aktif sesi yang generate PDF-nya) --
+        // lihat catatan di ProductVariant::getProductVariantBulk(). Hanya bisa diresolve kalau
+        // dipanggil untuk satu dokumen spesifik (filter sto_id diberikan).
+        $warehouseId = null;
+        if ($data['sto_id']) {
+            $sto = StockOpname::find($data['sto_id']);
+            $warehouseId = $sto && $sto->warehouse_id ? (int) $sto->warehouse_id : null;
+        }
+
         // Enrich sekali via bulk (hindari N+1 getProductVariant per baris).
         $variantMap = (new ProductVariant())->getProductVariantBulk(
-            $result->pluck('product_variant_id')->unique()->filter()->values()->all()
+            $result->pluck('product_variant_id')->unique()->filter()->values()->all(),
+            $warehouseId
         );
 
         foreach ($result as $key => $value) {

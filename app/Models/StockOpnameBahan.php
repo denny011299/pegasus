@@ -140,6 +140,10 @@ class StockOpnameBahan extends Model
             $warehouseId = (int) SuppliesStock::resolveWarehouseId($data['warehouse_id'] ?? null);
             $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
         }
+        // Rancang ulang 2026-08-27 (kembaran StockOpname::insertStockOpname()): dokumen BARU
+        // selalu versi baru (stock_opname_bahan_lines). Ditulis EKSPLISIT, tidak boleh
+        // mengandalkan default kolom -- default-nya sengaja true untuk dokumen lama.
+        $t->is_old_version = false;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 

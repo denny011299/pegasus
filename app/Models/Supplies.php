@@ -169,7 +169,14 @@ class Supplies extends Model
     }
 
     // Khusus untuk stock opname bahan — isi field sama seperti getSupplies(), tapi query digabung (tanpa N+1).
-    public function getSuppliesBulk(array $suppliesIds)
+    //
+    // $warehouseId pins the `->stock` collection to one specific warehouse instead of
+    // SuppliesStock's default "ambient session active warehouse" global scope. Needed by
+    // Stock Opname (fix/unit-conversion-coverage TODO, 2026-08-24): a document is bound to the
+    // warehouse it was created in, but whoever generates its PDF later may have a *different*
+    // warehouse active in their own session. Pass null (default) to keep the old ambient-scope
+    // behavior for every other caller.
+    public function getSuppliesBulk(array $suppliesIds, ?int $warehouseId = null)
     {
         $suppliesIds = array_values(array_unique(array_filter(array_map('intval', $suppliesIds))));
         if ($suppliesIds === []) {
@@ -237,7 +244,11 @@ class Supplies extends Model
             }
         }
 
-        $stocks = SuppliesStock::where('status', 1)
+        $stocks = ($warehouseId !== null
+                ? SuppliesStock::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', $warehouseId)
+                : SuppliesStock::query())
+            ->where('status', 1)
             ->whereIn('supplies_id', $ids)
             ->orderBy('created_at', 'asc')
             ->get();

@@ -4,6 +4,7 @@ namespace Tests\Support;
 
 use App\Models\Role;
 use App\Models\Staff;
+use App\Models\StaffWarehouse;
 
 /**
  * This app authenticates via Session::get('user') (a Staff row with
@@ -113,6 +114,49 @@ trait ActingAsStaff
     protected function withActiveWarehouse(int $warehouseId): static
     {
         session(['active_warehouse_id' => $warehouseId]);
+
+        return $this;
+    }
+
+    /**
+     * Assign the acting staff to one or more warehouses (`staff_warehouses`), which is what
+     * Staff::assignedWarehouseIds() reads.
+     *
+     * Needed against real, non-empty data: several access checks
+     * (StockTransferController::assertCanAcc()/assertCanEditSource(),
+     * SalesOrderStock::validateRetailSelection()) fail CLOSED — "Anda tidak punya akses ke gudang
+     * tujuan transfer ini" / "Gudang eceran yang dipilih tidak termasuk gudang Anda" — for a staff
+     * that HAS assignments not covering the warehouse in question. Against the old near-empty
+     * default seed the acting staff typically had no assignments at all, which those same checks
+     * treat as "unrestricted" and let through — so this was never needed until testing against
+     * real data (see memory pegasus-testing-db-multiwarehouse-drift). A test that drives a flow
+     * through one of those checks, or that creates its own destination warehouse on the fly (e.g.
+     * a fresh main warehouse for a multi-main-warehouse scenario), needs this.
+     *
+     * Tests\TestCase uses DatabaseTransactions, so the rows are rolled back per test.
+     */
+    protected function assignWarehousesToActingStaff(int ...$warehouseIds): static
+    {
+        $staff = session('user');
+        if (! $staff || empty($staff->staff_id)) {
+            return $this;
+        }
+
+        foreach ($warehouseIds as $warehouseId) {
+            $exists = StaffWarehouse::query()
+                ->where('staff_id', (int) $staff->staff_id)
+                ->where('warehouse_id', $warehouseId)
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            $row = new StaffWarehouse();
+            $row->staff_id = (int) $staff->staff_id;
+            $row->warehouse_id = $warehouseId;
+            $row->save();
+        }
 
         return $this;
     }

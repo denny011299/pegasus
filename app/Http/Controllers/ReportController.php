@@ -278,6 +278,124 @@ class ReportController extends Controller
         }
     }
 
+    /**
+     * Baris laporan selisih untuk dokumen Stock Opname VERSI BARU (stock_opname_lines).
+     *
+     * Sengaja lewat OpnameLineReader, bukan query SQL sendiri: pembaca itulah yang tahu kapan
+     * stok sistem diambil live (dokumen masih menunggu) dan kapan dari snapshot beku (sudah
+     * diputuskan), dan dialah yang merakit string "8 DOS, 0 pcs" yang dipakai laporan ini.
+     * Menduplikasi aturannya ke SQL berarti menghidupkan lagi dua sumber kebenaran untuk angka
+     * yang sama -- akar dari seluruh bug yang rancang ulang 2026-08-27 tutup.
+     *
+     * @return array<int, object>
+     */
+    private function selisihRowsFromOpnameLines(?string $startDate, ?string $endDate, $itemId = null): array
+    {
+        $q = \App\Models\StockOpname::where('status', '>=', 1)->where('is_old_version', 0);
+        if ($startDate && $endDate) $q->whereBetween('sto_date', [$startDate, $endDate]);
+        else if ($startDate) $q->where('sto_date', '>=', $startDate);
+        else if ($endDate) $q->where('sto_date', '<=', $endDate);
+
+        $documents = $q->get();
+        if ($documents->isEmpty()) {
+            return [];
+        }
+
+        $reader = new \App\Support\StockOpname\OpnameLineReader();
+        $rows = [];
+
+        // Harga diambil sekali secara bulk, bukan per baris.
+        $harga = \App\Models\StockOpnameLine::whereIn('sto_id', $documents->pluck('sto_id')->all())
+            ->where('status', 1)
+            ->pluck('product_variant_id')
+            ->unique()
+            ->pipe(fn ($ids) => \App\Models\ProductVariant::whereIn('product_variant_id', $ids->all())
+                ->pluck('product_variant_price', 'product_variant_id'));
+
+        foreach ($documents as $sto) {
+            foreach ($reader->read($sto) as $row) {
+                if (! empty($itemId) && (int) $row['product_variant_id'] !== (int) $itemId) {
+                    continue;
+                }
+
+                $rows[] = (object) [
+                    'kode' => $sto->sto_code,
+                    'tanggal' => $sto->sto_date,
+                    'sumber' => 'produk',
+                    'item_name' => $row['product_name'],
+                    'variant_name' => $row['variant_name'],
+                    'stock_system' => $row['system_text'],
+                    'stock_fisik' => $row['real_text'],
+                    'selisih_text' => $row['selisih_text'],
+                    'harga_satuan' => (float) ($harga[$row['product_variant_id']] ?? 0),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Kembaran persis selisihRowsFromOpnameLines() di atas, untuk dokumen Stock Opname BAHAN
+     * versi baru (stock_opname_bahan_lines). Lihat method itu untuk alasan lengkap kenapa lewat
+     * BahanOpnameLineReader dan bukan query SQL sendiri.
+     *
+     * Harga satuan dicari dengan query yang SAMA PERSIS dengan $lastHargaSub di atas (harga PO
+     * terakhir per supplies_id), cuma dijalankan sekali secara bulk di sini.
+     *
+     * @return array<int, object>
+     */
+    private function selisihRowsFromOpnameBahanLines(?string $startDate, ?string $endDate, $itemId = null): array
+    {
+        $q = \App\Models\StockOpnameBahan::where('status', '>=', 1)->where('is_old_version', 0);
+        if ($startDate && $endDate) $q->whereBetween('stob_date', [$startDate, $endDate]);
+        else if ($startDate) $q->where('stob_date', '>=', $startDate);
+        else if ($endDate) $q->where('stob_date', '<=', $endDate);
+
+        $documents = $q->get();
+        if ($documents->isEmpty()) {
+            return [];
+        }
+
+        $reader = new \App\Support\StockOpname\BahanOpnameLineReader();
+        $rows = [];
+
+        $suppliesIds = \App\Models\StockOpnameBahanLine::whereIn('stob_id', $documents->pluck('stob_id')->all())
+            ->where('status', 1)
+            ->pluck('supplies_id')
+            ->unique();
+
+        $harga = DB::table('purchase_orders_details as pod')
+            ->join('supplies_variants as sv', 'sv.supplies_variant_id', '=', 'pod.supplies_variant_id')
+            ->where('pod.status', 1)
+            ->whereIn('sv.supplies_id', $suppliesIds->all())
+            ->select('sv.supplies_id', DB::raw('MAX(pod.pod_harga) as last_harga'))
+            ->groupBy('sv.supplies_id')
+            ->pluck('last_harga', 'supplies_id');
+
+        foreach ($documents as $stob) {
+            foreach ($reader->read($stob) as $row) {
+                if (! empty($itemId) && (int) $row['supplies_id'] !== (int) $itemId) {
+                    continue;
+                }
+
+                $rows[] = (object) [
+                    'kode' => $stob->stob_code,
+                    'tanggal' => $stob->stob_date,
+                    'sumber' => 'bahan',
+                    'item_name' => $row['supplies_name'],
+                    'variant_name' => '',
+                    'stock_system' => $row['system_text'],
+                    'stock_fisik' => $row['real_text'],
+                    'selisih_text' => $row['selisih_text'],
+                    'harga_satuan' => (float) ($harga[$row['supplies_id']] ?? 0),
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
     private function hasNonZeroSelisih($selisihText): bool
     {
         if ($selisihText === null) return false;
@@ -3439,7 +3557,17 @@ class ReportController extends Controller
             else if ($startDate) $qProduct->where('h.sto_date', '>=', $startDate);
             else if ($endDate) $qProduct->where('h.sto_date', '<=', $endDate);
             if ($type === 'product' && !empty($itemId)) $qProduct->where('d.product_variant_id', $itemId);
+            // Query di atas HANYA melihat dokumen versi lama -- tabelnya memang cuma dipakai
+            // dokumen lama sejak rancang ulang 2026-08-27.
+            $qProduct->where('h.is_old_version', 1);
             $rows = array_merge($rows, $qProduct->get()->toArray());
+
+            // Dokumen versi baru dibaca lewat OpnameLineReader, bukan di-query ulang di sini.
+            // Selisihnya bergantung keadaan (stok live selama menunggu, beku setelah diputuskan)
+            // dan kolom Sistem/Real/Selisih dirakit di satu tempat -- menyalin aturannya ke dalam
+            // SQL akan melahirkan lagi persis masalah yang rancang ulang ini tutup: dua sumber
+            // kebenaran untuk angka yang sama, yang lambat laun berbeda.
+            $rows = array_merge($rows, $this->selisihRowsFromOpnameLines($startDate, $endDate, $type === 'product' ? $itemId : null));
         }
 
         $lastHargaSub = DB::table('purchase_orders_details as pod')
@@ -3462,7 +3590,13 @@ class ReportController extends Controller
             else if ($startDate) $qBahan->where('h.stob_date', '>=', $startDate);
             else if ($endDate) $qBahan->where('h.stob_date', '<=', $endDate);
             if ($type === 'bahan' && !empty($itemId)) $qBahan->where('d.supplies_id', $itemId);
+            // Query di atas HANYA melihat dokumen versi lama sejak rancang ulang 2026-08-27.
+            $qBahan->where('h.is_old_version', 1);
             $rows = array_merge($rows, $qBahan->get()->toArray());
+
+            // Kembaran selisihRowsFromOpnameLines() (Produk) di atas -- dokumen versi baru dibaca
+            // lewat BahanOpnameLineReader, bukan di-query ulang di sini, untuk alasan yang sama.
+            $rows = array_merge($rows, $this->selisihRowsFromOpnameBahanLines($startDate, $endDate, $type === 'bahan' ? $itemId : null));
         }
 
         $grouped = [];
