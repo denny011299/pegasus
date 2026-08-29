@@ -10,6 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\SalesOrder;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ActingAsStaff;
+use Tests\Support\ResolvesTestWarehouses;
 use Tests\TestCase;
 
 /**
@@ -27,6 +28,7 @@ use Tests\TestCase;
 class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
 {
     use ActingAsStaff;
+    use ResolvesTestWarehouses;
 
     private const MAIN_WAREHOUSE_ID = 1;
     private const RETAIL_WAREHOUSE_ID = 2;
@@ -113,14 +115,22 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
     {
         $this->actingAsSuperAdminStaff();
 
+        // self::RETAIL_WAREHOUSE_ID is only valid against the committed default seed's layout --
+        // SalesOrderStock::validateRetailSelection() fails closed ("Gudang eceran yang dipilih
+        // tidak termasuk gudang Anda") for a staff assigned to warehouses that don't include it.
+        // Resolve a real active retail warehouse and assign the staff to it. See
+        // ResolvesTestWarehouses/ActingAsStaff::assignWarehousesToActingStaff().
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId();
+        $this->assignWarehousesToActingStaff(self::MAIN_WAREHOUSE_ID, $retailWarehouseId);
+
         $fx = $this->createProductFixture(retailUnit: self::PIECE_UNIT_ID);
         $mainStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 100);
-        $retailStock = $this->createProductStock($fx['variant'], self::RETAIL_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
+        $retailStock = $this->createProductStock($fx['variant'], $retailWarehouseId, self::PIECE_UNIT_ID, 50);
 
-        $soId = $this->insertSalesOrder($fx, retailWarehouseId: self::RETAIL_WAREHOUSE_ID, qty: 10, unitId: self::PIECE_UNIT_ID);
+        $soId = $this->insertSalesOrder($fx, retailWarehouseId: $retailWarehouseId, qty: 10, unitId: self::PIECE_UNIT_ID);
 
         $so = SalesOrder::findOrFail($soId);
-        $this->assertSame(self::RETAIL_WAREHOUSE_ID, (int) $so->retail_warehouse_id);
+        $this->assertSame($retailWarehouseId, (int) $so->retail_warehouse_id);
 
         $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
 

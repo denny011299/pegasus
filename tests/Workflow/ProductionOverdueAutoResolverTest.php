@@ -39,6 +39,24 @@ class ProductionOverdueAutoResolverTest extends TestCase
     private const BOM_QTY = 1;
     private const BOM_DETAIL_QTY = 2;
 
+    /**
+     * ProductionOverdueAutoResolver::resolveOverdue() scans EVERY pending (status=1) production
+     * table-wide -- there's no way to scope it to just this test's own fixture. Real data (e.g.
+     * the okeh8644 snapshot) can carry genuinely old pending productions of its own; against the
+     * old near-empty default seed there happened to be none, so this never mattered. Neutralize
+     * any that already exist before each test creates its own fixture, so "checked/approved/
+     * declined" counts reflect only what the test itself set up. Tests\TestCase uses
+     * DatabaseTransactions, so this never touches the real data permanently.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        \App\Models\Production::where('status', 1)
+            ->where('production_date', '<', now()->toDateString())
+            ->update(['production_date' => now()->toDateString()]);
+    }
+
     /** @return array{variant: ProductVariant, productStock: ProductStock, suppliesStock: SuppliesStock, bom: Bom} */
     private function createFixture(int $startingSuppliesStock = 1000): array
     {

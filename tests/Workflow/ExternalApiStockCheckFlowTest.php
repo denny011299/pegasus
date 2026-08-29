@@ -9,6 +9,7 @@ use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Unit;
 use Tests\Support\ActingAsExternalApiClient;
+use Tests\Support\ResolvesTestWarehouses;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ use Tests\TestCase;
 class ExternalApiStockCheckFlowTest extends TestCase
 {
     use ActingAsExternalApiClient;
+    use ResolvesTestWarehouses;
 
     private const MAIN_WAREHOUSE_ID = 1;
     private const RETAIL_WAREHOUSE_ID = 2;
@@ -272,16 +274,22 @@ class ExternalApiStockCheckFlowTest extends TestCase
 
     public function test_check_uses_the_explicit_gudang_id_when_given(): void
     {
+        // gudang_id is validated as a real, ACTIVE warehouse (Rule::exists(...)->where('status',1)
+        // in StockController::check()) -- self::RETAIL_WAREHOUSE_ID is only valid against the
+        // committed default seed's layout, not whatever real data is actually loaded. See
+        // ResolvesTestWarehouses.
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId();
+
         $headers = $this->externalApiHeaders();
         $refUnitId = random_int(900000, 999999);
         $unit = $this->createUnit($refUnitId);
         $fx = $this->createProductFixture($unit);
         $this->createStock($fx['variant'], self::MAIN_WAREHOUSE_ID, $unit->unit_id, 7);
-        $this->createStock($fx['variant'], self::RETAIL_WAREHOUSE_ID, $unit->unit_id, 42);
+        $this->createStock($fx['variant'], $retailWarehouseId, $unit->unit_id, 42);
 
         $response = $this->postJson('/api/external/v1/stock/check', [
             'ref_shipment_id' => 'SHP-EXPLICIT-WH',
-            'gudang_id' => self::RETAIL_WAREHOUSE_ID,
+            'gudang_id' => $retailWarehouseId,
             'items' => [
                 ['sku' => $fx['sku'], 'qty' => 1, 'unit_id' => $refUnitId],
             ],
