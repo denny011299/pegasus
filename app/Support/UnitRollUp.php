@@ -345,19 +345,36 @@ class UnitRollUp
      * $existingByUnitId input (GitHub #87). A unit with no active row simply doesn't appear (plan()
      * treats an absent key as 0, which is correct: nothing there to fold in).
      *
+     * This ONE query also serves as the allow-list for the `plan*()` wrappers below (its keys are
+     * exactly `allowedProductUnitIds()`'s result), so a roll-up costs one query here, not two
+     * identical ones.
+     *
+     * ⚠️ **Must be given a warehouse scope when the warehouse module merges.** `main`'s
+     * `product_stocks` has no `warehouse_id` at all, so (variant, unit) is always a single row and
+     * the `SUM` below is exactly that row's value. On `fase2` the column exists — the test snapshot
+     * already has 345 (variant, unit) combos with more than one active row — and summing ACROSS
+     * warehouses would be wrong, because a roll-up is per-warehouse: it would decide to roll up
+     * using stock sitting in a warehouse it is not crediting. `fase2`'s
+     * `allowedProductUnitIds($productVariantId, $warehouseId)` already takes that scope; this must
+     * grow the same parameter at merge time rather than keep aggregating blindly. The `SUM` is a
+     * deliberate, deterministic placeholder (`pluck()` would silently pick an arbitrary row
+     * instead), NOT an endorsement of cross-warehouse aggregation.
+     *
      * @return array<int, int> unit_id => ps_stock
      */
     public static function existingProductStockByUnit(int $productVariantId): array
     {
         return ProductStock::where('product_variant_id', $productVariantId)
             ->where('status', 1)
-            ->pluck('ps_stock', 'unit_id')
+            ->groupBy('unit_id')
+            ->selectRaw('unit_id, SUM(ps_stock) AS qty')
+            ->pluck('qty', 'unit_id')
             ->map(fn ($q) => (int) $q)
             ->all();
     }
 
     /**
-     * Supplies-side counterpart of existingProductStockByUnit().
+     * Supplies-side counterpart of existingProductStockByUnit() — including its warehouse caveat.
      *
      * @return array<int, int> unit_id => ss_stock
      */
@@ -365,7 +382,9 @@ class UnitRollUp
     {
         return SuppliesStock::where('supplies_id', $suppliesId)
             ->where('status', 1)
-            ->pluck('ss_stock', 'unit_id')
+            ->groupBy('unit_id')
+            ->selectRaw('unit_id, SUM(ss_stock) AS qty')
+            ->pluck('qty', 'unit_id')
             ->map(fn ($q) => (int) $q)
             ->all();
     }
@@ -379,12 +398,17 @@ class UnitRollUp
      */
     public static function planProduct(int $productVariantId, int $startUnitId, int $qty): array
     {
+        // One lookup, two uses: its KEYS are exactly allowedProductUnitIds() (units with an active
+        // stock row) and its VALUES are the existing quantities plan() folds in — issuing both
+        // queries separately would just run the same WHERE twice.
+        $existing = self::existingProductStockByUnit($productVariantId);
+
         return self::plan(
             self::productChain($productVariantId),
             $startUnitId,
             $qty,
-            self::allowedProductUnitIds($productVariantId),
-            self::existingProductStockByUnit($productVariantId)
+            array_keys($existing),
+            $existing
         );
     }
 
@@ -396,12 +420,15 @@ class UnitRollUp
      */
     public static function planSupplies(int $suppliesId, int $startUnitId, int $qty): array
     {
+        // Single lookup serving both the allow-list and the existing quantities — see planProduct().
+        $existing = self::existingSuppliesStockByUnit($suppliesId);
+
         return self::plan(
             self::suppliesChain($suppliesId),
             $startUnitId,
             $qty,
-            self::allowedSuppliesUnitIds($suppliesId),
-            self::existingSuppliesStockByUnit($suppliesId)
+            array_keys($existing),
+            $existing
         );
     }
 
