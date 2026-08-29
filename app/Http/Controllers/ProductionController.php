@@ -21,6 +21,7 @@ use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Support\ProductionPendingStockRestorer;
 use App\Support\ProductUnitStock;
 use App\Support\UnitRollUp;
 use Illuminate\Http\Request;
@@ -545,14 +546,18 @@ class ProductionController extends Controller
      * ACC produksi (pending → approved).
      *
      * Alur keamanan stok (wajib dijaga):
-     * 1) pre-check SEMUA bahan tanpa mutasi
-     * 2) potong bahan + tambah produk + update status dalam 1 DB transaction
+     * 1) self-heal log/stok orphan dari ACC gagal sebelumnya — HANYA kalau belum ada Stock
+     *    Opname yang disetujui sejak orphan itu ditulis (lihat findLockingOpnameCode()); kalau
+     *    sudah dikunci opname, ACC ditolak (status -4) dan minta review manual, TIDAK dipaksa
+     *    auto-restore. Lihat docs/laporan-opname-vs-pending-production-2026-08-01.md — insiden
+     *    PR0258 yang jadi alasan awal fitur ini dimatikan dari ACC.
+     * 2) pre-check SEMUA bahan tanpa mutasi
+     * 3) potong bahan + tambah produk + update status dalam 1 DB transaction
      *
-     * Self-heal orphan TIDAK dijalankan otomatis di ACC (opname bisa sudah
-     * mengunci angka stok setelah potongan salah). Perbaikan massal hanya via:
+     * Perbaikan massal manual (tanpa cek opname, dipakai admin yang sudah meninjau sendiri):
      * php artisan production:restore-pending-stock
      *
-     * Detail: docs/production-acc-stock-safety.md
+     * Detail: docs/production-acc-stock-safety.md, GitHub #83
      */
     function accProduction(Request $req)
     {
@@ -584,6 +589,33 @@ class ProductionController extends Controller
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
+        }
+
+        // Self-heal (GitHub #83): produksi ini masih "Menunggu", tapi kalau sebuah ACC
+        // sebelumnya sempat memotong bahan lalu gagal sebelum status berubah (mis. proses PHP
+        // mati mendadak, bukan exception biasa -- kasus normal sudah aman lewat DB transaction
+        // di bawah), log_stocks-nya masih aktif menggantung. Balikkan dulu supaya retry ini
+        // tidak memotong bahan untuk kedua kalinya.
+        $stockRestorer = new ProductionPendingStockRestorer();
+        $orphanLogs = $stockRestorer->activeLogsFor($p->production_code);
+        if ($orphanLogs->isNotEmpty()) {
+            $lockingOpnameCode = $stockRestorer->findLockingOpnameCode($orphanLogs);
+            if ($lockingOpnameCode !== null) {
+                return response()->json([
+                    'status' => -4,
+                    'header' => 'Perlu Peninjauan Manual',
+                    'message' => "Produksi ini punya potongan stok menggantung dari percobaan ACC "
+                        . "sebelumnya, tapi Stock Opname {$lockingOpnameCode} sudah terlanjur "
+                        . "disetujui setelah potongan itu terjadi. Tidak bisa dikembalikan otomatis "
+                        . "supaya tidak merusak angka opname tersebut -- hubungi admin untuk "
+                        . "peninjauan manual (php artisan production:restore-pending-stock).",
+                ]);
+            }
+
+            $staffId = (int) (session('user')->staff_id ?? 0);
+            DB::transaction(function () use ($stockRestorer, $p, $staffId) {
+                $stockRestorer->revertProductionCode($p->production_code, true, $staffId > 0 ? $staffId : null);
+            });
         }
 
         $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();

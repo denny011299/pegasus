@@ -5,17 +5,85 @@ namespace App\Support;
 use App\Models\LogStock;
 use App\Models\Production;
 use App\Models\ProductStock;
+use App\Models\StockOpnameBahanLine;
+use App\Models\StockOpnameLine;
 use App\Models\SuppliesStock;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Kembalikan stok yang kepotong dari ACC produksi gagal
  * sementara header productions masih pending (status = 1).
  *
- * Lihat: docs/production-acc-stock-safety.md
+ * Lihat: docs/production-acc-stock-safety.md,
+ * docs/laporan-opname-vs-pending-production-2026-08-01.md
  */
 class ProductionPendingStockRestorer
 {
+    /**
+     * Log_stocks aktif (belum di-revert) untuk satu production_code, terbaru dulu.
+     *
+     * @return Collection<int, LogStock>
+     */
+    public function activeLogsFor(string $productionCode): Collection
+    {
+        return LogStock::where('log_kode', $productionCode)
+            ->where('status', 1)
+            ->orderByDesc('log_id')
+            ->get();
+    }
+
+    /**
+     * Cek apakah salah satu log orphan ini sudah "dikunci" oleh Stock Opname (bahan atau
+     * produk) yang DISETUJUI setelah log itu ditulis. Kalau iya, jangan auto-restore --
+     * lihat docs/laporan-opname-vs-pending-production-2026-08-01.md (insiden PR0258): opname
+     * itu sudah menghitung fisik dengan angka yang (sudah terpotong) itu sebagai kenyataan,
+     * jadi mengembalikan stok sekarang akan menyuntik stok yang secara fisik tidak ada.
+     *
+     * Sengaja tidak menyaring per unit_id -- item+gudang+waktu saja, supaya kalau ragu,
+     * diblokir (lebih aman daripada meloloskan restore yang ternyata merusak sebuah opname).
+     *
+     * @param Collection<int, LogStock> $logs
+     * @return string|null kode Stock Opname yang mengunci (mis. "SB0069"/"SP0069"), atau null kalau aman
+     */
+    public function findLockingOpnameCode(Collection $logs): ?string
+    {
+        foreach ($logs as $log) {
+            $since = $log->created_at ?? $log->log_date;
+            $warehouseId = $log->warehouse_id ? (int) $log->warehouse_id : null;
+
+            if ((int) $log->log_type === 2) {
+                $stobCode = StockOpnameBahanLine::query()
+                    ->join('stock_opname_bahans', 'stock_opname_bahans.stob_id', '=', 'stock_opname_bahan_lines.stob_id')
+                    ->where('stock_opname_bahan_lines.supplies_id', $log->log_item_id)
+                    ->where('stock_opname_bahan_lines.status', 1)
+                    ->where('stock_opname_bahans.status', 2)
+                    // stob_decided_at = kapan snapshot beku diputuskan (v2); dokumen versi
+                    // lama tidak mengisinya, jatuh balik ke updated_at.
+                    ->whereRaw('COALESCE(stock_opname_bahans.stob_decided_at, stock_opname_bahans.updated_at) >= ?', [$since])
+                    ->when($warehouseId, fn ($qq) => $qq->where('stock_opname_bahans.warehouse_id', $warehouseId))
+                    ->value('stock_opname_bahans.stob_code');
+                if ($stobCode) {
+                    return (string) $stobCode;
+                }
+            } elseif ((int) $log->log_type === 1) {
+                $stoCode = StockOpnameLine::query()
+                    ->join('stock_opnames', 'stock_opnames.sto_id', '=', 'stock_opname_lines.sto_id')
+                    ->where('stock_opname_lines.product_variant_id', $log->log_item_id)
+                    ->where('stock_opname_lines.status', 1)
+                    ->where('stock_opnames.status', 2)
+                    ->whereRaw('COALESCE(stock_opnames.sto_decided_at, stock_opnames.updated_at) >= ?', [$since])
+                    ->when($warehouseId, fn ($qq) => $qq->where('stock_opnames.warehouse_id', $warehouseId))
+                    ->value('stock_opnames.sto_code');
+                if ($stoCode) {
+                    return (string) $stoCode;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @return array{
      *   productions: int,
