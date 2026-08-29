@@ -32,10 +32,20 @@ use App\Models\SuppliesStock;
  *   rows, because the log note/code differs per flow.
  * - `$allowedUnitIds` is the caller's policy hook for "may I credit this unit?". Production passes
  *   every unit in the ladder because it provisions missing `ProductStock` rows on demand (behind a
- *   user confirmation). Every other caller passes only units that ALREADY have an active stock
- *   row, via `allowedProductUnitIds()`/`allowedSuppliesUnitIds()` below — so a roll-up never
- *   silently creates a stock row the user never asked for. Rolling stops at the first disallowed
- *   unit and the remainder simply stays at the level below it, which is always a valid state.
+ *   user confirmation) — see `planProductOutput()`. Every other caller passes only units that
+ *   ALREADY have an active stock row, via `allowedProductUnitIds()`/`allowedSuppliesUnitIds()`
+ *   below — so a roll-up never silently creates a stock row the user never asked for. Rolling stops
+ *   at the first disallowed unit and the remainder simply stays at the level below it, which is
+ *   always a valid state.
+ * - `$existingByUnitId` (GitHub #87, 2026-08-29) is what's already sitting in each unit's stock row
+ *   BEFORE this credit. Every `plan*()` convenience wrapper below fetches and passes it
+ *   automatically. Without it, a credit that's below a level's ratio on its own but pushes an
+ *   existing leftover over it never rolled up — the leftover just kept growing past its own unit's
+ *   ratio forever, e.g. 20 Piece already in stock + 4 Piece freshly credited never became 1 DOS even
+ *   at exactly 24 Piece = 1 DOS. Folding in the existing amount can make a credit at a given level
+ *   NEGATIVE (existing stock physically moving up a level along with the new credit) — that's
+ *   expected, not an error; every caller applies credits with a plain `+=`, which handles a negative
+ *   delta correctly.
  * - Guarded at 20 hops, same as the ladder walkers in ProductionController, so a circular or
  *   corrupt relation chain can't loop forever.
  */
@@ -46,14 +56,22 @@ class UnitRollUp
     /**
      * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
      * @param  array<int, int>  $allowedUnitIds
+     * @param  array<int, int>  $existingByUnitId  Whatever is ALREADY on the shelf at each unit
+     *         level, keyed by unit_id (0/absent = nothing there yet). Fixed 2026-08-29 (GitHub
+     *         #87): without this, a qty that's below the ratio on its own but pushes an existing
+     *         leftover over it (e.g. 20 Piece already in stock + 4 Piece just credited, 1 DOS = 24
+     *         Piece) never rolled up — the leftover just kept growing past its own unit's ratio
+     *         forever. Passing [] reproduces the old existing-blind behaviour exactly (every
+     *         caller that doesn't pass it gets the pre-fix math, byte for byte).
      * @return array<int, array{unit_id: int, qty: int}>
      */
-    public static function plan(array $chain, int $startUnitId, int $qty, array $allowedUnitIds): array
+    public static function plan(array $chain, int $startUnitId, int $qty, array $allowedUnitIds, array $existingByUnitId = []): array
     {
         $credits = [];
         $currentUnitId = $startUnitId;
         $remaining = $qty;
         $allowed = array_flip(array_map('intval', $allowedUnitIds));
+        $existing = array_map('intval', $existingByUnitId);
         $hops = 0;
 
         while ($hops < self::MAX_HOPS) {
@@ -67,20 +85,31 @@ class UnitRollUp
                 }
             }
 
-            // Chain ended, quantity no longer fills a whole bigger unit, ratio is nonsense, or the
-            // caller won't let us credit the next unit up — stop and leave the rest where it is.
+            $existingHere = $existing[$currentUnitId] ?? 0;
+            $total = $existingHere + $remaining;
+
+            // Chain ended, what's already here PLUS what's being credited now still doesn't fill a
+            // whole bigger unit, ratio is nonsense, or the caller won't let us credit the next unit
+            // up — stop and leave the rest where it is (existing stock untouched).
             if ($rel === null
                 || $rel['ratio'] <= 0
-                || $remaining < $rel['ratio']
+                || $total < $rel['ratio']
                 || ! isset($allowed[$rel['big']])
             ) {
                 break;
             }
 
-            $credits[] = ['unit_id' => $currentUnitId, 'qty' => (int) ($remaining % $rel['ratio'])];
+            // The combined total resettles at $total % ratio here; the delta from whatever was
+            // already sitting at this level can be negative — that's correct, it means some of the
+            // pre-existing stock physically moved up a level along with the new credit, not that it
+            // vanished. Conservation still holds: summed back down to $startUnitId's unit, every
+            // credit in the returned plan always adds up to exactly $qty (existing stock elsewhere
+            // is only ever repositioned, never counted twice) — see UnitRollUpTest's conservation
+            // tests for the proof.
+            $credits[] = ['unit_id' => $currentUnitId, 'qty' => (int) ($total % $rel['ratio']) - $existingHere];
 
             $currentUnitId = $rel['big'];
-            $remaining = (int) floor($remaining / $rel['ratio']);
+            $remaining = (int) floor($total / $rel['ratio']);
         }
 
         $credits[] = ['unit_id' => $currentUnitId, 'qty' => (int) $remaining];
@@ -360,32 +389,114 @@ class UnitRollUp
     }
 
     /**
-     * Convenience wrapper: plan a product roll-up restricted to units that already have stock rows.
+     * What's already on the shelf at each unit level RIGHT NOW, keyed by unit_id — the plan()'s
+     * $existingByUnitId input (GitHub #87). A unit with no active row simply doesn't appear (plan()
+     * treats an absent key as 0, which is correct: nothing there to fold in).
+     *
+     * This ONE query also serves as the allow-list for the `plan*()` wrappers below (its keys are
+     * exactly `allowedProductUnitIds()`'s result), so a roll-up costs one query here, not two
+     * identical ones.
+     *
+     * $warehouseId behaves exactly as in allowedProductUnitIds() — REQUIRED to avoid summing stock
+     * across warehouses (a roll-up is per-warehouse; folding in another warehouse's stock would
+     * decide to roll up using stock this call isn't even crediting). main's port of this fix has no
+     * warehouse_id at all and aggregates blindly across every row for the variant — that landmine
+     * doesn't apply here since fase2 already threads $warehouseId everywhere this matters.
+     *
+     * @return array<int, int> unit_id => ps_stock
+     */
+    public static function existingProductStockByUnit(int $productVariantId, ?int $warehouseId = null): array
+    {
+        return (($warehouseId !== null)
+                ? ProductStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : ProductStock::query())
+            ->where('product_variant_id', $productVariantId)
+            ->where('status', 1)
+            ->groupBy('unit_id')
+            ->selectRaw('unit_id, SUM(ps_stock) AS qty')
+            ->pluck('qty', 'unit_id')
+            ->map(fn ($q) => (int) $q)
+            ->all();
+    }
+
+    /**
+     * Supplies-side counterpart of existingProductStockByUnit() — including its warehouse scoping.
+     *
+     * @return array<int, int> unit_id => ss_stock
+     */
+    public static function existingSuppliesStockByUnit(int $suppliesId, ?int $warehouseId = null): array
+    {
+        return (($warehouseId !== null)
+                ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : SuppliesStock::query())
+            ->where('supplies_id', $suppliesId)
+            ->where('status', 1)
+            ->groupBy('unit_id')
+            ->selectRaw('unit_id, SUM(ss_stock) AS qty')
+            ->pluck('qty', 'unit_id')
+            ->map(fn ($q) => (int) $q)
+            ->all();
+    }
+
+    /**
+     * Convenience wrapper: plan a product roll-up restricted to units that already have stock rows,
+     * folding in whatever is already there (GitHub #87) so a credit that's below the ratio on its
+     * own but crosses it combined with an existing leftover still rolls up correctly.
      *
      * @return array<int, array{unit_id: int, qty: int}>
      */
     public static function planProduct(int $productVariantId, int $startUnitId, int $qty, ?int $warehouseId = null): array
     {
+        // One lookup, two uses: its KEYS are exactly allowedProductUnitIds() (units with an active
+        // stock row in this warehouse) and its VALUES are the existing quantities plan() folds in —
+        // issuing both queries separately would just run the same WHERE twice.
+        $existing = self::existingProductStockByUnit($productVariantId, $warehouseId);
+
         return self::plan(
             self::productChain($productVariantId),
             $startUnitId,
             $qty,
-            self::allowedProductUnitIds($productVariantId, $warehouseId)
+            array_keys($existing),
+            $existing
         );
     }
 
     /**
-     * Convenience wrapper: plan a supplies roll-up restricted to units that already have stock rows.
+     * Convenience wrapper: plan a supplies roll-up restricted to units that already have stock rows,
+     * folding in whatever is already there (GitHub #87) — see planProduct()'s docblock.
      *
      * @return array<int, array{unit_id: int, qty: int}>
      */
     public static function planSupplies(int $suppliesId, int $startUnitId, int $qty, ?int $warehouseId = null): array
     {
+        $existing = self::existingSuppliesStockByUnit($suppliesId, $warehouseId);
+
         return self::plan(
             self::suppliesChain($suppliesId),
             $startUnitId,
             $qty,
-            self::allowedSuppliesUnitIds($suppliesId, $warehouseId)
+            array_keys($existing),
+            $existing
+        );
+    }
+
+    /**
+     * Production's own output-crediting policy: unlike planProduct(), this may roll into EVERY unit
+     * in the product's ladder, not just ones that already have an active ProductStock row —
+     * accProduction() auto-provisions missing rows on demand (behind a user confirmation, see
+     * this class's "Design notes" above and ladderUnitIds()), so no allowedProductUnitIds() gate
+     * applies. Existing-aware (GitHub #87) via existingProductStockByUnit(), same as planProduct().
+     *
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function planProductOutput(int $productVariantId, int $startUnitId, int $qty, ?int $warehouseId = null): array
+    {
+        return self::plan(
+            self::productChain($productVariantId),
+            $startUnitId,
+            $qty,
+            self::ladderUnitIds($productVariantId),
+            self::existingProductStockByUnit($productVariantId, $warehouseId)
         );
     }
 }

@@ -70,8 +70,8 @@ class GeneralController extends Controller
      */
     function getLog(Request $req){
         $module = match ((int) $req->input('log_type')) {
-            1 => 'Daftar Produk',
-            2 => 'Daftar Bahan Mentah',
+            1 => 'Stok Produk',
+            2 => 'Stok Bahan Mentah',
             default => null,
         };
         if ($module === null || !RoleAccess::can(Session::get('user'), $module, 'view')) {

@@ -20,53 +20,57 @@ use Tests\TestCase;
  * middleware string could express "either Stok Produk or Stok Bahan Mentah" without hitting the
  * check.access.any first-module-only bug (see memory `pegasus-check-access-any-bug`).
  *
- * Fix, round 2 (per explicit product decision): the module actually required is `Daftar Produk`
- * for product history (`log_type=1`) and `Daftar Bahan Mentah` for bahan mentah history
- * (`log_type=2`) — not the Stok Produk/Stok Bahan Mentah page-view modules. Since the module needed
- * depends on a *request parameter* (`log_type`), not a fixed route, no `check.access` middleware
- * string can express it either — `GeneralController::getLog()` now validates inline via
- * `RoleAccess::can()`, keyed off `log_type`, and aborts 403 for a missing/unrecognized `log_type`
- * or a staff member lacking the corresponding module's `view` ability.
+ * Fix, round 2 (2026-08-21, since SUPERSEDED): keyed the module off `Daftar Produk`/`Daftar Bahan
+ * Mentah` instead — turned out to be a mistaken assumption, not the real answer (see below).
  *
- * See cdocs/testing/KNOWN_ISSUES.md.
+ * Fix, round 3 — the actual correction (2026-08-29, `c217531`, "mistaken getLogs access fix"): the
+ * module this endpoint's own history modal actually lives behind is `Stok Produk`/`Stok Bahan
+ * Mentah` (the SAME pages the modal opens from), not `Daftar Produk`/`Daftar Bahan Mentah` — round
+ * 2's module names were themselves the mistake. `GeneralController::getLog()` still validates
+ * inline via `RoleAccess::can()`, keyed off `log_type` (no static `check.access` string can express
+ * "either Stok Produk or Stok Bahan Mentah depending on a request parameter"), just against the
+ * corrected module names.
+ *
+ * See cdocs/testing/KNOWN_ISSUES.md and memory `pegasus-log-access-prefix-correction`.
  */
 class GetLogGatedByWrongModuleTest extends TestCase
 {
     use ActingAsStaff;
 
-    public function test_staff_with_daftar_produk_access_can_view_product_history(): void
+    public function test_staff_with_stok_produk_access_can_view_product_history(): void
     {
-        $this->actingAsStaffWithOnlyPermission('Daftar Produk', ['view']);
+        $this->actingAsStaffWithOnlyPermission('Stok Produk', ['view']);
 
         $this->get('/getLog?log_type=1&log_item_id=1')->assertOk();
     }
 
-    public function test_staff_with_daftar_produk_access_cannot_view_bahan_mentah_history(): void
+    public function test_staff_with_stok_produk_access_cannot_view_bahan_mentah_history(): void
     {
-        $this->actingAsStaffWithOnlyPermission('Daftar Produk', ['view']);
+        $this->actingAsStaffWithOnlyPermission('Stok Produk', ['view']);
 
         $this->get('/getLog?log_type=2&log_item_id=1')->assertForbidden();
     }
 
-    public function test_staff_with_daftar_bahan_mentah_access_can_view_bahan_mentah_history(): void
+    public function test_staff_with_stok_bahan_mentah_access_can_view_bahan_mentah_history(): void
     {
-        $this->actingAsStaffWithOnlyPermission('Daftar Bahan Mentah', ['view']);
+        $this->actingAsStaffWithOnlyPermission('Stok Bahan Mentah', ['view']);
 
         $this->get('/getLog?log_type=2&log_item_id=1')->assertOk();
     }
 
-    public function test_staff_with_daftar_bahan_mentah_access_cannot_view_product_history(): void
+    public function test_staff_with_stok_bahan_mentah_access_cannot_view_product_history(): void
     {
-        $this->actingAsStaffWithOnlyPermission('Daftar Bahan Mentah', ['view']);
+        $this->actingAsStaffWithOnlyPermission('Stok Bahan Mentah', ['view']);
 
         $this->get('/getLog?log_type=1&log_item_id=1')->assertForbidden();
     }
 
-    public function test_staff_with_only_stok_produk_page_access_cannot_view_product_history(): void
+    public function test_staff_with_only_daftar_produk_access_cannot_view_product_history(): void
     {
-        // Confirms the fix really keys off 'Daftar Produk', not 'Stok Produk' (the page itself) --
-        // a role granted only the stock-page module must still be denied.
-        $this->actingAsStaffWithOnlyPermission('Stok Produk', ['view']);
+        // Confirms the fix really keys off 'Stok Produk', not 'Daftar Produk' (round 2's mistaken
+        // module, sharing the same real-sounding "produk master data" area) -- a role granted only
+        // that module must still be denied.
+        $this->actingAsStaffWithOnlyPermission('Daftar Produk', ['view']);
 
         $this->get('/getLog?log_type=1&log_item_id=1')->assertForbidden();
     }
@@ -80,7 +84,7 @@ class GetLogGatedByWrongModuleTest extends TestCase
 
     public function test_missing_log_type_is_blocked_even_for_a_privileged_staff(): void
     {
-        $this->actingAsStaffWithOnlyPermission('Daftar Produk', ['view']);
+        $this->actingAsStaffWithOnlyPermission('Stok Produk', ['view']);
 
         $this->get('/getLog?log_item_id=1')->assertForbidden();
     }

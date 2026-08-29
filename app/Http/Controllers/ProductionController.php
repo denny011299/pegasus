@@ -893,14 +893,18 @@ class ProductionController extends Controller
         // membuat itu aman -- satuan yang belum punya baris dilaporkan di sini, dan barulah setelah
         // user menekan konfirmasi (confirm_create_stock) addQty() membuatnya. Caller lain yang
         // TIDAK punya langkah konfirmasi tetap memakai kebijakan ketat bawaan addQty().
+        //
+        // planProductOutput() (GH #87, 2026-08-30): existing-aware, sama seperti kredit
+        // sesungguhnya di addQty() di bawah -- preview ini tidak boleh berbeda dari yang benar-benar
+        // terjadi, jadi harus baca stok yang sudah ada juga, bukan cuma qty transaksi ini.
         $missingProductStockRows = [];
         foreach ($transferPlan['groups'] as $group) {
             foreach ($group['items'] as $output) {
-                $credits = UnitRollUp::plan(
-                    UnitRollUp::productChain((int) $output['product_variant_id']),
+                $credits = UnitRollUp::planProductOutput(
+                    (int) $output['product_variant_id'],
                     (int) $output['unit_id'],
                     (int) $output['qty'],
-                    UnitRollUp::ladderUnitIds((int) $output['product_variant_id'])
+                    (int) $mainWarehouse->id
                 );
 
                 foreach ($credits as $credit) {
