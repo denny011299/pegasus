@@ -801,6 +801,14 @@ class ProductionController extends Controller
 
             if (count($chain) > 1) {
                 foreach ($chain as $credit) {
+                    // Sejalan dengan langkah eksekusi di bawah (yang skip qty===0 dan TIDAK memanggil
+                    // ensureProductStockRow() untuk level yang murni "lewat" tanpa sisa) -- kalau
+                    // level ini tidak akan pernah benar-benar dikreditkan, jangan minta konfirmasi
+                    // untuk baris yang pada akhirnya tidak dibuat sama sekali.
+                    if ($credit['qty'] === 0) {
+                        continue;
+                    }
+
                     $unitId = $credit['unit_id'];
                     $exists = ProductStock::where('product_variant_id', $value['product_variant_id'])
                         ->where('unit_id', $unitId)
