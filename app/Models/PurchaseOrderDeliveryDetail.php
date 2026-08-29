@@ -82,8 +82,13 @@ class PurchaseOrderDeliveryDetail extends Model
 
             // Level di atasnya dijamin punya baris stok aktif — UnitRollUp hanya menaikkan ke
             // satuan yang sudah punya baris (lihat allowedSuppliesUnitIds()).
+            //
+            // GitHub #87 fix (2026-08-29): plan() sekarang existing-aware, jadi kredit di sini bisa
+            // NEGATIF (stok lama di level itu ikut naik satuan bersama penerimaan ini) -- dulu
+            // "<= 0" salah membuang kredit negatif itu, membuat stok lama tertinggal tanpa naik.
+            // "+=" tetap benar untuk delta negatif, jadi cukup skip yang benar-benar nol.
             foreach ($rollUp as $credit) {
-                if ($credit['qty'] <= 0) continue;
+                if ($credit['qty'] === 0) continue;
 
                 $row = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
                     ->where("unit_id", "=", $credit['unit_id'])

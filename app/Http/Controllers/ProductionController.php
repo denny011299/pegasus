@@ -19,6 +19,7 @@ use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Support\ProductionPendingStockRestorer;
+use App\Support\UnitRollUp;
 use GuzzleHttp\Psr7\UploadedFile;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile as HttpUploadedFile;
@@ -791,13 +792,23 @@ class ProductionController extends Controller
 
             $jumlahTambah = (int) $value['pd_qty'];
             // Ditambahkan (2026-08-24): dulu cuma cek satu hop ke atas ($r tunggal) — sekarang
-            // menyusuri seluruh rantai lewat creditProductOutputUpChain() (read-only) supaya
-            // konfirmasi "baris stok baru akan dibuat" ini juga menyebutkan level KEDUA/KETIGA dst,
-            // bukan cuma level pertama, sebelum accProduction() benar-benar mengkreditnya di bawah.
-            $chain = $this->creditProductOutputUpChain((int) $value['product_variant_id'], (int) $v->unit_id, $jumlahTambah);
+            // menyusuri seluruh rantai lewat UnitRollUp::planProductOutput() (read-only di sini)
+            // supaya konfirmasi "baris stok baru akan dibuat" ini juga menyebutkan level KEDUA/KETIGA
+            // dst, bukan cuma level pertama, sebelum accProduction() benar-benar mengkreditnya di
+            // bawah. Existing-aware sejak GitHub #87, jadi ikut menangkap kasus split yang baru
+            // ketahuan setelah stok lama di satuan ini digabung dengan tambahan produksi ini.
+            $chain = UnitRollUp::planProductOutput((int) $value['product_variant_id'], (int) $v->unit_id, $jumlahTambah);
 
             if (count($chain) > 1) {
                 foreach ($chain as $credit) {
+                    // Sejalan dengan langkah eksekusi di bawah (yang skip qty===0 dan TIDAK memanggil
+                    // ensureProductStockRow() untuk level yang murni "lewat" tanpa sisa) -- kalau
+                    // level ini tidak akan pernah benar-benar dikreditkan, jangan minta konfirmasi
+                    // untuk baris yang pada akhirnya tidak dibuat sama sekali.
+                    if ($credit['qty'] === 0) {
+                        continue;
+                    }
+
                     $unitId = $credit['unit_id'];
                     $exists = ProductStock::where('product_variant_id', $value['product_variant_id'])
                         ->where('unit_id', $unitId)
@@ -1042,20 +1053,27 @@ class ProductionController extends Controller
             $jumlahTambah = (int) $value['pd_qty'];
             if ($v && $v->unit_id == $unitIdInputUser) {
                 // GitHub #19 fix (2026-08-24): naik berjenjang lewat SELURUH rantai product_relations
-                // (bukan cuma satu hop) -- lihat creditProductOutputUpChain() di atas. Setiap level
-                // yang dilewati dikredit dan dicatat log_stocks-nya sendiri; level yang sisa
-                // hasil-baginya 0 (semuanya habis naik ke level berikutnya) tidak perlu disentuh sama
-                // sekali.
-                $chain = $this->creditProductOutputUpChain((int) $value["product_variant_id"], (int) $v->unit_id, $jumlahTambah);
+                // (bukan cuma satu hop) -- lihat UnitRollUp::planProductOutput(). Setiap level yang
+                // dilewati dikredit dan dicatat log_stocks-nya sendiri; level yang tidak berubah
+                // sama sekali (qty 0) tidak perlu disentuh.
+                //
+                // GitHub #87 fix (2026-08-29): plan()-nya sekarang existing-aware, jadi satu kredit
+                // BISA negatif -- itu berarti sebagian stok LAMA di level itu ikut naik satuan
+                // bersama tambahan produksi ini (bukan hilang), bukan cuma level baru yang selalu
+                // >=0 seperti dulu. Makanya loop di bawah ini tunggal untuk SEMUA kasus (baik naik
+                // satuan maupun tidak) -- dulu ada percabangan count($chain)>1 vs flat-add, sekarang
+                // tidak perlu lagi karena plan() dengan chain 1 level pun sudah menghasilkan hasil
+                // yang identik dengan flat-add.
+                $chain = UnitRollUp::planProductOutput((int) $value["product_variant_id"], (int) $v->unit_id, $jumlahTambah);
 
-                if (count($chain) > 1) {
-                    foreach ($chain as $credit) {
-                        if ($credit['qty'] <= 0) continue;
+                foreach ($chain as $credit) {
+                    if ($credit['qty'] === 0) continue;
 
-                        $ps = $this->ensureProductStockRow((int) $value["product_variant_id"], $credit['unit_id']);
-                        $ps->ps_stock += $credit['qty'];
-                        $ps->save();
+                    $ps = $this->ensureProductStockRow((int) $value["product_variant_id"], $credit['unit_id']);
+                    $ps->ps_stock += $credit['qty'];
+                    $ps->save();
 
+                    if ($credit['qty'] > 0) {
                         $insertProductLogOnce([
                             'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                             'log_kode' => $p->production_code,
@@ -1064,23 +1082,22 @@ class ProductionController extends Controller
                             'log_notes' => "Hasil Produksi Produk " . LogStock::actorSuffix(),
                             'log_jumlah' => $credit['qty'], 'unit_id' => $credit['unit_id'],
                         ]);
-                    }
-                } else  {
-                          //sekarang kita tambah yang belakang
-                        $v->ps_stock += $jumlahTambah;
-                        $v->save();
-
+                    } else {
+                        // Stok lama di level ini ikut tergulung naik ke level di atasnya bersama
+                        // hasil produksi -- catat sebagai konversi satuan (keluar di sini), bukan
+                        // "hasil produksi", supaya ledger tidak menunjukkan penurunan stok tanpa
+                        // penjelasan. Pasangannya (masuk di level atas) tercatat oleh iterasi
+                        // berikutnya lewat cabang "qty > 0" di atas.
                         $insertProductLogOnce([
                             'log_date' => \Carbon\Carbon::parse($p->production_date)->setTimeFrom(now()),
                             'log_kode' => $p->production_code,
-                            'log_type' => 1, 'log_category' => 1,
+                            'log_type' => 1, 'log_category' => 2,
                             'log_item_id' => $value["product_variant_id"],
-                            'log_notes' => "Hasil Produksi Produk " . LogStock::actorSuffix(),
-                            'log_jumlah' => $jumlahTambah, 'unit_id' => $unitIdInputUser,
+                            'log_notes' => "Konversi unit dari hasil produksi (Naik satuan) " . LogStock::actorSuffix(),
+                            'log_jumlah' => abs($credit['qty']), 'unit_id' => $credit['unit_id'],
                         ]);
-
-
                     }
+                }
             } else {
                 $pv = ProductVariant::find($value["product_variant_id"]);
                 $namaProduk = '-';
@@ -1637,56 +1654,6 @@ class ProductionController extends Controller
         }
 
         return $qty;
-    }
-
-    /**
-     * PM task (2026-08-24): accProduction()'s finished-goods output crediting used to roll a
-     * produced quantity up ONE level of product_relations only (see the dead $cek/$ada lookup this
-     * replaced) — a quantity that was an exact multiple of a SECOND level (e.g. 24 Piece = 2 DOS =
-     * 1 Sak) stalled at DOS and never reached Sak. This walks the WHOLE chain, mirroring the
-     * already-correct "bongkar" direction (convertQtyToSmallestUnit()/$siapkanStok above), just
-     * upward instead of downward.
-     *
-     * Pure/read-only — does no DB writes itself, just returns the list of {unit_id, qty} to credit,
-     * ordered from $startUnitId up to the highest level actually reached. The caller (accProduction())
-     * does the ProductStock += and logging. Reused as-is by the pre-check block above to find every
-     * unit level a split might touch, not just the first hop.
-     *
-     * @return array<int, array{unit_id:int, qty:int}>
-     */
-    private function creditProductOutputUpChain(int $productVariantId, int $startUnitId, int $qty): array
-    {
-        $relations = ProductRelation::where('product_variant_id', $productVariantId)
-            ->where('status', 1)
-            ->get();
-
-        $credits = [];
-        $currentUnitId = $startUnitId;
-        $remaining = $qty;
-        $guard = 0;
-
-        while ($guard < 20) {
-            $guard++;
-            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_2 === (int) $currentUnitId);
-            if (!$rel || $remaining < $rel->pr_unit_value_2) {
-                break;
-            }
-
-            $tambah = (int) floor($remaining / $rel->pr_unit_value_2);
-            $sisa = $remaining % $rel->pr_unit_value_2;
-
-            $credits[] = ['unit_id' => (int) $currentUnitId, 'qty' => (int) $sisa];
-
-            $currentUnitId = (int) $rel->pr_unit_id_1;
-            $remaining = $tambah;
-        }
-
-        // Sisa/titik teratas yang benar-benar dicapai (baik karena rantainya habis, atau qty yang
-        // dibawa tidak cukup untuk naik lagi) — kalau tidak pernah ada hop sama sekali, ini satu-satunya
-        // entri dan sama dengan {startUnitId, qty} apa adanya (perilaku lama untuk produk tanpa ladder).
-        $credits[] = ['unit_id' => $currentUnitId, 'qty' => (int) $remaining];
-
-        return $credits;
     }
 
     private function getBatchCount(
