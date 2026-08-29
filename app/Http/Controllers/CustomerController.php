@@ -152,35 +152,38 @@ class CustomerController extends Controller
                 ->first();
 
             if($sOld) {
-                $sOld->ps_stock += $rev['qty'];
-                $sOld->save();
-
-                // Baris dihapus dari SO → revert ini final, naikkan satuannya berjenjang.
+                // Baris dihapus dari SO → revert ini final, naikkan satuannya berjenjang. Baris
+                // yang MASIH dipakai cuma perlu flat-add (lihat komentar di atas $masihDipakai).
+                //
+                // GitHub #87 fix (2026-08-29): UnitRollUp::planProduct() sekarang existing-aware —
+                // ia MEMBACA stok yang sedang ada di DB untuk tiap level. Dulu di sini stoknya
+                // ditambah flat DULU baru "dibatalkan lagi" kalau ternyata perlu naik satuan; itu
+                // sekarang akan membuat plan() melihat stok yang SUDAH kena tambahan qty ini duluan
+                // dan menghitung ganda. Jadi urutannya dibalik: hitung rencana roll-up-nya dulu
+                // (sebelum stok berubah sama sekali), baru terapkan sekali jalan.
                 if (!isset($masihDipakai[$revKey])) {
                     $rollUp = UnitRollUp::planProduct((int) $rev['pvr_id'], (int) $rev['unit_id'], (int) $rev['qty']);
-                    $naikLevel = array_slice($rollUp, 1);
 
-                    if ($naikLevel !== []) {
-                        // Turunkan lagi yang sudah terlanjur ditambahkan flat di atas, lalu
-                        // distribusikan sesuai rencana roll-up.
-                        $sOld->ps_stock -= $rev['qty'];
-                        $sOld->ps_stock += (int) $rollUp[0]['qty'];
-                        $sOld->save();
+                    foreach ($rollUp as $credit) {
+                        if ($credit['qty'] === 0) continue;
 
-                        foreach ($naikLevel as $credit) {
-                            if ($credit['qty'] <= 0) continue;
-                            $row = ProductStock::where('product_variant_id', $rev['pvr_id'])
+                        $row = ((int) $credit['unit_id'] === (int) $rev['unit_id'])
+                            ? $sOld
+                            : ProductStock::where('product_variant_id', $rev['pvr_id'])
                                 ->where('unit_id', $credit['unit_id'])
                                 ->where('status', 1)
                                 ->first();
-                            if (!$row) continue;
-                            $row->ps_stock += $credit['qty'];
-                            $row->save();
-                        }
+                        if (!$row) continue;
+
+                        $row->ps_stock += $credit['qty'];
+                        $row->save();
                     }
+                } else {
+                    $sOld->ps_stock += $rev['qty'];
+                    $sOld->save();
                 }
 
-                (new LogStock())->insertLog([                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+                (new LogStock())->insertLog([
                     'log_date' => now(), 
                     'log_kode' => $data['so_number'], 
                     'log_type' => 1, 

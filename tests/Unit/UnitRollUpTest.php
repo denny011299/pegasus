@@ -127,6 +127,116 @@ class UnitRollUpTest extends TestCase
         $this->assertLessThanOrEqual(21, count($plan));
     }
 
+    // ============================================================ $existingByUnitId (GitHub #87)
+
+    /**
+     * The exact reported bug (GitHub #87): SKU HKCP60P had 11 DOS + 20 Piece in stock (1 DOS =
+     * 24 Piece there), a production run credited 4 more Piece. 4 alone never reaches the ratio, but
+     * 20 + 4 does — the old existing-blind plan() left this at 11 DOS + 24 Piece forever instead of
+     * rolling into a 12th DOS.
+     */
+    public function test_an_existing_leftover_plus_a_below_ratio_credit_rolls_up_together(): void
+    {
+        $hkcp60pLadder = [['small' => self::PIECE, 'big' => self::DOS, 'ratio' => 24]];
+
+        $plan = UnitRollUp::plan(
+            $hkcp60pLadder,
+            self::PIECE,
+            4,
+            [self::PIECE, self::DOS],
+            [self::PIECE => 20]
+        );
+
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => -20], // the old 20 Piece leaves this row entirely
+            ['unit_id' => self::DOS, 'qty' => 1],      // ... and reappears as 1 new DOS (11 -> 12)
+        ], $plan);
+    }
+
+    /** Existing + credit landing exactly on the ratio still counts as reaching it (not "below"). */
+    public function test_existing_plus_credit_exactly_on_the_ratio_still_rolls_up(): void
+    {
+        $plan = UnitRollUp::plan($this->twoLevelLadder(), self::PIECE, 12, [self::PIECE, self::DOS], [self::PIECE => 0]);
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => 0],
+            ['unit_id' => self::DOS, 'qty' => 1],
+        ], $plan);
+
+        // Same combined total (12), split differently between existing and new — same result.
+        $plan2 = UnitRollUp::plan($this->twoLevelLadder(), self::PIECE, 5, [self::PIECE, self::DOS], [self::PIECE => 7]);
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => -7],
+            ['unit_id' => self::DOS, 'qty' => 1],
+        ], $plan2);
+    }
+
+    /** Existing + credit still short of the ratio: nothing rolls, existing stock is left alone. */
+    public function test_existing_plus_credit_still_below_the_ratio_stays_put(): void
+    {
+        $plan = UnitRollUp::plan($this->twoLevelLadder(), self::PIECE, 4, [self::PIECE, self::DOS], [self::PIECE => 5]);
+
+        $this->assertSame([['unit_id' => self::PIECE, 'qty' => 4]], $plan);
+    }
+
+    /**
+     * A pre-existing leftover can cascade through MULTIPLE levels too, not just the level it's
+     * sitting at — 20 existing Piece + 4 new Piece rolls to 2 new DOS, and those 2 DOS combined
+     * with 5 ALREADY-existing DOS (7 total, ratio 2) roll again into 3 Sak + 1 DOS remainder.
+     */
+    public function test_an_existing_leftover_can_cascade_up_more_than_one_level(): void
+    {
+        $plan = UnitRollUp::plan(
+            $this->ladder(),
+            self::PIECE,
+            4,
+            $this->allUnits(),
+            [self::PIECE => 20, self::DOS => 5]
+        );
+
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => -20],
+            ['unit_id' => self::DOS, 'qty' => -4], // 5 existing - 1 remainder = 4 also leave, folded into the Sak
+            ['unit_id' => self::SAK, 'qty' => 3],
+        ], $plan);
+
+        // Conservation: -20*1 + -4*12 + 3*24 = 4, exactly the credited qty — see the dedicated
+        // conservation test below for why this must always hold.
+    }
+
+    /** Omitting $existingByUnitId reproduces the pre-fix, existing-blind behaviour exactly. */
+    public function test_omitting_existing_stock_defaults_to_the_old_existing_blind_behaviour(): void
+    {
+        $withDefault = UnitRollUp::plan($this->twoLevelLadder(), self::PIECE, 4, [self::PIECE, self::DOS]);
+        $withExplicitZero = UnitRollUp::plan($this->twoLevelLadder(), self::PIECE, 4, [self::PIECE, self::DOS], [self::PIECE => 0]);
+
+        $this->assertSame([['unit_id' => self::PIECE, 'qty' => 4]], $withDefault);
+        $this->assertSame($withDefault, $withExplicitZero);
+    }
+
+    /**
+     * Conservation still holds with a nonzero existing balance: summed back down to the base unit,
+     * the plan's credits always add up to exactly $qty — existing stock elsewhere is only ever
+     * repositioned by the plan, never counted as part of what's being credited.
+     */
+    public function test_conservation_holds_even_when_existing_stock_is_folded_in(): void
+    {
+        $plan = UnitRollUp::plan(
+            $this->ladder(),
+            self::PIECE,
+            4,
+            $this->allUnits(),
+            [self::PIECE => 20, self::DOS => 5]
+        );
+
+        $pieceEquivalent = [self::PIECE => 1, self::DOS => 12, self::SAK => 24];
+        $total = 0;
+        foreach ($plan as $credit) {
+            $total += $credit['qty'] * $pieceEquivalent[$credit['unit_id']];
+        }
+
+        $this->assertSame(4, $total, 'the plan only ever accounts for the newly credited 4 Piece, not the existing stock it repositions');
+    }
+
     // ================================================================== collapse()
 
     /**
