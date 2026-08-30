@@ -117,6 +117,12 @@ class StockController extends Controller
             // untuk draft: publish() sendiri yang menolak selama is_draft masih true.
             $lifecycle->publish(StockOpname::find($id));
 
+            // Sembuhkan stok live yang stuck under-rolled (mis. dari sebelum GitHub #87) untuk
+            // satuan yang TIDAK dihitung di dokumen ini -- lihat OpnameLifecycle::
+            // healUntouchedSystemStock(). Aman untuk draft: method-nya sendiri yang menolak
+            // selama is_draft masih true.
+            $lifecycle->healUntouchedSystemStock(StockOpname::find($id));
+
             return response()->json(['status' => 1, 'sto_id' => $id]);
         });
     }
@@ -211,7 +217,11 @@ class StockController extends Controller
         // dokumen keluar dari draft di sini -- inilah saat snapshot identitas dibekukan untuk
         // alur draft (tombol .btn-ajukan). Idempoten, jadi tidak masalah kalau dokumen ini
         // ternyata sudah pernah publish lewat insert.
-        (new OpnameLifecycle())->publish($sto->refresh());
+        $lifecycle = new OpnameLifecycle();
+        $lifecycle->publish($sto->refresh());
+        // Draft -> menunggu adalah momen yang sama seperti insert langsung non-draft: sembuhkan
+        // stok live yang stuck under-rolled untuk satuan yang tidak dihitung di dokumen ini.
+        $lifecycle->healUntouchedSystemStock($sto->refresh());
 
         return 1;
     }
@@ -894,6 +904,9 @@ class StockController extends Controller
             // draft ataupun langsung menunggu, sebelum publish() membekukan identitasnya.
             $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
             $lifecycle->publish(StockOpnameBahan::find($id));
+            // Kembaran keputusan PM di insertStockOpname() Produk -- sembuhkan stok bahan yang
+            // stuck under-rolled untuk satuan yang tidak dihitung di dokumen ini.
+            $lifecycle->healUntouchedSystemStock(StockOpnameBahan::find($id));
 
             return response()->json(['status' => 1, 'stob_id' => $id]);
         });
@@ -974,7 +987,9 @@ class StockController extends Controller
         // NB (merged from main's efef95e, 2026-08-28): main called
         // (new StockOpnameBahan())->submitStockOpnameBahan($data), a model method that doesn't
         // exist in this tree -- see submitStockOpname()'s (Produk) matching note.
-        (new BahanOpnameLifecycle())->publish($stob->refresh());
+        $lifecycle = new BahanOpnameLifecycle();
+        $lifecycle->publish($stob->refresh());
+        $lifecycle->healUntouchedSystemStock($stob->refresh());
 
         return 1;
     }
