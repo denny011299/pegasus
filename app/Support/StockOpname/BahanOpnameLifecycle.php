@@ -2,6 +2,7 @@
 
 namespace App\Support\StockOpname;
 
+use App\Models\LogStock;
 use App\Models\Staff;
 use App\Models\StockOpnameBahanLine;
 use App\Models\Supplies;
@@ -113,6 +114,69 @@ class BahanOpnameLifecycle
                     'unit_id' => $credit['unit_id'],
                     'sobl_counted_qty' => $credit['qty'],
                     'sobl_notes' => $first->sobl_notes,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Kembaran persis OpnameLifecycle::healUntouchedSystemStock() (Produk), untuk Supplies. Lihat
+     * kelas itu untuk alasan lengkap.
+     */
+    public function healUntouchedSystemStock($stob): void
+    {
+        if (! $stob || $stob->is_draft || $stob->is_old_version) {
+            return;
+        }
+
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->groupBy('supplies_id');
+
+        foreach ($lines as $suppliesId => $group) {
+            if (! $suppliesId) {
+                continue;
+            }
+
+            $touchedUnitIds = $group->filter(fn ($l) => $l->sobl_counted_qty !== null)
+                ->pluck('unit_id')->map(fn ($u) => (int) $u)->all();
+
+            $stocks = SuppliesStock::where('supplies_id', $suppliesId)
+                ->where('status', 1)
+                ->get();
+
+            $qtyByUnit = $stocks->pluck('ss_stock', 'unit_id')->map(fn ($q) => (int) $q)->all();
+            $collapsed = UnitRollUp::collapseSupplies((int) $suppliesId, $qtyByUnit);
+            if ($collapsed === []) {
+                continue;
+            }
+
+            $stocksByUnit = $stocks->keyBy('unit_id');
+
+            foreach ($collapsed as $credit) {
+                $unitId = (int) $credit['unit_id'];
+                if (in_array($unitId, $touchedUnitIds, true)) {
+                    continue;
+                }
+
+                $stock = $stocksByUnit->get($unitId);
+                $before = $stock ? (int) $stock->ss_stock : 0;
+                $after = (int) $credit['qty'];
+                if (! $stock || $before === $after) {
+                    continue;
+                }
+
+                $delta = $after - $before;
+                $stock->ss_stock = $after;
+                $stock->save();
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $stob->stob_code,
+                    'log_type' => 2,
+                    'log_category' => $delta > 0 ? 1 : 2,
+                    'log_item_id' => $suppliesId,
+                    'log_notes' => 'Konversi unit dari Stock Opname Bahan (perbaikan stok tergulung) '.LogStock::actorSuffix(),
+                    'log_jumlah' => abs($delta),
+                    'unit_id' => $unitId,
                 ]);
             }
         }
