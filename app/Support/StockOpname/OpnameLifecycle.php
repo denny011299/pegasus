@@ -2,6 +2,7 @@
 
 namespace App\Support\StockOpname;
 
+use App\Models\LogStock;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
@@ -160,6 +161,83 @@ class OpnameLifecycle
                     'unit_id' => $credit['unit_id'],
                     'sol_counted_qty' => $credit['qty'],
                     'sol_notes' => $first->sol_notes,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Sembuhkan LIVE ps_stock produk yang ikut di dokumen ini SEBELUM dokumen mulai dipercaya --
+     * keputusan PM 2026-08-31: stok yang stuck under-rolled dari sebelum GitHub #87 (mis. 12 DOS +
+     * 24 Piece padahal 1 DOS = 24 Piece, seharusnya 13 DOS + 0 Piece) tetap salah selamanya kalau
+     * tidak ada transaksi stok-masuk lain yang kebetulan menyentuhnya (lihat docblock
+     * AuditStuckUnitRollUpCommand). Membuat Stock Opname adalah persis momen staf akan MEMPERCAYAI
+     * angka live itu, jadi sembuhkan di sini juga -- primitif yang sama (UnitRollUp::
+     * collapseProduct()) yang dipakai command audit itu dan rollUpUnits() di atas.
+     *
+     * HANYA menyentuh satuan yang TIDAK dihitung di dokumen ini (sol_counted_qty === null).
+     * Satuan yang sedang diisi staf akan ditimpa langsung oleh hasil hitungnya sendiri saat ACC
+     * (lihat accStockOpnameV2()), jadi menyembuhkannya di sini cuma kerja ganda yang percuma --
+     * dan tidak menyentuhnya menjaga efek method ini persis sebatas satuan yang memang diminta.
+     *
+     * Dipanggil dari insertStockOpname() (dokumen baru langsung menunggu) dan submitStockOpname()
+     * (draft -> menunggu). TIDAK dipanggil selama masih draft (dijaga is_draft di bawah) --
+     * idempoten, memanggilnya lagi pada produk yang sudah sembuh tidak mengubah apa pun lagi.
+     */
+    public function healUntouchedSystemStock($sto): void
+    {
+        if (! $sto || $sto->is_draft || $sto->is_old_version) {
+            return;
+        }
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->groupBy('product_variant_id');
+
+        foreach ($lines as $productVariantId => $group) {
+            if (! $productVariantId) {
+                continue;
+            }
+
+            $touchedUnitIds = $group->filter(fn ($l) => $l->sol_counted_qty !== null)
+                ->pluck('unit_id')->map(fn ($u) => (int) $u)->all();
+
+            $stocks = ProductStock::where('product_variant_id', $productVariantId)
+                ->where('status', 1)
+                ->get();
+
+            $qtyByUnit = $stocks->pluck('ps_stock', 'unit_id')->map(fn ($q) => (int) $q)->all();
+            $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit);
+            if ($collapsed === []) {
+                continue;
+            }
+
+            $stocksByUnit = $stocks->keyBy('unit_id');
+
+            foreach ($collapsed as $credit) {
+                $unitId = (int) $credit['unit_id'];
+                if (in_array($unitId, $touchedUnitIds, true)) {
+                    continue;
+                }
+
+                $stock = $stocksByUnit->get($unitId);
+                $before = $stock ? (int) $stock->ps_stock : 0;
+                $after = (int) $credit['qty'];
+                if (! $stock || $before === $after) {
+                    continue;
+                }
+
+                $delta = $after - $before;
+                $stock->ps_stock = $after;
+                $stock->save();
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $sto->sto_code,
+                    'log_type' => 1,
+                    'log_category' => $delta > 0 ? 1 : 2,
+                    'log_item_id' => $productVariantId,
+                    'log_notes' => 'Konversi unit dari Stock Opname (perbaikan stok tergulung) '.LogStock::actorSuffix(),
+                    'log_jumlah' => abs($delta),
+                    'unit_id' => $unitId,
                 ]);
             }
         }
