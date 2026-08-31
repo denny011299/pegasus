@@ -25,6 +25,10 @@
 -- UNTUK IMPORT 1 FILE SQL (data real + warehouse_id sudah di INSERT):
 --   1) php docs/scripts/build_production_warehouse_sql.php
 --   2) Import: database/sql/pegasuso_production_import_with_warehouses.sql
+--      (postfix otomatis jalankan pegasuso_production_fase2_schema_gap.sql)
+--   ATAU setelah import dump biasa:
+--      database/sql/pegasuso_production_multi_warehouse_upgrade.sql
+--      database/sql/pegasuso_production_fase2_schema_gap.sql
 -- =============================================================================
 
 SET NAMES utf8mb4;

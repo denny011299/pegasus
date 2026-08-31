@@ -20,6 +20,8 @@ class ProductionMultiWarehouseSeeder extends Seeder
 {
   private const SQL_FILE = 'database/sql/pegasuso_production_multi_warehouse_upgrade.sql';
 
+  private const SCHEMA_GAP_SQL = 'database/sql/pegasuso_production_fase2_schema_gap.sql';
+
   private const CONFIG_FILE = 'database/seeders/data/production_default_warehouse.json';
 
   /** @var list<string> */
@@ -47,6 +49,7 @@ class ProductionMultiWarehouseSeeder extends Seeder
 
     DB::transaction(function () use ($config) {
       $this->runUpgradeSql();
+      $this->runSchemaGapSql();
       $this->ensureWarehousesFromConfig($config);
       $this->backfillWarehouseIds();
       $this->assignStaffToSeedWarehouses($config);
@@ -116,8 +119,19 @@ class ProductionMultiWarehouseSeeder extends Seeder
       throw new \RuntimeException('SQL upgrade tidak ditemukan: ' . self::SQL_FILE);
     }
 
-    $sql = File::get($path);
-    DB::unprepared($sql);
+    DB::unprepared(File::get($path));
+  }
+
+  private function runSchemaGapSql(): void
+  {
+    $path = base_path(self::SCHEMA_GAP_SQL);
+    if (!is_file($path)) {
+      $this->command?->warn('Schema gap SQL tidak ditemukan: ' . self::SCHEMA_GAP_SQL);
+
+      return;
+    }
+
+    DB::unprepared(File::get($path));
   }
 
   private function ensureWarehousesFromConfig(array $config): void

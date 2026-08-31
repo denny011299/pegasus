@@ -192,6 +192,11 @@ function postfix(): string
 {
     $main = MAIN_WAREHOUSE_ID;
     $retail = RETAIL_WAREHOUSE_ID;
+    $repoRoot = dirname(__DIR__, 2);
+    $gapPath = $repoRoot . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'sql' . DIRECTORY_SEPARATOR . 'pegasuso_production_fase2_schema_gap.sql';
+    $gapSql = is_file($gapPath)
+        ? "\n\n-- ----- fase2 schema gap (kolom fase2 yang belum ada di dump production) -----\n" . file_get_contents($gapPath)
+        : '';
 
     return <<<SQL
 
@@ -266,7 +271,7 @@ SELECT
   (SELECT COUNT(*) FROM `stock_opnames` WHERE `warehouse_id` = {$main}) AS stock_opnames_main,
   'pegasuso_production_import_with_warehouses OK' AS result;
 
-SQL;
+SQL . $gapSql;
 }
 
 /**
