@@ -8,8 +8,16 @@ use Tests\TestCase;
 
 /**
  * "Master" sidebar group (cdocs/docs/modules.md §2): Kategori/Satuan/Variasi,
- * Produk, Bahan Mentah, Armada & Pemasok, Inventaris. Broad, shallow checks —
- * business correctness is covered by Health/Workflow tests, not here.
+ * Produk, Bahan Mentah, Armada & Pemasok, Inventaris, plus the fase-2 "Gudang"
+ * submenu (Daftar Gudang / Tipe Gudang, modules.md §2.2). Broad, shallow
+ * checks — business correctness is covered by Health/Workflow tests, not here.
+ *
+ * Note on the Gudang routes: checkAccess also consults
+ * WarehouseMenuAccess::allows(), a per-warehouse sidebar_menus whitelist that
+ * super admin does NOT bypass. It only bites once a warehouse is active in the
+ * session, and these tests never set active_warehouse_id, so allows() short-
+ * circuits to true here. Pin one with withActiveWarehouse() and that stops
+ * being true — that path belongs in a Workflow test, not this file.
  *
  * Guest-redirect behaviour (checkLogin middleware) is app-wide and already
  * proven once in tests/Feature/ExampleTest.php — not repeated per route here.
@@ -24,6 +32,8 @@ class MasterSmokeTest extends TestCase
             'category' => ['/category', 'Kategori'],
             'unit' => ['/unit', 'Satuan'],
             'variant' => ['/variant', 'Variasi'],
+            'warehouse (Daftar Gudang)' => ['/warehouse', 'Gudang'],
+            'warehouse-type (Tipe Gudang)' => ['/warehouse-type', 'Tipe Gudang'],
             'product' => ['/product', 'Daftar Produk'],
             'stockProduct' => ['/stockProduct', 'Stok Produk'],
             'barcodePrint' => ['/barcodePrint', 'Daftar Produk'],

@@ -8,7 +8,18 @@ use Tests\TestCase;
 
 /**
  * "Penjualan & Pembelian" sidebar group (cdocs/docs/modules.md §3): Sales
- * Order (Pengiriman), Purchase Order (Pembelian), Tanda Terima PO.
+ * Order (Pengiriman), Purchase Order (Pembelian), Tanda Terima PO, plus two
+ * fase-2 additions — Stock Transfer (modules.md §3) and the Pengembalian/QC
+ * return endpoints that ride on the existing `Pengiriman` permission
+ * (modules.md §9.1, which also documents why they have no sidebar entry).
+ *
+ * The customerReturns* routes are DataTables/JSON endpoints, not HTML pages —
+ * their controllers return JsonResponse and nothing in resources/views links
+ * to them. They are smoke-tested here anyway because the thing this file
+ * checks (authorized 200 / unauthorized 403 / never a 500) is exactly as
+ * meaningful for a JSON endpoint as for a page. Only the list and /context
+ * routes are covered: the show routes need a real return document to exist,
+ * which is Workflow-test territory, not smoke.
  */
 class PenjualanPembelianSmokeTest extends TestCase
 {
@@ -20,6 +31,13 @@ class PenjualanPembelianSmokeTest extends TestCase
             'salesOrder (Pengiriman)' => ['/salesOrder', 'Pengiriman'],
             'purchaseOrder (Pembelian)' => ['/purchaseOrder', 'Pembelian'],
             'tt (Tanda Terima PO)' => ['/tt', 'Tanda Terima PO'],
+            'stockTransfer' => ['/stockTransfer', 'Stock Transfer'],
+            'customerReturns (list)' => ['/customerReturns', 'Pengiriman'],
+            'customerReturns/context' => ['/customerReturns/context', 'Pengiriman'],
+            'customerProductReturns (list)' => ['/customerProductReturns', 'Pengiriman'],
+            'customerProductReturns/context' => ['/customerProductReturns/context', 'Pengiriman'],
+            'customerSupplyReturns (list)' => ['/customerSupplyReturns', 'Pengiriman'],
+            'customerSupplyReturns/context' => ['/customerSupplyReturns/context', 'Pengiriman'],
         ];
     }
 

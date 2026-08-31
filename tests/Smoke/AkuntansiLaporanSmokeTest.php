@@ -43,6 +43,7 @@ class AkuntansiLaporanSmokeTest extends TestCase
             'reportProduksi' => ['/reportProduksi', 'Laporan Produksi'],
             'reportStockAging' => ['/reportStockAging', 'Laporan Stock Aging'],
             'reportCashOut' => ['/reportCashOut', 'Kas'],
+            'reportStockTransfer' => ['/reportStockTransfer', 'Stock Transfer'],
         ];
     }
 
