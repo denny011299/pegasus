@@ -1,4 +1,4 @@
-﻿-- =============================================================================
+-- =============================================================================
 -- productions.warehouse_id — gudang asal produksi (header)
 -- Filter list produksi pakai kolom ini, BUKAN destination_warehouse_id di detail.
 -- Default / backfill data lama = gudang utama (biasanya ID 1).
