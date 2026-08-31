@@ -66,3 +66,8 @@ pegasuso_pegasus.sql
 scratch_modals.*
 
 /database/seeders/snapshots/prod_21082026
+
+# Generated import dari dump production (berisi data live — jangan commit)
+/database/sql/pegasuso_production_import_with_warehouses.sql
+*export*.sql
+pegasus_live_fase2_export.sql

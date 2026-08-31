@@ -11,10 +11,14 @@ use Illuminate\Support\Facades\Schema;
  * Upgrade DB production (pegasuso) ke multi-gudang Fase 2 tanpa menghapus data.
  *
  * Jalankan setelah import dump production ke DB lokal:
+ *   php artisan pegasus:production-upgrade
  *   php artisan db:seed --class=ProductionMultiWarehouseSeeder
  *
- * Atau SQL manual:
- *   database/sql/pegasuso_production_multi_warehouse_upgrade.sql
+ * Opsi SQL (tanpa seeder PHP):
+ *   php docs/scripts/build_production_upgrade_in_place_sql.php
+ *   php artisan pegasus:production-upgrade --sql
+ *   mysql -u root db_name < database/sql/pegasuso_production_upgrade_in_place.sql
+ *   php artisan db:seed --class=RoleWarehouseAccessSeeder
  */
 class ProductionMultiWarehouseSeeder extends Seeder
 {
@@ -47,15 +51,15 @@ class ProductionMultiWarehouseSeeder extends Seeder
     $config = $this->loadConfig();
     $before = $this->snapshotCounts();
 
-    DB::transaction(function () use ($config) {
-      $this->runUpgradeSql();
-      $this->runSchemaGapSql();
-      $this->ensureWarehousesFromConfig($config);
-      $this->backfillWarehouseIds();
-      $this->assignStaffToSeedWarehouses($config);
-      $this->seedZeroStocksForRetailWarehouse($config);
-      $this->recordWarehouseMigrations();
-    });
+    // Tanpa DB::transaction(): DDL MySQL (CREATE/ALTER) implicit commit
+    // dan akan memicu "There is no active transaction" saat Laravel commit.
+    $this->runUpgradeSql();
+    $this->runSchemaGapSql();
+    $this->ensureWarehousesFromConfig($config);
+    $this->backfillWarehouseIds();
+    $this->assignStaffToSeedWarehouses($config);
+    $this->seedZeroStocksForRetailWarehouse($config);
+    $this->recordWarehouseMigrations();
 
     $this->call(RoleWarehouseAccessSeeder::class);
 

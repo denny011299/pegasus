@@ -3,19 +3,21 @@
  * Bandingkan data dump production vs DB setelah import + patch.
  *
  * Usage:
- *   php docs/scripts/verify_production_import.php [dump.sql] [database_name]
+ *   php docs/scripts/verify_production_import.php <dump.sql> [database_name]
  *
- * Default dump: pegasuso_pegasus_production 31-08-26.sql di Downloads
  * Default DB: pegasus_production_local
  */
 
 declare(strict_types=1);
 
-$dumpPath = $argv[1] ?? 'C:/Users/Ruben/Downloads/pegasuso_pegasus_production 31-08-26.sql';
+$dumpPath = $argv[1] ?? null;
 $dbName = $argv[2] ?? 'pegasus_production_local';
 
-if (!is_file($dumpPath)) {
-    fwrite(STDERR, "Dump tidak ditemukan: {$dumpPath}\n");
+if ($dumpPath === null || $dumpPath === '' || !is_file($dumpPath)) {
+    fwrite(STDERR, "Usage: php docs/scripts/verify_production_import.php <dump.sql> [database_name]\n");
+    if ($dumpPath !== null && $dumpPath !== '') {
+        fwrite(STDERR, "Dump tidak ditemukan: {$dumpPath}\n");
+    }
     exit(1);
 }
 
