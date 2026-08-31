@@ -1,0 +1,274 @@
+[
+    {
+        "id": 1,
+        "staff_id": 9,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 2,
+        "staff_id": 10,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 3,
+        "staff_id": 13,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 4,
+        "staff_id": 14,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 5,
+        "staff_id": 15,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 6,
+        "staff_id": 16,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 7,
+        "staff_id": 17,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 8,
+        "staff_id": 18,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 9,
+        "staff_id": 19,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 10,
+        "staff_id": 20,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 11,
+        "staff_id": 21,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 12,
+        "staff_id": 22,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 13,
+        "staff_id": 23,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 14,
+        "staff_id": 24,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 15,
+        "staff_id": 25,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 16,
+        "staff_id": 27,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 17,
+        "staff_id": 28,
+        "warehouse_id": 1,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 32,
+        "staff_id": 9,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 33,
+        "staff_id": 10,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 34,
+        "staff_id": 13,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 35,
+        "staff_id": 14,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 36,
+        "staff_id": 15,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 37,
+        "staff_id": 16,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 38,
+        "staff_id": 17,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 39,
+        "staff_id": 18,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 40,
+        "staff_id": 19,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 41,
+        "staff_id": 20,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 42,
+        "staff_id": 21,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 43,
+        "staff_id": 22,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 44,
+        "staff_id": 23,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 45,
+        "staff_id": 24,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 46,
+        "staff_id": 25,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 47,
+        "staff_id": 27,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    },
+    {
+        "id": 48,
+        "staff_id": 28,
+        "warehouse_id": 2,
+        "is_kepala_cabang": 0,
+        "created_at": "2026-08-31 23:52:36",
+        "updated_at": "2026-08-31 23:52:36"
+    }
+]
