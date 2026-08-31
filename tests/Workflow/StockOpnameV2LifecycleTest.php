@@ -386,10 +386,14 @@ class StockOpnameV2LifecycleTest extends TestCase
         return [$variant, $dos, $pcs, $dosUnit, $pcsUnit];
     }
 
-    /** Contoh persis dari PM: 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs. */
+    /**
+     * Contoh persis dari PM: 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs. DOS live
+     * sengaja 0 di sini -- kasus DOS yang SUDAH punya stok live dipegang terpisah oleh
+     * test_roll_up_folds_existing_live_stock_of_an_untouched_unit_instead_of_erasing_it().
+     */
     public function test_roll_up_converts_a_filled_small_unit_into_an_untouched_big_one(): void
     {
-        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder();
+        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
         $sto = $this->makeDocument(isDraft: false);
         $this->addLines($sto, $variant, [$pcs->unit_id => 30, $dos->unit_id => null]);
 
@@ -404,7 +408,7 @@ class StockOpnameV2LifecycleTest extends TestCase
     public function test_roll_up_applies_equally_to_draft_and_pending_documents(): void
     {
         foreach ([true, false] as $isDraft) {
-            [$variant, $dos, $pcs] = $this->makeFixtureWithLadder();
+            [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
             $sto = $this->makeDocument(isDraft: $isDraft);
             $this->addLines($sto, $variant, [$pcs->unit_id => 30, $dos->unit_id => null]);
 
@@ -464,6 +468,29 @@ class StockOpnameV2LifecycleTest extends TestCase
         $lines = StockOpnameLine::getLines($sto->sto_id)->keyBy('unit_id');
         $this->assertSame(30, (int) $lines[$pcs->unit_id]->sol_counted_qty);
         $this->assertNull($lines[$dos->unit_id]->sol_counted_qty);
+    }
+
+    /**
+     * Bug dilaporkan user (multi-gudang, 2026-08-31): stok live SUDAH kanonik (84 DOS + 0 Piece,
+     * 1 DOS = 12 Piece). Staf isi HANYA Piece = 1000, DOS dibiarkan kosong. Sebelum perbaikan ini,
+     * rollUpUnits() menggulung 1000 pcs SENDIRIAN (buta terhadap 84 DOS yang sudah ada) jadi
+     * cuma 83 DOS + 4 Piece -- 84 DOS lama lenyap diam-diam, dan angka rekaan itu ikut tertulis ke
+     * ps_stock saat ACC karena tidak lagi NULL. Perbaikannya melipat stok live yang sudah ada di
+     * DOS (satuan yang tidak disentuh) ke dalam carry gulungan.
+     */
+    public function test_roll_up_folds_existing_live_stock_of_an_untouched_unit_instead_of_erasing_it(): void
+    {
+        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 84, pcsStock: 0, ratio: 12);
+        $sto = $this->makeDocument(isDraft: false);
+        $sto->warehouse_id = 1;
+        $sto->save();
+        $this->addLines($sto, $variant, [$pcs->unit_id => 1000, $dos->unit_id => null]);
+
+        (new OpnameLifecycle())->rollUpUnits($sto);
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->keyBy('unit_id');
+        $this->assertSame(4, (int) $lines[$pcs->unit_id]->sol_counted_qty);
+        $this->assertSame(167, (int) $lines[$dos->unit_id]->sol_counted_qty, '84 DOS lama harus ikut terbawa, bukan digantikan angka dari Piece saja');
     }
 
     /** rollUpUnits() harus keluar lebih dulu untuk dokumen lama, tidak boleh menyentuh apa pun. */
