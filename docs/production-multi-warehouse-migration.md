@@ -1,0 +1,269 @@
+# SOP — Migrasi DB Production ke Multi-Gudang (Fase 2)
+
+**Tujuan:** upgrade database production (schema fase1) ke fase2 multi-gudang **tanpa menghapus data live**.
+
+**Branch:** `fase-2` / `fase2/main`  
+**Cek otomatis:** `php docs/scripts/verify_production_import.php`  
+**Seeder utama:** `ProductionMultiWarehouseSeeder`
+
+---
+
+## 0. Ringkasan keputusan
+
+| Lingkungan | Cara yang disarankan | Kenapa |
+|---|---|---|
+| **Lokal / staging (uji coba)** | Seeder **atau** SQL import + verify | Bisa diulang, diverifikasi sebelum sentuh live |
+| **Live production** | **Seeder in-place** | DB live tetap jalan; tidak ada transaksi yang hilang karena snapshot dump |
+
+> **Jangan** jalankan full SQL import **dan** seeder pada DB yang sama. Pilih **satu** jalur.
+
+---
+
+## 1. File terkait
+
+| Path | Fungsi |
+|---|---|
+| `database/seeders/ProductionMultiWarehouseSeeder.php` | Entry point upgrade (disarankan live + lokal) |
+| `database/seeders/data/production_default_warehouse.json` | Konfigurasi 2 gudang seed |
+| `database/sql/pegasuso_production_multi_warehouse_upgrade.sql` | DDL + backfill multi-gudang |
+| `database/sql/pegasuso_production_fase2_schema_gap.sql` | Kolom/tabel fase2 yang belum ada di dump production |
+| `database/sql/pegasuso_production_import_with_warehouses.sql` | Dump + warehouse_id (opsional, untuk UAT) |
+| `docs/scripts/build_production_warehouse_sql.php` | Generate ulang file import dari dump terbaru |
+| `docs/scripts/verify_production_import.php` | Bandingkan dump vs DB setelah import |
+
+### Gudang default (dari config)
+
+| ID | Nama | Peran |
+|---|---|---|
+| 1 | Gudang Hikari Pegasus Sidoarjo | Gudang utama — semua stok legacy (`warehouse_id = 1`) |
+| 2 | Gudang Eceran Sidoarjo | Gudang eceran — baris stok 0 (seed) |
+
+---
+
+## 2. Aturan keamanan data
+
+Script upgrade **TIDAK** melakukan:
+
+- `DELETE` / `TRUNCATE` data bisnis
+- Mengubah qty stok lama (`ps_stock`, `ss_stock`)
+- Menghapus transaksi (`sales_orders`, `log_stocks`, dll.)
+
+Yang ditambahkan:
+
+- Tabel/kolom baru fase2 (idempotent)
+- 2 gudang + `staff_warehouses`
+- Backfill `warehouse_id = 1` untuk stok/opname/log lama
+- Baris stok 0 di gudang eceran
+
+Seeder **idempotent** — aman dijalankan ulang (skip jika sudah ada).
+
+---
+
+## 3. Setup lokal (wajib sebelum staging)
+
+### 3.1 Prasyarat
+
+```bash
+# Clone / checkout branch fase-2
+git checkout fase-2
+composer install
+
+# Buat DB kosong di MySQL lokal, contoh: pegasus_production_local
+# Set .env:
+# DB_DATABASE=pegasus_production_local
+```
+
+### 3.2 Jalur A — Seeder (disarankan, sama dengan live)
+
+**DB masih dump mentah fase1** (belum ada `warehouse_id`):
+
+```bash
+# 1. Import dump production mentah ke DB lokal
+mysql -u root pegasus_production_local < "C:\path\to\pegasuso_pegasus_production.sql"
+
+# 2. Upgrade multi-gudang + schema fase2
+php artisan db:seed --class=ProductionMultiWarehouseSeeder
+
+# 3. Verifikasi
+php docs/scripts/verify_production_import.php "C:\path\to\pegasuso_pegasus_production.sql" pegasus_production_local
+```
+
+Output harus: **`RESULT: PASS`**
+
+**DB sudah pernah di-patch** (verify sudah PASS sebelumnya):
+
+- Tidak perlu run seeder lagi (redundan, tetap aman kalau di-run ulang).
+
+### 3.3 Jalur B — SQL import gabungan (opsional, untuk UAT)
+
+```bash
+# Generate file import dari dump terbaru (include schema gap di postfix)
+php docs/scripts/build_production_warehouse_sql.php "C:\path\to\dump-terbaru.sql"
+
+# Import ke DB lokal
+mysql -u root pegasus_production_local < database/sql/pegasuso_production_import_with_warehouses.sql
+
+# Verifikasi
+php docs/scripts/verify_production_import.php "C:\path\to\dump-terbaru.sql" pegasus_production_local
+```
+
+> Regenerate file import setiap kali ada dump production baru atau perubahan schema gap.
+
+### 3.4 Smoke test setelah upgrade
+
+```bash
+php artisan serve
+```
+
+Cek manual:
+
+- [ ] Login berhasil, gudang aktif muncul di navbar
+- [ ] Stok produk & bahan — gudang Hikari = stok lama
+- [ ] Gudang Eceran — stok 0 (belum ada transaksi)
+- [ ] Edit produk (kolom safety stock tidak error)
+- [ ] Sales order / PO / log stok masih ada
+
+```bash
+php artisan test --filter=StockTransferWorkflowTest
+```
+
+---
+
+## 4. Deploy ke staging
+
+Urutan:
+
+1. **Push** branch `fase-2` (atau merge ke `fase2/main` sesuai workflow tim)
+2. Deploy kode ke server staging
+3. **Backup DB staging** dulu
+4. Jalankan seeder di staging:
+
+```bash
+composer install --no-dev --optimize-autoloader
+php artisan config:cache
+php artisan db:seed --class=ProductionMultiWarehouseSeeder
+```
+
+5. Verifikasi (jika punya dump staging sebelum upgrade):
+
+```bash
+php docs/scripts/verify_production_import.php /path/dump-staging.sql nama_db_staging
+```
+
+6. Smoke test + `/system/deployment-check`
+
+---
+
+## 5. Deploy ke live (production)
+
+### Sebelum cutover
+
+- [ ] Backup penuh DB live (`mysqldump`) + folder `storage/`
+- [ ] Uji seeder di staging dengan clone DB live — verify PASS
+- [ ] Siapkan jadwal maintenance (user tidak transaksi)
+
+### Hari H
+
+```bash
+# 1. Maintenance ON
+
+# 2. Deploy kode fase-2 / fase2/main
+composer install --no-dev --optimize-autoloader
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# 3. Upgrade DB (IN-PLACE — jangan full import dump)
+php artisan db:seed --class=ProductionMultiWarehouseSeeder
+
+# 4. Smoke test (stok, SO, PO, edit produk, gudang)
+
+# 5. /system/deployment-check
+
+# 6. Maintenance OFF
+```
+
+### Kenapa live pakai seeder, bukan SQL import?
+
+| | Seeder in-place | Full SQL import |
+|---|---|---|
+| Data transaksi setelah dump | **Tetap ada** | **Hilang** (snapshot dump) |
+| Downtime | Lebih singkat | Lebih lama |
+| Risiko dobel import | Rendah | Tinggi kalau import 2x |
+
+---
+
+## 6. Verifikasi otomatis
+
+```bash
+php docs/scripts/verify_production_import.php [dump.sql] [database_name]
+```
+
+Default:
+
+- Dump: `C:/Users/Ruben/Downloads/pegasuso_pegasus_production 31-08-26.sql`
+- DB: `pegasus_production_local`
+
+Yang dicek:
+
+| Cek | Keterangan |
+|---|---|
+| Row count 75+ tabel | Harus identik dengan dump |
+| MAX primary key | `sales_orders`, `log_stocks`, dll. tidak boleh kurang |
+| Stok gudang utama | `warehouse_id=1` — jumlah baris & total qty identik dump |
+| Schema fase2 | `warehouse_id`, `ps_safety_stock`, approval ST, kolom SO baru |
+
+**Expected tambahan** (bukan kehilangan data):
+
+- `product_stocks` +N baris stok 0 gudang eceran
+- `supplies_stocks` +N baris stok 0 gudang eceran
+- `warehouses` +2, `warehouse_types` +2, `staff_warehouses` +N
+- `migrations` +N (patch schema)
+
+---
+
+## 7. Troubleshooting
+
+| Gejala | Penyebab | Solusi |
+|---|---|---|
+| `Unknown column ps_safety_stock` | Schema gap belum jalan | Run seeder lagi atau `pegasuso_production_fase2_schema_gap.sql` |
+| Stok gudang Hikari kosong | `warehouse_id` belum di-backfill | Run seeder; cek `production_default_warehouse.json` |
+| Duplikat stok eceran | Seeder di-run berkali-kali dengan kondisi anomali | Cek warning duplikat di output seeder; unique index seharusnya mencegah |
+| Verify FAIL — baris kurang | Import dump tidak lengkap / DB salah | Import ulang dump mentah + seeder (jangan patch 2x di DB yang sudah lengkap) |
+| `warehouse_id` NULL di stok lama | Backfill belum jalan | Seeder `backfillWarehouseIds()` — run seeder |
+
+---
+
+## 8. Checklist cepat
+
+### Lokal baru
+
+```
+[ ] git checkout fase-2
+[ ] composer install
+[ ] .env → DB lokal
+[ ] import dump mentah
+[ ] php artisan db:seed --class=ProductionMultiWarehouseSeeder
+[ ] php docs/scripts/verify_production_import.php → PASS
+[ ] smoke test manual
+```
+
+### Staging / Live
+
+```
+[ ] backup DB
+[ ] maintenance ON (live)
+[ ] deploy kode
+[ ] php artisan db:seed --class=ProductionMultiWarehouseSeeder
+[ ] smoke test
+[ ] deployment-check
+[ ] maintenance OFF (live)
+```
+
+---
+
+## 9. Dokumen terkait
+
+- `docs/fase2-merge-inventory.md` — inventaris fitur fase2
+- `docs/backlog-stock-multi-gudang.md` — keputusan bisnis multi-gudang
+- `database/seeders/ProductionMultiWarehouseSeeder.php` — komentar inline di class

@@ -5,6 +5,7 @@
 **Branch sumber kebenaran:** `fase-2` (= tip yang sudah di-push ke `fase2/main`)  
 **Snapshot tip saat dokumen ini ditulis:** `4721ce8`  
 **Dokumen terkait:**
+- `docs/production-multi-warehouse-migration.md` — **SOP migrasi DB production → multi-gudang** (lokal, staging, live)
 - `docs/backlog-stock-multi-gudang.md` — keputusan bisnis ST + backlog #1–#11
 - `docs/production-acc-stock-safety.md` — ACC produksi + ST Pending
 - `docs/production-pallet-shortcut.md` — shortcut Pallet di form produksi
