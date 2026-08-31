@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 /**
  * Verify fase-2 critical inventory is still present (anti-lost-on-merge).

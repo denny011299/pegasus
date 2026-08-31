@@ -117,6 +117,7 @@
                                         <tr>
                                             <th style="width: 4%"></th>
                                             <th style="width: 9%">Tanggal</th>
+                                            <th style="width: 14%" class="text-center">Status</th>
                                             <th style="width: 18%">Deskripsi</th>
                                             <th style="width: 12%" class="text-end">Masuk</th>
                                             <th style="width: 12%" class="text-end">Keluar</th>
@@ -124,7 +125,6 @@
                                             <th>Dibuat Oleh</th>
                                             <th>Diapprove/Ditolak Oleh</th>
                                             <th>Diperbarui Pada</th>
-                                            <th style="width: 18%">Status</th>
                                             <th style="width: 15%">Aksi</th>
                                         </tr>
                                     </thead>
@@ -133,18 +133,18 @@
                                     </tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="3" class="text-end fw-bold" style="text-align: right !important">Total : </td>
+                                            <td colspan="4" class="text-end fw-bold" style="text-align: right !important">Total : </td>
                                             <td class="debits text-success"></td>
                                             <td class="credits1 text-danger"></td>
                                             <td class="credits2 text-danger"></td>
-                                            <td colspan="5"></td>
+                                            <td colspan="4"></td>
                                         </tr>
                                         <tr>
-                                            <td colspan="5" class="fw-bold text-end">Sisa Kas : </td>
+                                            <td colspan="6" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
                                             <td class="fw-bold text-end">Total Setoran : </td>
                                             <td class="fw-bold text-end setor pe-4">Rp 0</td>
-                                            <td colspan="3"></td>
+                                            <td colspan="2"></td>
                                         </tr>
                                     </tfoot>
                                 </table>

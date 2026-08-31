@@ -37,6 +37,25 @@
         #tableStockTransfer td > div {
             min-width: 0;
         }
+        #tableStockTransfer th.st-col-warehouse,
+        #tableStockTransfer td.st-col-warehouse {
+            min-width: 155px !important;
+            max-width: 220px;
+            white-space: normal !important;
+        }
+        #tableStockTransfer td.st-col-warehouse > div {
+            min-width: 120px;
+        }
+        #tableStockTransfer .st-warehouse-name {
+            display: block;
+            min-width: 0;
+            max-width: 170px;
+            line-height: 1.35;
+            font-size: 13px;
+            overflow-wrap: normal;
+            word-break: normal;
+            white-space: normal;
+        }
         .stock-transfer-filter .form-control,
         .stock-transfer-filter .form-select {
             height: 42px !important;
@@ -380,8 +399,8 @@
                                             <th style="width:11%">Request</th>
                                             <th style="width:11%">Pengirim</th>
                                             <th style="width:11%">Penerima</th>
-                                            <th style="width:12%">Dari</th>
-                                            <th style="width:12%">Ke</th>
+                                            <th style="width:12%;min-width:155px">Dari</th>
+                                            <th style="width:12%;min-width:155px">Ke</th>
                                             <th class="no-sort text-center" style="width:6%">Aksi</th>
                                         </tr>
                                     </thead>

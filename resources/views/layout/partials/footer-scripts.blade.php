@@ -443,7 +443,12 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     function showModalKonfirmasi(text, button_id) {
         //button id ini, id button ketika dikofrimasi delete
         $("#text-konfirmasi").html(text);
-        $("#modalKonfirmasi .btn-konfirmasi").attr("id", button_id);
+        $("#modalKonfirmasi .btn-konfirmasi")
+            .attr("id", button_id)
+            .removeData("busy")
+            .prop("disabled", false)
+            .css({ "min-width": "", height: "" })
+            .html('<i class="fe fe-check-circle me-1"></i>Konfirmasi');
         $('#modalKonfirmasi').modal("show");
     }
 
@@ -476,7 +481,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     $('#modalKonfirmasi .btn-konfirmasi')
       .removeClass('btn-danger pg-btn-confirm--danger')
       .addClass('btn-success pg-btn-confirm')
-      .text('Konfirmasi');
+      .removeData('busy')
+      .prop('disabled', false)
+      .css({ 'min-width': '', height: '' })
+      .html('<i class="fe fe-check-circle me-1"></i>Konfirmasi');
   });
 
   $(document).on('click', '#btn-kembali-photo', function() {
@@ -585,17 +593,20 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
   function LoadingButton(id) {
     var $btn = $(id);
+    if (!$btn.length) return;
     // Lock current size so button doesn't expand when text changes
     $btn.css({
       'min-width': $btn.outerWidth() + 'px',
       'height': $btn.outerHeight() + 'px'
     });
-    $btn.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>')
+    // text-light: spinner terlihat di tombol hijau/merah (pg-btn-confirm)
+    $btn.html('<span class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></span>')
       .prop("disabled", true);
   }
 
   function ResetLoadingButton(id, text = null) {
     var $btn = $(id);
+    if (!$btn.length) return;
     $btn.css({
       'min-width': '',
       'height': ''

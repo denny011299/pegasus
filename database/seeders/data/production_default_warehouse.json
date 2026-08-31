@@ -1,0 +1,22 @@
+{
+    "warehouse_type": {
+        "warehouse_type_name": "Gudang Besar",
+        "is_main_warehouse": 1,
+        "status": 1
+    },
+    "warehouse": {
+        "warehouse_name": "Gudang Hikari Pegasus Sidoarjo",
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A8 - 9, Jalan Industri, Buduran, Sidoarjo",
+        "status": 1
+    },
+    "retail_warehouse_type": {
+        "warehouse_type_name": "Gudang Eceran",
+        "is_main_warehouse": 0,
+        "status": 1
+    },
+    "retail_warehouse": {
+        "warehouse_name": "Gudang Eceran Sidoarjo",
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A9, Jalan Industri, Buduran, Sidoarjo",
+        "status": 1
+    }
+}

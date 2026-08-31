@@ -1165,23 +1165,78 @@
     }
 
     function processRecord(key, action, question) {
-        Swal.fire({
-            icon: action === "accept" ? "question" : "warning",
-            title: question,
-            text: action === "accept" ? "Stok akan bertambah dan tindakan ini tidak dapat diulang." : "Penolakan tidak mengubah stok.",
-            showCancelButton: true,
-            confirmButtonText: "Ya, lanjutkan",
-            cancelButtonText: "Batal",
-        }).then(function (result) {
-            if (!result.isConfirmed) return;
-            $.post("/customerReturns/" + encodeURIComponent(key) + "/" + action, { _token: csrf() })
-                .done(function (response) {
-                    $("#customer-return-modal").modal("hide");
-                    if (typeof toastr !== "undefined") toastr.success(response.message);
-                    window.setTimeout(refreshCustomerReturn, 200);
-                }).fail(notifyError);
-        });
+        if (!key) return;
+        var btnId =
+            action === "accept"
+                ? "btn-accept-customer-return"
+                : "btn-decline-customer-return";
+        var detail =
+            action === "accept"
+                ? question +
+                  '<br><small class="text-muted">Stok akan bertambah dan tindakan ini tidak dapat diulang.</small>'
+                : question +
+                  '<br><small class="text-muted">Penolakan tidak mengubah stok.</small>';
+        if (typeof showModalKonfirmasi !== "function") {
+            if (typeof Swal !== "undefined") {
+                Swal.fire({
+                    icon: action === "accept" ? "question" : "warning",
+                    title: question,
+                    showCancelButton: true,
+                    confirmButtonText: "Ya, lanjutkan",
+                    cancelButtonText: "Batal",
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
+                    postProcessRecord(key, action, null);
+                });
+            }
+            return;
+        }
+        showModalKonfirmasi(detail, btnId);
+        $("#" + btnId)
+            .attr("data-key", key)
+            .attr("data-action", action);
     }
+
+    function postProcessRecord(key, action, $loadingBtn) {
+        if ($loadingBtn && $loadingBtn.length && typeof LoadingButton === "function") {
+            LoadingButton($loadingBtn);
+        }
+        $.post("/customerReturns/" + encodeURIComponent(key) + "/" + action, {
+            _token: csrf(),
+        })
+            .done(function (response) {
+                if (typeof closeModalConfirm === "function") closeModalConfirm();
+                $("#customer-return-modal").modal("hide");
+                if (typeof toastr !== "undefined") toastr.success(response.message);
+                window.setTimeout(refreshCustomerReturn, 200);
+            })
+            .fail(function (xhr) {
+                if ($loadingBtn && $loadingBtn.length) {
+                    $loadingBtn.data("busy", false);
+                    if (typeof ResetLoadingButton === "function") {
+                        ResetLoadingButton(
+                            $loadingBtn,
+                            '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                        );
+                    }
+                }
+                notifyError(xhr);
+            });
+    }
+
+    $(document).on(
+        "click",
+        "#btn-accept-customer-return, #btn-decline-customer-return",
+        function () {
+            var $btn = $(this);
+            if ($btn.data("busy")) return;
+            var key = $btn.attr("data-key");
+            var action = $btn.attr("data-action");
+            if (!key || !action) return;
+            $btn.data("busy", true);
+            postProcessRecord(key, action, $btn);
+        }
+    );
 
     function addSupplyLine() {
         var supply = selectedSupply();

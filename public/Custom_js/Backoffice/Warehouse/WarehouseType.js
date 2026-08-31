@@ -86,7 +86,7 @@ function inisialisasi() {
                         badgeColor +
                         ";border:1px solid " +
                         badgeBorder +
-                        ';padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;">' +
+                        ';padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;white-space:nowrap;text-align:left;">' +
                         data +
                         "</span></div>"
                     );
