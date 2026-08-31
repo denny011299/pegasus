@@ -4,7 +4,8 @@
 
 **Branch:** `fase-2` / `fase2/main`  
 **Cek otomatis:** `php docs/scripts/verify_production_import.php`  
-**Seeder utama:** `ProductionMultiWarehouseSeeder`
+**Seeder utama:** `ProductionMultiWarehouseSeeder`  
+**Command:** `php artisan pegasus:production-upgrade` (default seeder) atau `--sql`
 
 ---
 
@@ -12,10 +13,17 @@
 
 | Lingkungan | Cara yang disarankan | Kenapa |
 |---|---|---|
-| **Lokal / staging (uji coba)** | Seeder **atau** SQL import + verify | Bisa diulang, diverifikasi sebelum sentuh live |
-| **Live production** | **Seeder in-place** | DB live tetap jalan; tidak ada transaksi yang hilang karena snapshot dump |
+| **Lokal / staging (uji coba)** | Seeder **atau** `--sql` + verify | Bisa diulang, diverifikasi sebelum sentuh live |
+| **Live production** | **Seeder** atau **`--sql`** in-place | DB live tetap jalan; tidak perlu import dump ulang |
 
-> **Jangan** jalankan full SQL import **dan** seeder pada DB yang sama. Pilih **satu** jalur.
+### Dua opsi upgrade (pilih satu)
+
+| Opsi | Perintah | Kapan dipakai |
+|---|---|---|
+| **A — Seeder** (default) | `php artisan pegasus:production-upgrade` | Paling mudah; sama dengan live |
+| **B — SQL** | `php artisan pegasus:production-upgrade --sql` | Server tanpa artisan / prefer phpMyAdmin / mysql CLI |
+
+> **Jangan** jalankan full SQL import dump **dan** seeder/upgrade in-place pada DB yang sama. Pilih **satu** jalur.
 
 ---
 
@@ -23,7 +31,10 @@
 
 | Path | Fungsi |
 |---|---|
-| `database/seeders/ProductionMultiWarehouseSeeder.php` | Entry point upgrade (disarankan live + lokal) |
+| `database/seeders/ProductionMultiWarehouseSeeder.php` | Entry point upgrade via PHP |
+| `app/Console/Commands/ProductionUpgradeCommand.php` | `pegasus:production-upgrade` (--sql / seeder) |
+| `database/sql/pegasuso_production_upgrade_in_place.sql` | **1 file SQL** upgrade in-place (generate via script) |
+| `docs/scripts/build_production_upgrade_in_place_sql.php` | Generate file SQL in-place |
 | `database/seeders/data/production_default_warehouse.json` | Konfigurasi 2 gudang seed |
 | `database/sql/pegasuso_production_multi_warehouse_upgrade.sql` | DDL + backfill multi-gudang |
 | `database/sql/pegasuso_production_fase2_schema_gap.sql` | Kolom/tabel fase2 yang belum ada di dump production |
@@ -73,28 +84,29 @@ composer install
 # DB_DATABASE=pegasus_production_local
 ```
 
-### 3.2 Jalur A — Seeder (disarankan, sama dengan live)
-
-**DB masih dump mentah fase1** (belum ada `warehouse_id`):
+### 3.2 Jalur A — Seeder (disarankan)
 
 ```bash
-# 1. Import dump production mentah ke DB lokal
-mysql -u root pegasus_production_local < "C:\path\to\pegasuso_pegasus_production.sql"
-
-# 2. Upgrade multi-gudang + schema fase2
+php artisan pegasus:production-upgrade
+# sama dengan:
 php artisan db:seed --class=ProductionMultiWarehouseSeeder
-
-# 3. Verifikasi
-php docs/scripts/verify_production_import.php "C:\path\to\pegasuso_pegasus_production.sql" pegasus_production_local
 ```
 
-Output harus: **`RESULT: PASS`**
+### 3.3 Jalur B — SQL in-place (opsi alternatif)
 
-**DB sudah pernah di-patch** (verify sudah PASS sebelumnya):
+```bash
+# Generate / refresh file SQL gabungan
+php docs/scripts/build_production_upgrade_in_place_sql.php
 
-- Tidak perlu run seeder lagi (redundan, tetap aman kalau di-run ulang).
+# Via artisan (include RoleWarehouseAccessSeeder)
+php artisan pegasus:production-upgrade --sql
 
-### 3.3 Jalur B — SQL import gabungan (opsional, untuk UAT)
+# Atau manual di MySQL / phpMyAdmin:
+mysql -u root pegasus_production_local < database/sql/pegasuso_production_upgrade_in_place.sql
+php artisan db:seed --class=RoleWarehouseAccessSeeder
+```
+
+### 3.4 Jalur C — SQL import gabungan dari dump (UAT saja)
 
 ```bash
 # Generate file import dari dump terbaru (include schema gap di postfix)
@@ -109,7 +121,7 @@ php docs/scripts/verify_production_import.php "C:\path\to\dump-terbaru.sql" pega
 
 > Regenerate file import setiap kali ada dump production baru atau perubahan schema gap.
 
-### 3.4 Smoke test setelah upgrade
+### 3.5 Smoke test setelah upgrade
 
 ```bash
 php artisan serve
@@ -173,8 +185,10 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# 3. Upgrade DB (IN-PLACE — jangan full import dump)
-php artisan db:seed --class=ProductionMultiWarehouseSeeder
+# 3. Upgrade DB (IN-PLACE — pilih salah satu)
+php artisan pegasus:production-upgrade          # seeder (default)
+# atau
+php artisan pegasus:production-upgrade --sql      # SQL in-place
 
 # 4. Smoke test (stok, SO, PO, edit produk, gudang)
 
